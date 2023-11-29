@@ -1,0 +1,292 @@
+#include "Shape.h"
+
+#include <utility>    // std::swap
+#include <functional> // std::hash
+#include <cmath>
+
+/* ====================
+ * POINT
+ * ====================*/
+
+PointXY::PointXY() : x(0), y(0) {}
+PointXY::PointXY(double x, double y) : x(x), y(y) {}
+
+size_t PointXY::hash() const
+{
+  // Create individual hashes for x and y
+  size_t hashX = std::hash<double>{}(x);
+  size_t hashY = std::hash<double>{}(y);
+
+  // Combine the individual hashes using a hash combiner
+  size_t seed = 0;
+  seed ^= hashX + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  seed ^= hashY + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  return seed;
+}
+
+
+bool PointXY::operator<(const PointXY& other) const
+{
+  if (x != other.x) return x < other.x;
+  else return y < other.y;
+}
+
+
+bool PointXYZ::operator<(const PointXYZ& other) const
+{
+  if (x != other.x) return x < other.x;
+  else if (y != other.y) return y < other.y;
+  else return z < other.z;
+}
+
+bool PointXY::operator==(const PointXY& other) const
+{
+  return (x == other.x) && (y == other.y);
+}
+
+PointXYZ::PointXYZ() : PointXY(), z(0) {}
+PointXYZ::PointXYZ(double x, double y) : PointXY(x,y), z(0) {}
+PointXYZ::PointXYZ(double x, double y, double z) : PointXY(x,y), z(z) {}
+
+bool PointXYZ::operator==(const PointXYZ& other) const
+{
+  return (x == other.x) && (y == other.y) && (z == other.z);
+}
+
+#include "laszip.hpp"
+#include "laspoint.hpp"
+
+PointLAS::PointLAS()
+{
+  memset((void*)this, 0, sizeof(PointLAS));
+}
+
+PointLAS::PointLAS(const LASpoint* const p)
+{
+  copy(p);
+}
+
+void PointLAS::copy(const LASpoint* const p)
+{
+  FID = 0;
+  x = p->get_x();
+  y = p->get_y();
+  z = p->get_z();
+  intensity = p->get_intensity();
+  return_number = (p->is_extended_point_type()) ? p->get_extended_return_number() : p->get_return_number();
+  number_of_returns = (p->is_extended_point_type()) ? p->get_extended_number_of_returns() : p->get_number_of_returns();
+  scan_direction_flag = p->get_scan_direction_flag();
+  edge_of_flight_line = p->get_edge_of_flight_line();
+  classification = (p->is_extended_point_type()) ? p->get_extended_classification() : p->get_classification();
+  synthetic_flag = p->get_synthetic_flag();
+  keypoint_flag = p->get_keypoint_flag();
+  withheld_flag = p->get_withheld_flag();
+  overlap_flag =  p->get_extended_overlap_flag();
+  scan_angle = (p->is_extended_point_type()) ? p->get_scan_angle() : p->get_scan_angle_rank();
+  user_data = p->get_user_data();
+  point_source_ID = p->get_point_source_ID();
+  gps_time = p->get_gps_time();
+  R = p->get_R();
+  G = p->get_R();
+  B = p->get_R();
+  NIR = p->get_NIR();
+}
+
+/* ====================
+ * SHAPE
+ * ====================*/
+
+Shape::~Shape()
+{
+
+}
+
+/* ====================
+ * TRIANGLE
+ * ====================*/
+
+TriangleXYZ::TriangleXYZ(const PointXYZ& A, const PointXYZ& B, const PointXYZ& C)
+{
+  this->A = A;
+  this->B = B;
+  this->C = C;
+}
+
+void TriangleXYZ::make_clock_wise()
+{
+  if (orientation() == COUNTERCLOCKWISE) std::swap(this->B, this->C);
+}
+
+void TriangleXYZ::make_counter_clock_wise()
+{
+  if (orientation() == CLOCKWISE) std::swap(this->B, this->C);
+}
+
+PointXYZ TriangleXYZ::centroid() const
+{
+  PointXYZ centroid;
+  centroid.x = (A.x + B.x + C.x)/3;
+  centroid.y = (A.y + B.y + C.y)/3;
+  centroid.z = (A.z + B.z + C.z)/3;
+  return centroid;
+}
+
+bool TriangleXYZ::contains(const PointXY& p) const
+{
+  if (p.x < xmin() - EPSILON || p.x > xmax() + EPSILON || p.y < ymin() - EPSILON || p.y > ymax() + EPSILON)
+    return false;
+
+  double denominator = (A.x*(B.y - C.y) + A.y*(C.x - B.x) + B.x*C.y - B.y*C.x);
+  double t1 = (p.x*(C.y - A.y) + p.y*(A.x - C.x) - A.x*C.y + A.y*C.x) / denominator;
+  double t2 = (p.x*(B.y - A.y) + p.y*(A.x - B.x) - A.x*B.y + A.y*B.x) / -denominator;
+  double s = t1 + t2;
+
+  if (0 <= t1 && t1 <= 1 && 0 <= t2 && t2 <= 1 && s <= 1)
+    return true;
+
+  // see http://totologic.blogspot.com/2014/01/accurate-point-in-triangle-test.html
+  if (square_distance_point_to_segment(A, B, p) <= EPSILON) return true;
+  if (square_distance_point_to_segment(B, C, p) <= EPSILON) return true;
+  if (square_distance_point_to_segment(C, A, p) <= EPSILON) return true;
+
+  return false;
+}
+
+bool TriangleXYZ::contains(double x, double y) const
+{
+  PointXY p(x, y);
+  return contains(p);
+}
+
+double TriangleXYZ::square_max_edge_size() const
+{
+  // ABC is resented by vector u,v and w
+  PointXYZ u(A.x - B.x, A.y - B.y);
+  PointXYZ v(A.x - C.x, A.y - C.y);
+  PointXYZ w(B.x - C.x, B.y - C.y);
+
+  // Compute the AB, AC, BC edge comparable length
+  double edge_AB = u.x * u.x + u.y * u.y;
+  double edge_AC = v.x * v.x + v.y * v.y;
+  double edge_BC = w.x * w.x + w.y * w.y;
+  return MAX3(edge_AB, edge_AC, edge_BC);
+}
+
+void TriangleXYZ::linear_interpolation(PointXYZ& p) const
+{
+  double dx1 = p.x - A.x;
+  double dy1 = p.y - A.y;
+  double dx2 = B.x - A.x;
+  double dy2 = B.y - A.y;
+  double dx3 = C.x - A.x;
+  double dy3 = C.y - A.y;
+  p.z = A.z + ((dy1 * dx3 - dx1 * dy3) * (B.z - A.z) + (dx1 * dy2 - dy1 * dx2) * (C.z - A.z)) / (dx3 * dy2 - dx2 * dy3);
+}
+
+double TriangleXYZ::square_distance_point_to_segment(const PointXY& p1, const PointXY& p2, const PointXY& p) const
+{
+  double p1_p2_squareLength = (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y);
+  double dot_product = ((p.x - p1.x)*(p2.x - p1.x) + (p.y - p1.y)*(p2.y - p1.y)) / p1_p2_squareLength;
+
+  if ( dot_product < 0 )
+  {
+    return (p.x - p1.x)*(p.x - p1.x) + (p.y - p1.y)*(p.y - p1.y);
+  }
+  else if ( dot_product <= 1 )
+  {
+    double p_p1_squareLength = (p1.x - p.x)*(p1.x - p.x) + (p1.y - p.y)*(p1.y - p.y);
+    return p_p1_squareLength - dot_product * dot_product * p1_p2_squareLength;
+  }
+  else
+  {
+    return (p.x - p2.x)*(p.x - p2.x) + (p.y - p2.y)*(p.y - p2.y);
+  }
+}
+
+int TriangleXYZ::orientation() const
+{
+  double val = (B.x - A.x) * (C.y - B.y) - (B.y - A.y) * (C.x - B.x);
+  if (val == 0) return COLINEAR;
+  return (val > 0) ? CLOCKWISE : COUNTERCLOCKWISE;
+}
+
+/* ====================
+ * Edge
+ * ====================*/
+
+Edge::Edge(double x1, double y1, double x2, double y2)
+{
+  A.x = x1;
+  B.x = x2;
+  A.y = y1;
+  B.y = y2;
+}
+
+bool Edge::operator<(const Edge& other) const
+{
+  if (xmin() != other.xmin()) return xmin() < other.xmin();
+  if (ymin() != other.ymin()) return ymin() < other.ymin();
+  if (xmax() != other.xmax()) return xmax() < other.xmax();
+  return ymax() < other.ymax();
+}
+
+bool Edge::operator==(const Edge& other) const
+{
+  return (A == other.A && B == other.B) || (A == other.B && B == other.A);
+}
+
+std::size_t Edge::hash() const
+{
+  size_t hashX = std::hash<double>{}(xmin());
+  size_t hashY = std::hash<double>{}(ymax());
+
+  size_t seed = 0;
+  seed ^= hashX + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  seed ^= hashY + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  return seed;
+}
+
+/* ====================
+ * POLYGON
+ * ====================*/
+
+PolygonXY::PolygonXY(const std::vector<PointXY>& coords)
+{
+  coordinates = coords;
+}
+
+void PolygonXY::push_back(const PointXY& p)
+{
+  coordinates.push_back(p);
+}
+
+bool PolygonXY::is_closed()
+{
+  if (coordinates.size() == 0) return false;
+  return &coordinates.front() == &coordinates.back();
+}
+
+void PolygonXY::close()
+{
+  if (!is_closed()) coordinates.push_back(coordinates.front());
+}
+
+bool PolygonXY::is_clockwise()
+{
+  return signed_area() > 0;
+}
+
+double PolygonXY::signed_area()
+{
+  int n = coordinates.size();
+  double signed_area = 0.0;
+
+  for (int i = 0; i < n ; ++i)
+  {
+    const PointXY& current = coordinates[i];
+    const PointXY& next = coordinates[(i + 1) % n];
+    signed_area += (next.x - current.x) * (next.y + current.y);
+  }
+
+  return signed_area;
+}

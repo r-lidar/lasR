@@ -1,0 +1,7 @@
+PKG_CPPFLAGS= @PKG_CPPFLAGS@ -DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R -I./ -I./LASlib/ -I./LASzip/ -I./LASR/ -I./third_party/ -I./boost/
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS=@PKG_LIBS@ $(SHLIB_OPENMP_CXXFLAGS)
+CXX_STD=CXX
+SOURCES = $(wildcard LASlib/*.cpp LASzip/*.cpp LASR/*.cpp third_party/*.cpp ./*.cpp)
+TEMP1   = $(SOURCES:.cpp=.o)
+OBJECTS = $(TEMP1:.c=.o)

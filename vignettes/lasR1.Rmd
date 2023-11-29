@@ -1,0 +1,89 @@
+---
+title: "1. Why lasR?"
+author: "Jean-Romain Roussel"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{1. Why lasR?}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, echo = F}
+library(lasR)
+```
+
+## Rationnal for `lasR` vs. `lidR`
+
+Do we need a new package? The short answer lies in the following graph. The x-axis represents the time to perform three different rasterizations (a CHM, a DTM, and a density map), and the y-axis represents the amount of RAM memory used for `lidR` and `lasR` (more details in the benchmark vignette). `lasR` is intended to be much more efficient than `lidR` both in terms of memory usage and computation times.
+
+```{r, fig.width=6, fig.height=4, warning=F, echo=-1, echo=FALSE, fig.align = 'center'}
+col1 = rgb(0, 0.5, 1, alpha = 0.5)
+col2 = rgb(1, 0, 0, alpha = 0.5)
+
+par(mar = c(4,4,1,1))
+
+m_lasr = c(0, 82.03, 170.51, 354.01, 531.90, 711.60, 895.17, 1074.86, 1214.60, 1259.20, 1297.35, 1297.35, 435.67,550.40, 692.43, 831.39, 971.39, 1113.44, 1282.57, 1285.92, 1345.21, 
+1345.21, 498.85, 559.43, 697.85, 837.33, 977.29, 1127.08, 1258.82, 1240.92, 1240.92, 1240.92, 480.92, 606.07, 749.79, 887.94, 1026.13, 1169.48, 1358.71, 1378.30, 1423.42, 1423.42, 
+554.91, 560.07, 0)
+t_lasr = 1:length(m_lasr)*2/60
+
+m_lidr = c(0, 104.86, 456.99, 802.07, 1116.71, 1765.46, 2116.21, 2502.28, 2276.53, 2666.14, 2986.86, 2300.90, 2686.19, 2989.73, 2004.21, 2579.39, 3195.28, 2827.48, 3512.35, 4633.82, 
+5221.53, 5639.37, 3357.23, 4434.14, 5110.58, 4302.41, 3457.53, 4052.46, 4702.15, 4430.27, 4585.12, 4937.42, 5243.30,4713.65, 5063.31, 5376.67, 2866.46, 3207.25, 3459.13, 3188.25, 
+3523.44, 3733.16, 0)
+
+t_lidr = 1:length(m_lidr)*8/60
+
+x = t_lidr
+y = m_lidr/1000
+
+par(mar = c(4,4,1,1))
+
+plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
+lines(x, y, col = "blue", lwd = 2)
+
+x = t_lasr
+y = m_lasr/1000
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+lines(x, y, col = "red", lwd = 2)
+
+legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
+```
+
+The second issue is the absence of a powerful pipeline engine in `lidR`. Performing a task as simple as extracting and deriving metrics for multiple inventory plots from a non-normalized collection of files is not that easy in `lidR`. It is straightforward if the point cloud is normalized, but if not, users must write a complex custom script. With the introduction of real pipelines, `lasR` enables users to do more complex tasks in an easier way (see the tutorial vignette as well as the pipeline vignette).
+
+Last but not least, I have almost a decade of additional experience with R, C++, point cloud processing, and a lot of feedback compared to when I started the creation of `lidR`. I was simply not technically capable of writing `lasR` ten years ago!
+
+## Main differences between `lasR` and `lidR`
+
+### Pipeline
+
+`lasR` introduces a versatile pipeline engine, enabling the creation of more complex processing pipelines. Users can simultaneously create an ABA and compute a DTM in one read pass, leading to a significant speed-up.
+
+### Data loading
+
+Unlike `lidR`, `lasR` does not load lidar data into a `data.frame`. It is designed for efficient data processing, with memory management at the C++ level. Consequently, there is no `read_las()` function. Everything is internally and efficiently stored in a C++ structure that keeps the data compact in memory. However, some entry points are available to inject user-defined R code in the C++ pipeline.
+
+### Dependencies
+
+`lasR` has only one dependency, `boost`. It doesn't even depend on `Rcpp`. `lasR` does not use `terra` and `sf` at the R level for reading and writing spatial data; instead, it links to `GDAL`. If `terra` and `sf` are installed, the output files will be read with these packages. Due to the absence of dependency on R objects and the non-loading of data as R objects, there is also no dependency on `rgl`, resulting in no interactive 3D viewer like in `lidR`.
+
+### Code
+
+`lasR` is written 100% in C++ and contains no R code. It utilizes the source code of `lidR` with significant improvements. The major improvements observed in the benchmark section are not so much in the source code but rather in the organization of the code, i.e., no longer using `data.frame`, memory management in C++ rather than R, no processing at the R level, pipelines, and so on.
+

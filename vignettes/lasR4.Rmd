@@ -1,0 +1,251 @@
+---
+title: "4. Benchmarks of lasR vs. lidR"
+author: "Jean-Romain Roussel"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{4. Benchmarks of lasR vs. lidR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align='center', fig.width=6, fig.height=4)
+col1 = rgb(0, 0.5, 1, alpha = 0.5)
+col2 = rgb(1, 0, 0, alpha = 0.5)
+```
+
+This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The x-axis represents the time spent on the task, while the y-axis represents the memory used for the task.
+
+- Number of files: 4
+- Number of points: 119 million (30 million per file)
+- Coverage: 10.3 km² (2.5 km² per file)
+- Density: 12 points/m²
+- Number of cores: 1
+
+## Canopy Height Model
+
+
+```{r, echo=FALSE}
+f = c("/home/jr/Documents/Ulaval/ALS data/BCTS/092L073113_BCTS_2.laz", 
+"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073114_BCTS_2.laz", 
+"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073131_BCTS_2.laz", 
+"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073132_BCTS_2.laz")
+```
+
+### lidR
+
+```r
+chm = rasterize_canopy(ctg, 1, p2r())
+```
+
+### lasR
+
+```r
+pipeline = reader(ctg) + rasterize(1, "max")
+processor(pipeline)
+```
+
+### Result
+
+```{r, warning=F, echo=-1, echo=FALSE}
+m_lasr = c(0, 93.38, 93.38, 93.38, 93.38, 93.38, 93.38, 93.38, 122.01, 122.01, 122.01, 122.01, 122.01, 122.01, 122.01, 122.53, 122.53, 122.53, 122.53, 122.53, 122.53, 141.60, 
+141.60, 141.60, 141.60, 141.60, 141.60, 141.60, 140.92, 149.46,0)
+t_lasr = (1:length(m_lasr)-1)*2/60
+
+m_lidr = c(0,104.70, 342.79, 571.07, 793.16, 1028.55, 1388.56, 2027.17, 1888.13, 2164.38, 2381.46, 2519.50, 2280.10, 2519.86, 2783.66, 2984.50, 2266.93, 2379.23, 2635.35, 
+2868.93, 2997.68, 2127.28, 0)
+
+t_lidr = (1:length(m_lidr)-1)*5/60
+
+x = t_lidr
+y = m_lidr/1000
+
+par(mar = c(4,4,1,1))
+
+plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
+lines(x, y, col = "blue", lwd = 2)
+
+x = t_lasr
+y = m_lasr/1000
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+lines(x, y, col = "red", lwd = 2)
+
+legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
+```
+
+## Digital Terrain Model
+
+```{r, echo=FALSE}
+f = c("/home/jr/Documents/Ulaval/ALS data/BCTS/092L073113_BCTS_2.laz", 
+"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073114_BCTS_2.laz", 
+"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073131_BCTS_2.laz", 
+"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073132_BCTS_2.laz")
+```
+
+### lidR
+
+```r
+dtm = rasterize_terrain(ctg, 1, tin())
+```
+
+### lasR
+
+```r
+tri = triangulate(filter = keep_ground())
+pipeline = reader(ctg, filter = keep_ground()) + tri + rasterize(1, tri)
+processor(pipeline)
+```
+
+### Result
+
+```{r, warning=F, echo=-1, echo=FALSE}
+m_lasr = c(0, 79.67, 93.66, 116.75, 133.85, 146.74, 165.05, 257.17, 455.17, 767.38, 833.30, 833.30, 833.30, 846.70, 854.83, 862.04, 869.00, 874.93, 874.93, 894.53, 853.06, 853.06, 
+863.89, 872.39, 889.12, 902.23, 618.84, 1002.46, 1013.65, 1013.65, 1022.16, 1041.49, 1049.07, 1055.26, 1061.45, 1061.45, 177.75, 0)
+t_lasr = (1:length(m_lasr)-1)*3/60
+
+m_lidr = c(0,124.56, 356.59, 376.44, 966.76, 2048.83, 1790.97, 1790.97, 1754.86, 1754.86, 2457.66, 2169.17, 2169.17, 2170.71, 2304.78, 2654.14, 2172.81, 2195.75, 2170.75, 2231.33, 2579.38, 0)
+
+t_lidr = (1:length(m_lidr)-1)*10/60
+
+x = t_lidr
+y = m_lidr/1000
+
+par(mar = c(4,4,1,1))
+
+plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
+lines(x, y, col = "blue", lwd = 2)
+
+x = t_lasr
+y = m_lasr/1000
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+lines(x, y, col = "red", lwd = 2)
+
+legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
+```
+
+## Multiple raster
+
+The gain in terms of computation time is much more significant when running multiple stages in a single pipeline because files are read only once in `lasR` but multiple times in `lidR`. Here, all operations are executed in a single pass at the C++ level, resulting in more efficient memory management.
+
+### lidR
+
+```r
+custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
+ctg = readLAScatalog(f)
+chm = rasterize_canopy(ctg, 1, p2r())
+met = pixel_metrics(ctg, ~custom_function(Z, Intensity), 20)
+den = rasterize_density(ctg, 5)
+```
+
+### lasR
+
+```r
+custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
+read = reader(folder)
+chm = rasterize(1, "max")
+met = rasterize(20, custom_function(Z, Intensity))
+den = rasterize(5, "count")
+pipeline = read + chm + met + den
+processor(pipeline)
+```
+
+
+
+```{r, warning=F, echo=-1, echo=FALSE}
+m_lasr = c(0, 82.03, 170.51, 354.01, 531.90, 711.60, 895.17, 1074.86, 1214.60, 1259.20, 1297.35, 1297.35, 435.67,550.40, 692.43, 831.39, 971.39, 1113.44, 1282.57, 1285.92, 1345.21, 
+1345.21, 498.85, 559.43, 697.85, 837.33, 977.29, 1127.08, 1258.82, 1240.92, 1240.92, 1240.92, 480.92, 606.07, 749.79, 887.94, 1026.13, 1169.48, 1358.71, 1378.30, 1423.42, 1423.42, 
+554.91, 560.07, 0)
+t_lasr = 1:length(m_lasr)*2/60
+
+m_lidr = c(0, 104.86, 456.99, 802.07, 1116.71, 1765.46, 2116.21, 2502.28, 2276.53, 2666.14, 2986.86, 2300.90, 2686.19, 2989.73, 2004.21, 2579.39, 3195.28, 2827.48, 3512.35, 4633.82, 
+5221.53, 5639.37, 3357.23, 4434.14, 5110.58, 4302.41, 3457.53, 4052.46, 4702.15, 4430.27, 4585.12, 4937.42, 5243.30,4713.65, 5063.31, 5376.67, 2866.46, 3207.25, 3459.13, 3188.25, 
+3523.44, 3733.16, 0)
+
+t_lidr = 1:length(m_lidr)*8/60
+
+x = t_lidr
+y = m_lidr/1000
+
+par(mar = c(4,4,1,1))
+
+plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
+lines(x, y, col = "blue", lwd = 2)
+
+x = t_lasr
+y = m_lasr/1000
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+lines(x, y, col = "red", lwd = 2)
+
+legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
+```
+
+
+## Complex Pipeline
+
+In this complex pipeline, the point cloud is normalized and written to new files. A Digital Terrain Model (DTM) is produced, a Canopy Height Model (CHM) is built, and individual trees are detected. These detected trees are then used as seeds for a region-growing algorithm that segments the trees. The `lasR` pipeline can handle hundreds of laser tiles, while `lidR` may struggle to apply the same pipeline, especially during tree segmentation.
+
+
+```r
+read = reader(ctg)
+del = triangulate(filter = "-keep_class 2")
+norm = transform_with_triangulation(del)
+dtm = rasterize(1, del)
+chm = rasterize(1, "max")
+seed = local_maximum(3)
+tree = region_growing(chm, seed)
+write = write_las()
+pipeline = read + del + norm + write + dtm + chm +  seed + tree
+ans = processor(pipeline, progress = TRUE)
+```
+
+```{r, warning=F, echo=-1, echo=FALSE}
+m_lasr = c(0,191.41, 362.51, 593.35, 896.25, 1194.72, 1818.00, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2247.46, 2122.34,
+2192.39, 2192.39, 2192.39, 2197.03, 2197.80, 2198.83, 2199.87,2181.38, 2181.38, 2181.38, 2221.91, 1523.74, 1741.71, 1823.69, 1823.69, 1823.69, 1823.69, 1741.83, 1741.83, 1741.83,
+1741.83, 1741.83, 1454.66, 1703.53, 1928.16, 2152.36, 2276.37,2506.08, 2506.08, 2506.08, 2506.08, 2506.08, 2506.08, 2506.08,2506.08, 2506.08, 2506.08, 2506.08, 2277.12, 2324.82,
+2324.82, 2324.82, 2324.82, 2324.82, 2324.82, 2324.82, 2324.82, 2296.59, 2296.59, 2296.59, 2323.40, 1519.98, 1738.68, 1900.92, 2009.98, 2009.98, 2009.98, 2009.98, 2009.98, 1901.16,
+1901.16, 1901.16, 1901.16, 1901.16, 1901.16, 765.81, 768.27)
+
+m_lidr = c(0,111.37, 370.23, 1302.22, 2092.03, 1836.73, 1777.86, 1778.63, 1772.64, 2176.11, 1783.72, 1788.08, 2751.04, 3687.52, 4444.45, 4444.45, 4444.45, 4444.45, 4444.45, 5891.63, 
+6243.98, 5576.12, 5058.68, 6276.28, 5694.89, 5694.89, 5694.89, 5694.89, 4708.56, 6252.17, 7429.84, 5487.51, 5091.87, 4924.78, 2821.48, 4750.88, 4750.88, 4750.88, 4750.88, 4750.88, 
+4750.88, 4750.88, 4750.88, 4750.88, 3746.96, 4379.66, 4379.66, 4379.66, 5547.57, 5956.35, 5956.35, 5956.35, 5956.35, 5956.35, 5956.35, 5956.35,5956.35, 5956.35, 4058.14, 4737.40, 
+4737.40, 4737.40, 5196.26, 5196.26,0)
+
+t_lasr = (1:length(m_lasr)-1)*5/60
+t_lidr = (1:length(m_lidr)-1)*15/60
+
+col1 = rgb(0, 0.5, 1, alpha = 0.5)
+col2 = rgb(1, 0, 0, alpha = 0.5)
+
+x = t_lidr
+y = m_lidr/1000
+
+par(mar = c(4,4,1,1))
+
+plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
+lines(x, y, col = "blue", lwd = 2)
+
+x = t_lasr
+y = m_lasr/1000
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+lines(x, y, col = "red", lwd = 2)
+
+legend("topleft", legend = c("lidR", "lasR"), fill = c(col = col1, col2), border = NA)
+```

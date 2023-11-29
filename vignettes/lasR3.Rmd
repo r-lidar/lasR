@@ -1,0 +1,248 @@
+---
+title: "3. Pipelines"
+author: "Jean-Romain Roussel"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{3. Pipelines}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, echo=F}
+library(lasR)
+```
+
+After reading the tutorial, one may have noticed that writing certain pipelines can be tedious, especially when normalizing a dataset, which always implies using the same code.
+
+```{r}
+tri <- triangulate(filter = keep_ground())
+trans <- transform_with_triangulation(tri)
+norm <- tri + trans
+```
+
+This vignette shows a list of pipeline factories, i.e., functions that generate useful pieces of pipelines that can be reused. It also defines some functions that execute a pipeline, which may be regularly useful instead of writing it out. The lists are not comprehensive and will be updated if good tools come to mind.
+
+## Pipeline factories
+
+### normalize
+
+```{r}
+normalize = function(extrabytes = FALSE)
+{
+  pipeline = triangulate(filter = keep_ground())
+  
+  if (extrabytes)
+  {
+    extra = add_extrabytes("int", "HAG", "Height Above Ground")
+    trans = transform_with_triangulation(tri, store_in_attribute = "HAG")
+    pipeline = pipeline + extra + trans
+  }
+  else
+  {
+    trans = transform_with_triangulation(tri)
+    pipeline = pipeline
+  }
+  
+  return(pipeline)
+}
+```
+
+It can be used this way
+
+```{r, eval=FALSE}
+pipeline = reader(f) + normalize() + write_las(o)
+```
+
+### classify ground with CSF
+
+```r
+ground_csf = function(smooth = FALSE, threshold = 0.5, resolution = 0.5, rigidness = 1L, iterations = 500L, step = 0.65)
+{
+  csf = function(data, smooth, threshold, resolution, rigidness, iterations, step)
+  {
+    id = RCSF::CSF(data, smooth, threshold, resolution, rigidness, iterations, step)
+    class = integer(nrow(data))
+    class[id] = 2L
+    data$Classification <- class
+    return(data)
+  }
+  
+  classify = callback(csf, expose = "xyz", smooth = smooth, threshold = threshold, resolution = resolution, rigidness = rigidness, iterations = iterations, step = step)
+  return(classify)
+}
+```
+
+```{r, eval=FALSE}
+pipeline = reader(f) + ground_csf() + write_las(o)
+```
+
+### classify ground with MCC
+
+```r
+ground_mcc = function(s = 1.5, t = 0.3)
+{
+  csf = function(data, s, t)
+  {
+    id = RMCC::MCC(data, s, t)
+    class = integer(nrow(data))
+    class[id] = 2L
+    data$Classification <- class
+    return(data)
+  }
+  
+  classify = callback(csf, expose = "xyz", s = s, t = t)
+  return(classify)
+}
+```
+
+```{r, eval=FALSE}
+pipeline = reader(f) + ground_mcc() + write_las(o)
+```
+
+## Canopy Heigh Model
+
+```{r}
+chm_p2r = function(res, filter = "", ofile = tempfile(fileext = ".tif"))
+{
+  return(rasterize(res, "max", filter = filter, ofile = ofile))
+}
+```
+
+```{r}
+chm_tin = function(res, ofile = tempfile(fileext = ".tif"))
+{
+  tin = triangulate(filter = keep_first())
+  chm = rasterize(res, tin, ofile = ofile)
+  return(tin+chm)
+}
+```
+
+## Useful functions
+
+### read_las
+
+```{r}
+read_las = function(files, select = "xyzi", filter = "")
+{
+  load = function(data) { return(data) }
+  read = reader(files, filter = filter)
+  call = callback(load, expose = select, no_las_update = TRUE)
+  return(processor(read+call))
+}
+```
+
+### buffer_tile
+
+```{r}
+buffer_tiles = function(files, buffer, ofiles = paste0(tempdir(), "/*_buffered.las"))
+{
+  read = reader(files, buffer = buffer)
+  write = write_las(ofiles, keep_buffer = TRUE)
+  return(processor(read+write))
+}
+```
+
+### clip_circle
+
+Writes LAS files or returns `data.frame`s
+
+```{r}
+clip_circle = function(files, geometry, radius, ofiles = paste0(tempdir(), "/*_clipped.las"))
+{
+  if (sf::st_geometry_type(geometry, FALSE) != "POINT") 
+    stop("Expected POINT geometry type")
+
+  coordinates <- sf::st_coordinates(geometry)
+  xcenter <- coordinates[,1]
+  ycenter <- coordinates[,2]
+  
+  read = reader_circles(files, xcenter, ycenter, radius)
+  
+  if (length(ofiles) == 1L && ofiles == "")
+    stage = callback(function(data) { return(data) }, expose = "*", no_las_update = T)
+  else
+    stage = write_las(ofiles)
+  
+  ans = processor(read+stage)
+  return(ans)
+}
+```
+
+### crs
+
+A CRS as `sf` object. The cost of applying `boundaries()` is virtually null.
+
+```{r}
+crs = function(files)
+{
+  pipeline = reader(files) + boundaries()
+  ans = processor(pipeline)
+  return(sf::st_crs(ans))
+}
+```
+
+```{r, echo=FALSE, results='hide'}
+f = paste0(system.file(package="lasR"), "/extdata/bcts/")
+f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+crs(f)
+```
+
+### inventory_metrics
+
+Using an `sf` object to provide plot centers and offering the option to normalize on-the-fly and returns the same `sf` object with extra attributes
+
+```{r}
+inventory_metrics = function(geometry, radius, fun, normalize = FALSE)
+{
+  if (sf::st_geometry_type(geometry, FALSE) != "POINT") 
+    stop("Expected POINT geometry type")
+
+  coordinates <- sf::st_coordinates(geometry)
+  xcenter <- coordinates[,1]
+  ycenter <- coordinates[,2]
+  
+  pipeline <- reader_circles(f, xcenter, ycenter, radius)
+  
+  if (normalize)
+  {
+    tri <- triangulate(filter = keep_ground())
+    trans <- transform_with_triangulation(tri, store_in_attribute = "HAG")
+    pipeline <- pipeline + tri + trans
+  }
+
+  pipeline <- pipeline + callback(fun, expose = "*")
+  ans <- processor(pipeline)
+  ans <- lapply(ans, as.data.frame)
+  ans <- do.call(rbind, ans)
+  return(cbind(geometry, ans))
+}
+```
+
+```{r, echo=FALSE, results='hide'}
+f = paste0(system.file(package="lasR"), "/extdata/bcts/")
+f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+f = f[1:2]
+
+x = c(885100, 885100)
+y = c(629200, 629600)
+df = data.frame(x,y)
+geometry = sf::st_as_sf(df, coords = c("x", "y"))
+radius = 20
+fun = function(data) { list(metric1 = median(data$Z), metric2 = mean(data$Intensity)) }
+
+inventory_metrics(geometry, radius, fun)
+```
+

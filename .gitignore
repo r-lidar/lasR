@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+*.o
+*.so
+*.dll
+CRAN-RELEASE
+src/Makevars
+config*
+proj_conf_test*
+inst/doc
+docs

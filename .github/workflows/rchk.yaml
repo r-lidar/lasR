@@ -1,0 +1,8 @@
+  rchk:
+    runs-on: ubuntu-latest
+    container:
+      image: rhub/ubuntu-rchk
+      options: --user=root
+    steps:
+    - uses: actions/checkout@v3
+    - uses: r-lib/actions/run-rchk@v2

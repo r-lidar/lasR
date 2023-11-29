@@ -1,0 +1,31 @@
+Package: lasR
+Type: Package
+Title: Fast and Pipable Airborne LiDAR Data Tools
+Version: 0.1.0
+Authors@R: c(
+    person("Jean-Romain", "Roussel", email = "jean-romain.roussel.1@ulaval.ca", role = c("aut", "cre", "cph")),
+    person("Martin", "Isenburg", email = "", role = "cph", comment = "Is the author of the LASlib and LASzip libraries"),
+    person("Benoît", "St-Onge", email = "", role = "cph", comment = "Is the author of the 'chm_prep' function"))
+Description: Fast and Pipepable Airborne LiDAR (Light Detection and Ranging) processing tools. Read/write 
+    'las' and 'laz' files, computation of metrics in area based approach, point filtering, normalization,
+    individual tree segmentation and other manipulations.
+URL: https://github.com/r-lidar/lasR
+BugReports: https://github.com/r-lidar/lasR/issues
+License: GPL-3
+Depends: R (>= 3.6.0)
+Imports: 
+    methods,
+    utils
+Suggests: 
+    knitr,
+    rmarkdown,
+    sf,
+    terra,
+    testthat (>= 3.0.0),
+LinkingTo: BH (>= 1.72.0)
+RoxygenNote: 7.2.3
+SystemRequirements: GDAL (>= 2.2.3), GNU make
+Encoding: UTF-8
+Language: en-US
+Config/testthat/edition: 3
+VignetteBuilder: knitr
