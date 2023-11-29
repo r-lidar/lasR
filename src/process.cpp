@@ -47,7 +47,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpfiles, SEXP sexpbuffer, SEXP sexpprogrs
   lascatalog.check_spatial_index();  // prints a warning if no spatial index
 
   success = pipeline.parse(sexppipeline, lascatalog);
-  if (!success) { error(pipeline.get_last_error().c_str()); return default_return; }
+  if (!success) { error("%s", pipeline.get_last_error().c_str()); return default_return; }
 
   lascatalog.set_chunk_size(0);
   lascatalog.set_buffer(pipeline.need_buffer());
@@ -81,7 +81,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpfiles, SEXP sexpbuffer, SEXP sexpprogrs
     if (verbose) print("Processing chunk %d/%d: %s\n", i+1, n, chunk.name.c_str());
 
     success = pipeline.set_chunk(chunk);
-    if (!success) { error(pipeline.get_last_error().c_str()); return default_return; }
+    if (!success) { error("%s", pipeline.get_last_error().c_str()); return default_return; }
 
     pipeline.set_input_file(chunk.main_file); // Used only by writelax
     pipeline.set_input_file_name(chunk.name);
@@ -90,7 +90,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpfiles, SEXP sexpbuffer, SEXP sexpprogrs
     pipeline.set_crs(lascatalog.wkt);
 
     success = pipeline.run();
-    if (!success) { error(pipeline.get_last_error().c_str()); return default_return; }
+    if (!success) { error("%s", pipeline.get_last_error().c_str()); return default_return; }
 
     pipeline.clear(last_chunk);
 
