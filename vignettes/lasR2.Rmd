@@ -526,3 +526,17 @@ r2 = terra::rast(ans[2])
 terra::plot(r1, col = col)
 terra::plot(r2, col = col)
 ```
+
+## Compatibility with lidR
+
+While `lasR` does not depends on `lidR` it has some compatibilities with it. Instead of providing paths to files or folder it is possible to pass a `LAScatalog` to the readers.
+
+```r
+library(lasR)
+library(lidR)
+
+ctg = readLAScatalog(folder)
+pipeline = reader(ctg) + normalize() + write_las()
+
+ans = processor(pipeline)
+```
