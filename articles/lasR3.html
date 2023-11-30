@@ -101,10 +101,12 @@ will be updated if good tools come to mind.</p>
 <div class="section level3">
 <h3 id="normalize">normalize<a class="anchor" aria-label="anchor" href="#normalize"></a>
 </h3>
+<p>This pipeline is already installed in the package.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">normalize</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">extrabytes</span> <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
-<span>  <span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">tri</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">tri</span></span>
 <span>  </span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="va">extrabytes</span><span class="op">)</span></span>
 <span>  <span class="op">{</span></span>
@@ -122,7 +124,7 @@ will be updated if good tools come to mind.</p>
 <span><span class="op">}</span></span></code></pre></div>
 <p>It can be used this way</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">normalize</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="classify-ground-with-csf">classify ground with CSF<a class="anchor" aria-label="anchor" href="#classify-ground-with-csf"></a>
