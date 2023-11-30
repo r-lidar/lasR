@@ -46,7 +46,7 @@ SEXP LASRalgorithmWriter::to_R()
   UNPROTECT(written.size() + 1);
 
   return R_string_vector;
-};
+}
 #endif
 
 /* ==============
@@ -131,8 +131,8 @@ bool LASRalgorithmRaster::set_crs(std::string wkt)
 bool LASRalgorithmRaster::write()
 {
   if (raster.write()) return true;
-  last_error = raster.last_error;
-  return false;
+  last_error = raster.last_error; // # nocov
+  return false; // # nocov
 };
 
 void LASRalgorithmRaster::clear(bool last)

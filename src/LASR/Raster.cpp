@@ -97,7 +97,7 @@ bool Raster::set_nbands(int nbands)
 {
   if (!GDALdataset::set_nbands(nbands))
   {
-    return false;
+    return false; // # nocov
   }
 
   if (data.size() > 0)
@@ -131,15 +131,15 @@ bool Raster::write()
 {
   if (data.size() == 0)
   {
-    last_error = "cannot write with uninitialized data";
-    return false;
+    last_error = "cannot write with uninitialized data"; // # nocov
+    return false; // # nocov
   }
 
   if (!dataset)
   {
     if (!create_file())
     {
-      return false;
+      return false; // # nocov
     }
   }
 
@@ -180,14 +180,15 @@ bool Raster::write()
     // Handle errors
     if (err != CE_None)
     {
-      last_error = std::string(CPLGetLastErrorMsg());
-      return false;
+      last_error = std::string(CPLGetLastErrorMsg()); // # nocov
+      return false; // # nocov
     }
   }
 
   return true;
 }
 
+// # nocov start
 void Raster::show() const
 {
   print("class     : Raster\n");
@@ -198,3 +199,4 @@ void Raster::show() const
   print("filename  : %s\n", file.c_str());
   print("data init : %s\n", (data.size() == 0) ? "false" : "true");
 }
+// # nocov end

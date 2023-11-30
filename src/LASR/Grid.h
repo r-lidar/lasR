@@ -14,7 +14,7 @@ public:
   Grid(double xmin, double ymin, double xmax, double ymax, double res);
   Grid(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols);
   Grid(const Grid& grid);
-  Grid(const Grid& grid, int dissagregate);
+  //Grid(const Grid& grid, int dissagregate);
 
   int cell_from_xy(double x, double y) const;
   inline int col_from_cell(int cell) const { return cell%ncols; }

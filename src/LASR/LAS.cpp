@@ -319,8 +319,8 @@ bool LAS::add_attribute(int data_type, std::string name, std::string description
   int attr_index = header->add_attribute(attribute);
   if (attr_index == -1)
   {
-    eprint("LASlib internal error: add_attribute failed");
-    return false;
+    eprint("LASlib internal error: add_attribute failed"); // # nocov
+    return false; // # nocov
   }
 
   header->update_extra_bytes_vlr();
@@ -396,7 +396,7 @@ bool LAS::is_attribute_loadable(int index)
   }
 
   return true;
-};
+}
 
 LAStransform* LAS::make_z_transformer(const std::string& use_attribute)
 {

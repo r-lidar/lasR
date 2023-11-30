@@ -5,10 +5,10 @@ GridPartition::GridPartition(double xmin, double ymin, double xmax, double ymax,
   npoints = 0;
 }
 
-GridPartition::GridPartition(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols) : Grid(xmin, ymin, xmax, ymax, nrows, ncols)
+/*GridPartition::GridPartition(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols) : Grid(xmin, ymin, xmax, ymax, nrows, ncols)
 {
   npoints = 0;
-}
+}*/
 
 bool GridPartition::insert(double x, double y)
 {
@@ -33,7 +33,7 @@ void GridPartition::query(double xmin, double ymin, double xmax, double ymax, st
   }
 }
 
-void GridPartition::query(int cell, std::vector<Interval>& res) const
+/*void GridPartition::query(int cell, std::vector<Interval>& res) const
 {
   auto _it = map.find(cell);
   if (_it == map.end()) return;
@@ -41,4 +41,4 @@ void GridPartition::query(int cell, std::vector<Interval>& res) const
   {
     res.push_back({it->start, it->end});
   }
-}
+}*/

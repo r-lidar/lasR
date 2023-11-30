@@ -45,7 +45,7 @@ Grid::Grid(const Grid& grid)
   ncells = grid.ncells;
 }
 
-Grid::Grid(const Grid& grid, int dissagregate)
+/*Grid::Grid(const Grid& grid, int dissagregate)
 {
   xmin = grid.xmin;
   xmax = grid.xmax;
@@ -58,7 +58,7 @@ Grid::Grid(const Grid& grid, int dissagregate)
   ncols = std::round((xmax-xmin)/xres);
   nrows = std::round((ymax-ymin)/yres);
   ncells = ncols*nrows;
-}
+}*/
 
 std::vector<int> Grid::get_adjacent_cells(int cell, Contiguity n) const
 {

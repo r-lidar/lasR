@@ -360,8 +360,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
 #endif
     else
     {
-      error("Unsupported algorithm");
-      return false;
+      error("Unsupported algorithm"); // # nocov
+      return false; // # nocov
     }
 
     auto it = pipeline.back();

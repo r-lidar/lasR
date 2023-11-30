@@ -214,21 +214,21 @@ int TriangleXYZ::orientation() const
  * Edge
  * ====================*/
 
-Edge::Edge(double x1, double y1, double x2, double y2)
+/*Edge::Edge(double x1, double y1, double x2, double y2)
 {
   A.x = x1;
   B.x = x2;
   A.y = y1;
   B.y = y2;
-}
+}*/
 
-bool Edge::operator<(const Edge& other) const
+/*bool Edge::operator<(const Edge& other) const
 {
   if (xmin() != other.xmin()) return xmin() < other.xmin();
   if (ymin() != other.ymin()) return ymin() < other.ymin();
   if (xmax() != other.xmax()) return xmax() < other.xmax();
   return ymax() < other.ymax();
-}
+}*/
 
 bool Edge::operator==(const Edge& other) const
 {

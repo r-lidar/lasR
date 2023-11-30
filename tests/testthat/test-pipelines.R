@@ -20,7 +20,7 @@ test_that("buffer tiles",
   expect_equal(area2, 236796.375)
 })
 
-test_that("pipleine info works",
+test_that("pipleline info works",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
 
@@ -51,4 +51,12 @@ test_that("pipleine info works",
   expect_equal(info$streamable, TRUE)
   expect_equal(info$buffer, 0)
   expect_equal(info$read_points, TRUE)
+})
+
+test_that("processor fails without reader",
+{
+  f <- system.file("extdata", "bcts/", package="lasR")
+
+  expect_error(processor(boundaries()),  "The pipeline must start with a readers")
+  expect_error(processor(boundaries() + reader(f)),  "The reader must alway be the first stage of the pipeline")
 })

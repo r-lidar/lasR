@@ -24,7 +24,7 @@ Vector::Vector(double xmin, double ymin, double xmax, double ymax, int nattr) : 
   set_vector(wkbUnknown);
 }
 
-bool Vector::write_point(double x, double y, double z)
+/*bool Vector::write_point(double x, double y, double z)
 {
   if (!dataset)
   {
@@ -67,7 +67,7 @@ bool Vector::write_point(double x, double y, double z)
 bool Vector::write_point(const PointXYZ& p)
 {
   return write_point(p.x, p.y, p.z);
-}
+}*/
 
 bool Vector::write_point(const PointLAS& p)
 {
@@ -75,7 +75,7 @@ bool Vector::write_point(const PointLAS& p)
   {
     if (!create_file())
     {
-      return false;
+      return false; // # nocov
     }
 
     OGRFieldDefn intensity("Intensity", OFTInteger);
@@ -96,8 +96,8 @@ bool Vector::write_point(const PointLAS& p)
 
   if (eGType != wkbPoint25D)
   {
-    last_error = "ERROR: The file is not of type POINT";
-    return false;
+    last_error = "ERROR: The file is not of type POINT"; // # nocov
+    return false; // # nocov
   }
 
   // Write only points inside the bounding box
@@ -134,11 +134,13 @@ bool Vector::write_point(const PointLAS& p)
 
   if (layer->CreateFeature(feature) != OGRERR_NONE)
   {
+    // # nocov start
     char buffer[512];
     snprintf(buffer, sizeof(buffer), "error %d while writing point %u (%.2lf %.2lf). %s", CPLGetLastErrorNo(),  p.FID, p.x, p.y, CPLGetLastErrorMsg());
     last_error = std::string(buffer);
     OGRFeature::DestroyFeature(feature);
     return false;
+    // # nocov end
   }
 
   OGRFeature::DestroyFeature(feature);
@@ -157,8 +159,8 @@ bool Vector::write_triangulation(const std::vector<TriangleXYZ>& triangles)
 
   if (eGType != wkbMultiPolygon25D)
   {
-    last_error = "ERROR: The file is not of type MULTIPOLYGON";
-    return false;
+    last_error = "ERROR: The file is not of type MULTIPOLYGON"; // # nocov
+    return false; // # nocov
   }
 
   OGRMultiPolygon triangulation;
@@ -186,9 +188,9 @@ bool Vector::write_triangulation(const std::vector<TriangleXYZ>& triangles)
 
   if (layer->CreateFeature(feature) != OGRERR_NONE)
   {
-    last_error = "ERROR: Failed to create feature.";
-    OGRFeature::DestroyFeature(feature);
-    return false;
+    last_error = "ERROR: GDAL failed to create feature."; // # nocov
+    OGRFeature::DestroyFeature(feature); // # nocov
+    return false; // # nocov
   }
 
   OGRFeature::DestroyFeature(feature);
@@ -201,14 +203,14 @@ bool Vector::write_polygon(const std::vector<PolygonXY>& poly)
   {
     if (!create_file())
     {
-      return false;
+      return false; // # nocov
     }
   }
 
   if (eGType != wkbPolygon)
   {
-    last_error = "ERROR: The file is not of type POLYGON";
-    return false;
+    last_error = "ERROR: The file is not of type POLYGON"; // # nocov
+    return false; // # nocov
   }
 
   // Write only points inside the bounding box
@@ -240,9 +242,9 @@ bool Vector::write_polygon(const std::vector<PolygonXY>& poly)
 
   if (layer->CreateFeature(feature) != OGRERR_NONE)
   {
-    last_error = "ERROR: Failed to create feature.";
-    OGRFeature::DestroyFeature(feature);
-    return false;
+    last_error = "ERROR: GDAL failed to create feature.";  // # nocov
+    OGRFeature::DestroyFeature(feature); // # nocov
+    return false; // # nocov
   }
 
   OGRFeature::DestroyFeature(feature);

@@ -143,6 +143,16 @@ test_that("callback exposes everything",
   expect_equal(dim(las), c(62, 19))
 })
 
+test_that("callback coverage",
+{
+  # shuffle the data
+  fun = function(data) { data[sample(1:nrow(data)), ] }
+  read = reader(f)
+  call = callback(fun, expose = "*")
+
+  expect_error(processor(read+call), NA)
+})
+
 test_that("callback does not expose missing extrabytes",
 {
   expect_warning(read_las(f, expose = "xyz4"), NA) # use to throw a warning

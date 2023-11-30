@@ -9,8 +9,8 @@ class Vector : public GDALdataset
 public:
   Vector();
   Vector(double xmin, double ymin, double xmax, double ymax, int nattr = 1);
-  bool write_point(double x, double y, double z);
-  bool write_point(const PointXYZ& p);
+  //bool write_point(double x, double y, double z);
+  //bool write_point(const PointXYZ& p);
   bool write_point(const PointLAS& p);
   bool write_triangulation(const std::vector<TriangleXYZ>& triangles);
   bool write_polygon(const std::vector<PolygonXY>& poly);

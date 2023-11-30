@@ -24,10 +24,6 @@
 #' @export
 processor = function(pipeline, ncores = 1L, progress = FALSE, ...)
 {
-  read <- pipeline[[1]]
-
-  if (read[["algoname"]] != "reader") stop("The first algorithm must be 'reader'")
-
   dots <- list(...)
   verbose <- if (is.null(dots$verbose)) FALSE else TRUE
   noread <- if (is.null(dots$noread)) FALSE else TRUE

@@ -312,7 +312,7 @@ bool LASRcallback::process(LAS*& las)
     else if (sname == "NIR") col_names[i] = attributes::NIR;
     else if (sname == "Channel") col_names[i] = attributes::CHAN;
     else if (sname == "Buffer") col_names[i] = attributes::BUFF;
-    else if (las->header->get_attribute_index(sname.c_str()) != -1) col_names[i] = las->header->get_attribute_index(sname.c_str());
+    else if (las->header->get_attribute_index(sname.c_str()) != -1) col_names[i] = las->header->get_attribute_index(sname.c_str()) + 100;
     else
     {
       col_names[i] = -1;

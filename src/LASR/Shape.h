@@ -148,8 +148,8 @@ struct Edge
   PointXY B;
 
   Edge(const PointXY& A, const PointXY& B) : A(A), B(B) { }
-  Edge(double x1, double y1, double x2, double y2);
-  bool operator<(const Edge& other) const;
+  //Edge(double x1, double y1, double x2, double y2);
+  //bool operator<(const Edge& other) const;
   bool operator==(const Edge& other) const;
   std::size_t hash() const;
   inline double xmin() const { return MIN(A.x, B.x); }

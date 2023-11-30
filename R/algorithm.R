@@ -98,9 +98,9 @@ boundaries = function(mesh = NULL, ofile = tempfile(fileext = ".gpkg"))
 {
   if (!is.null(mesh))
   {
-    if (!methods::is(mesh, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'")
-    if (length(mesh) != 1L) stop("cannot input a complex pipeline")
-    if (mesh[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")
+    if (!methods::is(mesh, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'") # nocov
+    if (length(mesh) != 1L) stop("cannot input a complex pipeline")  # nocov
+    if (mesh[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")  # nocov
     ans <- list(algoname = "boundaries", connect = mesh[[1]][["uid"]], output = ofile)
   }
   else
@@ -289,9 +289,9 @@ nothing = function()
 #' @export
 pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_size = 3L, dil_radius = 0L, ofile = tempfile(fileext = ".tif"))
 {
-  if (!methods::is(raster, "LASRpipeline")) stop("rasterizator must be a 'LASRpipeline'")
-  if (length(raster) != 1L) stop("cannot input a complex pipeline")
-  if (raster[[1]]$algoname != "rasterize") stop("the algorithm must be 'rasterize'")
+  if (!methods::is(raster, "LASRpipeline")) stop("rasterizator must be a 'LASRpipeline'")  # nocov
+  if (length(raster) != 1L) stop("cannot input a complex pipeline")  # nocov
+  if (raster[[1]]$algoname != "rasterize") stop("the algorithm must be 'rasterize'")  # nocov
 
   ans <- list(algoname = "pit_fill", connect = raster[[1]][["uid"]],  lap_size = lap_size, thr_lap = thr_lap, thr_spk = thr_spk, med_size = med_size, dil_radius = dil_radius, output = ofile)
   set_lasr_class(ans)
@@ -383,7 +383,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
 reader = function(files, filter = "", buffer = 0, ...)
 {
   if (methods::is(files, "LAScatalog")) files <- files$filename
-  if (!is.character(files)) stop("Files must be character")
+  if (!is.character(files)) stop("Files must be character")  # nocov
 
   finfo <- file.info(files)
 
@@ -480,9 +480,9 @@ reader_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", buffer 
 #' @md
 region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.55, max_cr = 20, ofile = tempfile(fileext = ".tif"))
 {
-  if (!methods::is(raster, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")
-  if (!methods::is(seeds, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")
-  if (length(raster) > 1 || length(seeds) > 1) stop("cannot input a complex pipeline")
+  if (!methods::is(raster, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")  # nocov
+  if (!methods::is(seeds, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")  # nocov
+  if (length(raster) > 1 || length(seeds) > 1) stop("cannot input a complex pipeline")  # nocov
 
   ans <- list(algoname = "region_growing", connect1 = seeds[[1]][["uid"]], connect2 = raster[[1]][["uid"]], th_tree = th_tree, th_seed = th_seed, th_cr = th_cr, max_cr = max_cr, output = ofile)
   set_lasr_class(ans)
@@ -514,7 +514,7 @@ sampling_voxel = function(res = 2, filter = "")
 
 #' @export
 #' @rdname sampling
-sampling_pixel = function(res = 2, filter = "filter")
+sampling_pixel = function(res = 2, filter = "")
 {
   ans <- list(algoname = "sampling_pixel", res = res, filter = filter)
   set_lasr_class(ans)
@@ -606,10 +606,10 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' @export
 transform_with_triangulation = function(triangulator, operator = "-", store_in_attribute = "")
 {
-  if (!methods::is(triangulator, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'")
-  if (length(triangulator) != 1L) stop("cannot input a complex pipeline")
-  if (triangulator[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")
-  if (methods::is(triangulator, "LASRpipeline"))
+  if (!methods::is(triangulator, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'")  # nocov
+  if (length(triangulator) != 1L) stop("cannot input a complex pipeline")  # nocov
+  if (triangulator[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")  # nocov
+  if (methods::is(triangulator, "LASRpipeline"))  # nocov
 
   ans <- list(algoname = "transform_with_triangulation", connect = triangulator[[1]][["uid"]], operator = operator, store_in_attribute = store_in_attribute)
   set_lasr_class(ans)

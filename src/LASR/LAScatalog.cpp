@@ -35,8 +35,8 @@ bool LAScatalog::add_file(std::string file)
   LASreader* lasreader = lasreadopener->open();
   if (lasreader == 0)
   {
-    last_error = "cannot open not open lasreader";
-    return false;
+    last_error = "cannot open not open lasreader"; // # nocov
+    return false; // # nocov
   }
 
   set_crs(&lasreader->header);
@@ -86,8 +86,8 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
 
   if (i < 0 || i > get_number_chunks())
   {
-    last_error = "chunk request out of bounds";
-    return false;
+    last_error = "chunk request out of bounds"; // # nocov
+    return false; // # nocov
   }
 
   if (!laskdtree->was_built())

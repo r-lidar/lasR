@@ -47,7 +47,7 @@ int Grouper::largest_group_size()
   return max;
 }
 
-void Grouper::merge_intervals(std::vector<Interval>& x)
+/*void Grouper::merge_intervals(std::vector<Interval>& x)
 {
   if (x.size() < 2) return;
   std::sort(x.begin(), x.end(), sort_range);
@@ -71,7 +71,7 @@ void Grouper::merge_intervals(std::vector<Interval>& x)
 
   ans.push_back(prev);
   x.swap(ans);
-}
+}*/
 
 void Grouper::clear()
 {

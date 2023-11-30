@@ -76,8 +76,8 @@ bool Pipeline::set_chunk(const Chunk& chunk)
   {
     if (!stage->set_chunk(chunk))
     {
-      last_error = "in " + stage->get_name() + " while initalizing: " + stage->get_last_error();
-      return false;
+      last_error = "in " + stage->get_name() + " while initalizing: " + stage->get_last_error(); // # nocov
+      return false; // # nocov
     }
 
     stage->set_input_file(chunk.main_file);

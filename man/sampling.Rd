@@ -7,7 +7,7 @@
 \usage{
 sampling_voxel(res = 2, filter = "")
 
-sampling_pixel(res = 2, filter = "filter")
+sampling_pixel(res = 2, filter = "")
 }
 \arguments{
 \item{res}{numeric. voxel resolution}

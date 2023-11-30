@@ -53,7 +53,7 @@ bool GDALdataset::set_raster(double xmin, double ymax, int ncols, int nrows, dou
 {
   if (!check_dataset_is_not_initialized())
   {
-    return false;
+    return false; // # nocov
   }
 
   geo_transform[0] = xmin;
@@ -76,7 +76,7 @@ bool GDALdataset::set_vector(OGRwkbGeometryType geometry_type)
 {
   if (!check_dataset_is_not_initialized())
   {
-    return false;
+    return false; // # nocov
   }
 
   nBands = 0;
@@ -93,7 +93,7 @@ bool GDALdataset::set_geometry_type(OGRwkbGeometryType geometry_type)
 {
   if (!check_dataset_is_not_initialized())
   {
-    return false;
+    return false; // # nocov
   }
 
   eGType = geometry_type;
@@ -104,7 +104,7 @@ bool GDALdataset::set_nbands(int nbands)
 {
   if (!check_dataset_is_not_initialized() && !check_dataset_is_raster())
   {
-    return false;
+    return false; // # nocov
   }
 
   nBands = nbands;
@@ -116,19 +116,19 @@ bool GDALdataset::create_file()
 {
   if (!check_dataset_is_not_initialized())
   {
-    return false;
+    return false; // # nocov
   }
 
   if (file.empty())
   {
-    last_error = "No filename";
-    return false;
+    last_error = "No filename"; // # nocov
+    return false; // # nocov
   }
 
   if (dType == GDALDatasetType::UNDEFINED)
   {
-    last_error = "GDALdataset must be either of type raster of vector";
-    return false;
+    last_error = "GDALdataset must be either of type raster of vector"; // # nocov
+    return false; // # nocov
   }
 
   // Initialize GDAL
@@ -169,10 +169,12 @@ bool GDALdataset::create_file()
 
   if (!dataset)
   {
+    // # nocov start
     char buffer[512];
     snprintf(buffer, sizeof(buffer), "error %d while creating GDAL dataset. %s", CPLGetLastErrorNo(),  CPLGetLastErrorMsg());
     last_error = std::string(buffer);
     return false;
+    // # nocov end
   }
 
   if (is_raster())
@@ -190,8 +192,8 @@ bool GDALdataset::create_file()
   {
     if (eGType == wkbUnknown)
     {
-      last_error = "no geometry type recorded for this GDALdataset";
-      return false;
+      last_error = "no geometry type recorded for this GDALdataset"; // # nocov
+      return false; // # nocov
     }
 
     layer = dataset->CreateLayer("layer", &oSRS, eGType, nullptr);
@@ -212,13 +214,13 @@ bool GDALdataset::set_band_name(std::string name, int band)
 {
   if (!check_dataset_is_not_initialized() && !check_dataset_is_raster())
   {
-    return false;
+    return false; // # nocov
   }
 
   if (band >= nBands || band < 0)
   {
-    last_error = "Invalid band number";
-    return false;
+    last_error = "Invalid band number"; // # nocov
+    return false; // # nocov
   }
 
   band_names[band] = name;
@@ -230,7 +232,7 @@ bool GDALdataset::set_crs(int epsg)
 {
   if (!check_dataset_is_not_initialized())
   {
-    return false;
+    return false; // # nocov
   }
 
   if (oSRS.importFromEPSG(epsg) != OGRERR_NONE)
@@ -259,7 +261,12 @@ bool GDALdataset::set_crs(std::string wkt)
 
   if (oSRS.importFromWkt(wkt.c_str()) != OGRERR_NONE)
   {
+    // # nocov start
+    char buffer[512];
+    snprintf(buffer, sizeof(buffer), "error %d while creating GDAL dataset. %s", CPLGetLastErrorNo(),  CPLGetLastErrorMsg());
+    last_error = std::string(buffer);
     return false;
+    // # nocov end
   }
 
   return true;

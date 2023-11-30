@@ -26,5 +26,6 @@ test_that("growing region works with multiple files",
   chm = rasterize(1, "max")
   lmx = local_maximum(5)
   tree = region_growing(chm, lmx, max_cr = 10)
-  u = processor(reader + chm + lmx + tree)
+
+  expect_error(processor(reader + chm + lmx + tree), NA)
 })
