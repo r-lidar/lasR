@@ -243,12 +243,46 @@ local_maximum = function(ws, min_height = 2, filter = "", ofile = tempfile(filee
 
 # ===== N ====
 
-
-
 nothing = function()
 {
   ans <- list(algoname = "nothing")
   set_lasr_class(ans)
+}
+
+#' Normalize the point cloud
+#'
+#' Normalize the point cloud using `triangulate()` and `transform_with_triangulation()`
+#'
+#' @param extrabytes bool. If FALSE the coordinate Z of the point cloud is modified and becomes the
+#' height above ground (HAG). If TRUE the coordinate Z is not modified and a new extrabytes attribute
+#' named "HAG' is added to the point cloud.
+#'
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#' pipeline <- reader(f) + normalize() + write_las()
+#'
+#' @seealso
+#' \link{triangulate}
+#' \link{transform_with_triangulation}
+#' @export
+normalize = function(extrabytes = FALSE)
+{
+  tri <- triangulate(filter = keep_ground())
+  pipeline <- tri
+
+  if (extrabytes)
+  {
+    extra <- add_extrabytes("int", "HAG", "Height Above Ground")
+    trans <- transform_with_triangulation(tri, store_in_attribute = "HAG")
+    pipeline <- pipeline + extra + trans
+  }
+  else
+  {
+    trans <- transform_with_triangulation(tri)
+    pipeline <- pipeline
+  }
+
+  return(pipeline)
 }
 
 # ===== P ====
@@ -589,14 +623,10 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #'
-#' # There is no normalize algorithm in lasR. Let's create one
-#' normalize = function() {
-#'   mesh  <- triangulate(filter = "-keep_class 2")
-#'   norm <- mesh + transform_with_triangulation(mesh)
-#'   return(norm)
-#'  }
-#'
-#' pipeline <- reader(f) + normalize() + write_las()
+#' # There is a normalize pipeline in lasR but let's create one almost equivalent
+#' mesh  <- triangulate(filter = keep_ground())
+#' trans <- transform_with_triangulation(mesh)
+#' pipeline <- reader(f) + mesh + trans + write_las()
 #' ans <- processor(pipeline)
 #'
 #' @seealso

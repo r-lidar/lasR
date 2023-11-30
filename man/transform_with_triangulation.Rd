@@ -27,14 +27,10 @@ does not produce any output.
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 
-# There is no normalize algorithm in lasR. Let's create one
-normalize = function() {
-  mesh  <- triangulate(filter = "-keep_class 2")
-  norm <- mesh + transform_with_triangulation(mesh)
-  return(norm)
- }
-
-pipeline <- reader(f) + normalize() + write_las()
+# There is a normalize pipeline in lasR but let's create one almost equivalent
+mesh  <- triangulate(filter = keep_ground())
+trans <- transform_with_triangulation(mesh)
+pipeline <- reader(f) + mesh + trans + write_las()
 ans <- processor(pipeline)
 
 }

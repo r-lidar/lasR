@@ -39,10 +39,13 @@ This vignette shows a list of pipeline factories, i.e., functions that generate 
 
 ### normalize
 
+This pipeline is already installed in the package.
+
 ```{r}
 normalize = function(extrabytes = FALSE)
 {
-  pipeline = triangulate(filter = keep_ground())
+  tri <- triangulate(filter = keep_ground())
+  pipeline <- tri
   
   if (extrabytes)
   {
