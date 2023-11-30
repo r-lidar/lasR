@@ -19,9 +19,9 @@ LASRaddattribute::LASRaddattribute(std::string data_type, std::string name, std:
   this->description = description;
   this->scale = scale;
   this->offset = offset;
-};
+}
 
 bool LASRaddattribute::process(LAS*& las)
 {
   return las->add_attribute(data_type, name, description, scale, offset);
-};
+}

@@ -116,7 +116,7 @@ void LASRalgorithmRaster::set_output_file(std::string file)
     raster.set_file(file);
     written.push_back(file);
   }
-};
+}
 
 bool LASRalgorithmRaster::set_crs(int epsg)
 {
@@ -126,14 +126,14 @@ bool LASRalgorithmRaster::set_crs(int epsg)
 bool LASRalgorithmRaster::set_crs(std::string wkt)
 {
   return raster.set_crs(wkt);
-};
+}
 
 bool LASRalgorithmRaster::write()
 {
   if (raster.write()) return true;
   last_error = raster.last_error; // # nocov
   return false; // # nocov
-};
+}
 
 void LASRalgorithmRaster::clear(bool last)
 {
