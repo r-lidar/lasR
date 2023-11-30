@@ -19,3 +19,36 @@ test_that("buffer tiles",
   expect_equal(area1, 206788.110)
   expect_equal(area2, 236796.375)
 })
+
+test_that("pipleine info works",
+{
+  f <- system.file("extdata", "bcts/", package="lasR")
+
+  pipeline = triangulate() + rasterize(1)
+  info = lasR:::get_pipeline_info(pipeline)
+
+  expect_equal(info$streamable, FALSE)
+  expect_equal(info$buffer, 50)
+  expect_equal(info$read_points, TRUE)
+
+  pipeline = boundaries()
+  info = lasR:::get_pipeline_info(pipeline)
+
+  expect_equal(info$streamable, TRUE)
+  expect_equal(info$buffer, 0)
+  expect_equal(info$read_points, FALSE)
+
+  pipeline = reader(f, buffer = 20) + boundaries()
+  info = lasR:::get_pipeline_info(pipeline)
+
+  expect_equal(info$streamable, TRUE)
+  expect_equal(info$buffer, 20)
+  expect_equal(info$read_points, FALSE)
+
+  pipeline = rasterize(10)
+  info = lasR:::get_pipeline_info(pipeline)
+
+  expect_equal(info$streamable, TRUE)
+  expect_equal(info$buffer, 0)
+  expect_equal(info$read_points, TRUE)
+})

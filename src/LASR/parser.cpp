@@ -1,4 +1,10 @@
+#ifdef USING_R
+#include <R.h>
+#include <Rinternals.h>
+#endif
+
 #include "pipeline.h"
+#include "LAScatalog.h"
 
 #include "addattribute.h"
 #include "boundaries.h"
@@ -57,17 +63,27 @@ std::vector<double> get_element_as_vdouble(SEXP list, const char *str)
   for (int i = 0 ; i < Rf_length(res) ; ++i) ans[i] = REAL(res)[i];
   return ans;
 }
+std::vector<std::string> get_element_as_vstring(SEXP list, const char *str)
+{
+  SEXP res = get_element(list, str);
+  std::vector<std::string> ans(Rf_length(res));
+  for (int i = 0 ; i < Rf_length(res) ; ++i) ans[i] = CHAR(STRING_ELT(res, i));
+  return ans;
+}
 #endif
 
-bool Pipeline::parse(const SEXP sexpargs, LAScatalog& lascatalog)
+bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
 {
-  double xmin = lascatalog.xmin;
-  double ymin = lascatalog.ymin;
-  double xmax = lascatalog.xmax;
-  double ymax = lascatalog.ymax;
+  // This is the extent of the coverage.
+  // We don't know it yet. We need to parse a reader first
+  double xmin = 0;
+  double ymin = 0;
+  double xmax = 0;
+  double ymax = 0;
 
   parsed = false;
   pipeline.clear();
+  delete catalog;
 
   for (auto i = 0; i < Rf_length(sexpargs); ++i)
   {
@@ -86,25 +102,53 @@ bool Pipeline::parse(const SEXP sexpargs, LAScatalog& lascatalog)
         return false;
       }
 
+      // This is the buffer provided by the user. The actual buffer may be larger
+      // depending on the stages in the pipeline.
+      buffer = get_element_as_double(algorithm, "buffer");
+
       auto v = std::make_shared<LASRlasreader>();
       pipeline.push_back(v);
 
-      // Special treatment of the reader to find the potential queries in the catalog
-      if (contains_element(algorithm, "xcenter"))
+      // The reader stage provides the files we will read. We can build a LAScatalog.
+      // If we do not build a LAScatalog we can parse the pipeline anyway but all stages
+      // will be initialized with an extent of [0,0,0,0] because we do not know the bbox yet.
+      if (build_catalog)
       {
-        std::vector<double> xcenter = get_element_as_vdouble(algorithm, "xcenter");
-        std::vector<double> ycenter = get_element_as_vdouble(algorithm, "ycenter");
-        std::vector<double> radius = get_element_as_vdouble(algorithm, "radius");
-        for (auto j = 0 ; j <  xcenter.size() ; ++j) lascatalog.add_query(xcenter[j], ycenter[j], radius[j]);
-      }
+        std::vector<std::string> files = get_element_as_vstring(algorithm, "files");
 
-      if (contains_element(algorithm, "xmin"))
-      {
-        std::vector<double> xmin = get_element_as_vdouble(algorithm, "xmin");
-        std::vector<double> ymin = get_element_as_vdouble(algorithm, "ymin");
-        std::vector<double> xmax = get_element_as_vdouble(algorithm, "xmax");
-        std::vector<double> ymax = get_element_as_vdouble(algorithm, "ymax");
-        for (auto j = 0 ; j <  xmin.size() ; ++j) lascatalog.add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
+        catalog = new LAScatalog;
+        for (auto& file : files)
+        {
+          if (!catalog->add_file(file))
+          {
+            last_error = catalog->last_error.c_str();
+            return false;
+          }
+        }
+
+        // The catalog read all the file, we know the extent of the coverage
+        xmin = catalog->xmin;
+        ymin = catalog->ymin;
+        xmax = catalog->xmax;
+        ymax = catalog->ymax;
+
+        // Special treatment of the reader to find the potential queries in the catalog
+        if (contains_element(algorithm, "xcenter"))
+        {
+          std::vector<double> xcenter = get_element_as_vdouble(algorithm, "xcenter");
+          std::vector<double> ycenter = get_element_as_vdouble(algorithm, "ycenter");
+          std::vector<double> radius = get_element_as_vdouble(algorithm, "radius");
+          for (auto j = 0 ; j <  xcenter.size() ; ++j) catalog->add_query(xcenter[j], ycenter[j], radius[j]);
+        }
+
+        if (contains_element(algorithm, "xmin"))
+        {
+          std::vector<double> xmin = get_element_as_vdouble(algorithm, "xmin");
+          std::vector<double> ymin = get_element_as_vdouble(algorithm, "ymin");
+          std::vector<double> xmax = get_element_as_vdouble(algorithm, "xmax");
+          std::vector<double> ymax = get_element_as_vdouble(algorithm, "ymax");
+          for (auto j = 0 ; j <  xmin.size() ; ++j) catalog->add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
+        }
       }
     }
     else if (name == "rasterize")
@@ -326,10 +370,16 @@ bool Pipeline::parse(const SEXP sexpargs, LAScatalog& lascatalog)
     it->set_output_file(output);
   }
 
-  if (pipeline[0]->get_name() != "read_las")
+  // If there is no reader, there is no catalog. We check that we have a reader.
+  // If build_catalog = false we are allowed to do not have a reader. This is only
+  // used to parse a pipeline and produce infos in get_pipeline_info();
+  if (build_catalog)
   {
-    last_error = "The pipeline must start with a readers";
-    return false;
+    if (pipeline[0]->get_name() != "read_las")
+    {
+      last_error = "The pipeline must start with a readers";
+      return false;
+    }
   }
 
   parsed = true;
@@ -341,6 +391,13 @@ bool Pipeline::parse(const SEXP sexpargs, LAScatalog& lascatalog)
   {
     stage->set_ncpu(ncpu);
     stage->set_verbose(verbose);
+  }
+
+  if (catalog)
+  {
+    catalog->set_buffer(need_buffer());
+    set_crs(catalog->epsg);
+    set_crs(catalog->wkt);
   }
 
   return true;

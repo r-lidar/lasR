@@ -28,14 +28,11 @@ processor = function(pipeline, ncores = 1L, progress = FALSE, ...)
 
   if (read[["algoname"]] != "reader") stop("The first algorithm must be 'reader'")
 
-  files  <- read[["files"]]
-  buffer <- read[["buffer"]]
-
   dots <- list(...)
   verbose <- if (is.null(dots$verbose)) FALSE else TRUE
   noread <- if (is.null(dots$noread)) FALSE else TRUE
 
-  ans <- .Call(`C_process`, pipeline, files, buffer, progress, ncores, verbose)
+  ans <- .Call(`C_process`, pipeline, progress, ncores, verbose)
   if (!noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)
 

@@ -93,3 +93,8 @@ print.LASRpipeline = function(x, ...)
   return(ans)
 }
 
+get_pipeline_info = function(pipeline)
+{
+  .Call(`C_get_pipeline_info`, pipeline)
+}
+

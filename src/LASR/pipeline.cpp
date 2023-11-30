@@ -16,11 +16,14 @@ Pipeline::Pipeline()
   header = nullptr;
   point = nullptr;
   las = nullptr;
+  catalog = nullptr;
 }
 
 Pipeline::~Pipeline()
 {
   clean();
+  delete catalog;
+  catalog = nullptr;
 }
 
 bool Pipeline::run()
@@ -64,7 +67,6 @@ bool Pipeline::run()
   }
 
   clean();
-
   return true;
 }
 
@@ -72,25 +74,17 @@ bool Pipeline::set_chunk(const Chunk& chunk)
 {
   for (auto&& stage : pipeline)
   {
-    bool success = stage->set_chunk(chunk);
-    if (!success)
+    if (!stage->set_chunk(chunk))
     {
       last_error = "in " + stage->get_name() + " while initalizing: " + stage->get_last_error();
       return false;
     }
+
+    stage->set_input_file(chunk.main_file);
+    stage->set_input_file_name(chunk.name);
   }
 
   return true;
-}
-
-void Pipeline::set_input_file(std::string file)
-{
-  for (auto&& stage : pipeline) stage->set_input_file(file);
-}
-
-void Pipeline::set_input_file_name(std::string name)
-{
-  for (auto&& stage : pipeline) stage->set_input_file_name(name);
 }
 
 void Pipeline::set_progress(Progress* progress)
@@ -289,7 +283,8 @@ SEXP Pipeline::to_R()
 
 void Pipeline::clean()
 {
-  if (las) delete las;
+  delete las;
+  catalog = nullptr;
   header = nullptr;
   point = nullptr;
   las = nullptr;

@@ -24,7 +24,7 @@ class Pipeline
   public:
     Pipeline();
     ~Pipeline();
-    bool parse(const SEXP sexpargs, LAScatalog& lascatalog); // implemented in parser.cpp
+    bool parse(const SEXP sexpargs, bool build_catalog = true); // implemented in parser.cpp
     bool run();
 
     bool process(LASheader*& header);
@@ -35,9 +35,6 @@ class Pipeline
     bool set_chunk(const Chunk& chunk);
     bool set_crs(int epsg);
     bool set_crs(std::string wkt);
-    void set_output_file(std::string file);
-    void set_input_file(std::string file);
-    void set_input_file_name(std::string file);
     void set_header(LASheader*& header);
     bool is_streamable();
     double need_buffer();
@@ -48,6 +45,7 @@ class Pipeline
     void set_buffer(double buffer);
     void set_progress(Progress* progress);
     void set_chunk(double xmin, double ymin, double xmax, double ymax);
+    LAScatalog* get_catalog() { return catalog; };
     std::string get_last_error() { return last_error; };
 
     #ifdef USING_R
@@ -68,6 +66,7 @@ private:
     LAS* las;
     LASpoint* point;
     LASheader* header;
+    LAScatalog* catalog;
     std::string last_error;
     std::vector<std::shared_ptr<LASRalgorithm>> pipeline;
 };
