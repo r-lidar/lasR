@@ -56,6 +56,7 @@ bool LASRrasterize::process(LASpoint*& p)
   double x = p->get_x();
   double y = p->get_y();
   double z = p->get_z();
+
   int cell = raster.cell_from_xy(x,y);
 
   for (size_t i = 0 ; i < operators.size() ; ++i)

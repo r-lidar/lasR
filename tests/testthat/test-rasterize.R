@@ -105,8 +105,8 @@ test_that("rasterize splits the raster on demand",
   y = c(629200, 629300)
   r = 20
 
-  pipeline1 = reader_circles(f, x, y, r) + rasterize(2, "max", ofile = ofile1)
-  pipeline2 = reader_circles(f, x, y, r) + rasterize(2, "max", ofile = ofile2)
+  pipeline1 = reader(f, xc = x, yc = y, r = r) + rasterize(2, "max", ofile = ofile1)
+  pipeline2 = reader(f, xc = x, yc = y, r = r) + rasterize(2, "max", ofile = ofile2)
 
   ans1 = processor(pipeline1)
   ans2 = processor(pipeline2)

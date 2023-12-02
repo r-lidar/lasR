@@ -2,22 +2,39 @@
 % Please edit documentation in R/algorithm.R
 \name{reader}
 \alias{reader}
-\alias{reader_coverage}
-\alias{reader_circles}
-\alias{reader_rectangles}
+\alias{reader_files_coverage}
+\alias{reader_files_circles}
+\alias{reader_files_rectangles}
+\alias{reader_dataframe_coverage}
+\alias{reader_dataframe_circles}
+\alias{reader_dataframe_rectangles}
 \title{Initialize the pipeline}
 \usage{
-reader(files, filter = "", buffer = 0, ...)
+reader(x, filter = "", buffer = 0, ...)
 
-reader_coverage(files, filter = "", buffer = 0, ...)
+reader_files_coverage(files, filter = "", buffer = 0)
 
-reader_circles(files, x, y, r, filter = "", buffer = 0, ...)
+reader_files_circles(files, xc, yc, r, filter = "", buffer = 0)
 
-reader_rectangles(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
+reader_files_rectangles(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
+
+reader_dataframe_coverage(dataframe, filter = "", buffer = 0)
+
+reader_dataframe_circles(dataframe, xc, yc, r, filter = "", buffer = 0)
+
+reader_dataframe_rectangles(
+  dataframe,
+  xmin,
+  ymin,
+  xmax,
+  ymax,
+  filter = "",
+  buffer = 0
+)
 }
 \arguments{
-\item{files}{character. The path of the files to use. Supports a \code{LAScatalog} from \code{lidR}. Supports a path
-to a folder.}
+\item{x}{The path of the files to use. The path of the folder in which the files are stored. A \code{data.frame}.
+Supports also \code{LAScatalog} and \code{LAS} objects from \code{lidR}.}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running `print_filters()`.
@@ -27,19 +44,28 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 
 \item{buffer}{numeric. Each file is read with a buffer. The default is 0, which does not mean that
 the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
-pick the greatest value between the internal suggestion and this value if needed.}
+pick the greatest value between the internal suggestion and this provided value.}
 
-\item{...}{Unused}
+\item{...}{passed to other readers}
 
-\item{x, y, r}{numeric. Circle centres and radius or radii.}
+\item{files}{character. The path of the files to use. The path of the folder in which the files are stored.
+Supports a \code{LAScatalog} from \code{lidR}.}
+
+\item{xc, yc, r}{numeric. Circle centres and radius or radii.}
 
 \item{xmin, ymin, xmax, ymax}{numeric. Coordinates of the rectangles}
+
+\item{dataframe}{A \code{data.frame} with columns named conforming \code{lasR} or \code{lidR} naming conventions so
+internally it can recognized  e.g. which column is the classification (\code{Class} will not
+be recognized it must be called \code{Classification}). It can also be a \code{LAS} object from \code{lidR}.}
 }
 \description{
-This is the first algorithm that must be called in each pipeline. It specifies which files must be read.
-The algorithm does nothing and returns nothing. It only initializes the pipeline. \code{reader()} is equivalent
-to \code{read_coverage()}. \code{read_coverage()} reads all the files one by one, \code{read_circles()} and \code{read_rectangles()}
-read only some selected regions of interest one by one.
+This is the first stage that must be called in each pipeline. It specifies which files must be read.
+The stage does nothing and returns nothing if it is not assiciated to another processing stage.
+It only initializes the pipeline. \code{reader()} is the main function that dispatches into to other
+functions. \verb{reader_file_*()} reads from LAS/LAZ files on disk. \code{reader_dataframe()} can put an R
+\code{data.frame} in the pipeline. \verb{read_*_coverage} processed the entire point cloud. \verb{reader_*_circles()}
+and \verb{read_*_rectangles()} read and process only some selected regions of interest.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package = "lasR")

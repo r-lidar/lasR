@@ -147,7 +147,7 @@ clip_circle = function(files, geometry, radius, ofiles = paste0(tempdir(), "/*_c
   xcenter <- coordinates[,1]
   ycenter <- coordinates[,2]
   
-  read = reader_circles(files, xcenter, ycenter, radius)
+  read = reader(files, xc = xcenter, yc = ycenter, r = radius)
   
   if (length(ofiles) == 1L && ofiles == "")
     stage = callback(function(data) { return(data) }, expose = "*", no_las_update = T)
@@ -284,7 +284,7 @@ This computes custom metrics per inventory plots.
 ```{r}
 circle_metrics = function(f, xcenter, ycenter, radius, fun)
 {
-  read = reader_circles(f, xcenter, ycenter, radius)
+  read = reader(f, xc = xcenter, yc = ycenter, r = radius)
   metrics = callback(fun, expose = "*")
   processor(read+metrics)
 }

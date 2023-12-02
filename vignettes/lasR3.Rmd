@@ -37,7 +37,7 @@ This vignette shows a list of pipeline factories, i.e., functions that generate 
 
 ## Pipeline factories
 
-### normalize
+### Normalize
 
 This pipeline is already installed in the package.
 
@@ -69,7 +69,7 @@ It can be used this way
 pipeline = reader(f) + normalize() + write_las(o)
 ```
 
-### classify ground with CSF
+### Classify ground with CSF
 
 ```r
 ground_csf = function(smooth = FALSE, threshold = 0.5, resolution = 0.5, rigidness = 1L, iterations = 500L, step = 0.65)
@@ -92,7 +92,7 @@ ground_csf = function(smooth = FALSE, threshold = 0.5, resolution = 0.5, rigidne
 pipeline = reader(f) + ground_csf() + write_las(o)
 ```
 
-### classify ground with MCC
+### Classify ground with MCC
 
 ```r
 ground_mcc = function(s = 1.5, t = 0.3)
@@ -115,7 +115,7 @@ ground_mcc = function(s = 1.5, t = 0.3)
 pipeline = reader(f) + ground_mcc() + write_las(o)
 ```
 
-## Canopy Heigh Model
+### Canopy Heigh Model
 
 ```{r}
 chm_p2r = function(res, filter = "", ofile = tempfile(fileext = ".tif"))
@@ -135,7 +135,7 @@ chm_tin = function(res, ofile = tempfile(fileext = ".tif"))
 
 ## Useful functions
 
-### read_las
+### Read LAS
 
 ```{r}
 read_las = function(files, select = "xyzi", filter = "")
@@ -147,7 +147,7 @@ read_las = function(files, select = "xyzi", filter = "")
 }
 ```
 
-### buffer_tile
+### Buffer tiles
 
 ```{r}
 buffer_tiles = function(files, buffer, ofiles = paste0(tempdir(), "/*_buffered.las"))
@@ -158,7 +158,7 @@ buffer_tiles = function(files, buffer, ofiles = paste0(tempdir(), "/*_buffered.l
 }
 ```
 
-### clip_circle
+### Clip circle
 
 Writes LAS files or returns `data.frame`s
 
@@ -172,7 +172,7 @@ clip_circle = function(files, geometry, radius, ofiles = paste0(tempdir(), "/*_c
   xcenter <- coordinates[,1]
   ycenter <- coordinates[,2]
   
-  read = reader_circles(files, xcenter, ycenter, radius)
+  read = reader(files, xc = xcenter, yc = ycenter, r = radius)
   
   if (length(ofiles) == 1L && ofiles == "")
     stage = callback(function(data) { return(data) }, expose = "*", no_las_update = T)
@@ -184,11 +184,11 @@ clip_circle = function(files, geometry, radius, ofiles = paste0(tempdir(), "/*_c
 }
 ```
 
-### crs
+### CRS
 
 A CRS as `sf` object. The cost of applying `boundaries()` is virtually null.
 
-```{r}
+```{r crs}
 crs = function(files)
 {
   pipeline = reader(files) + boundaries()
@@ -203,12 +203,12 @@ f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
 crs(f)
 ```
 
-### inventory_metrics
+### Inventory metrics
 
 Using an `sf` object to provide plot centers and offering the option to normalize on-the-fly and returns the same `sf` object with extra attributes
 
 ```{r}
-inventory_metrics = function(geometry, radius, fun, normalize = FALSE)
+inventory_metrics = function(f, geometry, radius, fun, normalize = FALSE)
 {
   if (sf::st_geometry_type(geometry, FALSE) != "POINT") 
     stop("Expected POINT geometry type")
@@ -217,7 +217,7 @@ inventory_metrics = function(geometry, radius, fun, normalize = FALSE)
   xcenter <- coordinates[,1]
   ycenter <- coordinates[,2]
   
-  pipeline <- reader_circles(f, xcenter, ycenter, radius)
+  pipeline <- reader(f, xc = xcenter, yc = ycenter, r = radius)
   
   if (normalize)
   {
@@ -246,6 +246,6 @@ geometry = sf::st_as_sf(df, coords = c("x", "y"))
 radius = 20
 fun = function(data) { list(metric1 = median(data$Z), metric2 = mean(data$Intensity)) }
 
-inventory_metrics(geometry, radius, fun)
+inventory_metrics(f, geometry, radius, fun)
 ```
 

@@ -16,7 +16,6 @@
 
 SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbose)
 {
-  bool success = false;
   SEXP default_return = R_NilValue;
 
   #ifdef USING_R
@@ -48,6 +47,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     print(" Read points: %s\n", pipeline.need_points() ? "true" : "false");
     print(" Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
     print(" Buffer: %.1lf\n", pipeline.need_buffer());
+    print(" Chunks: %d\n", n);
     print("\n");
   }
 

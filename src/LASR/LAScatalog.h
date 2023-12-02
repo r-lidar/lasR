@@ -9,7 +9,10 @@
 
 struct Chunk
 {
-  Chunk() { clear(); };
+  Chunk()
+  {
+    clear();
+  };
   void clear()
   {
     xmin = 0;
@@ -44,6 +47,7 @@ public:
   void set_chunk_size(double size) { if (size> 0) chunk_size = size; else chunk_size = 1000; };
   void set_chunk_is_file() { chunk_size = 0; };
   void set_buffer(double buffer) { this->buffer = buffer; };
+  void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed);
   bool add_file(std::string file);
   void add_query(double xmin, double ymin, double xmax, double ymax);
   void add_query(double xcenter, double ycenter, double radius);
@@ -72,6 +76,9 @@ public:
   std::string wkt;
 
 private:
+  // reader mode
+  bool use_dataframe;
+
   // overall parameter
   double buffer;
   double chunk_size;

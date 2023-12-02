@@ -392,20 +392,27 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
 
 #' Initialize the pipeline
 #'
-#' This is the first algorithm that must be called in each pipeline. It specifies which files must be read.
-#' The algorithm does nothing and returns nothing. It only initializes the pipeline. `reader()` is equivalent
-#' to `read_coverage()`. `read_coverage()` reads all the files one by one, `read_circles()` and `read_rectangles()`
-#' read only some selected regions of interest one by one.
+#' This is the first stage that must be called in each pipeline. It specifies which files must be read.
+#' The stage does nothing and returns nothing if it is not assiciated to another processing stage.
+#' It only initializes the pipeline. `reader()` is the main function that dispatches into to other
+#' functions. `reader_file_*()` reads from LAS/LAZ files on disk. `reader_dataframe()` can put an R
+#' `data.frame` in the pipeline. `read_*_coverage` processed the entire point cloud. `reader_*_circles()`
+#' and `read_*_rectangles()` read and process only some selected regions of interest.
 #'
-#' @param files character. The path of the files to use. Supports a `LAScatalog` from `lidR`. Supports a path
-#' to a folder.
+#' @param x The path of the files to use. The path of the folder in which the files are stored. A `data.frame`.
+#' Supports also `LAScatalog` and `LAS` objects from `lidR`.
+#' @param files character. The path of the files to use. The path of the folder in which the files are stored.
+#' Supports a `LAScatalog` from `lidR`.
+#' @param dataframe A `data.frame` with columns named conforming `lasR` or `lidR` naming conventions so
+#' internally it can recognized  e.g. which column is the classification (`Class` will not
+#' be recognized it must be called `Classification`). It can also be a `LAS` object from `lidR`.
 #' @template param-filter
 #' @param buffer numeric. Each file is read with a buffer. The default is 0, which does not mean that
 #' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
-#' pick the greatest value between the internal suggestion and this value if needed.
-#' @param x,y,r numeric. Circle centres and radius or radii.
+#' pick the greatest value between the internal suggestion and this provided value.
+#' @param xc,yc,r numeric. Circle centres and radius or radii.
 #' @param xmin,ymin,xmax,ymax numeric. Coordinates of the rectangles
-#' @param ... Unused
+#' @param ... passed to other readers
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
@@ -414,20 +421,72 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
 #'
 #' @export
 #' @md
-reader = function(files, filter = "", buffer = 0, ...)
+reader = function(x, filter = "", buffer = 0, ...)
 {
-  if (methods::is(files, "LAScatalog")) files <- files$filename
-  if (!is.character(files)) stop("Files must be character")  # nocov
+  p <- list(...)
+  circle <- !is.null(p$xc)
+  rectangle <-!is.null(p$xmin)
+
+  if (methods::is(x, "LAScatalog") | is.character(x))
+  {
+    if (circle)
+    {
+      return(reader_files_circles(x, p$xc, p$yc, p$r, filter, buffer))
+    }
+
+    if (rectangle)
+    {
+      return(reader_files_rectangles(x, p$xmin, p$ymin, p$xmax, p$ymax, filter, buffer))
+    }
+
+    return(reader_files_coverage(x, filter, buffer))
+  }
+
+  if (methods::is(x, "LAS") | is.data.frame(x))
+  {
+    if (circle)
+    {
+      return(reader_dataframe_circles(x, p$xc, p$yc, p$r, filter, buffer))
+    }
+
+    if (rectangle)
+    {
+      return(reader_dataframe_rectangles(x, p$xmin, p$ymin, p$xmax, p$ymax,  filter, buffer))
+    }
+
+    return(reader_dataframe_coverage(x, filter, buffer))
+  }
+
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.")
+}
+
+#' @export
+#' @rdname reader
+reader_files_coverage = function(files, filter = "", buffer = 0)
+{
+  if (methods::is(files, "LAScatalog"))
+  {
+    files <- files$filename
+  }
+
+  if (!is.character(files))
+  {
+    stop("'files' must be character or a LAScatalog")  # nocov
+  }
 
   finfo <- file.info(files)
 
   if (all(is.na(finfo$isdir)))
-    stop(paste0(files, " does not exist."))
+  {
+    stop(paste0(files, " does not exist.")) # nocov
+  }
   else if (all(!finfo$isdir))
+  {
     files <- normalizePath(files)
+  }
   else
   {
-    p <- list(...)
+    p <- list()
     p$path <- files
     p$full.names <- TRUE
     p$pattern <- "(?i)\\.la(s|z)$"
@@ -437,36 +496,77 @@ reader = function(files, filter = "", buffer = 0, ...)
   nexist <- sum(!file.exists(files))
   if (nexist > 0) stop(paste0(nexist, " file(s) not existing"))
 
-  ans <- list(algoname = "reader", files = files, filter = filter, buffer = buffer)
+  ans <- list(algoname = "reader_las", files = files, filter = filter, buffer = buffer)
   set_lasr_class(ans)
 }
 
 #' @export
 #' @rdname reader
-reader_coverage = reader
-
-#' @export
-#' @rdname reader
-reader_circles = function(files, x, y, r, filter = "", buffer = 0, ...)
+reader_files_circles = function(files, xc, yc, r, filter = "", buffer = 0)
 {
-  stopifnot(length(x) == length(y))
-  if (length(r) == 1) r <- rep(r, length(x))
-  if (length(r) > 1) stopifnot(length(x) == length(r))
+  stopifnot(length(xc) == length(yc))
+  if (length(r) == 1) r <- rep(r, length(xc))
+  if (length(r) > 1) stopifnot(length(xc) == length(r))
 
-  ans <- reader(files, filter, buffer, ...)
-  ans[[1]]$xcenter <- x
-  ans[[1]]$ycenter <- y
+  ans <- reader_files_coverage(files, filter, buffer)
+  ans[[1]]$xcenter <- xc
+  ans[[1]]$ycenter <- yc
   ans[[1]]$radius <- r
   ans
 }
 
 #' @export
 #' @rdname reader
-reader_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
+reader_files_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
 {
   stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
 
-  ans <- reader(files, filter, buffer, ...)
+  ans <- reader_files_coverage(files, filter, buffer)
+  ans[[1]]$xmin <- xmin
+  ans[[1]]$ymin <- ymin
+  ans[[1]]$xmax <- xmax
+  ans[[1]]$ymax <- ymax
+  ans
+}
+
+#' @export
+#' @rdname reader
+reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0)
+{
+  accuracy = c(0,0,0)
+  if (methods::is(dataframe, "LAS"))
+  {
+    dataframe <- dataframe@data
+    accuracy <- c(dataframe@header@PHB[["X scale factor"]], dataframe@header@PHB[["Y scale factor"]], dataframe@header@PHB[["Z scale factor"]])
+  }
+
+  stopifnot(is.data.frame(dataframe))
+  ans <- list(algoname = "reader_dataframe", dataframe = dataframe, accuracy = accuracy)
+  set_lasr_class(ans)
+}
+
+#' @export
+#' @rdname reader
+reader_dataframe_circles = function(dataframe, xc, yc, r, filter = "", buffer = 0)
+{
+  stopifnot(length(xc) == length(yc))
+  if (length(r) == 1) r <- rep(r, length(xc))
+  if (length(r) > 1) stopifnot(length(xc) == length(r))
+
+  ans <- reader_dataframe_coverage(dataframe, filter, buffer)
+  ans[[1]]$xcenter <- xc
+  ans[[1]]$ycenter <- yc
+  ans[[1]]$radius <- r
+  ans
+}
+
+#' @export
+#' @rdname reader
+reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
+{
+  stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
+
+  ans <- reader_dataframe_coverage(dataframe, filter, buffer)
   ans[[1]]$xmin <- xmin
   ans[[1]]$ymin <- ymin
   ans[[1]]$xmax <- xmax

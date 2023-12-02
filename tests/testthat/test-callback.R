@@ -111,7 +111,7 @@ test_that("callback works if all the points are not exposed",
   x = 684850
   y = 5017900
   r = 10
-  read = reader_circles(f, x, y, r, buffer = 10)
+  read = reader(f, xc = x, yc = y, r = r, buffer = 10)
   pipeline = read + call1 + call2
 
   ans = processor(pipeline)

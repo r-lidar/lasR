@@ -121,7 +121,7 @@ void LASRalgorithmRaster::set_output_file(std::string file)
 bool LASRalgorithmRaster::set_crs(int epsg)
 {
   return raster.set_crs(epsg);
-};
+}
 
 bool LASRalgorithmRaster::set_crs(std::string wkt)
 {
@@ -205,17 +205,17 @@ void LASRalgorithmVector::set_output_file(std::string file)
     vector.set_file(file);
     written.push_back(file);
   }
-};
+}
 
 bool LASRalgorithmVector::set_crs(int epsg)
 {
   return vector.set_crs(epsg);
-};
+}
 
 bool LASRalgorithmVector::set_crs(std::string wkt)
 {
   return vector.set_crs(wkt);
-};
+}
 
 void LASRalgorithmVector::clear(bool last)
 {

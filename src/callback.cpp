@@ -147,7 +147,7 @@ bool LASRcallback::process(LAS*& las)
     case RN:    SET_STRING_ELT(list_names, i, Rf_mkChar("ReturnNumber")); break;
     case NOR:   SET_STRING_ELT(list_names, i, Rf_mkChar("NumberOfReturns")); break;
     case SDF:   SET_STRING_ELT(list_names, i, Rf_mkChar("ScanDirectionFlag")); break;
-    case EoF:   SET_STRING_ELT(list_names, i, Rf_mkChar("NumberOfReturns")); break;
+    case EoF:   SET_STRING_ELT(list_names, i, Rf_mkChar("EdgeOfFlightline")); break;
     case CLASS: SET_STRING_ELT(list_names, i, Rf_mkChar("Classification")); break;
     case SYNT:  SET_STRING_ELT(list_names, i, Rf_mkChar("Synthetic")); break;
     case KEYP:  SET_STRING_ELT(list_names, i, Rf_mkChar("Keypoint")); break;
@@ -298,6 +298,7 @@ bool LASRcallback::process(LAS*& las)
     else if (sname == "ReturnNumber") col_names[i] = attributes::RN;
     else if (sname == "NumberOfReturns") col_names[i] = attributes::NOR;
     else if (sname == "ScanDirectionFlag") col_names[i] = attributes::SDF;
+    else if (sname == "EdgeOfFlightline") col_names[i] = attributes::EoF;
     else if (sname == "Classification") col_names[i] = attributes::CLASS;
     else if (sname == "Synthetic") col_names[i] = attributes::SYNT;
     else if (sname == "Keypoint") col_names[i] = attributes::KEYP;
@@ -336,6 +337,7 @@ bool LASRcallback::process(LAS*& las)
       case attributes::RN: if (type != INTSXP) last_error = "ReturnNumber is expected to be integer"; break;
       case attributes::NOR: if (type != INTSXP) last_error = "NumberOfReturns is expected to be integer"; break;
       case attributes::SDF: if (type != LGLSXP) last_error = "ScanDirectionFlag is expected to be logical"; break;
+      case attributes::EoF: if (type != INTSXP) last_error = "EdgeOfFlightline is expected to be logical"; break;
       case attributes::CLASS: if (type != INTSXP) last_error = "Classification is expected to be integer"; break;
       case attributes::SYNT: if (type != LGLSXP) last_error = "Synthetic is expected to be logical"; break;
       case attributes::KEYP: if (type != LGLSXP) last_error = "Keypoint is expected to be logical"; break;
@@ -401,6 +403,7 @@ bool LASRcallback::process(LAS*& las)
         case attributes::RN: las->point.set_return_number(INTEGER(vector)[i]); break;
         case attributes::NOR: las->point.set_number_of_returns(INTEGER(vector)[i]); break;
         case attributes::SDF: las->point.set_scan_direction_flag(LOGICAL(vector)[i]); break;
+        case attributes::EoF: las->point.set_edge_of_flight_line(INTEGER(vector)[i]); break;
         case attributes::CLASS: las->point.set_classification(INTEGER(vector)[i]); break;
         case attributes::SYNT: las->point.set_synthetic_flag(LOGICAL(vector)[i]); break;
         case attributes::KEYP: las->point.set_keypoint_flag(LOGICAL(vector)[i]); break;

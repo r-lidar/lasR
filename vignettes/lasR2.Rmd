@@ -435,7 +435,16 @@ head(ans[[2]])
 
 ## Readers
 
-There are two readers in addition to `reader()`: `reader_circle()` and `reader_rectangle()`. The following pipeline triangulates the ground points, normalizes the point cloud, and computes some metric of interest **for each file of the entire coverage**. Each file is loaded with a buffer so that triangulation is performed without edge artifacts. Notice the use of `drop_buffer = TRUE` to expose the `data.frame` without the buffer used to perform the triangulation and normalization.
+There are several readers hidden behind `reader()`: 
+
+- `reader_file_coverage()`: will read of the files and process the entire point cloud.
+- `reader_file_rectangles()`: will read only some rectangular regions of interest of the coverage and process then sequentially.
+- `reader_file_circles()`: will read only some circular regions of interest of the coverage and process then sequentially.
+- `reader_dataframe_coverage()` : will read a `data.frame` and convert it internally into the internal `lasR`'s memory structure. It processes the entire point-cloud.
+- `reader_dataframe_rectangles()`: will read a `data.frame` and convert it internally into the internal `lasR`'s memory structure. It processes only the regions of interest sequentially.
+- `reader_dataframe_circles()`: will read a `data.frame` and convert it internally into the internal `lasR`'s memory structure. It processes only the regions of interest sequentially.
+
+The following pipeline triangulates the ground points, normalizes the point cloud, and computes some metric of interest **for each file of the entire coverage**. Each file is loaded with a buffer so that triangulation is performed without edge artifacts. Notice the use of `drop_buffer = TRUE` to expose the `data.frame` without the buffer used to perform the triangulation and normalization.
 
 
 ```{r readers, eval = FALSE}
@@ -472,7 +481,7 @@ coordinates <- st_coordinates(inventory)
 xcenter <- coordinates[,1]
 ycenter <- coordinates[,2]
 
-read <- reader_circles(f, xcenter, ycenter, 11.28) 
+read <- reader(f, xc = xcenter, yc = ycenter, r = 11.28) 
 tri <- triangulate(filter = keep_ground())
 trans <- transform_with_triangulation(tri)
 norm <- tri + trans
@@ -503,7 +512,7 @@ ofile = paste0(tempdir(), "/chm.tif")   # no wildcard
 x = c(885100, 885100)
 y = c(629200, 629600)
 
-pipeline = reader_circles(f, x, y, 20) + rasterize(2, "max", ofile = ofile)
+pipeline = reader(f, xc = x, yc = y, r = 20) + rasterize(2, "max", ofile = ofile)
 r0 = processor(pipeline)
 
 terra::plot(r0, col = col) # covers the entire collection of files
@@ -518,7 +527,7 @@ ofile = paste0(tempdir(), "/chm_*.tif") # wildcard
 x = c(885100, 885100)
 y = c(629200, 629600)
 
-pipeline = reader_circles(f, x, y, 20) + rasterize(2, "max", ofile = ofile)
+pipeline = reader(f, xc = x, yc = y, radius = 20) + rasterize(2, "max", ofile = ofile)
 ans = processor(pipeline)
 
 r1 = terra::rast(ans[1])
@@ -529,7 +538,7 @@ terra::plot(r2, col = col)
 
 ## Compatibility with lidR
 
-While `lasR` does not depends on `lidR` it has some compatibility with it. Instead of providing paths to files or folder it is possible to pass a `LAScatalog` to the readers.
+While `lasR` does not depends on `lidR` it has some compatibility with it. Instead of providing paths to files or folder it is possible to pass a `LAScatalog` or a `LAS` object to the readers.
 
 ```r
 library(lasR)
@@ -537,5 +546,9 @@ library(lidR)
 
 ctg = readLAScatalog(folder)
 pipeline = reader(ctg) + normalize() + write_las()
+ans = processor(pipeline)
+
+las = readLAS(file)
+pipeline = reader(las) + normalize() + write_las()
 ans = processor(pipeline)
 ```

@@ -101,7 +101,7 @@ bool LASRaggregate::process(LAS*& las)
     case RN:    SET_STRING_ELT(list_names, i, Rf_mkChar("ReturnNumber")); break;
     case NOR:   SET_STRING_ELT(list_names, i, Rf_mkChar("NumberOfReturns")); break;
     case SDF:   SET_STRING_ELT(list_names, i, Rf_mkChar("ScanDirectionFlag")); break;
-    case EoF:   SET_STRING_ELT(list_names, i, Rf_mkChar("NumberOfReturns")); break;
+    case EoF:   SET_STRING_ELT(list_names, i, Rf_mkChar("EdgeOfFlightline")); break;
     case CLASS: SET_STRING_ELT(list_names, i, Rf_mkChar("Classification")); break;
     case SYNT:  SET_STRING_ELT(list_names, i, Rf_mkChar("Synthetic")); break;
     case KEYP:  SET_STRING_ELT(list_names, i, Rf_mkChar("Keypoint")); break;

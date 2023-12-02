@@ -21,7 +21,7 @@ public:
   bool is_streamable() const override { return true; };
   bool is_mergable() const override {return true; };
   void set_filter(std::string filter) override { this->filter = filter; };
-  std::string get_name() const override { return "read_las"; }
+  std::string get_name() const override { return "reader_las"; }
 
 private:
   std::string filter;

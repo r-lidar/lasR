@@ -12,6 +12,7 @@ LAScatalog::LAScatalog()
   npoints = 0;
   buffer = 0;
   chunk_size = 0;
+  use_dataframe = true;
 
   nocrs_number = 0;
   crs_conflict_number = 0;
@@ -29,6 +30,20 @@ LAScatalog::~LAScatalog()
   for (auto p : queries) delete p;
 }
 
+void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed)
+{
+  Rectangle bb(xmin, ymin, xmax, ymax);
+  bboxes.push_back(bb);
+
+  if (this->xmin > xmin) this->xmin = xmin;
+  if (this->ymin > ymin) this->ymin = ymin;
+  if (this->xmax < xmax) this->xmax = xmax;
+  if (this->ymax < ymax) this->ymax = ymax;
+
+  laskdtree->add(xmin, ymin, xmax, ymax);
+  this->indexed.push_back(indexed);
+}
+
 bool LAScatalog::add_file(std::string file)
 {
   lasreadopener->add_file_name(file.c_str());
@@ -41,22 +56,14 @@ bool LAScatalog::add_file(std::string file)
 
   set_crs(&lasreader->header);
 
-  Rectangle bb(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y);
-  bboxes.push_back(bb);
-
-  if (lasreader->header.min_x < xmin) xmin = lasreader->header.min_x;
-  if (lasreader->header.min_y < ymin) ymin = lasreader->header.min_y;
-  if (lasreader->header.max_x > xmax) xmax = lasreader->header.max_x;
-  if (lasreader->header.max_y > ymax) ymax = lasreader->header.max_y;
+  add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex());
 
   npoints += lasreader->header.number_of_point_records;
 
-  indexed.push_back(lasreader->get_index() || lasreader->get_copcindex());
-
-  laskdtree->add(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y);
-
   lasreader->close();
   delete lasreader;
+
+  use_dataframe = false;
   return true;
 }
 
@@ -82,6 +89,7 @@ int LAScatalog::get_number_chunks() const
 
 bool LAScatalog::get_chunk(int i, Chunk& chunk)
 {
+  U32 index;
   chunk.clear();
 
   if (i < 0 || i > get_number_chunks())
@@ -102,9 +110,13 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
     chunk.ymin = bb.ymin();
     chunk.xmax = bb.xmax();
     chunk.ymax = bb.ymax();
-    chunk.main_file = lasreadopener->get_file_name(i);
-    chunk.name = lasreadopener->get_file_name_only(i);
-    chunk.name = chunk.name.substr(0, chunk.name.size()-4);
+
+    if (!use_dataframe)
+    {
+      chunk.main_file = lasreadopener->get_file_name(i);
+      chunk.name = lasreadopener->get_file_name_only(i);
+      chunk.name = chunk.name.substr(0, chunk.name.size()-4);
+    }
 
     if (buffer <= 0)
     {
@@ -113,10 +125,16 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
 
     chunk.buffer = buffer;
 
+    // We are working with an R data.frame: there is no file and especially
+    // no neighbouring files. We can exit now.
+    if (use_dataframe)
+    {
+      return true;
+    }
+
     laskdtree->overlap(bb.xmin() - buffer, bb.ymin() - buffer, bb.xmax() + buffer, bb.ymax() + buffer);
     if (laskdtree->has_overlaps())
     {
-      U32 index;
       while (laskdtree->get_overlap(index))
       {
         std::string file = lasreadopener->get_file_name(index);
@@ -140,7 +158,8 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   double centery = q->centroid().y;
   double epsilon = 1e-8;
 
-  laskdtree->overlap(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
+  // Search if there is a match
+  laskdtree->overlap(minx, miny,  maxx, maxy);
   if (!laskdtree->has_overlaps())
   {
     char buff[64];
@@ -149,6 +168,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
     return false;
   }
 
+  // There is a match we can update the chunk
   chunk.xmin = minx;
   chunk.ymin = miny;
   chunk.xmax = maxx;
@@ -156,17 +176,60 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   chunk.buffer = buffer;
   chunk.shape = q->type();
 
-  U32 index;
-  laskdtree->get_overlap(index);
-  chunk.main_file = lasreadopener->get_file_name(index);
-  chunk.name = lasreadopener->get_file_name_only(index);
-  chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
+  // With an R data.frame there is no file and thus no neighbouring files. We can exit.
+  if (use_dataframe)
+  {
+    chunk.main_file = "dataframe.las";
+    chunk.name = "data.frame";
+    return true;
+  }
 
+  // We are working with a single file there is no neighbouring files. We can exit.
+  if (get_number_files() == 1)
+  {
+    chunk.main_file = lasreadopener->get_file_name(0);
+    chunk.name = lasreadopener->get_file_name_only(0);
+    chunk.name = chunk.name.substr(0, chunk.name.size()-4);
+    return true;
+  }
+
+  // There are likely multiple files that intersect the query. If there is only one it is easy. We can exit.
+  if (laskdtree->get_num_overlaps() == 1)
+  {
+    laskdtree->get_overlap(index);
+    chunk.main_file = lasreadopener->get_file_name(index);
+    chunk.name = lasreadopener->get_file_name_only(index);
+    chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
+    return true;
+  }
+
+  // Otherwise we must find the main one to get a name to the chunk.
+  // We search the file that contains the centroid of the query
+  laskdtree->overlap(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
+
+  // There is an overlap: we have the main file otherwise the main file will be the first found
+  if (laskdtree->has_overlaps())
+  {
+    laskdtree->get_overlap(index);
+    chunk.main_file = lasreadopener->get_file_name(index);
+    chunk.name = lasreadopener->get_file_name_only(index);
+    chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
+  }
+
+  // We perform the query again to get the other files
   laskdtree->overlap(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
   if (laskdtree->has_overlaps())
   {
     while (laskdtree->get_overlap(index))
     {
+      // The chunk has no name already a name (i.e. a main file) we can assign one
+      if (chunk.name.empty())
+      {
+        chunk.main_file = lasreadopener->get_file_name(index);
+        chunk.name = lasreadopener->get_file_name_only(index);
+        chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
+      }
+
       std::string file = lasreadopener->get_file_name(index);
       if (chunk.main_file != file)
       {

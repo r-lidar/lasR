@@ -4,15 +4,15 @@
   FILE:  laskdtree.cpp
 
   CONTENTS:
-  
+
     see corresponding header file
-  
+
   PROGRAMMERS:
-  
+
     martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
-  
+
   COPYRIGHT:
-  
+
     (c) 2007-2019, martin isenburg, rapidlasso - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
@@ -21,11 +21,11 @@
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  
+
   CHANGE HISTORY:
-  
+
     see corresponding header file
-  
+
 ===============================================================================
 */
 
@@ -110,7 +110,7 @@ void LASkdtreeRectangles::add(F64 min_x, F64 min_y, F64 max_x, F64 max_y)
   if (min_y < bb.min[1]) bb.min[1] = min_y;
   if (max_x > bb.max[0]) bb.max[0] = max_x;
   if (min_y > bb.max[1]) bb.max[1] = max_y;
-  
+
   // create rectangle
 
   LASkdtreeRectangle rectangle(min_x, min_y, max_x, max_y, (U32)rectangle_list->size());
@@ -128,7 +128,7 @@ BOOL LASkdtreeRectangles::build()
   {
     return FALSE;
   }
-  
+
   build_recursive(root, 0, bb, rectangle_list, 0);
   rectangle_list = 0;
 
@@ -174,6 +174,11 @@ BOOL LASkdtreeRectangles::has_overlaps()
   return FALSE;
 }
 
+int LASkdtreeRectangles::get_num_overlaps()
+{
+  return overlap_set->size();
+}
+
 BOOL LASkdtreeRectangles::get_overlap(U32& index)
 {
   if (overlap_set)
@@ -191,7 +196,7 @@ BOOL LASkdtreeRectangles::get_overlap(U32& index)
 
 void LASkdtreeRectangles::build_recursive(LASkdtreeRectanglesNode* node, I32 plane, LASkdtreeRectangle curr_bb, my_rectangle_list* insertion_list, I32 unchanged)
 {
-  // is list small enough? 
+  // is list small enough?
   if (insertion_list->size() <= 4)
   {
     node->list = insertion_list;
@@ -316,7 +321,7 @@ void LASkdtreeRectangles::overlap_rectangles(LASkdtreeRectanglesNode* node, I32 
     }
 
     // maybe recurse right
-    
+
     if (node->split <= rectangle.max[plane])
     {
       overlap_rectangles(node->right, (plane + 1) % 2, rectangle, overlap_set);
