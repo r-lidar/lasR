@@ -99,7 +99,7 @@ will be updated if good tools come to mind.</p>
 <h2 id="pipeline-factories">Pipeline factories<a class="anchor" aria-label="anchor" href="#pipeline-factories"></a>
 </h2>
 <div class="section level3">
-<h3 id="normalize">normalize<a class="anchor" aria-label="anchor" href="#normalize"></a>
+<h3 id="normalize">Normalize<a class="anchor" aria-label="anchor" href="#normalize"></a>
 </h3>
 <p>This pipeline is already installed in the package.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -127,7 +127,7 @@ will be updated if good tools come to mind.</p>
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="classify-ground-with-csf">classify ground with CSF<a class="anchor" aria-label="anchor" href="#classify-ground-with-csf"></a>
+<h3 id="classify-ground-with-csf">Classify ground with CSF<a class="anchor" aria-label="anchor" href="#classify-ground-with-csf"></a>
 </h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ground_csf</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">smooth</span> <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">threshold</span> <span class="op">=</span> <span class="fl">0.5</span>, <span class="va">resolution</span> <span class="op">=</span> <span class="fl">0.5</span>, <span class="va">rigidness</span> <span class="op">=</span> <span class="fl">1L</span>, <span class="va">iterations</span> <span class="op">=</span> <span class="fl">500L</span>, <span class="va">step</span> <span class="op">=</span> <span class="fl">0.65</span><span class="op">)</span></span>
@@ -148,7 +148,7 @@ will be updated if good tools come to mind.</p>
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ground_csf</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="classify-ground-with-mcc">classify ground with MCC<a class="anchor" aria-label="anchor" href="#classify-ground-with-mcc"></a>
+<h3 id="classify-ground-with-mcc">Classify ground with MCC<a class="anchor" aria-label="anchor" href="#classify-ground-with-mcc"></a>
 </h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ground_mcc</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">s</span> <span class="op">=</span> <span class="fl">1.5</span>, <span class="va">t</span> <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span>
@@ -168,10 +168,9 @@ will be updated if good tools come to mind.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ground_mcc</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 </div>
-</div>
-<div class="section level2">
-<h2 id="canopy-heigh-model">Canopy Heigh Model<a class="anchor" aria-label="anchor" href="#canopy-heigh-model"></a>
-</h2>
+<div class="section level3">
+<h3 id="canopy-heigh-model">Canopy Heigh Model<a class="anchor" aria-label="anchor" href="#canopy-heigh-model"></a>
+</h3>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">chm_p2r</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">res</span>, <span class="va">filter</span> <span class="op">=</span> <span class="st">""</span>, <span class="va">ofile</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".tif"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
@@ -185,11 +184,12 @@ will be updated if good tools come to mind.</p>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">tin</span><span class="op">+</span><span class="va">chm</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
+</div>
 <div class="section level2">
 <h2 id="useful-functions">Useful functions<a class="anchor" aria-label="anchor" href="#useful-functions"></a>
 </h2>
 <div class="section level3">
-<h3 id="read_las">read_las<a class="anchor" aria-label="anchor" href="#read_las"></a>
+<h3 id="read-las">Read LAS<a class="anchor" aria-label="anchor" href="#read-las"></a>
 </h3>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">read_las</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span>, <span class="va">select</span> <span class="op">=</span> <span class="st">"xyzi"</span>, <span class="va">filter</span> <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
@@ -201,7 +201,7 @@ will be updated if good tools come to mind.</p>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="buffer_tile">buffer_tile<a class="anchor" aria-label="anchor" href="#buffer_tile"></a>
+<h3 id="buffer-tiles">Buffer tiles<a class="anchor" aria-label="anchor" href="#buffer-tiles"></a>
 </h3>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">buffer_tiles</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span>, <span class="va">buffer</span>, <span class="va">ofiles</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*_buffered.las"</span><span class="op">)</span><span class="op">)</span></span>
@@ -212,7 +212,7 @@ will be updated if good tools come to mind.</p>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="clip_circle">clip_circle<a class="anchor" aria-label="anchor" href="#clip_circle"></a>
+<h3 id="clip-circle">Clip circle<a class="anchor" aria-label="anchor" href="#clip-circle"></a>
 </h3>
 <p>Writes LAS files or returns <code>data.frame</code>s</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
@@ -225,7 +225,7 @@ will be updated if good tools come to mind.</p>
 <span>  <span class="va">xcenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span></span>
 <span>  <span class="va">ycenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span></span>
 <span>  </span>
-<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader_circles</a></span><span class="op">(</span><span class="va">files</span>, <span class="va">xcenter</span>, <span class="va">ycenter</span>, <span class="va">radius</span><span class="op">)</span></span>
+<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">files</span>, xc <span class="op">=</span> <span class="va">xcenter</span>, yc <span class="op">=</span> <span class="va">ycenter</span>, r <span class="op">=</span> <span class="va">radius</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">ofiles</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span> <span class="op">&amp;&amp;</span> <span class="va">ofiles</span> <span class="op">==</span> <span class="st">""</span><span class="op">)</span></span>
 <span>    <span class="va">stage</span> <span class="op">=</span> <span class="fu"><a href="../reference/callback.html">callback</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">}</span>, expose <span class="op">=</span> <span class="st">"*"</span>, no_las_update <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
@@ -237,7 +237,7 @@ will be updated if good tools come to mind.</p>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="crs">crs<a class="anchor" aria-label="anchor" href="#crs"></a>
+<h3 id="crs">CRS<a class="anchor" aria-label="anchor" href="#crs"></a>
 </h3>
 <p>A CRS as <code>sf</code> object. The cost of applying
 <code><a href="../reference/boundaries.html">boundaries()</a></code> is virtually null.</p>
@@ -250,13 +250,13 @@ will be updated if good tools come to mind.</p>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="inventory_metrics">inventory_metrics<a class="anchor" aria-label="anchor" href="#inventory_metrics"></a>
+<h3 id="inventory-metrics">Inventory metrics<a class="anchor" aria-label="anchor" href="#inventory-metrics"></a>
 </h3>
 <p>Using an <code>sf</code> object to provide plot centers and offering
 the option to normalize on-the-fly and returns the same <code>sf</code>
 object with extra attributes</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">inventory_metrics</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">geometry</span>, <span class="va">radius</span>, <span class="va">fun</span>, <span class="va">normalize</span> <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">inventory_metrics</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">geometry</span>, <span class="va">radius</span>, <span class="va">fun</span>, <span class="va">normalize</span> <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry_type.html" class="external-link">st_geometry_type</a></span><span class="op">(</span><span class="va">geometry</span>, <span class="cn">FALSE</span><span class="op">)</span> <span class="op">!=</span> <span class="st">"POINT"</span><span class="op">)</span> </span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Expected POINT geometry type"</span><span class="op">)</span></span>
@@ -265,7 +265,7 @@ object with extra attributes</p>
 <span>  <span class="va">xcenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span></span>
 <span>  <span class="va">ycenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span></span>
 <span>  </span>
-<span>  <span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reader.html">reader_circles</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">xcenter</span>, <span class="va">ycenter</span>, <span class="va">radius</span><span class="op">)</span></span>
+<span>  <span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, xc <span class="op">=</span> <span class="va">xcenter</span>, yc <span class="op">=</span> <span class="va">ycenter</span>, r <span class="op">=</span> <span class="va">radius</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="va">normalize</span><span class="op">)</span></span>
 <span>  <span class="op">{</span></span>

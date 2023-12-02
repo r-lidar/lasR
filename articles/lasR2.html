@@ -210,8 +210,8 @@ so the result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file20fb26b782cc.tif </span></span>
-<span><span class="co">#&gt; name        : file20fb26b782cc</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file210f73afa0a6.tif </span></span>
+<span><span class="co">#&gt; name        : file210f73afa0a6</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -331,11 +331,11 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpOA2cHu/bcts_1_ground" "/tmp/RtmpOA2cHu/bcts_2_ground"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/RtmpTORAuq/bcts_1_ground" "/tmp/RtmpTORAuq/bcts_2_ground"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpOA2cHu/bcts_1_normalized.laz"</span></span>
-<span><span class="co">#&gt; [2] "/tmp/RtmpOA2cHu/bcts_2_normalized.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpTORAuq/bcts_1_normalized.laz"</span></span>
+<span><span class="co">#&gt; [2] "/tmp/RtmpTORAuq/bcts_2_normalized.laz"</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behavior may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -349,7 +349,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpOA2cHu/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpTORAuq/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -653,7 +653,7 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; [1] 12745</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nsingle</span></span>
-<span><span class="co">#&gt; [1] 5104</span></span>
+<span><span class="co">#&gt; [1] 5087</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nwithheld</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
@@ -663,22 +663,48 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_return</span></span>
 <span><span class="co">#&gt;    1    2    3    4    5 </span></span>
-<span><span class="co">#&gt; 9471 2578  617   77    2 </span></span>
+<span><span class="co">#&gt; 9442 2628  590   82    3 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_class</span></span>
 <span><span class="co">#&gt;     1     2     9 </span></span>
-<span><span class="co">#&gt; 10814  1559   372</span></span></code></pre></div>
+<span><span class="co">#&gt; 10830  1538   377</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
 </h2>
-<p>There are two readers in addition to <code><a href="../reference/reader.html">reader()</a></code>:
-<code>reader_circle()</code> and <code>reader_rectangle()</code>. The
-following pipeline triangulates the ground points, normalizes the point
-cloud, and computes some metric of interest <strong>for each file of the
-entire coverage</strong>. Each file is loaded with a buffer so that
-triangulation is performed without edge artifacts. Notice the use of
-<code>drop_buffer = TRUE</code> to expose the <code>data.frame</code>
+<p>There are several readers hidden behind <code><a href="../reference/reader.html">reader()</a></code>:</p>
+<ul>
+<li>
+<code>reader_file_coverage()</code>: will read of the files and
+process the entire point cloud.</li>
+<li>
+<code>reader_file_rectangles()</code>: will read only some
+rectangular regions of interest of the coverage and process then
+sequentially.</li>
+<li>
+<code>reader_file_circles()</code>: will read only some circular
+regions of interest of the coverage and process then sequentially.</li>
+<li>
+<code><a href="../reference/reader.html">reader_dataframe_coverage()</a></code> : will read a
+<code>data.frame</code> and convert it internally into the internal
+<code>lasR</code>’s memory structure. It processes the entire
+point-cloud.</li>
+<li>
+<code><a href="../reference/reader.html">reader_dataframe_rectangles()</a></code>: will read a
+<code>data.frame</code> and convert it internally into the internal
+<code>lasR</code>’s memory structure. It processes only the regions of
+interest sequentially.</li>
+<li>
+<code><a href="../reference/reader.html">reader_dataframe_circles()</a></code>: will read a
+<code>data.frame</code> and convert it internally into the internal
+<code>lasR</code>’s memory structure. It processes only the regions of
+interest sequentially.</li>
+</ul>
+<p>The following pipeline triangulates the ground points, normalizes the
+point cloud, and computes some metric of interest <strong>for each file
+of the entire coverage</strong>. Each file is loaded with a buffer so
+that triangulation is performed without edge artifacts. Notice the use
+of <code>drop_buffer = TRUE</code> to expose the <code>data.frame</code>
 without the buffer used to perform the triangulation and
 normalization.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
@@ -691,7 +717,7 @@ normalization.</p>
 <p>The following pipeline, on the contrary, works exactly the same but
 operates only on circular plots.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader_circles</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">xcenter</span>, <span class="va">ycenter</span>, <span class="fl">11.28</span><span class="op">)</span> <span class="op">+</span> <span class="va">tri</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">metrics</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu">reader_circles</span><span class="op">(</span><span class="va">f</span>, <span class="va">xcenter</span>, <span class="va">ycenter</span>, <span class="fl">11.28</span><span class="op">)</span> <span class="op">+</span> <span class="va">tri</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">metrics</span></span></code></pre></div>
 <p>These readers allow building a ground inventory pipeline, for
 example.</p>
 </div>
@@ -716,7 +742,7 @@ correct triangulation bufer exposed to R without the buffer using
 <span><span class="va">xcenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span></span>
 <span><span class="va">ycenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reader.html">reader_circles</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">xcenter</span>, <span class="va">ycenter</span>, <span class="fl">11.28</span><span class="op">)</span> </span>
+<span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, xc <span class="op">=</span> <span class="va">xcenter</span>, yc <span class="op">=</span> <span class="va">ycenter</span>, r <span class="op">=</span> <span class="fl">11.28</span><span class="op">)</span> </span>
 <span><span class="va">tri</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">trans</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/transform_with_triangulation.html">transform_with_triangulation</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span>
 <span><span class="va">norm</span> <span class="op">&lt;-</span> <span class="va">tri</span> <span class="op">+</span> <span class="va">trans</span></span>
@@ -736,7 +762,7 @@ file. Otherwise, everything is written into a single massive LAS file
 <code><a href="../reference/rasterize.html">rasterize()</a></code> is used without a wildcard to write everything
 into a single raster file, but it also accepts a wildcard to write the
 results in multiple files, which is very useful with
-<code><a href="../reference/reader.html">reader_circles()</a></code> to avoid having one massive raster mostly
+<code>reader_circles()</code> to avoid having one massive raster mostly
 empty. Compare this pipeline with and without the wildcard.</p>
 <p>Without a wildcard, the output is a single raster that covers the
 entire point cloud with two patches of populated pixels.</p>
@@ -746,7 +772,7 @@ entire point cloud with two patches of populated pixels.</p>
 <span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">885100</span>, <span class="fl">885100</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">629200</span>, <span class="fl">629600</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader_circles</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">x</span>, <span class="va">y</span>, <span class="fl">20</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">2</span>, <span class="st">"max"</span>, ofile <span class="op">=</span> <span class="va">ofile</span><span class="op">)</span></span>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, xc <span class="op">=</span> <span class="va">x</span>, yc <span class="op">=</span> <span class="va">y</span>, r <span class="op">=</span> <span class="fl">20</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">2</span>, <span class="st">"max"</span>, ofile <span class="op">=</span> <span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">r0</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/terra/man/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">r0</span>, col <span class="op">=</span> <span class="va">col</span><span class="op">)</span> <span class="co"># covers the entire collection of files</span></span></code></pre></div>
@@ -759,7 +785,7 @@ of interest.</p>
 <span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">885100</span>, <span class="fl">885100</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">629200</span>, <span class="fl">629600</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader_circles</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">x</span>, <span class="va">y</span>, <span class="fl">20</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">2</span>, <span class="st">"max"</span>, ofile <span class="op">=</span> <span class="va">ofile</span><span class="op">)</span></span>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, xc <span class="op">=</span> <span class="va">x</span>, yc <span class="op">=</span> <span class="va">y</span>, radius <span class="op">=</span> <span class="fl">20</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">2</span>, <span class="st">"max"</span>, ofile <span class="op">=</span> <span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">r1</span> <span class="op">=</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/terra/man/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">ans</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
@@ -772,16 +798,19 @@ of interest.</p>
 <h2 id="compatibility-with-lidr">Compatibility with lidR<a class="anchor" aria-label="anchor" href="#compatibility-with-lidr"></a>
 </h2>
 <p>While <code>lasR</code> does not depends on <code>lidR</code> it has
-some compatibilities with it. Instead of providing paths to files or
-folder it is possible to pass a <code>LAScatalog</code> to the
-readers.</p>
+some compatibility with it. Instead of providing paths to files or
+folder it is possible to pass a <code>LAScatalog</code> or a
+<code>LAS</code> object to the readers.</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lasR" class="external-link">lasR</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lidR" class="external-link">lidR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">readLAScatalog</span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">ctg</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span></span>
+<span><span class="va">las</span> <span class="op">=</span> <span class="fu">readLAS</span><span class="op">(</span><span class="va">file</span><span class="op">)</span></span>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">las</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
