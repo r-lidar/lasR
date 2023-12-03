@@ -75,10 +75,12 @@ bool LASRtriangulate::process(LAS*& las)
 
   if (verbose)
   {
+    // # nocov start
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     float second = (float)duration.count()/1000.0f;
     print("  Construction of voronoi diagram took %.2f sec for %lu vertices\n", second, vd.num_vertices());
+    // # nocov end
   }
 
   return true;
@@ -197,10 +199,12 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
 
   if (verbose)
   {
+    // # nocov start
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     float second = (float)duration.count()/1000.0f;
     print("  Interpolation of Delaunay triangulation took %.2g sec\n", second);
+    // # nocov end
   }
 
   return true;
@@ -266,10 +270,12 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
 
   if (verbose)
   {
+    // # nocov start
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     float second = (float)duration.count()/1000.0f;
     print("  Delaunay contour took %.2f sec\n", second);
+    // # nocov end
   }
 
   return true;
@@ -342,10 +348,12 @@ bool LASRtriangulate::write()
 
   if (verbose)
   {
+    // # nocov start
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     float second = (float)duration.count()/1000.0f;
     print("  Writing Delaunay triangulation took %.2f sec\n", second);
+    // # nocov end
   }
 
   return true;

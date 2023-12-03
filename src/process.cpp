@@ -43,12 +43,14 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
   if (verbose)
   {
+    // # nocov start
     print("File processing options:\n");
     print(" Read points: %s\n", pipeline.need_points() ? "true" : "false");
     print(" Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
     print(" Buffer: %.1lf\n", pipeline.need_buffer());
     print(" Chunks: %d\n", n);
     print("\n");
+    // # nocov end
   }
 
   // Initialize progress bars
@@ -73,7 +75,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
     if (verbose)
     {
-      print("Processing chunk %d/%d: %s\n", i+1, n, chunk.name.c_str());
+      print("Processing chunk %d/%d: %s\n", i+1, n, chunk.name.c_str()); // # nocov
     }
 
     if (!pipeline.set_chunk(chunk))

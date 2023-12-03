@@ -10,17 +10,21 @@ LASRlasreader::LASRlasreader()
 
 LASRlasreader::~LASRlasreader()
 {
+  // # nocov start
   if (lasreader)
   {
     lasreader->close();
     delete lasreader;
     lasreader = nullptr;
+    warning("internal error: lasreader was supposed to be nullptr in ~LASRlasreader. Please report");
   }
 
   if (lasreadopener)
   {
     delete lasreadopener;
+    warning("internal error: lasreadopener was supposed to be nullptr in ~LASRlasreader. Please report");
   }
+  // # nocov end
 
   lasheader = nullptr;
 }
@@ -29,13 +33,15 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
 {
   if (lasreadopener)
   {
-    delete lasreadopener;
-    lasreadopener = nullptr;
+    delete lasreadopener; // # nocov
+    lasreadopener = nullptr; // # nocov
+    warning("internal error: lasreadopener was supposed to be nullptr. Please report"); // # nocov
   }
   if (lasreader)
   {
-    delete lasreader;
-    lasreader = nullptr;
+    delete lasreader; // # nocov
+    lasreader = nullptr; // # nocov
+    warning("internal error: lasreader was supposed to be nullptr. Please report"); // # nocov
   }
 
   const char* tmp = filter.c_str();
@@ -62,8 +68,8 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
   lasreader = lasreadopener->open();
   if (!lasreader)
   {
-    last_error = "LASlib internal error. Cannot open LASreader.";
-    return false;
+    last_error = "LASlib internal error. Cannot open LASreader."; // # nocov
+    return false; // # nocov
   }
 
   if (chunk.buffer == 0)

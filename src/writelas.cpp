@@ -15,10 +15,12 @@ LASRlaswriter::~LASRlaswriter()
 {
   if (laswriter)
   {
+    // # no cov start
     warning("internal error: please report, a LASwriter is still opened when destructing LASRlaswriter. The LAS or LAZ file written may be corrupted\n");
     laswriter->close();
     delete laswriter;
     laswriter = nullptr;
+    // # no cov end
   }
 }
 
@@ -54,8 +56,8 @@ bool LASRlaswriter::process(LASpoint*& p)
 
     if (!laswriter)
     {
-      last_error = "LASlib internal error. Cannot open LASwriter.";
-      return false;
+      last_error = "LASlib internal error. Cannot open LASwriter."; // # no cov
+      return false; // # no cov
     }
 
     written.push_back(ofile);
@@ -97,12 +99,6 @@ bool LASRlaswriter::process(LAS*& las)
 void LASRlaswriter::set_header(LASheader*& header)
 {
   lasheader = header;
-}
-
-bool LASRlaswriter::is_mergable() const
-{
-  size_t pos = template_filename.find('*');
-  return(pos == std::string::npos);
 }
 
 void LASRlaswriter::clear(bool last)

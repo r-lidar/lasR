@@ -26,8 +26,8 @@ bool LASRlocalmaximum::process(LAS*& las)
 {
   if (!las)
   {
-    last_error = "Uninitialized pointer to LAS object";
-    return false;
+    last_error = "Uninitialized pointer to LAS object"; // # nocov
+    return false; // # nocov
   }
 
   LAStransform* lastransform = nullptr;
@@ -121,10 +121,12 @@ bool LASRlocalmaximum::process(LAS*& las)
 
   if (verbose)
   {
+    // # nocov start
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     float second = (float)duration.count()/1000.0f;
     print("  Local Maximum Filter took %.2f sec.\n", second);
+    // # nocov en
   }
 
   return true;

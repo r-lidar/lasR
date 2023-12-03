@@ -43,8 +43,8 @@ float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr
   maxi=snlin-1;
 
   if ((image = (float *)malloc((long int)sncol*(long int)snlin*sizeof(float))) == NULL) {
-    eprint("Insufficient memory to hold the output image.\n");
-    return NULL;
+    eprint("Insufficient memory to hold the output image.\n"); // # no cov
+    return NULL;  // # no cov
   }
 
   for(n=0;n<snlin*sncol;n++) {
@@ -56,8 +56,8 @@ float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr
   fe = prepare_filter_elements(lap_size);
 
   if (fe == NULL) {
-    free(image);
-    return NULL;
+    free(image);  // # no cov
+    return NULL;  // # no cov
   }
 
   hole_map2 = find_holes(lap_size, snlin, sncol, mini, maxi, minj, maxj, thr_cav, thr_spk, dil_radius, fe, image);
@@ -65,8 +65,8 @@ float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr
   free(fe);
 
   if (hole_map2 == NULL) {
-    free(image);
-    return NULL;
+    free(image);  // # no cov
+    return NULL; // # no cov
   }
 
   gi = interpolate(snlin, sncol, mini, maxi, minj, maxj, image, hole_map2);
@@ -74,8 +74,8 @@ float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr
   free(image);
 
   if (gi == NULL) {
-    free(hole_map2);
-    return NULL;
+    free(hole_map2);  // # no cov
+    return NULL; // # no cov
   }
 
   out_scene = median_filter(med_size, snlin, sncol, mini, maxi, minj, maxj, gi, hole_map2);
@@ -85,7 +85,7 @@ float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr
   free(gi);
 
   if (out_scene == NULL) {
-    return NULL;
+    return NULL;  // # no cov
   }
 
   //printf("  Filtering pass completed.\n");
@@ -105,8 +105,8 @@ float* prepare_filter_elements(int size) {
 
 
   if(!(fe=(float *)malloc(size*size*sizeof(float)))) {
-    eprint("Out of memory.\n");
-    return NULL;
+    eprint("Out of memory.\n");  // # no cov
+    return NULL;  // # no cov
   }
 
   nb_fe = 0; /* Initialize number of filter elements */
@@ -149,21 +149,21 @@ unsigned char * find_holes(int size, int snlin, int sncol, int mini, int maxi, i
   float *hole_score;
 
   if ((hole_score = (float *)malloc((long int)snlin*(long int)sncol*(long int)4)) == NULL) {
-    eprint("Insufficient memory for the output hole score scene buffer.\n");
-    return NULL;
+    eprint("Insufficient memory for the output hole score scene buffer.\n");  // # no cov
+    return NULL;  // # no cov
   }
 
   if ((hole_map = (unsigned char *)malloc((long int)snlin*(long int)sncol)) == NULL) {
-    eprint("Insufficient memory for the output hole map scene buffer.\n");
-    free(hole_score);
+    eprint("Insufficient memory for the output hole map scene buffer.\n");  // # no cov
+    free(hole_score);  // # no cov
     return NULL;
   }
 
   if ((hole_map2 = (unsigned char *)malloc((long int)snlin*(long int)sncol)) == NULL) {
-    eprint("Insufficient memory for the output hole map scene buffer.\n");
-    free(hole_score);
-    free(hole_map);
-    return NULL;
+    eprint("Insufficient memory for the output hole map scene buffer.\n");  // # no cov
+    free(hole_score);  // # no cov
+    free(hole_map);  // # no cov
+    return NULL; // # no cov
   }
 
   // Initialize rasters.
@@ -208,10 +208,10 @@ unsigned char * find_holes(int size, int snlin, int sncol, int mini, int maxi, i
 
   /* Create dilation operator buffer */
   if ((dil_buf = (unsigned char *)malloc(dil_buf_size)) == NULL) {
-    eprint("Insufficient memory for the output hole map scene buffer.\n");
-    free(hole_score);
-    free(hole_map);
-    return NULL;
+    eprint("Insufficient memory for the output hole map scene buffer.\n");  // # no cov
+    free(hole_score);  // # no cov
+    free(hole_map);  // # no cov
+    return NULL; // # no cov
   }
 
   /* Initialize buffer */
@@ -257,8 +257,8 @@ float * interpolate(int snlin, int sncol, int mini, int maxi, int minj, int maxj
   float left_avg,right_avg,up_avg,down_avg,n_avg;
 
   if ((gi = (float *)malloc((long int)snlin*(long int)sncol*(long int)4)) == NULL) {
-    eprint("Insufficient memory for the output lidar scene buffer.\n");
-    return NULL;
+    eprint("Insufficient memory for the output lidar scene buffer.\n");  // # no cov
+    return NULL;  // # no cov
   }
 
   for(n=0;n<snlin*sncol;n++) {
@@ -458,8 +458,8 @@ float * median_filter(int msize, int snlin, int sncol, int mini, int maxi, int m
 
   if ((out_scene = (float *)malloc((long int)snlin*(long int)sncol*(long int)4)) == NULL)
   {
-    eprint("Insufficient memory for the output lidar scene buffer.\n");
-    return NULL;
+    eprint("Insufficient memory for the output lidar scene buffer.\n");  // # no cov
+    return NULL;  // # no cov
   }
 
   for(n=0;n<snlin*sncol;n++) {
@@ -471,9 +471,9 @@ float * median_filter(int msize, int snlin, int sncol, int mini, int maxi, int m
 
   if(!(mfe=(float *)malloc(msize*msize*sizeof(float))))
   {
-    eprint("Out of memory.\n");
-    free(out_scene);
-    return NULL;
+    eprint("Out of memory.\n");  // # no cov
+    free(out_scene);  // # no cov
+    return NULL; // # no cov
   }
 
   //print("  Median filtering.\n");

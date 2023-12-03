@@ -99,7 +99,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     {
       if (i != 0)
       {
-        error("The reader must alway be the first stage of the pipeline.");
+        last_error = "The reader must alway be the first stage of the pipeline.";
         return false;
       }
 
@@ -157,7 +157,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     {
       if (i != 0)
       {
-        error("The reader must alway be the first stage of the pipeline.");
+        last_error = "The reader must alway be the first stage of the pipeline.";
         return false;
       }
 
@@ -223,7 +223,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       {
         std::string uid = get_element_as_string(stage, "connect");
         auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
-        if (it == pipeline.end()) { error("Cannot find stage with this uid"); return false; }
+        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
         LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
         if (p)
@@ -233,7 +233,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         }
         else
         {
-          error("Incompatible stage combination for rasterize");
+          last_error = "Incompatible stage combination for rasterize";
           return false;
         }
       }
@@ -277,7 +277,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       std::string op = get_element_as_string(stage, "operator");
       std::string attr = get_element_as_string(stage, "store_in_attribute");
       auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
-      if (it == pipeline.end()) { error("Cannot find stage with this uid"); return false; }
+      if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
       LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
       if (p)
@@ -287,7 +287,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       }
       else
       {
-        error("Incompatible stage combination for 'rasterize'");
+        last_error = "Incompatible stage combination for 'rasterize'";
         return false;
       }
     }
@@ -301,7 +301,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       int dil_radius = get_element_as_int(stage, "dil_radius");
 
       auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
-      if (it == pipeline.end()) { error("Cannot find stage with this uid"); return false; }
+      if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
       LASRrasterize * p = dynamic_cast<LASRrasterize*>(it->get());
       if (p)
@@ -311,7 +311,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       }
       else
       {
-        error("Incompatible stage combination for 'rasterize'");
+        last_error = "Incompatible stage combination for 'rasterize'";
         return false;
       }
     }
@@ -337,9 +337,9 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       std::string uid1 = get_element_as_string(stage, "connect1");
       std::string uid2 = get_element_as_string(stage, "connect2");
       auto it1 = std::find_if(pipeline.begin(), pipeline.end(), [&uid1](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid1; });
-      if (it1 == pipeline.end()) { error("Cannot find stage with this uid");  return false; }
+      if (it1 == pipeline.end()) { last_error = "Cannot find stage with this uid";  return false; }
       auto it2 = std::find_if(pipeline.begin(), pipeline.end(), [&uid2](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid2; });
-      if (it2 == pipeline.end()) { error("Cannot find stage with this uid");  return false; }
+      if (it2 == pipeline.end()) { last_error = "Cannot find stage with this uid";  return false; }
 
       LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(it1->get());
       LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(it2->get());
@@ -350,7 +350,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       }
       else
       {
-        error("Incompatible stage combination for 'region_growing'");
+        last_error = "Incompatible stage combination for 'region_growing'";
         return false;
       }
     }
@@ -361,11 +361,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       {
         std::string uid = get_element_as_string(stage, "connect");
         auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
-        if (it == pipeline.end()) { error("Cannot find stage with this uid"); return false; }
+        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
         p = dynamic_cast<LASRtriangulate*>(it->get());
         if (p == nullptr)
         {
-          error("Incompatible stage combination for 'boundaries'");
+          last_error = "Incompatible stage combination for 'boundaries'";
           return false;
         }
       }
@@ -418,7 +418,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     #endif
     else
     {
-      error("Unsupported stage '%s'", name.c_str()); // # nocov
+      last_error = "Unsupported stage: " + std::string(name.c_str()); // # nocov
       return false; // # nocov
     }
 
