@@ -1,3 +1,6 @@
+#ifndef RCOMPATIBLE_H
+#define RCOMPATIBLE_H
+
 #ifdef USING_R
 #define R_NO_REMAP 1
 #include <R_ext/Print.h>
@@ -12,4 +15,6 @@
 #define eprint(fmt, ...) fprintf(stderr, "ERROR: " fmt "\n", ##__VA_ARGS__)
 #define error(fmt, ...) fprintf(stderr, "ERROR: " fmt "\n", ##__VA_ARGS__)
 #define warning(fmt, ...) fprintf(stderr, "WARNING: " fmt "\n", ##__VA_ARGS__)
+#endif
+
 #endif
