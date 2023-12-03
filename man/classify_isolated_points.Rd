@@ -4,7 +4,7 @@
 \alias{classify_isolated_points}
 \title{Classify isolated points}
 \usage{
-classify_isolated_points(res = 5, n = 6, class = 18L)
+classify_isolated_points(res = 5, n = 6L, class = 18L)
 }
 \arguments{
 \item{res}{numeric. Resolution of the voxels.}
