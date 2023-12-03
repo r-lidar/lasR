@@ -203,7 +203,7 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 #' @param class integer. The class to assign to the points that match the condition.
 #'
 #' @export
-classify_isolated_points = function(res = 5, n = 6, class = 18L)
+classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 {
   ans <- list(algoname = "classify_isolated_points", res = res, n = n, class = class)
   set_lasr_class(ans)

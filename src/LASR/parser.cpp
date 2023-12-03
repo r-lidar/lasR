@@ -376,7 +376,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     else if (name == "classify_isolated_points")
     {
       double res = get_element_as_double(stage, "res");
-      int n = get_element_as_int(stage, "filter");
+      int n = get_element_as_int(stage, "n");
       int classification = get_element_as_int(stage, "class");
       auto v = std::make_shared<LASRnoiseivf>(xmin, ymin, xmax, ymax, res, n, classification);
       pipeline.push_back(v);
