@@ -126,7 +126,7 @@ bool LASRlocalmaximum::process(LAS*& las)
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     float second = (float)duration.count()/1000.0f;
     print("  Local Maximum Filter took %.2f sec.\n", second);
-    // # nocov en
+    // # nocov end
   }
 
   return true;
