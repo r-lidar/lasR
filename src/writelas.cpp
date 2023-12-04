@@ -9,6 +9,7 @@ LASRlaswriter::LASRlaswriter(double xmin, double ymin, double xmax, double ymax,
   this->keep_buffer = keep_buffer;
   laswriter = nullptr;
   lasheader = nullptr;
+  merged = false;
 }
 
 LASRlaswriter::~LASRlaswriter()

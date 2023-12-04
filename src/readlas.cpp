@@ -29,23 +29,24 @@ LASRlasreader::~LASRlasreader()
 
 bool LASRlasreader::set_chunk(const Chunk& chunk)
 {
-  if (lasreadopener)
-  {
-    delete lasreadopener; // # nocov
-    lasreadopener = nullptr; // # nocov
-    warning("internal error: lasreadopener was supposed to be nullptr. Please report"); // # nocov
-  }
   if (lasreader)
   {
-    delete lasreader; // # nocov
-    lasreader = nullptr; // # nocov
-    warning("internal error: lasreader was supposed to be nullptr. Please report"); // # nocov
+    lasreader->close();
+    delete lasreader;
+    lasreader = nullptr;
+    lasheader = nullptr;
+  }
+  if (lasreadopener)
+  {
+    delete lasreadopener;
+    lasreadopener = nullptr;
   }
 
   const char* tmp = filter.c_str();
   int n = strlen(tmp)+1;
   char* filtercpy = (char*)malloc(n); memcpy(filtercpy, tmp, n);
 
+  // The openner must survive to the reader otherwise there are some pointer invalidation.
   lasreadopener = new LASreadOpener;
   lasreadopener->add_file_name(chunk.main_file.c_str());
   lasreadopener->set_merged(true);
@@ -120,10 +121,13 @@ bool LASRlasreader::process(LAS*& las)
 
 void LASRlasreader::clear(bool last)
 {
-  lasreader->close();
+  // It is not possible to delete the reader and header here because the header
+  // might be used later in the pipeline, typically by write_las. Instead set_chunk
+  // handle the memory and the destructor terminate to free memory on last chunk.
+  /*lasreader->close();
   delete lasreader;
   delete lasreadopener;
   lasreadopener = nullptr;
   lasreader = nullptr;
-  lasheader = nullptr;
+  lasheader = nullptr;*/
 }
