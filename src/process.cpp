@@ -21,7 +21,6 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     SEXP default_return = R_NilValue;
 
     #ifdef USING_R
-    // convert R object
     int ncpu = Rf_asInteger(sexpncpu);
     bool progrss = Rf_asLogical(sexpprogrss);
     bool verbose = Rf_asLogical(sexpverbose);

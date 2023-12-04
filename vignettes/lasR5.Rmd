@@ -197,7 +197,7 @@ decimate_with_pixel = function(f, res = 2, ofiles = paste0(tempdir(), "/*_decima
 
 ## filter
 
-`lasR` does not parse R expression such as `ReturnNumber != x` thus on must use `LASlib` filters. Each stage of the pipeline has it own filter. See `?lasR::filters`.
+`lasR` does not parse R expression such as `ReturnNumber != x` thus one must use `LASlib` filters. Each stage of the pipeline has it own filter. See `?lasR::filters`.
 
 ## filter_duplicates
 
@@ -209,7 +209,7 @@ read = reader(f, filter = drop_duplicates())
 
 ## las_check
 
-There is currently not implementation but this will be added later
+There is currently no implementation but this will be added later
 
 ## locate_trees
 
