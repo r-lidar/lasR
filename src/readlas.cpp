@@ -10,19 +10,21 @@ LASRlasreader::LASRlasreader()
 
 LASRlasreader::~LASRlasreader()
 {
-  // This happens when an error occurs in the pipeline otherwise
-  // the reader and opener are close in clear()
+  // # nocov start
   if (lasreader)
   {
     lasreader->close();
     delete lasreader;
     lasreader = nullptr;
+    warning("internal error: lasreader was supposed to be nullptr in ~LASRlasreader. Please report");
   }
 
   if (lasreadopener)
   {
     delete lasreadopener;
+    warning("internal error: lasreadopener was supposed to be nullptr in ~LASRlasreader. Please report");
   }
+  // # nocov end
 
   lasheader = nullptr;
 }
