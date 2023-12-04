@@ -14,51 +14,102 @@ SEXP get_element(SEXP list, const char *str)
   SEXP elmt = R_NilValue;
   SEXP names = Rf_getAttrib(list, R_NamesSymbol);
   for (int i = 0 ; i < Rf_length(list) ; i++) { if(strcmp(CHAR(STRING_ELT(names, i)), str) == 0)  { elmt = VECTOR_ELT(list, i); break; }}
-  if (Rf_isNull(elmt)) error("element '%s' not found", str);
+  if (Rf_isNull(elmt)) throw std::string("element '") + str +  "' not found"; // # nocov
   return elmt;
 }
 
 bool get_element_as_bool(SEXP list, const char *str)
 {
-  return LOGICAL(get_element(list, str))[0] != 0;
+  SEXP elem = get_element(list, str);
+  switch (TYPEOF(elem))
+  {
+    case LGLSXP: return LOGICAL(elem)[0] != 0; break;
+    case REALSXP: return REAL(elem)[0] != 0; break;
+    case INTSXP: return INTEGER(elem)[0] != 0; break;
+    default: throw std::string(str) + " must be a bool or something interpretable as a logical value"; break; // # nocov
+  }
 }
 
 int get_element_as_int(SEXP list, const char *str)
 {
-  return INTEGER(get_element(list, str))[0];
+  SEXP elem = get_element(list, str);
+  switch (TYPEOF(elem))
+  {
+  case LGLSXP: return (int)LOGICAL(elem)[0]; break;
+  case REALSXP: return (int)REAL(elem)[0]; break;
+  case INTSXP: return INTEGER(elem)[0]; break;
+  default: throw std::string(str) + " must be an integer or something interpretable as an integer value"; break; // # nocov
+  }
 }
 
 double get_element_as_double(SEXP list, const char *str)
 {
-  return REAL(get_element(list, str))[0];
+  SEXP elem = get_element(list, str);
+  switch (TYPEOF(elem))
+  {
+  case LGLSXP: return (double)LOGICAL(elem)[0]; break;
+  case REALSXP: return REAL(elem)[0]; break;
+  case INTSXP: return (double)INTEGER(elem)[0]; break;
+  default: throw std::string(str) + " must be a numeric or something interpretable as a numeric value"; break; // # nocov
+  }
 }
 
 std::string get_element_as_string(SEXP list, const char *str)
 {
-  return std::string(CHAR(STRING_ELT(get_element(list, str), 0)));
+  SEXP elem = get_element(list, str);
+  switch (TYPEOF(elem))
+  {
+  case STRSXP: return std::string(CHAR(STRING_ELT(get_element(list, str), 0))); break;
+  default: throw std::string(str) + " must be a string"; // # nocov
+  }
 }
 
 std::vector<int> get_element_as_vint(SEXP list, const char *str)
 {
-  SEXP res = get_element(list, str);
-  std::vector<int> ans(Rf_length(res));
-  for (int i = 0 ; i < Rf_length(res) ; ++i) ans[i] = INTEGER(res)[i];
+  SEXP elem = get_element(list, str);
+  int n = Rf_length(elem);
+  std::vector<int> ans(n);
+
+  switch (TYPEOF(elem))
+  {
+  case LGLSXP: for (int i=0;i<n;++i) ans[i] = (int)LOGICAL(elem)[i]; break;
+  case REALSXP: for (int i=0;i<n;++i) ans[i] = (int)REAL(elem)[i]; break;
+  case INTSXP: for (int i=0;i<n;++i) ans[i] = INTEGER(elem)[i]; break;
+  default: throw std::string(str) + " must be interger or something interpretable as a integer values"; break; // # nocov
+  }
+
   return ans;
 }
 
 std::vector<double> get_element_as_vdouble(SEXP list, const char *str)
 {
-  SEXP res = get_element(list, str);
-  std::vector<double> ans(Rf_length(res));
-  for (int i = 0 ; i < Rf_length(res) ; ++i) ans[i] = REAL(res)[i];
+  SEXP elem = get_element(list, str);
+  int n = Rf_length(elem);
+  std::vector<double> ans(n);
+
+  switch (TYPEOF(elem))
+  {
+  case LGLSXP: for (int i=0;i<n;++i) ans[i] = (double)LOGICAL(elem)[i]; break;
+  case REALSXP: for (int i=0;i<n;++i) ans[i] = REAL(elem)[i]; break;
+  case INTSXP: for (int i=0;i<n;++i) ans[i] = (double)INTEGER(elem)[i]; break;
+  default: throw std::string(str) + " must be a numeric or something interpretable as a numeric value"; break; // # nocov
+  }
+
   return ans;
 }
 
 std::vector<std::string> get_element_as_vstring(SEXP list, const char *str)
 {
-  SEXP res = get_element(list, str);
-  std::vector<std::string> ans(Rf_length(res));
-  for (int i = 0 ; i < Rf_length(res) ; ++i) ans[i] = CHAR(STRING_ELT(res, i));
+  SEXP elem = get_element(list, str);
+  int n = Rf_length(elem);
+  std::vector<std::string> ans(n);
+
+  switch (TYPEOF(elem))
+  {
+  case STRSXP: for (int i=0;i<n;++i) ans[i] = CHAR(STRING_ELT(elem, i)); break;
+  default: throw std::string(str) + " must be a character vector"; break; // # nocov
+  }
+
   return ans;
 }
 
