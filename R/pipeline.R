@@ -95,6 +95,8 @@ print.LASRpipeline = function(x, ...)
 
 get_pipeline_info = function(pipeline)
 {
-  .Call(`C_get_pipeline_info`, pipeline)
+  ans = .Call(`C_get_pipeline_info`, pipeline)
+  if (inherits(ans, "error")) { stop(ans) }
+  return(ans)
 }
 

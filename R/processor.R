@@ -29,6 +29,12 @@ processor = function(pipeline, ncores = 1L, progress = FALSE, ...)
   noread <- if (is.null(dots$noread)) FALSE else TRUE
 
   ans <- .Call(`C_process`, pipeline, progress, ncores, verbose)
+
+  if (inherits(ans, "error"))
+  {
+    stop(ans)
+  }
+
   if (!noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)
 

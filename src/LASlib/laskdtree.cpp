@@ -359,4 +359,5 @@ LASkdtreeRectangles::~LASkdtreeRectangles()
 {
   if (rectangle_list) delete rectangle_list;
   if (root) delete root;
+  if (overlap_set) delete overlap_set;
 }

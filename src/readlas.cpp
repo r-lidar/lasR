@@ -10,21 +10,19 @@ LASRlasreader::LASRlasreader()
 
 LASRlasreader::~LASRlasreader()
 {
-  // # nocov start
+  // This happens when an error occurs in the pipeline otherwise
+  // the reader and opener are close in clear()
   if (lasreader)
   {
     lasreader->close();
     delete lasreader;
     lasreader = nullptr;
-    warning("internal error: lasreader was supposed to be nullptr in ~LASRlasreader. Please report");
   }
 
   if (lasreadopener)
   {
     delete lasreadopener;
-    warning("internal error: lasreadopener was supposed to be nullptr in ~LASRlasreader. Please report");
   }
-  // # nocov end
 
   lasheader = nullptr;
 }
@@ -55,6 +53,8 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
   lasreadopener->set_buffer_size(chunk.buffer);
   lasreadopener->set_populate_header(true);
   lasreadopener->parse_str(filtercpy);
+
+  free(filtercpy);
 
   if (chunk.shape == ShapeType::RECTANGLE)
     lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
