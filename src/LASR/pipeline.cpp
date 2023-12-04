@@ -38,6 +38,7 @@ bool Pipeline::run()
   if (header->number_of_point_records == 0)
   {
     warning("This chunk has 0 points. Skipping");
+    clean();
     return true;
   }
 
@@ -161,7 +162,7 @@ bool Pipeline::process(LASpoint*& point)
 
       if (!success)
       {
-        last_error = "in " + stage->get_name() + " while processing the point cloud: " + stage->get_last_error();
+        last_error = "in " + stage->get_name() + " while processing a point: " + stage->get_last_error();
         return false;
       }
 
@@ -188,7 +189,7 @@ bool Pipeline::process(LAS*& las)
     bool success = stage->process(las);
     if (!success)
     {
-      error("in '%s' while processing the point cloud: %s\n", stage->get_name().c_str(), stage->get_last_error().c_str());
+      last_error = "in " + stage->get_name() + " while processing the point cloud: " + stage->get_last_error();
       return false;
     }
   }
@@ -284,7 +285,6 @@ SEXP Pipeline::to_R()
 void Pipeline::clean()
 {
   delete las;
-  catalog = nullptr;
   header = nullptr;
   point = nullptr;
   las = nullptr;

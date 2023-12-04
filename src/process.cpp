@@ -25,17 +25,19 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
   bool verbose = Rf_asLogical(sexpverbose);
   #endif
 
-  Pipeline pipeline;
-  pipeline.set_verbose(verbose);
-  pipeline.set_ncpu(ncpu);
+  Pipeline* pipeline = new Pipeline;
+  pipeline->set_verbose(verbose);
+  pipeline->set_ncpu(ncpu);
 
-  if (!pipeline.parse(sexppipeline))
+  if (!pipeline->parse(sexppipeline))
   {
-    error("%s", pipeline.get_last_error().c_str());
+    std::string err = pipeline->get_last_error();
+    delete pipeline;
+    failure("%s", err.c_str());
     return default_return;
   }
 
-  LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
+  LAScatalog* lascatalog = pipeline->get_catalog(); // the pipeline owns the catalog
   lascatalog->check_spatial_index();  // prints a warning if no spatial index
   lascatalog->set_chunk_size(0);
 
@@ -45,22 +47,22 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
   {
     // # nocov start
     print("File processing options:\n");
-    print(" Read points: %s\n", pipeline.need_points() ? "true" : "false");
-    print(" Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
-    print(" Buffer: %.1lf\n", pipeline.need_buffer());
+    print(" Read points: %s\n", pipeline->need_points() ? "true" : "false");
+    print(" Streamable: %s\n", pipeline->is_streamable() ? "true" : "false");
+    print(" Buffer: %.1lf\n", pipeline->need_buffer());
     print(" Chunks: %d\n", n);
     print("\n");
     // # nocov end
   }
 
   // Initialize progress bars
-  Progress progress;
-  progress.set_prefix("Overall");
-  progress.set_total(n);
-  progress.set_display(progrss);
-  progress.create_subprocess();
+  Progress* progress = new Progress;
+  progress->set_prefix("Overall");
+  progress->set_total(n);
+  progress->set_display(progrss);
+  progress->create_subprocess();
 
-  pipeline.set_progress(&progress);
+  pipeline->set_progress(progress);
 
   for (int i = 0 ; i < n ; ++i)
   {
@@ -69,7 +71,10 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     Chunk chunk;
     if (!lascatalog->get_chunk(i, chunk))
     {
-      error("%s", lascatalog->last_error.c_str());
+      std::string err = lascatalog->last_error.c_str();
+      delete pipeline;
+      delete progress;
+      failure("%s", err.c_str());
       return default_return;
     }
 
@@ -78,29 +83,39 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       print("Processing chunk %d/%d: %s\n", i+1, n, chunk.name.c_str()); // # nocov
     }
 
-    if (!pipeline.set_chunk(chunk))
+    if (!pipeline->set_chunk(chunk))
     {
-      error("%s", pipeline.get_last_error().c_str());
+      std::string err = pipeline->get_last_error();
+      delete pipeline;
+      delete progress;
+      failure("%s", err.c_str());
       return default_return;
     }
 
-    if (!pipeline.run())
+    if (!pipeline->run())
     {
-      error("%s", pipeline.get_last_error().c_str());
+      std::string err = pipeline->get_last_error();
+      delete pipeline;
+      delete progress;
+      failure("%s", err.c_str());
       return default_return;
     }
 
-    pipeline.clear(last_chunk);
+    pipeline->clear(last_chunk);
 
     // Progress bar
-    progress.update(i, true);
-    progress.show();
+    progress->update(i, true);
+    progress->show();
   }
 
-  progress.done(true);
+  progress->done(true);
+  delete progress;
+
+  SEXP ans = pipeline->to_R();
+  delete pipeline;
 
   #ifdef USING_R
-  return pipeline.to_R();
+  return ans;
   #else
   return default_return;
   #endif
@@ -109,15 +124,19 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 #ifdef USING_R
 SEXP get_pipeline_info(SEXP sexppipeline)
 {
-  Pipeline pipeline;
-  if (!pipeline.parse(sexppipeline, false))
+  Pipeline* pipeline = new Pipeline;
+  if (!pipeline->parse(sexppipeline, false))
   {
-    error("%s", pipeline.get_last_error().c_str());
+    std::string err = pipeline->get_last_error();
+    delete pipeline;
+    failure("%s", err.c_str());
     return R_NilValue;
   }
-  bool is_streamable = pipeline.is_streamable();
-  bool read_points = pipeline.need_points();
-  double buffer = pipeline.need_buffer();
+  bool is_streamable = pipeline->is_streamable();
+  bool read_points = pipeline->need_points();
+  double buffer = pipeline->need_buffer();
+
+  delete pipeline;
 
   SEXP ans =  PROTECT(allocVector(VECSXP, 3));
   SET_VECTOR_ELT(ans, 0, ScalarLogical(is_streamable));
