@@ -378,11 +378,6 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
 #'
 #' @param x The path of the files to use. The path of the folder in which the files are stored. A `data.frame`.
 #' Supports also `LAScatalog` and `LAS` objects from `lidR`.
-#' @param files character. The path of the files to use. The path of the folder in which the files are stored.
-#' Supports a `LAScatalog` from `lidR`.
-#' @param dataframe A `data.frame` with columns named conforming `lasR` or `lidR` naming conventions so
-#' internally it can recognized  e.g. which column is the classification (`Class` will not
-#' be recognized it must be called `Classification`). It can also be a `LAS` object from `lidR`.
 #' @template param-filter
 #' @param buffer numeric. Each file is read with a buffer. The default is 0, which does not mean that
 #' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
@@ -404,41 +399,38 @@ reader = function(x, filter = "", buffer = 0, ...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
 
-  if (methods::is(x, "LAScatalog") | is.character(x))
-  {
-    if (circle)
-    {
-      return(reader_files_circles(x, p$xc, p$yc, p$r, filter, buffer))
-    }
+  if (circle) return(reader_circles(x, p$xc, p$yc, p$r, filter, buffer))
+  if (rectangle) return(reader_rectangles(x, p$xmin, p$ymin, p$xmax, p$ymax, filter, buffer))
+  return(reader_coverage(x, filter, buffer))
+}
 
-    if (rectangle)
-    {
-      return(reader_files_rectangles(x, p$xmin, p$ymin, p$xmax, p$ymax, filter, buffer))
-    }
-
-    return(reader_files_coverage(x, filter, buffer))
-  }
-
-  if (methods::is(x, "LAS") | is.data.frame(x))
-  {
-    if (circle)
-    {
-      return(reader_dataframe_circles(x, p$xc, p$yc, p$r, filter, buffer))
-    }
-
-    if (rectangle)
-    {
-      return(reader_dataframe_rectangles(x, p$xmin, p$ymin, p$xmax, p$ymax,  filter, buffer))
-    }
-
-    return(reader_dataframe_coverage(x, filter, buffer))
-  }
-
+#' @export
+#' @rdname reader
+reader_coverage = function(x, filter = "", buffer = 0)
+{
+  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_coverage(x, filter, buffer))
+  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_coverage(x, filter, buffer))
   stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.")
 }
 
 #' @export
 #' @rdname reader
+reader_circles = function(x, xc, yc, r, filter = "", buffer = 0)
+{
+  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_circles(x, xc, yc, r, filter, buffer))
+  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_circles(x, xc, yc, r, filter, buffer))
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.")
+}
+
+#' @export
+#' @rdname reader
+reader_rectangles = function(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
+{
+  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer))
+  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer))
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.")
+}
+
 reader_files_coverage = function(files, filter = "", buffer = 0)
 {
   if (methods::is(files, "LAScatalog"))
@@ -477,8 +469,6 @@ reader_files_coverage = function(files, filter = "", buffer = 0)
   set_lasr_class(ans)
 }
 
-#' @export
-#' @rdname reader
 reader_files_circles = function(files, xc, yc, r, filter = "", buffer = 0)
 {
   stopifnot(length(xc) == length(yc))
@@ -492,8 +482,6 @@ reader_files_circles = function(files, xc, yc, r, filter = "", buffer = 0)
   ans
 }
 
-#' @export
-#' @rdname reader
 reader_files_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
 {
   stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
@@ -506,8 +494,6 @@ reader_files_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", b
   ans
 }
 
-#' @export
-#' @rdname reader
 reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0)
 {
   accuracy = c(0,0,0)
@@ -522,8 +508,6 @@ reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0)
   set_lasr_class(ans)
 }
 
-#' @export
-#' @rdname reader
 reader_dataframe_circles = function(dataframe, xc, yc, r, filter = "", buffer = 0)
 {
   stopifnot(length(xc) == length(yc))
@@ -537,8 +521,6 @@ reader_dataframe_circles = function(dataframe, xc, yc, r, filter = "", buffer = 
   ans
 }
 
-#' @export
-#' @rdname reader
 reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
 {
   stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))

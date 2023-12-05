@@ -2,35 +2,18 @@
 % Please edit documentation in R/stages.R
 \name{reader}
 \alias{reader}
-\alias{reader_files_coverage}
-\alias{reader_files_circles}
-\alias{reader_files_rectangles}
-\alias{reader_dataframe_coverage}
-\alias{reader_dataframe_circles}
-\alias{reader_dataframe_rectangles}
+\alias{reader_coverage}
+\alias{reader_circles}
+\alias{reader_rectangles}
 \title{Initialize the pipeline}
 \usage{
 reader(x, filter = "", buffer = 0, ...)
 
-reader_files_coverage(files, filter = "", buffer = 0)
+reader_coverage(x, filter = "", buffer = 0)
 
-reader_files_circles(files, xc, yc, r, filter = "", buffer = 0)
+reader_circles(x, xc, yc, r, filter = "", buffer = 0)
 
-reader_files_rectangles(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
-
-reader_dataframe_coverage(dataframe, filter = "", buffer = 0)
-
-reader_dataframe_circles(dataframe, xc, yc, r, filter = "", buffer = 0)
-
-reader_dataframe_rectangles(
-  dataframe,
-  xmin,
-  ymin,
-  xmax,
-  ymax,
-  filter = "",
-  buffer = 0
-)
+reader_rectangles(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
 }
 \arguments{
 \item{x}{The path of the files to use. The path of the folder in which the files are stored. A \code{data.frame}.
@@ -48,16 +31,9 @@ pick the greatest value between the internal suggestion and this provided value.
 
 \item{...}{passed to other readers}
 
-\item{files}{character. The path of the files to use. The path of the folder in which the files are stored.
-Supports a \code{LAScatalog} from \code{lidR}.}
-
 \item{xc, yc, r}{numeric. Circle centres and radius or radii.}
 
 \item{xmin, ymin, xmax, ymax}{numeric. Coordinates of the rectangles}
-
-\item{dataframe}{A \code{data.frame} with columns named conforming \code{lasR} or \code{lidR} naming conventions so
-internally it can recognized  e.g. which column is the classification (\code{Class} will not
-be recognized it must be called \code{Classification}). It can also be a \code{LAS} object from \code{lidR}.}
 }
 \description{
 This is the first stage that must be called in each pipeline. It specifies which files must be read.
