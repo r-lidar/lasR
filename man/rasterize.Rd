@@ -16,7 +16,7 @@ rasterize(
 
 \item{operators}{Can be a character vector. "min", "max" and "count" are accepted. Can also
 rasterize a triangulation if the input is a LASRalgorithm for triangulation (see examples).
-Can also be a user-defined expression (see example).}
+Can also be a user-defined expression (see example and details).}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running `print_filters()`.
@@ -31,6 +31,19 @@ hold the results in memory. This is useful for algorithm that are only intermedi
 \description{
 Rasterize a point cloud using different approaches. This algorithm does not modify the point cloud.
 It produces a derived product in raster format.
+}
+\details{
+If \code{operators} is a user-defined expression, the function must return either a vector of numbers
+or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
+These are valid operators:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{f = function(x) \{ return(mean(x)) \}
+g = function(x,y) \{ return(c(avg = mean(x), med = median(y))) \}
+h = function(x) \{ return(list(a = mean(x), b = median(x))) \}
+rasterize(10, f(Intensity))
+rasterize(10, g(Z, Intensity))
+rasterize(10, h(Z))
+}\if{html}{\out{</div>}}
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")

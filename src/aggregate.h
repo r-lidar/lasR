@@ -16,11 +16,14 @@ public:
   std::string get_name() const override { return "aggregate"; };
 
 private:
-  bool first;
+  // for consistency check
   int nmetrics;
+  int expected_type;
+
   SEXP call;
   SEXP env;
   Grouper grouper;
+
   enum attributes{X, Y, Z, I, T, RN, NOR, SDF, EoF, CLASS, SYNT, KEYP, WITH, OVER, UD, SA, PSID, R, G, B, NIR, CHAN};
 };
 

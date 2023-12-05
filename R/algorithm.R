@@ -338,10 +338,22 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' Rasterize a point cloud using different approaches. This algorithm does not modify the point cloud.
 #' It produces a derived product in raster format.
 #'
+#' If `operators` is a user-defined expression, the function must return either a vector of numbers
+#' or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
+#' These are valid operators:
+#' ```
+#' f = function(x) { return(mean(x)) }
+#' g = function(x,y) { return(c(avg = mean(x), med = median(y))) }
+#' h = function(x) { return(list(a = mean(x), b = median(x))) }
+#' rasterize(10, f(Intensity))
+#' rasterize(10, g(Z, Intensity))
+#' rasterize(10, h(Z))
+#' ````
+#'
 #' @param res numeric. The resolution of the raster.
 #' @param operators Can be a character vector. "min", "max" and "count" are accepted. Can also
 #' rasterize a triangulation if the input is a LASRalgorithm for triangulation (see examples).
-#' Can also be a user-defined expression (see example).
+#' Can also be a user-defined expression (see example and details).
 #' @template param-filter
 #' @template param-ofile
 #'
@@ -358,6 +370,7 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' ans[[2]]
 #' ans[[3]]
 #' @export
+#' @md
 rasterize = function(res, operators = "max", filter = "", ofile = tempfile(fileext = ".tif"))
 {
   class <- tryCatch({class(operators)}, error = function(x) return("call"))

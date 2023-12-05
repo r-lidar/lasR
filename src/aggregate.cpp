@@ -12,8 +12,8 @@ LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax,
   this->call = call;
   this->env = env;
 
-  first = true;
   nmetrics = 1;
+  expected_type = ANYSXP;
 
   raster = Raster(xmin, ymin, xmax, ymax, res);
 }
@@ -210,13 +210,20 @@ bool LASRaggregate::process(LAS*& las)
       break;
     }
 
+    if (TYPEOF(res) != REALSXP && TYPEOF(res) != INTSXP && TYPEOF(res) != VECSXP)
+    {
+      error = 1;
+      last_error = "user expression must return a vector of numbers or a list of atomic numbers";
+      break;
+    }
+
     // The output is a vector: check if it is atomic otherwise exit
-    if ((TYPEOF(res) == REALSXP || TYPEOF(res) == INTSXP) && Rf_length(res) > 1)
+    /*if ((TYPEOF(res) == REALSXP || TYPEOF(res) == INTSXP) && Rf_length(res) > 1)
     {
       error = 1;
       last_error = "user expression must return an atomic number or a list of atomic numbers";
       break;
-    }
+    }*/
 
     // The output is a list: check if each element is atomic otherwise exit
     if (TYPEOF(res) == VECSXP)
@@ -235,7 +242,7 @@ bool LASRaggregate::process(LAS*& las)
         if (Rf_length(v) > 1)
         {
           error = 1;
-          last_error = "user expression must return an atomic number or a list of atomic numbers";
+          last_error = "user expression must only return a vector of numbers or a list of atomic numbers";
           break;
         }
       }
@@ -244,42 +251,29 @@ bool LASRaggregate::process(LAS*& las)
     }
 
     // This is the first time we evaluate the user-expression: set-up objects to save the result
-    // record some properties of the result because next results must match the first one
-    if (first)
+    // and record some properties of the result because next results must match the first one
+    if (expected_type == ANYSXP)
     {
-      first = false;
+      expected_type = TYPEOF(res);
 
       // how many metrics are supposed to be returned
-      if (TYPEOF(res) == REALSXP || TYPEOF(res) == INTSXP)
-        nmetrics = 1;
-      else
-        nmetrics = Rf_length(res);
+      nmetrics = Rf_length(res);
+      if (nmetrics > 1) raster.set_nbands(nmetrics);
 
-      if (nmetrics > 1)
+      SEXP names = Rf_getAttrib(res, R_NamesSymbol);
+
+      if (names != R_NilValue)
       {
-        raster.set_nbands(nmetrics);
-      }
-
-      // maybe we must assign names to each layer
-      if (TYPEOF(res) == VECSXP)
-      {
-        SEXP names = Rf_getAttrib(res, R_NamesSymbol);
-
-        if (names != R_NilValue)
+        for (int i = 0 ; i < Rf_length(names) ; ++i)
         {
-          for (int i = 0 ; i < Rf_length(names) ; ++i)
-          {
-            const char*  name = CHAR(STRING_ELT(names, i));
-            raster.set_band_name(std::string(name), i);
-          }
+          const char*  name = CHAR(STRING_ELT(names, i));
+          raster.set_band_name(std::string(name), i);
         }
       }
     }
-
-    // This is the first time we evaluate the user-expression: we must check for consistency
-    if (!first)
+    else
     {
-      if (TYPEOF(res) == VECSXP && Rf_length(res) != nmetrics)
+      if (Rf_length(res) != nmetrics)
       {
         error = 1;
         last_error = "user expression returned an inconsistant number of items";
@@ -290,12 +284,19 @@ bool LASRaggregate::process(LAS*& las)
     // Assign the values. We are now sure everything is ok
     if (TYPEOF(res) == REALSXP)
     {
-      double value = REAL(res)[0];
-      raster.set_value(group, (float)value);
+      for (int i = 0; i < Rf_length(res); i++)
+      {
+        double value = REAL(res)[i];
+        raster.set_value(group, (float)value, i+1);
+      }
     }
     else if (TYPEOF(res) == INTSXP)
     {
-      int value = INTEGER(res)[0];      raster.set_value(group, (float)value);
+      for (int i = 0; i < Rf_length(res); i++)
+      {
+        int value = INTEGER(res)[i];
+        raster.set_value(group, (float)value, i+1);
+      }
     }
     else if (TYPEOF(res) == VECSXP)
     {
@@ -319,7 +320,7 @@ bool LASRaggregate::process(LAS*& las)
     progress->show();
   }
 
-  // Restore the TRUERf_length otherwise memory leak (??)
+  // Restore the true length otherwise memory leak (??)
   for (int i = 0; i < Rf_length(list); i++)
   {
     SEXP vector = VECTOR_ELT(list, i);
