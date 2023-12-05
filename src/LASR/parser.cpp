@@ -73,8 +73,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         {
           if (!catalog->add_file(file))
           {
-            last_error = catalog->last_error;
-            return false;
+            last_error = catalog->last_error; // # nocov
+            return false; // # nocov
           }
         }
 

@@ -159,10 +159,12 @@ bool GDALdataset::create_file()
 
   if (!driver)
   {
+    // # nocov start
     char buffer[64];
     snprintf(buffer, sizeof(buffer),  "no suitable GDAL driver found with name '%s'.", it->second.c_str());
     last_error = std::string(buffer);
     return false;
+    // # nocov end
   }
 
   dataset = driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, nullptr);
@@ -200,10 +202,12 @@ bool GDALdataset::create_file()
 
     if (layer == nullptr)
     {
+      // # nocov start
       char buffer[512];
       snprintf(buffer, sizeof(buffer), "error %d while creating GDAL dataset layer. %s", CPLGetLastErrorNo(),  CPLGetLastErrorMsg());
       last_error = std::string(buffer);
       return false;
+      // # nocov end
     }
   }
 

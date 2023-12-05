@@ -153,7 +153,7 @@ bool Vector::write_triangulation(const std::vector<TriangleXYZ>& triangles)
   {
     if (!create_file())
     {
-      return false;
+      return false; // # nocov
     }
   }
 

@@ -41,7 +41,7 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, i
   nodata = NA_F32_RASTER;
 }
 
-Raster::Raster(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols, int layers) : Grid (xmin, ymin, xmax, ymax, nrows, ncols), GDALdataset()
+/*Raster::Raster(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols, int layers) : Grid (xmin, ymin, xmax, ymax, nrows, ncols), GDALdataset()
 {
   extent[0] = this->xmin;
   extent[1] = this->ymin;
@@ -53,7 +53,7 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, int nrows, in
   set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
   set_nbands(layers);
   nodata  = NA_F32_RASTER;
-}
+}*/
 
 float& Raster::get_value(double x, double y, int layer)
 {

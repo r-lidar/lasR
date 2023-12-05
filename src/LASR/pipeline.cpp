@@ -37,8 +37,8 @@ bool Pipeline::run()
 
   if (header->number_of_point_records == 0)
   {
-    warning("This chunk has 0 points. Skipping");
-    return true;
+    warning("This chunk has 0 points. Skipping"); // # nocov
+    return true; // # nocov
   }
 
   set_header(header);

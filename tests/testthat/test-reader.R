@@ -55,5 +55,10 @@ test_that("reader_dataframe works",
   ans = processor(pipeline5)
 
   expect_equal(ans$npoints, 17L)
+
+  pipeline6 = reader(las, xc = 339008, yc = 5248000, r = 2) + summarise()
+  ans = processor(pipeline6)
+
+  expect_equal(ans$npoints, 15L)
 })
 

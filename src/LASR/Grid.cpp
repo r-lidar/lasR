@@ -147,7 +147,7 @@ std::vector<int> Grid::get_cells_dissagregated(const std::vector<int>& cells, in
   return out;
 }*/
 
-std::pair<double, double> Grid::get_cell_center(int cell) const
+/*std::pair<double, double> Grid::get_cell_center(int cell) const
 {
   if (cell > ncells) throw "Internal error: cell > ncells";
 
@@ -156,7 +156,7 @@ std::pair<double, double> Grid::get_cell_center(int cell) const
   double x = xmin + col*xres + xres/2;
   double y = ymin + row*yres + xres/2;
   return std::pair<double, double>{x,y};
-}
+}*/
 
 
 

@@ -39,7 +39,7 @@ public:
   //std::vector<int> get_cells_dissagregated(int cell, int factor, float drop_buffer = 0) const;
   //std::vector<int> get_cells_dissagregated(const std::vector<int>& cells, int factor, float drop_buffer = 0) const;
   void get_cells(double xmin, double ymin, double xmax, double ymax, std::vector<int>& cell) const;
-  std::pair<double, double> get_cell_center(int cell) const;
+  //std::pair<double, double> get_cell_center(int cell) const;
 
 protected:
   int ncols, nrows, ncells;

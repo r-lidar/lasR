@@ -159,6 +159,7 @@ public:
     this->show(false);
   }
 
+  // # nocov start
   void show(bool flush = true)
   {
     if (display && must_show())
@@ -201,6 +202,7 @@ private:
     if (sub) b = b || sub->must_show();
     return b;
   };
+  // # nocov end
 
   inline void compute_percentage()
   {

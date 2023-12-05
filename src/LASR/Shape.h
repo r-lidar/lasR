@@ -14,7 +14,7 @@ struct PointXY
   PointXY(double x, double y);
   size_t hash() const;
   bool operator==(const PointXY& other) const;
-  bool operator<(const PointXY& other) const;
+  //bool operator<(const PointXY& other) const;
 };
 
 struct PointXYZ : public PointXY
@@ -24,8 +24,8 @@ struct PointXYZ : public PointXY
   PointXYZ();
   PointXYZ(double x, double y);
   PointXYZ(double x, double y, double z);
-  bool operator<(const PointXYZ& other) const;
   bool operator==(const PointXYZ& other) const;
+  //ool operator<(const PointXYZ& other) const;
 };
 
 struct Pixel

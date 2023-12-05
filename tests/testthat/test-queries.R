@@ -20,13 +20,13 @@ test_that("reader_circle perform a queries",
   expect_equal(dim(ans), c(6368, 5L))
 
   # between two tiles with a buffer
-  pipeline = reader_circles(f, 885150, 629400, 10, buffer = 5) + read_las()
+  pipeline = reader_circles(f, 885150, 629400, 10, buffer = 5L) + read_las()
   ans = processor(pipeline)
   expect_equal(dim(ans), c(14074, 5L))
   expect_equal(sum(ans$Buffer), 7706L)
 
   # between two tiles with a buffer but the centroid is not in a file
-  pipeline = reader_rectangles(f, 885000, 629390, 885040, 629410, buffer = 5) + read_las()
+  pipeline = reader_rectangles(f, 885000L, 629390, 885040, 629410, buffer = 5) + read_las()
   ans = processor(pipeline)
   expect_equal(dim(ans), c(5028L, 5L))
   expect_equal(sum(ans$Buffer), 2415L)

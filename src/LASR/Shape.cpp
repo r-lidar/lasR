@@ -24,8 +24,7 @@ size_t PointXY::hash() const
   return seed;
 }
 
-
-bool PointXY::operator<(const PointXY& other) const
+/*bool PointXY::operator<(const PointXY& other) const
 {
   if (x != other.x) return x < other.x;
   else return y < other.y;
@@ -37,7 +36,7 @@ bool PointXYZ::operator<(const PointXYZ& other) const
   if (x != other.x) return x < other.x;
   else if (y != other.y) return y < other.y;
   else return z < other.z;
-}
+}*/
 
 bool PointXY::operator==(const PointXY& other) const
 {

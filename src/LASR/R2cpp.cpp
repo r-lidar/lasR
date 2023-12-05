@@ -24,8 +24,8 @@ bool get_element_as_bool(SEXP list, const char *str)
   switch (TYPEOF(elem))
   {
     case LGLSXP: return LOGICAL(elem)[0] != 0; break;
-    case REALSXP: return REAL(elem)[0] != 0; break;
-    case INTSXP: return INTEGER(elem)[0] != 0; break;
+    case REALSXP: return REAL(elem)[0] != 0; break; // # nocov
+    case INTSXP: return INTEGER(elem)[0] != 0; break; // # nocov
     default: throw std::string(str) + " must be a bool or something interpretable as a logical value"; break; // # nocov
   }
 }
@@ -35,7 +35,7 @@ int get_element_as_int(SEXP list, const char *str)
   SEXP elem = get_element(list, str);
   switch (TYPEOF(elem))
   {
-  case LGLSXP: return (int)LOGICAL(elem)[0]; break;
+  case LGLSXP: return (int)LOGICAL(elem)[0]; break; // # nocov
   case REALSXP: return (int)REAL(elem)[0]; break;
   case INTSXP: return INTEGER(elem)[0]; break;
   default: throw std::string(str) + " must be an integer or something interpretable as an integer value"; break; // # nocov
@@ -47,7 +47,7 @@ double get_element_as_double(SEXP list, const char *str)
   SEXP elem = get_element(list, str);
   switch (TYPEOF(elem))
   {
-  case LGLSXP: return (double)LOGICAL(elem)[0]; break;
+  case LGLSXP: return (double)LOGICAL(elem)[0]; break; // # nocov
   case REALSXP: return REAL(elem)[0]; break;
   case INTSXP: return (double)INTEGER(elem)[0]; break;
   default: throw std::string(str) + " must be a numeric or something interpretable as a numeric value"; break; // # nocov
@@ -72,7 +72,7 @@ std::vector<int> get_element_as_vint(SEXP list, const char *str)
 
   switch (TYPEOF(elem))
   {
-  case LGLSXP: for (int i=0;i<n;++i) ans[i] = (int)LOGICAL(elem)[i]; break;
+  case LGLSXP: for (int i=0;i<n;++i) ans[i] = (int)LOGICAL(elem)[i]; break; // # nocov
   case REALSXP: for (int i=0;i<n;++i) ans[i] = (int)REAL(elem)[i]; break;
   case INTSXP: for (int i=0;i<n;++i) ans[i] = INTEGER(elem)[i]; break;
   default: throw std::string(str) + " must be interger or something interpretable as a integer values"; break; // # nocov
@@ -89,7 +89,7 @@ std::vector<double> get_element_as_vdouble(SEXP list, const char *str)
 
   switch (TYPEOF(elem))
   {
-  case LGLSXP: for (int i=0;i<n;++i) ans[i] = (double)LOGICAL(elem)[i]; break;
+  case LGLSXP: for (int i=0;i<n;++i) ans[i] = (double)LOGICAL(elem)[i]; break; // # nocov
   case REALSXP: for (int i=0;i<n;++i) ans[i] = REAL(elem)[i]; break;
   case INTSXP: for (int i=0;i<n;++i) ans[i] = (double)INTEGER(elem)[i]; break;
   default: throw std::string(str) + " must be a numeric or something interpretable as a numeric value"; break; // # nocov
