@@ -94,9 +94,10 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 
 
 <dt>ofile</dt>
-<dd><p>character. Outputs are always stored on disk. If <code>ofile = ""</code>
+<dd><p>character. Full outputs are always stored on disk. If <code>ofile = ""</code>
 then the algorithm will not store the result on disk and will return nothing. It will however
-hold the results in memory. This is useful for algorithm that are only intermediate stage.</p></dd>
+hold partial output results temporarily in memory. This is useful for algorithm that are only
+intermediate stage.</p></dd>
 
 
 <dt>use_attribute</dt>

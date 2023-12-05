@@ -78,7 +78,7 @@ It produces a derived product in raster format.</p>
 <dt>operators</dt>
 <dd><p>Can be a character vector. "min", "max" and "count" are accepted. Can also
 rasterize a triangulation if the input is a LASRalgorithm for triangulation (see examples).
-Can also be a user-defined expression (see example).</p></dd>
+Can also be a user-defined expression (see example and details).</p></dd>
 
 
 <dt>filter</dt>
@@ -90,11 +90,24 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 
 
 <dt>ofile</dt>
-<dd><p>character. Outputs are always stored on disk. If <code>ofile = ""</code>
+<dd><p>character. Full outputs are always stored on disk. If <code>ofile = ""</code>
 then the algorithm will not store the result on disk and will return nothing. It will however
-hold the results in memory. This is useful for algorithm that are only intermediate stage.</p></dd>
+hold partial output results temporarily in memory. This is useful for algorithm that are only
+intermediate stage.</p></dd>
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>If <code>operators</code> is a user-defined expression, the function must return either a vector of numbers
+or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
+These are valid operators:</p>
+<p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>f <span class="ot">=</span> <span class="cf">function</span>(x) { <span class="fu">return</span>(<span class="fu">mean</span>(x)) }</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>g <span class="ot">=</span> <span class="cf">function</span>(x,y) { <span class="fu">return</span>(<span class="fu">c</span>(<span class="at">avg =</span> <span class="fu">mean</span>(x), <span class="at">med =</span> <span class="fu">median</span>(y))) }</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>h <span class="ot">=</span> <span class="cf">function</span>(x) { <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">a =</span> <span class="fu">mean</span>(x), <span class="at">b =</span> <span class="fu">median</span>(x))) }</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">rasterize</span>(<span class="dv">10</span>, <span class="fu">f</span>(Intensity))</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">rasterize</span>(<span class="dv">10</span>, <span class="fu">g</span>(Z, Intensity))</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rasterize</span>(<span class="dv">10</span>, <span class="fu">h</span>(Z))</span></code></pre><p></p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -112,23 +125,23 @@ hold the results in memory. This is useful for algorithm that are only intermedi
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 1, 1  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1f6c7a9cb530.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1f6c7a9cb530 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1fdf60c46bfa.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1fdf60c46bfa </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 30, 30, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 10, 10  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273350, 273650, 5274350, 5274650  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1f6c2c497631.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1f6c2c497631 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1fdf7f694291.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1fdf7f694291 </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 144, 144, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 2, 2  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273356, 273644, 5274356, 5274644  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1f6c79b864.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1fdf1b41a0b5.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> name        : max </span>
 </code></pre></div>
     </div>
