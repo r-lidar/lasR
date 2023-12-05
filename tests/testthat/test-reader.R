@@ -30,7 +30,7 @@ test_that("reader_dataframe works",
 
   expect_error(processor(pipeline), NA)
 
-  pipeline2 = pipeline + boundaries()
+  pipeline2 = pipeline + hulls()
 
   ans = processor(pipeline2)
 

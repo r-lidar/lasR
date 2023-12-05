@@ -1,8 +1,8 @@
-test_that("boundaries works",
+test_that("hulls works",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
   read = reader(f)
-  bound = lasR::boundaries()
+  bound = lasR::hulls()
   ans = processor(read+bound)
   ans
 
@@ -12,12 +12,12 @@ test_that("boundaries works",
 })
 
 
-test_that("boundaries works with triangulation",
+test_that("hulls works with triangulation",
 {
   f <- system.file("extdata", "Topography.las", package="lasR")
   read = reader(f)
   del = triangulate(15, filter = keep_ground())
-  bound = lasR::boundaries(del)
+  bound = lasR::hulls(del)
   ans = processor(read+del+bound)
   ans
 

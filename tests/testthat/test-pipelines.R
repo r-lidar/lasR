@@ -6,8 +6,8 @@ test_that("buffer tiles",
   write = write_las(paste0(tempdir(), "/*_buffered.las"), keep_buffer = TRUE)
   ans = processor(read+write)
 
-  cont1 = processor(reader(f) + boundaries())
-  cont2 = processor(reader(ans) + boundaries())
+  cont1 = processor(reader(f) + hulls())
+  cont2 = processor(reader(ans) + hulls())
 
   expect_equal(dim(cont1), c(4L,1L))
 
@@ -31,14 +31,14 @@ test_that("pipleline info works",
   expect_equal(info$buffer, 50)
   expect_equal(info$read_points, TRUE)
 
-  pipeline = boundaries()
+  pipeline = hulls()
   info = lasR:::get_pipeline_info(pipeline)
 
   expect_equal(info$streamable, TRUE)
   expect_equal(info$buffer, 0)
   expect_equal(info$read_points, FALSE)
 
-  pipeline = reader(f, buffer = 20) + boundaries()
+  pipeline = reader(f, buffer = 20) + hulls()
   info = lasR:::get_pipeline_info(pipeline)
 
   expect_equal(info$streamable, TRUE)
@@ -57,6 +57,6 @@ test_that("processor fails without reader",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
 
-  expect_error(processor(boundaries()),  "The pipeline must start with a readers")
-  expect_error(processor(boundaries() + reader(f)),  "The reader must alway be the first stage of the pipeline")
+  expect_error(processor(hulls()),  "The pipeline must start with a readers")
+  expect_error(processor(hulls() + reader(f)),  "The reader must alway be the first stage of the pipeline")
 })

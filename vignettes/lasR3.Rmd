@@ -203,12 +203,12 @@ clip_circle = function(files, geometry, radius, ofiles = paste0(tempdir(), "/*_c
 
 ### CRS
 
-A CRS as `sf` object. The cost of applying `boundaries()` is virtually null.
+A CRS as `sf` object. The cost of applying `hulls()` is virtually null.
 
 ```{r crs}
 crs = function(files)
 {
-  pipeline = reader(files) + boundaries()
+  pipeline = reader(files) + hulls()
   ans = processor(pipeline)
   return(sf::st_crs(ans))
 }

@@ -68,49 +68,6 @@ aggregate_q = function(res, call, filter, ofile, env)
   set_lasr_class(ans)
 }
 
-# ===== B =====
-
-#' Contour of a Delaunay triangulation
-#'
-#' This algorithm uses a Delaunay triangulation and computes its contour. The contour of a strict
-#' Delaunay triangulation is the convex hull, but in lasR, the triangulation has a `max_edge` argument.
-#' Thus, the contour might be a convex hull with holes.
-#'
-#' @param mesh NULL or LASRalgorithm. A `triangulate` algorithm. If NULL take the bounding box of the
-#' header of each file.
-#' @template param-ofile
-#'
-#' @examples
-#' f <- system.file("extdata", "Topography.las", package = "lasR")
-#' read <- reader(f)
-#' tri <- triangulate(20, filter = "-keep_class 2")
-#' contour <- boundaries(tri)
-#' pipeline <- read + tri + contour
-#' ans <- processor(pipeline)
-#' plot(ans)
-#'
-#' @seealso
-#' \link{triangulate}
-#'
-#' @export
-#' @md
-boundaries = function(mesh = NULL, ofile = tempfile(fileext = ".gpkg"))
-{
-  if (!is.null(mesh))
-  {
-    if (!methods::is(mesh, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'") # nocov
-    if (length(mesh) != 1L) stop("cannot input a complex pipeline")  # nocov
-    if (mesh[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")  # nocov
-    ans <- list(algoname = "boundaries", connect = mesh[[1]][["uid"]], output = ofile)
-  }
-  else
-  {
-    ans <- list(algoname = "boundaries", output = ofile)
-  }
-
-  set_lasr_class(ans)
-}
-
 # ===== C =====
 
 
@@ -206,6 +163,49 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 {
   ans <- list(algoname = "classify_isolated_points", res = res, n = n, class = class)
+  set_lasr_class(ans)
+}
+
+# ===== H =====
+
+#' Contour of a Delaunay triangulation
+#'
+#' This algorithm uses a Delaunay triangulation and computes its contour. The contour of a strict
+#' Delaunay triangulation is the convex hull, but in lasR, the triangulation has a `max_edge` argument.
+#' Thus, the contour might be a convex hull with holes.
+#'
+#' @param mesh NULL or LASRalgorithm. A `triangulate` algorithm. If NULL take the bounding box of the
+#' header of each file.
+#' @template param-ofile
+#'
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package = "lasR")
+#' read <- reader(f)
+#' tri <- triangulate(20, filter = "-keep_class 2")
+#' contour <- hulls(tri)
+#' pipeline <- read + tri + contour
+#' ans <- processor(pipeline)
+#' plot(ans)
+#'
+#' @seealso
+#' \link{triangulate}
+#'
+#' @export
+#' @md
+hulls = function(mesh = NULL, ofile = tempfile(fileext = ".gpkg"))
+{
+  if (!is.null(mesh))
+  {
+    if (!methods::is(mesh, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'") # nocov
+    if (length(mesh) != 1L) stop("cannot input a complex pipeline")  # nocov
+    if (mesh[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")  # nocov
+    ans <- list(algoname = "hulls", connect = mesh[[1]][["uid"]], output = ofile)
+  }
+  else
+  {
+    ans <- list(algoname = "hulls", output = ofile)
+  }
+
   set_lasr_class(ans)
 }
 

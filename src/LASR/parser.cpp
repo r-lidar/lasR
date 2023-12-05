@@ -305,7 +305,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         return false;
       }
     }
-    else if (name == "boundaries")
+    else if (name == "hulls")
     {
       LASRtriangulate* p = nullptr;
       if (contains_element(stage, "connect"))

@@ -70,7 +70,7 @@ buffer_tiles = function(f, buffer, ofiles = paste0(tempdir(), "/*_buffered.las")
 ```{r, echo = FALSE}
 f <- system.file("extdata", "bcts/", package="lasR")
 res <- buffer_tiles(f, 50)
-ctg <- processor(reader(res) + boundaries())
+ctg <- processor(reader(res) + hulls())
 #plot(ctg)
 ```
 

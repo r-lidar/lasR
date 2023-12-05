@@ -391,7 +391,7 @@ ans$summary$npoints
 
 In conclusion, in the hypothesis that the user-defined function returns something complex, there are two ways to handle the buffer: either using the bounding box or using the `Buffer` flag. A third option is to use `drop_buffer`. In this case users ensure to receive a `data.frame` that does not include points from the buffer.
 
-## Boundaries
+## Hulls
 
 A Delaunay triangulation defines a convex polygon, which represents the concave hull of the points. However, in dense point clouds, removing triangles with large edges due to the absence of points results in a more complex structure.
 
@@ -399,7 +399,7 @@ A Delaunay triangulation defines a convex polygon, which represents the concave 
 f <- system.file("extdata", "Topography.las", package="lasR")
 ```
 
-```{r boundaries, fig.width=5, fig.height=5}
+```{r hulls, fig.width=5, fig.height=5}
 read = reader(f)
 del = triangulate(15, filter = keep_ground(), ofile = tempfile(fileext = ".gpkg"))
 ans = processor(read+del)
@@ -408,19 +408,19 @@ par(mar = c(2, 2, 1, 1))
 plot(ans, axes = T, lwd = 0.5)
 ```
 
-The `boundaries()` algorithm computes the contour of the mesh, producing a convex hull with holes:
+The `hulls()` algorithm computes the contour of the mesh, producing a convex hull with holes:
 
-```{r boundaries2, fig.width=5, fig.height=5}
+```{r hulls2, fig.width=5, fig.height=5}
 read = reader(f)
 del = triangulate(15, filter = keep_ground())
-bound = boundaries(del)
+bound = hulls(del)
 ans = processor(read+del+bound)
 
 par(mar = c(2, 2, 1, 1))
 plot(ans, axes = T, lwd = 0.5, col = "gray")
 ```
 
-However `boundaries()` is more likely to be used without a triangulation. In this case it returns the bounding box of each LAS/LAZ file read from the header. And if it is used with `triangulate(0)` it returns the convex hull but this is a very inefficient way to get the convex hull.
+However `hulls()` is more likely to be used without a triangulation. In this case it returns the bounding box of each LAS/LAZ file read from the header. And if it is used with `triangulate(0)` it returns the convex hull but this is a very inefficient way to get the convex hull.
 
 ## Sampling Voxel
 

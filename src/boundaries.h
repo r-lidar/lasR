@@ -14,7 +14,7 @@ public:
   bool write() override;
   bool need_points() const override;
   bool is_streamable() const override { return true; }
-  std::string get_name() const override { return "boundaries"; }
+  std::string get_name() const override { return "hulls"; }
 
 private:
   LASRalgorithm* algorithm; // Not the owner
