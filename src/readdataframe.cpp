@@ -1,5 +1,7 @@
 #include "readdataframe.h"
 
+#include <algorithm>
+
 LASRdataframereader::LASRdataframereader(double xmin, double ymin, double xmax, double ymax, SEXP dataframe, const std::vector<double>& accuracy)
 {
   this->xmin = xmin;

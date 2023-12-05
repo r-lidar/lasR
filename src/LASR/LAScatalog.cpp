@@ -3,6 +3,8 @@
 #include "lasreader.hpp"
 #include "laskdtree.hpp"
 
+#include <algorithm>
+
 LAScatalog::LAScatalog()
 {
   xmin = F64_MAX;
@@ -292,6 +294,11 @@ void LAScatalog::check_spatial_index()
   {
     warning("%d files do not have spatial index. Spatial indexing speeds-up drastically tile buffering.", get_number_files()-get_number_indexed_files());
   }
+}
+
+int LAScatalog::get_number_indexed_files() const
+{
+  return std::count(indexed.begin(), indexed.end(), true);
 }
 
 
