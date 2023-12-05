@@ -83,20 +83,21 @@ Roussel</h4>
 
     
     
-<p><code>lasR</code> contains exclusively low-level functions. It means
-that there are no functions such as <code>dtm()</code>,
-<code>chm()</code>, <code><a href="https://rdrr.io/r/graphics/clip.html" class="external-link">clip()</a></code>, or any convenient functions
-with explicit names that perform one single expected task. The addition
-of, at least, a reader stage is mandatory. The concept of pipelines with
-low-level functions is highly versatile, and setting pre-built functions
-is sub-optimal and restricts usages (see later for more details).</p>
+<p><code>lasR</code> contains almost exclusively low-level functions. It
+means that there are no functions such as
+<code>rasterize_terrain()</code>, <code>rasterize_chm()</code>,
+<code><a href="https://rdrr.io/r/graphics/clip.html" class="external-link">clip()</a></code>, or any convenient functions with explicit names
+that perform one single expected task. The addition of, at least, a
+reader stage is mandatory. The concept of pipelines with low-level
+functions is highly versatile, and setting pre-built functions is
+sub-optimal and restricts usages (see later for more details).</p>
 <p>This vignette presents a list of convenient functions that mimic
 <code>lidR</code> functions while not being strictly equivalent. Yet, it
 is usually more interesting to <strong>NOT</strong> use these functions
-and rather use pre-built pipelines. See also the pipelines vignettes
-with a list of possible pipelines. This vignette is more like a tutorial
-on how to develop and program tools with <code>lasR</code> than a
-tutorial on how to use <code>lasR</code> like <code>lidR</code>.</p>
+and rather use pre-built pipelines. See also the <a href="lasR2.html">pipelines vignettes</a> with a list of possible
+pipelines. This vignette is more like a tutorial on how to develop and
+program tools with <code>lasR</code> than a tutorial on how to use
+<code>lasR</code> like <code>lidR</code>.</p>
 <div class="section level2">
 <h2 id="add_attribute">add_attribute<a class="anchor" aria-label="anchor" href="#add_attribute"></a>
 </h2>

@@ -74,11 +74,11 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="lasr">lasR<a class="anchor" aria-label="anchor" href="#lasr"></a>
 </h1></div>
-<p><img src="https://img.shields.io/badge/Licence-GPL--3-blue.svg" alt="license"><img src="https://img.shields.io/badge/Lifecycle-Experimental-339999" alt="Lifecycle:Experimental"></p>
+<p><img src="https://img.shields.io/badge/Licence-GPL--3-blue.svg" alt="license"><img src="https://img.shields.io/badge/Lifecycle-Experimental-339999" alt="Lifecycle:Experimental"><a href="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/r-lidar/lasR?branch=main" class="external-link"><img src="https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></p>
 <p>R Package for Fast Airborne LiDAR Data Processing</p>
 <p><strong>This package is in under early stage of development. Features and functions can change without warning</strong></p>
 <p>The <code>lasR</code> package (pronounce laser) <strong>does not</strong> intent to supersede the <code>lidR</code> package, but is designed to be much more efficient than <code>lidR</code> for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages. <code>lidR</code> intends to be a tool box to make data exploration and innovation easy. <code>lasR</code> on another hand focuses exclusively on memory and speed optimization of common tasks and make no trade off with other aspects of the development.</p>
-<p><span class="emoji" data-emoji="book">📖</span> Read the tutorial to start with <code>lasR</code>.</p>
+<p><span class="emoji" data-emoji="book">📖</span> Read <a href="https://r-lidar.github.io/lasR/articles/lasR2.html" class="external-link">the tutorial</a> to start with <code>lasR</code></p>
 <div class="section level2">
 <h2 id="benchmark">Benchmark<a class="anchor" aria-label="anchor" href="#benchmark"></a>
 </h2>
@@ -97,7 +97,8 @@
 <a class="anchor" aria-label="anchor" href="#main-differences-with-lidr"></a>
 </h2>
 <ul>
-<li>Introduces the concept of a pipeline to chain multiple operations on a point cloud optimally.</li>
+<li>Introduces the concept of pipelines to chain multiple operations on a point cloud optimally that was missing in <code>lidR</code>
+</li>
 <li>Is written exclusively in C/C++ without a single line of R.</li>
 <li>Uses the code of <code>lidR</code> but brings significant speed and memory improvements.</li>
 <li>Does not load the point cloud into a <code>data.frame</code>. The point cloud is stored in a C++ structure that is not exposed to users.</li>

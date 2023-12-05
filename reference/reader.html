@@ -58,7 +58,7 @@ and read_*_rectangles() read and process only some selected regions of interest.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Initialize the pipeline</h1>
-      <small class="dont-index">Source: <a href="https://github.com/r-lidar/lasR/blob/HEAD/R/algorithm.R" class="external-link"><code>R/algorithm.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/r-lidar/lasR/blob/HEAD/R/stages.R" class="external-link"><code>R/stages.R</code></a></small>
       <div class="d-none name"><code>reader.Rd</code></div>
     </div>
 
@@ -75,25 +75,11 @@ and <code>read_*_rectangles()</code> read and process only some selected regions
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">reader</span><span class="op">(</span><span class="va">x</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">reader_files_coverage</span><span class="op">(</span><span class="va">files</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="fu">reader_coverage</span><span class="op">(</span><span class="va">x</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">reader_files_circles</span><span class="op">(</span><span class="va">files</span>, <span class="va">xc</span>, <span class="va">yc</span>, <span class="va">r</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="fu">reader_circles</span><span class="op">(</span><span class="va">x</span>, <span class="va">xc</span>, <span class="va">yc</span>, <span class="va">r</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">reader_files_rectangles</span><span class="op">(</span><span class="va">files</span>, <span class="va">xmin</span>, <span class="va">ymin</span>, <span class="va">xmax</span>, <span class="va">ymax</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">reader_dataframe_coverage</span><span class="op">(</span><span class="va">dataframe</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">reader_dataframe_circles</span><span class="op">(</span><span class="va">dataframe</span>, <span class="va">xc</span>, <span class="va">yc</span>, <span class="va">r</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">reader_dataframe_rectangles</span><span class="op">(</span></span>
-<span>  <span class="va">dataframe</span>,</span>
-<span>  <span class="va">xmin</span>,</span>
-<span>  <span class="va">ymin</span>,</span>
-<span>  <span class="va">xmax</span>,</span>
-<span>  <span class="va">ymax</span>,</span>
-<span>  filter <span class="op">=</span> <span class="st">""</span>,</span>
-<span>  buffer <span class="op">=</span> <span class="fl">0</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">reader_rectangles</span><span class="op">(</span><span class="va">x</span>, <span class="va">xmin</span>, <span class="va">ymin</span>, <span class="va">xmax</span>, <span class="va">ymax</span>, filter <span class="op">=</span> <span class="st">""</span>, buffer <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -121,23 +107,12 @@ pick the greatest value between the internal suggestion and this provided value.
 <dd><p>passed to other readers</p></dd>
 
 
-<dt>files</dt>
-<dd><p>character. The path of the files to use. The path of the folder in which the files are stored.
-Supports a <code>LAScatalog</code> from <code>lidR</code>.</p></dd>
-
-
 <dt>xc, yc, r</dt>
 <dd><p>numeric. Circle centres and radius or radii.</p></dd>
 
 
 <dt>xmin, ymin, xmax, ymax</dt>
 <dd><p>numeric. Coordinates of the rectangles</p></dd>
-
-
-<dt>dataframe</dt>
-<dd><p>A <code>data.frame</code> with columns named conforming <code>lasR</code> or <code>lidR</code> naming conventions so
-internally it can recognized  e.g. which column is the classification (<code>Class</code> will not
-be recognized it must be called <code>Classification</code>). It can also be a <code>LAS</code> object from <code>lidR</code>.</p></dd>
 
 </dl></div>
 

@@ -31,16 +31,22 @@
     <loc>/reference/add_extrabytes.html</loc>
   </url>
   <url>
-    <loc>/reference/boundaries.html</loc>
+    <loc>/reference/callback.html</loc>
   </url>
   <url>
-    <loc>/reference/callback.html</loc>
+    <loc>/reference/chm.html</loc>
   </url>
   <url>
     <loc>/reference/classify_isolated_points.html</loc>
   </url>
   <url>
+    <loc>/reference/dtm.html</loc>
+  </url>
+  <url>
     <loc>/reference/filters.html</loc>
+  </url>
+  <url>
+    <loc>/reference/hulls.html</loc>
   </url>
   <url>
     <loc>/reference/index.html</loc>
