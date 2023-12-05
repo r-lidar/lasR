@@ -26,9 +26,9 @@ library(lasR)
 ```
 
 
-`lasR` contains exclusively low-level functions. It means that there are no functions such as `dtm()`, `chm()`, `clip()`, or any convenient functions with explicit names that perform one single expected task. The addition of, at least, a reader stage is mandatory. The concept of pipelines with low-level functions is highly versatile, and setting pre-built functions is sub-optimal and restricts usages (see later for more details).
+`lasR` contains almost exclusively low-level functions. It means that there are no functions such as `rasterize_terrain()`, `rasterize_chm()`, `clip()`, or any convenient functions with explicit names that perform one single expected task. The addition of, at least, a reader stage is mandatory. The concept of pipelines with low-level functions is highly versatile, and setting pre-built functions is sub-optimal and restricts usages (see later for more details).
 
-This vignette presents a list of convenient functions that mimic `lidR` functions while not being strictly equivalent. Yet, it is usually more interesting to **NOT** use these functions and rather use pre-built pipelines. See also the pipelines vignettes with a list of possible pipelines. This vignette is more like a tutorial on how to develop and program tools with `lasR` than a tutorial on how to use `lasR` like `lidR`.
+This vignette presents a list of convenient functions that mimic `lidR` functions while not being strictly equivalent. Yet, it is usually more interesting to **NOT** use these functions and rather use pre-built pipelines. See also the [pipelines vignettes](lasR2.html) with a list of possible pipelines. This vignette is more like a tutorial on how to develop and program tools with `lasR` than a tutorial on how to use `lasR` like `lidR`.
 
 ## add_attribute
 
