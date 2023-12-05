@@ -113,9 +113,14 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
 
     if (!use_dataframe)
     {
-      chunk.main_file = lasreadopener->get_file_name(i);
+      chunk.main_files.push_back(lasreadopener->get_file_name(i));
       chunk.name = lasreadopener->get_file_name_only(i);
       chunk.name = chunk.name.substr(0, chunk.name.size()-4);
+    }
+    else
+    {
+      chunk.main_files.push_back("data.frame");
+      chunk.name = "data.frame";
     }
 
     if (buffer <= 0)
@@ -138,7 +143,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
       while (laskdtree->get_overlap(index))
       {
         std::string file = lasreadopener->get_file_name(index);
-        if (chunk.main_file != file)
+        if (chunk.main_files[0] != file)
         {
           chunk.neighbour_files.push_back(file);
         }
@@ -179,7 +184,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   // With an R data.frame there is no file and thus no neighbouring files. We can exit.
   if (use_dataframe)
   {
-    chunk.main_file = "dataframe.las";
+    chunk.main_files.push_back("dataframe");
     chunk.name = "data.frame";
     return true;
   }
@@ -187,7 +192,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   // We are working with a single file there is no neighbouring files. We can exit.
   if (get_number_files() == 1)
   {
-    chunk.main_file = lasreadopener->get_file_name(0);
+    chunk.main_files.push_back(lasreadopener->get_file_name(0));
     chunk.name = lasreadopener->get_file_name_only(0);
     chunk.name = chunk.name.substr(0, chunk.name.size()-4);
     return true;
@@ -197,41 +202,43 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   if (laskdtree->get_num_overlaps() == 1)
   {
     laskdtree->get_overlap(index);
-    chunk.main_file = lasreadopener->get_file_name(index);
+    chunk.main_files.push_back(lasreadopener->get_file_name(index));
     chunk.name = lasreadopener->get_file_name_only(index);
     chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
     return true;
   }
 
-  // Otherwise we must find the main one to get a name to the chunk.
-  // We search the file that contains the centroid of the query
-  laskdtree->overlap(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
+  // There are multiple files. All the files are part of the main
+  while (laskdtree->get_overlap(index))
+  {
+    chunk.main_files.push_back(lasreadopener->get_file_name(index));
+  }
 
-  // There is an overlap: we have the main file otherwise the main file will be the first found
+  // We search the file that contains the centroid of the query to assign a name to the query
+  laskdtree->overlap(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
   if (laskdtree->has_overlaps())
   {
     laskdtree->get_overlap(index);
-    chunk.main_file = lasreadopener->get_file_name(index);
     chunk.name = lasreadopener->get_file_name_only(index);
     chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
   }
-
-  // We perform the query again to get the other files
-  laskdtree->overlap(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
-  if (laskdtree->has_overlaps())
+  else
   {
+    chunk.name = chunk.main_files[0];
+    chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
+  }
+
+  // We perform a query again with buffered shape to get the other files in the buffer
+  if (chunk.buffer > 0)
+  {
+    laskdtree->overlap(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
     while (laskdtree->get_overlap(index))
     {
-      // The chunk has no name already a name (i.e. a main file) we can assign one
-      if (chunk.name.empty())
-      {
-        chunk.main_file = lasreadopener->get_file_name(index);
-        chunk.name = lasreadopener->get_file_name_only(index);
-        chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
-      }
-
       std::string file = lasreadopener->get_file_name(index);
-      if (chunk.main_file != file)
+
+      // if the file is not part of the main files
+      auto it = std::find(chunk.main_files.begin(), chunk.main_files.end(), file);
+      if (it != chunk.main_files.end())
       {
         chunk.neighbour_files.push_back(file);
       }

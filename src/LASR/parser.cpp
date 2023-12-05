@@ -73,7 +73,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         {
           if (!catalog->add_file(file))
           {
-            last_error = catalog->last_error.c_str();
+            last_error = catalog->last_error;
             return false;
           }
         }
@@ -112,9 +112,12 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         return false;
       }
 
+      // This is the buffer provided by the user. The actual buffer may be larger
+      // depending on the stages in the pipeline.
+      buffer = get_element_as_double(stage, "buffer");
+
       SEXP dataframe = get_element(stage, "dataframe");
       std::vector<double> accuracy = get_element_as_vdouble(stage, "accuracy");
-
 
       // Compute the bounding box
       SEXP X = get_element(dataframe, "X");

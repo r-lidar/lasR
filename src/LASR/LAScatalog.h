@@ -20,7 +20,7 @@ struct Chunk
     shape = ShapeType::UNKNOWN;
     buffer = 0;
     name.clear();
-    main_file.clear();
+    main_files.clear();
     neighbour_files.clear();
   };
 
@@ -31,7 +31,7 @@ struct Chunk
   double buffer;
   ShapeType shape;
   std::string name;
-  std::string main_file;
+  std::vector<std::string> main_files;
   std::vector<std::string> neighbour_files;
 };
 

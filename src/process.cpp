@@ -69,7 +69,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       Chunk chunk;
       if (!lascatalog->get_chunk(i, chunk))
       {
-        throw lascatalog->last_error.c_str();
+        throw lascatalog->last_error;
       }
 
       if (verbose)

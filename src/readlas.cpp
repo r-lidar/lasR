@@ -48,7 +48,6 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
 
   // The openner must survive to the reader otherwise there are some pointer invalidation.
   lasreadopener = new LASreadOpener;
-  lasreadopener->add_file_name(chunk.main_file.c_str());
   lasreadopener->set_merged(true);
   lasreadopener->set_stored(false);
   lasreadopener->set_buffer_size(chunk.buffer);
@@ -57,14 +56,15 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
 
   free(filtercpy);
 
+  for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str());
+  for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
+
   if (chunk.shape == ShapeType::RECTANGLE)
     lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
   else if (chunk.shape == ShapeType::CIRCLE)
     lasreadopener->set_inside_circle((chunk.xmin+chunk.xmax)/2, (chunk.ymin+chunk.ymax)/2,  (chunk.xmax-chunk.xmin)/2 + chunk.buffer + EPSILON);
   else
     lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
-
-  for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
 
   lasreader = lasreadopener->open();
   if (!lasreader)

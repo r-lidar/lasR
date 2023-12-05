@@ -504,7 +504,7 @@ reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0)
   }
 
   stopifnot(is.data.frame(dataframe))
-  ans <- list(algoname = "reader_dataframe", dataframe = dataframe, accuracy = accuracy)
+  ans <- list(algoname = "reader_dataframe", dataframe = dataframe, accuracy = accuracy, filter = filter, buffer = buffer)
   set_lasr_class(ans)
 }
 
