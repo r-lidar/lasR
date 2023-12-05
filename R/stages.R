@@ -249,42 +249,6 @@ nothing = function()
   set_lasr_class(ans)
 }
 
-#' Normalize the point cloud
-#'
-#' Normalize the point cloud using `triangulate()` and `transform_with_triangulation()`
-#'
-#' @param extrabytes bool. If FALSE the coordinate Z of the point cloud is modified and becomes the
-#' height above ground (HAG). If TRUE the coordinate Z is not modified and a new extrabytes attribute
-#' named "HAG' is added to the point cloud.
-#'
-#' @examples
-#' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader(f) + normalize() + write_las()
-#'
-#' @seealso
-#' \link{triangulate}
-#' \link{transform_with_triangulation}
-#' @export
-normalize = function(extrabytes = FALSE)
-{
-  tri <- triangulate(filter = keep_ground())
-  pipeline <- tri
-
-  if (extrabytes)
-  {
-    extra <- add_extrabytes("int", "HAG", "Height Above Ground")
-    trans <- transform_with_triangulation(tri, store_in_attribute = "HAG")
-    pipeline <- pipeline + extra + trans
-  }
-  else
-  {
-    trans <- transform_with_triangulation(tri)
-    pipeline <- pipeline
-  }
-
-  return(pipeline)
-}
-
 # ===== P ====
 
 #' Pits and spikes filling

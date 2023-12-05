@@ -33,7 +33,7 @@ trans <- transform_with_triangulation(tri)
 norm <- tri + trans
 ```
 
-This vignette shows a list of pipeline factories, i.e., functions that generate useful pieces of pipelines that can be reused. It also defines some functions that execute a pipeline, which may be regularly useful instead of writing it out. The lists are not comprehensive and will be updated if good tools come to mind.
+This vignette shows a list of pipeline factories, i.e., functions that generate useful pieces of pipelines that can be reused. It also defines some functions that execute a pipeline, which may be regularly useful instead of writing it out. The lists are not comprehensive and will be updated if good tools come to mind. Some are already installed natively in the package.
 
 ## Pipeline factories
 
@@ -117,6 +117,8 @@ pipeline = reader(f) + ground_mcc() + write_las(o)
 
 ### Canopy Heigh Model
 
+These two pipelines are natively installed in the package under the name `chm()`.
+
 ```{r}
 chm_p2r = function(res, filter = "", ofile = tempfile(fileext = ".tif"))
 {
@@ -128,6 +130,21 @@ chm_p2r = function(res, filter = "", ofile = tempfile(fileext = ".tif"))
 chm_tin = function(res, ofile = tempfile(fileext = ".tif"))
 {
   tin = triangulate(filter = keep_first())
+  chm = rasterize(res, tin, ofile = ofile)
+  return(tin+chm)
+}
+```
+
+### Digital Terrain Model 
+
+This one is also natively installed in the package. `add_class` can be used to add a class used as ground such as 9 for water. 
+
+```{r}
+dtm = function(res, ofile = tempfile(fileext = ".tif"), add_class = NULL)
+{
+  filter = keep_ground()
+  if (!is.null(add_class)) filter = filter + keep_class(add_class)
+  tin = triangulate(filter = filter)
   chm = rasterize(res, tin, ofile = ofile)
   return(tin+chm)
 }

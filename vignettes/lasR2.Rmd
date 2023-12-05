@@ -32,7 +32,7 @@ In the following tutorial, the variable `f` refers to one or several file paths 
 
 ## Reader
 
-The `reader` algorithm must be the first algorithm of any pipeline. It takes as input the list of files to process. When creating a pipeline with only this algorithm, the files are read, but no computation is actually applied. The point are not even read. Files are read sequentially, with points loaded one at a time and immediately discarded. No result is returned.
+The `reader` stage must be the first stage of any pipeline. It takes as input the list of files to process. When creating a pipeline with only this stage, the files are read, but no computation is actually applied. The points are not even read. No result is returned.
 
 ```{r, echo = F}
 f = paste0(system.file(package="lasR"), "/extdata/bcts")
@@ -45,7 +45,7 @@ processor(read)
 
 ## Triangulate
 
-The first algorithm we can try is `triangulate()`. This algorithm performs a Delaunay triangulation on the points of interest. Triangulating points is a very useful task that is employed in numerous processing tasks. Triangulating all points is not very interesting, so we usually want to use the `filter` argument to triangulate only specific points of interest.
+The first stage we can try is `triangulate()`. This algorithm performs a Delaunay triangulation on the points of interest. Triangulating points is a very useful task that is employed in numerous processing tasks. Triangulating all points is not very interesting, so we usually want to use the `filter` argument to triangulate only specific points of interest.
 
 In the following example, we triangulate the points classified as 2 (i.e., ground). This produces a meshed Digital Terrain Model.
 
@@ -93,17 +93,18 @@ del2 = triangulate(filter = "-keep first", ofile = tempfile(fileext = ".gpkg"))
 pipeline = read + del1 + del2
 ans = processor(pipeline)
 ```
-Using `triangulate()` without any other algorithm in the pipeline is usually not very useful. Typically, `triangulate()` is employed without the `ofile` argument as an intermediate step. For instance, it can be used with `rasterize()`.
+
+Using `triangulate()` without any other stage in the pipeline is usually not very useful. Typically, `triangulate()` is employed without the `ofile` argument as an intermediate step. For instance, it can be used with `rasterize()`.
 
 ## Rasterize
 
 `rasterize()` does exactly what users may expect from it and even more. There are three variations:
 
-1. Rasterize with predefined operators. The operators are optimized internally, making the operations as fast as possible, but the number of registered operators is finite.
+1. Rasterize with predefined operators. The operators are optimized internally, making the operations as fast as possible, but the number of registered operators is low
 2. Rasterize by injecting a user-defined R expression. This is equivalent to `pixel_metrics()` from the package `lidR`. Any user-defined function can be mapped, making it extremely versatile but slower and limited in speed by the quality of the R code injected.
 3. Rasterize a Delaunay triangulation.
 
-With these variations, users can build a CHM, a DTM, a predictive model, or anything else. Let's build a DTM using a triangulation of the ground points and the `rasterize()` algorithm. In the following pipeline, the LAS files are read, points are loaded for each LAS file with a buffer, a Delaunay triangulation of the ground points is built, and then the triangulation is interpolated and rasterized. By default, `rasterize()` writes the raster in a temporary file, so the result is not discarded.
+With these variations, users can build a CHM, a DTM, a predictive model, or anything else. Let's build a DTM using a triangulation of the ground points and the `rasterize()` stage. In the following pipeline, the LAS files are read, points are loaded for each LAS file with a buffer, a Delaunay triangulation of the ground points is built, and then the triangulation is interpolated and rasterized. By default, `rasterize()` writes the raster in a temporary file, so the result is not discarded.
 
 ```{r rasterize}
 read = reader(f)
@@ -120,7 +121,7 @@ Here, `processor()` returns a only a `SpatRaster` because `triangulate()` return
 terra::plot(ans, col = gray.colors(25,0,1), mar = c(1, 1, 1, 3))
 ```
 
-Notice that, contrary to the lidR package, there is no high-level function with names like `rasterize_terrain()`. Instead, `lasR` is made up of low-level functions that are more versatile but also more challenging to use. Let's build two CHMs: one based on the highest point per pixel with a resolution of 2 meters, and the second based on the triangulation of the first returns with a resolution of 50 cm.
+Notice that, contrary to the lidR package, there is usually no high-level function with names like `rasterize_terrain()`. Instead, `lasR` is made up of low-level functions that are more versatile but also more challenging to use. Let's build two CHMs: one based on the highest point per pixel with a resolution of 2 meters, and the second based on the triangulation of the first returns with a resolution of 50 cm.
 
 In the following pipeline, we are using two variations of `rasterize()`: one capable of rasterizing a triangulation and the other capable of rasterizing the point cloud with a predefined operator (here `max`). The output is a named list with two `SpatRaster`.
 
@@ -140,7 +141,9 @@ terra::plot(ans[[1]], mar = c(1, 1, 1, 3), col = col)
 terra::plot(ans[[2]], mar = c(1, 1, 1, 3), col = col)
 ```
 
-To conclude, let's compute the map of the median intensity by injecting a user-defined expression. Like in `lidR`, the attributes of the point cloud are named: `X`, `Y`, `Z`, `Intensity`, `gpstime`, `ReturnNumber`, `NumberOfreturns`, `Classification`, `UserData`, `PointSourceID`, `R`, `G`, `B`, `NIR`. For users familiar with the `lidR` package, note that there is no `ScanAngleRank/ScanAngle`;  instead the scanner angle is always named `ScanAngle` and is numeric. Also flags are named `Withheld`, `Synthetic` and `Keypoint`.
+For simplicity the package has pre-installed pipelines named `chm()` and `dtm()` that do what is explained above.
+
+Last but not least, let's compute the map of the median intensity by injecting a user-defined expression. Like in `lidR`, the attributes of the point cloud are named: `X`, `Y`, `Z`, `Intensity`, `gpstime`, `ReturnNumber`, `NumberOfreturns`, `Classification`, `UserData`, `PointSourceID`, `R`, `G`, `B`, `NIR`. For users familiar with the `lidR` package, note that there is no `ScanAngleRank/ScanAngle`;  instead the scanner angle is always named `ScanAngle` and is numeric. Also flags are named `Withheld`, `Synthetic` and `Keypoint`.
 
 ```{r rasterize3, fig.height=3.5}
 read = reader(f)
@@ -171,7 +174,10 @@ pipeline = read + del + norm
 ans = processor(pipeline)
 ans
 ```
-To obtain a meaningful output, it is necessary to chain another algorithm. For instance, we can compute a Canopy Height Model (CHM) on the normalized point cloud. In the following pipeline, the first rasterization (`chm1`) is applied before normalization, while the second rasterization occurs after `transform_with_triangulation()`, thus being applied to the transformed point cloud.
+
+for convenience this pipeline is pre-recorded in the package under the name `normalize()`.
+
+To obtain a meaningful output, it is necessary to chain another stage. Here the point cloud has been modified but then it is discarded. For instance, we can compute a Canopy Height Model (CHM) on the normalized point cloud. In the following pipeline, the first rasterization (`chm1`) is applied before normalization, while the second rasterization occurs after `transform_with_triangulation()`, thus being applied to the transformed point cloud.
 
 ```{r twt2, warning=FALSE, fig.height=4, fig.width=8}
 read = reader(f)
@@ -186,7 +192,7 @@ col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(15)
 terra::plot(c(ans[[1]], ans[[2]]), col = col)
 ```
 
-After performing normalization, users may want to write the normalized point cloud to disk for later use. In this case, you can append the `write_las()` algorithm to the pipeline.
+After performing normalization, users may want to write the normalized point cloud to disk for later use. In this case, you can append the `write_las()` stage to the pipeline.
 
 ## Write LAS
 
@@ -209,7 +215,7 @@ ans = processor(pipeline)
 ans
 ```
 
-It is crucial to include a wildcard `*` in the file path; otherwise, a single large file will be created. This behavior may be intentional. Let's consider creating a file merge pipeline. In the following example, no wildcard `*` is used for the names of the LAS/LAZ files. The input files are read, and points are sequentially written to the single file `dataset_merged.laz`, naturally forming a merge pipeline.
+It is crucial to include a wildcard `*` in the file path; otherwise, a single large file will be created. This behaviour may be intentional. Let's consider creating a file merge pipeline. In the following example, no wildcard `*` is used for the names of the LAS/LAZ files. The input files are read, and points are sequentially written to the single file `dataset_merged.laz`, naturally forming a merge pipeline.
 
 
 ```{r, echo = FALSE}
@@ -227,7 +233,7 @@ ans
 
 ## Callback
 
-The `callback` algorithm holds significant importance as the second and last entry point to inject R code into the pipeline, following `rasterize()`. For those familiar with the `lidR` package, the initial step often involves reading data with `lidR::readLAS()` to expose the point cloud as a `data.frame` object in R. In contrast, `lasR` loads the point cloud optimally in C++ without exposing it directly to R. However, with `callback`, it becomes possible to expose the point cloud as a `data.frame` for executing specific R functions.
+The `callback` stage holds significant importance as the second and last entry point to inject R code into the pipeline, following `rasterize()`. For those familiar with the `lidR` package, the initial step often involves reading data with `lidR::readLAS()` to expose the point cloud as a `data.frame` object in R. In contrast, `lasR` loads the point cloud optimally in C++ without exposing it directly to R. However, with `callback`, it becomes possible to expose the point cloud as a `data.frame` for executing specific R functions.
 
 Similar to `lidR`, the attributes of the point cloud in `lasR` are named: `X`, `Y`, `Z`, `Intensity`, `gpstime`, `ReturnNumber`, `NumberOfreturns`, `Classification`, `UserData`, `PointSourceID`, `R`, `G`, `B`, `NIR`. Notably, for users accustomed to the `lidR` package, the scanner angle is consistently named `ScanAngle` and is numeric, as opposed to `ScanAngleRank/ScanAngle`. Additionally, flags are named `Withheld`, `Synthetic`, and `Keypoint`.
 
@@ -247,7 +253,7 @@ ans
 
 Be mindful that, for a given LAS/LAZ file, the point cloud may contain more points than the original file if the file is loaded with a buffer. Further clarification on this matter will be provided later.
 
-The `callback` function is versatile and can also be employed to edit the point cloud. When the user-defined function returns a `data.frame` with the same number of rows as the original one, the function edits the underlying C++ dataset. This enables users to perform tasks such as assigning a class to a specific point. While physically removing points is not possible, users can flag points as `Withheld`. In such cases, these points will not be processed in subsequent steps.
+The `callback` function is versatile and can also be employed to edit the point cloud. When the user-defined function returns a `data.frame` with the same number of rows as the original one, the function edits the underlying C++ dataset. This enables users to perform tasks such as assigning a class to a specific point. While physically removing points is not possible, users can flag points as `Withheld`. In such cases, these points will not be processed in subsequent stages
 
 
 ```{r callback2}
@@ -265,7 +271,7 @@ ans = processor(read+call)
 ans
 ```
 
-As observed, `callback` does not explicitly return anything; however, it edits the point cloud without producing a visible result. To generate an output, users must use `write_las()`. It's important to note that `write_las()` will **NOT** write the point number 13 which is flagged `withheld`.
+As observed, here, `callback` does not explicitly return anything; however, it edits the point cloud without producing a visible result. To generate an output, users must use `write_las()`. It's important to note that `write_las()` will **NOT** write the point number 13 which is flagged `withheld`.
 
 Now, let's explore the capabilities of `callback` further. First, let's create a lidR-like `read_las()` function to expose the point cloud to R. In the following example, the user-defined function is employed to return the `data.frame` as is. When the user's function returns a `data.frame` with the same number of points as the original dataset, this updates the points at the C++ level. Here, we use `no_las_update = TRUE` to explicitly return the result.
 
@@ -383,7 +389,7 @@ ans$callback[[1]]$npoints+ ans$callback[[2]]$npoints
 ans$summary$npoints
 ```
 
-In conclusion, in the hypothesis that the user-defined function returns something complex, there are two ways to handle the buffer: either using the bounding box or using the `Buffer` flag.
+In conclusion, in the hypothesis that the user-defined function returns something complex, there are two ways to handle the buffer: either using the bounding box or using the `Buffer` flag. A third option is to use `drop_buffer`. In this case users ensure to receive a `data.frame` that does not include points from the buffer.
 
 ## Boundaries
 
@@ -414,7 +420,7 @@ par(mar = c(2, 2, 1, 1))
 plot(ans, axes = T, lwd = 0.5, col = "gray")
 ```
 
-However `boundaries()` is more likely to be used without a triangulation. In this case it returns the bounding box of each LAS/LAZ file read from the header.
+However `boundaries()` is more likely to be used without a triangulation. In this case it returns the bounding box of each LAS/LAZ file read from the header. And if it is used with `triangulate(0)` it returns the convex hull but this is a very inefficient way to get the convex hull.
 
 ## Sampling Voxel
 
@@ -467,7 +473,7 @@ These readers allow building a ground inventory pipeline, for example.
 
 ## Plot inventory
 
-This pipeline extracts a plot inventory using a shapefile from a non-normalized point cloud, normalizes each plot, computes metrics for each plot, and writes each normalized and non-normalized plot in separate files. Each circular plot is loaded with a buffer to perform a correct triangulation bufer exposed to R without the buffer using `drop_buffer`.
+This pipeline extracts a plot inventory using a shapefile from a non-normalized point cloud, normalizes each plot, computes metrics for each plot, and writes each normalized and non-normalized plot in separate files. Each circular plot is loaded with a buffer to perform a correct triangulation. The plots are exposed to R without the buffer using `drop_buffer = TRUE`.
 
 ```{r inventory, eval=FALSE}
 ofiles_plot <- paste0(tempdir(), "/plot_*.las")
