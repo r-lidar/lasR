@@ -241,7 +241,12 @@ bool GDALdataset::set_crs(int epsg)
 
   if (oSRS.importFromEPSG(epsg) != OGRERR_NONE)
   {
+    // # nocov start
+    char buffer[512];
+    snprintf(buffer, sizeof(buffer), "error %d while creating GDAL dataset. %s", CPLGetLastErrorNo(),  CPLGetLastErrorMsg());
+    last_error = std::string(buffer);
     return false;
+    // # nocov end
   }
 
   return true;
