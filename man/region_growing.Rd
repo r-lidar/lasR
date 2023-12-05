@@ -33,9 +33,10 @@ multiplied by this value. It should be between 0 and 1. Default is 0.55.}
 Default is 20. \strong{BE CAREFUL} this algorithm exists in the \code{lidR} package and this parameter is in
 pixels in \code{lidR}.}
 
-\item{ofile}{character. Outputs are always stored on disk. If \code{ofile = ""}
+\item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
 then the algorithm will not store the result on disk and will return nothing. It will however
-hold the results in memory. This is useful for algorithm that are only intermediate stage.}
+hold partial output results temporarily in memory. This is useful for algorithm that are only
+intermediate stage.}
 }
 \description{
 Region growing for individual tree segmentation based on Dalponte and Coomes (2016) algorithm (see reference).

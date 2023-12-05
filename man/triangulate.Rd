@@ -17,9 +17,10 @@ For a given algorithm when a filter is applied, only the points that meet the cr
 The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
 \link{filters}.}
 
-\item{ofile}{character. Outputs are always stored on disk. If \code{ofile = ""}
+\item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
 then the algorithm will not store the result on disk and will return nothing. It will however
-hold the results in memory. This is useful for algorithm that are only intermediate stage.}
+hold partial output results temporarily in memory. This is useful for algorithm that are only
+intermediate stage.}
 
 \item{use_attribute}{character. By default the triangulation is performed on the coordinate Z. Can also be
 the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity'.}

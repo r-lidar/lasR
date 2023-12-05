@@ -29,9 +29,10 @@ value will be considered a spike). A negative value.}
 
 \item{dil_radius}{integer. Dilation radius (integer value, in pixels).}
 
-\item{ofile}{character. Outputs are always stored on disk. If \code{ofile = ""}
+\item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
 then the algorithm will not store the result on disk and will return nothing. It will however
-hold the results in memory. This is useful for algorithm that are only intermediate stage.}
+hold partial output results temporarily in memory. This is useful for algorithm that are only
+intermediate stage.}
 }
 \description{
 Pits and spikes filling for raster. Typically used for post-processing CHM. This algorithm
