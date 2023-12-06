@@ -84,7 +84,7 @@ Roussel</h4>
     
     
 <div class="section level2">
-<h2 id="rationnal-for-lasr-vs--lidr">Rationnal for <code>lasR</code> vs. <code>lidR</code><a class="anchor" aria-label="anchor" href="#rationnal-for-lasr-vs--lidr"></a>
+<h2 id="rationnale-for-lasr-vs--lidr">Rationnale for <code>lasR</code> vs. <code>lidR</code><a class="anchor" aria-label="anchor" href="#rationnale-for-lasr-vs--lidr"></a>
 </h2>
 <p>Do we need a new package? The short answer lies in the following
 graph. The x-axis represents the time to perform three different
@@ -154,6 +154,61 @@ are not so much in the source code but rather in the organization of the
 code, i.e., no longer using <code>data.frame</code>, memory management
 in C++ rather than R, no processing at the R level, pipelines, and so
 on.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="should-i-use-lidr-or-lasr">Should I use <code>lidR</code> or <code>lasR</code>?<a class="anchor" aria-label="anchor" href="#should-i-use-lidr-or-lasr"></a>
+</h2>
+<p>The question is actually pretty simple to answer. If you want to
+explore, manipulate, test, try, retry, and implement new ideas you have
+in mind, use <code>lidR</code>. If you know what you want, and what you
+want is relatively common (raster of metrics, DTM, CHM, tree location),
+especially if you want it on a large coverage, use
+<code>lasR</code>.</p>
+<div class="section level3">
+<h3 id="example-1">Example 1<a class="anchor" aria-label="anchor" href="#example-1"></a>
+</h3>
+<p>I received 500 km² of data, and I want a CHM and a DTM.</p>
+<p>→ Use <code>lasR</code> to compute both as fast as possible.</p>
+</div>
+<div class="section level3">
+<h3 id="example-2">Example 2<a class="anchor" aria-label="anchor" href="#example-2"></a>
+</h3>
+<p>I want to segment the trees, explore different methods, and test
+different parameters on small plots. Maybe I will integrate a custom
+step, but it’s an exploratory process.</p>
+<p>→ Use <code>lidR</code>.</p>
+</div>
+<div class="section level3">
+<h3 id="example-3">Example 3<a class="anchor" aria-label="anchor" href="#example-3"></a>
+</h3>
+<p>I want to extract circular ground inventories and compute metrics for
+each plot. If the dataset is already normalized, you can use either
+<code>lasR</code> or <code>lidR</code>; this is pretty much equivalent.
+<code>lidR</code> will be easier to use; <code>lasR</code> will be a
+little bit more efficient but more difficult to use (yet the <a href="lasR3.html">pipeline vignette</a> contains a copy-pastable code
+for that). If your dataset is not normalized, <code>lasR</code> will be
+much simpler in that case, thanks to the pipeline processor that allows
+adding a normalization stage before computing the metrics.</p>
+</div>
+<div class="section level3">
+<h3 id="example-4">Example 4<a class="anchor" aria-label="anchor" href="#example-4"></a>
+</h3>
+<p>I want to create a complex pipeline that computes the local shape of
+the points to classify roofs and wires in the point cloud. Then using a
+shapefile, I want to classify the water in the point cloud. To finish, I
+want to write new classified LAS files.</p>
+<p>→ Use <code>lidR</code>. <code>lasR</code> does not have so many
+tools. <code>lasR</code> is not <code>lidR</code>; it is much more
+efficient but less versatile and has fewer tools.</p>
+</div>
+<div class="section level3">
+<h3 id="example-5">Example 5<a class="anchor" aria-label="anchor" href="#example-5"></a>
+</h3>
+<p>I want to find and segment the trees with a common algorithm. Nothing
+fancy. I want to do that on 100 km² or more.</p>
+<p>→ Use <code>lasR</code>. <code>lidR</code> will probably fail at
+doing it.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

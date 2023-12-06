@@ -209,8 +209,8 @@ result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file2104661a0284.tif </span></span>
-<span><span class="co">#&gt; name        : file2104661a0284</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file216f3ff651db.tif </span></span>
+<span><span class="co">#&gt; name        : file216f3ff651db</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -336,11 +336,11 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpdgBfGi/bcts_1_ground" "/tmp/RtmpdgBfGi/bcts_2_ground"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/RtmpEuxz2W/bcts_1_ground" "/tmp/RtmpEuxz2W/bcts_2_ground"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpdgBfGi/bcts_1_normalized.laz"</span></span>
-<span><span class="co">#&gt; [2] "/tmp/RtmpdgBfGi/bcts_2_normalized.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpEuxz2W/bcts_1_normalized.laz"</span></span>
+<span><span class="co">#&gt; [2] "/tmp/RtmpEuxz2W/bcts_2_normalized.laz"</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -354,7 +354,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpdgBfGi/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpEuxz2W/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -663,7 +663,7 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; [1] 12745</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nsingle</span></span>
-<span><span class="co">#&gt; [1] 5082</span></span>
+<span><span class="co">#&gt; [1] 5097</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nwithheld</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
@@ -673,11 +673,11 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_return</span></span>
 <span><span class="co">#&gt;    1    2    3    4    5    6 </span></span>
-<span><span class="co">#&gt; 9461 2562  644   73    4    1 </span></span>
+<span><span class="co">#&gt; 9446 2587  629   77    5    1 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_class</span></span>
 <span><span class="co">#&gt;     1     2     9 </span></span>
-<span><span class="co">#&gt; 10781  1593   371</span></span></code></pre></div>
+<span><span class="co">#&gt; 10811  1556   378</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
