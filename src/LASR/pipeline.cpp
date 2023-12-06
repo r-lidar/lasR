@@ -80,7 +80,8 @@ bool Pipeline::set_chunk(const Chunk& chunk)
       return false; // # nocov
     }
 
-    stage->set_input_file(chunk.main_files[0]); // TODO: only used by writelax. Can be removed
+    for (const auto& f : chunk.main_files) stage->set_input_file(f); // TODO: only used by writelax. Can be removed and replace by set_chunk
+
     stage->set_input_file_name(chunk.name);
   }
 

@@ -2,7 +2,11 @@
 #define LASRWRITELAS_H
 
 #include "lasralgorithm.h"
-#include "laswriter.hpp"
+
+class LASwriter;
+class LASheader;
+//class LASindex;
+//class LASquadtree;
 
 class LASRlaswriter: public LASRalgorithmWriter
 {

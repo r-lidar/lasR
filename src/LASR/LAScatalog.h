@@ -28,7 +28,7 @@ public:
   double get_buffer() const { return buffer; };
   int get_number_files() const { return indexed.size(); }
   int get_number_indexed_files() const;
-  void check_spatial_index();
+  bool check_spatial_index();
 
 private:
   void set_crs(const LASheader* header);

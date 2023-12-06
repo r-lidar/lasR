@@ -100,3 +100,17 @@ get_pipeline_info = function(pipeline)
   return(ans)
 }
 
+is_indexed = function(files)
+{
+  ans = logical(length(files))
+  for (i in seq_along(files))
+  {
+    file = files[i]
+    indexed = .Call(`C_is_indexed`, file)
+    if (inherits(ans, "error")) { stop(indexed) }
+    ans[i] = indexed
+  }
+
+  return (ans)
+}
+

@@ -2,7 +2,6 @@
 #define LASRWRITELAX_H
 
 #include "lasralgorithm.h"
-#include "laswriter.hpp"
 
 class LASRlaxwriter: public LASRalgorithm
 {

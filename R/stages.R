@@ -733,28 +733,6 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
   set_lasr_class(ans)
 }
 
-#' Write LAX files
-#'
-#' Write a lax file from a las or laz file. A lax file is a tiny file which can come with a las or laz
-#' and which spatially index the data to make faster spatial queries. It has been created by Martin
-#' Isenburg in LASlib. lasR supports lax files and enable to write a lax. For more options, use
-#' lasindex from LAStools (for more informations see references)
-#'
-#' @references
-#' https://rapidlasso.com/
-#' https://rapidlasso.com/2012/12/03/lasindex-spatial-indexing-of-lidar-data/
-#' https://github.com/LAStools/LAStools
-#'
-#' @examples
-#' f <- system.file("extdata", "Topography.las", package="lasR")
-#' processor(reader(f) + write_lax())
-#' @noRd
-write_lax = function()
-{
-  ans <- list(algoname = "write_lax")
-  set_lasr_class(ans)
-}
-
 # ==== INTERNALS =====
 
 generate_uid <- function(size = 6)

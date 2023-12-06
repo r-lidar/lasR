@@ -288,12 +288,13 @@ void LAScatalog::set_crs(const LASheader* header)
   }
 }
 
-void LAScatalog::check_spatial_index()
+bool LAScatalog::check_spatial_index()
 {
-  if (get_number_files() > 1 && get_buffer() > 0 && get_number_indexed_files() != get_number_files())
-  {
-    warning("%d files do not have spatial index. Spatial indexing speeds-up drastically tile buffering.", get_number_files()-get_number_indexed_files());
-  }
+  bool multi_files = get_number_files() > 1;
+  bool use_buffer = get_buffer() > 0;
+  bool no_index = get_number_indexed_files() != get_number_files();
+  bool has_queries = queries.size() > 0;
+  return !((multi_files && use_buffer && no_index) || (has_queries && no_index));
 }
 
 int LAScatalog::get_number_indexed_files() const

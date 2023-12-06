@@ -36,6 +36,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
   parsed = false;
   pipeline.clear();
   delete catalog;
+  catalog = nullptr;
 
   for (auto i = 0; i < Rf_length(sexpargs); ++i)
   {
@@ -54,12 +55,14 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         return false;
       }
 
-      // This is the buffer provided by the user. The actual buffer may be larger
-      // depending on the stages in the pipeline.
-      buffer = get_element_as_double(stage, "buffer");
-
+      // Create a reader stage
       auto v = std::make_shared<LASRlasreader>();
       pipeline.push_back(v);
+
+      // This is the buffer provided by the user. The actual buffer may be larger
+      // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
+      // stage tells us 50.
+      buffer = get_element_as_double(stage, "buffer");
 
       // The reader stage provides the files we will read. We can build a LAScatalog.
       // If we do not build a LAScatalog we can parse the pipeline anyway but all stages
@@ -78,13 +81,14 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
           }
         }
 
-        // The catalog read all the file, we know the extent of the coverage
+        // The catalog read all the files, we now know the extent of the coverage
         xmin = catalog->xmin;
         ymin = catalog->ymin;
         xmax = catalog->xmax;
         ymax = catalog->ymax;
 
-        // Special treatment of the reader to find the potential queries in the catalog
+        // Special treatment of the reader to find the potential queries in the catalogue
+        // TODO: xcenter, ycenter, radius, xmin, ymin and ... have the same size it is checked at R level but should be tested here.
         if (contains_element(stage, "xcenter"))
         {
           std::vector<double> xcenter = get_element_as_vdouble(stage, "xcenter");
@@ -113,13 +117,16 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       }
 
       // This is the buffer provided by the user. The actual buffer may be larger
-      // depending on the stages in the pipeline.
+      // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
+      // stage tells us 50. But in this case it is useful only for queries since there is no files
+      // and especially no neigbor files
       buffer = get_element_as_double(stage, "buffer");
 
       SEXP dataframe = get_element(stage, "dataframe");
       std::vector<double> accuracy = get_element_as_vdouble(stage, "accuracy");
 
-      // Compute the bounding box
+      // Compute the bounding box. We assume that the data.frame has element named X and Y.
+      // This is not checked at R level. Anyway get_element() will throw an exception
       SEXP X = get_element(dataframe, "X");
       SEXP Y = get_element(dataframe, "Y");
       xmin = F64_MAX;
@@ -382,18 +389,6 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     it->set_output_file(output);
   }
 
-  // If there is no reader, there is no catalog. We check that we have a reader.
-  // If build_catalog = false we are allowed to do not have a reader. This is only
-  // used to parse a pipeline and produce infos in get_pipeline_info();
-  if (build_catalog)
-  {
-    if (pipeline[0]->get_name().substr(0, 6) != "reader")
-    {
-      last_error = "The pipeline must start with a readers";
-      return false;
-    }
-  }
-
   parsed = true;
   streamable = is_streamable();
   buffer = need_buffer();
@@ -405,11 +400,31 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     stage->set_verbose(verbose);
   }
 
-  if (catalog)
+  if (build_catalog)
   {
+    // Check that the first stage is a reader
+    if (pipeline.front()->get_name().substr(0, 6) != "reader")
+    {
+      last_error = "The pipeline must start with a readers";
+      return false;
+    }
+
+    // We parse the pipeline so we know if we need a buffer
     catalog->set_buffer(need_buffer());
+
+    // The calog is build, we know the CRS of the collection
     set_crs(catalog->epsg);
     set_crs(catalog->wkt);
+
+    // Write lax is the very first algorithm. Even before read_las. It is called
+    // only if needed.
+    if (!catalog->check_spatial_index())
+    {
+      auto v = std::make_shared<LASRlaxwriter>();
+      pipeline.push_front(v);
+      print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n",
+             catalog->get_number_files()-catalog->get_number_indexed_files());
+    }
   }
 
   return true;

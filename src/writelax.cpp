@@ -1,6 +1,7 @@
 #include "writelax.h"
 #include "macros.h"
 
+#include "laswriter.hpp"
 #include "lasreader.hpp"
 #include "laszip_decompress_selective_v3.hpp"
 #include "lasindex.hpp"
@@ -17,6 +18,14 @@ void LASRlaxwriter::set_input_file(std::string file)
   if (!lasreader)
   {
     last_error = "LASlib internal error";
+    return;
+  }
+
+  // This file is already indexed
+  if (lasreader->get_copcindex() || lasreader->get_index())
+  {
+    lasreader->close();
+    delete lasreader;
     return;
   }
 
@@ -59,8 +68,14 @@ void LASRlaxwriter::set_input_file(std::string file)
   lasreader->close();
   delete lasreader;
 
-  lasindex.complete(100000, -20, verbose);
-  lasindex.write(lasreadopener.get_file_name());
+  int minimum_points = 100000;
+  int maximum_intervals = -20;
+  lasindex.complete(minimum_points, maximum_intervals, false);
+
+  if (!lasindex.append(lasreadopener.get_file_name()))
+  {
+    lasindex.write(lasreadopener.get_file_name());
+  }
 
   progress->done();
 

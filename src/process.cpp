@@ -36,7 +36,6 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     }
 
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
-    lascatalog->check_spatial_index();  // prints a warning if no spatial index
     lascatalog->set_chunk_size(0);
 
     int n = lascatalog->get_number_chunks();

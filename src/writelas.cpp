@@ -1,5 +1,7 @@
 #include "writelas.h"
 
+#include "laswriter.hpp"
+
 LASRlaswriter::LASRlaswriter(double xmin, double ymin, double xmax, double ymax, bool keep_buffer)
 {
   this->xmin = xmin;

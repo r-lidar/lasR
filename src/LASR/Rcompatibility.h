@@ -6,12 +6,14 @@
 #include <R_ext/Print.h>
 #include <R_ext/Error.h>
 #define print Rprintf
-#define eprint REprintf
+#define eprint(fmt, ...) REprintf("ERROR: " fmt "\n", ##__VA_ARGS__)
+#define wprint(fmt, ...) REprintf("WARNING: " fmt "\n", ##__VA_ARGS__)
 #define warning Rf_warning
 #else
 #include <cstdio>
 #define print(fmt, ...) fprintf(stdout, fmt, ##__VA_ARGS__)
 #define eprint(fmt, ...) fprintf(stderr, "ERROR: " fmt "\n", ##__VA_ARGS__)
+#define wprint(fmt, ...) fprintf(stderr, "WARNING: " fmt "\n", ##__VA_ARGS__)
 #define warning(fmt, ...) fprintf(stderr, "WARNING: " fmt "\n", ##__VA_ARGS__)
 #endif
 

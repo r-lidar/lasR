@@ -12,7 +12,7 @@
 
 // STL
 #include <memory>
-#include <vector>
+#include <list>
 
 class LAS;
 class LASpoint;
@@ -68,7 +68,7 @@ private:
     LASheader* header;
     LAScatalog* catalog;
     std::string last_error;
-    std::vector<std::shared_ptr<LASRalgorithm>> pipeline;
+    std::list<std::shared_ptr<LASRalgorithm>> pipeline;
 };
 
 #endif
