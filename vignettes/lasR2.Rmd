@@ -393,7 +393,7 @@ In conclusion, in the hypothesis that the user-defined function returns somethin
 
 ## Hulls
 
-A Delaunay triangulation defines a convex polygon, which represents the concave hull of the points. However, in dense point clouds, removing triangles with large edges due to the absence of points results in a more complex structure.
+A Delaunay triangulation defines a convex polygon, which represents the convex hull of the points. However, in dense point clouds, removing triangles with large edges due to the absence of points results in a more complex structure.
 
 ```{r, echo = FALSE}
 f <- system.file("extdata", "Topography.las", package="lasR")

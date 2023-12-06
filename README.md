@@ -16,7 +16,7 @@ The `lasR` package (pronounce laser) **does not** intent to supersede the `lidR`
 
 ## Benchmark
 
-The following benchmark compares how much time and RAM memory it takes for `lasR` and `lidR` to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the benchmark vignettes.
+The following benchmark compares how much time and RAM memory it takes for `lasR` and `lidR` to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the [benchmark](https://r-lidar.github.io/lasR/articles/lasR4.html) vignettes.
 
 <img src="man/figures/readme_benchmark.png" style="display: block; margin: auto;" />
 
