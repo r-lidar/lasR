@@ -28,6 +28,7 @@ SEXP is_indexed(SEXP sexpfile)
 
   if (!lasreader)
   {
+    // # nocov start
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 
     SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
@@ -50,6 +51,7 @@ SEXP is_indexed(SEXP sexpfile)
 
     UNPROTECT(5);
     return res;
+    // # nocov end
   }
 
   bool indexed = lasreader->get_copcindex() || lasreader->get_index();
