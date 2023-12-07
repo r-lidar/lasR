@@ -139,7 +139,7 @@ bool LASRdataframereader::process(LASheader*& header)
       SEXP vector = VECTOR_ELT(dataframe, i);
       if (TYPEOF(vector) == REALSXP) data_type = LAS::DOUBLE;
       const char* name = CHAR(STRING_ELT(names_attr, i));
-      LASattribute lasattribute(data_type, name, name);
+      LASattribute lasattribute(data_type-1, name, name);
       lasheader.add_attribute(lasattribute);
       lasheader.update_extra_bytes_vlr();
       lasheader.point_data_record_length += lasattribute.get_size();

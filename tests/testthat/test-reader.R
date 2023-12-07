@@ -62,3 +62,30 @@ test_that("reader_dataframe works",
   expect_equal(ans$npoints, 15L)
 })
 
+read_las = function(files, select = "*", filter = "")
+{
+  load = function(data) { return(data) }
+  read = reader(files, filter = filter)
+  call = callback(load, expose = select, no_las_update = TRUE)
+  return(processor(read+call))
+}
+
+test_that("reader_dataframe works with extrabytes",
+{
+  f = system.file("extdata", "Example.rds", package="lasR")
+  las = readRDS(f)
+  las$foo = 1L
+  las$bar = 2.5
+  read = reader(las)
+  write = write_las()
+
+  expect_error(ans <- processor(read+write), NA)
+  expect_equal(basename(ans), "data.frame.las")
+  las = read_las(ans)
+  expect_true(all(c("foo", "bar") %in% names(las)))
+  expect_true(las$foo[1] == 1L)
+  expect_true(is.integer(las$foo))
+  expect_true(las$bar[1] == 2.5)
+  expect_false(is.integer(las$bar))
+})
+
