@@ -226,21 +226,28 @@ bool LASRdataframereader::process(LASpoint*& point)
           if (type ==  INTSXP)
           {
             int val = INTEGER(vector)[current_point];
+            laspoint.set_attribute(attr_index, (U8*)&val); break;
 
-            switch(attr.data_type)
+            // No other possible cases because LASRdataframereader::process(LASheader*& header)
+            // assigns either LAS::LONG or LAS::DOUBLE
+            /*switch(attr.data_type)
             {
-            case LAS::UCHAR:  { U8 u  = U8_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
+            case LAS::UCHAR:  { U8 u  = U8_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; } //
             case LAS::CHAR:   { I8 u  = I8_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::USHORT: { U16 u = U16_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::SHORT:  { I16 u = I16_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::LONG:   { I32 u = I32_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            }
+            }*/
           }
           else if (type ==  REALSXP)
           {
             double val = REAL(vector)[current_point];
-            val = (val - attr.offset[0])/attr.scale[0];
+            laspoint.set_attribute(attr_index, (U8*)&val);
 
+            // No other possible cases because LASRdataframereader::process(LASheader*& header)
+            // assigns either LAS::LONG or LAS::DOUBLE
+            // TODO: support other options for compatibility with lidR
+            /*val = (val - attr.offset[0])/attr.scale[0];
             switch(attr.data_type)
             {
             case LAS::UCHAR:  { U8  u = U8_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
@@ -250,7 +257,7 @@ bool LASRdataframereader::process(LASpoint*& point)
             case LAS::LONG:   { I32 u = I32_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::FLOAT:  { F32 u = (F32)val; laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::DOUBLE: { F64 u = (F64)val; laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            }
+            }*/
           }
 
           break;
