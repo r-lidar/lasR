@@ -17,8 +17,8 @@ void LASRlaxwriter::set_input_file(std::string file)
 
   if (!lasreader)
   {
-    last_error = "LASlib internal error";
-    return;
+    last_error = "LASlib internal error"; // # nocov
+    return; // # nocov
   }
 
   // This file is already indexed
@@ -40,14 +40,14 @@ void LASRlaxwriter::set_input_file(std::string file)
 
   if ((w < 1000) && (h < 1000))
     t = 10.0;
-  else if ((w < 10000) && (h < 10000))
+  else if ((w < 10000) && (h < 10000)) // # nocov start
     t = 100.0;
   else if ((w < 100000) && (h < 100000))
     t = 1000.0;
   else if ((w < 1000000) && (h < 1000000))
     t = 10000.0;
   else
-    t = 100000.0;
+    t = 100000.0; // # nocov end
 
   lasquadtree->setup(lasreader->header.min_x, lasreader->header.max_x, lasreader->header.min_y, lasreader->header.max_y, t);
 

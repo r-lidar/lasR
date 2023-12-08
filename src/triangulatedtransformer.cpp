@@ -20,16 +20,16 @@ bool LASRtriangulatedTransformer::process(LAS*& las)
 {
   if (algorithm == nullptr)
   {
-    last_error = "unitialized pointer to LASRalgorithm";
-    return false;
+    last_error = "unitialized pointer to LASRalgorithm"; // # nocov
+    return false; // # nocov
   }
 
   LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(algorithm);
 
   if (p == nullptr)
   {
-    last_error = "invalid dynamic cast. Expecting a pointer to LASRtriangulate";
-    return false;
+    last_error = "invalid dynamic cast. Expecting a pointer to LASRtriangulate"; // # nocov
+    return false; // # nocov
   }
 
   int attr_index = -1;
@@ -83,7 +83,7 @@ bool LASRtriangulatedTransformer::process(LAS*& las)
     {
       case SUB: z = las->point.get_z() - z; break;
       case ADD: z = las->point.get_z() + z; break;
-      default: last_error = "internal error, invalid operator"; return false; break;
+      default: last_error = "internal error, invalid operator"; return false; break; // # nocov
     }
 
     if (attr_index == -1)

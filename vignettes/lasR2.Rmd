@@ -408,7 +408,7 @@ par(mar = c(2, 2, 1, 1))
 plot(ans, axes = T, lwd = 0.5)
 ```
 
-The `hulls()` algorithm computes the contour of the mesh, producing a convex hull with holes:
+The `hulls()` algorithm computes the contour of the mesh, producing a concave hull with holes:
 
 ```{r hulls2, fig.width=5, fig.height=5}
 read = reader(f)
