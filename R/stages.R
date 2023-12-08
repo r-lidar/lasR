@@ -362,7 +362,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
   }
   else
   {
-    stop("Invalid operators")
+    stop("Invalid operators") # no cov
   }
   set_lasr_class(ans)
 }
@@ -410,7 +410,7 @@ reader_coverage = function(x, filter = "", buffer = 0)
 {
   if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_coverage(x, filter, buffer))
   if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_coverage(x, filter, buffer))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.")
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # no cov
 }
 
 #' @export
@@ -419,7 +419,7 @@ reader_circles = function(x, xc, yc, r, filter = "", buffer = 0)
 {
   if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_circles(x, xc, yc, r, filter, buffer))
   if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_circles(x, xc, yc, r, filter, buffer))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.")
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # no cov
 }
 
 #' @export
@@ -428,7 +428,7 @@ reader_rectangles = function(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
 {
   if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer))
   if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.")
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # no cov
 }
 
 reader_files_coverage = function(files, filter = "", buffer = 0)
@@ -463,7 +463,7 @@ reader_files_coverage = function(files, filter = "", buffer = 0)
   }
 
   nexist <- sum(!file.exists(files))
-  if (nexist > 0) stop(paste0(nexist, " file(s) not existing"))
+  if (nexist > 0) stop(paste0(nexist, " file(s) not existing")) # no cov
 
   ans <- list(algoname = "reader_las", files = files, filter = filter, buffer = buffer)
   set_lasr_class(ans)

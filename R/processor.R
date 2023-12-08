@@ -75,8 +75,8 @@ read_as_common_r_object = function(ans)
         }
         else
         {
-          warning(paste0("Non supported format for ", x))
-          return(x)
+          warning(paste0("Non supported format for ", x)) # no cov
+          return(x) # no cov
         }
       }
       else

@@ -18,12 +18,12 @@ LASRlaswriter::~LASRlaswriter()
 {
   if (laswriter)
   {
-    // # no cov start
+    // # nocov start
     warning("internal error: please report, a LASwriter is still opened when destructing LASRlaswriter. The LAS or LAZ file written may be corrupted\n");
     laswriter->close();
     delete laswriter;
     laswriter = nullptr;
-    // # no cov end
+    // # nocov end
   }
 }
 
@@ -59,8 +59,8 @@ bool LASRlaswriter::process(LASpoint*& p)
 
     if (!laswriter)
     {
-      last_error = "LASlib internal error. Cannot open LASwriter."; // # no cov
-      return false; // # no cov
+      last_error = "LASlib internal error. Cannot open LASwriter."; // # nocov
+      return false; // # nocov
     }
 
     written.push_back(ofile);

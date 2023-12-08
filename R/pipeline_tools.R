@@ -75,7 +75,7 @@ print.LASRpipeline = function(x, ...)
 `+.LASRpipeline` <- function(e1, e2)
 {
   if (!methods::is(e1, "LASRpipeline") || !methods::is(e2, "LASRpipeline"))
-    stop("Both operands must be of class LASRalgorithm")
+    stop("Both operands must be of class LASRalgorithm") # no cov
 
   ans <- c(e1, e2)
   class(ans) <- "LASRpipeline"
@@ -96,7 +96,7 @@ print.LASRpipeline = function(x, ...)
 get_pipeline_info = function(pipeline)
 {
   ans = .Call(`C_get_pipeline_info`, pipeline)
-  if (inherits(ans, "error")) { stop(ans) }
+  if (inherits(ans, "error")) { stop(ans) } # no cov
   return(ans)
 }
 
@@ -107,7 +107,7 @@ is_indexed = function(files)
   {
     file = files[i]
     indexed = .Call(`C_is_indexed`, file)
-    if (inherits(ans, "error")) { stop(indexed) }
+    if (inherits(ans, "error")) { stop(indexed) } # no cov
     ans[i] = indexed
   }
 

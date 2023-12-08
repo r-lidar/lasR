@@ -57,7 +57,7 @@ bool LASRboundaries::process(LAS*& las)
   if (p == 0)
   {
     last_error  = "Internal error. Invalid pointer dynamic cast. Expecting a pointer to LASRtriangulate"; // # nocov
-    return false; // # no cov
+    return false; // # nocov
   }
 
   std::vector<Edge> edges;
