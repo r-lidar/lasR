@@ -923,12 +923,11 @@ LASreader* LASreadOpener::open(const CHAR* other_file_name, BOOL reset_after_oth
 				// Creation of the COPC index
 				if (lasreaderlas->header.vlr_copc_entries)
 				{
-					if (index)
-					{
-						REprintf("WARNING: both LAX file and COPC spatial indexing registered. COPC has the precedence.\n");
-						delete index;
-						index = 0;
-					}
+				  if (index)
+				  {
+				    REprintf("WARNING: both LAX file and COPC spatial indexing registered. COPC has the precedence.\n");
+				    lasreaderlas->set_index(0); // delete the index internally
+				  }
 
 					COPCindex *copc_index = new COPCindex(lasreaderlas->header);
 					if (copc_stream_order == 0) 	 copc_index->set_stream_ordered_by_chunk();
