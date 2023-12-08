@@ -35,9 +35,9 @@ bool Pipeline::run()
   success = process(header);
   if (!success) return false;
 
-  if (header->number_of_point_records == 0)
+  if (header->number_of_point_records == 0 && header->extended_number_of_point_records == 0)
   {
-    warning("This chunk has 0 points. Skipping"); // # nocov
+    wprint("This chunk has 0 points. Skipping"); // # nocov
     return true; // # nocov
   }
 
