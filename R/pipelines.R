@@ -28,7 +28,7 @@ normalize = function(extrabytes = FALSE)
   else
   {
     trans <- transform_with_triangulation(tri)
-    pipeline <- pipeline
+    pipeline <- pipeline + trans
   }
 
   return(pipeline)

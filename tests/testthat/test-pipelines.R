@@ -20,6 +20,22 @@ test_that("buffer tiles",
   expect_equal(area2, 236796.375)
 })
 
+test_that("normalize & dtm",
+{
+  f <- system.file("extdata", "Topography.las", package="lasR")
+
+  pipeline = reader(f) + dtm() + normalize() + summarise() + chm(2)
+  suppressWarnings(ans <- processor(pipeline))
+
+  expect_length(ans, 3L)
+  expect_s4_class(ans[[1]], "SpatRaster")
+
+  x = as.numeric(names(ans$summary$z_histogram))
+  w = ans$summary$z_histogram
+
+  expect_equal(mean(x*w/sum(w)), 0.287, tolerance = 0.01)
+})
+
 test_that("pipleline info works",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
