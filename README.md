@@ -46,7 +46,7 @@ remotes::install_github("r-lidar/lasR")
   - Provided under LGPL license and modified to be R-compliant by
     Jean-Romain Roussel.
 - For `lasR`:
-  - © 2023-2014 Jean-Romain Roussel
+  - © 2023-2024 Jean-Romain Roussel
   - Provided under GPL-3 license.
 - For `chm_prep`
   - © 2008-2023 Benoît St-Onge
