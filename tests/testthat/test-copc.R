@@ -1,4 +1,4 @@
-test_that(
+test_that("works with COPC",
 {
   f = system.file("extdata", "example.copc.laz", package="lasR")
   read = reader(f)
