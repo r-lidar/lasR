@@ -28,7 +28,9 @@ col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(15)
 
 This tutorial is intended to be read in order. It introduces the available tools of the package in a specific order so that the reader can discover all the features of the package organically.
 
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 In the following tutorial, the variable `f` refers to one or several file paths stored in a vector. It can also be the path to a directory. In this tutorial, the output is rendered with one or two small LAS files, but every pipeline is designed to process numerous files covering a large extent.
+</blockquote>
 
 ## Reader
 
@@ -141,7 +143,9 @@ terra::plot(ans[[1]], mar = c(1, 1, 1, 3), col = col)
 terra::plot(ans[[2]], mar = c(1, 1, 1, 3), col = col)
 ```
 
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 For simplicity the package has pre-installed pipelines named `chm()` and `dtm()` that do what is explained above.
+</blockquote>
 
 Last but not least, let's compute the map of the median intensity by injecting a user-defined expression. Like in `lidR`, the attributes of the point cloud are named: `X`, `Y`, `Z`, `Intensity`, `gpstime`, `ReturnNumber`, `NumberOfreturns`, `Classification`, `UserData`, `PointSourceID`, `R`, `G`, `B`, `NIR`. For users familiar with the `lidR` package, note that there is no `ScanAngleRank/ScanAngle`;  instead the scanner angle is always named `ScanAngle` and is numeric. Also flags are named `Withheld`, `Synthetic` and `Keypoint`.
 
@@ -175,7 +179,9 @@ ans = processor(pipeline)
 ans
 ```
 
-for convenience this pipeline is pre-recorded in the package under the name `normalize()`.
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+For convenience this pipeline is pre-recorded in the package under the name `normalize()`.
+</blockquote>
 
 To obtain a meaningful output, it is necessary to chain another stage. Here the point cloud has been modified but then it is discarded. For instance, we can compute a Canopy Height Model (CHM) on the normalized point cloud. In the following pipeline, the first rasterization (`chm1`) is applied before normalization, while the second rasterization occurs after `transform_with_triangulation()`, thus being applied to the transformed point cloud.
 

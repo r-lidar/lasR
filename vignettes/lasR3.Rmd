@@ -39,7 +39,9 @@ This vignette shows a list of pipeline factories, i.e., functions that generate 
 
 ### Normalize
 
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 This pipeline is already installed in the package.
+</blockquote>
 
 ```{r}
 normalize = function(extrabytes = FALSE)
@@ -117,7 +119,9 @@ pipeline = reader(f) + ground_mcc() + write_las(o)
 
 ### Canopy Heigh Model
 
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 These two pipelines are natively installed in the package under the name `chm()`.
+</blockquote>
 
 ```{r}
 chm_p2r = function(res, filter = "", ofile = tempfile(fileext = ".tif"))
@@ -137,7 +141,11 @@ chm_tin = function(res, ofile = tempfile(fileext = ".tif"))
 
 ### Digital Terrain Model 
 
-This one is also natively installed in the package. `add_class` can be used to add a class used as ground such as 9 for water. 
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+This one is also natively installed in the package.
+</blockquote>
+
+`add_class` can be used to add a class used as ground such as 9 for water. 
 
 ```{r}
 dtm = function(res, ofile = tempfile(fileext = ".tif"), add_class = NULL)
@@ -177,7 +185,7 @@ buffer_tiles = function(files, buffer, ofiles = paste0(tempdir(), "/*_buffered.l
 
 ### Clip circle
 
-Writes LAS files or returns `data.frame`s
+Writes LAS files or returns `data.frame`s. Supports `sf` objects as input.
 
 ```{r}
 clip_circle = function(files, geometry, radius, ofiles = paste0(tempdir(), "/*_clipped.las"))
@@ -222,7 +230,7 @@ crs(f)
 
 ### Inventory metrics
 
-Using an `sf` object to provide plot centers and offering the option to normalize on-the-fly and returns the same `sf` object with extra attributes
+Using an `sf` object to provide plot centers and offering the option to normalize on-the-fly.  It returns the same `sf` object with extra attributes.
 
 ```{r}
 inventory_metrics = function(f, geometry, radius, fun, normalize = FALSE)
