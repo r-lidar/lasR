@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 class LASheader;
 class LASreadOpener;
@@ -19,8 +20,8 @@ public:
   void set_chunk_size(double size) { if (size> 0) chunk_size = size; else chunk_size = 1000; };
   void set_chunk_is_file() { chunk_size = 0; };
   void set_buffer(double buffer) { this->buffer = buffer; };
-  void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed);
-  bool add_file(std::string file);
+  void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool buffer_only = false);
+  bool add_file(std::string file, bool buffer_only = false);
   void add_query(double xmin, double ymin, double xmax, double ymax);
   void add_query(double xcenter, double ycenter, double radius);
   bool get_chunk(int index, Chunk& chunk);
@@ -56,10 +57,12 @@ private:
   double chunk_size;
 
   // stores information about each file
-  std::vector<bool> indexed;
-  std::vector<Rectangle> bboxes;
+  std::vector<bool> indexed;                // the file has a spatial index
+  std::vector<bool> buffer_only;            // the file is not processed and is used only for bufferring
+  std::vector<Rectangle> bboxes;            // bounding boxes of the files
+  std::vector<std::filesystem::path> files; // path to files
 
-  LASreadOpener* lasreadopener;
+  //LASreadOpener* lasreadopener;
   LASkdtreeRectangles* laskdtree;
 
   // Queries, partial read
