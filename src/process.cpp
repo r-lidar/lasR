@@ -1,5 +1,6 @@
 // R
 #ifdef USING_R
+#define R_NO_REMAP 1
 #include <R.h>
 #include <Rinternals.h>
 #endif
@@ -144,16 +145,16 @@ SEXP get_pipeline_info(SEXP sexppipeline)
     bool read_points = pipeline.need_points();
     double buffer = pipeline.need_buffer();
 
-    SEXP ans =  PROTECT(allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(ans, 0, ScalarLogical(is_streamable));
-    SET_VECTOR_ELT(ans, 1, ScalarLogical(read_points));
-    SET_VECTOR_ELT(ans, 2, ScalarReal(buffer));
+    SEXP ans =  PROTECT(Rf_allocVector(VECSXP, 3));
+    SET_VECTOR_ELT(ans, 0, Rf_ScalarLogical(is_streamable));
+    SET_VECTOR_ELT(ans, 1, Rf_ScalarLogical(read_points));
+    SET_VECTOR_ELT(ans, 2, Rf_ScalarReal(buffer));
 
-    SEXP names = PROTECT(allocVector(STRSXP, 3));
-    SET_STRING_ELT(names, 0, mkChar("streamable"));
-    SET_STRING_ELT(names, 1, mkChar("read_points"));
-    SET_STRING_ELT(names, 2, mkChar("buffer"));
-    setAttrib(ans, R_NamesSymbol, names);
+    SEXP names = PROTECT(Rf_allocVector(STRSXP, 3));
+    SET_STRING_ELT(names, 0, Rf_mkChar("streamable"));
+    SET_STRING_ELT(names, 1, Rf_mkChar("read_points"));
+    SET_STRING_ELT(names, 2, Rf_mkChar("buffer"));
+    Rf_setAttrib(ans, R_NamesSymbol, names);
 
     UNPROTECT(2);
     return ans;
