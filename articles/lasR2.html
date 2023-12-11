@@ -86,11 +86,13 @@ Roussel</h4>
 <p>This tutorial is intended to be read in order. It introduces the
 available tools of the package in a specific order so that the reader
 can discover all the features of the package organically.</p>
-<p>In the following tutorial, the variable <code>f</code> refers to one
-or several file paths stored in a vector. It can also be the path to a
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+In the following tutorial, the variable <code>f</code> refers to one or
+several file paths stored in a vector. It can also be the path to a
 directory. In this tutorial, the output is rendered with one or two
 small LAS files, but every pipeline is designed to process numerous
-files covering a large extent.</p>
+files covering a large extent.
+</blockquote>
 <div class="section level2">
 <h2 id="reader">Reader<a class="anchor" aria-label="anchor" href="#reader"></a>
 </h2>
@@ -209,8 +211,8 @@ result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file217a76f05896.tif </span></span>
-<span><span class="co">#&gt; name        : file217a76f05896</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file21a86281a615.tif </span></span>
+<span><span class="co">#&gt; name        : file21a86281a615</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -241,9 +243,11 @@ operator (here <code>max</code>). The output is a named list with two
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/terra/man/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span>, col <span class="op">=</span> <span class="va">col</span><span class="op">)</span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/terra/man/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span>, col <span class="op">=</span> <span class="va">col</span><span class="op">)</span></span></code></pre></div>
 <p><img src="lasR2_files/figure-html/rasterize2-1.png" width="50%"><img src="lasR2_files/figure-html/rasterize2-2.png" width="50%"></p>
-<p>For simplicity the package has pre-installed pipelines named
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+For simplicity the package has pre-installed pipelines named
 <code><a href="../reference/chm.html">chm()</a></code> and <code><a href="../reference/dtm.html">dtm()</a></code> that do what is explained
-above.</p>
+above.
+</blockquote>
 <p>Last but not least, let’s compute the map of the median intensity by
 injecting a user-defined expression. Like in <code>lidR</code>, the
 attributes of the point cloud are named: <code>X</code>, <code>Y</code>,
@@ -290,8 +294,10 @@ is <code>NULL</code>.</p>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
 <span><span class="co">#&gt; NULL</span></span></code></pre></div>
-<p>for convenience this pipeline is pre-recorded in the package under
-the name <code><a href="../reference/normalize.html">normalize()</a></code>.</p>
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+For convenience this pipeline is pre-recorded in the package under the
+name <code><a href="../reference/normalize.html">normalize()</a></code>.
+</blockquote>
 <p>To obtain a meaningful output, it is necessary to chain another
 stage. Here the point cloud has been modified but then it is discarded.
 For instance, we can compute a Canopy Height Model (CHM) on the
@@ -336,11 +342,11 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/Rtmpb9ZvCy/bcts_1_ground" "/tmp/Rtmpb9ZvCy/bcts_2_ground"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/RtmpzL8gUh/bcts_1_ground" "/tmp/RtmpzL8gUh/bcts_2_ground"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/Rtmpb9ZvCy/bcts_1_normalized.laz"</span></span>
-<span><span class="co">#&gt; [2] "/tmp/Rtmpb9ZvCy/bcts_2_normalized.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpzL8gUh/bcts_1_normalized.laz"</span></span>
+<span><span class="co">#&gt; [2] "/tmp/RtmpzL8gUh/bcts_2_normalized.laz"</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -354,7 +360,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/Rtmpb9ZvCy/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpzL8gUh/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -391,10 +397,10 @@ and invokes the <code>meanz()</code> function on the
 <span><span class="va">call</span> <span class="op">=</span> <span class="fu"><a href="../reference/callback.html">callback</a></span><span class="op">(</span><span class="va">meanz</span>, expose <span class="op">=</span> <span class="st">"xyz"</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">call</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; $Topography</span></span>
+<span><span class="co">#&gt; [[1]]</span></span>
 <span><span class="co">#&gt; [1] 809.0835</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $Megaplot</span></span>
+<span><span class="co">#&gt; [[2]]</span></span>
 <span><span class="co">#&gt; [1] 13.27202</span></span></code></pre></div>
 <p>Be mindful that, for a given LAS/LAZ file, the point cloud may
 contain more points than the original file if the file is loaded with a
@@ -531,10 +537,10 @@ deal with the buffer.</p>
 <span><span class="va">sum</span> <span class="op">=</span> <span class="fu"><a href="../reference/summarise.html">summarise</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">npts</span> <span class="op">+</span> <span class="va">sum</span><span class="op">)</span></span>
 <span><span class="va">ans</span><span class="op">$</span><span class="va">callback</span></span>
-<span><span class="co">#&gt; $bcts_1</span></span>
+<span><span class="co">#&gt; [[1]]</span></span>
 <span><span class="co">#&gt; [1] 682031</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $bcts_2</span></span>
+<span><span class="co">#&gt; [[2]]</span></span>
 <span><span class="co">#&gt; [1] 931581</span></span>
 <span><span class="va">ans</span><span class="op">$</span><span class="va">callback</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">+</span> <span class="va">ans</span><span class="op">$</span><span class="va">callback</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="co">#&gt; [1] 1613612</span></span>
@@ -569,19 +575,19 @@ the buffer. The buffer is exposed only if the user includes the letter
 <span><span class="va">sum</span> <span class="op">=</span> <span class="fu"><a href="../reference/summarise.html">summarise</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">npts</span> <span class="op">+</span> <span class="va">sum</span><span class="op">)</span></span>
 <span><span class="va">ans</span><span class="op">$</span><span class="va">callback</span></span>
-<span><span class="co">#&gt; $bcts_1</span></span>
-<span><span class="co">#&gt; $bcts_1$bbox</span></span>
+<span><span class="co">#&gt; [[1]]</span></span>
+<span><span class="co">#&gt; [[1]]$bbox</span></span>
 <span><span class="co">#&gt; [1] 885022.4 629157.2 885210.2 629400.0</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $bcts_1$npoints</span></span>
+<span><span class="co">#&gt; [[1]]$npoints</span></span>
 <span><span class="co">#&gt; [1] 531662</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $bcts_2</span></span>
-<span><span class="co">#&gt; $bcts_2$bbox</span></span>
+<span><span class="co">#&gt; [[2]]</span></span>
+<span><span class="co">#&gt; [[2]]$bbox</span></span>
 <span><span class="co">#&gt; [1] 885024.1 629400.0 885217.1 629700.0</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $bcts_2$npoints</span></span>
+<span><span class="co">#&gt; [[2]]$npoints</span></span>
 <span><span class="co">#&gt; [1] 823945</span></span>
 <span><span class="va">ans</span><span class="op">$</span><span class="va">callback</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">npoints</span><span class="op">+</span> <span class="va">ans</span><span class="op">$</span><span class="va">callback</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">npoints</span></span>
 <span><span class="co">#&gt; [1] 1355607</span></span>
@@ -663,7 +669,7 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; [1] 12745</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nsingle</span></span>
-<span><span class="co">#&gt; [1] 5004</span></span>
+<span><span class="co">#&gt; [1] 5128</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nwithheld</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
@@ -672,12 +678,12 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; [1] 0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_return</span></span>
-<span><span class="co">#&gt;    1    2    3    4    5    6 </span></span>
-<span><span class="co">#&gt; 9410 2631  609   90    4    1 </span></span>
+<span><span class="co">#&gt;    1    2    3    4    5 </span></span>
+<span><span class="co">#&gt; 9455 2556  638   92    4 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_class</span></span>
 <span><span class="co">#&gt;     1     2     9 </span></span>
-<span><span class="co">#&gt; 10834  1534   377</span></span></code></pre></div>
+<span><span class="co">#&gt; 10821  1551   373</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>

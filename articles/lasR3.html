@@ -102,7 +102,9 @@ natively in the package.</p>
 <div class="section level3">
 <h3 id="normalize">Normalize<a class="anchor" aria-label="anchor" href="#normalize"></a>
 </h3>
-<p>This pipeline is already installed in the package.</p>
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+This pipeline is already installed in the package.
+</blockquote>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">normalize</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">extrabytes</span> <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
@@ -172,8 +174,10 @@ natively in the package.</p>
 <div class="section level3">
 <h3 id="canopy-heigh-model">Canopy Heigh Model<a class="anchor" aria-label="anchor" href="#canopy-heigh-model"></a>
 </h3>
-<p>These two pipelines are natively installed in the package under the
-name <code><a href="../reference/chm.html">chm()</a></code>.</p>
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+These two pipelines are natively installed in the package under the name
+<code><a href="../reference/chm.html">chm()</a></code>.
+</blockquote>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">chm_p2r</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">res</span>, <span class="va">filter</span> <span class="op">=</span> <span class="st">""</span>, <span class="va">ofile</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".tif"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
@@ -190,9 +194,11 @@ name <code><a href="../reference/chm.html">chm()</a></code>.</p>
 <div class="section level3">
 <h3 id="digital-terrain-model">Digital Terrain Model<a class="anchor" aria-label="anchor" href="#digital-terrain-model"></a>
 </h3>
-<p>This one is also natively installed in the package.
-<code>add_class</code> can be used to add a class used as ground such as
-9 for water.</p>
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+This one is also natively installed in the package.
+</blockquote>
+<p><code>add_class</code> can be used to add a class used as ground such
+as 9 for water.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dtm</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">res</span>, <span class="va">ofile</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".tif"</span><span class="op">)</span>, <span class="va">add_class</span> <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
@@ -233,7 +239,8 @@ name <code><a href="../reference/chm.html">chm()</a></code>.</p>
 <div class="section level3">
 <h3 id="clip-circle">Clip circle<a class="anchor" aria-label="anchor" href="#clip-circle"></a>
 </h3>
-<p>Writes LAS files or returns <code>data.frame</code>s</p>
+<p>Writes LAS files or returns <code>data.frame</code>s. Supports
+<code>sf</code> objects as input.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">clip_circle</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span>, <span class="va">geometry</span>, <span class="va">radius</span>, <span class="va">ofiles</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*_clipped.las"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
@@ -272,8 +279,8 @@ name <code><a href="../reference/chm.html">chm()</a></code>.</p>
 <h3 id="inventory-metrics">Inventory metrics<a class="anchor" aria-label="anchor" href="#inventory-metrics"></a>
 </h3>
 <p>Using an <code>sf</code> object to provide plot centers and offering
-the option to normalize on-the-fly and returns the same <code>sf</code>
-object with extra attributes</p>
+the option to normalize on-the-fly. It returns the same <code>sf</code>
+object with extra attributes.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inventory_metrics</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">geometry</span>, <span class="va">radius</span>, <span class="va">fun</span>, <span class="va">normalize</span> <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
