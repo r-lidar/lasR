@@ -37,11 +37,6 @@ LASRcallback::LASRcallback(double xmin, double ymin, double xmax, double ymax, s
   ans = PROTECT(Rf_allocVector(VECSXP, 0)); nsexpprotected++;
 }
 
-void LASRcallback::set_input_file_name(std::string file)
-{
-  filenames.push_back(file);
-}
-
 bool LASRcallback::process(LAS*& las)
 {
   // LAS format
@@ -476,13 +471,6 @@ SEXP LASRcallback::to_R()
 
   if (Rf_length(ans) == 1)
     return VECTOR_ELT(ans, 0);
-
-  if (Rf_length(ans) == (int)filenames.size())
-  {
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, filenames.size())); nsexpprotected++;
-    for (int i = 0 ; i < (int)filenames.size() ; ++i) SET_STRING_ELT(names, i, Rf_mkChar(filenames[i].c_str()));
-    Rf_setAttrib(ans, R_NamesSymbol, names);
-  }
 
   return ans;
 }

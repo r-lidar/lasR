@@ -11,7 +11,6 @@ class LASRcallback : public LASRalgorithm
 public:
   LASRcallback(double xmin, double ymin, double xmax, double ymax, std::string select, SEXP fun, SEXP args, bool modify, bool drop_buffer);
   bool process(LAS*& las) override;
-  void set_input_file_name(std::string file) override;
   SEXP to_R() override;
   std::string get_name() const override { return "callback";  }
 
