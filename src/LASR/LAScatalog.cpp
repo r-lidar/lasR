@@ -5,6 +5,7 @@
 
 #include <algorithm>
 
+
 LAScatalog::LAScatalog()
 {
   xmin = F64_MAX;
@@ -20,19 +21,17 @@ LAScatalog::LAScatalog()
   crs_conflict_number = 0;
   epsg = 0;
 
-  lasreadopener = new LASreadOpener;
   laskdtree = new LASkdtreeRectangles;
   laskdtree->init();
 }
 
 LAScatalog::~LAScatalog()
 {
-  if (lasreadopener) delete lasreadopener;
   if (laskdtree) delete laskdtree;
   for (auto p : queries) delete p;
 }
 
-void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed)
+void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool buffer_only)
 {
   Rectangle bb(xmin, ymin, xmax, ymax);
   bboxes.push_back(bb);
@@ -44,22 +43,23 @@ void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bo
 
   laskdtree->add(xmin, ymin, xmax, ymax);
   this->indexed.push_back(indexed);
+  this->buffer_only.push_back(buffer_only);
 }
 
-bool LAScatalog::add_file(std::string file)
+bool LAScatalog::add_file(std::string file, bool buffer_only)
 {
-  lasreadopener->add_file_name(file.c_str());
-  LASreader* lasreader = lasreadopener->open();
+  LASreadOpener lasreadopener;
+  lasreadopener.add_file_name(file.c_str());
+  LASreader* lasreader = lasreadopener.open();
   if (lasreader == 0)
   {
     last_error = "cannot open not open lasreader"; // # nocov
     return false; // # nocov
   }
 
+  files.push_back(file);
   set_crs(&lasreader->header);
-
-  add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex());
-
+  add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), buffer_only);
   npoints += lasreader->header.number_of_point_records;
 
   lasreader->close();
@@ -115,9 +115,8 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
 
     if (!use_dataframe)
     {
-      chunk.main_files.push_back(lasreadopener->get_file_name(i));
-      chunk.name = lasreadopener->get_file_name_only(i);
-      chunk.name = chunk.name.substr(0, chunk.name.size()-4);
+      chunk.main_files.push_back(files[i].string());
+      chunk.name = files[i].stem().string();
     }
     else
     {
@@ -144,7 +143,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
     {
       while (laskdtree->get_overlap(index))
       {
-        std::string file = lasreadopener->get_file_name(index);
+        std::string file = files[index].string();
         if (chunk.main_files[0] != file)
         {
           chunk.neighbour_files.push_back(file);
@@ -194,9 +193,8 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   // We are working with a single file there is no neighbouring files. We can exit.
   if (get_number_files() == 1)
   {
-    chunk.main_files.push_back(lasreadopener->get_file_name(0));
-    chunk.name = lasreadopener->get_file_name_only(0);
-    chunk.name = chunk.name.substr(0, chunk.name.size()-4);
+    chunk.main_files.push_back(files[0].string());
+    chunk.name = files[0].stem().string();
     return true;
   }
 
@@ -204,30 +202,25 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   if (laskdtree->get_num_overlaps() == 1)
   {
     laskdtree->get_overlap(index);
-    chunk.main_files.push_back(lasreadopener->get_file_name(index));
-    chunk.name = lasreadopener->get_file_name_only(index);
-    chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
+    chunk.main_files.push_back(files[index].string());
+    chunk.name = files[index].stem().string() + "_" + std::to_string(i);
     return true;
   }
 
   // There are multiple files. All the files are part of the main
   while (laskdtree->get_overlap(index))
   {
-    chunk.main_files.push_back(lasreadopener->get_file_name(index));
+    chunk.main_files.push_back(files[index]);
+    if (chunk.name.empty()) files[index].stem().string() + "_" + std::to_string(i);
   }
 
   // We search the file that contains the centroid of the query to assign a name to the query
+  // If we can't find it we have already assigned a name anyway.
   laskdtree->overlap(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
   if (laskdtree->has_overlaps())
   {
     laskdtree->get_overlap(index);
-    chunk.name = lasreadopener->get_file_name_only(index);
-    chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
-  }
-  else
-  {
-    chunk.name = chunk.main_files[0];
-    chunk.name = chunk.name.substr(0, chunk.name.size()-4) + "_" + std::to_string(i);
+    chunk.name = files[index].stem().string() + "_" + std::to_string(i);
   }
 
   // We perform a query again with buffered shape to get the other files in the buffer
@@ -236,7 +229,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
     laskdtree->overlap(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
     while (laskdtree->get_overlap(index))
     {
-      std::string file = lasreadopener->get_file_name(index);
+      std::string file = files[index];
 
       // if the file is not part of the main files
       auto it = std::find(chunk.main_files.begin(), chunk.main_files.end(), file);
