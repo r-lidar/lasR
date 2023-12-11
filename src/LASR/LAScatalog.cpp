@@ -210,7 +210,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   // There are multiple files. All the files are part of the main
   while (laskdtree->get_overlap(index))
   {
-    chunk.main_files.push_back(files[index]);
+    chunk.main_files.push_back(files[index].string());
     if (chunk.name.empty()) files[index].stem().string() + "_" + std::to_string(i);
   }
 
@@ -229,7 +229,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
     laskdtree->overlap(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
     while (laskdtree->get_overlap(index))
     {
-      std::string file = files[index];
+      std::string file = files[index].string();
 
       // if the file is not part of the main files
       auto it = std::find(chunk.main_files.begin(), chunk.main_files.end(), file);
