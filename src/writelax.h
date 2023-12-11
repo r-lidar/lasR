@@ -6,7 +6,7 @@
 class LASRlaxwriter: public LASRalgorithm
 {
 public:
-  void set_input_file(std::string file) override;
+  bool set_chunk(const Chunk& chunk) override;
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "write_lax"; }
 };

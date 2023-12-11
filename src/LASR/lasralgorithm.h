@@ -44,7 +44,6 @@ public:
   virtual bool set_crs(int epsg) { return false; };
   virtual bool set_crs(std::string wkt) { return false; };
   virtual void set_output_file(std::string file) { ofile = file; };
-  virtual void set_input_file(std::string file) { ifile = file; };
   virtual void set_input_file_name(std::string file) { return; };
   virtual void set_header(LASheader*& header) { return; };
   virtual bool is_streamable() const { return false; };
