@@ -65,16 +65,17 @@
 #define LAS_TOOLS_FORMAT_DEFAULT 0
 #define LAS_TOOLS_FORMAT_LAS     1
 #define LAS_TOOLS_FORMAT_LAZ     2
-#define LAS_TOOLS_FORMAT_BIN     3
-#define LAS_TOOLS_FORMAT_QFIT    4
-#define LAS_TOOLS_FORMAT_VRML    5
-#define LAS_TOOLS_FORMAT_TXT     6
-#define LAS_TOOLS_FORMAT_SHP     7
-#define LAS_TOOLS_FORMAT_PLY     8
-#define LAS_TOOLS_FORMAT_ASC     9
-#define LAS_TOOLS_FORMAT_BIL    10
-#define LAS_TOOLS_FORMAT_FLT    11
-#define LAS_TOOLS_FORMAT_DTM    12
+#define LAS_TOOLS_FORMAT_COPC    3
+#define LAS_TOOLS_FORMAT_BIN     4
+#define LAS_TOOLS_FORMAT_QFIT    5
+#define LAS_TOOLS_FORMAT_VRML    6
+#define LAS_TOOLS_FORMAT_TXT     7
+#define LAS_TOOLS_FORMAT_SHP     8
+#define LAS_TOOLS_FORMAT_PLY     9
+#define LAS_TOOLS_FORMAT_ASC    10
+#define LAS_TOOLS_FORMAT_BIL    11
+#define LAS_TOOLS_FORMAT_FLT    12
+#define LAS_TOOLS_FORMAT_DTM    13
 
 #define LAS_TOOLS_GLOBAL_ENCODING_BIT_GPS_TIME_TYPE 0
 #define LAS_TOOLS_GLOBAL_ENCODING_BIT_WDP_INTERNAL  1
@@ -714,7 +715,7 @@ public:
     else
     {
       number_of_extended_variable_length_records = 1;
-      evlrs = (LASevlr*)malloc(sizeof(LASevlr)*number_of_extended_variable_length_records);
+      evlrs = (LASevlr*)calloc(number_of_extended_variable_length_records, sizeof(LASevlr));
     }
     evlrs[i].reserved = 0; // used to be 0xAABB
     // Fix #61
