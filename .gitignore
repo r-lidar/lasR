@@ -10,3 +10,5 @@ config*
 proj_conf_test*
 inst/doc
 docs
+/doc/
+/Meta/
