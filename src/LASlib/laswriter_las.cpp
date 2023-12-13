@@ -1224,47 +1224,47 @@ BOOL LASwriterLAS::update_header(const LASheader* header, BOOL use_inventory, BO
       stream->seek(375+54);
       if (!stream->put64bitsLE((U8*)&info->center_x))
       {
-        REprintf("ERROR: updating CopcInfo->center_x\n", i);
+        REprintf("ERROR: updating CopcInfo->center_x\n");
         return FALSE;
       }
       if (!stream->put64bitsLE((U8*)&info->center_y))
       {
-        REprintf("ERROR: updating CopcInfo->center_y\n", i);
+        REprintf("ERROR: updating CopcInfo->center_y\n");
         return FALSE;
       }
       if (!stream->put64bitsLE((U8*)&info->center_z))
       {
-        REprintf("ERROR: updating CopcInfo->center_z\n", i);
+        REprintf("ERROR: updating CopcInfo->center_z\n");
         return FALSE;
       }
       if (!stream->put64bitsLE((U8*)&info->halfsize))
       {
-        REprintf("ERROR: updating CopcInfo->halfsize\n", i);
+        REprintf("ERROR: updating CopcInfo->halfsize\n");
         return FALSE;
       }
       if (!stream->put64bitsLE((U8*)&info->spacing))
       {
-        REprintf("ERROR: updating CopcInfo->spacing\n", i);
+        REprintf("ERROR: updating CopcInfo->spacing\n");
         return FALSE;
       }
       if (!stream->put64bitsLE((U8*)&info->root_hier_offset))
       {
-        REprintf("ERROR: updating CopcInfo->root_hier_offset\n", i);
+        REprintf("ERROR: updating CopcInfo->root_hier_offset\n");
         return FALSE;
       }
       if (!stream->put64bitsLE((U8*)&info->root_hier_size))
       {
-        REprintf("ERROR: updating CopcInfo->root_hier_size\n", i);
+        REprintf("ERROR: updating CopcInfo->root_hier_size\n");
         return FALSE;
       }
       if (!stream->put64bitsLE((U8*)&info->gpstime_minimum))
       {
-        REprintf("ERROR: updating CopcInfo->gpstime_minimum\n", i);
+        REprintf("ERROR: updating CopcInfo->gpstime_minimum\n");
         return FALSE;
       }
       if (!stream->put64bitsLE((U8*)&info->gpstime_maximum))
       {
-        REprintf("ERROR: updating CopcInfo->gpstime_maximum\n", i);
+        REprintf("ERROR: updating CopcInfo->gpstime_maximum\n");
         return FALSE;
       }
     }
