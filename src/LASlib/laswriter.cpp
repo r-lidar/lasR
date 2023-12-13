@@ -35,6 +35,7 @@
 #include "laswriter_qfit.hpp"
 #include "laswriter_wrl.hpp"
 #include "laswriter_txt.hpp"
+#include "laswriter_copc.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +83,17 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
         return 0;
       }
       return laswriterlas;
+    }
+    else if (format <= LAS_TOOLS_FORMAT_COPC)
+    {
+      LASwriterCOPC* laswritercopc = new LASwriterCOPC();
+      if (!laswritercopc->open(file_name, header, 2, io_obuffer_size))
+      {
+        REprintf("ERROR: cannot open laswriterlas with file name '%s'\n", file_name);
+        delete laswritercopc;
+        return 0;
+      }
+      return laswritercopc;
     }
     else if (format == LAS_TOOLS_FORMAT_TXT)
     {
@@ -323,6 +335,11 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
       set_format(LAS_TOOLS_FORMAT_LAZ);
       *argv[i]='\0';
     }
+    else if (strcmp(argv[i],"-ocopc") == 0)
+    {
+      set_format(LAS_TOOLS_FORMAT_COPC);
+      *argv[i]='\0';
+    }
     else if (strcmp(argv[i],"-otxt") == 0)
     {
       specified = TRUE;
@@ -509,6 +526,9 @@ void LASwriteOpener::set_file_name(const CHAR* file_name)
         if (strstr(extension, "laz") || strstr(extension, "LAZ"))
         {
           format = LAS_TOOLS_FORMAT_LAZ;
+
+          if (strstr(this->file_name, "copc.laz") || strstr(this->file_name, "COPC.LAZ"))
+            format = LAS_TOOLS_FORMAT_COPC;
         }
         else if (strstr(extension, "las") || strstr(extension, "LAS"))
         {
@@ -534,7 +554,10 @@ void LASwriteOpener::set_file_name(const CHAR* file_name)
     }
     else
     {
-      CHAR* temp_file_name = (CHAR*)malloc(len + (format == LAS_TOOLS_FORMAT_QFIT ? 4 : 5));
+      I32 ext_size = 5;
+      if (format == LAS_TOOLS_FORMAT_QFIT) ext_size = 4;
+      if (format == LAS_TOOLS_FORMAT_COPC) ext_size = 10;
+      CHAR* temp_file_name = (CHAR*)malloc(len + ext_size);
       strcpy(temp_file_name, this->file_name);
       free(this->file_name);
       this->file_name = temp_file_name;
@@ -556,6 +579,25 @@ void LASwriteOpener::set_file_name(const CHAR* file_name)
         this->file_name[len] = 'a';
         len++;
         this->file_name[len] = 's';
+      }
+      else if (format == LAS_TOOLS_FORMAT_COPC)
+      {
+        len++;
+        this->file_name[len] = 'c';
+        len++;
+        this->file_name[len] = 'o';
+        len++;
+        this->file_name[len] = 'p';
+        len++;
+        this->file_name[len] = 'c';
+        len++;
+        this->file_name[len] = '.';
+        len++;
+        this->file_name[len] = 'l';
+        len++;
+        this->file_name[len] = 'a';
+        len++;
+        this->file_name[len] = 'z';
       }
       else if (format == LAS_TOOLS_FORMAT_BIN) // terrasolid
       {
