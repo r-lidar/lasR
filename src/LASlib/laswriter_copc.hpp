@@ -51,10 +51,6 @@ class LASwritePoint;
 class LASwriterCOPC : public LASwriterLAS
 {
 public:
-
-  BOOL refile(FILE* file);
-  void set_delete_stream(BOOL delete_stream=TRUE) { LASwriterLAS::set_delete_stream(delete_stream); };
-
   BOOL open(const LASheader* header, I32 requested_version=0);
   BOOL open(const char* file_name, const LASheader* header, I32 requested_version=0, I32 io_buffer_size=LAS_TOOLS_IO_OBUFFER_SIZE);
   BOOL open(FILE* file, const LASheader* header, I32 requested_version=0);
@@ -83,7 +79,6 @@ private:
   // COPC information for (E)VLR and octree
   F64 gpstime_maximum;
   F64 gpstime_minimum;
-  I32 max_depth;
   U32 root_grid_size;
   U32 max_points_per_octant;
   I32 min_points_per_octant;

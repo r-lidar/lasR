@@ -44,6 +44,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unordered_set>
 #include <random>
 
 static inline F64 get_gps_time(const U8* buf) { return *((F64*)&buf[22]); };
@@ -61,73 +62,17 @@ static int compare_buffers(const void *a, const void *b)
 
 struct COPCoctant
 {
-  U8* point_buffer;
-  I32 point_count;
-  I32 point_size;
-  I32 point_capacity;
-  std::unordered_map<I32, I32> occupancy;
+  std::vector<I64> point_idx;
+  std::unordered_set<I32> occupancy;
 
-  COPCoctant(const U32 size)
+  void insert(const I64 idx, const I32 cell)
   {
-    point_size = size;
-    point_count = 0;
-    point_capacity = 25000;
-    point_buffer = (U8*)malloc(point_capacity * point_size);
-    occupancy.reserve(point_capacity);
+    point_idx.push_back(idx);
+    if (cell >= 0) occupancy.insert(cell); // cell = -1 means that recording the location of the point is useless (save memory)
   };
 
-  void insert(const U8* buffer, const I32 cell)
-  {
-    if (point_count == point_capacity)
-    {
-      point_capacity *= 2;
-      point_buffer = (U8*)realloc(point_buffer, point_capacity * point_size);
-    }
-
-    memcpy(point_buffer + point_count * point_size, buffer, point_size);
-
-    // cell = -1 means that recording the location of the point is useless (save memory)
-    if (cell >= 0) occupancy.insert({cell, point_count});
-
-    point_count++;
-  };
-
-  void insert(const LASpoint *laspoint, const I32 cell)
-  {
-    if (point_count == point_capacity)
-    {
-      point_capacity *= 2;
-      point_buffer = (U8*)realloc(point_buffer, point_capacity * point_size);
-    }
-
-    laspoint->copy_to(point_buffer + point_count * point_size);
-
-    // cell = -1 means that recording the location of the point is useless (save memory)
-    if (cell >= 0) occupancy.insert({cell, point_count});
-
-    point_count++;
-  };
-
-  void sort()
-  {
-    qsort((void*)point_buffer, point_count, point_size, compare_buffers);
-  };
-
-  I32 npoints() const
-  {
-    return point_count;
-  };
-
-  void clean()
-  {
-    if (point_buffer) free(point_buffer);
-  };
+  I32 npoints() const {return (I32)point_idx.size(); };
 };
-
-BOOL LASwriterCOPC::refile(FILE* file)
-{
-  return LASwriterLAS::refile(file);
-}
 
 BOOL LASwriterCOPC::open(const LASheader* header, I32 requested_version)
 {
@@ -196,17 +141,19 @@ typedef std::unordered_map<EPTkey, COPCoctant, EPTKeyHasher> Registry;
 
 I64 LASwriterCOPC::close(BOOL update_npoints)
 {
+  U32 point_size = point->total_point_size;
+
+  // Update the header because we now have all the points and we know the bounding box and number of points
+  // These informations are mandatory to build the EPToctree
   inventory.update_header(header);
 
+  // Built the octree
   EPToctree octree(*header);
   octree.set_gridsize(root_grid_size);
+  I32 max_depth = EPToctree::compute_max_depth(*header, max_points_per_octant);
+  max_depth = (max_depth > 10) ? 10 : max_depth;
 
-  if (max_depth < 0)
-  {
-    max_depth = EPToctree::compute_max_depth(*header, max_points_per_octant);
-    max_depth = (max_depth > 10) ? 10 : max_depth;
-  }
-
+  // Update the COPC VLR info now we have almost all the data we need
   LASvlr_copc_info* info = (LASvlr_copc_info*)header->vlrs[0].data;
   info->center_x = octree.get_center_x();
   info->center_y = octree.get_center_y();
@@ -222,16 +169,15 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<I64> distribution(0, p_count);
-  I32 elem_size = point->total_point_size;
-  U8* temp = (U8*)malloc(elem_size);
+  U8* temp = (U8*)malloc(point_size);
   for (I64 i = 0; i < p_count; i++)
   {
     I64 j = distribution(gen);
-    U8* block1 = points_buffer + i * elem_size;
-    U8* block2 = points_buffer + j * elem_size;
-    memcpy(temp, block1, elem_size);
-    memcpy(block1, block2, elem_size);
-    memcpy(block2, temp, elem_size);
+    U8* block1 = points_buffer + i * point_size;
+    U8* block2 = points_buffer + j * point_size;
+    memcpy(temp, block1, point_size);
+    memcpy(block1, block2, point_size);
+    memcpy(block2, temp, point_size);
   }
   free(temp);
 
@@ -245,8 +191,8 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
   // Delayed write
   for (I64 i = 0 ; i < p_count ; i++)
   {
-    // Get a point
-    point->copy_from(points_buffer+i*point->total_point_size);
+    // Get a point, the point are comming in a random order
+    point->copy_from(points_buffer+i*point_size);
 
     // Search a place to insert the point
     I32 lvl = 0;
@@ -255,7 +201,6 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
     while (!accepted)
     {
       EPTkey key = octree.get_key(point, lvl);
-      //print("key %d-%d-%d-%d\n", key.d, key.x, key.y, key.z);
 
       if (lvl == max_depth)
         cell = -1; // Do not build an occupancy grid for last level. Point must be inserted anyway.
@@ -265,7 +210,7 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
       it = registry.find(key);
       if (it == registry.end())
       {
-        it = registry.insert({key, COPCoctant(elem_size)}).first;
+        it = registry.insert({key, COPCoctant()}).first;
       }
 
       auto it2 = it->second.occupancy.find(cell);
@@ -275,14 +220,13 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
     }
 
     // Insert the point
-    it->second.insert(point, cell);
+    it->second.insert(i, cell);
   }
 
-  // We no longer need the buffeer of points
-  free(points_buffer);
-  points_buffer = 0;
+  U8* tmp_buffer = 0;
+  I32 tmp_buffer_capacity = 0;
 
-  // All the octant are sorted
+  // Loop through octants and write in copc file.
   for (it = registry.begin(); it != registry.end();)
   {
     // Bounding box of the octant
@@ -309,9 +253,7 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
         if (it2 != registry.end())
         {
           for (I32 k = 0; k < it->second.npoints(); k++)
-            it2->second.insert(it->second.point_buffer + k * elem_size, -1);
-
-          it->second.clean();
+            it2->second.insert(it->second.point_idx[k], -1);
 
           // The octant must be inserted in the list because it may have childs
           if (it->first.d < max_depth)
@@ -345,13 +287,34 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
     entry.point_count = it->second.npoints();
     entry.offset = LASwriterLAS::tell();
 
+    // Copy the points in a buffer
+    I32 npoints = it->second.npoints();
+
+    // Alloc enough memory to store the points
+    if (tmp_buffer == 0)
+    {
+      tmp_buffer = (U8*)malloc(npoints*point_size);
+      tmp_buffer_capacity = npoints;
+    }
+    else if (tmp_buffer_capacity < npoints)
+    {
+      tmp_buffer = (U8*)realloc((void*)tmp_buffer, npoints*point_size);
+    }
+
+    // Copy the points in the tempory buffer to sort and write
+    for (I32 k = 0; k < npoints ; k++)
+    {
+      I64 point_index = it->second.point_idx[k];
+      memcpy(tmp_buffer+k*point_size, points_buffer+point_index*point_size, point_size);
+    }
+
     // The points *MUST* be sorted (to optimize compression)
-    it->second.sort();
+    qsort(tmp_buffer, npoints, point_size, compare_buffers);
 
     // Write the chunk
-    for (I32 k = 0; k < it->second.npoints(); k++)
+    for (I32 k = 0; k < npoints; k++)
     {
-      point->copy_from(it->second.point_buffer + k * elem_size);
+      point->copy_from(tmp_buffer + k * point_size);
       LASwriterLAS::write_point(point); p_count--;
     }
     LASwriterLAS::chunk();
@@ -360,10 +323,11 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
     entry.byte_size = (I32)(LASwriterLAS::tell() - entry.offset);
     entries.push_back(entry);
 
-    // We will never see this octant again. Goodbye.
-    it->second.clean();
     it = registry.erase(it);
   }
+
+  free(tmp_buffer);
+  tmp_buffer = 0;
 
   // Construct the EPT hierarchy eVLR
   LASvlr_copc_entry* hierarchy = new LASvlr_copc_entry[entries.size()];
@@ -371,6 +335,7 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
   header->evlrs[0].record_length_after_header = entries.size()*sizeof(LASvlr_copc_entry);
   header->evlrs[0].data = (U8*)hierarchy;
 
+  // Updater the header of the file including the COPC VLR info
   LASwriterLAS::update_header(header, TRUE, TRUE);
 
   return LASwriterLAS::close(update_npoints);
@@ -512,7 +477,6 @@ LASwriterCOPC::LASwriterCOPC()
   capacity = 0;
   gpstime_maximum = F64_MIN;
   gpstime_minimum = F64_MAX;
-  max_depth = -1;
   root_grid_size = 256;
   max_points_per_octant = 100000; // not absolute, only used to estimate the depth.
   min_points_per_octant = 100;    // not absolute, use to (maybe) remove too small chunks
