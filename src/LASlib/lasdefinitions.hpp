@@ -763,13 +763,8 @@ public:
         number_of_extended_variable_length_records--;
         if (number_of_extended_variable_length_records)
         {
-          // Fix for rlas#67. I do not understand why realloc corrupts the memory.
-          LASevlr* tmp = (LASevlr*)calloc(number_of_extended_variable_length_records, sizeof(LASevlr));
-          for (U32 j = 0, k = 0; j < number_of_extended_variable_length_records+1; ++j) { if (j != i) { tmp[k++] = evlrs[j]; }}
-          free(evlrs);
-          evlrs = tmp;
-          //evlrs[i] = evlrs[number_of_extended_variable_length_records];
-          //evlrs = (LASevlr*)realloc(evlrs, sizeof(LASvlr)*number_of_extended_variable_length_records);
+          evlrs[i] = evlrs[number_of_extended_variable_length_records];
+          evlrs = (LASevlr*)realloc(evlrs, sizeof(LASevlr)*number_of_extended_variable_length_records);
         }
         else
         {
