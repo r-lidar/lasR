@@ -212,7 +212,7 @@ f = f[1:2]
 
 ```{r writelas, warning=FALSE}
 read = reader(f)
-write1 = write_las(paste0(tempdir(), "/*_ground"), filter = "-keep_class 2")
+write1 = write_las(paste0(tempdir(), "/*_ground.laz"), filter = "-keep_class 2")
 write2 = write_las(paste0(tempdir(), "/*_normalized.laz"), )
 del = triangulate(filter = "-keep_class 2")
 norm = transform_with_triangulation(del, "-")
