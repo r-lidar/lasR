@@ -41,13 +41,12 @@ remotes::install_github("r-lidar/lasR")
 ## Copyright Information
 
 - For `LASlib` and `LASzip`:
-  - © 2007-2021 <martin.isenburg@rapidlasso.com> -
-    <http://rapidlasso.com>
+  - © 2007-2021 Martin Isenburg - <http://rapidlasso.com>
   - Provided under LGPL license and modified to be R-compliant by
     Jean-Romain Roussel.
 - For `lasR`:
   - © 2023-2024 Jean-Romain Roussel
   - Provided under GPL-3 license.
 - For `chm_prep`
-  - © 2008-2023 Benoît St-Onge
+  - © 2008-2023 Benoît St-Onge - [Geophoton-inc/chm_prep](https://github.com/Geophoton-inc/chm_prep)
   - Provided under GPL-3 license.
