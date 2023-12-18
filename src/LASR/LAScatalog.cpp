@@ -14,6 +14,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+namespace pt = boost::property_tree;
+
 bool LAScatalog::read(const std::vector<std::string>& files)
 {
   for (auto& file : files)
@@ -75,8 +77,8 @@ bool LAScatalog::read_vpc(const std::string& filename)
   try
   {
     // read the JSON file
-    boost::property_tree::ptree vpc;
-    boost::property_tree::read_json(filename, vpc);
+    pt::ptree vpc;
+    pt::read_json(filename, vpc);
 
     // Check that it has a FeatureCollection property
     if (vpc.find("type") ==  vpc.not_found() || vpc.get<std::string>("type") != "FeatureCollection")
@@ -131,20 +133,18 @@ bool LAScatalog::read_vpc(const std::string& filename)
 
       int pccount = feature.get<int>("properties.pc:count");
 
-      // Not reading pc:type nor pc:schemas. We don't need them.
-
       // Get the CRS either in WKT or EPSG
       std::string wkt = feature.get<std::string>("properties.proj:wkt2", "");
       int epsg = feature.get<int>("properties.proj:epsg", 0);
 
       // Read the bounding box. If not found fall back to regular file reading
-      if (feature.find("properties.proj:bbox") == feature.not_found())
+      auto optbbox = feature.get_child_optional("properties.proj:bbox");
+      if (!optbbox)
       {
         if (!add_file(file))
         {
           return false;
         }
-
         continue;
       }
 
@@ -174,22 +174,27 @@ bool LAScatalog::read_vpc(const std::string& filename)
         return false; // # nocov
       }
 
-      //print("file %s\n", file.c_str());
-      //print("bbox [%.1f %.1f %.1f %.1f]\n", min_x, min_y, max_x, max_y);
+      bool spatial_index = feature.get<bool>("properties.index:indexed", false);
+
+      //printf("pc:count %d\n", pccount);
+      //printf("pc:wkt %s\n", wkt.c_str());
+      //printf("pc:epsg %d\n", epsg);
+      //printf("file %s\n", file.c_str());
+      //printf("bbox [%.1f %.1f %.1f %.1f]\n", min_x, min_y, max_x, max_y);
 
       files.push_back(file);
       add_wkt(wkt);
       add_epsg(epsg);
-      add_bbox(min_x, min_y, max_x, max_y, false);
-      npoints += pccount;
+      add_bbox(min_x, min_y, max_x, max_y, spatial_index);
+      npoints.push_back(pccount);
     }
   }
-  catch (const boost::property_tree::json_parser_error& e)
+  catch (const pt::json_parser_error& e)
   {
     last_error = std::string("JSON parsing error: ") + e.what(); // # nocov
     return false; // # nocov
   }
-  catch (const boost::property_tree::ptree_error& e)
+  catch (const pt::ptree_error& e)
   {
     last_error = std::string("Error reading JSON file: ") + e.what();  // # nocov
     return false;  // # nocov
@@ -203,10 +208,79 @@ bool LAScatalog::read_vpc(const std::string& filename)
   return true;
 }
 
-bool LAScatalog::write_vpc(const std::string& file)
+bool LAScatalog::write_vpc(const std::string& vpcfile)
 {
-  last_error = "Not implemented yet";
-  return false;
+  if (use_dataframe)
+  {
+    last_error = "Cannot vrite a virtual point cloud file with a data.frame";
+    return false;
+  }
+
+  std::filesystem::path output_path = vpcfile;
+  output_path = output_path.parent_path();
+
+  std::ofstream output(vpcfile);
+  if (!output.good())
+  {
+    last_error = std::string("Failed to create file: ") + vpcfile;
+    return false;
+  }
+
+  // Mmmm.... boost property_tree is not able to write numbers... will do everything by hand
+  auto autoquote = [](const std::string& str) { return '"' + str + '"'; };
+
+
+  output << "{" << std::endl;
+  output << "  \"type\": \"FeatureCollection\"," << std::endl;
+  output << "  \"features\": [" << std::endl;
+
+  for (int i = 0 ; i < get_number_files() ; i++)
+  {
+    std::filesystem::path file = files[i];
+    std::string relative_path = "./" +std::filesystem::relative(file, output_path).string();
+    Rectangle& bbox = bboxes[i];
+    uint64_t n = npoints[i];
+    bool index = indexed[i];
+
+    output << "  {" << std::endl;
+    output << "    \"type\": \"Feature\"," << std::endl;
+    output << "    \"stac_version\": \"1.0.0\"," << std::endl;
+    output << "    \"stac_extensions\": [" << std::endl;
+    output << "      \"https://stac-extensions.github.io/pointcloud/v1.0.0/schema.json\"," << std::endl;
+    output << "      \"https://stac-extensions.github.io/projection/v1.1.0/schema.json\"" << std::endl;
+    output << "     ]," << std::endl;
+    output << "    \"id\": " << autoquote(file.stem().string()) << "," << std::endl;
+    output << "    \"properties\": {" << std::endl;
+    output << "      \"datatime\": " << "\"0-01-01T00:00:00Z\""<< "," << std::endl;
+    output << "      \"pc:count\": " << n << "," << std::endl;
+    output << "      \"pc:encoding\": " << "\"?\""<< "," << std::endl;
+    output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
+    output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
+    if (!wkt.empty()) output << "      \"proj:wtk2\": " << wkt << "," << std::endl;
+    else if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
+    output << "      \"index:indexed\": " << index << std::endl;
+    output << "    }," << std::endl;
+    output << "    \"links\": []," << std::endl;
+    output << "    \"assets\": {" << std::endl;
+    output << "      \"data\": {" << std::endl;
+    output << "      \"href\": " << autoquote(relative_path) << "," << std::endl;
+    output << "      \"roles\": [\"data\"]" << std::endl;
+    output << "      }" << std::endl;
+    output << "    }" << std::endl;
+    output << "  }";
+
+    if (i < files.size()-1)
+      output << ",";
+
+    output << std::endl;
+  }
+
+  output << "  ]" << std::endl;
+  output << "}";
+
+  output.close();
+
+  return true;
 }
 
 void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool buffer_only)
@@ -258,7 +332,7 @@ bool LAScatalog::add_file(const std::string& file, bool buffer_only)
   files.push_back(file);
   add_crs(&lasreader->header);
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), buffer_only);
-  npoints += lasreader->header.number_of_point_records;
+  npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.number_of_extended_variable_length_records));
 
   lasreader->close();
   delete lasreader;
@@ -468,7 +542,6 @@ void LAScatalog::clear()
   ymin = F64_MAX;
   xmax = F64_MIN;
   ymax = F64_MIN;
-  npoints = 0;
   last_error.clear();
 
   // CRS
@@ -483,6 +556,7 @@ void LAScatalog::clear()
   chunk_size = 0;
 
   indexed.clear();
+  npoints.clear();
   buffer_only.clear();
   bboxes.clear();
   files.clear();

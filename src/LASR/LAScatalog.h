@@ -21,6 +21,7 @@ public:
   LAScatalog();
   ~LAScatalog();
   bool read(const std::vector<std::string>& files);
+  bool write_vpc(const std::string& file);
   void set_chunk_size(double size) { if (size > 0) chunk_size = size; else chunk_size = 0; };
   void set_chunk_is_file() { chunk_size = 0; };
   void set_buffer(double buffer) { this->buffer = buffer; };
@@ -44,7 +45,6 @@ public:
 
 private:
   bool read_vpc(const std::string& file);
-  bool write_vpc(const std::string& file);
   bool add_file(const std::string& file, bool buffer_only = false);
   void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool buffer_only = false);
   void add_wkt(const std::string& wkt);
@@ -57,7 +57,6 @@ public:
   double ymin;
   double xmax;
   double ymax;
-  uint64_t npoints;
   std::string last_error;
 
   // A set of CRS because each file may have different CRS so we must check the consistency
@@ -75,8 +74,9 @@ private:
   double chunk_size;
 
   // stores information about each file
+  std::vector<uint64_t> npoints;
   std::vector<bool> indexed;                // the file has a spatial index
-  std::vector<bool> buffer_only;            // the file is not processed and is used only for bufferring
+  std::vector<bool> buffer_only;            // the file is not processed and is used only for buffering
   std::vector<Rectangle> bboxes;            // bounding boxes of the files
   std::vector<std::filesystem::path> files; // path to files
 

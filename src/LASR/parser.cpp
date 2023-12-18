@@ -16,6 +16,7 @@
 #include "triangulatedtransformer.h"
 #include "writelas.h"
 #include "writelax.h"
+#include "writevpc.h"
 
 #ifdef USING_R
 #include "R2cpp.h"
@@ -146,8 +147,6 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       {
         catalog = new LAScatalog;
         catalog->add_bbox(xmin, ymin, xmax, ymax);
-        // TODO: must parse the CRS
-        catalog->npoints = Rf_length(X);
 
         // Special treatment of the reader to find the potential queries in the catalog
         if (contains_element(stage, "xcenter"))
@@ -229,6 +228,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     else if (name == "write_lax")
     {
       auto v = std::make_shared<LASRlaxwriter>();
+      pipeline.push_back(v);
+    }
+    else if (name == "write_vpc")
+    {
+      auto v = std::make_shared<LASRvpcwriter>();
       pipeline.push_back(v);
     }
     else if (name == "transform_with_triangulation")

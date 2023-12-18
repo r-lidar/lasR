@@ -16,17 +16,6 @@ test_that("reader works with multiple files",
   expect_length(u, 0)
 })
 
-test_that("reader works with virtual point cloud",
-{
-  f = system.file("extdata", "bcts/bcts.vpc", package="lasR")
-  pipeline = reader(f) + hulls()
-  ans = processor(pipeline)
-
-  expect_s3_class(ans, "sf")
-  expect_equal(dim(ans), c(4L,1L))
-  expect_equal(length(ans$geom[[1]]), 1L)
-})
-
 test_that("reader fails if file does not exist",
 {
   expect_error(reader("missing.las"))

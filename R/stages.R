@@ -735,6 +735,22 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
   set_lasr_class(ans)
 }
 
+#' Write a Virtual Point Cloud
+#'
+#' Borrowing the concept of virtual rasters from GDAL, the VPC file format references other point
+#' cloud files in virtual point cloud (VPC)
+#'
+#' @param ofile character. The file path with extnsion .vpc where to write the virtual point cloud file
+#' @references
+#' https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/
+#' https://github.com/PDAL/wrench/blob/main/vpc-spec.md
+#' @export
+write_vpc = function(ofile)
+{
+  ans <- list(algoname = "write_vpc", output = ofile)
+  set_lasr_class(ans)
+}
+
 # ==== INTERNALS =====
 
 generate_uid <- function(size = 6)
