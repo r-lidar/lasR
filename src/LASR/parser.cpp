@@ -426,8 +426,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     {
       auto v = std::make_shared<LASRlaxwriter>();
       pipeline.push_front(v);
-      print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n",
-             catalog->get_number_files()-catalog->get_number_indexed_files());
+      print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n", catalog->get_number_files()-catalog->get_number_indexed_files());
     }
   }
 

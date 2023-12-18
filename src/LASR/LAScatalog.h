@@ -39,7 +39,7 @@ public:
   // Special to build a LAScatalog from a data.frame in R
   void add_bbox(double xmin, double ymin, double xmax, double ymax, int npoints)
   {
-    this->npoints.push_back(npoints)
+    this->npoints.push_back(npoints);
     add_bbox(xmin, ymin, xmax, ymax, true, false);
   };
   #endif
