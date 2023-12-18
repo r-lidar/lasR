@@ -124,6 +124,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
 
       SEXP dataframe = get_element(stage, "dataframe");
       std::vector<double> accuracy = get_element_as_vdouble(stage, "accuracy");
+      std::string wkt = get_element_as_string(stage, "crs");
 
       // Compute the bounding box. We assume that the data.frame has element named X and Y.
       // This is not checked at R level. Anyway get_element() will throw an exception
@@ -141,7 +142,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
       }
 
-      auto v = std::make_shared<LASRdataframereader>(xmin, ymin, xmax, ymax, dataframe, accuracy);
+      auto v = std::make_shared<LASRdataframereader>(xmin, ymin, xmax, ymax, dataframe, accuracy, wkt);
       pipeline.push_back(v);
 
       if (build_catalog)
@@ -149,6 +150,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         catalog = new LAScatalog;
         catalog->add_bbox(xmin, ymin, xmax, ymax, true);
         catalog->npoints = Rf_length(X);
+        catalog->wkt = wkt;
 
         // Special treatment of the reader to find the potential queries in the catalog
         if (contains_element(stage, "xcenter"))

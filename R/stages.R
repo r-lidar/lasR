@@ -362,7 +362,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
   }
   else
   {
-    stop("Invalid operators") # no cov
+    stop("Invalid operators") # nocov
   }
   set_lasr_class(ans)
 }
@@ -410,7 +410,7 @@ reader_coverage = function(x, filter = "", buffer = 0)
 {
   if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_coverage(x, filter, buffer))
   if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_coverage(x, filter, buffer))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # no cov
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
 }
 
 #' @export
@@ -419,7 +419,7 @@ reader_circles = function(x, xc, yc, r, filter = "", buffer = 0)
 {
   if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_circles(x, xc, yc, r, filter, buffer))
   if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_circles(x, xc, yc, r, filter, buffer))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # no cov
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
 }
 
 #' @export
@@ -428,7 +428,7 @@ reader_rectangles = function(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
 {
   if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer))
   if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # no cov
+  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
 }
 
 reader_files_coverage = function(files, filter = "", buffer = 0)
@@ -463,7 +463,7 @@ reader_files_coverage = function(files, filter = "", buffer = 0)
   }
 
   nexist <- sum(!file.exists(files))
-  if (nexist > 0) stop(paste0(nexist, " file(s) not existing")) # no cov
+  if (nexist > 0) stop(paste0(nexist, " file(s) not existing")) # nocov
 
   ans <- list(algoname = "reader_las", files = files, filter = filter, buffer = buffer)
   set_lasr_class(ans)
@@ -499,12 +499,24 @@ reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0)
   accuracy = c(0,0,0)
   if (methods::is(dataframe, "LAS"))
   {
-    dataframe <- dataframe@data
     accuracy <- c(dataframe@header@PHB[["X scale factor"]], dataframe@header@PHB[["Y scale factor"]], dataframe@header@PHB[["Z scale factor"]])
+    crs <- dataframe@crs$wkt
+    dataframe <- dataframe@data
+    attr(dataframe, "accuracy") <- accuracy
+    attr(dataframe, "crs") <- crs
   }
 
   stopifnot(is.data.frame(dataframe))
-  ans <- list(algoname = "reader_dataframe", dataframe = dataframe, accuracy = accuracy, filter = filter, buffer = buffer)
+
+  crs <- attr(dataframe, "crs")
+  if (is.null(crs)) crs = ""
+  if (!is.character(crs) & length(crs != 1)) stop("The CRS of this data.frame is not a WKT string")
+
+  acc <- attr(dataframe, "accuracy")
+  if (is.null(acc)) acc = c(0, 0, 0)
+  if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
+
+  ans <- list(algoname = "reader_dataframe", dataframe = dataframe, accuracy = acc, crs = crs, filter = filter, buffer = buffer)
   set_lasr_class(ans)
 }
 

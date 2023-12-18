@@ -89,3 +89,16 @@ test_that("reader_dataframe works with extrabytes",
   expect_false(is.integer(las$bar))
 })
 
+
+test_that("reader_dataframe propagates the CRS",
+{
+  wkt = sf::st_crs(26917)$wkt
+  f = system.file("extdata", "Example.rds", package="lasR")
+  las = readRDS(f)
+  attr(las, "crs") = wkt
+  read = reader(las)
+  rast = rasterize(2)
+  u = processor(read+rast)
+
+  expect_equal(terra::crs(u), wkt)
+})

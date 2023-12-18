@@ -2,13 +2,14 @@
 
 #include <algorithm>
 
-LASRdataframereader::LASRdataframereader(double xmin, double ymin, double xmax, double ymax, SEXP dataframe, const std::vector<double>& accuracy)
+LASRdataframereader::LASRdataframereader(double xmin, double ymin, double xmax, double ymax, const SEXP dataframe, const std::vector<double>& accuracy, const std::string& wkt)
 {
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
   this->ymax = ymax;
   this->dataframe = dataframe;
+  this->wkt = wkt;
   scale[0] = accuracy[0];
   scale[1] = accuracy[1];
   scale[2] = accuracy[2];
@@ -150,7 +151,11 @@ bool LASRdataframereader::process(LASheader*& header)
   //lasheader.set_global_encoding_bit(1); // Waveform Data Packets Internal
   //lasheader.set_global_encoding_bit(2); // Waveform Data Packets External
   //lasheader.set_global_encoding_bit(3); // Synthetic Return Numbers
-  //lasheader.set_global_encoding_bit(4); // WKT crs
+  if (!wkt.empty())
+  {
+    lasheader.set_global_encoding_bit(4); // WKT
+    lasheader.set_geo_ogc_wkt(1, wkt.c_str());
+  }
   //lasheader.set_global_encoding_bit(5); // Aggregate Model
 
   strcpy(lasheader.generating_software, "lasR R package");
