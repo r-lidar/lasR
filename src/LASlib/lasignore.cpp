@@ -34,17 +34,17 @@
 
 void LASignore::usage() const
 {
-  REprintf("Ignore points based on classifications.\n");
-  REprintf("  -ignore_class 7\n");
-  REprintf("  -ignore_class 0 1 7 33\n");
-  REprintf("Ignore points based on return type.\n");
-  REprintf("  -ignore_first -ignore_first_of_many\n");
-  REprintf("  -ignore_last -ignore_last_of_many\n");
-  REprintf("  -ignore_intermediate\n");
-  REprintf("  -ignore_single\n");
-  REprintf("Ignore points based on flags.\n");
-  REprintf("  -ignore_synthetic -ignore_keypoint\n");
-  REprintf("  -ignore_withheld -ignore_overlap\n");
+  eprint("Ignore points based on classifications.\n");
+  eprint("  -ignore_class 7\n");
+  eprint("  -ignore_class 0 1 7 33\n");
+  eprint("Ignore points based on return type.\n");
+  eprint("  -ignore_first -ignore_first_of_many\n");
+  eprint("  -ignore_last -ignore_last_of_many\n");
+  eprint("  -ignore_intermediate\n");
+  eprint("  -ignore_single\n");
+  eprint("Ignore points based on flags.\n");
+  eprint("  -ignore_synthetic -ignore_keypoint\n");
+  eprint("  -ignore_withheld -ignore_overlap\n");
 }
 
 void LASignore::ignore_class(U8 classification)
@@ -72,7 +72,7 @@ BOOL LASignore::parse(int& i, int argc, char *argv[])
   {
     if ((i+1) >= argc)
     {
-      REprintf("ERROR: '%s' needs 1 at least argument: classification\n", argv[i]);
+      eprint("ERROR: '%s' needs 1 at least argument: classification\n", argv[i]);
       return FALSE;
     }
     int i_in = i;
@@ -83,12 +83,12 @@ BOOL LASignore::parse(int& i, int argc, char *argv[])
       U32 classification;
       if (sscanf(argv[i], "%u", &classification) != 1)
       {
-        REprintf("ERROR: '%s' needs arguments between 0 and 255 but '%s' is no valid code\n", argv[i_in], argv[i]);
+        eprint("ERROR: '%s' needs arguments between 0 and 255 but '%s' is no valid code\n", argv[i_in], argv[i]);
         return FALSE;
       }
       if (classification > 255)
       {
-        REprintf("ERROR: '%s' needs arguments between 0 and 255 but '%u' is out of range\n", argv[i_in], classification);
+        eprint("ERROR: '%s' needs arguments between 0 and 255 but '%u' is out of range\n", argv[i_in], classification);
         return FALSE;
       }
       ignore_mask |= (1u << (classification >> 5));
@@ -102,23 +102,23 @@ BOOL LASignore::parse(int& i, int argc, char *argv[])
   {
     if ((i+1) >= argc)
     {
-      REprintf("ERROR: '%s' needs 1 argument: mask\n", argv[i]);
+      eprint("ERROR: '%s' needs 1 argument: mask\n", argv[i]);
       return FALSE;
     }
     U32 classification_mask;
     if (sscanf(argv[i+1], "%u", &classification_mask) != 1)
     {
-      REprintf("ERROR: '%s' needs argument between 0x00000000 and 0xFFFFFFFF but '%s' is no valid mask\n", argv[i], argv[i+1]);
+      eprint("ERROR: '%s' needs argument between 0x00000000 and 0xFFFFFFFF but '%s' is no valid mask\n", argv[i], argv[i+1]);
       return FALSE;
     }
     if (classification_mask == 0x00000000)
     {
-      REprintf("ERROR: '%s' needs argument between 0x00000000 and 0xFFFFFFFF but %u makes no sense\n", argv[i], classification_mask);
+      eprint("ERROR: '%s' needs argument between 0x00000000 and 0xFFFFFFFF but %u makes no sense\n", argv[i], classification_mask);
       return FALSE;
     }
     if (classification_mask == 0xFFFFFFFF)
     {
-      REprintf("ERROR: '%s' needs argument between 0x00000000 and 0xFFFFFFFF but %u makes no sense\n", argv[i], classification_mask);
+      eprint("ERROR: '%s' needs argument between 0x00000000 and 0xFFFFFFFF but %u makes no sense\n", argv[i], classification_mask);
       return FALSE;
     }
     ignore_mask |= 1;
@@ -179,7 +179,7 @@ BOOL LASignore::parse(int& i, int argc, char *argv[])
   }
   else
   {
-    REprintf( "ERROR: cannot understand argument '%s'\n", argv[i]);
+    eprint( "ERROR: cannot understand argument '%s'\n", argv[i]);
     return FALSE;
   }
   return TRUE;

@@ -2532,9 +2532,9 @@ void LAStransform::check_for_overflow() const
       CHAR command[256];
       operations[i]->get_command(command);
 #ifdef _WIN32
-      REprintf( "WARNING: total of %" PRId64 " overflows caused by '%s'\n", operations[i]->get_overflow(), command);
+      eprint( "WARNING: total of %" PRId64 " overflows caused by '%s'\n", operations[i]->get_overflow(), command);
 #else
-      REprintf( "WARNING: total of  %" PRId64 " overflows caused by '%s'\n", operations[i]->get_overflow(), command);
+      eprint( "WARNING: total of  %" PRId64 " overflows caused by '%s'\n", operations[i]->get_overflow(), command);
 #endif
     }
   }
@@ -2561,143 +2561,143 @@ void LAStransform::clean()
 
 void LAStransform::usage() const
 {
-  REprintf("Transform coordinates.\n");
-  REprintf("  -translate_x -2.5\n");
-  REprintf("  -scale_z 0.3048\n");
-  REprintf("  -rotate_xy 15.0 620000 4100000 (angle + origin)\n");
-  REprintf("  -translate_xyz 0.5 0.5 0\n");
-  REprintf("  -translate_then_scale_y -0.5 1.001\n");
-  REprintf("  -transform_helmert -199.87,74.79,246.62\n");
-  REprintf("  -transform_helmert 598.1,73.7,418.2,0.202,0.045,-2.455,6.7\n");
-  REprintf("  -transform_affine 0.9999652,0.903571,171.67,736.26\n");
-  REprintf("  -switch_x_y -switch_x_z -switch_y_z\n");
-  REprintf("  -clamp_z_below 70.5\n");
-  REprintf("  -clamp_z 70.5 72.5\n");
-  REprintf("  -copy_attribute_into_z 0\n");
-  REprintf("  -add_attribute_to_z 1\n");
-  REprintf("  -add_scaled_attribute_to_z 1 -1.2\n");
-  REprintf("  -copy_intensity_into_z\n");
-  REprintf("  -copy_user_data_into_z\n");
-  REprintf("Transform raw xyz integers.\n");
-  REprintf("  -translate_raw_z 20\n");
-  REprintf("  -translate_raw_xyz 1 1 0\n");
-  REprintf("  -translate_raw_xy_at_random 2 2\n");
-  REprintf("  -clamp_raw_z 500 800\n");
-  REprintf("Transform intensity.\n");
-  REprintf("  -set_intensity 0\n");
-  REprintf("  -scale_intensity 2.5\n");
-  REprintf("  -translate_intensity 50\n");
-  REprintf("  -translate_then_scale_intensity 0.5 3.1\n");
-  REprintf("  -clamp_intensity 0 255\n");
-  REprintf("  -clamp_intensity_above 255\n");
-  REprintf("  -map_intensity map_file.txt\n");
-  REprintf("  -copy_RGB_into_intensity\n");
-  REprintf("  -copy_NIR_into_intensity\n");
-  REprintf("  -copy_attribute_into_intensity 0\n");
-  REprintf("  -bin_gps_time_into_intensity 0.5\n");
-  REprintf("Transform scan_angle.\n");
-  REprintf("  -set_scan_angle 0.0\n");
-  REprintf("  -scale_scan_angle 1.944445\n");
-  REprintf("  -translate_scan_angle -5\n");
-  REprintf("  -translate_then_scale_scan_angle -0.5 2.1\n");
-  REprintf("Change the return number or return count of points.\n");
-  REprintf("  -repair_zero_returns\n");
-  REprintf("  -set_return_number 1\n");
-  REprintf("  -set_extended_return_number 10\n");
-  REprintf("  -change_return_number_from_to 2 1\n");
-  REprintf("  -change_extended_return_number_from_to 2 8\n");
-  REprintf("  -set_number_of_returns 2\n");
-  REprintf("  -set_extended_number_of_returns 15\n");
-  REprintf("  -change_number_of_returns_from_to 0 2\n");
-  REprintf("  -change_extended_number_of_returns_from_to 8 10\n");
-  REprintf("Modify the classification.\n");
-  REprintf("  -set_classification 2\n");
-  REprintf("  -set_extended_classification 41\n");
-  REprintf("  -change_classification_from_to 2 4\n");
-  REprintf("  -classify_z_below_as -5.0 7\n");
-  REprintf("  -classify_z_above_as 70.0 7\n");
-  REprintf("  -classify_z_between_as 2.0 5.0 4\n");
-  REprintf("  -classify_intensity_above_as 200 9\n");
-  REprintf("  -classify_intensity_below_as 30 11 \n");
-  REprintf("  -classify_intensity_between_as 500 900 15\n");
-  REprintf("  -classify_attribute_below_as 0 -5.0 7\n");
-  REprintf("  -classify_attribute_above_as 1 70.0 7\n");
-  REprintf("  -classify_attribute_between_as 1 2.0 5.0 4\n");
-  REprintf("  -change_extended_classification_from_to 6 46\n");
-  REprintf("  -move_ancient_to_extended_classification\n");
-  REprintf("  -copy_user_data_into_classification\n");
-  REprintf("Change the flags.\n");
-  REprintf("  -set_withheld_flag 0\n");
-  REprintf("  -set_synthetic_flag 1\n");
-  REprintf("  -set_keypoint_flag 0\n");
-  REprintf("  -set_overlap_flag 1\n");
-  REprintf("Modify the extended scanner channel.\n");
-  REprintf("  -set_scanner_channel 2\n");
-  REprintf("  -copy_user_data_into_scanner_channel\n");
-  REprintf("Modify the user data.\n");
-  REprintf("  -set_user_data 0\n");
-  REprintf("  -scale_user_data 1.5\n");
-  REprintf("  -change_user_data_from_to 23 26\n");
-  REprintf("  -change_user_data_from_to 23 26\n");
-  REprintf("  -map_user_data map_file.txt\n");
-  REprintf("  -copy_scanner_channel_into_user_data\n");
-  REprintf("  -copy_attribute_into_user_data 1\n");
-  REprintf("  -add_scaled_attribute_to_user_data 0 10.0\n");
-  REprintf("Modify the point source ID.\n");
-  REprintf("  -set_point_source 500\n");
-  REprintf("  -change_point_source_from_to 1023 1024\n");
-  REprintf("  -map_point_source map_file.txt\n");
-  REprintf("  -copy_user_data_into_point_source\n");
-  REprintf("  -copy_scanner_channel_into_point_source\n");
-  REprintf("  -copy_attribute_into_point_source 0\n");
-  REprintf("  -merge_scanner_channel_into_point_source\n");
-  REprintf("  -split_scanner_channel_from_point_source\n");
-  REprintf("  -bin_Z_into_point_source 200\n");
-  REprintf("  -bin_abs_scan_angle_into_point_source 2\n");
-  REprintf("  -bin_gps_time_into_point_source 5.0\n");
-  REprintf("Transform gps_time.\n");
-  REprintf("  -set_gps_time 113556962.005715\n");
-  REprintf("  -translate_gps_time 40.50\n");
-  REprintf("  -adjusted_to_week\n");
-  REprintf("  -week_to_adjusted 1671\n");
-  REprintf("Transform RGB/NIR colors.\n");
-  REprintf("  -set_RGB 255 0 127\n");
-  REprintf("  -set_RGB_of_class 9 0 0 255\n");
-  REprintf("  -scale_RGB 2 4 2\n");
-  REprintf("  -scale_RGB_down (by 256)\n");
-  REprintf("  -scale_RGB_up (by 256)\n");
-  REprintf("  -scale_RGB_to_8bit (only scales down 16 bit values)\n");
-  REprintf("  -scale_RGB_to_16bit (only scales up 8 bit values)\n");
-  REprintf("  -scale_NIR 2\n");
-  REprintf("  -scale_NIR_down (by 256)\n");
-  REprintf("  -scale_NIR_up (by 256)\n");
-  REprintf("  -scale_NIR_to_8bit (only scales down 16 bit values)\n");
-  REprintf("  -scale_NIR_to_16bit (only scales up 8 bit values)\n");
-  REprintf("  -switch_R_G -switch_R_B -switch_B_G\n");
-  REprintf("  -copy_R_into_NIR -copy_R_into_intensity\n");
-  REprintf("  -copy_G_into_NIR -copy_G_into_intensity\n");
-  REprintf("  -copy_B_into_NIR -copy_B_into_intensity\n");
-  REprintf("  -copy_intensity_into_NIR\n");
-  REprintf("  -switch_RGBI_into_CIR\n");
-  REprintf("  -switch_RGB_intensity_into_CIR\n");
-  REprintf("Transform attributes in \"Extra Bytes\".\n");
-  REprintf("  -scale_attribute 0 1.5\n");
-  REprintf("  -translate_attribute 1 0.2\n");
-  REprintf("  -copy_user_data_into_attribute 0\n");
-  REprintf("  -copy_z_into_attribute 0\n");
-  REprintf("  -map_attribute_into_RGB 0 map_height_to_RGB.txt\n");
-  REprintf("Transform using \"LASregisters\".\n");
-  REprintf("  -copy_attribute_into_register 0 0\n");
-  REprintf("  -scale_register 0 1.5\n");
-  REprintf("  -translate_register 1 10.7\n");
-  REprintf("  -add_registers 0 1 3\n");
-  REprintf("  -multiply_registers 0 1 2\n");
-  REprintf("  -copy_intensity_into_register 0\n");
-  REprintf("  -copy_R_into_register 1\n");
-  REprintf("  -copy_G_into_register 2\n");
-  REprintf("  -copy_B_into_register 3\n");
-  REprintf("  -copy_NIR_into_register 4\n");
-  REprintf("  -copy_register_into_intensity 1\n");
+  eprint("Transform coordinates.\n");
+  eprint("  -translate_x -2.5\n");
+  eprint("  -scale_z 0.3048\n");
+  eprint("  -rotate_xy 15.0 620000 4100000 (angle + origin)\n");
+  eprint("  -translate_xyz 0.5 0.5 0\n");
+  eprint("  -translate_then_scale_y -0.5 1.001\n");
+  eprint("  -transform_helmert -199.87,74.79,246.62\n");
+  eprint("  -transform_helmert 598.1,73.7,418.2,0.202,0.045,-2.455,6.7\n");
+  eprint("  -transform_affine 0.9999652,0.903571,171.67,736.26\n");
+  eprint("  -switch_x_y -switch_x_z -switch_y_z\n");
+  eprint("  -clamp_z_below 70.5\n");
+  eprint("  -clamp_z 70.5 72.5\n");
+  eprint("  -copy_attribute_into_z 0\n");
+  eprint("  -add_attribute_to_z 1\n");
+  eprint("  -add_scaled_attribute_to_z 1 -1.2\n");
+  eprint("  -copy_intensity_into_z\n");
+  eprint("  -copy_user_data_into_z\n");
+  eprint("Transform raw xyz integers.\n");
+  eprint("  -translate_raw_z 20\n");
+  eprint("  -translate_raw_xyz 1 1 0\n");
+  eprint("  -translate_raw_xy_at_random 2 2\n");
+  eprint("  -clamp_raw_z 500 800\n");
+  eprint("Transform intensity.\n");
+  eprint("  -set_intensity 0\n");
+  eprint("  -scale_intensity 2.5\n");
+  eprint("  -translate_intensity 50\n");
+  eprint("  -translate_then_scale_intensity 0.5 3.1\n");
+  eprint("  -clamp_intensity 0 255\n");
+  eprint("  -clamp_intensity_above 255\n");
+  eprint("  -map_intensity map_file.txt\n");
+  eprint("  -copy_RGB_into_intensity\n");
+  eprint("  -copy_NIR_into_intensity\n");
+  eprint("  -copy_attribute_into_intensity 0\n");
+  eprint("  -bin_gps_time_into_intensity 0.5\n");
+  eprint("Transform scan_angle.\n");
+  eprint("  -set_scan_angle 0.0\n");
+  eprint("  -scale_scan_angle 1.944445\n");
+  eprint("  -translate_scan_angle -5\n");
+  eprint("  -translate_then_scale_scan_angle -0.5 2.1\n");
+  eprint("Change the return number or return count of points.\n");
+  eprint("  -repair_zero_returns\n");
+  eprint("  -set_return_number 1\n");
+  eprint("  -set_extended_return_number 10\n");
+  eprint("  -change_return_number_from_to 2 1\n");
+  eprint("  -change_extended_return_number_from_to 2 8\n");
+  eprint("  -set_number_of_returns 2\n");
+  eprint("  -set_extended_number_of_returns 15\n");
+  eprint("  -change_number_of_returns_from_to 0 2\n");
+  eprint("  -change_extended_number_of_returns_from_to 8 10\n");
+  eprint("Modify the classification.\n");
+  eprint("  -set_classification 2\n");
+  eprint("  -set_extended_classification 41\n");
+  eprint("  -change_classification_from_to 2 4\n");
+  eprint("  -classify_z_below_as -5.0 7\n");
+  eprint("  -classify_z_above_as 70.0 7\n");
+  eprint("  -classify_z_between_as 2.0 5.0 4\n");
+  eprint("  -classify_intensity_above_as 200 9\n");
+  eprint("  -classify_intensity_below_as 30 11 \n");
+  eprint("  -classify_intensity_between_as 500 900 15\n");
+  eprint("  -classify_attribute_below_as 0 -5.0 7\n");
+  eprint("  -classify_attribute_above_as 1 70.0 7\n");
+  eprint("  -classify_attribute_between_as 1 2.0 5.0 4\n");
+  eprint("  -change_extended_classification_from_to 6 46\n");
+  eprint("  -move_ancient_to_extended_classification\n");
+  eprint("  -copy_user_data_into_classification\n");
+  eprint("Change the flags.\n");
+  eprint("  -set_withheld_flag 0\n");
+  eprint("  -set_synthetic_flag 1\n");
+  eprint("  -set_keypoint_flag 0\n");
+  eprint("  -set_overlap_flag 1\n");
+  eprint("Modify the extended scanner channel.\n");
+  eprint("  -set_scanner_channel 2\n");
+  eprint("  -copy_user_data_into_scanner_channel\n");
+  eprint("Modify the user data.\n");
+  eprint("  -set_user_data 0\n");
+  eprint("  -scale_user_data 1.5\n");
+  eprint("  -change_user_data_from_to 23 26\n");
+  eprint("  -change_user_data_from_to 23 26\n");
+  eprint("  -map_user_data map_file.txt\n");
+  eprint("  -copy_scanner_channel_into_user_data\n");
+  eprint("  -copy_attribute_into_user_data 1\n");
+  eprint("  -add_scaled_attribute_to_user_data 0 10.0\n");
+  eprint("Modify the point source ID.\n");
+  eprint("  -set_point_source 500\n");
+  eprint("  -change_point_source_from_to 1023 1024\n");
+  eprint("  -map_point_source map_file.txt\n");
+  eprint("  -copy_user_data_into_point_source\n");
+  eprint("  -copy_scanner_channel_into_point_source\n");
+  eprint("  -copy_attribute_into_point_source 0\n");
+  eprint("  -merge_scanner_channel_into_point_source\n");
+  eprint("  -split_scanner_channel_from_point_source\n");
+  eprint("  -bin_Z_into_point_source 200\n");
+  eprint("  -bin_abs_scan_angle_into_point_source 2\n");
+  eprint("  -bin_gps_time_into_point_source 5.0\n");
+  eprint("Transform gps_time.\n");
+  eprint("  -set_gps_time 113556962.005715\n");
+  eprint("  -translate_gps_time 40.50\n");
+  eprint("  -adjusted_to_week\n");
+  eprint("  -week_to_adjusted 1671\n");
+  eprint("Transform RGB/NIR colors.\n");
+  eprint("  -set_RGB 255 0 127\n");
+  eprint("  -set_RGB_of_class 9 0 0 255\n");
+  eprint("  -scale_RGB 2 4 2\n");
+  eprint("  -scale_RGB_down (by 256)\n");
+  eprint("  -scale_RGB_up (by 256)\n");
+  eprint("  -scale_RGB_to_8bit (only scales down 16 bit values)\n");
+  eprint("  -scale_RGB_to_16bit (only scales up 8 bit values)\n");
+  eprint("  -scale_NIR 2\n");
+  eprint("  -scale_NIR_down (by 256)\n");
+  eprint("  -scale_NIR_up (by 256)\n");
+  eprint("  -scale_NIR_to_8bit (only scales down 16 bit values)\n");
+  eprint("  -scale_NIR_to_16bit (only scales up 8 bit values)\n");
+  eprint("  -switch_R_G -switch_R_B -switch_B_G\n");
+  eprint("  -copy_R_into_NIR -copy_R_into_intensity\n");
+  eprint("  -copy_G_into_NIR -copy_G_into_intensity\n");
+  eprint("  -copy_B_into_NIR -copy_B_into_intensity\n");
+  eprint("  -copy_intensity_into_NIR\n");
+  eprint("  -switch_RGBI_into_CIR\n");
+  eprint("  -switch_RGB_intensity_into_CIR\n");
+  eprint("Transform attributes in \"Extra Bytes\".\n");
+  eprint("  -scale_attribute 0 1.5\n");
+  eprint("  -translate_attribute 1 0.2\n");
+  eprint("  -copy_user_data_into_attribute 0\n");
+  eprint("  -copy_z_into_attribute 0\n");
+  eprint("  -map_attribute_into_RGB 0 map_height_to_RGB.txt\n");
+  eprint("Transform using \"LASregisters\".\n");
+  eprint("  -copy_attribute_into_register 0 0\n");
+  eprint("  -scale_register 0 1.5\n");
+  eprint("  -translate_register 1 10.7\n");
+  eprint("  -add_registers 0 1 3\n");
+  eprint("  -multiply_registers 0 1 2\n");
+  eprint("  -copy_intensity_into_register 0\n");
+  eprint("  -copy_R_into_register 1\n");
+  eprint("  -copy_G_into_register 2\n");
+  eprint("  -copy_B_into_register 3\n");
+  eprint("  -copy_NIR_into_register 4\n");
+  eprint("  -copy_register_into_intensity 1\n");
 }
 
 BOOL LAStransform::parse(int argc, char* argv[])
@@ -2721,13 +2721,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+1], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: offset but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -2738,13 +2738,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+1], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: offset but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Y_COORDINATE;
@@ -2755,13 +2755,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+1], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: offset but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -2772,25 +2772,25 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: offset_x offset_y offset_z\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: offset_x offset_y offset_z\n", argv[i]);
           return FALSE;
         }
         F64 offset_x;
         if (sscanf(argv[i+1], "%lf", &offset_x) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: offset_x offset_y offset_z but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: offset_x offset_y offset_z but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 offset_y;
         if (sscanf(argv[i+2], "%lf", &offset_y) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: offset_x offset_y offset_z but '%s' is no valid number\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: offset_x offset_y offset_z but '%s' is no valid number\n", argv[i], argv[i+2]);
           return FALSE;
         }
         F64 offset_z;
         if (sscanf(argv[i+3], "%lf", &offset_z) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: offset_x offset_y offset_z but '%s' is no valid number\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: offset_x offset_y offset_z but '%s' is no valid number\n", argv[i], argv[i+3]);
           return FALSE;
         }
         if (offset_x) transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -2803,19 +2803,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+1], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 scale;
         if (sscanf(argv[i+2], "%lf", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+2]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -2826,19 +2826,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+1], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 scale;
         if (sscanf(argv[i+2], "%lf", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+2]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Y_COORDINATE;
@@ -2849,19 +2849,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+1], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 scale;
         if (sscanf(argv[i+2], "%lf", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid number\n", argv[i], argv[i+2]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -2874,13 +2874,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: raw_offset\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: raw_offset\n", argv[i]);
             return FALSE;
           }
           I32 raw_offset;
           if (sscanf(argv[i+1], "%d", &raw_offset) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: raw_offset but '%s' is no valid raw_offset\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: raw_offset but '%s' is no valid raw_offset\n", argv[i], argv[i+1]);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -2891,13 +2891,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: raw_offset\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: raw_offset\n", argv[i]);
             return FALSE;
           }
           I32 raw_offset;
           if (sscanf(argv[i+1], "%d", &raw_offset) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: raw_offset but '%s' is no valid raw_offset\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: raw_offset but '%s' is no valid raw_offset\n", argv[i], argv[i+1]);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_Y_COORDINATE;
@@ -2908,13 +2908,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: raw_offset\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: raw_offset\n", argv[i]);
             return FALSE;
           }
           I32 raw_offset;
           if (sscanf(argv[i+1], "%d", &raw_offset) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: raw_offset but '%s' is no valid raw_offset\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: raw_offset but '%s' is no valid raw_offset\n", argv[i], argv[i+1]);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -2925,25 +2925,25 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+3) >= argc)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: raw_offset_x raw_offset_y raw_offset_z\n", argv[i]);
+            eprint("ERROR: '%s' needs 3 arguments: raw_offset_x raw_offset_y raw_offset_z\n", argv[i]);
             return FALSE;
           }
           I32 raw_offset_x;
           if (sscanf(argv[i+1], "%d", &raw_offset_x) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: raw_offset_x raw_offset_y raw_offset_z but '%s' is no valid raw_offset_x\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 3 arguments: raw_offset_x raw_offset_y raw_offset_z but '%s' is no valid raw_offset_x\n", argv[i], argv[i+1]);
             return FALSE;
           }
           I32 raw_offset_y;
           if (sscanf(argv[i+2], "%d", &raw_offset_y) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: raw_offset_x raw_offset_y raw_offset_z but '%s' is no valid raw_offset_y\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 3 arguments: raw_offset_x raw_offset_y raw_offset_z but '%s' is no valid raw_offset_y\n", argv[i], argv[i+2]);
             return FALSE;
           }
           I32 raw_offset_z;
           if (sscanf(argv[i+3], "%d", &raw_offset_z) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: raw_offset_x raw_offset_y raw_offset_z but '%s' is no valid raw_offset_z\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 3 arguments: raw_offset_x raw_offset_y raw_offset_z but '%s' is no valid raw_offset_z\n", argv[i], argv[i+3]);
             return FALSE;
           }
           if (raw_offset_x) transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -2956,19 +2956,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: max_raw_offset_x max_raw_offset_y\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: max_raw_offset_x max_raw_offset_y\n", argv[i]);
             return FALSE;
           }
           I32 max_raw_offset_x;
           if (sscanf(argv[i+1], "%d", &max_raw_offset_x) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: max_raw_offset_x max_raw_offset_y but '%s' is no valid max_raw_offset_x\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 2 arguments: max_raw_offset_x max_raw_offset_y but '%s' is no valid max_raw_offset_x\n", argv[i], argv[i+1]);
             return FALSE;
           }
           I32 max_raw_offset_y;
           if (sscanf(argv[i+2], "%d", &max_raw_offset_y) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: max_raw_offset_x max_raw_offset_y but '%s' is no valid max_raw_offset_y\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 2 arguments: max_raw_offset_x max_raw_offset_y but '%s' is no valid max_raw_offset_y\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (max_raw_offset_x) transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -2981,13 +2981,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
           return FALSE;
         }
         F32 offset;
         if (sscanf(argv[i+1], "%f", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset but '%s' is no valid offset\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: offset but '%s' is no valid offset\n", argv[i], argv[i+1]);
           return FALSE;
         }
         add_operation(new LASoperationTranslateIntensity(offset));
@@ -2997,19 +2997,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
           return FALSE;
         }
         F32 offset;
         if (sscanf(argv[i+1], "%f", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid offset\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid offset\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F32 scale;
         if (sscanf(argv[i+2], "%f", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
           return FALSE;
         }
         add_operation(new LASoperationTranslateThenScaleIntensity(offset, scale));
@@ -3019,13 +3019,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
           return FALSE;
         }
         F32 offset;
         if (sscanf(argv[i+1], "%f", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset but '%s' is no valid offset\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: offset but '%s' is no valid offset\n", argv[i], argv[i+1]);
           return FALSE;
         }
         add_operation(new LASoperationTranslateScanAngle(offset));
@@ -3035,19 +3035,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale\n", argv[i]);
           return FALSE;
         }
         F32 offset;
         if (sscanf(argv[i+1], "%f", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid offset\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid offset\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F32 scale;
         if (sscanf(argv[i+2], "%f", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: offset scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
           return FALSE;
         }
         add_operation(new LASoperationTranslateThenScaleScanAngle(offset, scale));
@@ -3057,13 +3057,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: offset\n", argv[i]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+1], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: offset but '%s' is no valid offset\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: offset but '%s' is no valid offset\n", argv[i], argv[i+1]);
           return FALSE;
         }
         add_operation(new LASoperationTranslateGpsTime(offset));
@@ -3073,19 +3073,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index offset\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: index offset\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index offset but '%s' is no valid index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: index offset but '%s' is no valid index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+2], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index offset but '%s' is no valid offset\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: index offset but '%s' is no valid offset\n", argv[i], argv[i+2]);
           return FALSE;
         }
         add_operation(new LASoperationTranslateAttribute(index, offset));
@@ -3095,19 +3095,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index offset\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: index offset\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index offset but '%s' is no valid index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: index offset but '%s' is no valid index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 offset;
         if (sscanf(argv[i+2], "%lf", &offset) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index offset but '%s' is no valid offset\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: index offset but '%s' is no valid offset\n", argv[i], argv[i+2]);
           return FALSE;
         }
         add_operation(new LASoperationTranslateRegister(registers, index, offset));
@@ -3120,30 +3120,30 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y\n", argv[i]);
           return FALSE;
         }
         F64 angle;
         if (sscanf(argv[i+1], "%lf", &angle) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but '%s' is no valid angle\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but '%s' is no valid angle\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (angle == 0.0)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but %g is no valid angle\n", argv[i], angle);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but %g is no valid angle\n", argv[i], angle);
           return FALSE;
         }
         F64 rot_center_x;
         if (sscanf(argv[i+2], "%lf", &rot_center_x) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but '%s' is no valid rot_center_x\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but '%s' is no valid rot_center_x\n", argv[i], argv[i+2]);
           return FALSE;
         }
         F64 rot_center_y;
         if (sscanf(argv[i+3], "%lf", &rot_center_y) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but '%s' is no valid rot_center_y\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but '%s' is no valid rot_center_y\n", argv[i], argv[i+3]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -3155,30 +3155,30 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_z\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_z\n", argv[i]);
           return FALSE;
         }
         F64 angle;
         if (sscanf(argv[i+1], "%lf", &angle) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_z but '%s' is no valid angle\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_z but '%s' is no valid angle\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (angle == 0.0)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but %g is no valid angle\n", argv[i], angle);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but %g is no valid angle\n", argv[i], angle);
           return FALSE;
         }
         F64 rot_center_x;
         if (sscanf(argv[i+2], "%lf", &rot_center_x) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_z but '%s' is no valid rot_center_x\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_z but '%s' is no valid rot_center_x\n", argv[i], argv[i+2]);
           return FALSE;
         }
         F64 rot_center_z;
         if (sscanf(argv[i+3], "%lf", &rot_center_z) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_z but '%s' is no valid rot_center_z\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_z but '%s' is no valid rot_center_z\n", argv[i], argv[i+3]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -3190,30 +3190,30 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_y rot_center_z\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_y rot_center_z\n", argv[i]);
           return FALSE;
         }
         F64 angle;
         if (sscanf(argv[i+1], "%lf", &angle) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_y rot_center_z but '%s' is no valid angle\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_y rot_center_z but '%s' is no valid angle\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (angle == 0.0)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but %g is no valid angle\n", argv[i], angle);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_x rot_center_y but %g is no valid angle\n", argv[i], angle);
           return FALSE;
         }
         F64 rot_center_y;
         if (sscanf(argv[i+2], "%lf", &rot_center_y) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_y rot_center_z but '%s' is no valid rot_center_y\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_y rot_center_z but '%s' is no valid rot_center_y\n", argv[i], argv[i+2]);
           return FALSE;
         }
         F64 rot_center_z;
         if (sscanf(argv[i+3], "%lf", &rot_center_z) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: angle rot_center_y rot_center_z but '%s' is no valid rot_center_z\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: angle rot_center_y rot_center_z but '%s' is no valid rot_center_z\n", argv[i], argv[i+3]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Y_COORDINATE;
@@ -3228,19 +3228,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: below above\n", argv[i]);
           return FALSE;
         }
         F64 below;
         if (sscanf(argv[i+1], "%lf", &below) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid below value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid below value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 above;
         if (sscanf(argv[i+2], "%lf", &above) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid above value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid above value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -3251,13 +3251,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: below\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: below\n", argv[i]);
           return FALSE;
         }
         F64 below;
         if (sscanf(argv[i+1], "%lf", &below) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: below but '%s' is no valid below value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: below but '%s' is no valid below value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -3268,13 +3268,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: above\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: above\n", argv[i]);
           return FALSE;
         }
         F64 above;
         if (sscanf(argv[i+1], "%lf", &above) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: above but '%s' is no valid above value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: above but '%s' is no valid above value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -3285,29 +3285,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: below above\n", argv[i]);
           return FALSE;
         }
         U32 below;
         if (sscanf(argv[i+1], "%u", &below) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid below value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid below value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         U32 above;
         if (sscanf(argv[i+2], "%u", &above) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid above value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid above value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (below > U16_MAX)
         {
-          REprintf("ERROR: cannot clamp intensity because below value of %u is larger than %u\n", below, U16_MAX);
+          eprint("ERROR: cannot clamp intensity because below value of %u is larger than %u\n", below, U16_MAX);
           return FALSE;
         }
         if (above > U16_MAX)
         {
-          REprintf("ERROR: cannot clamp intensity because above value of %u is larger than %u\n", above, U16_MAX);
+          eprint("ERROR: cannot clamp intensity because above value of %u is larger than %u\n", above, U16_MAX);
           return FALSE;
         }
         add_operation(new LASoperationClampIntensity((U16)below, (U16)above));
@@ -3317,18 +3317,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: below\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: below\n", argv[i]);
           return FALSE;
         }
         U32 below;
         if (sscanf(argv[i+1], "%u", &below) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: below but '%s' is no valid below value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: below but '%s' is no valid below value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (below > U16_MAX)
         {
-          REprintf("ERROR: cannot clamp intensity because below value of %u is larger than %u\n", below, U16_MAX);
+          eprint("ERROR: cannot clamp intensity because below value of %u is larger than %u\n", below, U16_MAX);
           return FALSE;
         }
         add_operation(new LASoperationClampIntensityBelow((U16)below));
@@ -3338,18 +3338,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: above\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: above\n", argv[i]);
           return FALSE;
         }
         U32 above;
         if (sscanf(argv[i+1], "%u", &above) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: above but '%s' is no valid above value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: above but '%s' is no valid above value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (above > U16_MAX)
         {
-          REprintf("ERROR: cannot clamp intensity because above value of %u is larger than %u\n", above, U16_MAX);
+          eprint("ERROR: cannot clamp intensity because above value of %u is larger than %u\n", above, U16_MAX);
           return FALSE;
         }
         add_operation(new LASoperationClampIntensityAbove((U16)above));
@@ -3359,19 +3359,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: below above\n", argv[i]);
           return FALSE;
         }
         I32 below;
         if (sscanf(argv[i+1], "%d", &below) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid below value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid below value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         I32 above;
         if (sscanf(argv[i+2], "%d", &above) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid above value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: below above but '%s' is no valid above value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -3387,13 +3387,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -3404,13 +3404,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_Y_COORDINATE;
@@ -3421,13 +3421,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -3438,13 +3438,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyAttributeIntoUserData(index));
@@ -3454,13 +3454,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyAttributeIntoIntensity(index));
@@ -3470,13 +3470,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyAttributeIntoPointSource(index));
@@ -3486,13 +3486,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyAttributeIntoRGBNIR(index, 0));
@@ -3502,13 +3502,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyAttributeIntoRGBNIR(index, 1));
@@ -3518,13 +3518,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyAttributeIntoRGBNIR(index, 2));
@@ -3534,13 +3534,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyAttributeIntoRGBNIR(index, 3));
@@ -3550,24 +3550,24 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index of attribute, index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: index of attribute, index of register\n", argv[i]);
             return FALSE;
           }
           U32 index_attribute;
           if (sscanf(argv[i+1], "%u", &index_attribute) != 1)
           {
-            REprintf("ERROR: '%s' 1st of 2 arguments index of attribute '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' 1st of 2 arguments index of attribute '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           U32 index_register;
           if (sscanf(argv[i+2], "%u", &index_register) != 1)
           {
-            REprintf("ERROR: '%s' 2nd of 2 arguments index of register '%s' is no valid index\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' 2nd of 2 arguments index of register '%s' is no valid index\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (index_register >= 16)
           {
-            REprintf("ERROR: '%s' 2nd of 2 arguments index of register %u is out of valid [0,15] range\n", argv[i], index_register);
+            eprint("ERROR: '%s' 2nd of 2 arguments index of register %u is out of valid [0,15] range\n", argv[i], index_register);
             return FALSE;
           }
           add_operation(new LASoperationCopyAttributeIntoRegister(index_attribute, registers, index_register));
@@ -3580,18 +3580,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -3602,18 +3602,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_Y_COORDINATE;
@@ -3624,18 +3624,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -3646,18 +3646,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRegisterIntoUserData(registers, index));
@@ -3667,18 +3667,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRegisterIntoIntensity(registers, index));
@@ -3688,18 +3688,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRegisterIntoPointSource(registers, index));
@@ -3709,18 +3709,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRegisterIntoRGBNIR(registers, index, 0));
@@ -3730,18 +3730,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRegisterIntoRGBNIR(registers, index, 1));
@@ -3751,18 +3751,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRegisterIntoRGBNIR(registers, index, 2));
@@ -3772,18 +3772,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index of register\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index of register but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRegisterIntoRGBNIR(registers, index, 3));
@@ -3793,24 +3793,24 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index of register, index of attribute\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: index of register, index of attribute\n", argv[i]);
             return FALSE;
           }
           U32 index_register;
           if (sscanf(argv[i+1], "%u", &index_register) != 1)
           {
-            REprintf("ERROR: '%s' 1st of 2 arguments index of register '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' 1st of 2 arguments index of register '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index_register >= 16)
           {
-            REprintf("ERROR: '%s' 1st of 2 arguments index of register %u is out of valid [0,15] range\n", argv[i], index_register);
+            eprint("ERROR: '%s' 1st of 2 arguments index of register %u is out of valid [0,15] range\n", argv[i], index_register);
             return FALSE;
           }
           U32 index_attribute;
           if (sscanf(argv[i+2], "%u", &index_attribute) != 1)
           {
-            REprintf("ERROR: '%s' 2nd of 2 arguments index of attribute '%s' is no valid index\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' 2nd of 2 arguments index of attribute '%s' is no valid index\n", argv[i], argv[i+2]);
             return FALSE;
           }
           add_operation(new LASoperationCopyRegisterIntoAttribute(registers, index_register, index_attribute));
@@ -3843,13 +3843,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyUserDataIntoAttribute(index));
@@ -3859,18 +3859,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyUserDataIntoRegister(registers, index));
@@ -3883,18 +3883,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyPointSourceIntoRegister(registers, index));
@@ -3920,18 +3920,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRBGNIRintoRegister(0, registers, index));
@@ -3959,18 +3959,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRBGNIRintoRegister(1, registers, index));
@@ -3993,18 +3993,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRBGNIRintoRegister(2, registers, index));
@@ -4027,18 +4027,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyRBGNIRintoRegister(3, registers, index));
@@ -4072,13 +4072,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyIntensityIntoAttribute(index));
@@ -4088,18 +4088,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (index >= 16)
           {
-            REprintf("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
+            eprint("ERROR: '%s' index of register %u is out of valid [0,15] range\n", argv[i], index);
             return FALSE;
           }
           add_operation(new LASoperationCopyIntensityIntoRegister(registers, index));
@@ -4125,13 +4125,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: index\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: index but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationCopyZIntoAttribute(index));
@@ -4145,18 +4145,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: classification\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: classification\n", argv[i]);
           return FALSE;
         }
         U32 classification;
         if (sscanf(argv[i+1], "%u", &classification) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: classification but '%s' is no valid classification\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: classification but '%s' is no valid classification\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (classification > 255)
         {
-          REprintf("ERROR: cannot set classification because classification of %u is larger than 255\n", classification);
+          eprint("ERROR: cannot set classification because classification of %u is larger than 255\n", classification);
           return FALSE;
         }
         add_operation(new LASoperationSetClassification((U8)classification));
@@ -4166,18 +4166,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > U16_MAX)
         {
-          REprintf("ERROR: cannot set intensity because value of %u is larger than %u\n", value, U16_MAX);
+          eprint("ERROR: cannot set intensity because value of %u is larger than %u\n", value, U16_MAX);
           return FALSE;
         }
         add_operation(new LASoperationSetIntensity(U16_CLAMP(value)));
@@ -4187,18 +4187,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > 1)
         {
-          REprintf("ERROR: cannot set withheld flag because value %u is larger than 1\n", value);
+          eprint("ERROR: cannot set withheld flag because value %u is larger than 1\n", value);
           return FALSE;
         }
         add_operation(new LASoperationSetWithheldFlag((U8)value));
@@ -4208,18 +4208,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > 1)
         {
-          REprintf("ERROR: cannot set synthetic flag because value %u is larger than 1\n", value);
+          eprint("ERROR: cannot set synthetic flag because value %u is larger than 1\n", value);
           return FALSE;
         }
         add_operation(new LASoperationSetSyntheticFlag((U8)value));
@@ -4229,18 +4229,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > 1)
         {
-          REprintf("ERROR: cannot set keypoint flag because value %u is larger than 1\n", value);
+          eprint("ERROR: cannot set keypoint flag because value %u is larger than 1\n", value);
           return FALSE;
         }
         add_operation(new LASoperationSetKeypointFlag((U8)value));
@@ -4250,18 +4250,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > 1)
         {
-          REprintf("ERROR: cannot set overlap flag because value %u is larger than 1\n", value);
+          eprint("ERROR: cannot set overlap flag because value %u is larger than 1\n", value);
           return FALSE;
         }
         add_operation(new LASoperationSetExtendedOverlapFlag((U8)value));
@@ -4271,18 +4271,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > 3)
         {
-          REprintf("ERROR: cannot set scanner channel because value %u is larger than 3\n", value);
+          eprint("ERROR: cannot set scanner channel because value %u is larger than 3\n", value);
           return FALSE;
         }
         add_operation(new LASoperationSetExtendedScannerChannel((U8)value));
@@ -4292,18 +4292,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > U8_MAX)
         {
-          REprintf("ERROR: cannot set user data because value %u is larger than %d\n", value, U8_MAX);
+          eprint("ERROR: cannot set user data because value %u is larger than %d\n", value, U8_MAX);
           return FALSE;
         }
         add_operation(new LASoperationSetUserData((U8)value));
@@ -4313,23 +4313,23 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         F32 value;
         if (sscanf(argv[i+1], "%g", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value < -180.0f)
         {
-          REprintf("ERROR: cannot set scan angle because value %g is smaller than -180\n", value);
+          eprint("ERROR: cannot set scan angle because value %g is smaller than -180\n", value);
           return FALSE;
         }
         else if (value > 180.0f)
         {
-          REprintf("ERROR: cannot set scan angle rank because value %g is larger than 180\n", value);
+          eprint("ERROR: cannot set scan angle rank because value %g is larger than 180\n", value);
           return FALSE;
         }
 
@@ -4340,18 +4340,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: psid\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: psid\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > U16_MAX)
         {
-          REprintf("ERROR: cannot set point source ID because value %u is larger than %d\n", value, U16_MAX);
+          eprint("ERROR: cannot set point source ID because value %u is larger than %d\n", value, U16_MAX);
           return FALSE;
         }
         add_operation(new LASoperationSetPointSource((U16)value));
@@ -4361,18 +4361,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: return_number\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: return_number\n", argv[i]);
           return FALSE;
         }
         U32 return_number;
         if (sscanf(argv[i+1], "%u", &return_number) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: return_number but '%s' is no valid return_number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: return_number but '%s' is no valid return_number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (return_number > 7)
         {
-          REprintf("ERROR: cannot set return_number because %u is larger than 7\n", return_number);
+          eprint("ERROR: cannot set return_number because %u is larger than 7\n", return_number);
           return FALSE;
         }
         add_operation(new LASoperationSetReturnNumber((U8)return_number));
@@ -4382,18 +4382,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: extended_return_number\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: extended_return_number\n", argv[i]);
           return FALSE;
         }
         U32 extended_return_number;
         if (sscanf(argv[i+1], "%u", &extended_return_number) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: extended_return_number but '%s' is no valid extended_return_number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: extended_return_number but '%s' is no valid extended_return_number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (extended_return_number > 15)
         {
-          REprintf("ERROR: cannot set extended_return_number because %u is larger than 15\n", extended_return_number);
+          eprint("ERROR: cannot set extended_return_number because %u is larger than 15\n", extended_return_number);
           return FALSE;
         }
         add_operation(new LASoperationSetExtendedReturnNumber((U8)extended_return_number));
@@ -4403,18 +4403,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: number_of_returns\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: number_of_returns\n", argv[i]);
           return FALSE;
         }
         U32 number_of_returns;
         if (sscanf(argv[i+1], "%u", &number_of_returns) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: number_of_returns but '%s' is no valid number_of_returns\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: number_of_returns but '%s' is no valid number_of_returns\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (number_of_returns > 7)
         {
-          REprintf("ERROR: cannot set number_of_returns because %u is larger than 7\n", number_of_returns);
+          eprint("ERROR: cannot set number_of_returns because %u is larger than 7\n", number_of_returns);
           return FALSE;
         }
         add_operation(new LASoperationSetNumberOfReturns((U8)number_of_returns));
@@ -4424,18 +4424,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: extended_number_of_returns\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: extended_number_of_returns\n", argv[i]);
           return FALSE;
         }
         U32 extended_number_of_returns;
         if (sscanf(argv[i+1], "%u", &extended_number_of_returns) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: extended_number_of_returns but '%s' is no valid extended_return_number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: extended_number_of_returns but '%s' is no valid extended_return_number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (extended_number_of_returns > 15)
         {
-          REprintf("ERROR: cannot set extended_number_of_returns because %u is larger than 15\n", extended_number_of_returns);
+          eprint("ERROR: cannot set extended_number_of_returns because %u is larger than 15\n", extended_number_of_returns);
           return FALSE;
         }
         add_operation(new LASoperationSetExtendedNumberOfReturns((U8)extended_number_of_returns));
@@ -4445,13 +4445,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: gps_time\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: gps_time\n", argv[i]);
           return FALSE;
         }
         F64 gps_time;
         if (sscanf(argv[i+1], "%lf", &gps_time) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: gps_time but '%s' is no valid gps_time\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: gps_time but '%s' is no valid gps_time\n", argv[i], argv[i+1]);
           return FALSE;
         }
         add_operation(new LASoperationSetGpsTime(gps_time));
@@ -4461,19 +4461,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: index value\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index value but '%s' is no valid index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: index value but '%s' is no valid index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 value;
         if (sscanf(argv[i+2], "%lf", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index value but '%s' is no valid value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: index value but '%s' is no valid value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         add_operation(new LASoperationSetAttribute(index, value));
@@ -4483,19 +4483,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: index value\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index value but '%s' is no valid index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: index value but '%s' is no valid index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 value;
         if (sscanf(argv[i+2], "%lf", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index value but '%s' is no valid value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: index value but '%s' is no valid value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         add_operation(new LASoperationSetRegister(registers, index, value));
@@ -4507,40 +4507,40 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+3) >= argc)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: R G B\n", argv[i]);
+            eprint("ERROR: '%s' needs 3 arguments: R G B\n", argv[i]);
             return FALSE;
           }
           U32 R;
           if (sscanf(argv[i+1], "%u", &R) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: R G B but '%s' is no valid R\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 3 arguments: R G B but '%s' is no valid R\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (R > U16_MAX)
           {
-            REprintf("ERROR: cannot set RGB because R is %u, which is larger than %u\n", R, U16_MAX);
+            eprint("ERROR: cannot set RGB because R is %u, which is larger than %u\n", R, U16_MAX);
             return FALSE;
           }
           U32 G;
           if (sscanf(argv[i+2], "%u", &G) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: R G B but '%s' is no valid G\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 3 arguments: R G B but '%s' is no valid G\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (G > U16_MAX)
           {
-            REprintf("ERROR: cannot set RGB because G is %u, which is larger than %u\n", G, U16_MAX);
+            eprint("ERROR: cannot set RGB because G is %u, which is larger than %u\n", G, U16_MAX);
             return FALSE;
           }
           U32 B;
           if (sscanf(argv[i+3], "%u", &B) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: R G B but '%s' is no valid B\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 3 arguments: R G B but '%s' is no valid B\n", argv[i], argv[i+3]);
             return FALSE;
           }
           if (B > U16_MAX)
           {
-            REprintf("ERROR: cannot set RGB because B is %u, which is larger than %u\n", B, U16_MAX);
+            eprint("ERROR: cannot set RGB because B is %u, which is larger than %u\n", B, U16_MAX);
             return FALSE;
           }
           add_operation(new LASoperationSetRGB((U16)R, (U16)G, (U16)B));
@@ -4550,51 +4550,51 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+4) >= argc)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: classification R G B\n", argv[i]);
+            eprint("ERROR: '%s' needs 4 arguments: classification R G B\n", argv[i]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+1], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: classification R G B but '%s' is no valid classification\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 4 arguments: classification R G B but '%s' is no valid classification\n", argv[i], argv[i+1]);
             return FALSE;
           }
           if (classification > U8_MAX)
           {
-            REprintf("ERROR: cannot set RGB because classification is %u, which is larger than %u\n", classification, U8_MAX);
+            eprint("ERROR: cannot set RGB because classification is %u, which is larger than %u\n", classification, U8_MAX);
             return FALSE;
           }
           U32 R;
           if (sscanf(argv[i+2], "%u", &R) != 1)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: classification R G B but '%s' is no valid R\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 4 arguments: classification R G B but '%s' is no valid R\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (R > U16_MAX)
           {
-            REprintf("ERROR: cannot set RGB because R is %u, which is larger than %u\n", R, U16_MAX);
+            eprint("ERROR: cannot set RGB because R is %u, which is larger than %u\n", R, U16_MAX);
             return FALSE;
           }
           U32 G;
           if (sscanf(argv[i+3], "%u", &G) != 1)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: classification R G B but '%s' is no valid G\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 4 arguments: classification R G B but '%s' is no valid G\n", argv[i], argv[i+3]);
             return FALSE;
           }
           if (G > U16_MAX)
           {
-            REprintf("ERROR: cannot set RGB because G is %u, which is larger than %u\n", G, U16_MAX);
+            eprint("ERROR: cannot set RGB because G is %u, which is larger than %u\n", G, U16_MAX);
             return FALSE;
           }
           U32 B;
           if (sscanf(argv[i+4], "%u", &B) != 1)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: classification R G B but '%s' is no valid B\n", argv[i], argv[i+4]);
+            eprint("ERROR: '%s' needs 4 arguments: classification R G B but '%s' is no valid B\n", argv[i], argv[i+4]);
             return FALSE;
           }
           if (B > U16_MAX)
           {
-            REprintf("ERROR: cannot set RGB because B is %u, which is larger than %u\n", B, U16_MAX);
+            eprint("ERROR: cannot set RGB because B is %u, which is larger than %u\n", B, U16_MAX);
             return FALSE;
           }
           if (classification < 32)
@@ -4612,18 +4612,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > 1)
         {
-          REprintf("ERROR: cannot set scan direction flag because value %u is larger than 1\n", value);
+          eprint("ERROR: cannot set scan direction flag because value %u is larger than 1\n", value);
           return FALSE;
         }
         add_operation(new LASoperationSetScanDirectionFlag((U8)value));
@@ -4633,18 +4633,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' need 1 argument: value\n", argv[i]);
+          eprint("ERROR: '%s' need 1 argument: value\n", argv[i]);
           return FALSE;
         }
         U32 value;
         if (sscanf(argv[i+1], "%u", &value) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: value but '%s' is no valid flag\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (value > 1)
         {
-          REprintf("ERROR: cannot set edge of flight line because value %u is larger than 1\n", value);
+          eprint("ERROR: cannot set edge of flight line because value %u is larger than 1\n", value);
           return FALSE;
         }
         add_operation(new LASoperationSetEdgeOfFlightLine((U8)value));
@@ -4657,29 +4657,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
           return FALSE;
         }
         U32 from_value;
         if (sscanf(argv[i+1], "%u", &from_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (from_value > U8_MAX)
         {
-          REprintf("ERROR: cannot change classification because from_value %u is larger than %u\n", from_value, U8_MAX);
+          eprint("ERROR: cannot change classification because from_value %u is larger than %u\n", from_value, U8_MAX);
           return FALSE;
         }
         U32 to_value;
         if (sscanf(argv[i+2], "%u", &to_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (to_value > U8_MAX)
         {
-          REprintf("ERROR: cannot change classification because to_value %u is larger than %u\n", to_value, U8_MAX);
+          eprint("ERROR: cannot change classification because to_value %u is larger than %u\n", to_value, U8_MAX);
           return FALSE;
         }
         add_operation(new LASoperationChangeClassificationFromTo((U8)from_value, (U8)to_value));
@@ -4689,29 +4689,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
           return FALSE;
         }
         U32 from_value;
         if (sscanf(argv[i+1], "%u", &from_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (from_value > U8_MAX)
         {
-          REprintf("ERROR: cannot change classification because from_value %u is larger than %u\n", from_value, U8_MAX);
+          eprint("ERROR: cannot change classification because from_value %u is larger than %u\n", from_value, U8_MAX);
           return FALSE;
         }
         U32 to_value;
         if (sscanf(argv[i+2], "%u", &to_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (to_value > U8_MAX)
         {
-          REprintf("ERROR: cannot change classification because to_value %u is larger than %u\n", to_value, U8_MAX);
+          eprint("ERROR: cannot change classification because to_value %u is larger than %u\n", to_value, U8_MAX);
           return FALSE;
         }
         add_operation(new LASoperationChangeUserDataFromTo(from_value, to_value));
@@ -4721,29 +4721,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
           return FALSE;
         }
         U32 from_value;
         if (sscanf(argv[i+1], "%u", &from_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (from_value > U16_MAX)
         {
-          REprintf("ERROR: cannot change classification because from_value %u is larger than %u\n", from_value, U16_MAX);
+          eprint("ERROR: cannot change classification because from_value %u is larger than %u\n", from_value, U16_MAX);
           return FALSE;
         }
         U32 to_value;
         if (sscanf(argv[i+2], "%u", &to_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (to_value > U16_MAX)
         {
-          REprintf("ERROR: cannot change classification because to_value %u is larger than %u\n", to_value, U16_MAX);
+          eprint("ERROR: cannot change classification because to_value %u is larger than %u\n", to_value, U16_MAX);
           return FALSE;
         }
         add_operation(new LASoperationChangePointSourceFromTo((U16)from_value, (U16)to_value));
@@ -4753,29 +4753,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
           return FALSE;
         }
         U32 from_value;
         if (sscanf(argv[i+1], "%u", &from_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (from_value > 7)
         {
-          REprintf("ERROR: cannot change return_number because from_value %u is larger than %u\n", from_value, 7);
+          eprint("ERROR: cannot change return_number because from_value %u is larger than %u\n", from_value, 7);
           return FALSE;
         }
         U32 to_value;
         if (sscanf(argv[i+2], "%u", &to_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (to_value > 7)
         {
-          REprintf("ERROR: cannot change return_number because to_value %u is larger than %u\n", to_value, 7);
+          eprint("ERROR: cannot change return_number because to_value %u is larger than %u\n", to_value, 7);
           return FALSE;
         }
         add_operation(new LASoperationChangeReturnNumberFromTo((U8)from_value, (U8)to_value));
@@ -4785,29 +4785,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
           return FALSE;
         }
         U32 from_value;
         if (sscanf(argv[i+1], "%u", &from_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (from_value > 7)
         {
-          REprintf("ERROR: cannot change number_of_returns because from_value %u is larger than %u\n", from_value, 7);
+          eprint("ERROR: cannot change number_of_returns because from_value %u is larger than %u\n", from_value, 7);
           return FALSE;
         }
         U32 to_value;
         if (sscanf(argv[i+2], "%u", &to_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (to_value > 7)
         {
-          REprintf("ERROR: cannot change number_of_returns because to_value %u is larger than %u\n", to_value, 7);
+          eprint("ERROR: cannot change number_of_returns because to_value %u is larger than %u\n", to_value, 7);
           return FALSE;
         }
         add_operation(new LASoperationChangeNumberOfReturnsFromTo((U8)from_value, (U8)to_value));
@@ -4817,29 +4817,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
           return FALSE;
         }
         U32 from_value;
         if (sscanf(argv[i+1], "%u", &from_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (from_value > 15)
         {
-          REprintf("ERROR: cannot change extended_return_number because from_value %u is larger than %u\n", from_value, 15);
+          eprint("ERROR: cannot change extended_return_number because from_value %u is larger than %u\n", from_value, 15);
           return FALSE;
         }
         U32 to_value;
         if (sscanf(argv[i+2], "%u", &to_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (to_value > 15)
         {
-          REprintf("ERROR: cannot change extended_return_number because to_value %u is larger than %u\n", to_value, 15);
+          eprint("ERROR: cannot change extended_return_number because to_value %u is larger than %u\n", to_value, 15);
           return FALSE;
         }
         add_operation(new LASoperationChangeExtendedReturnNumberFromTo((U8)from_value, (U8)to_value));
@@ -4849,29 +4849,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value\n", argv[i]);
           return FALSE;
         }
         U32 from_value;
         if (sscanf(argv[i+1], "%u", &from_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid from_value\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (from_value > 15)
         {
-          REprintf("ERROR: cannot change extended_number_of_returns because from_value %u is larger than %u\n", from_value, 15);
+          eprint("ERROR: cannot change extended_number_of_returns because from_value %u is larger than %u\n", from_value, 15);
           return FALSE;
         }
         U32 to_value;
         if (sscanf(argv[i+2], "%u", &to_value) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: from_value to_value but '%s' is no valid to_value\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (to_value > 15)
         {
-          REprintf("ERROR: cannot change extended_number_of_returns because to_value %u is larger than %u\n", to_value, 15);
+          eprint("ERROR: cannot change extended_number_of_returns because to_value %u is larger than %u\n", to_value, 15);
           return FALSE;
         }
         add_operation(new LASoperationChangeExtendedNumberOfReturnsFromTo((U8)from_value, (U8)to_value));
@@ -4886,24 +4886,24 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: z_value classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: z_value classification\n", argv[i]);
             return FALSE;
           }
           F64 z_value;
           if (sscanf(argv[i+1], "%lf", &z_value) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: z_value classification but '%s' is no valid z_value\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 2 arguments: z_value classification but '%s' is no valid z_value\n", argv[i], argv[i+1]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+2], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: z_value classification but '%s' is no valid classification\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 2 arguments: z_value classification but '%s' is no valid classification\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify z_value because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify z_value because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyZbelowAs(z_value, U8_CLAMP(classification)));
@@ -4913,24 +4913,24 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: z_value classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: z_value classification\n", argv[i]);
             return FALSE;
           }
           F64 z_value;
           if (sscanf(argv[i+1], "%lf", &z_value) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: z_value classification but '%s' is no valid z_value\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 2 arguments: z_value classification but '%s' is no valid z_value\n", argv[i], argv[i+1]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+2], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: z_value classification but '%s' is no valid classification\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 2 arguments: z_value classification but '%s' is no valid classification\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify z_value because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify z_value because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyZaboveAs(z_value, U8_CLAMP(classification)));
@@ -4940,30 +4940,30 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+3) >= argc)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: z_min z_max classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 3 arguments: z_min z_max classification\n", argv[i]);
             return FALSE;
           }
           F64 z_min;
           if (sscanf(argv[i+1], "%lf", &z_min) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: z_min z_max classification but '%s' is no valid z_min\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 3 arguments: z_min z_max classification but '%s' is no valid z_min\n", argv[i], argv[i+1]);
             return FALSE;
           }
           F64 z_max;
           if (sscanf(argv[i+2], "%lf", &z_max) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: z_min z_max classification but '%s' is no valid z_max\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 3 arguments: z_min z_max classification but '%s' is no valid z_max\n", argv[i], argv[i+2]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+3], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: z_min z_max classification but '%s' is no valid classification\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 3 arguments: z_min z_max classification but '%s' is no valid classification\n", argv[i], argv[i+3]);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify z_value because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify z_value because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyZbetweenAs(z_min, z_max, U8_CLAMP(classification)));
@@ -4976,29 +4976,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: value classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: value classification\n", argv[i]);
             return FALSE;
           }
           U32 value;
           if (sscanf(argv[i+1], "%u", &value) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: value classification but '%s' is no valid value\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 2 arguments: value classification but '%s' is no valid value\n", argv[i], argv[i+1]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+2], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: value classification but '%s' is no valid classification\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 2 arguments: value classification but '%s' is no valid classification\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (value > U16_MAX)
           {
-            REprintf("ERROR: cannot classify intensity because value of %u is larger than %u\n", value, U16_MAX);
+            eprint("ERROR: cannot classify intensity because value of %u is larger than %u\n", value, U16_MAX);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify intensity because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify intensity because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyIntensityBelowAs(value, classification));
@@ -5008,29 +5008,29 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: value classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: value classification\n", argv[i]);
             return FALSE;
           }
           U32 value;
           if (sscanf(argv[i+1], "%u", &value) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: value classification but '%s' is no valid value\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 2 arguments: value classification but '%s' is no valid value\n", argv[i], argv[i+1]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+2], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: value classification but '%s' is no valid classification\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 2 arguments: value classification but '%s' is no valid classification\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (value > U16_MAX)
           {
-            REprintf("ERROR: cannot classify intensity because value of %u is larger than %u\n", value, U16_MAX);
+            eprint("ERROR: cannot classify intensity because value of %u is larger than %u\n", value, U16_MAX);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify intensity because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify intensity because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyIntensityAboveAs(value, classification));
@@ -5040,40 +5040,40 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+3) >= argc)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: min_value max_value classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 3 arguments: min_value max_value classification\n", argv[i]);
             return FALSE;
           }
           U32 min_value;
           if (sscanf(argv[i+1], "%u", &min_value) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: min_value max_value classification but '%s' is no valid min_value\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 3 arguments: min_value max_value classification but '%s' is no valid min_value\n", argv[i], argv[i+1]);
             return FALSE;
           }
           U32 max_value;
           if (sscanf(argv[i+2], "%u", &max_value) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: min_value max_value classification but '%s' is no valid max_value\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 3 arguments: min_value max_value classification but '%s' is no valid max_value\n", argv[i], argv[i+2]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+3], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: min_value max_value classification but '%s' is no valid classification\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 3 arguments: min_value max_value classification but '%s' is no valid classification\n", argv[i], argv[i+3]);
             return FALSE;
           }
           if (min_value > U16_MAX)
           {
-            REprintf("ERROR: cannot classify intensity because min_value of %u is larger than %u\n", min_value, U16_MAX);
+            eprint("ERROR: cannot classify intensity because min_value of %u is larger than %u\n", min_value, U16_MAX);
             return FALSE;
           }
           if (max_value > U16_MAX)
           {
-            REprintf("ERROR: cannot classify intensity because max_value of %u is larger than %u\n", max_value, U16_MAX);
+            eprint("ERROR: cannot classify intensity because max_value of %u is larger than %u\n", max_value, U16_MAX);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify intensity because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify intensity because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyIntensityBetweenAs(min_value, max_value, classification));
@@ -5086,30 +5086,30 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+3) >= argc)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: attribute_index value classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 3 arguments: attribute_index value classification\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           F64 value;
           if (sscanf(argv[i+2], "%lf", &value) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid value\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid value\n", argv[i], argv[i+2]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+3], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid classification\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid classification\n", argv[i], argv[i+3]);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify attribute below because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify attribute below because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyAttributeBelowAs(index, value, U8_CLAMP(classification)));
@@ -5119,30 +5119,30 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+3) >= argc)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: attribute_index value classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 3 arguments: attribute_index value classification\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           F64 value;
           if (sscanf(argv[i+2], "%lf", &value) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid value\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid value\n", argv[i], argv[i+2]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+3], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid classification\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 3 arguments: attribute_index value classification but '%s' is no valid classification\n", argv[i], argv[i+3]);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify attribute above because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify attribute above because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyAttributeAboveAs(index, value, U8_CLAMP(classification)));
@@ -5152,36 +5152,36 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+4) >= argc)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: attribute_index min max classification\n", argv[i]);
+            eprint("ERROR: '%s' needs 4 arguments: attribute_index min max classification\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: attribute_index min max classification but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 4 arguments: attribute_index min max classification but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           F64 min;
           if (sscanf(argv[i+2], "%lf", &min) != 1)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: attribute_index min max classification but '%s' is no valid min\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 4 arguments: attribute_index min max classification but '%s' is no valid min\n", argv[i], argv[i+2]);
             return FALSE;
           }
           F64 max;
           if (sscanf(argv[i+3], "%lf", &max) != 1)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: attribute_index min max classification but '%s' is no valid max\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 4 arguments: attribute_index min max classification but '%s' is no valid max\n", argv[i], argv[i+3]);
             return FALSE;
           }
           U32 classification;
           if (sscanf(argv[i+4], "%u", &classification) != 1)
           {
-            REprintf("ERROR: '%s' needs 4 arguments: attribute_index min max classification but '%s' is no valid classification\n", argv[i], argv[i+4]);
+            eprint("ERROR: '%s' needs 4 arguments: attribute_index min max classification but '%s' is no valid classification\n", argv[i], argv[i+4]);
             return FALSE;
           }
           if (classification > 255)
           {
-            REprintf("ERROR: cannot classify attribute between because classification of %u is larger than 255\n", classification);
+            eprint("ERROR: cannot classify attribute between because classification of %u is larger than 255\n", classification);
             return FALSE;
           }
           add_operation(new LASoperationClassifyAttributeBetweenAs(index, min, max, U8_CLAMP(classification)));
@@ -5195,13 +5195,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
           return FALSE;
         }
         F64 scale_x;
         if (sscanf(argv[i+1], "%lf", &scale_x) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale_x but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: scale_x but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (scale_x != 1.0) transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -5212,13 +5212,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
           return FALSE;
         }
         F64 scale_y;
         if (sscanf(argv[i+1], "%lf", &scale_y) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale_y but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: scale_y but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (scale_y != 1.0) transformed_fields |= LASTRANSFORM_Y_COORDINATE;
@@ -5229,13 +5229,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
           return FALSE;
         }
         F64 scale_z;
         if (sscanf(argv[i+1], "%lf", &scale_z) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale_z but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: scale_z but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (scale_z != 1.0) transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -5246,25 +5246,25 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: scale_x scale_y scale_z\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: scale_x scale_y scale_z\n", argv[i]);
           return FALSE;
         }
         F64 scale_x;
         if (sscanf(argv[i+1], "%lf", &scale_x) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: scale_x scale_y scale_z but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: scale_x scale_y scale_z but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F64 scale_y;
         if (sscanf(argv[i+2], "%lf", &scale_y) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: scale_x scale_y scale_z but '%s' is no valid number\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: scale_x scale_y scale_z but '%s' is no valid number\n", argv[i], argv[i+2]);
           return FALSE;
         }
         F64 scale_z;
         if (sscanf(argv[i+3], "%lf", &scale_z) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: scale_x scale_y scale_z but '%s' is no valid number\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: scale_x scale_y scale_z but '%s' is no valid number\n", argv[i], argv[i+3]);
           return FALSE;
         }
         if (scale_x != 1.0) transformed_fields |= LASTRANSFORM_X_COORDINATE;
@@ -5277,13 +5277,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
           return FALSE;
         }
         F32 scale;
         if (sscanf(argv[i+1], "%f", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: scale but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         add_operation(new LASoperationScaleIntensity(scale));
@@ -5293,13 +5293,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
           return FALSE;
         }
         F32 scale;
         if (sscanf(argv[i+1], "%f", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: scale but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         add_operation(new LASoperationScaleScanAngle(scale));
@@ -5309,13 +5309,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
           return FALSE;
         }
         F32 scale;
         if (sscanf(argv[i+1], "%f", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale but '%s' is no valid number\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: scale but '%s' is no valid number\n", argv[i], argv[i+1]);
           return FALSE;
         }
         add_operation(new LASoperationScaleUserData(scale));
@@ -5327,25 +5327,25 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+3) >= argc)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: scale_R scale_G scale_B\n", argv[i]);
+            eprint("ERROR: '%s' needs 3 arguments: scale_R scale_G scale_B\n", argv[i]);
             return FALSE;
           }
           F32 scale_R;
           if (sscanf(argv[i+1], "%f", &scale_R) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: scale_R scale_G scale_B but '%s' is no valid number\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 3 arguments: scale_R scale_G scale_B but '%s' is no valid number\n", argv[i], argv[i+1]);
             return FALSE;
           }
           F32 scale_G;
           if (sscanf(argv[i+2], "%f", &scale_G) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: scale_R scale_G scale_B but '%s' is no valid number\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 3 arguments: scale_R scale_G scale_B but '%s' is no valid number\n", argv[i], argv[i+2]);
             return FALSE;
           }
           F32 scale_B;
           if (sscanf(argv[i+3], "%f", &scale_B) != 1)
           {
-            REprintf("ERROR: '%s' needs 3 arguments: scale_R scale_G scale_B but '%s' is no valid number\n", argv[i], argv[i+3]);
+            eprint("ERROR: '%s' needs 3 arguments: scale_R scale_G scale_B but '%s' is no valid number\n", argv[i], argv[i+3]);
             return FALSE;
           }
           add_operation(new LASoperationScaleRGB(scale_R, scale_G, scale_B));
@@ -5378,13 +5378,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+1) >= argc)
           {
-            REprintf("ERROR: '%s' needs 1 argument: scale_NIR\n", argv[i]);
+            eprint("ERROR: '%s' needs 1 argument: scale_NIR\n", argv[i]);
             return FALSE;
           }
           F32 scale_NIR;
           if (sscanf(argv[i+1], "%f", &scale_NIR) != 1)
           {
-            REprintf("ERROR: '%s' needs 1 argument: scale_NIR but '%s' is no valid number\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 1 argument: scale_NIR but '%s' is no valid number\n", argv[i], argv[i+1]);
             return FALSE;
           }
           add_operation(new LASoperationScaleNIR(scale_NIR));
@@ -5415,19 +5415,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: index scale\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F32 scale;
         if (sscanf(argv[i+2], "%f", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
           return FALSE;
         }
         add_operation(new LASoperationScaleAttribute(index, scale));
@@ -5437,19 +5437,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: index scale\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         F32 scale;
         if (sscanf(argv[i+2], "%f", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
           return FALSE;
         }
         add_operation(new LASoperationScaleRegister(registers, index, scale));
@@ -5505,18 +5505,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: bin_size\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: bin_size\n", argv[i]);
           return FALSE;
         }
         U32 bin_size;
         if (sscanf(argv[i+1], "%u", &bin_size) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: bin_size but '%s' is no valid bin_size\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: bin_size but '%s' is no valid bin_size\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (bin_size == 0)
         {
-          REprintf("ERROR: %u is no valid bin_size for '%s'\n", bin_size, argv[i]);
+          eprint("ERROR: %u is no valid bin_size for '%s'\n", bin_size, argv[i]);
           return FALSE;
         }
         add_operation(new LASoperationBinZintoPointSource(bin_size));
@@ -5526,18 +5526,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: bin_size\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: bin_size\n", argv[i]);
           return FALSE;
         }
         F32 bin_size;
         if (sscanf(argv[i+1], "%f", &bin_size) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: bin_size but '%s' is no valid bin_size\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: bin_size but '%s' is no valid bin_size\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (bin_size <= 0.0f)
         {
-          REprintf("ERROR: %f is no valid bin_size for '%s'\n", bin_size, argv[i]);
+          eprint("ERROR: %f is no valid bin_size for '%s'\n", bin_size, argv[i]);
           return FALSE;
         }
         add_operation(new LASoperationBinAbsScanAngleIntoPointSource(bin_size));
@@ -5547,18 +5547,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: bin_size\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: bin_size\n", argv[i]);
           return FALSE;
         }
         F64 bin_size;
         if (sscanf(argv[i+1], "%lf", &bin_size) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: bin_size but '%s' is no valid bin_size\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: bin_size but '%s' is no valid bin_size\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (bin_size <= 0.0)
         {
-          REprintf("ERROR: %g is no valid bin_size for '%s'\n", bin_size, argv[i]);
+          eprint("ERROR: %g is no valid bin_size for '%s'\n", bin_size, argv[i]);
           return FALSE;
         }
         add_operation(new LASoperationBinGpsTimeIntoIntensity(bin_size));
@@ -5568,18 +5568,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: bin_size\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: bin_size\n", argv[i]);
           return FALSE;
         }
         F64 bin_size;
         if (sscanf(argv[i+1], "%lf", &bin_size) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: bin_size but '%s' is no valid bin_size\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: bin_size but '%s' is no valid bin_size\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (bin_size <= 0.0)
         {
-          REprintf("ERROR: %g is no valid bin_size for '%s'\n", bin_size, argv[i]);
+          eprint("ERROR: %g is no valid bin_size for '%s'\n", bin_size, argv[i]);
           return FALSE;
         }
         add_operation(new LASoperationBinGpsTimeIntoPointSource(bin_size));
@@ -5592,13 +5592,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: map_file_name.txt\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: map_file_name.txt\n", argv[i]);
           return FALSE;
         }
         FILE* file = fopen(argv[i+1], "r");
         if (file == 0)
         {
-          REprintf("ERROR: cannot '%s' needs text file with map but '%s' cannot be opened\n", argv[i], argv[i+1]);
+          eprint("ERROR: cannot '%s' needs text file with map but '%s' cannot be opened\n", argv[i], argv[i+1]);
           return FALSE;
         }
         else
@@ -5612,13 +5612,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: map_file_name.txt\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: map_file_name.txt\n", argv[i]);
           return FALSE;
         }
         FILE* file = fopen(argv[i+1], "r");
         if (file == 0)
         {
-          REprintf("ERROR: '%s' needs text file with map but '%s' cannot be opened\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs text file with map but '%s' cannot be opened\n", argv[i], argv[i+1]);
           return FALSE;
         }
         else
@@ -5632,13 +5632,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: map_file_name.txt\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: map_file_name.txt\n", argv[i]);
           return FALSE;
         }
         FILE* file = fopen(argv[i+1], "r");
         if (file == 0)
         {
-          REprintf("ERROR: '%s' needs text file with map but '%s' cannot be opened\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs text file with map but '%s' cannot be opened\n", argv[i], argv[i+1]);
           return FALSE;
         }
         else
@@ -5652,19 +5652,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: attribute_index map_file_name.txt\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: attribute_index map_file_name.txt\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: attribute_index map_file_name.txt but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: attribute_index map_file_name.txt but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         FILE* file = fopen(argv[i+2], "r");
         if (file == 0)
         {
-          REprintf("ERROR: '%s' needs text file with map but '%s' cannot be opened\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs text file with map but '%s' cannot be opened\n", argv[i], argv[i+2]);
           return FALSE;
         }
         else
@@ -5681,19 +5681,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+2) >= argc)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: attribute_index attribute_file_name.txt\n", argv[i]);
+          eprint("ERROR: '%s' needs 2 arguments: attribute_index attribute_file_name.txt\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 2 arguments: attribute_index attribute_file_name.txt but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 2 arguments: attribute_index attribute_file_name.txt but '%s' is no valid attribute_index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         FILE* file = fopen(argv[i+2], "r");
         if (file == 0)
         {
-          REprintf("ERROR: '%s' needs text file with attribute values but '%s' cannot be opened\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs text file with attribute values but '%s' cannot be opened\n", argv[i], argv[i+2]);
           return FALSE;
         }
         else
@@ -5710,7 +5710,7 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: 3 or 7 comma separated parameters\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: 3 or 7 comma separated parameters\n", argv[i]);
           return FALSE;
         }
         F64 dx, dy, dz, rx, ry, rz, m, dummy;
@@ -5725,7 +5725,7 @@ BOOL LAStransform::parse(int argc, char* argv[])
         }
         else
         {
-          REprintf("ERROR: '%s' needs 3 or 7 comma separated parameters as argument\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 or 7 comma separated parameters as argument\n", argv[i]);
           return FALSE;
         }
         *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
@@ -5734,7 +5734,7 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: 4 comma separated parameters\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: 4 comma separated parameters\n", argv[i]);
           return FALSE;
         }
         F64 k, w, tx, ty, dummy;
@@ -5745,7 +5745,7 @@ BOOL LAStransform::parse(int argc, char* argv[])
         }
         else
         {
-          REprintf("ERROR: '%s' needs 4 comma separated parameters as argument\n", argv[i]);
+          eprint("ERROR: '%s' needs 4 comma separated parameters as argument\n", argv[i]);
           return FALSE;
         }
         *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
@@ -5785,13 +5785,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: week\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: week\n", argv[i]);
         return FALSE;
       }
       U32 week;
       if (sscanf(argv[i+1], "%u", &week) != 1)
       {
-        REprintf("ERROR: '%s' needs 1 argument: week but '%s' is no valid week\n", argv[i], argv[i+1]);
+        eprint("ERROR: '%s' needs 1 argument: week but '%s' is no valid week\n", argv[i], argv[i+1]);
         return FALSE;
       }
       add_operation(new LASoperationConvertWeekToAdjustedGps(week));
@@ -5808,40 +5808,40 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output\n", argv[i]);
           return FALSE;
         }
         U32 input1;
         if (sscanf(argv[i+1], "%u", &input1) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input1\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input1\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (input1 > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input1\n", argv[i], input1);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input1\n", argv[i], input1);
           return FALSE;
         }
         U32 input2;
         if (sscanf(argv[i+2], "%u", &input2) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input2\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input2\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (input2 > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input2\n", argv[i], input2);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input2\n", argv[i], input2);
           return FALSE;
         }
         U32 output;
         if (sscanf(argv[i+3], "%u", &output) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input3\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input3\n", argv[i], argv[i+3]);
           return FALSE;
         }
         if (output > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for output\n", argv[i], output);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for output\n", argv[i], output);
           return FALSE;
         }
         add_operation(new LASoperationAddRegisters(registers, input1, input2, output));
@@ -5853,24 +5853,24 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index scale\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: index scale\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           F32 scale;
           if (sscanf(argv[i+2], "%f", &scale) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
             return FALSE;
           }
           if (scale == 0.0f)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index scale but '%g' is no valid scale\n", argv[i], scale);
+            eprint("ERROR: '%s' needs 2 arguments: index scale but '%g' is no valid scale\n", argv[i], scale);
             return FALSE;
           }
           transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -5881,19 +5881,19 @@ BOOL LAStransform::parse(int argc, char* argv[])
         {
           if ((i+2) >= argc)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index scale\n", argv[i]);
+            eprint("ERROR: '%s' needs 2 arguments: index scale\n", argv[i]);
             return FALSE;
           }
           U32 index;
           if (sscanf(argv[i+1], "%u", &index) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid index\n", argv[i], argv[i+1]);
+            eprint("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid index\n", argv[i], argv[i+1]);
             return FALSE;
           }
           F32 scale;
           if (sscanf(argv[i+2], "%f", &scale) != 1)
           {
-            REprintf("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
+            eprint("ERROR: '%s' needs 2 arguments: index scale but '%s' is no valid scale\n", argv[i], argv[i+2]);
             return FALSE;
           }
           add_operation(new LASoperationAddScaledAttributeToUserData(index, scale));
@@ -5904,13 +5904,13 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: index of attribute\n", argv[i]);
           return FALSE;
         }
         U32 index;
         if (sscanf(argv[i+1], "%u", &index) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: index of attribute but '%s' is no valid index\n", argv[i], argv[i+1]);
           return FALSE;
         }
         transformed_fields |= LASTRANSFORM_Z_COORDINATE;
@@ -5924,40 +5924,40 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output\n", argv[i]);
           return FALSE;
         }
         U32 input1;
         if (sscanf(argv[i+1], "%u", &input1) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input1\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input1\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (input1 > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input1\n", argv[i], input1);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input1\n", argv[i], input1);
           return FALSE;
         }
         U32 input2;
         if (sscanf(argv[i+2], "%u", &input2) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input2\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input2\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (input2 > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input2\n", argv[i], input2);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input2\n", argv[i], input2);
           return FALSE;
         }
         U32 output;
         if (sscanf(argv[i+3], "%u", &output) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input3\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input3\n", argv[i], argv[i+3]);
           return FALSE;
         }
         if (output > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for output\n", argv[i], output);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for output\n", argv[i], output);
           return FALSE;
         }
         add_operation(new LASoperationMultiplyRegisters(registers, input1, input2, output));
@@ -5967,18 +5967,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
           return FALSE;
         }
         F32 scale;
         if (sscanf(argv[i+1], "%f", &scale) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale but '%s' is no valid scale\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: scale but '%s' is no valid scale\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (scale == 0.0f)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale but '%g' is no valid scale\n", argv[i], scale);
+          eprint("ERROR: '%s' needs 1 argument: scale but '%g' is no valid scale\n", argv[i], scale);
           return FALSE;
         }
         if (strcmp(argv[i]+36,"red") == 0)
@@ -6010,18 +6010,18 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+1) >= argc)
         {
-          REprintf("ERROR: '%s' needs 1 argument: divisor \n", argv[i]);
+          eprint("ERROR: '%s' needs 1 argument: divisor \n", argv[i]);
           return FALSE;
         }
         F32 divisor;
         if (sscanf(argv[i+1], "%f", &divisor) != 1)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale but '%s' is no valid divisor\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 1 argument: scale but '%s' is no valid divisor\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (divisor == 0.0f)
         {
-          REprintf("ERROR: '%s' needs 1 argument: scale but '%g' is no valid divisor\n", argv[i], divisor);
+          eprint("ERROR: '%s' needs 1 argument: scale but '%g' is no valid divisor\n", argv[i], divisor);
           return FALSE;
         }
         F32 scale = 1.0f / divisor;
@@ -6057,40 +6057,40 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output\n", argv[i]);
           return FALSE;
         }
         U32 input1;
         if (sscanf(argv[i+1], "%u", &input1) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input1\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input1\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (input1 > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input1\n", argv[i], input1);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input1\n", argv[i], input1);
           return FALSE;
         }
         U32 input2;
         if (sscanf(argv[i+2], "%u", &input2) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input2\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input2\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (input2 > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input2\n", argv[i], input2);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input2\n", argv[i], input2);
           return FALSE;
         }
         U32 output;
         if (sscanf(argv[i+3], "%u", &output) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input3\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input3\n", argv[i], argv[i+3]);
           return FALSE;
         }
         if (output > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for output\n", argv[i], output);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for output\n", argv[i], output);
           return FALSE;
         }
         add_operation(new LASoperationSubtractRegisters(registers, input1, input2, output));
@@ -6103,40 +6103,40 @@ BOOL LAStransform::parse(int argc, char* argv[])
       {
         if ((i+3) >= argc)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output\n", argv[i]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output\n", argv[i]);
           return FALSE;
         }
         U32 input1;
         if (sscanf(argv[i+1], "%u", &input1) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input1\n", argv[i], argv[i+1]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input1\n", argv[i], argv[i+1]);
           return FALSE;
         }
         if (input1 > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input1\n", argv[i], input1);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input1\n", argv[i], input1);
           return FALSE;
         }
         U32 input2;
         if (sscanf(argv[i+2], "%u", &input2) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input2\n", argv[i], argv[i+2]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input2\n", argv[i], argv[i+2]);
           return FALSE;
         }
         if (input2 > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input2\n", argv[i], input2);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for input2\n", argv[i], input2);
           return FALSE;
         }
         U32 output;
         if (sscanf(argv[i+3], "%u", &output) != 1)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input3\n", argv[i], argv[i+3]);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but '%s' is no valid input3\n", argv[i], argv[i+3]);
           return FALSE;
         }
         if (output > 15)
         {
-          REprintf("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for output\n", argv[i], output);
+          eprint("ERROR: '%s' needs 3 arguments: input1 input2 output but %u is out-of-range for output\n", argv[i], output);
           return FALSE;
         }
         add_operation(new LASoperationDivideRegisters(registers, input1, input2, output));

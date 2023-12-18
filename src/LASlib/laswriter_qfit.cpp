@@ -51,7 +51,7 @@ BOOL LASwriterQFIT::open(const char* file_name, const LASheader* header, I32 ver
 {
   if (file_name == 0)
   {
-    REprintf("ERROR: file name pointer is zero\n");
+    eprint("ERROR: file name pointer is zero\n");
     return FALSE;
   }
 
@@ -59,13 +59,13 @@ BOOL LASwriterQFIT::open(const char* file_name, const LASheader* header, I32 ver
 
   if (file == 0)
   {
-    REprintf( "ERROR: cannot open file '%s'\n", file_name);
+    eprint( "ERROR: cannot open file '%s'\n", file_name);
     return FALSE;
   }
 
   if (setvbuf(file, NULL, _IOFBF, io_buffer_size) != 0)
   {
-    REprintf( "WARNING: setvbuf() failed with buffer size %u\n", io_buffer_size);
+    eprint( "WARNING: setvbuf() failed with buffer size %u\n", io_buffer_size);
   }
 
   return open(file, header, version);
@@ -75,7 +75,7 @@ BOOL LASwriterQFIT::open(FILE* file, const LASheader* header, I32 version)
 {
   if (file == 0)
   {
-    REprintf("ERROR: file pointer is zero\n");
+    eprint("ERROR: file pointer is zero\n");
     return FALSE;
   }
 
@@ -84,7 +84,7 @@ BOOL LASwriterQFIT::open(FILE* file, const LASheader* header, I32 version)
   {
     if(_setmode( _fileno( stdout ), _O_BINARY ) == -1 )
     {
-      REprintf( "ERROR: cannot set stdout to binary (untranslated) mode\n");
+      eprint( "ERROR: cannot set stdout to binary (untranslated) mode\n");
     }
   }
 #endif
@@ -108,14 +108,14 @@ BOOL LASwriterQFIT::open(ByteStreamOut* stream, const LASheader* header, I32 ver
 {
   if (stream == 0)
   {
-    REprintf("ERROR: ByteStreamOut pointer is zero\n");
+    eprint("ERROR: ByteStreamOut pointer is zero\n");
     return FALSE;
   }
   this->stream = stream;
 
   if (header == 0)
   {
-    REprintf("ERROR: LASheader pointer is zero\n");
+    eprint("ERROR: LASheader pointer is zero\n");
     return FALSE;
   }
 
@@ -123,7 +123,7 @@ BOOL LASwriterQFIT::open(ByteStreamOut* stream, const LASheader* header, I32 ver
 
   if (((-361 < header->min_x) && (-361 < header->min_y) && (header->max_x < 361) && (header->max_y < 361)) == FALSE)
   {
-    REprintf("ERROR: bounding box (%g %g / %g %g) exceeds longitude / latitude\n", header->min_x, header->min_y, header->max_x, header->max_y);
+    eprint("ERROR: bounding box (%g %g / %g %g) exceeds longitude / latitude\n", header->min_x, header->min_y, header->max_x, header->max_y);
     return FALSE;
   }
 
@@ -166,7 +166,7 @@ BOOL LASwriterQFIT::open(ByteStreamOut* stream, const LASheader* header, I32 ver
   }
   else
   {
-    REprintf("WARNING: version %d of QFIT unknown ... using 48\n", version);
+    eprint("WARNING: version %d of QFIT unknown ... using 48\n", version);
     this->version = 48;
   }
 
@@ -174,7 +174,7 @@ BOOL LASwriterQFIT::open(ByteStreamOut* stream, const LASheader* header, I32 ver
 
   if (!stream->put32bitsLE((U8*)&version))
   {
-    REprintf("ERROR: while writing version of QFIT header\n");
+    eprint("ERROR: while writing version of QFIT header\n");
     return FALSE;
   }
 
@@ -185,7 +185,7 @@ BOOL LASwriterQFIT::open(ByteStreamOut* stream, const LASheader* header, I32 ver
 
   if (!stream->putBytes((U8*)buffer, version-4))
   {
-    REprintf("ERROR: writing first header record of QFIT header\n");
+    eprint("ERROR: writing first header record of QFIT header\n");
     return FALSE;
   }
 
@@ -196,12 +196,12 @@ BOOL LASwriterQFIT::open(ByteStreamOut* stream, const LASheader* header, I32 ver
 
   if (!stream->put32bitsLE((U8*)&buffer[0]))
   {
-    REprintf("ERROR: while writing -9000000 into QFIT header\n");
+    eprint("ERROR: while writing -9000000 into QFIT header\n");
     return FALSE;
   }
   if (!stream->put32bitsLE((U8*)&buffer[1]))
   {
-    REprintf("ERROR: while writing offset into QFIT header\n");
+    eprint("ERROR: while writing offset into QFIT header\n");
     return FALSE;
   }
 
@@ -211,7 +211,7 @@ BOOL LASwriterQFIT::open(ByteStreamOut* stream, const LASheader* header, I32 ver
   snprintf((char*)buffer, 48, "LAStools by Martin Isenburg");
   if (!stream->putBytes((U8*)buffer, version-8))
   {
-    REprintf("ERROR: writing second header record of QFIT header\n");
+    eprint("ERROR: writing second header record of QFIT header\n");
     return FALSE;
   }
 

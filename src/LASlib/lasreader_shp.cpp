@@ -105,7 +105,7 @@ BOOL LASreaderSHP::open(const char* file_name)
 {
   if (file_name == 0)
   {
-    REprintf("ERROR: file name pointer is zero\n");
+    eprint("ERROR: file name pointer is zero\n");
     return FALSE;
   }
 
@@ -114,7 +114,7 @@ BOOL LASreaderSHP::open(const char* file_name)
   file = fopen_compressed(file_name, "rb", &piped);
   if (file == 0)
   {
-    REprintf( "ERROR: cannot open file '%s'\n", file_name);
+    eprint( "ERROR: cannot open file '%s'\n", file_name);
     return FALSE;
   }
 
@@ -158,7 +158,7 @@ BOOL LASreaderSHP::open(const char* file_name)
   from_big_endian(&int_input); 
   if (int_input != 9994)
   {
-    REprintf( "ERROR: wrong shapefile code %d != 9994\n", int_input);
+    eprint( "ERROR: wrong shapefile code %d != 9994\n", int_input);
     return FALSE;
   }
   if (fread(&int_input, sizeof(int), 1, file) != 1) return false; // unused (BIG)
@@ -173,7 +173,7 @@ BOOL LASreaderSHP::open(const char* file_name)
   from_little_endian(&int_input); 
   if (int_input != 1000)
   {
-    REprintf( "ERROR: wrong shapefile version %d != 1000\n", int_input);
+    eprint( "ERROR: wrong shapefile version %d != 1000\n", int_input);
     return FALSE;
   }
   if (fread(&int_input, sizeof(int), 1, file) != 1) return false; // shape type (LITTLE)
@@ -181,7 +181,7 @@ BOOL LASreaderSHP::open(const char* file_name)
   shape_type = int_input;
   if (shape_type != 1 && shape_type != 11 && shape_type != 21 && shape_type != 8 && shape_type != 18 && shape_type != 28)
   {
-    REprintf( "ERROR: wrong shape type %d != 1,11,21,8,18,28\n", shape_type);
+    eprint( "ERROR: wrong shape type %d != 1,11,21,8,18,28\n", shape_type);
     return FALSE;
   }
   double double_input;
@@ -298,7 +298,7 @@ BOOL LASreaderSHP::read_point_default()
     from_little_endian(&int_input);
     if (int_input != shape_type)
     {
-      REprintf( "WARNING: wrong shape type %d != %d in record\n", int_input, shape_type);
+      eprint( "WARNING: wrong shape type %d != %d in record\n", int_input, shape_type);
     }
     double double_input;
     if (shape_type == 8 || shape_type == 18 || shape_type == 28) // Multipoint
@@ -416,14 +416,14 @@ BOOL LASreaderSHP::reopen(const char* file_name)
 {
   if (file_name == 0)
   {
-    REprintf("ERROR: file name pointer is zero\n");
+    eprint("ERROR: file name pointer is zero\n");
     return FALSE;
   }
 
   file = fopen_compressed(file_name, "rb", &piped);
   if (file == 0)
   {
-    REprintf( "ERROR: cannot reopen file '%s'\n", file_name);
+    eprint( "ERROR: cannot reopen file '%s'\n", file_name);
     return FALSE;
   }
 
@@ -566,8 +566,8 @@ void LASreaderSHP::populate_bounding_box()
 
   if ((header.min_x > 0) != (dequant_min_x > 0))
   {
-    REprintf( "WARNING: quantization sign flip for min_x from %g to %g.\n", header.min_x, dequant_min_x);
-    REprintf( "         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
+    eprint( "WARNING: quantization sign flip for min_x from %g to %g.\n", header.min_x, dequant_min_x);
+    eprint( "         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
   }
   else
   {
@@ -575,8 +575,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.max_x > 0) != (dequant_max_x > 0))
   {
-    REprintf( "WARNING: quantization sign flip for max_x from %g to %g.\n", header.max_x, dequant_max_x);
-    REprintf( "         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
+    eprint( "WARNING: quantization sign flip for max_x from %g to %g.\n", header.max_x, dequant_max_x);
+    eprint( "         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
   }
   else
   {
@@ -584,8 +584,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.min_y > 0) != (dequant_min_y > 0))
   {
-    REprintf( "WARNING: quantization sign flip for min_y from %g to %g.\n", header.min_y, dequant_min_y);
-    REprintf( "         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
+    eprint( "WARNING: quantization sign flip for min_y from %g to %g.\n", header.min_y, dequant_min_y);
+    eprint( "         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
   }
   else
   {
@@ -593,8 +593,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.max_y > 0) != (dequant_max_y > 0))
   {
-    REprintf( "WARNING: quantization sign flip for max_y from %g to %g.\n", header.max_y, dequant_max_y);
-    REprintf( "         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
+    eprint( "WARNING: quantization sign flip for max_y from %g to %g.\n", header.max_y, dequant_max_y);
+    eprint( "         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
   }
   else
   {
@@ -602,8 +602,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.min_z > 0) != (dequant_min_z > 0))
   {
-    REprintf( "WARNING: quantization sign flip for min_z from %g to %g.\n", header.min_z, dequant_min_z);
-    REprintf( "         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
+    eprint( "WARNING: quantization sign flip for min_z from %g to %g.\n", header.min_z, dequant_min_z);
+    eprint( "         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
   }
   else
   {
@@ -611,8 +611,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.max_z > 0) != (dequant_max_z > 0))
   {
-    REprintf( "WARNING: quantization sign flip for max_z from %g to %g.\n", header.max_z, dequant_max_z);
-    REprintf( "         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
+    eprint( "WARNING: quantization sign flip for max_z from %g to %g.\n", header.max_z, dequant_max_z);
+    eprint( "         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
   }
   else
   {

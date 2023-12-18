@@ -477,7 +477,7 @@ BOOL LASreadPoint::read(U8* const * point)
           {
             ((LASreadItemCompressed*)(readers_compressed[i]))->init(point[i], context);
           }
-          if (DEBUG_OUTPUT_NUM_BYTES_DETAILS) REprintf( "\n");
+          if (DEBUG_OUTPUT_NUM_BYTES_DETAILS) eprint( "\n");
         }
         else
         {

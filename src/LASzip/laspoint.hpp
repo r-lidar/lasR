@@ -282,7 +282,7 @@ public:
 
     if (!LASzip().setup(&num_items, &items, point_type, point_size, LASZIP_COMPRESSOR_NONE))
     {
-      REprintf("ERROR: unknown point type %d with point size %d\n", (I32)point_type, (I32)point_size);
+      eprint("ERROR: unknown point type %d with point size %d\n", (I32)point_type, (I32)point_size);
       return FALSE;
     }
 

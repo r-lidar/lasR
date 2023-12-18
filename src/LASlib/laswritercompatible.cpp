@@ -105,9 +105,9 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   if (start_of_waveform_data_packet_record != 0)
   {
 #ifdef _WIN32
-    REprintf("WARNING: header->start_of_waveform_data_packet_record is %" PRId64 ". writing 0 instead.\n", start_of_waveform_data_packet_record);
+    eprint("WARNING: header->start_of_waveform_data_packet_record is %" PRId64 ". writing 0 instead.\n", start_of_waveform_data_packet_record);
 #else
-    REprintf("WARNING: header->start_of_waveform_data_packet_record is %" PRId64 ". writing 0 instead.\n", start_of_waveform_data_packet_record);
+    eprint("WARNING: header->start_of_waveform_data_packet_record is %" PRId64 ". writing 0 instead.\n", start_of_waveform_data_packet_record);
 #endif
     start_of_waveform_data_packet_record = 0;
   }
@@ -116,9 +116,9 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   if (start_of_first_extended_variable_length_record != 0)
   {
 #ifdef _WIN32
-    REprintf("WARNING: EVLRs not supported. header->start_of_first_extended_variable_length_record is %" PRId64 ". writing 0 instead.\n", start_of_first_extended_variable_length_record);
+    eprint("WARNING: EVLRs not supported. header->start_of_first_extended_variable_length_record is %" PRId64 ". writing 0 instead.\n", start_of_first_extended_variable_length_record);
 #else
-    REprintf("WARNING: EVLRs not supported. header->start_of_first_extended_variable_length_record is %" PRId64 ". writing 0 instead.\n", start_of_first_extended_variable_length_record);
+    eprint("WARNING: EVLRs not supported. header->start_of_first_extended_variable_length_record is %" PRId64 ". writing 0 instead.\n", start_of_first_extended_variable_length_record);
 #endif
     start_of_first_extended_variable_length_record = 0;
   }
@@ -126,7 +126,7 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   U32 number_of_extended_variable_length_records = header->number_of_extended_variable_length_records;
   if (number_of_extended_variable_length_records != 0)
   {
-    REprintf("WARNING: EVLRs not supported. header->number_of_extended_variable_length_records is %u. writing 0 instead.\n", number_of_extended_variable_length_records);
+    eprint("WARNING: EVLRs not supported. header->number_of_extended_variable_length_records is %u. writing 0 instead.\n", number_of_extended_variable_length_records);
     number_of_extended_variable_length_records = 0;
   }
   out->put32bitsLE((U8*)&number_of_extended_variable_length_records);
@@ -134,7 +134,7 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   if (header->number_of_point_records)
   {
     extended_number_of_point_records = header->number_of_point_records;
-    REprintf("WARNING: legacy number_of_point_records in header of LAS 1.4 file should be zero.\n");
+    eprint("WARNING: legacy number_of_point_records in header of LAS 1.4 file should be zero.\n");
   }
   else
   {
@@ -150,7 +150,7 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
       if (header->number_of_points_by_return[i])
       {
         extended_number_of_points_by_return = header->number_of_points_by_return[i];
-        REprintf("WARNING: legacy number_of_points_by_return[%d] in header of LAS 1.4 file should be zero.\n", i);
+        eprint("WARNING: legacy number_of_points_by_return[%d] in header of LAS 1.4 file should be zero.\n", i);
       }
       else
       {
@@ -229,9 +229,9 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
           else
           {
 #ifdef _WIN32
-            REprintf("large EVLR with user ID '%s' and record ID %d with payload size %" PRId64 " not moved to VLRs.\n", header->evlrs[i].user_id, header->evlrs[i].record_id, header->evlrs[i].record_length_after_header);
+            eprint("large EVLR with user ID '%s' and record ID %d with payload size %" PRId64 " not moved to VLRs.\n", header->evlrs[i].user_id, header->evlrs[i].record_id, header->evlrs[i].record_length_after_header);
 #else
-            REprintf("large EVLR with user ID '%s' and record ID %d with payload size %" PRId64 " not moved to VLRs.\n", header->evlrs[i].user_id, header->evlrs[i].record_id, header->evlrs[i].record_length_after_header);
+            eprint("large EVLR with user ID '%s' and record ID %d with payload size %" PRId64 " not moved to VLRs.\n", header->evlrs[i].user_id, header->evlrs[i].record_id, header->evlrs[i].record_length_after_header);
 #endif
           }
         }
@@ -269,7 +269,7 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
           }
           else
           {
-            REprintf("unknown LASF_Projection EVLR with record ID %d not moved to VLRs.\n", header->evlrs[i].record_id);
+            eprint("unknown LASF_Projection EVLR with record ID %d not moved to VLRs.\n", header->evlrs[i].record_id);
           }
         }
       }
@@ -438,40 +438,40 @@ BOOL LASwriterCompatibleUp::open(LASheader* header, LASwriteOpener* laswriteopen
   const LASvlr* compatibility_vlr = header->get_vlr("lascompatible", 22204);
   if (compatibility_vlr == 0)
   {
-    REprintf( "ERROR: no compatibility VLR in header\n"); 
+    eprint( "ERROR: no compatibility VLR in header\n"); 
     return FALSE;
   }
   // the compatibility VLR must have the right length
   if (compatibility_vlr->record_length_after_header != (2+2+4+148))
   {
-    REprintf( "ERROR: compatibility VLR has %u instead of %u bytes in payload\n", compatibility_vlr->record_length_after_header, 2+2+4+148);
+    eprint( "ERROR: compatibility VLR has %u instead of %u bytes in payload\n", compatibility_vlr->record_length_after_header, 2+2+4+148);
     return FALSE;
   }
   I32 index_scan_angle = header->get_attribute_index("LAS 1.4 scan angle");
   if (index_scan_angle == -1)
   {
-    REprintf( "ERROR: attribute \"LAS 1.4 scan angle\" is not in EXTRA_BYTES\n");
+    eprint( "ERROR: attribute \"LAS 1.4 scan angle\" is not in EXTRA_BYTES\n");
     return FALSE;
   }
   start_scan_angle = header->get_attribute_start(index_scan_angle);
   I32 index_extended_returns = header->get_attribute_index("LAS 1.4 extended returns");
   if (index_extended_returns == -1)
   {
-    REprintf( "ERROR: attribute \"LAS 1.4 extended returns\" is not in EXTRA_BYTES\n");
+    eprint( "ERROR: attribute \"LAS 1.4 extended returns\" is not in EXTRA_BYTES\n");
     return FALSE;
   }
   start_extended_returns = header->get_attribute_start(index_extended_returns);
   I32 index_classification = header->get_attribute_index("LAS 1.4 classification");
   if (index_classification == -1)
   {
-    REprintf( "ERROR: attribute \"LAS 1.4 classification\" is not in EXTRA_BYTES\n");
+    eprint( "ERROR: attribute \"LAS 1.4 classification\" is not in EXTRA_BYTES\n");
     return FALSE;
   }
   start_classification = header->get_attribute_start(index_classification);
   I32 index_flags_and_channel = header->get_attribute_index("LAS 1.4 flags and channel");
   if (index_scan_angle == -1)
   {
-    REprintf( "ERROR: attribute \"LAS 1.4 flags and channel\" is not in EXTRA_BYTES\n");
+    eprint( "ERROR: attribute \"LAS 1.4 flags and channel\" is not in EXTRA_BYTES\n");
     return FALSE;
   }
   start_flags_and_channel = header->get_attribute_start(index_flags_and_channel); 
@@ -517,14 +517,14 @@ BOOL LASwriterCompatibleUp::open(LASheader* header, LASwriteOpener* laswriteopen
   in->get16bitsLE((U8*)&compatible_version);
   if (compatible_version != 3)
   {
-    REprintf( "ERROR: compatibility mode version %u not implemented\n", compatible_version);
+    eprint( "ERROR: compatibility mode version %u not implemented\n", compatible_version);
     return FALSE;
   }
   U32 unused;
   in->get32bitsLE((U8*)&unused);
   if (unused != 0)
   {
-    REprintf( "WARNING: unused is %u instead of 0\n", unused);
+    eprint( "WARNING: unused is %u instead of 0\n", unused);
   }
   in->get64bitsLE((U8*)&(header->start_of_waveform_data_packet_record));
   in->get64bitsLE((U8*)&(header->start_of_first_extended_variable_length_record));

@@ -65,7 +65,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
     LASwriterLAS* laswriterlas = new LASwriterLAS();
     if (!laswriterlas->open(header, (format == LAS_TOOLS_FORMAT_LAZ ? (native ? LASZIP_COMPRESSOR_LAYERED_CHUNKED : LASZIP_COMPRESSOR_CHUNKED) : LASZIP_COMPRESSOR_NONE), 2, chunk_size))
     {
-      REprintf("ERROR: cannot open laswriterlas to NULL\n");
+      eprint("ERROR: cannot open laswriterlas to NULL\n");
       delete laswriterlas;
       return 0;
     }
@@ -78,7 +78,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterLAS* laswriterlas = new LASwriterLAS();
       if (!laswriterlas->open(file_name, header, (format == LAS_TOOLS_FORMAT_LAZ ? (native ? LASZIP_COMPRESSOR_LAYERED_CHUNKED : LASZIP_COMPRESSOR_CHUNKED) : LASZIP_COMPRESSOR_NONE), 2, chunk_size, io_obuffer_size))
       {
-        REprintf("ERROR: cannot open laswriterlas with file name '%s'\n", file_name);
+        eprint("ERROR: cannot open laswriterlas with file name '%s'\n", file_name);
         delete laswriterlas;
         return 0;
       }
@@ -89,7 +89,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterCOPC* laswritercopc = new LASwriterCOPC();
       if (!laswritercopc->open(file_name, header, 2, io_obuffer_size))
       {
-        REprintf("ERROR: cannot open laswriterlas with file name '%s'\n", file_name);
+        eprint("ERROR: cannot open laswriterlas with file name '%s'\n", file_name);
         delete laswritercopc;
         return 0;
       }
@@ -102,7 +102,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       else if (optx) laswritertxt->set_ptx(TRUE);
       if (!laswritertxt->open(file_name, header, parse_string, separator))
       {
-        REprintf("ERROR: cannot open laswritertxt with file name '%s'\n", file_name);
+        eprint("ERROR: cannot open laswritertxt with file name '%s'\n", file_name);
         delete laswritertxt;
         return 0;
       }
@@ -114,7 +114,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterBIN* laswriterbin = new LASwriterBIN();
       if (!laswriterbin->open(file_name, header, "ts8"))
       {
-        REprintf("ERROR: cannot open laswriterbin with file name '%s'\n", file_name);
+        eprint("ERROR: cannot open laswriterbin with file name '%s'\n", file_name);
         delete laswriterbin;
         return 0;
       }
@@ -125,7 +125,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterQFIT* laswriterqfit = new LASwriterQFIT();
       if (!laswriterqfit->open(file_name, header, 40))
       {
-        REprintf("ERROR: cannot open laswriterqfit with file name '%s'\n", file_name);
+        eprint("ERROR: cannot open laswriterqfit with file name '%s'\n", file_name);
         delete laswriterqfit;
         return 0;
       }
@@ -136,7 +136,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterWRL* laswriterwrl = new LASwriterWRL();
       if (!laswriterwrl->open(file_name, header, parse_string))
       {
-        REprintf("ERROR: cannot open laswriterwrl with file name '%s'\n", file_name);
+        eprint("ERROR: cannot open laswriterwrl with file name '%s'\n", file_name);
         delete laswriterwrl;
         return 0;
       }
@@ -144,7 +144,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
     }
     else
     {
-      REprintf("ERROR: unknown format %d\n", format);
+      eprint("ERROR: unknown format %d\n", format);
       return 0;
     }
   }
@@ -155,7 +155,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterLAS* laswriterlas = new LASwriterLAS();
       if (!laswriterlas->open(stdout, header, (format == LAS_TOOLS_FORMAT_LAZ ? (native ? LASZIP_COMPRESSOR_LAYERED_CHUNKED : LASZIP_COMPRESSOR_CHUNKED) : LASZIP_COMPRESSOR_NONE), 2, chunk_size))
       {
-        REprintf("ERROR: cannot open laswriterlas to stdout\n");
+        eprint("ERROR: cannot open laswriterlas to stdout\n");
         delete laswriterlas;
         return 0;
       }
@@ -168,7 +168,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       else if (optx) laswritertxt->set_ptx(TRUE);
       if (!laswritertxt->open(stdout, header, parse_string, separator))
       {
-        REprintf("ERROR: cannot open laswritertxt to stdout\n");
+        eprint("ERROR: cannot open laswritertxt to stdout\n");
         delete laswritertxt;
         return 0;
       }
@@ -180,7 +180,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterBIN* laswriterbin = new LASwriterBIN();
       if (!laswriterbin->open(stdout, header, "ts8"))
       {
-        REprintf("ERROR: cannot open laswriterbin to stdout\n");
+        eprint("ERROR: cannot open laswriterbin to stdout\n");
         delete laswriterbin;
         return 0;
       }
@@ -191,7 +191,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterQFIT* laswriterqfit = new LASwriterQFIT();
       if (!laswriterqfit->open(stdout, header, 40))
       {
-        REprintf("ERROR: cannot open laswriterbin to stdout\n");
+        eprint("ERROR: cannot open laswriterbin to stdout\n");
         delete laswriterqfit;
         return 0;
       }
@@ -202,7 +202,7 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
       LASwriterWRL* laswriterwrl = new LASwriterWRL();
       if (!laswriterwrl->open(stdout, header, parse_string))
       {
-        REprintf("ERROR: cannot open laswriterwrl with file name '%s'\n", file_name);
+        eprint("ERROR: cannot open laswriterwrl with file name '%s'\n", file_name);
         delete laswriterwrl;
         return 0;
       }
@@ -210,13 +210,13 @@ LASwriter* LASwriteOpener::open(const LASheader* header)
     }
     else
     {
-      REprintf("ERROR: unknown format %d\n", format);
+      eprint("ERROR: unknown format %d\n", format);
       return 0;
     }
   }*/
   else
   {
-    REprintf("ERROR: no laswriter output specified\n");
+    eprint("ERROR: no laswriter output specified\n");
     return 0;
   }
 }
@@ -238,18 +238,18 @@ LASwaveform13writer* LASwriteOpener::open_waveform13(const LASheader* lasheader)
 
 void LASwriteOpener::usage() const
 {
-  REprintf("Supported LAS Outputs\n");
-  REprintf("  -o lidar.las\n");
-  REprintf("  -o lidar.laz\n");
-  REprintf("  -o xyzta.txt -oparse xyzta (on-the-fly to ASCII)\n");
-  REprintf("  -o terrasolid.bin\n");
-  REprintf("  -o nasa.qi\n");
-  REprintf("  -odir C:%cdata%cground (specify output directory)\n", DIRECTORY_SLASH, DIRECTORY_SLASH);
-  REprintf("  -odix _classified (specify file name appendix)\n");
-  REprintf("  -ocut 2 (cut the last two characters from name)\n");
-  REprintf("  -olas -olaz -otxt -obin -oqfit (specify format)\n");
-  REprintf("  -stdout (pipe to stdout)\n");
-  REprintf("  -nil    (pipe to NULL)\n");
+  eprint("Supported LAS Outputs\n");
+  eprint("  -o lidar.las\n");
+  eprint("  -o lidar.laz\n");
+  eprint("  -o xyzta.txt -oparse xyzta (on-the-fly to ASCII)\n");
+  eprint("  -o terrasolid.bin\n");
+  eprint("  -o nasa.qi\n");
+  eprint("  -odir C:%cdata%cground (specify output directory)\n", DIRECTORY_SLASH, DIRECTORY_SLASH);
+  eprint("  -odix _classified (specify file name appendix)\n");
+  eprint("  -ocut 2 (cut the last two characters from name)\n");
+  eprint("  -olas -olaz -otxt -obin -oqfit (specify format)\n");
+  eprint("  -stdout (pipe to stdout)\n");
+  eprint("  -nil    (pipe to NULL)\n");
 }
 
 BOOL LASwriteOpener::parse(int argc, char* argv[])
@@ -270,7 +270,7 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: file_name\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: file_name\n", argv[i]);
         return FALSE;
       }
       set_file_name(argv[i+1]);
@@ -280,12 +280,12 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: directory\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: directory\n", argv[i]);
         return FALSE;
       }
       if (!set_directory(argv[i+1]))
       {
-        REprintf("ERROR: '%s' is not a valid directory\n", argv[i+1]);
+        eprint("ERROR: '%s' is not a valid directory\n", argv[i+1]);
         return FALSE;
       }
       *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
@@ -294,7 +294,7 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: appendix\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: appendix\n", argv[i]);
         return FALSE;
       }
       set_appendix(argv[i+1]);
@@ -304,7 +304,7 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: number of characters to cut\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: number of characters to cut\n", argv[i]);
         return FALSE;
       }
       set_cut(atoi(argv[i+1]));
@@ -377,7 +377,7 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: number_points\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: number_points\n", argv[i]);
         return FALSE;
       }
       set_chunk_size(atoi(argv[i+1]));
@@ -387,7 +387,7 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: string\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: string\n", argv[i]);
         return FALSE;
       }
       set_parse_string(argv[i+1]);
@@ -397,7 +397,7 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: separator\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: separator\n", argv[i]);
         return FALSE;
       }
       set_separator(argv[i+1]);
@@ -407,7 +407,7 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: scale\n", argv[i]);
         return FALSE;
       }
       set_scale_rgb((F32)atof(argv[i+1]));
@@ -427,7 +427,7 @@ BOOL LASwriteOpener::parse(int argc, char* argv[])
     {
       if ((i+1) >= argc)
       {
-        REprintf("ERROR: '%s' needs 1 argument: size\n", argv[i]);
+        eprint("ERROR: '%s' needs 1 argument: size\n", argv[i]);
         return FALSE;
       }
       set_io_obuffer_size((I32)atoi(argv[i+1]));
@@ -449,10 +449,10 @@ BOOL LASwriteOpener::set_directory(const CHAR* directory)
   {
     if (strstr(directory, ";") || strstr(directory, "\""))
     {
-      REprintf("WARNING: specified '-odir' seems to contain a substring '\\\"' such\n");
-      REprintf("         as -odir \"D:\\\" or -odir \"..\\tiles\\\". this command will\n");
-      REprintf("         probably fail. please use -odir \"D:\" or -odir \"..\\tiles\"\n");
-      REprintf("         instead.\n");
+      eprint("WARNING: specified '-odir' seems to contain a substring '\\\"' such\n");
+      eprint("         as -odir \"D:\\\" or -odir \"..\\tiles\\\". this command will\n");
+      eprint("         probably fail. please use -odir \"D:\" or -odir \"..\\tiles\"\n");
+      eprint("         instead.\n");
     }
     this->directory = LASCopyString(directory);
     I32 len = (I32)strlen(this->directory);
@@ -861,7 +861,7 @@ void LASwriteOpener::make_file_name(const CHAR* file_name, I32 file_number)
     }
     if (file_num)
     {
-      REprintf("WARNING: file name number %d too big to store in '%s'. use more digits.\n", file_number, this->file_name);
+      eprint("WARNING: file name number %d too big to store in '%s'. use more digits.\n", file_number, this->file_name);
     }
   }
   else
@@ -961,9 +961,9 @@ void LASwriteOpener::make_file_name(const CHAR* file_name, I32 file_number)
       {
         this->file_name = LASCopyString("temp.txt");
       }
-      REprintf("WARNING: generated output name '%s'\n", file_name);
-      REprintf("         identical to input name. changed to '%s'.\n", this->file_name);
-      REprintf("         you can override this safety measure with '-oforce'.\n");
+      eprint("WARNING: generated output name '%s'\n", file_name);
+      eprint("         identical to input name. changed to '%s'.\n", this->file_name);
+      eprint("         you can override this safety measure with '-oforce'.\n");
     }
   }
 }

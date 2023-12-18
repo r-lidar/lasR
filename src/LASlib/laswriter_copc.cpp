@@ -404,7 +404,7 @@ BOOL LASwriterCOPC::make_copc_header(const LASheader* header)
     }
     if (num_extra_bytes < 0)
     {
-      REprintf("ERROR: point record length has %d fewer bytes than needed\n", num_extra_bytes);
+      eprint("ERROR: point record length has %d fewer bytes than needed\n", num_extra_bytes);
       return false;
     }
 
@@ -454,7 +454,7 @@ BOOL LASwriterCOPC::make_copc_header(const LASheader* header)
     geoprojectionconverter.set_projection_from_geo_keys(header->vlr_geo_keys[0].number_of_keys, (GeoProjectionGeoKeys*)header->vlr_geo_key_entries, header->vlr_geo_ascii_params, header->vlr_geo_double_params);
     if (!geoprojectionconverter.get_ogc_wkt_from_projection(len, &ogc_wkt))
     {
-      REprintf("WARNING: cannot convert CRS from GeoTIFF to OGC WKT.\n");
+      eprint("WARNING: cannot convert CRS from GeoTIFF to OGC WKT.\n");
     }
 
     if (ogc_wkt)

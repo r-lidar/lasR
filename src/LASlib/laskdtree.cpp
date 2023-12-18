@@ -331,7 +331,7 @@ void LASkdtreeRectangles::overlap_rectangles(LASkdtreeRectanglesNode* node, I32 
 
 void LASkdtreeRectangles::print_overlap()
 {
-  REprintf( "overlap elements: %u\n", (U32)overlap_set->size());
+  eprint( "overlap elements: %u\n", (U32)overlap_set->size());
   my_index_set::iterator set_element = overlap_set->begin();
   while (TRUE)
   {
@@ -342,7 +342,7 @@ void LASkdtreeRectangles::print_overlap()
 
     U32 idx = (*set_element);
 
-    REprintf( "overlap %u\n", idx);
+    eprint( "overlap %u\n", idx);
 
     set_element++;
   }

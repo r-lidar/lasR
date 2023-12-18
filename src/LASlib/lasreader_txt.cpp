@@ -44,20 +44,20 @@ BOOL LASreaderTXT::open(const CHAR* file_name, U8 point_type, const CHAR* parse_
 {
 	if (file_name == 0)
 	{
-		REprintf("ERROR: file name pointer is zero\n");
+		eprint("ERROR: file name pointer is zero\n");
 		return FALSE;
 	}
 
 	FILE* file = fopen_compressed(file_name, "r", &piped);
 	if (file == 0)
 	{
-		REprintf("ERROR: cannot open file '%s'\n", file_name);
+		eprint("ERROR: cannot open file '%s'\n", file_name);
 		return FALSE;
 	}
 
 	if (setvbuf(file, NULL, _IOFBF, 10 * LAS_TOOLS_IO_IBUFFER_SIZE) != 0)
 	{
-		REprintf("WARNING: setvbuf() failed with buffer size %d\n", 10 * LAS_TOOLS_IO_IBUFFER_SIZE);
+		eprint("WARNING: setvbuf() failed with buffer size %d\n", 10 * LAS_TOOLS_IO_IBUFFER_SIZE);
 	}
 
 	return open(file, file_name, point_type, parse_string, skip_lines, populate_header);
@@ -69,7 +69,7 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 
 	if (file == 0)
 	{
-		REprintf("ERROR: file pointer is zero\n");
+		eprint("ERROR: file pointer is zero\n");
 		return FALSE;
 	}
 
@@ -109,7 +109,7 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 				header.add_attribute(attribute);
 			}
 			catch (...) {
-				REprintf("ERROR: initializing attribute %s\n", attribute_descriptions[i]);
+				eprint("ERROR: initializing attribute %s\n", attribute_descriptions[i]);
 				return FALSE;
 			}
 		}
@@ -290,19 +290,19 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			   if (sscanf(line, "%" PRId64 "", &npoints) != 1)
 #endif*/
 				{
-					REprintf("ERROR: parsing number of points for '-itps'\n");
+					eprint("ERROR: parsing number of points for '-itps'\n");
 					return FALSE;
 				}
 #ifdef _WIN32
-			  REprintf( "PTS header states %" PRId64 " points. ignoring ...\n", npoints);
+			  eprint( "PTS header states %" PRId64 " points. ignoring ...\n", npoints);
 #else
-			  REprintf( "PTS header states %" PRId64 " points. ignoring ...\n", npoints);
+			  eprint( "PTS header states %" PRId64 " points. ignoring ...\n", npoints);
 #endif
 				npoints = 0;
 			}
 			else
 			{
-				REprintf("ERROR: reading PTS header for '-itps'\n");
+				eprint("ERROR: reading PTS header for '-itps'\n");
 				return FALSE;
 			}
 		}
@@ -313,13 +313,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%d", &ncols) != 1)
 				{
-					REprintf("ERROR: parsing number of cols\n");
+					eprint("ERROR: parsing number of cols\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with number of cols\n");
+				eprint("ERROR: reading line with number of cols\n");
 				return FALSE;
 			}
 			I32 nrows;
@@ -327,33 +327,33 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%d", &nrows) != 1)
 				{
-					REprintf("ERROR: parsing number of rows\n");
+					eprint("ERROR: parsing number of rows\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with number of rows\n");
+				eprint("ERROR: reading line with number of rows\n");
 				return FALSE;
 			}
 			npoints = (I64)ncols*(I64)nrows;
 #ifdef _WIN32
-			REprintf( "PTX header states %d cols by %d rows aka %" PRId64 " points. ignoring ...\n", ncols, nrows, npoints);
+			eprint( "PTX header states %d cols by %d rows aka %" PRId64 " points. ignoring ...\n", ncols, nrows, npoints);
 #else
-			REprintf( "PTX header states %d cols by %d rows aka %" PRId64 " points. ignoring ...\n", ncols, nrows, npoints);
+			eprint( "PTX header states %d cols by %d rows aka %" PRId64 " points. ignoring ...\n", ncols, nrows, npoints);
 #endif
 			F64 ptx_scan_pos[3];
 			if (fgets(line, 512, file))
 			{
 				if (sscanf(line, "%lf %lf %lf", &(ptx_scan_pos[0]), &(ptx_scan_pos[1]), &(ptx_scan_pos[2])) != 3)
 				{
-					REprintf("ERROR: parsing ptx_scan_pos\n");
+					eprint("ERROR: parsing ptx_scan_pos\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with ptx_scan_pos\n");
+				eprint("ERROR: reading line with ptx_scan_pos\n");
 				return FALSE;
 			}
 			F64 ptx_scan_axis_x[3];
@@ -361,13 +361,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%lf %lf %lf", &(ptx_scan_axis_x[0]), &(ptx_scan_axis_x[1]), &(ptx_scan_axis_x[2])) != 3)
 				{
-					REprintf("ERROR: parsing rotation row 0\n");
+					eprint("ERROR: parsing rotation row 0\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with rotation row 0\n");
+				eprint("ERROR: reading line with rotation row 0\n");
 				return FALSE;
 			}
 			F64 ptx_scan_axis_y[3];
@@ -375,13 +375,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%lf %lf %lf", &(ptx_scan_axis_y[0]), &(ptx_scan_axis_y[1]), &(ptx_scan_axis_y[2])) != 3)
 				{
-					REprintf("ERROR: parsing rotation row 1\n");
+					eprint("ERROR: parsing rotation row 1\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with rotation row 1\n");
+				eprint("ERROR: reading line with rotation row 1\n");
 				return FALSE;
 			}
 			F64 ptx_scan_axis_z[3];
@@ -389,13 +389,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%lf %lf %lf", &(ptx_scan_axis_z[0]), &(ptx_scan_axis_z[1]), &(ptx_scan_axis_z[2])) != 3)
 				{
-					REprintf("ERROR: parsing rotation row 2\n");
+					eprint("ERROR: parsing rotation row 2\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with rotation row 2\n");
+				eprint("ERROR: reading line with rotation row 2\n");
 				return FALSE;
 			}
 			F64 ptx_matrix_row_0[4];
@@ -403,13 +403,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%lf %lf %lf %lf", &(ptx_matrix_row_0[0]), &(ptx_matrix_row_0[1]), &(ptx_matrix_row_0[2]), &(ptx_matrix_row_0[3])) != 4)
 				{
-					REprintf("ERROR: parsing transformation row 0\n");
+					eprint("ERROR: parsing transformation row 0\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with transformation row 0\n");
+				eprint("ERROR: reading line with transformation row 0\n");
 				return FALSE;
 			}
 			F64 ptx_matrix_row_1[4];
@@ -417,13 +417,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%lf %lf %lf %lf", &(ptx_matrix_row_1[0]), &(ptx_matrix_row_1[1]), &(ptx_matrix_row_1[2]), &(ptx_matrix_row_1[3])) != 4)
 				{
-					REprintf("ERROR: parsing transformation row 1\n");
+					eprint("ERROR: parsing transformation row 1\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with transformation row 1\n");
+				eprint("ERROR: reading line with transformation row 1\n");
 				return FALSE;
 			}
 			F64 ptx_matrix_row_2[4];
@@ -431,13 +431,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%lf %lf %lf %lf", &(ptx_matrix_row_2[0]), &(ptx_matrix_row_2[1]), &(ptx_matrix_row_2[2]), &(ptx_matrix_row_2[3])) != 4)
 				{
-					REprintf("ERROR: parsing transformation row 2\n");
+					eprint("ERROR: parsing transformation row 2\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with transformation row 2\n");
+				eprint("ERROR: reading line with transformation row 2\n");
 				return FALSE;
 			}
 			F64 ptx_matrix_row_3[4];
@@ -445,13 +445,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			{
 				if (sscanf(line, "%lf %lf %lf %lf", &(ptx_matrix_row_3[0]), &(ptx_matrix_row_3[1]), &(ptx_matrix_row_3[2]), &(ptx_matrix_row_3[3])) != 4)
 				{
-					REprintf("ERROR: parsing transformation row 3\n");
+					eprint("ERROR: parsing transformation row 3\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: reading line with transformation row 3\n");
+				eprint("ERROR: reading line with transformation row 3\n");
 				return FALSE;
 			}
 			npoints = 0;
@@ -471,7 +471,7 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			else
 			{
 				line[strlen(line) - 1] = '\0';
-				REprintf("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, parse_less);
+				eprint("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, parse_less);
 			}
 		}
 
@@ -479,7 +479,7 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 
 		if (npoints == 0)
 		{
-			REprintf("ERROR: could not parse any lines with '%s'\n", parse_less);
+			eprint("ERROR: could not parse any lines with '%s'\n", parse_less);
 			fclose(file);
 			file = 0;
 			free(parse_less);
@@ -551,14 +551,14 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			else
 			{
 				line[strlen(line) - 1] = '\0';
-				REprintf("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, parse_less);
+				eprint("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, parse_less);
 			}
 		}
 
 #ifdef _WIN32
-		REprintf( "counted %" PRId64 " points in populate pass.\n", npoints);
+		eprint( "counted %" PRId64 " points in populate pass.\n", npoints);
 #else
-		REprintf( "counted %" PRId64 " points in populate pass.\n", npoints);
+		eprint( "counted %" PRId64 " points in populate pass.\n", npoints);
 #endif
 
 		if (point.extended_point_type || (npoints > U32_MAX) || header.extended_number_of_points_by_return[5] || header.extended_number_of_points_by_return[6] || header.extended_number_of_points_by_return[7] || header.extended_number_of_points_by_return[8] || header.extended_number_of_points_by_return[9] || header.extended_number_of_points_by_return[10] || header.extended_number_of_points_by_return[11] || header.extended_number_of_points_by_return[12] || header.extended_number_of_points_by_return[13] || header.extended_number_of_points_by_return[14])
@@ -618,13 +618,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		file = fopen_compressed(file_name, "r", &piped);
 		if (file == 0)
 		{
-			REprintf("ERROR: could not open '%s' for second pass\n", file_name);
+			eprint("ERROR: could not open '%s' for second pass\n", file_name);
 			return FALSE;
 		}
 
 		if (setvbuf(file, NULL, _IOFBF, 10 * LAS_TOOLS_IO_IBUFFER_SIZE) != 0)
 		{
-			REprintf("WARNING: setvbuf() failed with buffer size %d\n", 10 * LAS_TOOLS_IO_IBUFFER_SIZE);
+			eprint("WARNING: setvbuf() failed with buffer size %d\n", 10 * LAS_TOOLS_IO_IBUFFER_SIZE);
 		}
 	}
 
@@ -657,7 +657,7 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 			   if (sscanf(line, "%" PRId64 "", &npoints) != 1)
 #endif*/
 				{
-					REprintf("ERROR: parsing number of points for '-itps'\n");
+					eprint("ERROR: parsing number of points for '-itps'\n");
 					return FALSE;
 				}
 			}
@@ -688,7 +688,7 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		}
 		else
 		{
-			REprintf("ERROR: reading PTS header for '-itps'\n");
+			eprint("ERROR: reading PTS header for '-itps'\n");
 			return FALSE;
 		}
 
@@ -708,13 +708,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%d", &ncols) != 1)
 			{
-				REprintf("ERROR: parsing number of cols\n");
+				eprint("ERROR: parsing number of cols\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with number of cols\n");
+			eprint("ERROR: reading line with number of cols\n");
 			return FALSE;
 		}
 		I32 nrows;
@@ -722,13 +722,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%d", &nrows) != 1)
 			{
-				REprintf("ERROR: parsing number of rows\n");
+				eprint("ERROR: parsing number of rows\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with number of rows\n");
+			eprint("ERROR: reading line with number of rows\n");
 			return FALSE;
 		}
 		npoints = (I64)ncols*(I64)nrows;
@@ -761,13 +761,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%lf %lf %lf", &(ptx_scan_pos[0]), &(ptx_scan_pos[1]), &(ptx_scan_pos[2])) != 3)
 			{
-				REprintf("ERROR: parsing ptx_scan_pos\n");
+				eprint("ERROR: parsing ptx_scan_pos\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with ptx_scan_pos\n");
+			eprint("ERROR: reading line with ptx_scan_pos\n");
 			return FALSE;
 		}
 		F64 ptx_scan_axis_x[3];
@@ -775,13 +775,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%lf %lf %lf", &(ptx_scan_axis_x[0]), &(ptx_scan_axis_x[1]), &(ptx_scan_axis_x[2])) != 3)
 			{
-				REprintf("ERROR: parsing rotation row 0\n");
+				eprint("ERROR: parsing rotation row 0\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with rotation row 0\n");
+			eprint("ERROR: reading line with rotation row 0\n");
 			return FALSE;
 		}
 		F64 ptx_scan_axis_y[3];
@@ -789,13 +789,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%lf %lf %lf", &(ptx_scan_axis_y[0]), &(ptx_scan_axis_y[1]), &(ptx_scan_axis_y[2])) != 3)
 			{
-				REprintf("ERROR: parsing rotation row 1\n");
+				eprint("ERROR: parsing rotation row 1\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with rotation row 1\n");
+			eprint("ERROR: reading line with rotation row 1\n");
 			return FALSE;
 		}
 		F64 ptx_scan_axis_z[3];
@@ -803,13 +803,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%lf %lf %lf", &(ptx_scan_axis_z[0]), &(ptx_scan_axis_z[1]), &(ptx_scan_axis_z[2])) != 3)
 			{
-				REprintf("ERROR: parsing rotation row 2\n");
+				eprint("ERROR: parsing rotation row 2\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with rotation row 2\n");
+			eprint("ERROR: reading line with rotation row 2\n");
 			return FALSE;
 		}
 		F64 ptx_matrix_row_0[4];
@@ -817,13 +817,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%lf %lf %lf %lf", &(ptx_matrix_row_0[0]), &(ptx_matrix_row_0[1]), &(ptx_matrix_row_0[2]), &(ptx_matrix_row_0[3])) != 4)
 			{
-				REprintf("ERROR: parsing transformation row 0\n");
+				eprint("ERROR: parsing transformation row 0\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with transformation row 0\n");
+			eprint("ERROR: reading line with transformation row 0\n");
 			return FALSE;
 		}
 		F64 ptx_matrix_row_1[4];
@@ -831,13 +831,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%lf %lf %lf %lf", &(ptx_matrix_row_1[0]), &(ptx_matrix_row_1[1]), &(ptx_matrix_row_1[2]), &(ptx_matrix_row_1[3])) != 4)
 			{
-				REprintf("ERROR: parsing transformation row 1\n");
+				eprint("ERROR: parsing transformation row 1\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with transformation row 1\n");
+			eprint("ERROR: reading line with transformation row 1\n");
 			return FALSE;
 		}
 		F64 ptx_matrix_row_2[4];
@@ -845,13 +845,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%lf %lf %lf %lf", &(ptx_matrix_row_2[0]), &(ptx_matrix_row_2[1]), &(ptx_matrix_row_2[2]), &(ptx_matrix_row_2[3])) != 4)
 			{
-				REprintf("ERROR: parsing transformation row 2\n");
+				eprint("ERROR: parsing transformation row 2\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with transformation row 2\n");
+			eprint("ERROR: reading line with transformation row 2\n");
 			return FALSE;
 		}
 		F64 ptx_matrix_row_3[4];
@@ -859,13 +859,13 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		{
 			if (sscanf(line, "%lf %lf %lf %lf", &(ptx_matrix_row_3[0]), &(ptx_matrix_row_3[1]), &(ptx_matrix_row_3[2]), &(ptx_matrix_row_3[3])) != 4)
 			{
-				REprintf("ERROR: parsing transformation row 3\n");
+				eprint("ERROR: parsing transformation row 3\n");
 				return FALSE;
 			}
 		}
 		else
 		{
-			REprintf("ERROR: reading line with transformation row 3\n");
+			eprint("ERROR: reading line with transformation row 3\n");
 			return FALSE;
 		}
 
@@ -961,7 +961,7 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 		else
 		{
 			line[strlen(line) - 1] = '\0';
-			REprintf("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, this->parse_string);
+			eprint("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, this->parse_string);
 		}
 	}
 
@@ -969,7 +969,7 @@ BOOL LASreaderTXT::open(FILE* file, const CHAR* file_name, U8 point_type, const 
 
 	if (i != 1)
 	{
-		REprintf("ERROR: could not parse any lines with '%s'\n", this->parse_string);
+		eprint("ERROR: could not parse any lines with '%s'\n", this->parse_string);
 		fclose(this->file);
 		this->file = 0;
 		free(this->parse_string);
@@ -1135,13 +1135,13 @@ BOOL LASreaderTXT::seek(const I64 p_index)
 			else
 			{
 				line[strlen(line) - 1] = '\0';
-				REprintf("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, this->parse_string);
+				eprint("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, this->parse_string);
 			}
 		}
 		// did we manage to parse a line
 		if (i != 1)
 		{
-			REprintf("ERROR: could not parse any lines with '%s'\n", this->parse_string);
+			eprint("ERROR: could not parse any lines with '%s'\n", this->parse_string);
 			fclose(file);
 			file = 0;
 			free(this->parse_string);
@@ -1174,7 +1174,7 @@ BOOL LASreaderTXT::read_point_default()
 				else
 				{
 					line[strlen(line) - 1] = '\0';
-					REprintf("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, this->parse_string);
+					eprint("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, this->parse_string);
 				}
 			}
 			else
@@ -1184,9 +1184,9 @@ BOOL LASreaderTXT::read_point_default()
 					if (p_count != npoints)
 					{
 #ifdef _WIN32
-					  REprintf("WARNING: end-of-file after %" PRId64 " of %" PRId64 " points\n", p_count, npoints);
+					  eprint("WARNING: end-of-file after %" PRId64 " of %" PRId64 " points\n", p_count, npoints);
 #else
-					  REprintf("WARNING: end-of-file after %" PRId64 " of %" PRId64 " points\n", p_count, npoints);
+					  eprint("WARNING: end-of-file after %" PRId64 " of %" PRId64 " points\n", p_count, npoints);
 #endif
 					}
 				}
@@ -1197,9 +1197,9 @@ BOOL LASreaderTXT::read_point_default()
 						if (p_count != npoints)
 						{
 #ifdef _WIN32
-						  REprintf("WARNING: end-of-file after %" PRId64 " of %" PRId64 " points\n", p_count, npoints);
+						  eprint("WARNING: end-of-file after %" PRId64 " of %" PRId64 " points\n", p_count, npoints);
 #else
-						  REprintf("WARNING: end-of-file after %" PRId64 " of %" PRId64 " points\n", p_count, npoints);
+						  eprint("WARNING: end-of-file after %" PRId64 " of %" PRId64 " points\n", p_count, npoints);
 #endif
 						}
 					}
@@ -1272,20 +1272,20 @@ BOOL LASreaderTXT::reopen(const char* file_name)
 
 	if (file_name == 0)
 	{
-		REprintf("ERROR: file name pointer is zero\n");
+		eprint("ERROR: file name pointer is zero\n");
 		return FALSE;
 	}
 
 	file = fopen_compressed(file_name, "r", &piped);
 	if (file == 0)
 	{
-		REprintf("ERROR: cannot reopen file '%s'\n", file_name);
+		eprint("ERROR: cannot reopen file '%s'\n", file_name);
 		return FALSE;
 	}
 
 	if (setvbuf(file, NULL, _IOFBF, 10 * LAS_TOOLS_IO_IBUFFER_SIZE) != 0)
 	{
-		REprintf("WARNING: setvbuf() failed with buffer size %d\n", 10 * LAS_TOOLS_IO_IBUFFER_SIZE);
+		eprint("WARNING: setvbuf() failed with buffer size %d\n", 10 * LAS_TOOLS_IO_IBUFFER_SIZE);
 	}
 
 	// skip lines if we have to
@@ -1306,7 +1306,7 @@ BOOL LASreaderTXT::reopen(const char* file_name)
 		else
 		{
 			line[strlen(line) - 1] = '\0';
-			REprintf("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, parse_string);
+			eprint("WARNING: cannot parse '%s' with '%s'. skipping ...\n", line, parse_string);
 		}
 	}
 
@@ -1314,7 +1314,7 @@ BOOL LASreaderTXT::reopen(const char* file_name)
 
 	if (i != 1)
 	{
-		REprintf("ERROR: could not parse any lines with '%s'\n", parse_string);
+		eprint("ERROR: could not parse any lines with '%s'\n", parse_string);
 		fclose(file);
 		file = 0;
 		return FALSE;
@@ -1408,7 +1408,7 @@ BOOL LASreaderTXT::parse_attribute(const char* l, I32 index)
 		}
 		if (temp_i < U8_MIN || temp_i > U8_MAX)
 		{
-			REprintf("WARNING: attribute %d of type U8 is %d. clamped to [%d %d] range.\n", index, temp_i, U8_MIN, U8_MAX);
+			eprint("WARNING: attribute %d of type U8 is %d. clamped to [%d %d] range.\n", index, temp_i, U8_MIN, U8_MAX);
 			point.set_attribute(attribute_starts[index], U8_CLAMP(temp_i));
 		}
 		else
@@ -1433,7 +1433,7 @@ BOOL LASreaderTXT::parse_attribute(const char* l, I32 index)
 		}
 		if (temp_i < I8_MIN || temp_i > I8_MAX)
 		{
-			REprintf("WARNING: attribute %d of type I8 is %d. clamped to [%d %d] range.\n", index, temp_i, I8_MIN, I8_MAX);
+			eprint("WARNING: attribute %d of type I8 is %d. clamped to [%d %d] range.\n", index, temp_i, I8_MIN, I8_MAX);
 			point.set_attribute(attribute_starts[index], I8_CLAMP(temp_i));
 		}
 		else
@@ -1458,7 +1458,7 @@ BOOL LASreaderTXT::parse_attribute(const char* l, I32 index)
 		}
 		if (temp_i < U16_MIN || temp_i > U16_MAX)
 		{
-			REprintf("WARNING: attribute %d of type U16 is %d. clamped to [%d %d] range.\n", index, temp_i, U16_MIN, U16_MAX);
+			eprint("WARNING: attribute %d of type U16 is %d. clamped to [%d %d] range.\n", index, temp_i, U16_MIN, U16_MAX);
 			point.set_attribute(attribute_starts[index], U16_CLAMP(temp_i));
 		}
 		else
@@ -1483,7 +1483,7 @@ BOOL LASreaderTXT::parse_attribute(const char* l, I32 index)
 		}
 		if (temp_i < I16_MIN || temp_i > I16_MAX)
 		{
-			REprintf("WARNING: attribute %d of type I16 is %d. clamped to [%d %d] range.\n", index, temp_i, I16_MIN, I16_MAX);
+			eprint("WARNING: attribute %d of type I16 is %d. clamped to [%d %d] range.\n", index, temp_i, I16_MIN, I16_MAX);
 			point.set_attribute(attribute_starts[index], I16_CLAMP(temp_i));
 		}
 		else
@@ -1536,7 +1536,7 @@ BOOL LASreaderTXT::parse_attribute(const char* l, I32 index)
 	}
 	else
 	{
-		REprintf("WARNING: attribute %d not (yet) implemented.\n", index);
+		eprint("WARNING: attribute %d not (yet) implemented.\n", index);
 		return FALSE;
 	}
 	return TRUE;
@@ -1624,7 +1624,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			if (sscanf(l, "%f", &temp_f) != 1) return FALSE;
 			if (translate_intensity != 0.0f) temp_f = temp_f + translate_intensity;
 			if (scale_intensity != 1.0f) temp_f = temp_f * scale_intensity;
-			if (temp_f < 0.0f || temp_f >= 65535.5f) REprintf("WARNING: intensity %g is out of range of unsigned short\n", temp_f);
+			if (temp_f < 0.0f || temp_f >= 65535.5f) eprint("WARNING: intensity %g is out of range of unsigned short\n", temp_f);
 			point.set_intensity(U16_QUANTIZE(temp_f));
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1635,7 +1635,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			if (sscanf(l, "%f", &temp_f) != 1) return FALSE;
 			if (translate_scan_angle != 0.0f) temp_f = temp_f + translate_scan_angle;
 			if (scale_scan_angle != 1.0f) temp_f = temp_f * scale_scan_angle;
-			if (temp_f < -128.0f || temp_f > 127.0f) REprintf("WARNING: scan angle %g is out of range of char\n", temp_f);
+			if (temp_f < -128.0f || temp_f > 127.0f) eprint("WARNING: scan angle %g is out of range of char\n", temp_f);
 			point.set_scan_angle(temp_f);
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1646,12 +1646,12 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
 			if (point_type > 5)
 			{
-				if (temp_i < 0 || temp_i > 15) REprintf("WARNING: number of returns of given pulse %d is out of range of four bits\n", temp_i);
+				if (temp_i < 0 || temp_i > 15) eprint("WARNING: number of returns of given pulse %d is out of range of four bits\n", temp_i);
 				point.set_extended_number_of_returns(temp_i & 15);
 			}
 			else
 			{
-				if (temp_i < 0 || temp_i > 7) REprintf("WARNING: number of returns of given pulse %d is out of range of three bits\n", temp_i);
+				if (temp_i < 0 || temp_i > 7) eprint("WARNING: number of returns of given pulse %d is out of range of three bits\n", temp_i);
 				point.set_number_of_returns(temp_i & 7);
 			}
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
@@ -1663,12 +1663,12 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
 			if (point_type > 5)
 			{
-				if (temp_i < 0 || temp_i > 15) REprintf("WARNING: return number %d is out of range of four bits\n", temp_i);
+				if (temp_i < 0 || temp_i > 15) eprint("WARNING: return number %d is out of range of four bits\n", temp_i);
 				point.set_extended_return_number(temp_i & 15);
 			}
 			else
 			{
-				if (temp_i < 0 || temp_i > 7) REprintf("WARNING: return number %d is out of range of three bits\n", temp_i);
+				if (temp_i < 0 || temp_i > 7) eprint("WARNING: return number %d is out of range of three bits\n", temp_i);
 				point.set_return_number(temp_i & 7);
 			}
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
@@ -1678,7 +1678,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			while (l[0] && (l[0] == ' ' || l[0] == ',' || l[0] == '\t' || l[0] == ';')) l++; // first skip white spaces
 			if (l[0] == 0) return FALSE;
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
-			if (temp_i < 0 || temp_i > 1) REprintf("WARNING: withheld flag %d is out of range of single bit\n", temp_i);
+			if (temp_i < 0 || temp_i > 1) eprint("WARNING: withheld flag %d is out of range of single bit\n", temp_i);
 			point.set_withheld_flag(temp_i ? 1 : 0);
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1687,7 +1687,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			while (l[0] && (l[0] == ' ' || l[0] == ',' || l[0] == '\t' || l[0] == ';')) l++; // first skip white spaces
 			if (l[0] == 0) return FALSE;
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
-			if (temp_i < 0 || temp_i > 1) REprintf("WARNING: keypoint flag %d is out of range of single bit\n", temp_i);
+			if (temp_i < 0 || temp_i > 1) eprint("WARNING: keypoint flag %d is out of range of single bit\n", temp_i);
 			point.set_keypoint_flag(temp_i ? 1 : 0);
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1696,7 +1696,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			while (l[0] && (l[0] == ' ' || l[0] == ',' || l[0] == '\t' || l[0] == ';')) l++; // first skip white spaces
 			if (l[0] == 0) return FALSE;
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
-			if (temp_i < 0 || temp_i > 1) REprintf("WARNING: keypoint flag %d is out of range of single bit\n", temp_i);
+			if (temp_i < 0 || temp_i > 1) eprint("WARNING: keypoint flag %d is out of range of single bit\n", temp_i);
 			point.set_synthetic_flag(temp_i ? 1 : 0);
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1705,7 +1705,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			while (l[0] && (l[0] == ' ' || l[0] == ',' || l[0] == '\t' || l[0] == ';')) l++; // first skip white spaces
 			if (l[0] == 0) return FALSE;
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
-			if (temp_i < 0 || temp_i > 1) REprintf("WARNING: overlap flag %d is out of range of single bit\n", temp_i);
+			if (temp_i < 0 || temp_i > 1) eprint("WARNING: overlap flag %d is out of range of single bit\n", temp_i);
 			point.set_extended_overlap_flag(temp_i ? 1 : 0);
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1714,7 +1714,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			while (l[0] && (l[0] == ' ' || l[0] == ',' || l[0] == '\t' || l[0] == ';')) l++; // first skip white spaces
 			if (l[0] == 0) return FALSE;
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
-			if (temp_i < 0 || temp_i > 3) REprintf("WARNING: scanner channel %d is out of range of two bits\n", temp_i);
+			if (temp_i < 0 || temp_i > 3) eprint("WARNING: scanner channel %d is out of range of two bits\n", temp_i);
 			point.extended_scanner_channel = temp_i & 3;
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1723,7 +1723,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			while (l[0] && (l[0] == ' ' || l[0] == ',' || l[0] == '\t' || l[0] == ';')) l++; // first skip white spaces
 			if (l[0] == 0) return FALSE;
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
-			if (temp_i < 0 || temp_i > 3) REprintf("WARNING: terrasolid echo encoding %d is out of range of 0 to 3\n", temp_i);
+			if (temp_i < 0 || temp_i > 3) eprint("WARNING: terrasolid echo encoding %d is out of range of 0 to 3\n", temp_i);
 			if (temp_i == 0) // only echo
 			{
 				point.number_of_returns = 1;
@@ -1753,7 +1753,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
 			if (temp_i < 0)
 			{
-				REprintf("WARNING: classification %d is negative. zeroing ...\n", temp_i);
+				eprint("WARNING: classification %d is negative. zeroing ...\n", temp_i);
 				point.set_classification(0);
 				point.set_extended_classification(0);
 			}
@@ -1761,7 +1761,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			{
 				if (temp_i > 255)
 				{
-					REprintf("WARNING: extended classification %d is larger than 255. clamping ...\n", temp_i);
+					eprint("WARNING: extended classification %d is larger than 255. clamping ...\n", temp_i);
 					point.set_extended_classification(255);
 				}
 				else
@@ -1773,7 +1773,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			{
 				if (temp_i > 31)
 				{
-					REprintf("WARNING: classification %d is larger than 31. clamping ...\n", temp_i);
+					eprint("WARNING: classification %d is larger than 31. clamping ...\n", temp_i);
 					point.set_classification(31);
 				}
 				else
@@ -1790,7 +1790,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
 			if (temp_i < 0 || temp_i > 255)
 			{
-				REprintf("WARNING: user data %d is out of range of unsigned char\n", temp_i);
+				eprint("WARNING: user data %d is out of range of unsigned char\n", temp_i);
 				point.set_user_data(U8_CLAMP(temp_i));
 			}
 			else
@@ -1806,7 +1806,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
 			if (temp_i < 0 || temp_i > 65535)
 			{
-				REprintf("WARNING: point source ID %d is out of range of unsigned short\n", temp_i);
+				eprint("WARNING: point source ID %d is out of range of unsigned short\n", temp_i);
 				point.set_point_source_ID(U16_CLAMP(temp_i));
 			}
 			else
@@ -1820,7 +1820,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			while (l[0] && (l[0] == ' ' || l[0] == ',' || l[0] == '\t' || l[0] == ';')) l++; // first skip white spaces
 			if (l[0] == 0) return FALSE;
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
-			if (temp_i < 0 || temp_i > 1) REprintf("WARNING: edge of flight line flag %d is out of range of boolean flag\n", temp_i);
+			if (temp_i < 0 || temp_i > 1) eprint("WARNING: edge of flight line flag %d is out of range of boolean flag\n", temp_i);
 			point.edge_of_flight_line = (temp_i ? 1 : 0);
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1829,7 +1829,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 			while (l[0] && (l[0] == ' ' || l[0] == ',' || l[0] == '\t' || l[0] == ';')) l++; // first skip white spaces
 			if (l[0] == 0) return FALSE;
 			if (sscanf(l, "%d", &temp_i) != 1) return FALSE;
-			if (temp_i < 0 || temp_i > 1) REprintf("WARNING: direction of scan flag %d is out of range of boolean flag\n", temp_i);
+			if (temp_i < 0 || temp_i > 1) eprint("WARNING: direction of scan flag %d is out of range of boolean flag\n", temp_i);
 			point.scan_direction_flag = (temp_i ? 1 : 0);
 			while (l[0] && l[0] != ' ' && l[0] != ',' && l[0] != '\t' && l[0] != ';') l++; // then advance to next white space
 		}
@@ -1885,7 +1885,7 @@ BOOL LASreaderTXT::parse(const char* parse_string)
 		}
 		else
 		{
-			REprintf("ERROR: unknown symbol '%c' in parse string\n", p[0]);
+			eprint("ERROR: unknown symbol '%c' in parse string\n", p[0]);
 		}
 		p++;
 	}
@@ -1929,7 +1929,7 @@ BOOL LASreaderTXT::check_parse_string(const char* parse_string)
 				I32 index = (I32)(p[0] - '0');
 				if (index >= header.number_attributes)
 				{
-					REprintf("ERROR: extra bytes attribute '%d' was not described.\n", index);
+					eprint("ERROR: extra bytes attribute '%d' was not described.\n", index);
 					return FALSE;
 				}
 				attribute_starts[index] = header.get_attribute_start(index);
@@ -1947,53 +1947,53 @@ BOOL LASreaderTXT::check_parse_string(const char* parse_string)
 					}
 					if (index >= header.number_attributes)
 					{
-						REprintf("ERROR: extra bytes attribute '%d' was not described.\n", index);
+						eprint("ERROR: extra bytes attribute '%d' was not described.\n", index);
 						return FALSE;
 					}
 					if (p[0] != ')')
 					{
-						REprintf("ERROR: extra bytes attribute '%d' misses closing bracket.\n", index);
+						eprint("ERROR: extra bytes attribute '%d' misses closing bracket.\n", index);
 						return FALSE;
 					}
 					attribute_starts[index] = header.get_attribute_start(index);
 				}
 				else
 				{
-					REprintf("ERROR: parse string opening bracket '(' misses extra bytes index.\n");
+					eprint("ERROR: parse string opening bracket '(' misses extra bytes index.\n");
 					return FALSE;
 				}
 			}
 			else
 			{
-				REprintf("ERROR: unknown symbol '%c' in parse string. valid are\n", p[0]);
-				REprintf("       'x' : the <x> coordinate\n");
-				REprintf("       'y' : the <y> coordinate\n");
-				REprintf("       'z' : the <z> coordinate\n");
-				REprintf("       't' : the gps <t>ime\n");
-				REprintf("       'R' : the <R>ed channel of the RGB field\n");
-				REprintf("       'G' : the <G>reen channel of the RGB field\n");
-				REprintf("       'B' : the <B>lue channel of the RGB field\n");
-				REprintf("       'I' : the N<I>R channel of LAS 1.4 point type 8\n");
-				REprintf("       's' : <s>kip a string or a number that we don't care about\n");
-				REprintf("       'i' : the <i>ntensity\n");
-				REprintf("       'a' : the scan <a>ngle\n");
-				REprintf("       'n' : the <n>umber of returns of that given pulse\n");
-				REprintf("       'r' : the number of the <r>eturn\n");
-				REprintf("       'h' : the with<h>eld flag\n");
-				REprintf("       'k' : the <k>eypoint flag\n");
-				REprintf("       'g' : the synthetic fla<g>\n");
-				REprintf("       'o' : the <o>verlap flag of LAS 1.4 point types 6, 7, 8\n");
-				REprintf("       'l' : the scanner channe<l> of LAS 1.4 point types 6, 7, 8\n");
-				REprintf("       'E' : terrasolid <E>hco Encoding\n");
-				REprintf("       'c' : the <c>lassification\n");
-				REprintf("       'u' : the <u>ser data\n");
-				REprintf("       'p' : the <p>oint source ID\n");
-				REprintf("       'e' : the <e>dge of flight line flag\n");
-				REprintf("       'd' : the <d>irection of scan flag\n");
-				REprintf("   '0'-'9' : additional attributes described as extra bytes (0 through 9)\n");
-				REprintf("    '(13)' : additional attributes described as extra bytes (10 and up)\n");
-				REprintf("       'H' : a hexadecimal string encoding the RGB color\n");
-				REprintf("       'J' : a hexadecimal string encoding the intensity\n");
+				eprint("ERROR: unknown symbol '%c' in parse string. valid are\n", p[0]);
+				eprint("       'x' : the <x> coordinate\n");
+				eprint("       'y' : the <y> coordinate\n");
+				eprint("       'z' : the <z> coordinate\n");
+				eprint("       't' : the gps <t>ime\n");
+				eprint("       'R' : the <R>ed channel of the RGB field\n");
+				eprint("       'G' : the <G>reen channel of the RGB field\n");
+				eprint("       'B' : the <B>lue channel of the RGB field\n");
+				eprint("       'I' : the N<I>R channel of LAS 1.4 point type 8\n");
+				eprint("       's' : <s>kip a string or a number that we don't care about\n");
+				eprint("       'i' : the <i>ntensity\n");
+				eprint("       'a' : the scan <a>ngle\n");
+				eprint("       'n' : the <n>umber of returns of that given pulse\n");
+				eprint("       'r' : the number of the <r>eturn\n");
+				eprint("       'h' : the with<h>eld flag\n");
+				eprint("       'k' : the <k>eypoint flag\n");
+				eprint("       'g' : the synthetic fla<g>\n");
+				eprint("       'o' : the <o>verlap flag of LAS 1.4 point types 6, 7, 8\n");
+				eprint("       'l' : the scanner channe<l> of LAS 1.4 point types 6, 7, 8\n");
+				eprint("       'E' : terrasolid <E>hco Encoding\n");
+				eprint("       'c' : the <c>lassification\n");
+				eprint("       'u' : the <u>ser data\n");
+				eprint("       'p' : the <p>oint source ID\n");
+				eprint("       'e' : the <e>dge of flight line flag\n");
+				eprint("       'd' : the <d>irection of scan flag\n");
+				eprint("   '0'-'9' : additional attributes described as extra bytes (0 through 9)\n");
+				eprint("    '(13)' : additional attributes described as extra bytes (10 and up)\n");
+				eprint("       'H' : a hexadecimal string encoding the RGB color\n");
+				eprint("       'J' : a hexadecimal string encoding the intensity\n");
 				return FALSE;
 			}
 		}
@@ -2067,8 +2067,8 @@ void LASreaderTXT::populate_bounding_box()
 
 	if ((header.min_x > 0) != (dequant_min_x > 0))
 	{
-		REprintf("WARNING: quantization sign flip for min_x from %g to %g.\n", header.min_x, dequant_min_x);
-		REprintf("         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
+		eprint("WARNING: quantization sign flip for min_x from %g to %g.\n", header.min_x, dequant_min_x);
+		eprint("         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
 	}
 	else
 	{
@@ -2076,8 +2076,8 @@ void LASreaderTXT::populate_bounding_box()
 	}
 	if ((header.max_x > 0) != (dequant_max_x > 0))
 	{
-		REprintf("WARNING: quantization sign flip for max_x from %g to %g.\n", header.max_x, dequant_max_x);
-		REprintf("         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
+		eprint("WARNING: quantization sign flip for max_x from %g to %g.\n", header.max_x, dequant_max_x);
+		eprint("         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
 	}
 	else
 	{
@@ -2085,8 +2085,8 @@ void LASreaderTXT::populate_bounding_box()
 	}
 	if ((header.min_y > 0) != (dequant_min_y > 0))
 	{
-		REprintf("WARNING: quantization sign flip for min_y from %g to %g.\n", header.min_y, dequant_min_y);
-		REprintf("         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
+		eprint("WARNING: quantization sign flip for min_y from %g to %g.\n", header.min_y, dequant_min_y);
+		eprint("         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
 	}
 	else
 	{
@@ -2094,8 +2094,8 @@ void LASreaderTXT::populate_bounding_box()
 	}
 	if ((header.max_y > 0) != (dequant_max_y > 0))
 	{
-		REprintf("WARNING: quantization sign flip for max_y from %g to %g.\n", header.max_y, dequant_max_y);
-		REprintf("         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
+		eprint("WARNING: quantization sign flip for max_y from %g to %g.\n", header.max_y, dequant_max_y);
+		eprint("         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
 	}
 	else
 	{
@@ -2103,8 +2103,8 @@ void LASreaderTXT::populate_bounding_box()
 	}
 	if ((header.min_z > 0) != (dequant_min_z > 0))
 	{
-		REprintf("WARNING: quantization sign flip for min_z from %g to %g.\n", header.min_z, dequant_min_z);
-		REprintf("         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
+		eprint("WARNING: quantization sign flip for min_z from %g to %g.\n", header.min_z, dequant_min_z);
+		eprint("         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
 	}
 	else
 	{
@@ -2112,8 +2112,8 @@ void LASreaderTXT::populate_bounding_box()
 	}
 	if ((header.max_z > 0) != (dequant_max_z > 0))
 	{
-		REprintf("WARNING: quantization sign flip for max_z from %g to %g.\n", header.max_z, dequant_max_z);
-		REprintf("         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
+		eprint("WARNING: quantization sign flip for max_z from %g to %g.\n", header.max_z, dequant_max_z);
+		eprint("         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
 	}
 	else
 	{

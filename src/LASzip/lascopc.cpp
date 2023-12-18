@@ -225,7 +225,7 @@ BOOL EPToctree::set_vlr_entries(const U8* data, const U64 offset_to_first_copc_e
 
   if (sum != header.extended_number_of_point_records)
   {
-    REprintf("WARNING: COPC EPT hierarchy EVLR number of point does not match with the header.\n");
+    eprint("WARNING: COPC EPT hierarchy EVLR number of point does not match with the header.\n");
     return FALSE;
   }
 

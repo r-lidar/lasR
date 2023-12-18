@@ -205,12 +205,12 @@ IntegerCompressor::~IntegerCompressor()
           entropy -= log(prob)*prob/log(2.0);
         }
       }
-      REprintf( "k: %d number: %d different: %d entropy: %lg raw: %1.1f\n",k,number,different,entropy, (float)(k?k:1));
+      eprint( "k: %d number: %d different: %d entropy: %lg raw: %1.1f\n",k,number,different,entropy, (float)(k?k:1));
       total_number += number;
       total_entropy += (entropy*number);
       total_raw += ((k?k:1)*number);
     }  
-    REprintf( "TOTAL: number: %d entropy: %lg raw: %lg\n",total_number,total_entropy/total_number,total_raw/total_number);
+    eprint( "TOTAL: number: %d entropy: %lg raw: %lg\n",total_number,total_entropy/total_number,total_raw/total_number);
   }
 #endif
 }

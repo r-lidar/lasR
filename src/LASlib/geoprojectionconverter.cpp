@@ -980,7 +980,7 @@ bool GeoProjectionConverter::set_projection_from_geo_keys(int num_geo_keys, cons
         ellipsoid = GEO_ELLIPSOID_KRASSOWSKY;
         break;
       default:
-        REprintf("GeographicTypeGeoKey: look-up for %d not implemented\n", geo_keys[i].value_offset);
+        eprint("GeographicTypeGeoKey: look-up for %d not implemented\n", geo_keys[i].value_offset);
       }
       break;
     case 2050: // GeogGeodeticDatumGeoKey

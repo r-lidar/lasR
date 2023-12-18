@@ -58,7 +58,7 @@ BOOL LASwriterTXT::open(const CHAR* file_name, const LASheader* header, const CH
 {
   if (file_name == 0)
   {
-    REprintf("ERROR: file name pointer is zero\n");
+    eprint("ERROR: file name pointer is zero\n");
     return FALSE;
   }
 
@@ -66,7 +66,7 @@ BOOL LASwriterTXT::open(const CHAR* file_name, const LASheader* header, const CH
 
   if (file == 0)
   {
-    REprintf( "ERROR: cannot open file '%s'\n", file_name);
+    eprint( "ERROR: cannot open file '%s'\n", file_name);
     return FALSE;
   }
 
@@ -79,7 +79,7 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
 {
   if (file == 0)
   {
-    REprintf("ERROR: file pointer is zero\n");
+    eprint("ERROR: file pointer is zero\n");
     return FALSE;
   }
 
@@ -128,7 +128,7 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
     }
     else
     {
-      REprintf( "ERROR: unknown seperator '%s'\n", separator);
+      eprint( "ERROR: unknown seperator '%s'\n", separator);
       return FALSE;
     }
   }
@@ -153,17 +153,17 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
         }
         else if (ptsVLR)
         {
-          REprintf( "WARNING: found VLR for PTS with wrong payload size of %d.\n", ptsVLR->record_length_after_header);
+          eprint( "WARNING: found VLR for PTS with wrong payload size of %d.\n", ptsVLR->record_length_after_header);
         }
         else if (ptxVLR)
         {
-          REprintf( "WARNING: found VLR for PTX with wrong payload size of %d.\n", ptxVLR->record_length_after_header);
+          eprint( "WARNING: found VLR for PTX with wrong payload size of %d.\n", ptxVLR->record_length_after_header);
         }
       }
     }
     else
     {
-      REprintf( "WARNING: found no VLR with PTS or PTX info.\n");
+      eprint( "WARNING: found no VLR with PTS or PTX info.\n");
     }
     if (header->version_minor >= 4)
     {
@@ -180,11 +180,11 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
     }
     if (this->parse_string && strcmp(this->parse_string, "xyz") && strcmp(this->parse_string, "xyzi") && strcmp(this->parse_string, "xyziRGB") && strcmp(this->parse_string, "xyzRGB"))
     {
-      REprintf( "WARNING: the parse string for PTS should be 'xyz', 'xyzi', 'xyziRGB', or 'xyzRGB'\n");
+      eprint( "WARNING: the parse string for PTS should be 'xyz', 'xyzi', 'xyziRGB', or 'xyzRGB'\n");
     }
     if (separator_sign != ' ')
     {
-      REprintf( "WARNING: the separator for PTS should be 'space' not '%s'\n", separator);
+      eprint( "WARNING: the separator for PTS should be 'space' not '%s'\n", separator);
     }
   }
   else if (optx)
@@ -214,13 +214,13 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
     {
       if (ptxVLR)
       {
-        REprintf( "WARNING: found VLR for PTX with wrong payload size of %d.\n", ptxVLR->record_length_after_header);
+        eprint( "WARNING: found VLR for PTX with wrong payload size of %d.\n", ptxVLR->record_length_after_header);
       }
       else
       {
-        REprintf( "WARNING: found no VLR with PTX info.\n");
+        eprint( "WARNING: found no VLR with PTX info.\n");
       }
-      REprintf( "         outputting PTS instead ...\n");
+      eprint( "         outputting PTS instead ...\n");
       if (header->version_minor >= 4)
       {
 // temporarily comment this portion that is not useful in rlas. See #62
@@ -237,11 +237,11 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
     }
     if (this->parse_string && strcmp(this->parse_string, "xyz") && strcmp(this->parse_string, "xyzi") && strcmp(this->parse_string, "xyziRGB") && strcmp(this->parse_string, "xyzRGB"))
     {
-      REprintf( "WARNING: the parse string for PTX should be 'xyz', 'xyzi', 'xyziRGB', or 'xyzRGB'\n");
+      eprint( "WARNING: the parse string for PTX should be 'xyz', 'xyzi', 'xyziRGB', or 'xyzRGB'\n");
     }
     if (separator_sign != ' ')
     {
-      REprintf( "WARNING: the separator for PTX should be 'space' not '%s'\n", separator);
+      eprint( "WARNING: the separator for PTX should be 'space' not '%s'\n", separator);
     }
   }
 
@@ -421,7 +421,7 @@ BOOL LASwriterTXT::unparse_attribute(const LASpoint* point, I32 index)
   }
   else
   {
-    REprintf( "WARNING: attribute %d not (yet) implemented.\n", index);
+    eprint( "WARNING: attribute %d not (yet) implemented.\n", index);
     return FALSE;
   }
   return TRUE;
@@ -653,42 +653,42 @@ BOOL LASwriterTXT::check_parse_string(const CHAR* parse_string)
         I32 index = (I32)(p[0] - '0');
         if (index >= header->number_attributes)
         {
-          REprintf( "ERROR: extra bytes attribute '%d' does not exist.\n", index);
+          eprint( "ERROR: extra bytes attribute '%d' does not exist.\n", index);
           return FALSE;
         }
         attribute_starts[index] = header->get_attribute_start(index);
       }
       else
       {
-        REprintf( "ERROR: unknown symbol '%c' in parse string. valid are\n", p[0]);
-        REprintf( "       'x' : the x coordinate\n");
-        REprintf( "       'y' : the y coordinate\n");
-        REprintf( "       'z' : the z coordinate\n");
-        REprintf( "       't' : the gps time\n");
-        REprintf( "       'R' : the red channel of the RGB field\n");
-        REprintf( "       'G' : the green channel of the RGB field\n");
-        REprintf( "       'B' : the blue channel of the RGB field\n");
-        REprintf( "       's' : a string or a number that we don't care about\n");
-        REprintf( "       'i' : the intensity\n");
-        REprintf( "       'a' : the scan angle\n");
-        REprintf( "       'n' : the number of returns of that given pulse\n");
-        REprintf( "       'r' : the number of the return\n");
-        REprintf( "       'c' : the classification\n");
-        REprintf( "       'u' : the user data\n");
-        REprintf( "       'p' : the point source ID\n");
-        REprintf( "       'e' : the edge of flight line flag\n");
-        REprintf( "       'd' : the direction of scan flag\n");
-        REprintf( "       'h' : the withheld flag\n");
-        REprintf( "       'k' : the keypoint flag\n");
-        REprintf( "       'g' : the synthetic flag\n");
-        REprintf( "       'o' : the overlap flag\n");
-        REprintf( "       'l' : the scanner channel\n");
-        REprintf( "       'M' : the index of the point\n");
-        REprintf( "       'w' : the wavepacket descriptor index\n");
-        REprintf( "       'W' : all wavepacket attributes\n");
-        REprintf( "       'X' : the unscaled and unoffset integer x coordinate\n");
-        REprintf( "       'Y' : the unscaled and unoffset integer y coordinate\n");
-        REprintf( "       'Z' : the unscaled and unoffset integer z coordinate\n");
+        eprint( "ERROR: unknown symbol '%c' in parse string. valid are\n", p[0]);
+        eprint( "       'x' : the x coordinate\n");
+        eprint( "       'y' : the y coordinate\n");
+        eprint( "       'z' : the z coordinate\n");
+        eprint( "       't' : the gps time\n");
+        eprint( "       'R' : the red channel of the RGB field\n");
+        eprint( "       'G' : the green channel of the RGB field\n");
+        eprint( "       'B' : the blue channel of the RGB field\n");
+        eprint( "       's' : a string or a number that we don't care about\n");
+        eprint( "       'i' : the intensity\n");
+        eprint( "       'a' : the scan angle\n");
+        eprint( "       'n' : the number of returns of that given pulse\n");
+        eprint( "       'r' : the number of the return\n");
+        eprint( "       'c' : the classification\n");
+        eprint( "       'u' : the user data\n");
+        eprint( "       'p' : the point source ID\n");
+        eprint( "       'e' : the edge of flight line flag\n");
+        eprint( "       'd' : the direction of scan flag\n");
+        eprint( "       'h' : the withheld flag\n");
+        eprint( "       'k' : the keypoint flag\n");
+        eprint( "       'g' : the synthetic flag\n");
+        eprint( "       'o' : the overlap flag\n");
+        eprint( "       'l' : the scanner channel\n");
+        eprint( "       'M' : the index of the point\n");
+        eprint( "       'w' : the wavepacket descriptor index\n");
+        eprint( "       'W' : all wavepacket attributes\n");
+        eprint( "       'X' : the unscaled and unoffset integer x coordinate\n");
+        eprint( "       'Y' : the unscaled and unoffset integer y coordinate\n");
+        eprint( "       'Z' : the unscaled and unoffset integer z coordinate\n");
         return FALSE;
       }
     }

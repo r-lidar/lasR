@@ -484,7 +484,7 @@ void LASbin::add_to_bin(I32 bin)
         bins_pos = (U32*)malloc(sizeof(U32)*size_pos);
         if (bins_pos == 0)
         {
-          REprintf( "ERROR: allocating %u pos bins\012", size_pos);
+          eprint( "ERROR: allocating %u pos bins\012", size_pos);
           throw std::runtime_error("Internal error");
         }
         for (i = 0; i < size_pos; i++) bins_pos[i] = 0;
@@ -495,7 +495,7 @@ void LASbin::add_to_bin(I32 bin)
         bins_pos = (U32*)realloc(bins_pos, sizeof(U32)*new_size);
         if (bins_pos == 0)
         {
-          REprintf( "ERROR: reallocating %u pos bins\012", new_size);
+          eprint( "ERROR: reallocating %u pos bins\012", new_size);
           throw std::runtime_error("Internal error");
         }
         for (i = size_pos; i < new_size; i++) bins_pos[i] = 0;
@@ -516,7 +516,7 @@ void LASbin::add_to_bin(I32 bin)
         bins_neg = (U32*)malloc(sizeof(U32)*size_neg);
         if (bins_neg == 0)
         {
-          REprintf( "ERROR: allocating %u neg bins\012", size_neg);
+          eprint( "ERROR: allocating %u neg bins\012", size_neg);
           throw std::runtime_error("Internal error");
         }
         for (i = 0; i < size_neg; i++) bins_neg[i] = 0;
@@ -527,7 +527,7 @@ void LASbin::add_to_bin(I32 bin)
         bins_neg = (U32*)realloc(bins_neg, sizeof(U32)*new_size);
         if (bins_neg == 0)
         {
-          REprintf( "ERROR: reallocating %u neg bins\012", new_size);
+          eprint( "ERROR: reallocating %u neg bins\012", new_size);
           throw std::runtime_error("Internal error");
         }
         for (i = size_neg; i < new_size; i++) bins_neg[i] = 0;
@@ -561,12 +561,12 @@ void LASbin::add(I32 item, I32 value)
         values_pos = (F64*)malloc(sizeof(F64)*size_pos);
         if (bins_pos == 0)
         {
-          REprintf( "ERROR: allocating %u pos bins\012", size_pos);
+          eprint( "ERROR: allocating %u pos bins\012", size_pos);
           throw std::runtime_error("Internal error");
         }
         if (values_pos == 0)
         {
-          REprintf( "ERROR: allocating %u pos values\012", size_pos);
+          eprint( "ERROR: allocating %u pos values\012", size_pos);
           throw std::runtime_error("Internal error");
         }
         for (i = 0; i < size_pos; i++) { bins_pos[i] = 0; values_pos[i] = 0; }
@@ -578,12 +578,12 @@ void LASbin::add(I32 item, I32 value)
         values_pos = (F64*)realloc(values_pos, sizeof(F64)*new_size);
         if (bins_pos == 0)
         {
-          REprintf( "ERROR: reallocating %u pos bins\012", new_size);
+          eprint( "ERROR: reallocating %u pos bins\012", new_size);
           throw std::runtime_error("Internal error");
         }
         if (values_pos == 0)
         {
-          REprintf( "ERROR: reallocating %u pos values\012", new_size);
+          eprint( "ERROR: reallocating %u pos values\012", new_size);
           throw std::runtime_error("Internal error");
         }
         for (i = size_pos; i < new_size; i++) { bins_pos[i] = 0; values_pos[i] = 0; }
@@ -606,12 +606,12 @@ void LASbin::add(I32 item, I32 value)
         values_neg = (F64*)malloc(sizeof(F64)*size_neg);
         if (bins_neg == 0)
         {
-          REprintf( "ERROR: allocating %u neg bins\012", size_neg);
+          eprint( "ERROR: allocating %u neg bins\012", size_neg);
           throw std::runtime_error("Internal error");
         }
         if (values_neg == 0)
         {
-          REprintf( "ERROR: allocating %u neg values\012", size_neg);
+          eprint( "ERROR: allocating %u neg values\012", size_neg);
           throw std::runtime_error("Internal error");
         }
         for (i = 0; i < size_neg; i++) { bins_neg[i] = 0; values_neg[i] = 0; }
@@ -623,12 +623,12 @@ void LASbin::add(I32 item, I32 value)
         values_neg = (F64*)realloc(values_neg, sizeof(F64)*new_size);
         if (bins_neg == 0)
         {
-          REprintf( "ERROR: reallocating %u neg bins\012", new_size);
+          eprint( "ERROR: reallocating %u neg bins\012", new_size);
           throw std::runtime_error("Internal error");
         }
         if (values_neg == 0)
         {
-          REprintf( "ERROR: reallocating %u neg values\012", new_size);
+          eprint( "ERROR: reallocating %u neg values\012", new_size);
           throw std::runtime_error("Internal error");
         }
         for (i = size_neg; i < new_size; i++) { bins_neg[i] = 0; values_neg[i] = 0; }
@@ -663,12 +663,12 @@ void LASbin::add(F64 item, F64 value)
         values_pos = (F64*)malloc(sizeof(F64)*size_pos);
         if (bins_pos == 0)
         {
-          REprintf( "ERROR: allocating %u pos bins\012", size_pos);
+          eprint( "ERROR: allocating %u pos bins\012", size_pos);
           throw std::runtime_error("Internal error");
         }
         if (values_pos == 0)
         {
-          REprintf( "ERROR: allocating %u pos values\012", size_pos);
+          eprint( "ERROR: allocating %u pos values\012", size_pos);
           throw std::runtime_error("Internal error");
         }
         for (i = 0; i < size_pos; i++) { bins_pos[i] = 0; values_pos[i] = 0; }
@@ -680,12 +680,12 @@ void LASbin::add(F64 item, F64 value)
         values_pos = (F64*)realloc(values_pos, sizeof(F64)*new_size);
         if (bins_pos == 0)
         {
-          REprintf( "ERROR: reallocating %u pos bins\012", new_size);
+          eprint( "ERROR: reallocating %u pos bins\012", new_size);
           throw std::runtime_error("Internal error");
         }
         if (values_pos == 0)
         {
-          REprintf( "ERROR: reallocating %u pos values\012", new_size);
+          eprint( "ERROR: reallocating %u pos values\012", new_size);
           throw std::runtime_error("Internal error");
         }
         for (i = size_pos; i < new_size; i++) { bins_pos[i] = 0; values_pos[i] = 0; }
@@ -708,12 +708,12 @@ void LASbin::add(F64 item, F64 value)
         values_neg = (F64*)malloc(sizeof(F64)*size_neg);
         if (bins_neg == 0)
         {
-          REprintf( "ERROR: allocating %u neg bins\012", size_neg);
+          eprint( "ERROR: allocating %u neg bins\012", size_neg);
           throw std::runtime_error("Internal error");
         }
         if (values_neg == 0)
         {
-          REprintf( "ERROR: allocating %u neg values\012", size_neg);
+          eprint( "ERROR: allocating %u neg values\012", size_neg);
           throw std::runtime_error("Internal error");
         }
         for (i = 0; i < size_neg; i++) { bins_neg[i] = 0; values_neg[i] = 0; }
@@ -725,12 +725,12 @@ void LASbin::add(F64 item, F64 value)
         values_neg = (F64*)realloc(values_neg, sizeof(F64)*new_size);
         if (bins_neg == 0)
         {
-          REprintf( "ERROR: reallocating %u neg bins\012", new_size);
+          eprint( "ERROR: reallocating %u neg bins\012", new_size);
           throw std::runtime_error("Internal error");
         }
         if (values_neg == 0)
         {
-          REprintf( "ERROR: reallocating %u neg values\012", new_size);
+          eprint( "ERROR: reallocating %u neg values\012", new_size);
           throw std::runtime_error("Internal error");
         }
         for (i = size_neg; i < new_size; i++) { bins_neg[i] = 0; values_neg[i] = 0; }
@@ -996,13 +996,13 @@ BOOL LAShistogram::parse(int argc, char* argv[])
     {
       if ((i+2) >= argc)
       {
-        REprintf("ERROR: '%s' needs 2 arguments: name step\n", argv[i]);
+        eprint("ERROR: '%s' needs 2 arguments: name step\n", argv[i]);
         return FALSE;
       }
       F64 step = 0.0;
       if (sscanf(argv[i+2], "%lf", &step) != 1)
       {
-        REprintf("ERROR: '%s' needs 2 arguments: name step but '%s' is no valid step\n", argv[i], argv[i+2]);
+        eprint("ERROR: '%s' needs 2 arguments: name step but '%s' is no valid step\n", argv[i], argv[i+2]);
         return FALSE;
       }
       if (!histo(argv[i+1], step)) return FALSE;
@@ -1012,13 +1012,13 @@ BOOL LAShistogram::parse(int argc, char* argv[])
     {
       if ((i+3) >= argc)
       {
-        REprintf("ERROR: '%s' needs 3 arguments: name step name_avg\n", argv[i]);
+        eprint("ERROR: '%s' needs 3 arguments: name step name_avg\n", argv[i]);
         return FALSE;
       }
       F64 step = 0.0;
       if (sscanf(argv[i+2], "%lf", &step) != 1)
       {
-        REprintf("ERROR: '%s' needs 3 arguments: name step name_avg but '%s' is no valid step\n", argv[i], argv[i+2]);
+        eprint("ERROR: '%s' needs 3 arguments: name step name_avg but '%s' is no valid step\n", argv[i], argv[i+2]);
         return FALSE;
       }
       if (!histo_avg(argv[i+1], step, argv[i+3])) return FALSE;
@@ -1140,7 +1140,7 @@ BOOL LAShistogram::histo(const CHAR* name, F64 step)
     wavepacket_location_bin = new LASbin(step);
   else
   {
-    REprintf("ERROR: histogram of '%s' not implemented\n", name);
+    eprint("ERROR: histogram of '%s' not implemented\n", name);
     return FALSE;
   }
   is_active = TRUE;
@@ -1157,7 +1157,7 @@ BOOL LAShistogram::histo_avg(const CHAR* name, F64 step, const CHAR* name_avg)
       classification_bin_scan_angle = new LASbin(step);
     else
     {
-      REprintf("ERROR: histogram of '%s' with '%s' averages not implemented\n", name, name_avg);
+      eprint("ERROR: histogram of '%s' with '%s' averages not implemented\n", name, name_avg);
       return FALSE;
     }
   }
@@ -1171,7 +1171,7 @@ BOOL LAShistogram::histo_avg(const CHAR* name, F64 step, const CHAR* name_avg)
       scan_angle_bin_intensity = new LASbin(step);
     else
     {
-      REprintf("ERROR: histogram of '%s' with '%s' averages not implemented\n", name, name_avg);
+      eprint("ERROR: histogram of '%s' with '%s' averages not implemented\n", name, name_avg);
       return FALSE;
     }
   }
@@ -1181,13 +1181,13 @@ BOOL LAShistogram::histo_avg(const CHAR* name, F64 step, const CHAR* name_avg)
       return_map_bin_intensity = new LASbin(1);
     else
     {
-      REprintf("ERROR: histogram of '%s' with '%s' averages not implemented\n", name, name_avg);
+      eprint("ERROR: histogram of '%s' with '%s' averages not implemented\n", name, name_avg);
       return FALSE;
     }
   }
   else
   {
-    REprintf("ERROR: histogram of '%s' not implemented\n", name);
+    eprint("ERROR: histogram of '%s' not implemented\n", name);
     return FALSE;
   }
   is_active = TRUE;

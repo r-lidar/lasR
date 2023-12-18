@@ -482,40 +482,40 @@ public:
   {
     if (strncmp(file_signature, "LASF", 4) != 0)
     {
-      REprintf("ERROR: wrong file signature '%4s'\n", file_signature);
+      eprint("ERROR: wrong file signature '%4s'\n", file_signature);
       return FALSE;
     }
     if ((version_major != 1) || (version_minor > 4))
     {
-      REprintf("WARNING: unknown version %d.%d (should be 1.0 or 1.1 or 1.2 or 1.3 or 1.4)\n", version_major, version_minor);
+      eprint("WARNING: unknown version %d.%d (should be 1.0 or 1.1 or 1.2 or 1.3 or 1.4)\n", version_major, version_minor);
     }
     if (header_size < 227)
     {
-      REprintf("ERROR: header size is %d but should be at least 227\n", header_size);
+      eprint("ERROR: header size is %d but should be at least 227\n", header_size);
       return FALSE;
     }
     if (offset_to_point_data < header_size)
     {
-      REprintf("ERROR: offset to point data %d is smaller than header size %d\n", offset_to_point_data, header_size);
+      eprint("ERROR: offset to point data %d is smaller than header size %d\n", offset_to_point_data, header_size);
       return FALSE;
     }
     if (x_scale_factor == 0)
     {
-      REprintf("WARNING: x scale factor is zero.\n");
+      eprint("WARNING: x scale factor is zero.\n");
     }
     if (y_scale_factor == 0)
     {
-      REprintf("WARNING: y scale factor is zero.\n");
+      eprint("WARNING: y scale factor is zero.\n");
     }
     if (z_scale_factor == 0)
     {
-      REprintf("WARNING: z scale factor is zero.\n");
+      eprint("WARNING: z scale factor is zero.\n");
     }
     if (max_x < min_x || max_y < min_y || max_z < min_z)
     {
       if (number_of_point_records || extended_number_of_point_records)
       {
-        REprintf("WARNING: invalid bounding box [ %g %g %g / %g %g %g ]\n", min_x, min_y, min_z, max_x, max_y, max_z);
+        eprint("WARNING: invalid bounding box [ %g %g %g / %g %g %g ]\n", min_x, min_y, min_z, max_x, max_y, max_z);
       }
     }
     return TRUE;

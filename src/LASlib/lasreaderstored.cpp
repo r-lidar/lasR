@@ -44,7 +44,7 @@ BOOL LASreaderStored::open(LASreader* lasreader)
 {
   if (lasreader == 0)
   {
-    REprintf( "ERROR: no lasreader\n");
+    eprint( "ERROR: no lasreader\n");
     return FALSE;
   }
 
@@ -88,7 +88,7 @@ BOOL LASreaderStored::open(LASreader* lasreader)
 
   if (streamoutarray == 0)
   {
-    REprintf( "ERROR: allocating streamoutarray\n");
+    eprint( "ERROR: allocating streamoutarray\n");
     return FALSE;
   }
 
@@ -101,7 +101,7 @@ BOOL LASreaderStored::open(LASreader* lasreader)
 
   if (laswriterlas == 0)
   {
-    REprintf( "ERROR: allocating laswriterlas\n");
+    eprint( "ERROR: allocating laswriterlas\n");
     return FALSE;
   }
 
@@ -109,7 +109,7 @@ BOOL LASreaderStored::open(LASreader* lasreader)
   {
     delete laswriterlas;
     laswriterlas = 0;
-    REprintf( "ERROR: opening laswriterlas to streamoutarray\n");
+    eprint( "ERROR: opening laswriterlas to streamoutarray\n");
     return FALSE;
   }
 
@@ -133,13 +133,13 @@ BOOL LASreaderStored::reopen()
   {
     if (streamoutarray == 0)
     {
-      REprintf( "ERROR: no streamoutarray\n");
+      eprint( "ERROR: no streamoutarray\n");
       return FALSE;
     }
 
     if (streamoutarray->getSize() == 0)
     {
-      REprintf( "ERROR: nothing stored in streamoutarray\n");
+      eprint( "ERROR: nothing stored in streamoutarray\n");
       return FALSE;
     }
 
@@ -150,7 +150,7 @@ BOOL LASreaderStored::reopen()
 
     if (streaminarray == 0)
     {
-      REprintf( "ERROR: creating streaminarray\n");
+      eprint( "ERROR: creating streaminarray\n");
       return FALSE;
     }
   }
@@ -164,7 +164,7 @@ BOOL LASreaderStored::reopen()
 
   if (lasreaderlas == 0)
   {
-    REprintf( "ERROR: allocating lasreaderlas\n");
+    eprint( "ERROR: allocating lasreaderlas\n");
     return FALSE;
   }
 
@@ -172,7 +172,7 @@ BOOL LASreaderStored::reopen()
   {
     delete lasreaderlas;
     lasreaderlas = 0;
-    REprintf( "ERROR: opening lasreaderlas from streaminarray\n");
+    eprint( "ERROR: opening lasreaderlas from streaminarray\n");
     return FALSE;
   }
 
