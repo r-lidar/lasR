@@ -16,7 +16,7 @@ The `lasR` package (pronounce laser) **does not** intent to supersede the `lidR`
 
 ## Benchmark
 
-The following benchmark compares how much time and RAM memory it takes for `lasR` and `lidR` to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the [benchmark](https://r-lidar.github.io/lasR/articles/lasR4.html) vignettes.
+The following benchmark compares how much time and RAM memory it takes for `lasR` and `lidR` to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the [benchmark](https://r-lidar.github.io/lasR/articles/lasR4.html) vignette.
 
 <img src="man/figures/readme_benchmark.png" style="display: block; margin: auto;" />
 
@@ -31,7 +31,7 @@ remotes::install_github("r-lidar/lasR")
 
 ## Main differences with `lidR`
 
-- Introduces the concept of pipelines to chain multiple operations on a point cloud optimally that was missing in `lidR`
+- Introduces the concept of pipelines, that is missing in `lidR`, to chain multiple operations on a point cloud optimally.
 - Is written exclusively in C/C++ without a single line of R.
 - Uses the code of `lidR` but brings significant speed and memory improvements.
 - Does not load the point cloud into a `data.frame`. The point cloud is stored in a C++ structure that is not exposed to users.
