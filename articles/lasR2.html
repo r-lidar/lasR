@@ -89,8 +89,9 @@ can discover all the features of the package organically.</p>
 <blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 In the following tutorial, the variable <code>f</code> refers to one or
 several file paths stored in a vector. It can also be the path to a
-directory. In this tutorial, the output is rendered with one or two
-small LAS files, but every pipeline is designed to process numerous
+directory or the path of a <a href="https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/" class="external-link">virtual
+point cloud</a>. In this tutorial, the output is rendered with one or
+two small LAS files, but every pipeline is designed to process numerous
 files covering a large extent.
 </blockquote>
 <div class="section level2">
@@ -211,8 +212,8 @@ result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file218426f50816.tif </span></span>
-<span><span class="co">#&gt; name        : file218426f50816</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file21be47eae659.tif </span></span>
+<span><span class="co">#&gt; name        : file21be47eae659</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -342,11 +343,11 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpO8FhYW/bcts_1_ground.laz" "/tmp/RtmpO8FhYW/bcts_2_ground.laz"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/Rtmp6wCDpq/bcts_1_ground.laz" "/tmp/Rtmp6wCDpq/bcts_2_ground.laz"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpO8FhYW/bcts_1_normalized.laz"</span></span>
-<span><span class="co">#&gt; [2] "/tmp/RtmpO8FhYW/bcts_2_normalized.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/Rtmp6wCDpq/bcts_1_normalized.laz"</span></span>
+<span><span class="co">#&gt; [2] "/tmp/Rtmp6wCDpq/bcts_2_normalized.laz"</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -360,7 +361,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpO8FhYW/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/Rtmp6wCDpq/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -669,7 +670,7 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; [1] 12745</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nsingle</span></span>
-<span><span class="co">#&gt; [1] 5030</span></span>
+<span><span class="co">#&gt; [1] 5024</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nwithheld</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
@@ -678,12 +679,12 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; [1] 0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_return</span></span>
-<span><span class="co">#&gt;    1    2    3    4    5 </span></span>
-<span><span class="co">#&gt; 9413 2607  622   98    5 </span></span>
+<span><span class="co">#&gt;    1    2    3    4    5    6 </span></span>
+<span><span class="co">#&gt; 9414 2620  619   88    3    1 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_class</span></span>
 <span><span class="co">#&gt;     1     2     9 </span></span>
-<span><span class="co">#&gt; 10842  1536   367</span></span></code></pre></div>
+<span><span class="co">#&gt; 10835  1546   364</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
