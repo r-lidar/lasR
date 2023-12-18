@@ -29,7 +29,7 @@ col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(15)
 This tutorial is intended to be read in order. It introduces the available tools of the package in a specific order so that the reader can discover all the features of the package organically.
 
 <blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
-In the following tutorial, the variable `f` refers to one or several file paths stored in a vector. It can also be the path to a directory. In this tutorial, the output is rendered with one or two small LAS files, but every pipeline is designed to process numerous files covering a large extent.
+In the following tutorial, the variable `f` refers to one or several file paths stored in a vector. It can also be the path to a directory or the path of a  [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/). In this tutorial, the output is rendered with one or two small LAS files, but every pipeline is designed to process numerous files covering a large extent.
 </blockquote>
 
 ## Reader

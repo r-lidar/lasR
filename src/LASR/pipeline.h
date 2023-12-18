@@ -31,6 +31,7 @@ class Pipeline
     bool process(LASheader*& header);
     bool process(LASpoint*& p);
     bool process(LAS*& las);
+    bool process(LAScatalog*& catalog);
     bool write();
     void clear(bool last = false);
     bool set_chunk(const Chunk& chunk);

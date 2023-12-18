@@ -1,0 +1,693 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/pointcloud/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/projection/v1.1.0/schema.json"
+      ],
+      "id": "bcts_1",
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              -127.62757584675262,
+              50.66546913502696,
+              325.83
+            ],
+            [
+              -127.62765485949838,
+              50.66764968580137,
+              325.83
+            ],
+            [
+              -127.62499752877378,
+              50.66768843382495,
+              358.28
+            ],
+            [
+              -127.62491864493454,
+              50.665507881270464,
+              358.28
+            ],
+            [
+              -127.62757584675262,
+              50.66546913502696,
+              325.83
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "bbox": [
+        -127.62765485949838,
+        50.66546913502696,
+        325.83,
+        -127.62491864493454,
+        50.66768843382495,
+        358.28
+      ],
+      "properties": {
+        "datetime": "0-01-01T00:00:00Z",
+        "pc:count": 531662,
+        "pc:encoding": "?",
+        "pc:schemas": [
+          {
+            "name": "X",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Y",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Z",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Intensity",
+            "size": 2,
+            "type": "unsigned"
+          },
+          {
+            "name": "ReturnNumber",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "NumberOfReturns",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "ScanDirectionFlag",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "EdgeOfFlightLine",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "Classification",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "ScanAngleRank",
+            "size": 4,
+            "type": "floating"
+          },
+          {
+            "name": "UserData",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "PointSourceId",
+            "size": 2,
+            "type": "unsigned"
+          },
+          {
+            "name": "GpsTime",
+            "size": 8,
+            "type": "floating"
+          }
+        ],
+        "pc:type": "lidar",
+        "proj:bbox": [
+          885022.37,
+          629157.18,
+          325.83,
+          885210.15,
+          629399.99,
+          358.28
+        ],
+        "proj:geometry": {
+          "coordinates": [
+            [
+              [
+                885022.37,
+                629157.18,
+                325.83
+              ],
+              [
+                885022.37,
+                629399.99,
+                325.83
+              ],
+              [
+                885210.15,
+                629399.99,
+                358.28
+              ],
+              [
+                885210.15,
+                629157.18,
+                358.28
+              ],
+              [
+                885022.37,
+                629157.18,
+                325.83
+              ]
+            ]
+          ],
+          "type": "Polygon"
+        },
+        "proj:wkt2": "COMPD_CS[\"NAD83 / BC Albers\",PROJCS[\"NAD83 / BC Albers\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Albers_Conic_Equal_Area\"],PARAMETER[\"latitude_of_center\",45],PARAMETER[\"longitude_of_center\",-126],PARAMETER[\"standard_parallel_1\",50],PARAMETER[\"standard_parallel_2\",58.5],PARAMETER[\"false_easting\",1000000],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3005\"]],VERT_CS[\"CGVD28 height\",VERT_DATUM[\"Canadian Geodetic Vertical Datum of 1928\",2005,AUTHORITY[\"EPSG\",\"5114\"]],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"5713\"]]]"
+      },
+      "links": [],
+      "assets": {
+        "data": {
+          "href": "./bcts_1.laz",
+          "roles": [
+            "data"
+          ]
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/pointcloud/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/projection/v1.1.0/schema.json"
+      ],
+      "id": "bcts_2",
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              -127.62763052254095,
+              50.667650130811815,
+              325.12
+            ],
+            [
+              -127.62772815135163,
+              50.67034417766032,
+              325.12
+            ],
+            [
+              -127.62499678702964,
+              50.67038400358077,
+              361.74
+            ],
+            [
+              -127.6248993219271,
+              50.66768995447168,
+              361.74
+            ],
+            [
+              -127.62763052254095,
+              50.667650130811815,
+              325.12
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "bbox": [
+        -127.62772815135163,
+        50.667650130811815,
+        325.12,
+        -127.6248993219271,
+        50.67038400358077,
+        361.74
+      ],
+      "properties": {
+        "datetime": "0-01-01T00:00:00Z",
+        "pc:count": 823945,
+        "pc:encoding": "?",
+        "pc:schemas": [
+          {
+            "name": "X",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Y",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Z",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Intensity",
+            "size": 2,
+            "type": "unsigned"
+          },
+          {
+            "name": "ReturnNumber",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "NumberOfReturns",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "ScanDirectionFlag",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "EdgeOfFlightLine",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "Classification",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "ScanAngleRank",
+            "size": 4,
+            "type": "floating"
+          },
+          {
+            "name": "UserData",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "PointSourceId",
+            "size": 2,
+            "type": "unsigned"
+          },
+          {
+            "name": "GpsTime",
+            "size": 8,
+            "type": "floating"
+          }
+        ],
+        "pc:type": "lidar",
+        "proj:bbox": [
+          885024.09,
+          629400.0,
+          325.12,
+          885217.09,
+          629699.99,
+          361.74
+        ],
+        "proj:geometry": {
+          "coordinates": [
+            [
+              [
+                885024.09,
+                629400.0,
+                325.12
+              ],
+              [
+                885024.09,
+                629699.99,
+                325.12
+              ],
+              [
+                885217.09,
+                629699.99,
+                361.74
+              ],
+              [
+                885217.09,
+                629400.0,
+                361.74
+              ],
+              [
+                885024.09,
+                629400.0,
+                325.12
+              ]
+            ]
+          ],
+          "type": "Polygon"
+        },
+        "proj:wkt2": "COMPD_CS[\"NAD83 / BC Albers\",PROJCS[\"NAD83 / BC Albers\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Albers_Conic_Equal_Area\"],PARAMETER[\"latitude_of_center\",45],PARAMETER[\"longitude_of_center\",-126],PARAMETER[\"standard_parallel_1\",50],PARAMETER[\"standard_parallel_2\",58.5],PARAMETER[\"false_easting\",1000000],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3005\"]],VERT_CS[\"CGVD28 height\",VERT_DATUM[\"Canadian Geodetic Vertical Datum of 1928\",2005,AUTHORITY[\"EPSG\",\"5114\"]],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"5713\"]]]"
+      },
+      "links": [],
+      "assets": {
+        "data": {
+          "href": "./bcts_2.laz",
+          "roles": [
+            "data"
+          ]
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/pointcloud/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/projection/v1.1.0/schema.json"
+      ],
+      "id": "bcts_3",
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              -127.62769687838929,
+              50.670344723880945,
+              327.72
+            ],
+            [
+              -127.62779451703616,
+              50.67303876203563,
+              327.72
+            ],
+            [
+              -127.6249970359071,
+              50.67307955026052,
+              395.95
+            ],
+            [
+              -127.6248995649412,
+              50.670385509790385,
+              395.95
+            ],
+            [
+              -127.62769687838929,
+              50.670344723880945,
+              327.72
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "bbox": [
+        -127.62779451703616,
+        50.670344723880945,
+        327.72,
+        -127.6248995649412,
+        50.67307955026052,
+        395.95
+      ],
+      "properties": {
+        "datetime": "0-01-01T00:00:00Z",
+        "pc:count": 887254,
+        "pc:encoding": "?",
+        "pc:schemas": [
+          {
+            "name": "X",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Y",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Z",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Intensity",
+            "size": 2,
+            "type": "unsigned"
+          },
+          {
+            "name": "ReturnNumber",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "NumberOfReturns",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "ScanDirectionFlag",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "EdgeOfFlightLine",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "Classification",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "ScanAngleRank",
+            "size": 4,
+            "type": "floating"
+          },
+          {
+            "name": "UserData",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "PointSourceId",
+            "size": 2,
+            "type": "unsigned"
+          },
+          {
+            "name": "GpsTime",
+            "size": 8,
+            "type": "floating"
+          }
+        ],
+        "pc:type": "lidar",
+        "proj:bbox": [
+          885026.3,
+          629700.0,
+          327.72,
+          885223.96,
+          629999.99,
+          395.95
+        ],
+        "proj:geometry": {
+          "coordinates": [
+            [
+              [
+                885026.3,
+                629700.0,
+                327.72
+              ],
+              [
+                885026.3,
+                629999.99,
+                327.72
+              ],
+              [
+                885223.96,
+                629999.99,
+                395.95
+              ],
+              [
+                885223.96,
+                629700.0,
+                395.95
+              ],
+              [
+                885026.3,
+                629700.0,
+                327.72
+              ]
+            ]
+          ],
+          "type": "Polygon"
+        },
+        "proj:wkt2": "COMPD_CS[\"NAD83 / BC Albers\",PROJCS[\"NAD83 / BC Albers\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Albers_Conic_Equal_Area\"],PARAMETER[\"latitude_of_center\",45],PARAMETER[\"longitude_of_center\",-126],PARAMETER[\"standard_parallel_1\",50],PARAMETER[\"standard_parallel_2\",58.5],PARAMETER[\"false_easting\",1000000],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3005\"]],VERT_CS[\"CGVD28 height\",VERT_DATUM[\"Canadian Geodetic Vertical Datum of 1928\",2005,AUTHORITY[\"EPSG\",\"5114\"]],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"5713\"]]]"
+      },
+      "links": [],
+      "assets": {
+        "data": {
+          "href": "./bcts_3.laz",
+          "roles": [
+            "data"
+          ]
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/pointcloud/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/projection/v1.1.0/schema.json"
+      ],
+      "id": "bcts_4",
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              -127.62776465749695,
+              50.673039287620234,
+              342.08
+            ],
+            [
+              -127.62783609842188,
+              50.675010306132236,
+              342.08
+            ],
+            [
+              -127.62499872284114,
+              50.67505167466922,
+              418.46
+            ],
+            [
+              -127.6249274063527,
+              50.67308065443893,
+              418.46
+            ],
+            [
+              -127.62776465749695,
+              50.673039287620234,
+              342.08
+            ]
+          ]
+        ],
+        "type": "Polygon"
+      },
+      "bbox": [
+        -127.62783609842188,
+        50.673039287620234,
+        342.08,
+        -127.6249274063527,
+        50.67505167466922,
+        418.46
+      ],
+      "properties": {
+        "datetime": "0-01-01T00:00:00Z",
+        "pc:count": 591489,
+        "pc:encoding": "?",
+        "pc:schemas": [
+          {
+            "name": "X",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Y",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Z",
+            "size": 8,
+            "type": "floating"
+          },
+          {
+            "name": "Intensity",
+            "size": 2,
+            "type": "unsigned"
+          },
+          {
+            "name": "ReturnNumber",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "NumberOfReturns",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "ScanDirectionFlag",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "EdgeOfFlightLine",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "Classification",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "ScanAngleRank",
+            "size": 4,
+            "type": "floating"
+          },
+          {
+            "name": "UserData",
+            "size": 1,
+            "type": "unsigned"
+          },
+          {
+            "name": "PointSourceId",
+            "size": 2,
+            "type": "unsigned"
+          },
+          {
+            "name": "GpsTime",
+            "size": 8,
+            "type": "floating"
+          }
+        ],
+        "pc:type": "lidar",
+        "proj:bbox": [
+          885028.41,
+          630000.0,
+          342.08,
+          885228.88,
+          630219.48,
+          418.46
+        ],
+        "proj:geometry": {
+          "coordinates": [
+            [
+              [
+                885028.41,
+                630000.0,
+                342.08
+              ],
+              [
+                885028.41,
+                630219.48,
+                342.08
+              ],
+              [
+                885228.88,
+                630219.48,
+                418.46
+              ],
+              [
+                885228.88,
+                630000.0,
+                418.46
+              ],
+              [
+                885028.41,
+                630000.0,
+                342.08
+              ]
+            ]
+          ],
+          "type": "Polygon"
+        },
+        "proj:wkt2": "COMPD_CS[\"NAD83 / BC Albers\",PROJCS[\"NAD83 / BC Albers\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Albers_Conic_Equal_Area\"],PARAMETER[\"latitude_of_center\",45],PARAMETER[\"longitude_of_center\",-126],PARAMETER[\"standard_parallel_1\",50],PARAMETER[\"standard_parallel_2\",58.5],PARAMETER[\"false_easting\",1000000],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"3005\"]],VERT_CS[\"CGVD28 height\",VERT_DATUM[\"Canadian Geodetic Vertical Datum of 1928\",2005,AUTHORITY[\"EPSG\",\"5114\"]],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"5713\"]]]"
+      },
+      "links": [],
+      "assets": {
+        "data": {
+          "href": "./bcts_4.laz",
+          "roles": [
+            "data"
+          ]
+        }
+      }
+    }
+  ]
+}

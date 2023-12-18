@@ -194,6 +194,21 @@ bool Pipeline::process(LAS*& las)
     return true;
 }
 
+bool Pipeline::process(LAScatalog*& catalog)
+{
+  for (auto&& stage : pipeline)
+  {
+    bool success = stage->process(catalog);
+    if (!success)
+    {
+      last_error = "in '" + stage->get_name() + "' while processing the catalog: " + stage->get_last_error();
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool Pipeline::write()
 {
   for (auto&& stage : pipeline)

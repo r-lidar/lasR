@@ -370,14 +370,16 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
 #' Initialize the pipeline
 #'
 #' This is the first stage that must be called in each pipeline. It specifies which files must be read.
-#' The stage does nothing and returns nothing if it is not assiciated to another processing stage.
+#' The stage does nothing and returns nothing if it is not associated to another processing stage.
 #' It only initializes the pipeline. `reader()` is the main function that dispatches into to other
-#' functions. `reader_file_*()` reads from LAS/LAZ files on disk. `reader_dataframe()` can put an R
-#' `data.frame` in the pipeline. `read_*_coverage` processed the entire point cloud. `reader_*_circles()`
-#' and `read_*_rectangles()` read and process only some selected regions of interest.
+#' functions. `reader_*()` reads from LAS/LAZ files on disk.`reader_coverage()` processes the entire
+#' point cloud. `reader_circles()` and `reader_rectangles()` read and process only some selected regions
+#' of interest.
 #'
-#' @param x The path of the files to use. The path of the folder in which the files are stored. A `data.frame`.
-#' Supports also `LAScatalog` and `LAS` objects from `lidR`.
+#' @param x Can be the paths of the files to use, the path of the folder in which the files are stored,
+#' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
+#' file or a `data.frame` containing hte point cloud. It supports also a `LAScatalog` or a `LAS` objects
+#' from `lidR`.
 #' @template param-filter
 #' @param buffer numeric. Each file is read with a buffer. The default is 0, which does not mean that
 #' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
@@ -742,6 +744,22 @@ transform_with_triangulation = function(triangulator, operator = "-", store_in_a
 write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE)
 {
   ans <- list(algoname = "write_las", filter = filter, output = ofile, keep_buffer = keep_buffer)
+  set_lasr_class(ans)
+}
+
+#' Write a Virtual Point Cloud
+#'
+#' Borrowing the concept of virtual rasters from GDAL, the VPC file format references other point
+#' cloud files in virtual point cloud (VPC)
+#'
+#' @param ofile character. The file path with extnsion .vpc where to write the virtual point cloud file
+#' @references
+#' https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/
+#' https://github.com/PDAL/wrench/blob/main/vpc-spec.md
+#' @export
+write_vpc = function(ofile)
+{
+  ans <- list(algoname = "write_vpc", output = ofile)
   set_lasr_class(ans)
 }
 

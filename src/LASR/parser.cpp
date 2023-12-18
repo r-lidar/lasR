@@ -16,6 +16,7 @@
 #include "triangulatedtransformer.h"
 #include "writelas.h"
 #include "writelax.h"
+#include "writevpc.h"
 
 #ifdef USING_R
 #include "R2cpp.h"
@@ -72,13 +73,10 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         std::vector<std::string> files = get_element_as_vstring(stage, "files");
 
         catalog = new LAScatalog;
-        for (auto& file : files)
+        if (!catalog->read(files))
         {
-          if (!catalog->add_file(file))
-          {
-            last_error = catalog->last_error; // # nocov
-            return false; // # nocov
-          }
+          last_error = "In the parser while reading the file collection: " + catalog->last_error; // # nocov
+          return false; // # nocov
         }
 
         // The catalog read all the files, we now know the extent of the coverage
@@ -119,7 +117,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       // This is the buffer provided by the user. The actual buffer may be larger
       // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
       // stage tells us 50. But in this case it is useful only for queries since there is no files
-      // and especially no neigbor files
+      // and especially no neighbour files
       buffer = get_element_as_double(stage, "buffer");
 
       SEXP dataframe = get_element(stage, "dataframe");
@@ -148,8 +146,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       if (build_catalog)
       {
         catalog = new LAScatalog;
-        catalog->add_bbox(xmin, ymin, xmax, ymax, true);
-        catalog->npoints = Rf_length(X);
+        catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
         catalog->wkt = wkt;
 
         // Special treatment of the reader to find the potential queries in the catalog
@@ -232,6 +229,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     else if (name == "write_lax")
     {
       auto v = std::make_shared<LASRlaxwriter>();
+      pipeline.push_back(v);
+    }
+    else if (name == "write_vpc")
+    {
+      auto v = std::make_shared<LASRvpcwriter>();
       pipeline.push_back(v);
     }
     else if (name == "transform_with_triangulation")
