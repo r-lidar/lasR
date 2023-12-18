@@ -72,13 +72,10 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         std::vector<std::string> files = get_element_as_vstring(stage, "files");
 
         catalog = new LAScatalog;
-        for (auto& file : files)
+        if (!catalog->read(files))
         {
-          if (!catalog->add_file(file))
-          {
-            last_error = catalog->last_error; // # nocov
-            return false; // # nocov
-          }
+          last_error = "In the parser while reading the file collection: " + catalog->last_error; // # nocov
+          return false; // # nocov
         }
 
         // The catalog read all the files, we now know the extent of the coverage
@@ -119,11 +116,12 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       // This is the buffer provided by the user. The actual buffer may be larger
       // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
       // stage tells us 50. But in this case it is useful only for queries since there is no files
-      // and especially no neigbor files
+      // and especially no neighbour files
       buffer = get_element_as_double(stage, "buffer");
 
       SEXP dataframe = get_element(stage, "dataframe");
       std::vector<double> accuracy = get_element_as_vdouble(stage, "accuracy");
+      // TODO: add CRS
 
       // Compute the bounding box. We assume that the data.frame has element named X and Y.
       // This is not checked at R level. Anyway get_element() will throw an exception
@@ -147,7 +145,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       if (build_catalog)
       {
         catalog = new LAScatalog;
-        catalog->add_bbox(xmin, ymin, xmax, ymax, true);
+        catalog->add_bbox(xmin, ymin, xmax, ymax);
+        // TODO: must parse the CRS
         catalog->npoints = Rf_length(X);
 
         // Special treatment of the reader to find the potential queries in the catalog
