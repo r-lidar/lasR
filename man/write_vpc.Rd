@@ -13,7 +13,12 @@ write_vpc(ofile)
 Borrowing the concept of virtual rasters from GDAL, the VPC file format references other point
 cloud files in virtual point cloud (VPC)
 }
+\examples{
+\dontrun{
+pipeline = reader("folder/") + write_vpc("folder/dataset.vpc")
+}
+}
 \references{
-https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/
-https://github.com/PDAL/wrench/blob/main/vpc-spec.md
+\url{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/}\cr
+\url{https://github.com/PDAL/wrench/blob/main/vpc-spec.md}
 }

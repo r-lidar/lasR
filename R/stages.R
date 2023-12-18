@@ -754,8 +754,12 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #'
 #' @param ofile character. The file path with extnsion .vpc where to write the virtual point cloud file
 #' @references
-#' https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/
-#' https://github.com/PDAL/wrench/blob/main/vpc-spec.md
+#' \url{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/}\cr
+#' \url{https://github.com/PDAL/wrench/blob/main/vpc-spec.md}
+#' @examples
+#' \dontrun{
+#' pipeline = reader("folder/") + write_vpc("folder/dataset.vpc")
+#' }
 #' @export
 write_vpc = function(ofile)
 {
