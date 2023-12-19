@@ -329,7 +329,7 @@ bool LAS::add_attribute(int data_type, std::string name, std::string description
   LASpoint new_point;
   new_point.init(header, header->point_data_format, header->point_data_record_length, header);
 
-  if (capacity * new_point.total_point_size < npoints * point.total_point_size)
+  if (capacity * point.total_point_size < npoints * new_point.total_point_size)
   {
     buffer = (unsigned char*)realloc((void*)buffer, npoints * new_point.total_point_size);
   }
