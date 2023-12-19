@@ -82,7 +82,7 @@
 <div class="section level2">
 <h2 id="benchmark">Benchmark<a class="anchor" aria-label="anchor" href="#benchmark"></a>
 </h2>
-<p>The following benchmark compares how much time and RAM memory it takes for <code>lasR</code> and <code>lidR</code> to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the <a href="https://r-lidar.github.io/lasR/articles/lasR4.html" class="external-link">benchmark</a> vignettes.</p>
+<p>The following benchmark compares how much time and RAM memory it takes for <code>lasR</code> and <code>lidR</code> to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the <a href="https://r-lidar.github.io/lasR/articles/lasR4.html" class="external-link">benchmark</a> vignette.</p>
 <p><img src="reference/figures/readme_benchmark.png" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
@@ -97,8 +97,7 @@
 <a class="anchor" aria-label="anchor" href="#main-differences-with-lidr"></a>
 </h2>
 <ul>
-<li>Introduces the concept of pipelines to chain multiple operations on a point cloud optimally that was missing in <code>lidR</code>
-</li>
+<li>Introduces the concept of pipelines, that is missing in <code>lidR</code>, to chain multiple operations on a point cloud optimally.</li>
 <li>Is written exclusively in C/C++ without a single line of R.</li>
 <li>Uses the code of <code>lidR</code> but brings significant speed and memory improvements.</li>
 <li>Does not load the point cloud into a <code>data.frame</code>. The point cloud is stored in a C++ structure that is not exposed to users.</li>
