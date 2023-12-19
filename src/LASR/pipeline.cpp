@@ -26,6 +26,12 @@ Pipeline::~Pipeline()
   catalog = nullptr;
 }
 
+bool Pipeline::pre_run()
+{
+  // Only used by write_vpc
+  return process(catalog);
+}
+
 bool Pipeline::run()
 {
   bool success;

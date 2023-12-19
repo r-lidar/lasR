@@ -60,7 +60,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
     pipeline.set_progress(&progress);
 
-    if (!pipeline.process(lascatalog))
+    if (!pipeline.pre_run())
     {
       throw pipeline.get_last_error();
     }

@@ -126,10 +126,7 @@ bool LAScatalog::read_vpc(const std::string& filename)
       // Find the path to the file and resolve relative path
       auto& first_asset = *feature.get_child("assets").begin();
       std::string file = first_asset.second.get<std::string>("href");
-      if (file.substr(0, 2) == "./")
-      {
-        file = std::filesystem::weakly_canonical(parent_folder / file).string();
-      }
+      file = std::filesystem::weakly_canonical(parent_folder / file).string();
 
       int pccount = feature.get<int>("properties.pc:count");
 
@@ -216,6 +213,13 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
   }
 
   std::filesystem::path output_path = vpcfile;
+
+  if (output_path.extension() != ".vpc")
+  {
+    last_error = "The virtual point cloud must have the extension '.vpc'"; // # nocov
+    return false; // # nocov
+  }
+
   output_path = output_path.parent_path();
 
   std::ofstream output(vpcfile);
@@ -236,7 +240,9 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
   for (int i = 0 ; i < get_number_files() ; i++)
   {
     std::filesystem::path file = files[i];
-    std::string relative_path = "./" +std::filesystem::relative(file, output_path).string();
+    std::string relative_path = "./" + std::filesystem::relative(file, output_path).string();
+    std::replace(relative_path.begin(), relative_path.end(), '\\', '/'); // avoid problem of backslash on windows
+
     Rectangle& bbox = bboxes[i];
     uint64_t n = npoints[i];
     bool index = indexed[i];
@@ -354,6 +360,19 @@ void LAScatalog::add_query(double xmin, double ymin, double xmax, double ymax)
 {
   Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
   queries.push_back(rect);
+}
+
+void LAScatalog::set_chunk_size(double size)
+{
+  if (size > 0)
+    chunk_size = size;
+  else
+    chunk_size = 0;
+}
+
+void LAScatalog::set_chunk_is_file()
+{
+  chunk_size = 0;
 }
 
 void LAScatalog::add_query(double xcenter, double ycenter, double radius)
@@ -528,6 +547,11 @@ bool LAScatalog::check_spatial_index()
 int LAScatalog::get_number_chunks() const
 {
   return (queries.size() == 0) ? get_number_files() : queries.size();
+}
+
+int LAScatalog::get_number_files() const
+{
+  return indexed.size();
 }
 
 int LAScatalog::get_number_indexed_files() const

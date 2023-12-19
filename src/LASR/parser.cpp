@@ -80,10 +80,10 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         }
 
         // The catalog read all the files, we now know the extent of the coverage
-        xmin = catalog->xmin;
-        ymin = catalog->ymin;
-        xmax = catalog->xmax;
-        ymax = catalog->ymax;
+        xmin = catalog->get_xmin();
+        ymin = catalog->get_ymin();
+        xmax = catalog->get_xmax();
+        ymax = catalog->get_ymax();
 
         // Special treatment of the reader to find the potential queries in the catalogue
         // TODO: xcenter, ycenter, radius, xmin, ymin and ... have the same size it is checked at R level but should be tested here.
@@ -147,7 +147,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       {
         catalog = new LAScatalog;
         catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
-        catalog->wkt = wkt;
+        catalog->set_wkt(wkt);
 
         // Special treatment of the reader to find the potential queries in the catalog
         if (contains_element(stage, "xcenter"))
@@ -416,9 +416,9 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
     // We parse the pipeline so we know if we need a buffer
     catalog->set_buffer(need_buffer());
 
-    // The calog is build, we know the CRS of the collection
-    set_crs(catalog->epsg);
-    set_crs(catalog->wkt);
+    // The catlog is build, we know the CRS of the collection
+    set_crs(catalog->get_epsg());
+    set_crs(catalog->get_wkt());
 
     // Write lax is the very first algorithm. Even before read_las. It is called
     // only if needed.

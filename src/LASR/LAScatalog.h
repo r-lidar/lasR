@@ -22,16 +22,24 @@ public:
   ~LAScatalog();
   bool read(const std::vector<std::string>& files);
   bool write_vpc(const std::string& file);
-  void set_chunk_size(double size) { if (size > 0) chunk_size = size; else chunk_size = 0; };
-  void set_chunk_is_file() { chunk_size = 0; };
   void set_buffer(double buffer) { this->buffer = buffer; };
   void add_query(double xmin, double ymin, double xmax, double ymax);
   void add_query(double xcenter, double ycenter, double radius);
+  void set_chunk_size(double size);
+  void set_chunk_is_file();
+  void set_wkt(const std::string& wkt) { this->wkt = wkt; };
+  std::string get_wkt() const { return wkt; };
+  void set_epsg(int epsg) { this->epsg = epsg; };
+  int get_epsg() const { return epsg; };
   bool get_chunk(int index, Chunk& chunk);
   int get_number_chunks() const;
-  int get_number_files() const { return indexed.size(); }
+  int get_number_files() const;
   int get_number_indexed_files() const;
   double get_buffer() const { return buffer; };
+  double get_xmin() const { return xmin; };
+  double get_ymin() const { return ymin; };
+  double get_xmax() const { return xmax; };
+  double get_ymax() const { return ymax; };
   bool check_spatial_index();
   void clear();
 
@@ -54,37 +62,40 @@ private:
   PathType parse_path(const std::string& path);
 
 public:
+  std::string last_error;
+
+private:
+
+  // Bounding box of the file collection
   double xmin;
   double ymin;
   double xmax;
   double ymax;
-  std::string last_error;
 
   // A set of CRS because each file may have different CRS so we must check the consistency
   std::set<std::string> wkt_set;
   std::set<int> epsg_set;
+
+  // CRS retained of the overall collection
   int epsg;
   std::string wkt;
 
-private:
-  // reader mode
+  // reader mode to support R data.frame
   bool use_dataframe;
 
-  // overall parameter
+  // overall parameter to process
   double buffer;
   double chunk_size;
 
-  // stores information about each file
-  std::vector<uint64_t> npoints;
+  // information about each file
+  std::vector<uint64_t> npoints;            // number of points
   std::vector<bool> indexed;                // the file has a spatial index
   std::vector<bool> buffer_only;            // the file is not processed and is used only for buffering
   std::vector<Rectangle> bboxes;            // bounding boxes of the files
   std::vector<std::filesystem::path> files; // path to files
 
-  //LASreadOpener* lasreadopener;
+  // queries, partial read
   LASkdtreeRectangles* laskdtree;
-
-  // Queries, partial read
   std::vector<Shape*> queries;
 };
 
