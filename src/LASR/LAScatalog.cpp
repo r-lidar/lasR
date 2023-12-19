@@ -151,15 +151,14 @@ bool LAScatalog::read_vpc(const std::string& filename)
       // We are sure there is a bbox
       auto& bbox = feature.get_child("properties.proj:bbox");
       auto it = bbox.begin();
-      double min_x, min_y, min_z, max_x, max_y, max_z;
+      double min_x, min_y, max_x, max_y;
       if (bbox.size() == 6)
       {
         min_x = it->second.get_value<double>(); it++;
         min_y = it->second.get_value<double>(); it++;
-        min_z = it->second.get_value<double>(); it++;
+        it++; // min_z
         max_x = it->second.get_value<double>(); it++;
         max_y = it->second.get_value<double>(); it++;
-        max_z = it->second.get_value<double>();
       }
       else if (bbox.size() == 4)
       {
@@ -269,7 +268,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     output << "    }" << std::endl;
     output << "  }";
 
-    if (i < files.size()-1)
+    if (i < (int)files.size()-1)
       output << ",";
 
     output << std::endl;

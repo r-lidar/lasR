@@ -63,7 +63,7 @@ bool LAS::add_point(const LASpoint& p)
   {
     uint64_t capacity_max = MAX(header->number_of_point_records, header->extended_number_of_point_records);
 
-    if (capacity_max < (int)capacity*2)
+    if (capacity_max < (uint64_t)capacity*2)
       capacity = capacity_max;
     else
       capacity *= 2;

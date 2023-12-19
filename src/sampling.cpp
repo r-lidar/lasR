@@ -84,7 +84,6 @@ bool LASRsamplingpixels::process(LAS*& las)
 
   double rxmin = las->header->min_x;
   double rymin = las->header->min_y;
-  double rzmin = las->header->min_z;
   double rxmax = las->header->max_x;
   double rymax = las->header->max_y;
   Grid grid(rxmin, rymin, rxmax, rymax, res);

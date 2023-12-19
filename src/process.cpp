@@ -19,8 +19,6 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 {
   try
   {
-    SEXP default_return = R_NilValue;
-
     #ifdef USING_R
     int ncpu = Rf_asInteger(sexpncpu);
     bool progrss = Rf_asLogical(sexpprogrss);

@@ -30,7 +30,6 @@ private:
   bool has_gps;
   bool has_rgb;
   bool has_nir;
-  bool has_intensity;
   bool is_extended;
   int current_point;
   int num_extrabytes;

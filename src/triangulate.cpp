@@ -79,7 +79,7 @@ bool LASRtriangulate::process(LAS*& las)
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     float second = (float)duration.count()/1000.0f;
-    print("  Construction of voronoi diagram took %.2f sec for %lu vertices\n", second, vd.num_vertices());
+    print("  Construction of voronoi diagram took %.2f sec for %llu vertices\n", second, vd.num_vertices());
     // # nocov end
   }
 

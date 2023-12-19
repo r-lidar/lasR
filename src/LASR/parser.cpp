@@ -92,7 +92,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
           std::vector<double> xcenter = get_element_as_vdouble(stage, "xcenter");
           std::vector<double> ycenter = get_element_as_vdouble(stage, "ycenter");
           std::vector<double> radius = get_element_as_vdouble(stage, "radius");
-          for (auto j = 0 ; j <  xcenter.size() ; ++j) catalog->add_query(xcenter[j], ycenter[j], radius[j]);
+          for (size_t j = 0 ; j <  xcenter.size() ; ++j) catalog->add_query(xcenter[j], ycenter[j], radius[j]);
         }
 
         if (contains_element(stage, "xmin"))
@@ -101,7 +101,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
           std::vector<double> ymin = get_element_as_vdouble(stage, "ymin");
           std::vector<double> xmax = get_element_as_vdouble(stage, "xmax");
           std::vector<double> ymax = get_element_as_vdouble(stage, "ymax");
-          for (auto j = 0 ; j <  xmin.size() ; ++j) catalog->add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
+          for (size_t j = 0 ; j <  xmin.size() ; ++j) catalog->add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
         }
       }
     }
@@ -155,7 +155,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
           std::vector<double> xcenter = get_element_as_vdouble(stage, "xcenter");
           std::vector<double> ycenter = get_element_as_vdouble(stage, "ycenter");
           std::vector<double> radius = get_element_as_vdouble(stage, "radius");
-          for (auto j = 0 ; j <  xcenter.size() ; ++j) catalog->add_query(xcenter[j], ycenter[j], radius[j]);
+          for (size_t j = 0 ; j <  xcenter.size() ; ++j) catalog->add_query(xcenter[j], ycenter[j], radius[j]);
         }
 
         if (contains_element(stage, "xmin"))
@@ -164,7 +164,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
           std::vector<double> ymin = get_element_as_vdouble(stage, "ymin");
           std::vector<double> xmax = get_element_as_vdouble(stage, "xmax");
           std::vector<double> ymax = get_element_as_vdouble(stage, "ymax");
-          for (auto j = 0 ; j <  xmin.size() ; ++j) catalog->add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
+          for (size_t j = 0 ; j <  xmin.size() ; ++j) catalog->add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
         }
       }
     }

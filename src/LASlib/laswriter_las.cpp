@@ -1216,7 +1216,7 @@ BOOL LASwriterLAS::update_header(const LASheader* header, BOOL use_inventory, BO
   // COPC info VLR is resolved once the last point is written.
   // Therefore, it cannot be added when opening the writer. We use update_header update propagate the VLR.
   // For this trick to work a zeroed placeholder copc info vlr must have been written when opening the file
-  for (i = 0; i < header->number_of_variable_length_records; i++)
+  for (i = 0; i < (I32)header->number_of_variable_length_records; i++)
   {
     if ((strcmp(header->vlrs[i].user_id, "copc") == 0) && header->vlrs[i].record_id == 1)
     {
@@ -1275,7 +1275,7 @@ BOOL LASwriterLAS::update_header(const LASheader* header, BOOL use_inventory, BO
   // Therefore, it cannot be added when opening the writer. We use update_header to propagate the EVLR
   // just before closing the writer. EVLRs are written when closing. This trick allows us to be COPC
   // compatible with minimal changes to the code.
-  for (i = 0; i < header->number_of_extended_variable_length_records; i++)
+  for (i = 0; i < (I32)header->number_of_extended_variable_length_records; i++)
   {
     if ((strcmp(header->evlrs[i].user_id, "copc") == 0) && header->evlrs[i].record_id == 1000)
     {

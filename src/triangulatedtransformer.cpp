@@ -57,9 +57,9 @@ bool LASRtriangulatedTransformer::process(LAS*& las)
     if (data_type == LAS::LONG)
     {
       scale = las->point.quantizer->z_scale_factor;
-      offset = las->point.quantizer->z_offset;
+      //offset = las->point.quantizer->z_offset;
       las->header->attributes[attr_index].set_scale(scale);
-      las->header->attributes[attr_index].set_offset(0);
+      las->header->attributes[attr_index].set_offset(offset);
       las->header->update_extra_bytes_vlr();
     }
   }

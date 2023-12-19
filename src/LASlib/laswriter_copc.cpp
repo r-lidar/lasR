@@ -47,9 +47,9 @@
 #include <unordered_set>
 #include <random>
 
-static inline F64 get_gps_time(const U8* buf) { return *((F64*)&buf[22]); };
-static inline U8 get_scanner_channel(const U8* buf) { return (buf[15] >> 4) & 0x03; };
-static inline U8 get_return_number(const U8* buf) { return buf[14] & 0x0F; };
+static inline F64 get_gps_time(const U8* buf) { return *((F64*)&buf[22]); }
+static inline U8 get_scanner_channel(const U8* buf) { return (buf[15] >> 4) & 0x03; }
+static inline U8 get_return_number(const U8* buf) { return buf[14] & 0x0F; }
 static int compare_buffers(const void *a, const void *b)
 {
   if (get_gps_time((U8*)a) < get_gps_time((U8*)b)) return -1;
@@ -229,15 +229,6 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
   // Loop through octants and write in copc file.
   for (it = registry.begin(); it != registry.end();)
   {
-    // Bounding box of the octant
-    F64 res = octree.get_size() / (1 << it->first.d);
-    F64 minx = res * it->first.x + octree.get_xmin();
-    F64 miny = res * it->first.y + octree.get_ymin();
-    F64 minz = res * it->first.z + octree.get_zmin();
-    F64 maxx = minx + res;
-    F64 maxy = miny + res;
-    F64 maxz = minz + res;
-
     // Check if the chunk is not too small. Otherwise, redistribute the points in the parent octant.
     // There is no guarantee that parents still exist. They may have already been written and freed.
     // (Requiring that chunks have more than min_points_per_octant is not a strong requirement,
@@ -430,14 +421,14 @@ BOOL LASwriterCOPC::make_copc_header(const LASheader* header)
   this->header->add_evlr("copc", 1000, 0, 0, FALSE, "EPT hierarchy");
 
   // Deep copy of the original VLR and EVLR
-  for (I32 i = 0; i < header->number_of_variable_length_records; i++)
+  for (U32 i = 0; i < header->number_of_variable_length_records; i++)
   {
     LASvlr* vlr = &header->vlrs[i];
     U8* data = new U8[vlr->record_length_after_header];
     memcpy(data, vlr->data, vlr->record_length_after_header);
     this->header->add_vlr(vlr->user_id, vlr->record_id, vlr->record_length_after_header, data, FALSE, vlr->description);
   }
-  for (I32 i = 0; i < header->number_of_extended_variable_length_records; i++)
+  for (U32 i = 0; i < header->number_of_extended_variable_length_records; i++)
   {
     LASevlr* evlr = &header->evlrs[i];
     U8* data = new U8[evlr->record_length_after_header];

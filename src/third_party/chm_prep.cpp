@@ -246,14 +246,18 @@ unsigned char * find_holes(int size, int snlin, int sncol, int mini, int maxi, i
 
 
 float * interpolate(int snlin, int sncol, int mini, int maxi, int minj, int maxj, float *scene, unsigned char *hole_map2) {
-  unsigned long int ncol, nlig;
+  int ncol, nlig;
   float *gi;
 
   unsigned char search_left,left,search_right,right,search_up,up,search_down,down;
-  unsigned long int i,j;
-  long int col_pos,lig_pos,side_pos,step,d_left,d_right,d_up,d_down;
-  unsigned int stepmax = 20; /* Largest hole size, in pixels. This is set to contain interpolation in the case of large cavities. */
-  unsigned int n;
+  int i,j;
+  int col_pos,lig_pos,side_pos;
+  int d_left = 0;
+  int d_right = 0;
+  int d_up = 0;
+  int d_down = 0;
+  int stepmax = 20; /* Largest hole size, in pixels. This is set to contain interpolation in the case of large cavities. */
+  int n, step;
   float left_avg,right_avg,up_avg,down_avg,n_avg;
 
   if ((gi = (float *)malloc((long int)snlin*(long int)sncol*(long int)4)) == NULL) {

@@ -74,7 +74,7 @@ private:
   LASpoint* point;
   LASheader* header;
   U8* points_buffer;
-  U64 capacity;
+  I64 capacity;
 
   // COPC information for (E)VLR and octree
   F64 gpstime_maximum;

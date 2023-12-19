@@ -93,9 +93,7 @@ bool LASRdataframereader::process(LASheader*& header)
   {
     for (int j = 0 ; j < Rf_length(dataframe) ; j++)
     {
-      //print("current point %d col %d column %d\n", current_point, j, col_names[j]);
       SEXP vector = VECTOR_ELT(dataframe, j);
-      int type = TYPEOF(vector);
 
       switch(col_names[j])
       {
@@ -226,9 +224,9 @@ bool LASRdataframereader::process(LASpoint*& point)
         default: //extrabytes
         {
           int attr_index = col_names[j]-100;
-          LASattribute attr = laspoint.attributer->attributes[attr_index];
+          //LASattribute attr = laspoint.attributer->attributes[attr_index];
 
-          if (type ==  INTSXP)
+          if (type == INTSXP)
           {
             int val = INTEGER(vector)[current_point];
             laspoint.set_attribute(attr_index, (U8*)&val); break;
@@ -316,7 +314,6 @@ int LASRdataframereader::get_point_data_record_length(int point_data_format)
 int LASRdataframereader::guess_point_data_format()
 {
   std::vector<int> formats = {0,1,2,3,6,7,8};
-  int format;
 
   if (has_nir) // format 8 or 10
     return 8;
