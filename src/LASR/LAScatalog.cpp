@@ -37,7 +37,7 @@ bool LAScatalog::read(const std::vector<std::string>& files)
       }
       read_vpc(file);
     }
-    else if (type == PathType::LAXFILE)
+    else if (type == PathType::LAXFILE) // # nocov
     {
       // nothing to do, just skip
     }
@@ -46,7 +46,7 @@ bool LAScatalog::read(const std::vector<std::string>& files)
       last_error = "Directory are not supported yet: " + file; // # nocov
       return false; // # nocov
     }
-    else if (type == PathType::MISSINGFILE)
+    else if (type == PathType::MISSINGFILE) // # nocov
     {
       last_error = "File not found: " + file; // # nocov
       return false; // # nocov
@@ -212,8 +212,8 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
 {
   if (use_dataframe)
   {
-    last_error = "Cannot vrite a virtual point cloud file with a data.frame";
-    return false;
+    last_error = "Cannot write a virtual point cloud file with a data.frame"; // # nocov
+    return false; // # nocov
   }
 
   std::filesystem::path output_path = vpcfile;
@@ -222,8 +222,8 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
   std::ofstream output(vpcfile);
   if (!output.good())
   {
-    last_error = std::string("Failed to create file: ") + vpcfile;
-    return false;
+    last_error = std::string("Failed to create file: ") + vpcfile; // # nocov
+    return false; // # nocov
   }
 
   // Mmmm.... boost property_tree is not able to write numbers... will do everything by hand
