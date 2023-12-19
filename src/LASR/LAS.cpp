@@ -27,6 +27,11 @@ LAS::LAS(LASheader* header)
 
   // Initialize the good point format
   point.init(header, header->point_data_format, header->point_data_record_length, header);
+
+  // This fixes #2 and troubles with add_extrabytes but I don't know exactly why expect
+  // it is a matter of item in the compressor
+  delete header->laszip;
+  header->laszip = 0;
 }
 
 LAS::~LAS()
