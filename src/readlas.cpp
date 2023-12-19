@@ -69,7 +69,9 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
   lasreader = lasreadopener->open();
   if (!lasreader)
   {
-    last_error = "LASlib internal error. Cannot open LASreader."; // # nocov
+    char buffer[512];
+    snprintf(buffer, 512, "LASlib internal error. Cannot open LASreader with %s\n", chunk.main_files[0].c_str());
+    last_error = std::string(buffer); // # nocov
     return false; // # nocov
   }
 
