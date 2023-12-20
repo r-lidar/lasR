@@ -29,16 +29,16 @@ bool LASRpitfill::process(LAS*& las)
 {
   if (!algorithm)
   {
-    last_error = "Unitialized pointer to LASRalgorithm";
-    return false;
+    last_error = "Unitialized pointer to LASRalgorithm"; // # nocov
+    return false; // # nocov
   }
 
   LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(algorithm);
 
   if (!p)
   {
-    last_error = "Invalid pointer dynamic cast. Expecting a pointer to LASRalgorithmRaster";
-    return false;
+    last_error = "Invalid pointer dynamic cast. Expecting a pointer to LASRalgorithmRaster"; // # nocov
+    return false; // # nocov
   }
 
   const Raster& rin = p->get_raster();
@@ -56,8 +56,8 @@ bool LASRpitfill::process(LAS*& las)
 
   if (ans == NULL)
   {
-    last_error = "st_onge::chm_prep failed to allocate memory";
-    return false;
+    last_error = "st_onge::chm_prep failed to allocate memory"; // # nocov
+    return false; // # nocov
   }
 
   for (int i = 0 ; i < snlin*sncol ; i++)

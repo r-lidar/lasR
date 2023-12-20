@@ -44,8 +44,8 @@ bool LASRregiongrowing::process(LAS*& las)
 
   if (p == nullptr || q == nullptr)
   {
-    last_error = "invalid pointers: must be 'LASRlocalmaximum' and 'LASRalgorithmRaster'. Please report this error.";
-    return false;
+    last_error = "invalid pointers: must be 'LASRlocalmaximum' and 'LASRalgorithmRaster'. Please report this error."; // # nocov
+    return false; // # nocov
   }
 
   progress->reset();

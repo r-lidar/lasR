@@ -12,7 +12,6 @@ public:
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   bool is_streamable() const override { return algorithm == 0; };
-  bool is_mergable() const override { return algorithm == 0; };
   std::string get_name() const override { return "rasterize"; };
 
 private:

@@ -48,7 +48,6 @@ public:
   virtual void set_input_file_name(std::string file) { return; };
   virtual void set_header(LASheader*& header) { return; };
   virtual bool is_streamable() const { return false; };
-  virtual bool is_mergable() const { return false; };
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
   virtual void set_filter(std::string f) { char* s = const_cast<char*>(f.c_str()); lasfilter.parse(s); };

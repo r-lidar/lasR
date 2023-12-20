@@ -14,7 +14,6 @@ public:
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   bool is_streamable() const override { return true; }
-  bool is_mergable() const override { return true; }
   std::string get_name() const override { return "summary"; }
 
 #ifdef USING_R

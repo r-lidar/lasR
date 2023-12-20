@@ -89,7 +89,7 @@ bool LASRlaswriter::process(LAS*& las)
   {
     p = &las->point;
     if (!process(p))
-      return false;
+      return false; // # nocov
 
     (*progress)++;
     progress->show();

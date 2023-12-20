@@ -78,7 +78,7 @@ bool LASRrasterize::process(LAS*& las)
     {
       p = &las->point;
       if (!process(p))
-        return false;
+        return false; // # nocov
     }
     return true;
   }
@@ -86,8 +86,8 @@ bool LASRrasterize::process(LAS*& las)
   LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(algorithm);
   if (!p)
   {
-    last_error  = "invalid pointer. Expecting a pointer to LASRtriangulate (internal error, please report)";
-    return false;
+    last_error  = "invalid pointer. Expecting a pointer to LASRtriangulate (internal error, please report)"; // # nocov
+    return false; // # nocov
   }
 
   std::vector<double> z;
