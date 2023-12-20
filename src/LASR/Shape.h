@@ -169,12 +169,12 @@ public:
   PolygonXY() { }
   PolygonXY(const std::vector<PointXY>& coords);
   void push_back(const PointXY& p);
-  bool is_closed();
+  bool is_closed() const;
   void close();
-  bool is_clockwise();
+  bool is_clockwise() const;
 
 private:
-  double signed_area();
+  double signed_area() const;
 };
 
 

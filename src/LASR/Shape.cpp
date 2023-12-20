@@ -259,7 +259,7 @@ void PolygonXY::push_back(const PointXY& p)
   coordinates.push_back(p);
 }
 
-bool PolygonXY::is_closed()
+bool PolygonXY::is_closed() const
 {
   if (coordinates.size() == 0) return false;
   return &coordinates.front() == &coordinates.back();
@@ -270,12 +270,12 @@ void PolygonXY::close()
   if (!is_closed()) coordinates.push_back(coordinates.front());
 }
 
-bool PolygonXY::is_clockwise()
+bool PolygonXY::is_clockwise() const
 {
   return signed_area() > 0;
 }
 
-double PolygonXY::signed_area()
+double PolygonXY::signed_area() const
 {
   int n = coordinates.size();
   double signed_area = 0.0;

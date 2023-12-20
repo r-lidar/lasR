@@ -94,6 +94,11 @@ bool LASRboundaries::process(LAS*& las)
     contour.push_back(ordered_contour);
   }
 
+  // Sort the vector using is_clockwise such as the outer ring comes first to we spec compliant
+  std::sort(contour.begin(), contour.end(), [](const PolygonXY& a, const PolygonXY& b) {
+    return a.is_clockwise() < b.is_clockwise();
+  });
+
   return true;
 }
 
