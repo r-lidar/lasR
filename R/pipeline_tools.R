@@ -29,7 +29,7 @@ print.LASRalgorithm = function(x, ...)
       cat(" ", name, ": ")
       cat("uid:", x[[name]], "\n", sep = "")
     }
-    if (name == "files")
+    else if (name == "files")
     {
       cat(" ", name, ": ")
       if (length(x[[name]]) > 5)
