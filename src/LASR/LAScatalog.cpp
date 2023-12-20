@@ -47,7 +47,7 @@ bool LAScatalog::read(const std::vector<std::string>& files)
       {
         if (entry.is_regular_file())
         {
-          std::string ext = entry.path().extension();
+          std::string ext = entry.path().extension().string();
           if (ext == ".las" || ext == ".laz" || ext == ".LAS" || ext == ".LAZ")
           {
             add_file(entry.path().string());
