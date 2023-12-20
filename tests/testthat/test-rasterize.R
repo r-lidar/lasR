@@ -41,6 +41,21 @@ test_that("rasterize expression works multiband",
   expect_equal(names(u),c("a", "b"))
  })
 
+test_that("rasterize expression works with extrabytes",
+{
+  f = system.file("extdata", "extra_byte.las", package="lasR")
+
+  read = reader(f, filter = "")
+  met = rasterize(5, mean(Amplitude))
+  pipeline = read + met
+  u = suppressWarnings(processor(pipeline))
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(dim(u), c(2, 5, 1))
+  expect_equal(mean(u[], na.rm = T), 9.17, tolerance = 0.001)
+})
+
+
 test_that("rasterize captures the expression",
 {
   f = system.file("extdata", "Example.las", package="lasR")
@@ -51,6 +66,23 @@ test_that("rasterize captures the expression",
   pipeline = read + met
   expect_error(processor(pipeline), NA)
 })
+
+test_that("rasterize captures the expression hand handles error",
+{
+  f = system.file("extdata", "Example.las", package="lasR")
+
+  fun = function(x) {return(list(a = mean(x), b = c(0,0)))}
+  read = reader(f, filter = "")
+  met = rasterize(5, fun(Intensity))
+  pipeline = read + met
+  expect_error(processor(pipeline), "must only return a vector of numbers or a list of atomic numbers")
+
+  fun = function(x) {return(list(list(a = mean(x))))}
+  read = reader(f, filter = "")
+  met = rasterize(5, fun(Intensity))
+  pipeline = read + met
+  expect_error(processor(pipeline), "user expression must only return numbers")
+ })
 
 
 test_that("rasterize triangulation works with 1 file",

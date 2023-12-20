@@ -35,7 +35,7 @@ test_that("normalize & dtm",
 
   expect_equal(mean(x*w/sum(w)), 0.287, tolerance = 0.01)
 
-  pipeline = reader(f) + dtm() + normalize(TRUE) + summarise() + chm(1, TRUE)
+  pipeline = reader(f) + dtm(add_class = 9) + normalize(TRUE) + summarise() + chm(1, TRUE)
   suppressWarnings(ans <- processor(pipeline))
 
   expect_length(ans, 3L)

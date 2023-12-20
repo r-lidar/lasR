@@ -2,6 +2,7 @@ test_that("R convient filters work", {
   expect_equal(as.character(keep_class(c(5,7))), "-keep_class 5 7")
   expect_equal(as.character(drop_class(c(5,7))), "-drop_class 5 7")
   expect_equal(as.character(keep_first()), "-keep_first")
+  expect_equal(as.character(drop_first()), "-drop_first")
   expect_equal(as.character(keep_ground()), "-keep_class 2")
   expect_equal(as.character(drop_ground()), "-drop_class 2")
   expect_equal(as.character(keep_noise()), "-keep_class 18")
