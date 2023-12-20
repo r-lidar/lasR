@@ -445,28 +445,7 @@ reader_files_coverage = function(files, filter = "", buffer = 0)
     stop("'files' must be character or a LAScatalog")  # nocov
   }
 
-  finfo <- file.info(files)
-
-  if (all(is.na(finfo$isdir)))
-  {
-    stop(paste0(files, " does not exist.")) # nocov
-  }
-  else if (all(!finfo$isdir))
-  {
-    files <- normalizePath(files)
-  }
-  else
-  {
-    p <- list()
-    p$path <- files
-    p$full.names <- TRUE
-    p$pattern <- "(?i)\\.la(s|z)$"
-    files <- do.call(list.files, p)
-  }
-
-  nexist <- sum(!file.exists(files))
-  if (nexist > 0) stop(paste0(nexist, " file(s) not existing")) # nocov
-
+  files <- normalizePath(files)
   ans <- list(algoname = "reader_las", files = files, filter = filter, buffer = buffer)
   set_lasr_class(ans)
 }

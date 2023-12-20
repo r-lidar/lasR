@@ -18,7 +18,24 @@ test_that("reader works with multiple files",
 
 test_that("reader fails if file does not exist",
 {
-  expect_error(reader("missing.las"))
+  expect_warning(p <- reader("missing.las"))
+  expect_error(processor(p), "File not found")
+
+  f = system.file("extdata", "bcts/bcts.gpkg", package="lasR")
+  expect_error(processor(reader(f)), "Unknown file type")
+
+  f = system.file("extdata", "bcts/bcts.vpc", package="lasR")
+  g = system.file("extdata", "Megaplot.las", package="lasR")
+  f = c(f, g)
+  expect_error(processor(reader(f)), "Virtual point cloud file detected mixed with other content")
+})
+
+test_that("reader can read a folder",
+{
+  f = system.file("extdata", "bcts/", package="lasR")
+  p <- reader(f) + hulls()
+  ans = processor(p)
+  expect_equal(dim(ans), c(4L,1L))
 })
 
 test_that("reader_dataframe works",

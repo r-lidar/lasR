@@ -32,8 +32,8 @@ bool LAScatalog::read(const std::vector<std::string>& files)
     {
       if (files.size() > 1)
       {
-        last_error = "Virtual point cloud file detected mixed with other content"; // # nocov
-        return false; // # nocov
+        last_error = "Virtual point cloud file detected mixed with other content";
+        return false;
       }
       read_vpc(file);
     }
@@ -43,18 +43,27 @@ bool LAScatalog::read(const std::vector<std::string>& files)
     }
     else if (type == PathType::DIRECTORY)
     {
-      last_error = "Directory are not supported yet: " + file; // # nocov
-      return false; // # nocov
+      for (const auto& entry : std::filesystem::directory_iterator(file))
+      {
+        if (entry.is_regular_file())
+        {
+          std::string ext = entry.path().extension();
+          if (ext == ".las" || ext == ".laz" || ext == ".LAS" || ext == ".LAZ")
+          {
+            add_file(entry.path().string());
+          }
+        }
+      }
     }
-    else if (type == PathType::MISSINGFILE) // # nocov
+    else if (type == PathType::MISSINGFILE)
     {
-      last_error = "File not found: " + file; // # nocov
-      return false; // # nocov
+      last_error = "File not found: " + file;
+      return false;
     }
     else
     {
-      last_error = "Unknown file type: " + file; // # nocov
-      return false; // # nocov
+      last_error = "Unknown file type: " + file;
+      return false;
     }
   }
 
