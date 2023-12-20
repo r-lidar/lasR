@@ -34,6 +34,18 @@ test_that("normalize & dtm",
   w = ans$summary$z_histogram
 
   expect_equal(mean(x*w/sum(w)), 0.287, tolerance = 0.01)
+
+  pipeline = reader(f) + dtm() + normalize(TRUE) + summarise() + chm(1, TRUE)
+  suppressWarnings(ans <- processor(pipeline))
+
+  expect_length(ans, 3L)
+  expect_s4_class(ans[[1]], "SpatRaster")
+
+  x = as.numeric(names(ans$summary$z_histogram))
+  w = ans$summary$z_histogram
+
+  # was not actually normalized because put in extrabyte
+  expect_equal(mean(x*w/sum(w)), 36.77, tolerance = 0.01)
 })
 
 test_that("pipleline info works",

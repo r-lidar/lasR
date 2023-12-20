@@ -26,18 +26,6 @@ LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double y
   vector.set_geometry_type(wkbMultiPolygon25D);
 }
 
-bool LASRtriangulate::process(LASpoint*& p)
-{
-  if (!lasfilter.filter(p))
-  {
-    vb.insert_point(p->get_X(), p->get_Y());
-    index_map.push_back(npoints);
-  }
-  npoints++;
-
-  return true;
-}
-
 bool LASRtriangulate::process(LAS*& las)
 {
   auto start_time = std::chrono::high_resolution_clock::now();
@@ -65,7 +53,12 @@ bool LASRtriangulate::process(LAS*& las)
   {
     p = &las->point;
     if (lastransform) lastransform->transform(p);
-    process(p);
+    if (!lasfilter.filter(p))
+    {
+      vb.insert_point(p->get_X(), p->get_Y());
+      index_map.push_back(las->current_point);
+      npoints++;
+    }
   }
 
   this->las = las;

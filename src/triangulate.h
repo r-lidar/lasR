@@ -17,7 +17,6 @@ class LASRtriangulate : public LASRalgorithmVector
 {
 public:
   LASRtriangulate(double xmin, double ymin, double xmax, double ymax, double trim, std::string use_attribute);
-  bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   bool interpolate(std::vector<double>& res, const Raster* raster = nullptr);
   bool contour(std::vector<Edge>& edges) const;
