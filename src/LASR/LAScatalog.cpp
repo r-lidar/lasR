@@ -383,9 +383,6 @@ void LAScatalog::add_query(double xcenter, double ycenter, double radius)
 
 bool LAScatalog::get_chunk(int i, Chunk& chunk)
 {
-  U32 index;
-  chunk.clear();
-
   if (i < 0 || i > get_number_chunks())
   {
     last_error = "chunk request out of bounds"; // # nocov
@@ -393,58 +390,76 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   }
 
   if (!laskdtree->was_built())
-  {
     laskdtree->build();
-  }
+
+  bool success = false;
 
   if (queries.size() == 0)
+    success = get_chunk_regular(i, chunk);
+  else
+    success = get_chunk_with_query(i, chunk);
+
+  return success;
+}
+
+bool LAScatalog::get_chunk_regular(int i, Chunk& chunk)
+{
+  chunk.clear();
+
+  Rectangle bb = bboxes[i];
+  chunk.xmin = bb.xmin();
+  chunk.ymin = bb.ymin();
+  chunk.xmax = bb.xmax();
+  chunk.ymax = bb.ymax();
+
+  if (!use_dataframe)
   {
-    Rectangle bb = bboxes[i];
-    chunk.xmin = bb.xmin();
-    chunk.ymin = bb.ymin();
-    chunk.xmax = bb.xmax();
-    chunk.ymax = bb.ymax();
+    chunk.main_files.push_back(files[i].string());
+    chunk.name = files[i].stem().string();
+  }
+  else
+  {
+    chunk.main_files.push_back("data.frame");
+    chunk.name = "data.frame";
+  }
 
-    if (!use_dataframe)
-    {
-      chunk.main_files.push_back(files[i].string());
-      chunk.name = files[i].stem().string();
-    }
-    else
-    {
-      chunk.main_files.push_back("data.frame");
-      chunk.name = "data.frame";
-    }
-
-    if (buffer <= 0)
-    {
-      return true;
-    }
-
-    chunk.buffer = buffer;
-
-    // We are working with an R data.frame: there is no file and especially
-    // no neighbouring files. We can exit now.
-    if (use_dataframe)
-    {
-      return true;
-    }
-
-    laskdtree->overlap(bb.xmin() - buffer, bb.ymin() - buffer, bb.xmax() + buffer, bb.ymax() + buffer);
-    if (laskdtree->has_overlaps())
-    {
-      while (laskdtree->get_overlap(index))
-      {
-        std::string file = files[index].string();
-        if (chunk.main_files[0] != file)
-        {
-          chunk.neighbour_files.push_back(file);
-        }
-      }
-    }
-
+  // No buffer, we don't need to go further there is not other file to read
+  if (buffer <= 0)
+  {
     return true;
   }
+
+  // We are working with an R data.frame: there is no file and especially
+  // no neighbouring files. We can exit now.
+  if (use_dataframe)
+  {
+    return true;
+  }
+
+  chunk.buffer = buffer;
+
+  // Perform a query to find the files that encompass the buffered region
+  unsigned int index;
+  laskdtree->overlap(bb.xmin() - buffer, bb.ymin() - buffer, bb.xmax() + buffer, bb.ymax() + buffer);
+  if (laskdtree->has_overlaps())
+  {
+    while (laskdtree->get_overlap(index))
+    {
+      std::string file = files[index].string();
+      if (chunk.main_files[0] != file)
+      {
+        chunk.neighbour_files.push_back(file);
+      }
+    }
+  }
+
+  return true;
+}
+
+bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk)
+{
+  unsigned int index;
+  chunk.clear();
 
   // Some shape are provided. We are performing queries i.e not processing the entire collection
   Shape* q = queries[i];
@@ -461,7 +476,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   if (!laskdtree->has_overlaps())
   {
     char buff[64];
-    snprintf(buff, sizeof(buff), "cannot find any file at %.1lf, %.1lf", centerx, centery);
+    snprintf(buff, sizeof(buff), "cannot find any file in [%.1lf, %.1lf %.1lf, %.1lf]", minx, miny,  maxx, maxy);
     last_error = buff;
     return false;
   }

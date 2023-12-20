@@ -59,6 +59,8 @@ private:
   void add_wkt(const std::string& wkt);
   void add_epsg(int epsg);
   void add_crs(const LASheader* header);
+  bool get_chunk_regular(int index, Chunk& chunk);
+  bool get_chunk_with_query(int index, Chunk& chunk);
   PathType parse_path(const std::string& path);
 
 public:
