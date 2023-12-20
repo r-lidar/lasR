@@ -212,8 +212,8 @@ temporary file, so the result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file21c3789ceaa5.tif </span></span>
-<span><span class="co">#&gt; name        : file21c3789ceaa5</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file21f933829aeb.tif </span></span>
+<span><span class="co">#&gt; name        : file21f933829aeb</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -343,11 +343,11 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpwLTEZI/bcts_1_ground.laz" "/tmp/RtmpwLTEZI/bcts_2_ground.laz"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/RtmpwcYxhA/bcts_1_ground.laz" "/tmp/RtmpwcYxhA/bcts_2_ground.laz"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpwLTEZI/bcts_1_normalized.laz"</span></span>
-<span><span class="co">#&gt; [2] "/tmp/RtmpwLTEZI/bcts_2_normalized.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpwcYxhA/bcts_1_normalized.laz"</span></span>
+<span><span class="co">#&gt; [2] "/tmp/RtmpwcYxhA/bcts_2_normalized.laz"</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -361,7 +361,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpwLTEZI/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpwcYxhA/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -642,8 +642,6 @@ producing a concave hull with holes:</p>
 <span><span class="va">del</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span><span class="fl">15</span>, filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">bound</span> <span class="op">=</span> <span class="fu"><a href="../reference/hulls.html">hulls</a></span><span class="op">(</span><span class="va">del</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">del</span><span class="op">+</span><span class="va">bound</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in processor(read + del + bound): GDAL Message 1: Hole lies outside</span></span>
-<span><span class="co">#&gt; shell at or near point 273359.81374999997 5274519.7364999996</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span>, axes <span class="op">=</span> <span class="cn">T</span>, lwd <span class="op">=</span> <span class="fl">0.5</span>, col <span class="op">=</span> <span class="st">"gray"</span><span class="op">)</span></span></code></pre></div>
@@ -689,7 +687,7 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; [1] 12745</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nsingle</span></span>
-<span><span class="co">#&gt; [1] 5084</span></span>
+<span><span class="co">#&gt; [1] 4997</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nwithheld</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
@@ -699,11 +697,11 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_return</span></span>
 <span><span class="co">#&gt;    1    2    3    4    5 </span></span>
-<span><span class="co">#&gt; 9464 2560  625   91    5 </span></span>
+<span><span class="co">#&gt; 9500 2533  619   89    4 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_class</span></span>
 <span><span class="co">#&gt;     1     2     9 </span></span>
-<span><span class="co">#&gt; 10806  1564   375</span></span></code></pre></div>
+<span><span class="co">#&gt; 10806  1565   374</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
