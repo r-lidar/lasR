@@ -90,10 +90,9 @@ Roussel</h4>
 graph. The x-axis represents the time to perform three different
 rasterizations (a CHM, a DTM, and a density map), and the y-axis
 represents the amount of RAM memory used for <code>lidR</code> and
-<code>lasR</code> (more details in the benchmark vignette).
-<code>lasR</code> is intended to be much more efficient than
-<code>lidR</code> both in terms of memory usage and computation
-times.</p>
+<code>lasR</code> (more details in the <a href="lasR4.html">benchmark</a> vignette). <code>lasR</code> is intended
+to be much more efficient than <code>lidR</code> both in terms of memory
+usage and computation times.</p>
 <p><img src="lasR1_files/figure-html/unnamed-chunk-2-1.png" width="576" style="display: block; margin: auto;"></p>
 <p>The second issue is the absence of a powerful pipeline engine in
 <code>lidR</code>. Performing a task as simple as extracting and
@@ -149,11 +148,10 @@ like in <code>lidR</code>.</p>
 </h3>
 <p><code>lasR</code> is written 100% in C++ and contains no R code. It
 utilizes the source code of <code>lidR</code> with significant
-improvements. The major improvements observed in the benchmark section
-are not so much in the source code but rather in the organization of the
-code, i.e., no longer using <code>data.frame</code>, memory management
-in C++ rather than R, no processing at the R level, pipelines, and so
-on.</p>
+improvements. The major improvements observed in the <a href="lasR4.html">benchmark</a> are not so much in the source code but
+rather in the organization of the code, i.e., no longer using
+<code>data.frame</code>, memory management in C++ rather than R, no
+processing at the R level, pipelines, and so on.</p>
 </div>
 </div>
 <div class="section level2">
