@@ -33,7 +33,7 @@ to the original collection of files.
 f <- system.file("extdata", "Topography.las", package="lasR")
 read <- reader(f)
 tri  <- triangulate(filter = "-keep_class 2")
-normalize <- tri + transform_with_triangulation(tri)
+normalize <- tri + transform_with(tri)
 pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 processor(pipeline)
 }

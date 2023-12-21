@@ -13,7 +13,7 @@
 #include "regiongrowing.h"
 #include "summary.h"
 #include "triangulate.h"
-#include "triangulatedtransformer.h"
+#include "transformwith.h"
 #include "writelas.h"
 #include "writelax.h"
 #include "writevpc.h"
@@ -236,7 +236,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       auto v = std::make_shared<LASRvpcwriter>();
       pipeline.push_back(v);
     }
-    else if (name == "transform_with_triangulation")
+    else if (name == "transform_with")
     {
       std::string uid = get_element_as_string(stage, "connect");
       std::string op = get_element_as_string(stage, "operator");
@@ -245,9 +245,15 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
       LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
+      LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(it->get());
       if (p)
       {
-        auto v = std::make_shared<LASRtriangulatedTransformer>(xmin, ymin, xmax, ymax, p, op, attr);
+        auto v = std::make_shared<LASRtransformwith>(xmin, ymin, xmax, ymax, p, op, attr);
+        pipeline.push_back(v);
+      }
+      else if(q)
+      {
+        auto v = std::make_shared<LASRtransformwith>(xmin, ymin, xmax, ymax, q, op, attr);
         pipeline.push_back(v);
       }
       else

@@ -1,6 +1,6 @@
 #' Normalize the point cloud
 #'
-#' Normalize the point cloud using `triangulate()` and `transform_with_triangulation()`
+#' Normalize the point cloud using `triangulate()` and `transform_with()`
 #'
 #' @param extrabytes bool. If FALSE the coordinate Z of the point cloud is modified and becomes the
 #' height above ground (HAG). If TRUE the coordinate Z is not modified and a new extrabytes attribute
@@ -12,7 +12,7 @@
 #'
 #' @seealso
 #' \link{triangulate}
-#' \link{transform_with_triangulation}
+#' \link{transform_with}
 #' @export
 normalize = function(extrabytes = FALSE)
 {
@@ -22,12 +22,12 @@ normalize = function(extrabytes = FALSE)
   if (extrabytes)
   {
     extra <- add_extrabytes("int", "HAG", "Height Above Ground")
-    trans <- transform_with_triangulation(tri, store_in_attribute = "HAG")
+    trans <- transform_with(tri, store_in_attribute = "HAG")
     pipeline <- pipeline + extra + trans
   }
   else
   {
-    trans <- transform_with_triangulation(tri)
+    trans <- transform_with(tri)
     pipeline <- pipeline + trans
   }
 

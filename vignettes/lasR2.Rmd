@@ -160,13 +160,13 @@ ans = processor(pipeline)
 terra::plot(ans, mar = c(1, 1, 1, 3), col = heat.colors(15))
 ```
 
-## Transform with triangulation
+## Transform with
 
 Another way to use a Delaunay triangulation is to transform the point cloud. Users can add or subtract the triangulation from the point cloud, effectively normalizing it. Unlike the `lidR` package, there is no high-level function with names like `normalize_points()`. Instead, `lasR` is composed of low-level functions that offer more versatility.
 
 Let's normalize the point cloud using a triangulation of the ground points (meshed DTM).
 
-In the following example, the triangulation is used by `transform_with_triangulation()` that modifies the point cloud in the pipeline. Both `triangulate()` and `transform_with_triangulation()` return nothing. The output is `NULL`.
+In the following example, the triangulation is used by `transform_with()` that modifies the point cloud in the pipeline. Both `triangulate()` and `transform_with()` return nothing. The output is `NULL`.
 
 ```{r, echo = FALSE}
 f <- system.file("extdata", "Topography.las", package="lasR")
@@ -175,7 +175,7 @@ f <- system.file("extdata", "Topography.las", package="lasR")
 ```{r twt, warning=FALSE}
 read = reader(f)
 del = triangulate(filter = keep_ground())
-norm = transform_with_triangulation(del, "-")
+norm = transform_with(del, "-")
 pipeline = read + del + norm
 ans = processor(pipeline)
 ans
@@ -185,12 +185,17 @@ ans
 For convenience this pipeline is pre-recorded in the package under the name `normalize()`.
 </blockquote>
 
-To obtain a meaningful output, it is necessary to chain another stage. Here the point cloud has been modified but then, it is discarded because we did nothing with it. For instance, we can compute a Canopy Height Model (CHM) on the normalized point cloud. In the following pipeline, the first rasterization (`chm1`) is applied before normalization, while the second rasterization occurs after `transform_with_triangulation()`, thus being applied to the transformed point cloud.
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+`transform_with()` can also transform with a raster. This is not presented in this tutorial.
+</blockquote>
+
+
+To obtain a meaningful output, it is necessary to chain another stage. Here the point cloud has been modified but then, it is discarded because we did nothing with it. For instance, we can compute a Canopy Height Model (CHM) on the normalized point cloud. In the following pipeline, the first rasterization (`chm1`) is applied before normalization, while the second rasterization occurs after `transform_with()`, thus being applied to the transformed point cloud.
 
 ```{r twt2, warning=FALSE, fig.height=4, fig.width=8}
 read = reader(f)
 del = triangulate(filter = keep_ground())
-norm = transform_with_triangulation(del, "-")
+norm = transform_with(del, "-")
 chm1 = rasterize(2, "max")
 chm2 = rasterize(2, "max")
 pipeline = read + chm1 + del + norm + chm2
@@ -217,7 +222,7 @@ read = reader(f)
 write1 = write_las(paste0(tempdir(), "/*_ground.laz"), filter = keep_ground())
 write2 = write_las(paste0(tempdir(), "/*_normalized.laz"), )
 del = triangulate(filter = keep_ground())
-norm = transform_with_triangulation(del, "-")
+norm = transform_with(del, "-")
 pipeline = read + write1 + del + norm + write2
 ans = processor(pipeline)
 ans
@@ -467,7 +472,7 @@ The following pipeline triangulates the ground points, normalizes the point clou
 ```{r readers, eval = FALSE}
 my_metric_fun = function(data) { mean(data$Z) }
 tri <- triangulate(filter = keep_ground())
-trans <- transform_with_triangulation(tri)
+trans <- transform_with(tri)
 norm <- tri + trans
 metric <- callback(my_metric_fun, expose = "z", drop_buffer = TRUE)
 pipeline = reader(f) + norm + metric
@@ -500,7 +505,7 @@ ycenter <- coordinates[,2]
 
 read <- reader(f, xc = xcenter, yc = ycenter, r = 11.28) 
 tri <- triangulate(filter = keep_ground())
-trans <- transform_with_triangulation(tri)
+trans <- transform_with(tri)
 norm <- tri + trans
 metric <- callback(my_metric_fun, expose = "z", drop_buffer = TRUE)
 write1 <- write_las(ofiles_plot)

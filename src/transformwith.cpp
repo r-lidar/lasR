@@ -1,8 +1,8 @@
-#include "triangulatedtransformer.h"
+#include "transformwith.h"
 #include "triangulate.h"
 #include "NA.h"
 
-LASRtriangulatedTransformer::LASRtriangulatedTransformer(double xmin, double ymin, double xmax, double ymax, LASRalgorithm* algorithm, std::string op, std::string attribute)
+LASRtransformwith::LASRtransformwith(double xmin, double ymin, double xmax, double ymax, LASRalgorithm* algorithm, std::string op, std::string attribute)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -16,7 +16,7 @@ LASRtriangulatedTransformer::LASRtriangulatedTransformer(double xmin, double ymi
   if (op == "+") this->op = ADD;
 }
 
-bool LASRtriangulatedTransformer::process(LAS*& las)
+bool LASRtransformwith::process(LAS*& las)
 {
   if (algorithm == nullptr)
   {
@@ -25,10 +25,11 @@ bool LASRtriangulatedTransformer::process(LAS*& las)
   }
 
   LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(algorithm);
+  LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(algorithm);
 
-  if (p == nullptr)
+  if (p == nullptr && q == nullptr)
   {
-    last_error = "invalid dynamic cast. Expecting a pointer to LASRtriangulate"; // # nocov
+    last_error = "invalid dynamic cast. Expecting a pointer to LASRtriangulate or LASalgorithmRaster"; // # nocov
     return false; // # nocov
   }
 
@@ -65,7 +66,23 @@ bool LASRtriangulatedTransformer::process(LAS*& las)
   }
 
   std::vector<double> hag;
-  p->interpolate(hag, nullptr);
+
+  if (p != nullptr)
+  {
+    p->interpolate(hag, nullptr);
+  }
+  else
+  {
+    Raster& raster = q->get_raster();
+    hag.resize(las->npoints);
+    std::fill(hag.begin(), hag.end(), NA_F64);
+
+    while (las->read_point())
+    {
+      float val = raster.get_value(las->point.get_x(), las->point.get_y());
+      if (val != raster.nodata) hag[las->current_point] = val;
+    }
+  }
 
   U32 deleted = 0;
   while (las->read_point())

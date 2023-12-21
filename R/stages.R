@@ -668,7 +668,7 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' to build a normalization algorithm. This algorithm modifies the point cloud in the pipeline but
 #' does not produce any output.
 #'
-#' @param triangulator LASRpipeline. A 'triangulate' algorithm.
+#' @param stage LASRpipeline. A stage that produces a triangulation or a raster.
 #' @param operator string. '-' and '+' are supported.
 #' @param store_in_attribute numeric. Use an extra bytes attribute to store the result.
 #'
@@ -677,7 +677,7 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #'
 #' # There is a normalize pipeline in lasR but let's create one almost equivalent
 #' mesh  <- triangulate(filter = keep_ground())
-#' trans <- transform_with_triangulation(mesh)
+#' trans <- transform_with(mesh)
 #' pipeline <- reader(f) + mesh + trans + write_las()
 #' ans <- processor(pipeline)
 #'
@@ -686,14 +686,13 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' \link{triangulate}
 #' \link{write_las}
 #' @export
-transform_with_triangulation = function(triangulator, operator = "-", store_in_attribute = "")
+transform_with = function(stage, operator = "-", store_in_attribute = "")
 {
-  if (!methods::is(triangulator, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'")  # nocov
-  if (length(triangulator) != 1L) stop("cannot input a complex pipeline")  # nocov
-  if (triangulator[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")  # nocov
-  if (methods::is(triangulator, "LASRpipeline"))  # nocov
+  if (!methods::is(stage, "LASRpipeline")) stop("the stage must be a 'LASRpipeline' object")  # nocov
+  if (length(stage) != 1L) stop("cannot input a complex pipeline")  # nocov
+  if (!stage[[1]]$algoname %in% c("triangulate", "rasterize", "aggregate")) stop("the stage must be a triangulation or a raster stage")  # nocov
 
-  ans <- list(algoname = "transform_with_triangulation", connect = triangulator[[1]][["uid"]], operator = operator, store_in_attribute = store_in_attribute)
+  ans <- list(algoname = "transform_with", connect = stage[[1]][["uid"]], operator = operator, store_in_attribute = store_in_attribute)
   set_lasr_class(ans)
 }
 
@@ -716,7 +715,7 @@ transform_with_triangulation = function(triangulator, operator = "-", store_in_a
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader(f)
 #' tri  <- triangulate(filter = "-keep_class 2")
-#' normalize <- tri + transform_with_triangulation(tri)
+#' normalize <- tri + transform_with(tri)
 #' pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 #' processor(pipeline)
 #' @export

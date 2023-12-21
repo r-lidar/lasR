@@ -29,7 +29,7 @@ After reading the tutorial, one may have noticed that writing certain pipelines 
 
 ```{r}
 tri <- triangulate(filter = keep_ground())
-trans <- transform_with_triangulation(tri)
+trans <- transform_with(tri)
 norm <- tri + trans
 ```
 
@@ -52,12 +52,12 @@ normalize = function(extrabytes = FALSE)
   if (extrabytes)
   {
     extra = add_extrabytes("int", "HAG", "Height Above Ground")
-    trans = transform_with_triangulation(tri, store_in_attribute = "HAG")
+    trans = transform_with(tri, store_in_attribute = "HAG")
     pipeline = pipeline + extra + trans
   }
   else
   {
-    trans = transform_with_triangulation(tri)
+    trans = transform_with(tri)
     pipeline = pipeline + trans
   }
   
@@ -247,7 +247,7 @@ inventory_metrics = function(f, geometry, radius, fun, normalize = FALSE)
   if (normalize)
   {
     tri <- triangulate(filter = keep_ground())
-    trans <- transform_with_triangulation(tri, store_in_attribute = "HAG")
+    trans <- transform_with(tri, store_in_attribute = "HAG")
     pipeline <- pipeline + tri + trans
   }
 

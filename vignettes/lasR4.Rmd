@@ -203,7 +203,7 @@ In this complex pipeline, the point cloud is normalized and written to new files
 ```r
 read = reader(ctg)
 del = triangulate(filter = "-keep_class 2")
-norm = transform_with_triangulation(del)
+norm = transform_with(del)
 dtm = rasterize(1, del)
 chm = rasterize(1, "max")
 seed = local_maximum(3)
