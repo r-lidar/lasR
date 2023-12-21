@@ -212,8 +212,8 @@ temporary file, so the result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file211f30313279.tif </span></span>
-<span><span class="co">#&gt; name        : file211f30313279</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file21701f2a6a8d.tif </span></span>
+<span><span class="co">#&gt; name        : file21701f2a6a8d</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -272,7 +272,7 @@ always named <code>ScanAngle</code> and is numeric. Also flags are named
 <p><img src="lasR2_files/figure-html/rasterize3-1.png" width="700"></p>
 </div>
 <div class="section level2">
-<h2 id="transform-with-triangulation">Transform with triangulation<a class="anchor" aria-label="anchor" href="#transform-with-triangulation"></a>
+<h2 id="transform-with">Transform with<a class="anchor" aria-label="anchor" href="#transform-with"></a>
 </h2>
 <p>Another way to use a Delaunay triangulation is to transform the point
 cloud. Users can add or subtract the triangulation from the point cloud,
@@ -283,14 +283,14 @@ of low-level functions that offer more versatility.</p>
 <p>Let’s normalize the point cloud using a triangulation of the ground
 points (meshed DTM).</p>
 <p>In the following example, the triangulation is used by
-<code><a href="../reference/transform_with_triangulation.html">transform_with_triangulation()</a></code> that modifies the point
-cloud in the pipeline. Both <code><a href="../reference/triangulate.html">triangulate()</a></code> and
-<code><a href="../reference/transform_with_triangulation.html">transform_with_triangulation()</a></code> return nothing. The output
-is <code>NULL</code>.</p>
+<code><a href="../reference/transform_with.html">transform_with()</a></code> that modifies the point cloud in the
+pipeline. Both <code><a href="../reference/triangulate.html">triangulate()</a></code> and
+<code><a href="../reference/transform_with.html">transform_with()</a></code> return nothing. The output is
+<code>NULL</code>.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
 <span><span class="va">del</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">norm</span> <span class="op">=</span> <span class="fu"><a href="../reference/transform_with_triangulation.html">transform_with_triangulation</a></span><span class="op">(</span><span class="va">del</span>, <span class="st">"-"</span><span class="op">)</span></span>
+<span><span class="va">norm</span> <span class="op">=</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">del</span>, <span class="st">"-"</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
@@ -299,18 +299,22 @@ is <code>NULL</code>.</p>
 For convenience this pipeline is pre-recorded in the package under the
 name <code><a href="../reference/normalize.html">normalize()</a></code>.
 </blockquote>
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+<code><a href="../reference/transform_with.html">transform_with()</a></code> can also transform with a raster. This is
+not presented in this tutorial.
+</blockquote>
 <p>To obtain a meaningful output, it is necessary to chain another
 stage. Here the point cloud has been modified but then, it is discarded
 because we did nothing with it. For instance, we can compute a Canopy
 Height Model (CHM) on the normalized point cloud. In the following
 pipeline, the first rasterization (<code>chm1</code>) is applied before
 normalization, while the second rasterization occurs after
-<code><a href="../reference/transform_with_triangulation.html">transform_with_triangulation()</a></code>, thus being applied to the
-transformed point cloud.</p>
+<code><a href="../reference/transform_with.html">transform_with()</a></code>, thus being applied to the transformed
+point cloud.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
 <span><span class="va">del</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">norm</span> <span class="op">=</span> <span class="fu"><a href="../reference/transform_with_triangulation.html">transform_with_triangulation</a></span><span class="op">(</span><span class="va">del</span>, <span class="st">"-"</span><span class="op">)</span></span>
+<span><span class="va">norm</span> <span class="op">=</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">del</span>, <span class="st">"-"</span><span class="op">)</span></span>
 <span><span class="va">chm1</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">2</span>, <span class="st">"max"</span><span class="op">)</span></span>
 <span><span class="va">chm2</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">2</span>, <span class="st">"max"</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">chm1</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">chm2</span></span>
@@ -338,16 +342,16 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">write1</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*_ground.laz"</span><span class="op">)</span>, filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">write2</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*_normalized.laz"</span><span class="op">)</span>, <span class="op">)</span></span>
 <span><span class="va">del</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">norm</span> <span class="op">=</span> <span class="fu"><a href="../reference/transform_with_triangulation.html">transform_with_triangulation</a></span><span class="op">(</span><span class="va">del</span>, <span class="st">"-"</span><span class="op">)</span></span>
+<span><span class="va">norm</span> <span class="op">=</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">del</span>, <span class="st">"-"</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">write1</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write2</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/Rtmpa0BcWD/bcts_1_ground.laz" "/tmp/Rtmpa0BcWD/bcts_2_ground.laz"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/RtmpRZLYaL/bcts_1_ground.laz" "/tmp/RtmpRZLYaL/bcts_2_ground.laz"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $write_las</span></span>
-<span><span class="co">#&gt; [1] "/tmp/Rtmpa0BcWD/bcts_1_normalized.laz"</span></span>
-<span><span class="co">#&gt; [2] "/tmp/Rtmpa0BcWD/bcts_2_normalized.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpRZLYaL/bcts_1_normalized.laz"</span></span>
+<span><span class="co">#&gt; [2] "/tmp/RtmpRZLYaL/bcts_2_normalized.laz"</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -361,7 +365,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/Rtmpa0BcWD/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpRZLYaL/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -687,7 +691,7 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; [1] 12745</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nsingle</span></span>
-<span><span class="co">#&gt; [1] 5110</span></span>
+<span><span class="co">#&gt; [1] 5028</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $nwithheld</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
@@ -697,11 +701,11 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_return</span></span>
 <span><span class="co">#&gt;    1    2    3    4    5 </span></span>
-<span><span class="co">#&gt; 9462 2580  619   81    3 </span></span>
+<span><span class="co">#&gt; 9382 2656  606   97    4 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $npoints_per_class</span></span>
 <span><span class="co">#&gt;     1     2     9 </span></span>
-<span><span class="co">#&gt; 10842  1533   370</span></span></code></pre></div>
+<span><span class="co">#&gt; 10809  1560   376</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
@@ -728,7 +732,7 @@ normalization.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my_metric_fun</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">Z</span><span class="op">)</span> <span class="op">}</span></span>
 <span><span class="va">tri</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">trans</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/transform_with_triangulation.html">transform_with_triangulation</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span>
+<span><span class="va">trans</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span>
 <span><span class="va">norm</span> <span class="op">&lt;-</span> <span class="va">tri</span> <span class="op">+</span> <span class="va">trans</span></span>
 <span><span class="va">metric</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callback.html">callback</a></span><span class="op">(</span><span class="va">my_metric_fun</span>, expose <span class="op">=</span> <span class="st">"z"</span>, drop_buffer <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">metric</span></span></code></pre></div>
@@ -763,7 +767,7 @@ exposed to R without the buffer using
 <span></span>
 <span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, xc <span class="op">=</span> <span class="va">xcenter</span>, yc <span class="op">=</span> <span class="va">ycenter</span>, r <span class="op">=</span> <span class="fl">11.28</span><span class="op">)</span> </span>
 <span><span class="va">tri</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">trans</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/transform_with_triangulation.html">transform_with_triangulation</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span>
+<span><span class="va">trans</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span>
 <span><span class="va">norm</span> <span class="op">&lt;-</span> <span class="va">tri</span> <span class="op">+</span> <span class="va">trans</span></span>
 <span><span class="va">metric</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/callback.html">callback</a></span><span class="op">(</span><span class="va">my_metric_fun</span>, expose <span class="op">=</span> <span class="st">"z"</span>, drop_buffer <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">write1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofiles_plot</span><span class="op">)</span></span>
