@@ -242,12 +242,12 @@ normalize_elevation = function(f, extrabytes = FALSE, ofiles = paste0(tempdir(),
   if (extrabytes)
   {
     extra = add_extrabytes("int", "HAG", "Height Above Ground")
-    norm = transform_with_triangulation(tri, store_in_attribute = "HAG")
+    norm = transform_with(tri, store_in_attribute = "HAG")
     pipeline = pipeline + extra + norm
   }
   else
   {
-    norm = transform_with_triangulation(tri)
+    norm = transform_with(tri)
     pipeline = pipeline + norm
   }
   

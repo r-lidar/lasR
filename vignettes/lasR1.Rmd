@@ -27,7 +27,7 @@ library(lasR)
 
 ## Rationnale for `lasR` vs. `lidR`
 
-Do we need a new package? The short answer lies in the following graph. The x-axis represents the time to perform three different rasterizations (a CHM, a DTM, and a density map), and the y-axis represents the amount of RAM memory used for `lidR` and `lasR` (more details in the benchmark vignette). `lasR` is intended to be much more efficient than `lidR` both in terms of memory usage and computation times.
+Do we need a new package? The short answer lies in the following graph. The x-axis represents the time to perform three different rasterizations (a CHM, a DTM, and a density map), and the y-axis represents the amount of RAM memory used for `lidR` and `lasR` (more details in the [benchmark](lasR4.html) vignette). `lasR` is intended to be much more efficient than `lidR` both in terms of memory usage and computation times.
 
 ```{r, fig.width=6, fig.height=4, warning=F, echo=-1, echo=FALSE, fig.align = 'center'}
 col1 = rgb(0, 0.5, 1, alpha = 0.5)
@@ -85,7 +85,7 @@ Unlike `lidR`, `lasR` does not load lidar data into a `data.frame`. It is design
 
 ### Code
 
-`lasR` is written 100% in C++ and contains no R code. It utilizes the source code of `lidR` with significant improvements. The major improvements observed in the benchmark section are not so much in the source code but rather in the organization of the code, i.e., no longer using `data.frame`, memory management in C++ rather than R, no processing at the R level, pipelines, and so on.
+`lasR` is written 100% in C++ and contains no R code. It utilizes the source code of `lidR` with significant improvements. The major improvements observed in the [benchmark](lasR4.html) are not so much in the source code but rather in the organization of the code, i.e., no longer using `data.frame`, memory management in C++ rather than R, no processing at the R level, pipelines, and so on.
 
 ## Should I use `lidR` or `lasR`?
 

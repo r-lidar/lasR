@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 library(lasR)
 ```
 
-After reading the tutorial, one may have noticed that writing certain pipelines can be tedious, especially when normalizing a dataset, which always implies using the same code.
+After reading the [tutorial](lasR2.html), one may have noticed that writing certain pipelines can be tedious, especially when normalizing a dataset, which always implies using the same code.
 
 ```{r}
 tri <- triangulate(filter = keep_ground())
@@ -247,7 +247,7 @@ inventory_metrics = function(f, geometry, radius, fun, normalize = FALSE)
   if (normalize)
   {
     tri <- triangulate(filter = keep_ground())
-    trans <- transform_with(tri, store_in_attribute = "HAG")
+    trans <- transform_with(tri)
     pipeline <- pipeline + tri + trans
   }
 
