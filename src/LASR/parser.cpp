@@ -193,8 +193,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         }
         else
         {
-          last_error = "Incompatible stage combination for rasterize";
-          return false;
+          last_error = "Incompatible stage combination for rasterize"; // # nocov
+          return false; // # nocov
         }
       }
     }
@@ -258,8 +258,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       }
       else
       {
-        last_error = "Incompatible stage combination for 'rasterize'";
-        return false;
+        last_error = "Incompatible stage combination for 'rasterize'"; // # nocov
+        return false; // # nocov
       }
     }
     else if (name == "pit_fill")
@@ -282,8 +282,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       }
       else
       {
-        last_error = "Incompatible stage combination for 'rasterize'";
-        return false;
+        last_error = "Incompatible stage combination for 'rasterize'"; // # nocov
+        return false; // # nocov
       }
     }
     else if (name  == "sampling_voxel")
@@ -321,8 +321,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       }
       else
       {
-        last_error = "Incompatible stage combination for 'region_growing'";
-        return false;
+        last_error = "Incompatible stage combination for 'region_growing'"; // # nocov
+        return false; // # nocov
       }
     }
     else if (name == "hulls")
@@ -336,8 +336,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         p = dynamic_cast<LASRtriangulate*>(it->get());
         if (p == nullptr)
         {
-          last_error = "Incompatible stage combination for 'boundaries'";
-          return false;
+          last_error = "Incompatible stage combination for 'hulls'"; // # nocov
+          return false; // # nocov
         }
       }
 

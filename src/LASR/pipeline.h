@@ -37,7 +37,7 @@ class Pipeline
     bool set_crs(std::string wkt);
     void set_ncpu(int ncpu);
     void set_verbose(bool verbose);
-    void set_buffer(double buffer);
+    //void set_buffer(double buffer);
     void set_progress(Progress* progress);
     LAScatalog* get_catalog() const { return catalog; };
     std::string get_last_error() const { return last_error; };

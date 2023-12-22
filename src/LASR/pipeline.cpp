@@ -130,10 +130,10 @@ void Pipeline::set_verbose(bool verbose)
   this->verbose = verbose;
 }
 
-void Pipeline::set_buffer(double buffer)
+/*void Pipeline::set_buffer(double buffer)
 {
   this->buffer = buffer;
-}
+}*/
 
 bool Pipeline::process(LASheader*& header)
 {
@@ -143,8 +143,8 @@ bool Pipeline::process(LASheader*& header)
     success = stage->process(header);
     if (!success)
     {
-      last_error = "in '" + stage->get_name() + "' while processing a point: " + stage->get_last_error();
-      return false;
+      last_error = "in '" + stage->get_name() + "' while processing the header: " + stage->get_last_error(); // # nocov
+      return false; // # nocov
     }
   }
 
@@ -165,8 +165,8 @@ bool Pipeline::process(LASpoint*& point)
 
       if (!success)
       {
-        last_error = "in '" + stage->get_name() + "' while processing a point: " + stage->get_last_error();
-        return false;
+        last_error = "in '" + stage->get_name() + "' while processing a point: " + stage->get_last_error(); // # nocov
+        return false; // # nocov
       }
 
       if (point == nullptr)
@@ -207,8 +207,8 @@ bool Pipeline::process(LAScatalog*& catalog)
     bool success = stage->process(catalog);
     if (!success)
     {
-      last_error = "in '" + stage->get_name() + "' while processing the catalog: " + stage->get_last_error();
-      return false;
+      last_error = "in '" + stage->get_name() + "' while processing the catalog: " + stage->get_last_error(); // # nocov
+      return false; // # nocov
     }
   }
 
