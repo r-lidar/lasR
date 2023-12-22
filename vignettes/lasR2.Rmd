@@ -290,7 +290,7 @@ ans
 As observed, here, this time `callback` does not explicitly return anything; however, it edited the point cloud without internally. To generate an output, users must use another stage such as `write_las()`. It's important to note that `write_las()` will **NOT** write the point number 12 which is flagged `withheld`. Neither any subsequent stage will process it. The point is still in memory but is discarded.
 
 <blockquote style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 5px;">
-For memory and efficiency reasons, it is not possible to physically remove a point from the underlying memory in `lasR`. Instead, the points flagged as `withheld` will **never be processed**. One consequence of this, is that points flagged as withheld in a LAS/LAZ file **will not** be processed in `lasR`. This aligns with the intended purpose of the flag according to the LAS specification but may differ from the default behaviour of many software options on the market.
+For memory and efficiency reasons, it is not possible to physically remove a point from the underlying memory in `lasR`. Instead, the points flagged as `withheld` will **never be processed**. One consequence of this, is that points flagged as withheld in a LAS/LAZ file **will not** be processed in `lasR`. This aligns with the intended purpose of the flag according to the LAS specification but may differ from the default behaviour of many software on the market including `lidR`.
 </blockquote>
 
 Now, let's explore the capabilities of `callback` further. First, let's create a lidR-like `read_las()` function to expose the point cloud to R. In the following example, the user-defined function is employed to return the `data.frame` as is. When the user's function returns a `data.frame` with the same number of points as the original dataset, this updates the points at the C++ level. Here, we use `no_las_update = TRUE` to explicitly return the result.
@@ -328,6 +328,10 @@ write = write_las()
 pipeline = read + classify + write
 processor(pipeline)
 ```
+
+<blockquote style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; font-size: 14px; border-radius: 5px;">
+`callback()` exposes the point cloud as a `data.frame`. This is the only way to present point clouds to users in a manageable way. One of the reasons why `lasR` is more memory-efficient and faster than `lidR` is that it **does not** expose the point cloud as a `data.frame`. Thus, the pipelines using `callback()` are not significantly different from `lidR`. The advantage of using `lasR` here is the ability to pipe different stages.
+</blockquote>
 
 ## Tree Segmentation
 

@@ -71,7 +71,9 @@ It can be used this way
 pipeline = reader(f) + normalize() + write_las(o)
 ```
 
-### Classify ground with CSF
+### Classify ground
+
+#### With CSF
 
 ```r
 ground_csf = function(smooth = FALSE, threshold = 0.5, resolution = 0.5, rigidness = 1L, iterations = 500L, step = 0.65)
@@ -94,7 +96,7 @@ ground_csf = function(smooth = FALSE, threshold = 0.5, resolution = 0.5, rigidne
 pipeline = reader(f) + ground_csf() + write_las(o)
 ```
 
-### Classify ground with MCC
+#### With MCC
 
 ```r
 ground_mcc = function(s = 1.5, t = 0.3)
@@ -116,6 +118,10 @@ ground_mcc = function(s = 1.5, t = 0.3)
 ```{r, eval=FALSE}
 pipeline = reader(f) + ground_mcc() + write_las(o)
 ```
+
+<blockquote style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; font-size: 14px; border-radius: 5px;">
+These pipelines use `callback(` that exposes the point cloud as a `data.frame`. One of the reasons why `lasR` is more memory-efficient and faster than `lidR` is that it **does not** expose the point cloud as a `data.frame`. Thus, these pipelines are not very different from the `classify_ground()` function in `lidR`. The advantage of using `lasR` here is the ability to pipe different stages.
+</blockquote>
 
 ### Canopy Heigh Model
 
@@ -274,3 +280,18 @@ fun = function(data) { list(metric1 = median(data$Z), metric2 = mean(data$Intens
 inventory_metrics(f, geometry, radius, fun)
 ```
 
+### Virtual point cloud
+
+```{r}
+build_vpc = function(files, ofile)
+{
+  read = reader(files)
+  write = write_vpc(ofile)
+  processor(read+write)
+}
+```
+
+```{r, echo=FALSE, results='hide'}
+f = paste0(system.file(package="lasR"), "/extdata/bcts/")
+build_vpc(f, tempfile(fileext = ".vpc"))
+```
