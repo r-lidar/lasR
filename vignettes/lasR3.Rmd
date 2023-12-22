@@ -120,7 +120,7 @@ pipeline = reader(f) + ground_mcc() + write_las(o)
 ```
 
 <blockquote style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; font-size: 14px; border-radius: 5px;">
-These pipelines use `callback(` that exposes the point cloud as a `data.frame`. One of the reasons why `lasR` is more memory-efficient and faster than `lidR` is that it **does not** expose the point cloud as a `data.frame`. Thus, these pipelines are not very different from the `classify_ground()` function in `lidR`. The advantage of using `lasR` here is the ability to pipe different stages.
+These pipelines use `callback()` that exposes the point cloud as a `data.frame`. One of the reasons why `lasR` is more memory-efficient and faster than `lidR` is that it **does not** expose the point cloud as a `data.frame`. Thus, these pipelines are not very different from the `classify_ground()` function in `lidR`. The advantage of using `lasR` here is the ability to pipe different stages.
 </blockquote>
 
 ### Canopy Heigh Model

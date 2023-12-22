@@ -24,6 +24,28 @@ knitr::opts_chunk$set(
 ```{r setup, echo = FALSE}
 library(lasR)
 col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(15)
+print.list <- function(my_list, indent = 0) {
+  if (is.null(names(my_list))) {
+    for (element in my_list) {
+      if (is.list(element)) {
+        cat(rep(" ", indent), "- List:\n")
+        print.list(element, indent + 1)
+      } else {
+        cat(rep(" ", indent), "-", element, "\n")
+      }
+    }
+  } else {
+    for (name in names(my_list)) {
+      cat(rep("  ", indent), "-", name, ": ")
+      if (is.list(my_list[[name]])) {
+        cat("\n")
+        print.list(my_list[[name]], indent + 1)
+      } else {
+        cat(my_list[[name]], "\n")
+      }
+    }
+  }
+}
 ```
 
 This tutorial is intended to be read in order. It introduces the available tools of the package in a specific order so that the reader can discover all the features of the package organically.
@@ -261,7 +283,7 @@ meanz = function(data){ return(mean(data$Z)) }
 read = reader(f)
 call = callback(meanz, expose = "xyz")
 ans = processor(read+call)
-ans
+print(ans)
 ```
 Here the output is a `list` with two elements because we processed two files (`f` is not displayed in this document). The average Z elevation are respectively 809.08 and 13.27 in each file.
 
@@ -379,7 +401,7 @@ del = triangulate(filter = keep_ground())
 npts = callback(count, expose = "x")
 sum = summarise()
 ans = processor(read + del + npts + sum)
-ans$callback
+print(ans$callback)
 ans$callback[[1]]+ ans$callback[[2]]
 ans$summary$npoints
 ```
@@ -407,7 +429,7 @@ del = triangulate(filter = keep_ground())
 npts = callback(count_buffer_aware, expose = "b") # b for buffer
 sum = summarise()
 ans = processor(read + del + npts + sum)
-ans$callback
+print(ans$callback)
 ans$callback[[1]]$npoints+ ans$callback[[2]]$npoints
 ans$summary$npoints
 ```
@@ -458,8 +480,8 @@ f <- c(system.file("extdata", "Topography.las", package="lasR"))
 read = reader(f)
 pipeline = read + summarise() + sampling_voxel(4) + summarise()
 ans = processor(pipeline)
-head(ans[[1]])
-head(ans[[2]])
+print(head(ans[[1]]))
+print(head(ans[[2]]))
 ```
 
 ## Readers
