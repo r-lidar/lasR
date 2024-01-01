@@ -130,8 +130,11 @@ This pipeline is already installed in the package.
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="classify-ground-with-csf">Classify ground with CSF<a class="anchor" aria-label="anchor" href="#classify-ground-with-csf"></a>
+<h3 id="classify-ground">Classify ground<a class="anchor" aria-label="anchor" href="#classify-ground"></a>
 </h3>
+<div class="section level4">
+<h4 id="with-csf">With CSF<a class="anchor" aria-label="anchor" href="#with-csf"></a>
+</h4>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ground_csf</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">smooth</span> <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">threshold</span> <span class="op">=</span> <span class="fl">0.5</span>, <span class="va">resolution</span> <span class="op">=</span> <span class="fl">0.5</span>, <span class="va">rigidness</span> <span class="op">=</span> <span class="fl">1L</span>, <span class="va">iterations</span> <span class="op">=</span> <span class="fl">500L</span>, <span class="va">step</span> <span class="op">=</span> <span class="fl">0.65</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
@@ -150,9 +153,9 @@ This pipeline is already installed in the package.
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ground_csf</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="classify-ground-with-mcc">Classify ground with MCC<a class="anchor" aria-label="anchor" href="#classify-ground-with-mcc"></a>
-</h3>
+<div class="section level4">
+<h4 id="with-mcc">With MCC<a class="anchor" aria-label="anchor" href="#with-mcc"></a>
+</h4>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ground_mcc</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">s</span> <span class="op">=</span> <span class="fl">1.5</span>, <span class="va">t</span> <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
@@ -170,6 +173,17 @@ This pipeline is already installed in the package.
 <span><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ground_mcc</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
+<blockquote style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; font-size: 14px; border-radius: 5px;">
+These pipelines use <code><a href="../reference/callback.html">callback()</a></code> that exposes the point cloud
+as a <code>data.frame</code>. One of the reasons why <code>lasR</code>
+is more memory-efficient and faster than <code>lidR</code> is that it
+<strong>does not</strong> expose the point cloud as a
+<code>data.frame</code>. Thus, these pipelines are not very different
+from the <code>classify_ground()</code> function in <code>lidR</code>.
+The advantage of using <code>lasR</code> here is the ability to pipe
+different stages.
+</blockquote>
+</div>
 </div>
 <div class="section level3">
 <h3 id="canopy-heigh-model">Canopy Heigh Model<a class="anchor" aria-label="anchor" href="#canopy-heigh-model"></a>
@@ -305,6 +319,17 @@ object with extra attributes.</p>
 <span>  <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">ans</span>, <span class="va">as.data.frame</span><span class="op">)</span></span>
 <span>  <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">ans</span><span class="op">)</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">geometry</span>, <span class="va">ans</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="virtual-point-cloud">Virtual point cloud<a class="anchor" aria-label="anchor" href="#virtual-point-cloud"></a>
+</h3>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">build_vpc</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span>, <span class="va">ofile</span><span class="op">)</span></span>
+<span><span class="op">{</span></span>
+<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">files</span><span class="op">)</span></span>
+<span>  <span class="va">write</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_vpc.html">write_vpc</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">write</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 </div>
