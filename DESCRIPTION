@@ -24,7 +24,7 @@ Suggests:
     testthat (>= 3.0.0),
 LinkingTo: BH (>= 1.72.0)
 RoxygenNote: 7.2.3
-SystemRequirements: GDAL (>= 2.0.1), PROJ (>= 4.8.0), GNU make
+SystemRequirements: GDAL (>= 2.0.1), PROJ (>= 4.8.0), GNU make, C++17
 Encoding: UTF-8
 Language: en-US
 Config/testthat/edition: 3

@@ -22,7 +22,7 @@ PKG_LIBS = \
 	-lodbc32 -lodbccp32 -liconv -lpsapi -lwldap32 -lsecur32 -lgdi32 -lnormaliz \
 	-lcrypto -lcrypt32 -lws2_32 -lshlwapi -lbcrypt $(SHLIB_OPENMP_CXXFLAGS)
 
-CXX_STD = CXX
+CXX_STD=CXX17
 
 SOURCES = $(wildcard LASlib/*.cpp LASzip/*.cpp LASR/*.cpp ./third_party/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
