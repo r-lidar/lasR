@@ -8,7 +8,7 @@
 
 R Package for Fast Airborne LiDAR Data Processing
 
-**This package is in under early stage of development. Features and functions can change without warning**
+**This package is in under early stage of development.**
 
 The `lasR` package (pronounce laser) **does not** intent to supersede the `lidR` package, but is designed to be much more efficient than `lidR` for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages. `lidR` intends to be a tool box to make data exploration and innovation easy. `lasR` on another hand focuses exclusively on memory and speed optimization of common tasks and make no trade off with other aspects of the development.
 
