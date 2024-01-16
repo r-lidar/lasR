@@ -11,14 +11,9 @@
 
 .onAttach <- function(libname, pkgname)
 {
-  # Runs when attached to search() path such as by library() or require()
-  if (!interactive()) return(invisible())
-
-  v = utils::packageVersion("lasR") # nocov
-  packageStartupMessage("lasR ", v, " is an experimental version") # nocov
+  check_update()
 }
 
-# nocov start
 .onLoad <- function(libname, pkgname)
 {
   # installed <- row.names(installed.packages())
@@ -42,7 +37,40 @@
 {
   library.dynam.unload("lasR", libpath)
 }
-# nocov end
+
+# Check if the package has more recent version
+check_update = function()
+{
+  f <- paste0(tempdir(), "/LASRDESCRIPTION")
+
+  ans <- tryCatch(
+    {
+      nullcon <- file(nullfile(), open = "wb")
+      sink(nullcon, type = "message")
+      utils::download.file("https://raw.githubusercontent.com/r-lidar/lasR/main/DESCRIPTION", f)
+      sink(type = "message")
+      close(nullcon)
+      TRUE
+    },
+    error = function(e)
+    {
+      return(FALSE)
+    })
+
+  if (isFALSE(ans))
+    return(NULL)
+
+  m <- read.dcf(f)
+  dev <- m[4]
+  dev <- package_version(dev)
+  curr <- utils::packageVersion("lasR")
+  if (dev > curr)
+  {
+    packageStartupMessage(paste("lasR", dev, "is now available. You are using", curr, "\nremotes::install_github(\"r-lidar/lasR\")"))
+  }
+
+  return(NULL)
+}
 
 # ,@@@
 #  @@@@@@.@                                                           ,#*
