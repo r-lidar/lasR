@@ -4336,7 +4336,7 @@ BOOL LASfilter::parse(int argc, char* argv[])
       else if (strcmp(argv[i],"-drop_duplicates") == 0)
       {
         add_criterion(new LAScriterionDropDuplicates());
-        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
+        *argv[i]='\0';
       }
     }
     else if (strcmp(argv[i],"-first_only") == 0)
