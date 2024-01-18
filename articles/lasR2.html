@@ -212,8 +212,8 @@ temporary file, so the result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file223c7fd2c31d.tif </span></span>
-<span><span class="co">#&gt; name        : file223c7fd2c31d</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file221cf4f3af.tif </span></span>
+<span><span class="co">#&gt; name        : file221cf4f3af</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -346,8 +346,8 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">write1</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write2</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/Rtmp5VIPlZ/bcts_1_ground.laz /tmp/Rtmp5VIPlZ/bcts_2_ground.laz </span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/Rtmp5VIPlZ/bcts_1_ground.laz /tmp/Rtmp5VIPlZ/bcts_2_ground.laz</span></span></code></pre></div>
+<span><span class="co">#&gt;  - write_las : /tmp/Rtmpzdh5Nv/bcts_1_ground.laz /tmp/Rtmpzdh5Nv/bcts_2_ground.laz </span></span>
+<span><span class="co">#&gt;  - write_las : /tmp/Rtmpzdh5Nv/bcts_1_ground.laz /tmp/Rtmpzdh5Nv/bcts_2_ground.laz</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -361,7 +361,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/Rtmp5VIPlZ/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/Rtmpzdh5Nv/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -668,11 +668,11 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt;  - npoints_per_class : 61347 8159 3897</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  - npoints : 12745 </span></span>
-<span><span class="co">#&gt;  - nsingle : 5052 </span></span>
+<span><span class="co">#&gt;  - nsingle : 5083 </span></span>
 <span><span class="co">#&gt;  - nwithheld : 0 </span></span>
 <span><span class="co">#&gt;  - nsynthetic : 0 </span></span>
-<span><span class="co">#&gt;  - npoints_per_return : 9434 2561 654 94 2 </span></span>
-<span><span class="co">#&gt;  - npoints_per_class : 10824 1552 369</span></span></code></pre></div>
+<span><span class="co">#&gt;  - npoints_per_return : 9369 2631 651 91 2 1 </span></span>
+<span><span class="co">#&gt;  - npoints_per_class : 10842 1529 374</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
