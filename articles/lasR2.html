@@ -95,13 +95,41 @@ two small LAS files, but every pipeline is designed to process numerous
 files covering a large extent.
 </blockquote>
 <div class="section level2">
+<h2 id="overall-functionality">Overall functionality<a class="anchor" aria-label="anchor" href="#overall-functionality"></a>
+</h2>
+<p>In <code>lasR</code>, the R functions provided to the user are not
+designed to process the data directly; instead, they are used to create
+a pipeline. A pipeline consists of stages that are applied to a point
+cloud. Each stage can either transform the point cloud within the
+pipeline without generating any output or process the point cloud to
+produce an output.</p>
+<p>In the figure below, there are 4 LAS/LAZ files and a pipeline that
+(1) reads a file, (2) builds and writes a DTM on disk, (3) transforms
+the point cloud by normalizing the elevation, (4) builds a canopy height
+model using the transformed point cloud, and (5) transforms the point
+cloud by removing points below 5 m. The resulting version of the point
+cloud (points above 5m) is discarded and lost because there is no
+additional stage in this pipeline. However, other stages can be added,
+such as the application of a predictive model for points above 5 m or a
+stage that writes the point cloud to disk.</p>
+<p>Once the first file completes the entire pipeline, the second file is
+used, and the pipeline is applied to fill in the missing parts of the
+geospatial rasters or vectors produced by the pipeline. Each file is
+loaded with a buffer from neighboring files if needed.</p>
+<p>A pipeline created from the R interface does nothing initially. After
+building the pipeline, users must call the <code><a href="../reference/processor.html">processor()</a></code>
+function on it to initiate the computation.</p>
+<p><img src="pipeline.png"></p>
+</div>
+<div class="section level2">
 <h2 id="reader">Reader<a class="anchor" aria-label="anchor" href="#reader"></a>
 </h2>
-<p>The <code>reader</code> stage must be the first stage of any
-pipeline. It takes as input the list of files to process. When creating
-a pipeline with only this stage, the header of the files are read, but
-no computation is actually applied. The points are not even read. No
-result is returned.</p>
+<p>The <code>reader</code> stage MUST be the first stage of any pipeline
+(blue in the figure above). It takes as input the list of files to
+process. When creating a pipeline with only this stage, the header of
+the files are read, but no computation is actually applied. The points
+are not even read because there is no other stage in the pipeline that
+require to read the points. No result is returned.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span><span class="op">)</span></span>
@@ -212,8 +240,8 @@ temporary file, so the result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file221cf4f3af.tif </span></span>
-<span><span class="co">#&gt; name        : file221cf4f3af</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file216440a6e6ae.tif </span></span>
+<span><span class="co">#&gt; name        : file216440a6e6ae</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -346,8 +374,8 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">write1</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write2</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/Rtmpzdh5Nv/bcts_1_ground.laz /tmp/Rtmpzdh5Nv/bcts_2_ground.laz </span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/Rtmpzdh5Nv/bcts_1_ground.laz /tmp/Rtmpzdh5Nv/bcts_2_ground.laz</span></span></code></pre></div>
+<span><span class="co">#&gt;  - write_las : /tmp/RtmpW72Nbv/bcts_1_ground.laz /tmp/RtmpW72Nbv/bcts_2_ground.laz </span></span>
+<span><span class="co">#&gt;  - write_las : /tmp/RtmpW72Nbv/bcts_1_normalized.laz /tmp/RtmpW72Nbv/bcts_2_normalized.laz</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -361,7 +389,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/Rtmpzdh5Nv/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpW72Nbv/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -433,7 +461,7 @@ in subsequent stages</p>
 <span><span class="va">ans</span></span>
 <span><span class="co">#&gt; NULL</span></span></code></pre></div>
 <p>As observed, here, this time <code>callback</code> does not
-explicitly return anything; however, it edited the point cloud without
+explicitly return anything; however, it edited the point cloud
 internally. To generate an output, users must use another stage such as
 <code><a href="../reference/write_las.html">write_las()</a></code>. It’s important to note that
 <code><a href="../reference/write_las.html">write_las()</a></code> will <strong>NOT</strong> write the point
@@ -668,11 +696,11 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt;  - npoints_per_class : 61347 8159 3897</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  - npoints : 12745 </span></span>
-<span><span class="co">#&gt;  - nsingle : 5083 </span></span>
+<span><span class="co">#&gt;  - nsingle : 5063 </span></span>
 <span><span class="co">#&gt;  - nwithheld : 0 </span></span>
 <span><span class="co">#&gt;  - nsynthetic : 0 </span></span>
-<span><span class="co">#&gt;  - npoints_per_return : 9369 2631 651 91 2 1 </span></span>
-<span><span class="co">#&gt;  - npoints_per_class : 10842 1529 374</span></span></code></pre></div>
+<span><span class="co">#&gt;  - npoints_per_return : 9467 2574 609 92 2 1 </span></span>
+<span><span class="co">#&gt;  - npoints_per_class : 10805 1562 378</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
