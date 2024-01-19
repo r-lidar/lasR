@@ -35,13 +35,14 @@ print.list <- function(my_list, indent = 0) {
       }
     }
   } else {
-    for (name in names(my_list)) {
+    for (i in seq_along(my_list)) {
+      name = names(my_list)[i]
       cat(rep("  ", indent), "-", name, ": ")
-      if (is.list(my_list[[name]])) {
+      if (is.list(my_list[[i]])) {
         cat("\n")
-        print.list(my_list[[name]], indent + 1)
+        print.list(my_list[[i]], indent + 1)
       } else {
-        cat(my_list[[name]], "\n")
+        cat(my_list[[i]], "\n")
       }
     }
   }
@@ -54,9 +55,21 @@ This tutorial is intended to be read in order. It introduces the available tools
 In the following tutorial, the variable `f` refers to one or several file paths stored in a vector. It can also be the path to a directory or the path of a  [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/). In this tutorial, the output is rendered with one or two small LAS files, but every pipeline is designed to process numerous files covering a large extent.
 </blockquote>
 
+## Overall functionality
+
+In `lasR`, the R functions provided to the user are not designed to process the data directly; instead, they are used to create a pipeline. A pipeline consists of stages that are applied to a point cloud. Each stage can either transform the point cloud within the pipeline without generating any output or process the point cloud to produce an output.
+
+In the figure below, there are 4 LAS/LAZ files and a pipeline that (1) reads a file, (2) builds and writes a DTM on disk, (3) transforms the point cloud by normalizing the elevation, (4) builds a canopy height model using the transformed point cloud, and (5) transforms the point cloud by removing points below 5 m. The resulting version of the point cloud (points above 5m) is discarded and lost because there is no additional stage in this pipeline. However, other stages can be added, such as the application of a predictive model for points above 5 m or a stage that writes the point cloud to disk.
+
+Once the first file completes the entire pipeline, the second file is used, and the pipeline is applied to fill in the missing parts of the geospatial rasters or vectors produced by the pipeline. Each file is loaded with a buffer from neighboring files if needed.
+
+A pipeline created from the R interface does nothing initially. After building the pipeline, users must call the `processor()` function on it to initiate the computation.
+
+![](pipeline.png)
+
 ## Reader
 
-The `reader` stage must be the first stage of any pipeline. It takes as input the list of files to process. When creating a pipeline with only this stage, the header of the files are read, but no computation is actually applied. The points are not even read. No result is returned.
+The `reader` stage MUST be the first stage of any pipeline (blue in the figure above). It takes as input the list of files to process. When creating a pipeline with only this stage, the header of the files are read, but no computation is actually applied. The points are not even read because there is no other stage in the pipeline that require to read the points. No result is returned.
 
 ```{r, echo = F}
 f = paste0(system.file(package="lasR"), "/extdata/bcts")
@@ -309,7 +322,7 @@ ans = processor(read+call)
 ans
 ```
 
-As observed, here, this time `callback` does not explicitly return anything; however, it edited the point cloud without internally. To generate an output, users must use another stage such as `write_las()`. It's important to note that `write_las()` will **NOT** write the point number 12 which is flagged `withheld`. Neither any subsequent stage will process it. The point is still in memory but is discarded.
+As observed, here, this time `callback` does not explicitly return anything; however, it edited the point cloud internally. To generate an output, users must use another stage such as `write_las()`. It's important to note that `write_las()` will **NOT** write the point number 12 which is flagged `withheld`. Neither any subsequent stage will process it. The point is still in memory but is discarded.
 
 <blockquote style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 5px;">
 For memory and efficiency reasons, it is not possible to physically remove a point from the underlying memory in `lasR`. Instead, the points flagged as `withheld` will **never be processed**. One consequence of this, is that points flagged as withheld in a LAS/LAZ file **will not** be processed in `lasR`. This aligns with the intended purpose of the flag according to the LAS specification but may differ from the default behaviour of many software on the market including `lidR`.
