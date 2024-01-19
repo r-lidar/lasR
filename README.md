@@ -38,6 +38,8 @@ remotes::install_github("r-lidar/lasR")
 - Uses GDAL instead of relying on `terra` and `sf` for more flexibility at the C++ level.
 - Has only 2 strong dependencies: `boost` and `gdal`. But if `sf` and  `terra` are installed the experience is better.
 
+More details in the corresponding [vignette](https://r-lidar.github.io/lasR/articles/lasR1.html#main-differences-between-lasr-and-lidr)
+
 ## Copyright Information
 
 - For `LASlib` and `LASzip`:
