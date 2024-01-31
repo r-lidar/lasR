@@ -26,6 +26,7 @@ public:
   std::string get_name() const override { return "triangulate"; }
 
 private:
+  bool keep_large;
   double trim;
   unsigned int npoints;
   std::vector<U32> index_map;

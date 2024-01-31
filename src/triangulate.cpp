@@ -17,6 +17,7 @@ LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double y
   this->xmax = xmax;
   this->ymax = ymax;
 
+  this->keep_large = trim < 0;
   this->trim = trim*trim;
   this->npoints = 0;
   this->las = 0;
@@ -130,7 +131,8 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
         TriangleXYZ triangle(nodes[0], nodes[1], nodes[2]);
 
         // Interpolate in this triangle if the longest edge fulfill requirements
-        if (trim == 0 || triangle.square_max_edge_size() < trim)
+        bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
+        if (trim == 0 || keep_triangle)
         {
           if (raster)
           {
@@ -232,7 +234,8 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
       {
         TriangleXYZ triangle(nodes[0], nodes[1], nodes[2]);
 
-        if (trim == 0 || triangle.square_max_edge_size() < trim)
+        bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
+        if (trim == 0 || keep_triangle)
         {
           triangle.make_clock_wise();
 
@@ -316,7 +319,8 @@ bool LASRtriangulate::write()
       {
         TriangleXYZ triangle(nodes[0], nodes[1], nodes[2]);
 
-        if (trim == 0 || triangle.square_max_edge_size() < trim)
+        bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
+        if (trim == 0 || keep_triangle)
         {
           triangle.make_clock_wise();
           triangles.push_back(triangle);
