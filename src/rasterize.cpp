@@ -1,14 +1,15 @@
 #include "rasterize.h"
 #include "triangulate.h"
 
-LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, std::vector<int> methods)
+LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, std::vector<int> methods)
 {
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
   this->ymax = ymax;
   this->ofile = ofile;
-  this->algorithm = 0;
+  this->algorithm = nullptr;
+  this->window = (window > res) ? (window-res)/2 : 0;
 
   raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
 
@@ -41,8 +42,8 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   this->xmax = xmax;
   this->ymax = ymax;
   this->ofile = ofile;
-
   this->algorithm = algorithm;
+  this->window = 0;
 
   raster = Raster(xmin, ymin, xmax, ymax, res, 1);
 }
@@ -57,13 +58,20 @@ bool LASRrasterize::process(LASpoint*& p)
   double y = p->get_y();
   double z = p->get_z();
 
-  int cell = raster.cell_from_xy(x,y);
+  std::vector<int> cells;
+  if (window)
+    raster.get_cells(x-window,y-window, x+window,y+window, cells);
+  else
+    cells.push_back(raster.cell_from_xy(x,y));
 
   for (size_t i = 0 ; i < operators.size() ; ++i)
   {
-    float v = raster.get_value(cell, i+1);
-    FunctionPointer& f = operators[i];
-    raster.set_value(cell, (this->*f)(v, z), i+1);
+    for (int cell : cells)
+    {
+      float v = raster.get_value(cell, i+1);
+      FunctionPointer& f = operators[i];
+      raster.set_value(cell, (this->*f)(v, z), i+1);
+    }
   }
 
   return true;

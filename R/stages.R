@@ -63,8 +63,13 @@ aggregate = function(res, call, filter = "", ofile = tempfile(fileext = ".tif"))
 
 aggregate_q = function(res, call, filter, ofile, env)
 {
+  res_raster  <- res[1]
+  res_window <- res[1]
+  if (length(res) > 1L)
+    res_window <- res[2]
+
   call <- as.call(call)
-  ans <- list(algoname = "aggregate", res = res, call = call, filter = filter, output = ofile, env = env)
+  ans <- list(algoname = "aggregate", res = res_raster, window = res_window, call = call, filter = filter, output = ofile, env = env)
   set_lasr_class(ans)
 }
 
@@ -313,8 +318,22 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' rasterize(10, g(Z, Intensity))
 #' rasterize(10, h(Z))
 #' ````
+#' \cr
+#' If the argument `res` is a vector with two numbers, the first number represents the resolution of
+#' the output raster, and the second number represents the size of the windows used to compute the metrics.
+#' This approach is called Buffered Area Based Approach (BABA). In classical rasterization, the metrics
+#' are computed independently for each pixel using the points. For example, predicting a resource typically
+#' involves computing metrics with a 400 m2 pixel, resulting in a raster with a resolution of 20 m.
+#' It is not possible to achieve a finer granularity with this method. However, with buffered rasterization,
+#' it is possible to compute the raster at a resolution of 10 m (i.e., computing metrics every 10 meters)
+#' while using 20 x 20 windows for metric computation. In this case, the windows overlap, essentially
+#' creating a moving window effect. This option does not makes when rasterizing a triangulation and
+#' the second value is not considered in this case
 #'
-#' @param res numeric. The resolution of the raster.
+#'
+#' @param res numeric. The resolution of the raster. Can be a vector with two resolutions.
+#' In this case it does not correspond to the x and y resolution but to a buffed rasterization.
+#' (see details)
 #' @param operators Can be a character vector. "min", "max" and "count" are accepted. Can also
 #' rasterize a triangulation if the input is a LASRalgorithm for triangulation (see examples).
 #' Can also be a user-defined expression (see example and details).
@@ -333,11 +352,36 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' ans[[1]]
 #' ans[[2]]
 #' ans[[3]]
+#'
+#' # Demonstration of buffered rasterization
+#'
+#' # A good resolution for computing point density is 4 meters.
+#' c0 <- rasterize(4, "count")
+#'
+#' # Computing point density at too fine a resolution doesn't make sense since there is
+#' # either zero or one point per pixel. Therefore, producing a point density raster with
+#' # a 1 m resolution is not feasible with classical rasterization.
+#' c1 <- rasterize(1, "count")
+#'
+#' # Using a buffered approach, we can produce a raster with a 1-meter resolution where
+#' # the metrics for each pixel are computed using a 4-meter window.
+#' c2  <- rasterize(c(1,4), "count")
+#'
+#' pipeline = read + c0 + c1 + c2
+#' res <- processor(pipeline)
+#' terra::plot(res[[1]]/16)  # divide by 16 to get the density
+#' terra::plot(res[[2]]/1)   # divide by 1 to get the density
+#' terra::plot(res[[3]]/16)  # divide by 16 to get the density
 #' @export
 #' @md
 rasterize = function(res, operators = "max", filter = "", ofile = tempfile(fileext = ".tif"))
 {
   class <- tryCatch({class(operators)}, error = function(x) return("call"))
+
+  res_raster  <- res[1]
+  res_window <- res[1]
+  if (length(res) > 1L)
+    res_window <- res[2]
 
   if (class == "call")
   {
@@ -348,7 +392,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
   if (methods::is(operators, "LASRpipeline"))
   {
     if (length(operators) == 1)
-      ans <- list(algoname = "rasterize", res = res, connect = operators[[1]][["uid"]], filter = filter, output = ofile)
+      ans <- list(algoname = "rasterize", res = res_raster, connect = operators[[1]][["uid"]], filter = filter, output = ofile)
     else
       stop("cannot input a complex pipeline")
   }
@@ -358,7 +402,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
     valid <- operators %in% supported_operators
     if (!all(valid)) stop("Non supported operators")
     id <- match(operators, supported_operators)
-    ans <- list(algoname = "rasterize", "res" = res, "method" = id, filter = filter, output = ofile)
+    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = id, filter = filter, output = ofile)
   }
   else
   {

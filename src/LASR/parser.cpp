@@ -175,8 +175,9 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
 
       if (!contains_element(stage, "connect"))
       {
+        double window = get_element_as_double(stage, "window");
         std::vector<int> methods = get_element_as_vint(stage, "method");
-        auto v = std::make_shared<LASRrasterize>(xmin, ymin, xmax, ymax, res, methods);
+        auto v = std::make_shared<LASRrasterize>(xmin, ymin, xmax, ymax, res, window, methods);
         pipeline.push_back(v);
       }
       else
@@ -373,7 +374,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
       SEXP call = get_element(stage, "call");
       SEXP env = get_element(stage, "env");
       double res = get_element_as_double(stage, "res");
-      auto v = std::make_shared<LASRaggregate>(xmin, ymin, xmax, ymax, res, call, env);
+      double win = get_element_as_double(stage, "window");
+      auto v = std::make_shared<LASRaggregate>(xmin, ymin, xmax, ymax, res, win, call, env);
       pipeline.push_back(v);
     }
     else if (name  == "callback")

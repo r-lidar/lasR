@@ -12,7 +12,9 @@ rasterize(
 )
 }
 \arguments{
-\item{res}{numeric. The resolution of the raster.}
+\item{res}{numeric. The resolution of the raster. Can be a vector with two resolutions.
+In this case it does not correspond to the x and y resolution but to a buffed rasterization.
+(see details)}
 
 \item{operators}{Can be a character vector. "min", "max" and "count" are accepted. Can also
 rasterize a triangulation if the input is a LASRalgorithm for triangulation (see examples).
@@ -45,6 +47,18 @@ rasterize(10, f(Intensity))
 rasterize(10, g(Z, Intensity))
 rasterize(10, h(Z))
 }\if{html}{\out{</div>}}
+
+\cr
+If the argument \code{res} is a vector with two numbers, the first number represents the resolution of
+the output raster, and the second number represents the size of the windows used to compute the metrics.
+This approach is called Buffered Area Based Approach (BABA). In classical rasterization, the metrics
+are computed independently for each pixel using the points. For example, predicting a resource typically
+involves computing metrics with a 400 m2 pixel, resulting in a raster with a resolution of 20 m.
+It is not possible to achieve a finer granularity with this method. However, with buffered rasterization,
+it is possible to compute the raster at a resolution of 10 m (i.e., computing metrics every 10 meters)
+while using 20 x 20 windows for metric computation. In this case, the windows overlap, essentially
+creating a moving window effect. This option does not makes when rasterizing a triangulation and
+the second value is not considered in this case
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
@@ -58,4 +72,24 @@ ans <- processor(pipeline)
 ans[[1]]
 ans[[2]]
 ans[[3]]
+
+# Demonstration of buffered rasterization
+
+# A good resolution for computing point density is 4 meters.
+c0 <- rasterize(4, "count")
+
+# Computing point density at too fine a resolution doesn't make sense since there is
+# either zero or one point per pixel. Therefore, producing a point density raster with
+# a 1 m resolution is not feasible with classical rasterization.
+c1 <- rasterize(1, "count")
+
+# Using a buffered approach, we can produce a raster with a 1-meter resolution where
+# the metrics for each pixel are computed using a 4-meter window.
+c2  <- rasterize(c(1,4), "count")
+
+pipeline = read + c0 + c1 + c2
+res <- processor(pipeline)
+terra::plot(res[[1]]/16)  # divide by 16 to get the density
+terra::plot(res[[2]]/1)   # divide by 1 to get the density
+terra::plot(res[[3]]/16)  # divide by 16 to get the density
 }

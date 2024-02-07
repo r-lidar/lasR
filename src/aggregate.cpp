@@ -3,7 +3,7 @@
 
 #ifdef USING_R
 
-LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, SEXP call, SEXP env)
+LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, double window, SEXP call, SEXP env)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -11,6 +11,7 @@ LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax,
   this->ymax = ymax;
   this->call = call;
   this->env = env;
+  this->window = (window > res) ? (window-res)/2 : 0;
 
   nmetrics = 1;
   expected_type = ANYSXP;
@@ -20,11 +21,22 @@ LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax,
 
 bool LASRaggregate::process(LAS*& las)
 {
-  while (las->read_point(true))
+  // Pre-compute the groups for each point
+  std::vector<int> cells;
+  while (las->read_point(true)) // Need to include withheld points to do not mess grouper indexes
   {
-    if (lasfilter.filter(&las->point)) continue;
-    int key = raster.cell_from_xy(las->point.get_x(), las->point.get_y());
-    grouper.insert(key);
+    if (lasfilter.filter(&las->point)) continue; // TODO: check why and if we need that one
+
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+
+    if (window)
+      raster.get_cells(x-window,y-window, x+window,y+window, cells);
+    else
+      cells.push_back(raster.cell_from_xy(x,y));
+
+    grouper.insert(cells);
+    cells.clear();
   }
 
   // LAS format
@@ -57,7 +69,7 @@ bool LASRaggregate::process(LAS*& las)
   // Create environments in which the call takes place
   SEXP list = PROTECT(Rf_allocVector(VECSXP, nattr)); nsexpprotected++;
 
-  // Populate the list by creating allocating vectors of size nalloc to store lidar data.
+  // Populate the list by allocating vectors of size nalloc to store lidar data.
   for (int i = 0 ; i < nattr ; i++)
   {
     int type;

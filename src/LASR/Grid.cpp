@@ -95,10 +95,10 @@ int Grid::cell_from_xy(double x, double y) const
 
 void Grid::get_cells(double xmin, double ymin, double xmax, double ymax, std::vector<int>& cells) const
 {
-  int colmin = std::floor((xmin - this->xmin) / xres);
-  int colmax = std::ceil((xmax - this->xmin) / xres);
-  int rowmin = std::floor((this->ymax - ymax) / yres);
-  int rowmax = std::ceil((this->ymax - ymin) / yres);
+  int colmin = (xmin - this->xmin) / xres;
+  int colmax = (xmax - this->xmin) / xres;
+  int rowmin = (this->ymax - ymax) / yres;
+  int rowmax = (this->ymax - ymin) / yres;
   cells.clear();
 
   for (int col = std::max(colmin,0) ; col <= std::min(colmax, (int)ncols-1) ; col++) {

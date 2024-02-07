@@ -67,7 +67,7 @@ test_that("rasterize captures the expression",
   expect_error(processor(pipeline), NA)
 })
 
-test_that("rasterize captures the expression hand handles error",
+test_that("rasterize captures the expression and handles error",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 

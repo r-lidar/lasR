@@ -34,6 +34,18 @@ bool Grouper::insert(int key)
   return true;
 }
 
+bool Grouper::insert(const std::vector<int>& keys)
+{
+  for (int key: keys)
+  {
+    insert(key);
+    npoints--;
+  }
+
+  npoints++;
+  return true;
+}
+
 int Grouper::largest_group_size()
 {
   int max = 0;

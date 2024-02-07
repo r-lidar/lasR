@@ -11,6 +11,7 @@ class Grouper
 public:
   Grouper();
   bool insert(int key);
+  bool insert(const std::vector<int>& keys);
   //void merge_intervals(std::vector<Interval>& x);
   void clear();
   int largest_group_size();
