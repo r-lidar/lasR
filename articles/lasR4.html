@@ -88,11 +88,33 @@ Roussel</h4>
 spent on the task, while the y-axis represents the memory used for the
 task.</p>
 <ul>
-<li>Number of files: 4</li>
-<li>Number of points: 119 million (30 million per file)</li>
-<li>Coverage: 10.3 km² (2.5 km² per file)</li>
-<li>Density: 12 points/m²</li>
-<li>Number of cores: 1</li>
+<li>
+<strong>Number of files:</strong> 4</li>
+<li>
+<strong>Number of points:</strong> 119 million (30 million per
+file)</li>
+<li>
+<strong>Coverage:</strong> 10.3 km² (2.5 km² per file)</li>
+<li>
+<strong>Density:</strong> 12 points/m²</li>
+<li>
+<strong>OS:</strong> Linux</li>
+<li>
+<strong>CPU:</strong>
+<ul>
+<li>Intel Core i7-5600U CPU (5th generation Intel Core)</li>
+<li>Intel Core i7-1355U (13th generation Intel Core)</li>
+</ul>
+</li>
+<li>
+<strong>Date:</strong> update 2024-02-07</li>
+<li>
+<strong>Version:</strong>
+<ul>
+<li>lidR 4.1.1</li>
+<li>lasR 0.1.0</li>
+</ul>
+</li>
 </ul>
 <div class="section level2">
 <h2 id="canopy-height-model">Canopy Height Model<a class="anchor" aria-label="anchor" href="#canopy-height-model"></a>
@@ -113,7 +135,7 @@ task.</p>
 <div class="section level3">
 <h3 id="result">Result<a class="anchor" aria-label="anchor" href="#result"></a>
 </h3>
-<p><img src="lasR4_files/figure-html/unnamed-chunk-2-1.png" width="576" style="display: block; margin: auto;"></p>
+<p><img src="lasR4_files/figure-html/unnamed-chunk-2-1.png" width="50%" style="display: block; margin: auto;"><img src="lasR4_files/figure-html/unnamed-chunk-2-2.png" width="50%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -136,7 +158,7 @@ task.</p>
 <div class="section level3">
 <h3 id="result-1">Result<a class="anchor" aria-label="anchor" href="#result-1"></a>
 </h3>
-<p><img src="lasR4_files/figure-html/unnamed-chunk-4-1.png" width="576" style="display: block; margin: auto;"></p>
+<p><img src="lasR4_files/figure-html/unnamed-chunk-4-1.png" width="50%" style="display: block; margin: auto;"><img src="lasR4_files/figure-html/unnamed-chunk-4-2.png" width="50%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -168,7 +190,7 @@ in more efficient memory management.</p>
 <span><span class="va">den</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">5</span>, <span class="st">"count"</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">chm</span> <span class="op">+</span> <span class="va">met</span> <span class="op">+</span> <span class="va">den</span></span>
 <span><span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
-<p><img src="lasR4_files/figure-html/unnamed-chunk-5-1.png" width="576" style="display: block; margin: auto;"></p>
+<p><img src="lasR4_files/figure-html/unnamed-chunk-5-1.png" width="50%" style="display: block; margin: auto;"><img src="lasR4_files/figure-html/unnamed-chunk-5-2.png" width="50%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -192,7 +214,7 @@ pipeline, especially during tree segmentation.</p>
 <span><span class="va">write</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write</span> <span class="op">+</span> <span class="va">dtm</span> <span class="op">+</span> <span class="va">chm</span> <span class="op">+</span>  <span class="va">seed</span> <span class="op">+</span> <span class="va">tree</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span>, progress <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="lasR4_files/figure-html/unnamed-chunk-6-1.png" width="576" style="display: block; margin: auto;"></p>
+<p><img src="lasR4_files/figure-html/unnamed-chunk-6-1.png" width="50%" style="display: block; margin: auto;"></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
