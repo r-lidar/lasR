@@ -4,12 +4,13 @@
 \alias{processor}
 \title{Process the pipeline}
 \usage{
-processor(pipeline, ncores = 1L, progress = FALSE, ...)
+processor(pipeline, ncores = half_cores(), progress = FALSE, ...)
 }
 \arguments{
 \item{pipeline}{a LASRpipeline. A serie of algorithms called in order}
 
-\item{ncores}{integer. Not yet supported.}
+\item{ncores}{integer. Number of cores to use. Some stages or some steps in some stages
+are parallelised but overall one file is process at a time.}
 
 \item{progress}{boolean. Displays a progress bar.}
 
