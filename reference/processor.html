@@ -12,7 +12,7 @@ to actually process the point-cloud"><!-- mathjax --><script src="https://cdnjs.
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,9 @@ to actually process the point-cloud"><!-- mathjax --><script src="https://cdnjs.
     <a class="dropdown-item" href="../articles/lasR4.html">4. Benchmarks of lasR vs. lidR</a>
     <a class="dropdown-item" href="../articles/lasR5.html">5. How lidR functions map to lasR functions</a>
   </div>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="../news/index.html">Changelog</a>
 </li>
       </ul><form class="form-inline my-2 my-lg-0" role="search">
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off"></form>
@@ -61,7 +64,7 @@ to actually process the point-cloud</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">processor</span><span class="op">(</span><span class="va">pipeline</span>, ncores <span class="op">=</span> <span class="fl">1L</span>, progress <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">processor</span><span class="op">(</span><span class="va">pipeline</span>, ncores <span class="op">=</span> <span class="fu"><a href="ncores.html">half_cores</a></span><span class="op">(</span><span class="op">)</span>, progress <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -71,7 +74,8 @@ to actually process the point-cloud</p>
 
 
 <dt>ncores</dt>
-<dd><p>integer. Not yet supported.</p></dd>
+<dd><p>integer. Number of cores to use. Some stages or some steps in some stages
+are parallelised but overall one file is process at a time.</p></dd>
 
 
 <dt>progress</dt>

@@ -14,7 +14,7 @@ in vector format."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/aja
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,6 +34,9 @@ in vector format."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/aja
     <a class="dropdown-item" href="../articles/lasR4.html">4. Benchmarks of lasR vs. lidR</a>
     <a class="dropdown-item" href="../articles/lasR5.html">5. How lidR functions map to lasR functions</a>
   </div>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="../news/index.html">Changelog</a>
 </li>
       </ul><form class="form-inline my-2 my-lg-0" role="search">
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off"></form>
@@ -123,16 +126,16 @@ probably no use case for that one.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 297 × 6</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    Intensity gpstime ReturnNumber Classification ScanAngle</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>       115 <span style="text-decoration: underline;">149</span>929.            1              1        16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>       136 <span style="text-decoration: underline;">149</span>930.            1              1        16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>        13 <span style="text-decoration: underline;">149</span>930.            1              1        17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>        18 <span style="text-decoration: underline;">149</span>930.            1              1        17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>       137 <span style="text-decoration: underline;">149</span>930.            1              1        17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>       152 <span style="text-decoration: underline;">149</span>930.            1              1        17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>       117 <span style="text-decoration: underline;">149</span>930.            1              1        16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>       133 <span style="text-decoration: underline;">149</span>930.            1              1        16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>       113 <span style="text-decoration: underline;">149</span>930.            1              1        17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>         1 <span style="text-decoration: underline;">149</span>930.            1              1        17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>       141 <span style="text-decoration: underline;">151</span>388.            1              1        -<span style="color: #BB0000;">4</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>        81 <span style="text-decoration: underline;">151</span>388.            1              1        -<span style="color: #BB0000;">6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>       115 <span style="text-decoration: underline;">149</span>929.            1              1        16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>       107 <span style="text-decoration: underline;">151</span>388.            1              1        -<span style="color: #BB0000;">5</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>         3 <span style="text-decoration: underline;">151</span>388.            1              1        -<span style="color: #BB0000;">5</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>       136 <span style="text-decoration: underline;">149</span>930.            1              1        16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>       116 <span style="text-decoration: underline;">151</span>388.            1              1        -<span style="color: #BB0000;">8</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>       110 <span style="text-decoration: underline;">151</span>388.            1              1        -<span style="color: #BB0000;">4</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>        13 <span style="text-decoration: underline;">149</span>930.            1              1        17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>        99 <span style="text-decoration: underline;">151</span>388.            1              1        -<span style="color: #BB0000;">6</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 287 more rows</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 1 more variable: geom &lt;POINT [m]&gt;</span></span>
 </code></pre></div>
