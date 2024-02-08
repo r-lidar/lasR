@@ -3,6 +3,7 @@
 
 #include "openmp.h"
 #include "macros.h"
+#include "Rcompatibility.h"
 
 #include <inttypes.h>
 #include <string>

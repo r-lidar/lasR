@@ -93,7 +93,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       pipeline.clear(last_chunk);
 
       // Progress bar
-      progress.update(i, true);
+      progress.update(i+1, true);
       progress.show();
     }
 
