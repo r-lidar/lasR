@@ -115,7 +115,7 @@ bool LASRlasreader::process(LAS*& las)
   while (lasreader->read_point())
   {
     las->add_point(lasreader->point);
-    (*progress)++;
+    progress->update(lasreader->p_count);
     progress->show();
   }
   progress->done();
