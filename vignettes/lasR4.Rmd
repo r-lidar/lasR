@@ -18,15 +18,24 @@ vignette: >
 knitr::opts_chunk$set(echo = TRUE, fig.align='center', fig.width=6, fig.height=4)
 col1 = rgb(0, 0.5, 1, alpha = 0.5)
 col2 = rgb(1, 0, 0, alpha = 0.5)
+col3 = rgb(0.5, 0.5, 1, alpha = 0.5)
+col4 = rgb(1, 0, 1, alpha = 0.5)
 ```
 
 This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The x-axis represents the time spent on the task, while the y-axis represents the memory used for the task.
 
-- Number of files: 4
-- Number of points: 119 million (30 million per file)
-- Coverage: 10.3 km² (2.5 km² per file)
-- Density: 12 points/m²
-- Number of cores: 1
+- **Number of files:** 4
+- **Number of points:** 119 million (30 million per file)
+- **Coverage:** 10.3 km² (2.5 km² per file)
+- **Density:** 12 points/m²
+- **OS:** Linux
+- **CPU:** 
+  - Intel Core i7-5600U CPU (5th generation Intel Core) 
+  - Intel Core i7-1355U (13th generation Intel Core) 
+- **Date:** update 2024-02-07
+- **Version:** 
+  - lidR 4.1.1
+  - lasR 0.1.0
 
 ## Canopy Height Model
 
@@ -53,22 +62,33 @@ processor(pipeline)
 
 ### Result
 
-```{r, warning=F, echo=-1, echo=FALSE}
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
+# 1 
 m_lasr = c(0, 93.38, 93.38, 93.38, 93.38, 93.38, 93.38, 93.38, 122.01, 122.01, 122.01, 122.01, 122.01, 122.01, 122.01, 122.53, 122.53, 122.53, 122.53, 122.53, 122.53, 141.60, 
 141.60, 141.60, 141.60, 141.60, 141.60, 141.60, 140.92, 149.46,0)
 t_lasr = (1:length(m_lasr)-1)*2/60
 
 m_lidr = c(0,104.70, 342.79, 571.07, 793.16, 1028.55, 1388.56, 2027.17, 1888.13, 2164.38, 2381.46, 2519.50, 2280.10, 2519.86, 2783.66, 2984.50, 2266.93, 2379.23, 2635.35, 
 2868.93, 2997.68, 2127.28, 0)
-
 t_lidr = (1:length(m_lidr)-1)*5/60
+
+m_lidr2 = c(0, 193.67, 351.17, 499.30, 648.55, 783.17, 931.17, 1079.79, 1132.39, 1197.64, 1972.39, 2222.19, 2372.32, 2521.19, 2690.99, 2839.99, 2946.35, 3068.06, 2392.09, 2670.97, 2818.85, 2967.72, 3137.86, 3293.99, 3370.11, 2619.88, 2307.91, 1989.16, 2128.16, 2286.00, 2433.63, 2579.13, 2656.12, 2723.62, 2594.85, 0)
+t_lidr2 = (1:length(m_lidr2)-1)*2/60
+
+m_lasr2 = c(0,203.04, 358.92, 358.92, 371.79, 371.79, 371.79, 372.04, 372.04, 391.29, 391.29, 391.29, 0)
+t_lasr2 = (1:length(m_lasr2)-1)*4/60
+
+tmax = max(t_lidr, t_lasr, t_lidr2, t_lasr2)
+mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
+
+# Thinkpad
 
 x = t_lidr
 y = m_lidr/1000
 
 par(mar = c(4,4,1,1))
 
-plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U")
 
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
 lines(x, y, col = "blue", lwd = 2)
@@ -79,7 +99,26 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+
+# Latitude
+
+x = t_lidr2
+y = m_lidr2/1000
+
+plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-1355U")
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1 , border = NA)
+lines(x, y, col = "blue", lwd = 2)
+
+x = t_lasr2
+y = m_lasr2/1000
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+lines(x, y, col = "red", lwd = 2)
+
+
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
 ```
 
 ## Digital Terrain Model
@@ -107,21 +146,32 @@ processor(pipeline)
 
 ### Result
 
-```{r, warning=F, echo=-1, echo=FALSE}
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
+# 2
 m_lasr = c(0, 79.67, 93.66, 116.75, 133.85, 146.74, 165.05, 257.17, 455.17, 767.38, 833.30, 833.30, 833.30, 846.70, 854.83, 862.04, 869.00, 874.93, 874.93, 894.53, 853.06, 853.06, 
 863.89, 872.39, 889.12, 902.23, 618.84, 1002.46, 1013.65, 1013.65, 1022.16, 1041.49, 1049.07, 1055.26, 1061.45, 1061.45, 177.75, 0)
 t_lasr = (1:length(m_lasr)-1)*3/60
 
 m_lidr = c(0,124.56, 356.59, 376.44, 966.76, 2048.83, 1790.97, 1790.97, 1754.86, 1754.86, 2457.66, 2169.17, 2169.17, 2170.71, 2304.78, 2654.14, 2172.81, 2195.75, 2170.75, 2231.33, 2579.38, 0)
-
 t_lidr = (1:length(m_lidr)-1)*10/60
+
+m_lidr2 = c(0, 139.30, 346.42, 356.80, 366.42, 372.17, 381.80, 387.30, 414.42, 748.34, 809.84, 890.09, 970.47, 1050.59, 1130.22, 1209.59, 1289.47, 1271.14, 1271.14, 781.42, 787.67, 794.42, 803.29, 811.79, 819.67, 765.35, 925.04, 1001.29, 1076.16, 1151.04, 1225.79, 1300.66, 1375.54, 1450.16, 1392.50, 1392.50, 896.18, 905.18, 919.43, 934.05, 940.18, 923.84, 1020.86, 1101.36, 1181.48, 1260.86, 1339.61, 1418.61, 1497.61, 1576.73, 1656.36, 1728.61, 1651.25, 1651.25, 1030.53, 1039.41, 1047.53, 1054.41, 1060.03, 1063.78, 1101.87, 1195.12, 1270.50, 1345.12, 1420.37, 1495.37, 1570.50, 1645.12, 1601.39, 1601.39, 0)
+t_lidr2 = (1:length(m_lidr2)-1)*2/60
+
+m_lasr2 = c(0,202.92, 349.05, 355.55, 372.67, 389.55, 410.09, 422.72, 755.83, 1118.58, 1082.29, 1082.29, 1082.41, 1101.29, 1111.29, 1120.04, 1123.91, 1143.54, 1102.06, 1102.06, 1119.81, 1137.43, 1150.81, 891.28, 1312.16, 1262.08, 1262.08, 1273.33, 1282.21, 1289.33, 1295.33, 1300.96, 1318.83, 0)
+t_lasr2 = (1:length(m_lasr2)-1)*2/60
+
+tmax = max(t_lidr, t_lasr, t_lidr2, t_lasr2)
+mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
+
+# Thinkpad
 
 x = t_lidr
 y = m_lidr/1000
 
 par(mar = c(4,4,1,1))
 
-plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U")
 
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
 lines(x, y, col = "blue", lwd = 2)
@@ -132,7 +182,26 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+
+# Latitude
+
+x = t_lidr2
+y = m_lidr2/1000
+
+plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-1355U")
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1 , border = NA)
+lines(x, y, col = "blue", lwd = 2)
+
+x = t_lasr2
+y = m_lasr2/1000
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+lines(x, y, col = "red", lwd = 2)
+
+
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
 ```
 
 ## Multiple raster
@@ -163,7 +232,8 @@ processor(pipeline)
 
 
 
-```{r, warning=F, echo=-1, echo=FALSE}
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
+# 3
 m_lasr = c(0, 82.03, 170.51, 354.01, 531.90, 711.60, 895.17, 1074.86, 1214.60, 1259.20, 1297.35, 1297.35, 435.67,550.40, 692.43, 831.39, 971.39, 1113.44, 1282.57, 1285.92, 1345.21, 
 1345.21, 498.85, 559.43, 697.85, 837.33, 977.29, 1127.08, 1258.82, 1240.92, 1240.92, 1240.92, 480.92, 606.07, 749.79, 887.94, 1026.13, 1169.48, 1358.71, 1378.30, 1423.42, 1423.42, 
 554.91, 560.07, 0)
@@ -172,15 +242,23 @@ t_lasr = 1:length(m_lasr)*2/60
 m_lidr = c(0, 104.86, 456.99, 802.07, 1116.71, 1765.46, 2116.21, 2502.28, 2276.53, 2666.14, 2986.86, 2300.90, 2686.19, 2989.73, 2004.21, 2579.39, 3195.28, 2827.48, 3512.35, 4633.82, 
 5221.53, 5639.37, 3357.23, 4434.14, 5110.58, 4302.41, 3457.53, 4052.46, 4702.15, 4430.27, 4585.12, 4937.42, 5243.30,4713.65, 5063.31, 5376.67, 2866.46, 3207.25, 3459.13, 3188.25, 
 3523.44, 3733.16, 0)
-
 t_lidr = 1:length(m_lidr)*8/60
+
+m_lidr2 = c(0, 193.23, 497.98, 784.95, 1085.33, 1205.75, 2226.83, 2527.83, 2847.46, 2536.90, 2678.37, 2974.99, 3299.73, 2721.75, 1991.53, 2285.40, 2575.28, 2724.10, 2548.08, 3019.45, 3524.15, 3900.47, 2601.94, 3582.43, 4037.68, 4587.39, 4970.17, 2331.14, 3414.44, 3911.82, 4499.68, 4979.93, 3151.38, 3652.82, 4215.47, 4644.97, 4193.78, 3546.69, 3603.89, 3863.48, 4237.23, 3809.42, 1696.35, 1958.85, 2231.42, 2436.03, 2867.71, 3133.63, 3347.25, 2549.77, 2823.65, 3088.82, 3268.23, 3359.37, 0)
+t_lidr2 = 1:length(m_lidr2)*4/60
+
+m_lasr2 = c(0, 203.05, 355.17, 448.05, 625.42, 802.55, 979.14, 1157.14, 1332.77, 1482.14, 1488.77, 1527.14, 668.36, 668.48, 842.36, 981.61, 1120.61, 1260.98, 1400.61, 1515.23, 1551.98, 1577.36, 730.80, 778.80, 915.80, 1055.17, 1195.42, 1341.80, 1490.67, 1472.86, 1472.86, 712.91, 765.78, 904.41, 1044.28, 1180.66, 1318.28, 1453.91, 1598.78, 1633.03, 1633.03, 0)
+t_lasr2 = 1:length(m_lasr2)*2/60
+
+tmax = max(t_lidr, t_lasr, t_lidr2, t_lasr2)
+mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
 
 x = t_lidr
 y = m_lidr/1000
 
 par(mar = c(4,4,1,1))
 
-plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U CPU")
 
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
 lines(x, y, col = "blue", lwd = 2)
@@ -191,7 +269,25 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+
+# Latitude
+
+x = t_lidr2
+y = m_lidr2/1000
+
+plot(x, y, type = "n",  xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-1355U")
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
+lines(x, y, col = "blue", lwd = 2)
+
+x = t_lasr2
+y = m_lasr2/1000
+
+polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+lines(x, y, col = "red", lwd = 2)
+
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
 ```
 
 
@@ -213,7 +309,7 @@ pipeline = read + del + norm + write + dtm + chm +  seed + tree
 ans = processor(pipeline, progress = TRUE)
 ```
 
-```{r, warning=F, echo=-1, echo=FALSE}
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
 m_lasr = c(0,191.41, 362.51, 593.35, 896.25, 1194.72, 1818.00, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2323.06, 2247.46, 2122.34,
 2192.39, 2192.39, 2192.39, 2197.03, 2197.80, 2198.83, 2199.87,2181.38, 2181.38, 2181.38, 2221.91, 1523.74, 1741.71, 1823.69, 1823.69, 1823.69, 1823.69, 1741.83, 1741.83, 1741.83,
 1741.83, 1741.83, 1454.66, 1703.53, 1928.16, 2152.36, 2276.37,2506.08, 2506.08, 2506.08, 2506.08, 2506.08, 2506.08, 2506.08,2506.08, 2506.08, 2506.08, 2506.08, 2277.12, 2324.82,
@@ -236,7 +332,7 @@ y = m_lidr/1000
 
 par(mar = c(4,4,1,1))
 
-plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)")
+plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U CPU")
 
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
 lines(x, y, col = "blue", lwd = 2)
@@ -247,5 +343,5 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR", "lasR"), fill = c(col = col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
 ```
