@@ -65,6 +65,8 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       throw pipeline.get_last_error();
     }
 
+    progress.show();
+
     for (int i = 0 ; i < n ; ++i)
     {
       bool last_chunk = i+1 == n;
