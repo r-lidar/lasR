@@ -364,7 +364,9 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     }
     else if (name == "nothing")
     {
-      auto v = std::make_shared<LASRnothing>();
+      bool read = get_element_as_bool(stage, "read");
+      bool stream = get_element_as_bool(stage, "stream");
+      auto v = std::make_shared<LASRnothing>(read, stream);
       pipeline.push_back(v);
     }
     #ifdef USING_R
