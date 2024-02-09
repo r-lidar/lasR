@@ -29,9 +29,9 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     pipeline.set_verbose(verbose);
     pipeline.set_ncpu(ncpu);
 
-    if (!pipeline.parse(sexppipeline))
+    if (!pipeline.parse(sexppipeline, true, progrss))
     {
-     throw pipeline.get_last_error();
+      throw pipeline.get_last_error();
     }
 
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
@@ -43,10 +43,10 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     {
       // # nocov start
       print("File processing options:\n");
-      print(" Read points: %s\n", pipeline.need_points() ? "true" : "false");
-      print(" Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
-      print(" Buffer: %.1lf\n", pipeline.need_buffer());
-      print(" Chunks: %d\n", n);
+      print("  Read points: %s\n", pipeline.need_points() ? "true" : "false");
+      print("  Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
+      print("  Buffer: %.1lf\n", pipeline.need_buffer());
+      print("  Chunks: %d\n", n);
       print("\n");
       // # nocov end
     }

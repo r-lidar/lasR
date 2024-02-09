@@ -25,7 +25,7 @@ class Pipeline
   public:
     Pipeline();
     ~Pipeline();
-    bool parse(const SEXP sexpargs, bool build_catalog = true); // implemented in parser.cpp
+    bool parse(const SEXP sexpargs, bool build_catalog = true, bool progress = false); // implemented in parser.cpp
     bool pre_run();
     bool run();
     void clear(bool last = false);

@@ -25,7 +25,7 @@
 #include "readdataframe.h"
 #endif
 
-bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
+bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 {
   // This is the extent of the coverage.
   // We don't know it yet. We need to parse a reader first
@@ -73,7 +73,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog)
         std::vector<std::string> files = get_element_as_vstring(stage, "files");
 
         catalog = new LAScatalog;
-        if (!catalog->read(files))
+        if (!catalog->read(files, progress))
         {
           last_error = "In the parser while reading the file collection: " + catalog->last_error; // # nocov
           return false; // # nocov

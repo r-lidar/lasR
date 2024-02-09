@@ -8,6 +8,10 @@
 #include <inttypes.h>
 #include <string>
 
+#ifdef USING_R
+#include <R.h> // for R_FlushConsole
+#endif
+
 #define PROGRESSSYM "=================================================="
 
 class Progress

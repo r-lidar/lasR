@@ -1,3 +1,7 @@
+# lasR 0.1.2 ()
+
+- New: progress bar when reading a the header of the files (`LAScatalog`) can be enable with `progress = TRUE`
+
 # lasR 0.1.1 (2024-02-08)
 
 - Doc: Corrected the documentation for the argument `ncores` in `processor()`, which incorrectly mentioned that it was not supported.
