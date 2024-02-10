@@ -82,6 +82,14 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
         print("Processing chunk %d/%d: %s\n", i+1, n, chunk.name.c_str()); // # nocov
       }
 
+      if (!chunk.process)
+      {
+        progress.update(i+1, true);
+        progress.show();
+        if (verbose) print("Chunk %d is flagged for not being processed. Skipped.", i);
+        continue;
+      }
+
       if (!pipeline.set_chunk(chunk))
       {
         throw pipeline.get_last_error();

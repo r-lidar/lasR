@@ -307,7 +307,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
   return true;
 }
 
-void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool buffer_only)
+void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess)
 {
   Rectangle bb(xmin, ymin, xmax, ymax);
   bboxes.push_back(bb);
@@ -319,7 +319,7 @@ void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bo
 
   laskdtree->add(xmin, ymin, xmax, ymax);
   this->indexed.push_back(indexed);
-  this->buffer_only.push_back(buffer_only);
+  this->noprocess.push_back(noprocess);
 }
 
 void LAScatalog::add_crs(const LASheader* header)
@@ -342,7 +342,7 @@ void LAScatalog::add_crs(const LASheader* header)
   }
 }
 
-bool LAScatalog::add_file(const std::string& file, bool buffer_only)
+bool LAScatalog::add_file(const std::string& file, bool noprocess)
 {
   LASreadOpener lasreadopener;
   lasreadopener.add_file_name(file.c_str());
@@ -355,7 +355,7 @@ bool LAScatalog::add_file(const std::string& file, bool buffer_only)
 
   files.push_back(file);
   add_crs(&lasreader->header);
-  add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), buffer_only);
+  add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
   npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.number_of_extended_variable_length_records));
 
   lasreader->close();
@@ -379,6 +379,18 @@ void LAScatalog::add_query(double xmin, double ymin, double xmax, double ymax)
 {
   Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
   queries.push_back(rect);
+}
+
+bool LAScatalog::set_noprocess(const std::vector<bool>& b)
+{
+  if (b.size() != files.size())
+  {
+    last_error = "the vector indicating if a file is used as buffer only is not the same size as the vector of files"; // # nocov
+    return false; // # nocov
+  }
+
+  noprocess = b;
+  return true;
 }
 
 void LAScatalog::set_chunk_size(double size)
@@ -417,6 +429,8 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
     success = get_chunk_regular(i, chunk);
   else
     success = get_chunk_with_query(i, chunk);
+
+  chunk.process = !noprocess[i];
 
   return success;
 }
@@ -614,7 +628,7 @@ void LAScatalog::clear()
 
   indexed.clear();
   npoints.clear();
-  buffer_only.clear();
+  noprocess.clear();
   bboxes.clear();
   files.clear();
 

@@ -445,43 +445,47 @@ reader = function(x, filter = "", buffer = 0, ...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
 
-  if (circle) return(reader_circles(x, p$xc, p$yc, p$r, filter, buffer))
-  if (rectangle) return(reader_rectangles(x, p$xmin, p$ymin, p$xmax, p$ymax, filter, buffer))
-  return(reader_coverage(x, filter, buffer))
+  if (circle) return(reader_circles(x, p$xc, p$yc, p$r, filter = filter, buffer = buffer, ...))
+  if (rectangle) return(reader_rectangles(x, p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, buffer = buffer, ...))
+  return(reader_coverage(x, filter = filter, buffer = buffer, ...))
 }
 
 #' @export
 #' @rdname reader
-reader_coverage = function(x, filter = "", buffer = 0)
+reader_coverage = function(x, filter = "", buffer = 0, ...)
 {
-  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_coverage(x, filter, buffer))
-  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_coverage(x, filter, buffer))
+  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_coverage(x, filter, buffer, ...))
+  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_coverage(x, filter, buffer, ...))
   stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
 }
 
 #' @export
 #' @rdname reader
-reader_circles = function(x, xc, yc, r, filter = "", buffer = 0)
+reader_circles = function(x, xc, yc, r, filter = "", buffer = 0, ...)
 {
-  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_circles(x, xc, yc, r, filter, buffer))
-  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_circles(x, xc, yc, r, filter, buffer))
+  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_circles(x, xc, yc, r, filter, buffer, ...))
+  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_circles(x, xc, yc, r, filter, buffer, ...))
   stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
 }
 
 #' @export
 #' @rdname reader
-reader_rectangles = function(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
+reader_rectangles = function(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
 {
-  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer))
-  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer))
+  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer, ...))
+  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer, ...))
   stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
 }
 
-reader_files_coverage = function(files, filter = "", buffer = 0)
+reader_files_coverage = function(files, filter = "", buffer = 0, ...)
 {
+  p <- list(...)
+  noprocess = p$noprocess
+
   if (methods::is(files, "LAScatalog"))
   {
     files <- files$filename
+    if (!is.null(files$processed)) noprocess = !files$processed
   }
 
   if (!is.character(files))
@@ -489,25 +493,31 @@ reader_files_coverage = function(files, filter = "", buffer = 0)
     stop("'files' must be character or a LAScatalog")  # nocov
   }
 
+  if (!is.null(noprocess))
+  {
+    if (length(noprocess) != length(files))
+      stop("'noprocess' and 'files' have different length")
+  }
+
   files <- normalizePath(files)
-  ans <- list(algoname = "reader_las", files = files, filter = filter, buffer = buffer)
+  ans <- list(algoname = "reader_las", files = files, filter = filter, buffer = buffer, noprocess = noprocess)
   set_lasr_class(ans)
 }
 
-reader_files_circles = function(files, xc, yc, r, filter = "", buffer = 0)
+reader_files_circles = function(files, xc, yc, r, filter = "", buffer = 0, ...)
 {
   stopifnot(length(xc) == length(yc))
   if (length(r) == 1) r <- rep(r, length(xc))
   if (length(r) > 1) stopifnot(length(xc) == length(r))
 
-  ans <- reader_files_coverage(files, filter, buffer)
+  ans <- reader_files_coverage(files, filter, buffer, ...)
   ans[[1]]$xcenter <- xc
   ans[[1]]$ycenter <- yc
   ans[[1]]$radius <- r
   ans
 }
 
-reader_files_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
+reader_files_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
 {
   stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
 
@@ -519,7 +529,7 @@ reader_files_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", b
   ans
 }
 
-reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0)
+reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0, ...)
 {
   accuracy = c(0,0,0)
   if (methods::is(dataframe, "LAS"))
@@ -545,7 +555,7 @@ reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0)
   set_lasr_class(ans)
 }
 
-reader_dataframe_circles = function(dataframe, xc, yc, r, filter = "", buffer = 0)
+reader_dataframe_circles = function(dataframe, xc, yc, r, filter = "", buffer = 0, ...)
 {
   stopifnot(length(xc) == length(yc))
   if (length(r) == 1) r <- rep(r, length(xc))
@@ -558,7 +568,7 @@ reader_dataframe_circles = function(dataframe, xc, yc, r, filter = "", buffer = 
   ans
 }
 
-reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
+reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
 {
   stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
 
@@ -802,6 +812,8 @@ set_lasr_class = function(x)
 
   if (is.null(x[["output"]])) x[["output"]] = ""
   if (is.null(x[["filter"]])) x[["filter"]] = ""
+
+  x <- Filter(Negate(is.null), x)
 
   x[["output"]] = normalizePath(x[["output"]], mustWork = FALSE)
 

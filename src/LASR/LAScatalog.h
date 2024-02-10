@@ -25,6 +25,7 @@ public:
   void set_buffer(double buffer) { this->buffer = buffer; };
   void add_query(double xmin, double ymin, double xmax, double ymax);
   void add_query(double xcenter, double ycenter, double radius);
+  bool set_noprocess(const std::vector<bool>& b);
   void set_chunk_size(double size);
   void set_chunk_is_file();
   void set_wkt(const std::string& wkt) { this->wkt = wkt; };
@@ -54,8 +55,8 @@ public:
 
 private:
   bool read_vpc(const std::string& file);
-  bool add_file(const std::string& file, bool buffer_only = false);
-  void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool buffer_only = false);
+  bool add_file(const std::string& file, bool noprocess = false);
+  void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess = false);
   void add_wkt(const std::string& wkt);
   void add_epsg(int epsg);
   void add_crs(const LASheader* header);
@@ -92,7 +93,7 @@ private:
   // information about each file
   std::vector<uint64_t> npoints;            // number of points
   std::vector<bool> indexed;                // the file has a spatial index
-  std::vector<bool> buffer_only;            // the file is not processed and is used only for buffering
+  std::vector<bool> noprocess;            // the file is not processed and is used only for buffering
   std::vector<Rectangle> bboxes;            // bounding boxes of the files
   std::vector<std::filesystem::path> files; // path to files
 

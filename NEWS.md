@@ -1,6 +1,7 @@
 # lasR 0.2.0
 
-- New: `rasterize()` gains the ability to perform a multi-resolution rasterization. See documentation.
+- New: `rasterize()` gains the ability to perform a multi-resolution or buffered rasterization. See documentation.
+- New: the internal engine gains the ability to skip the processing of some file of the collection and use these files only to load a buffer. This feature works with a `LAScatalog` from `lidR` respecting the `processed` attribute used in `lidR`
 
 # lasR 0.1.2
 

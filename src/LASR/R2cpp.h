@@ -16,6 +16,7 @@ std::string get_element_as_string(SEXP list, const char *str);
 std::vector<int> get_element_as_vint(SEXP list, const char *str);
 std::vector<double> get_element_as_vdouble(SEXP list, const char *str);
 std::vector<std::string> get_element_as_vstring(SEXP list, const char *str);
+std::vector<bool> get_element_as_vbool(SEXP list, const char *str);
 
 #else
 #pragma message("R2cpp skipped: cannot be compiled without R")

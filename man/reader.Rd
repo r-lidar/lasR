@@ -9,11 +9,11 @@
 \usage{
 reader(x, filter = "", buffer = 0, ...)
 
-reader_coverage(x, filter = "", buffer = 0)
+reader_coverage(x, filter = "", buffer = 0, ...)
 
-reader_circles(x, xc, yc, r, filter = "", buffer = 0)
+reader_circles(x, xc, yc, r, filter = "", buffer = 0, ...)
 
-reader_rectangles(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0)
+reader_rectangles(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
 }
 \arguments{
 \item{x}{Can be the paths of the files to use, the path of the folder in which the files are stored,

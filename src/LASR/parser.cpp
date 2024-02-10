@@ -79,6 +79,16 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
           return false; // # nocov
         }
 
+        if (contains_element(stage, "noprocess"))
+        {
+          std::vector<bool> noproces = get_element_as_vbool(stage, "noprocess");
+          if (!catalog->set_noprocess(noproces))
+          {
+            last_error = "In the parser while reading the file collection: " + catalog->last_error; // # nocov
+            return false; // # nocov
+          }
+        }
+
         // The catalog read all the files, we now know the extent of the coverage
         xmin = catalog->get_xmin();
         ymin = catalog->get_ymin();

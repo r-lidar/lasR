@@ -113,4 +113,21 @@ std::vector<std::string> get_element_as_vstring(SEXP list, const char *str)
   return ans;
 }
 
+std::vector<bool> get_element_as_vbool(SEXP list, const char *str)
+{
+  SEXP elem = get_element(list, str);
+  int n = Rf_length(elem);
+  std::vector<bool> ans(n);
+
+  switch (TYPEOF(elem))
+  {
+  case LGLSXP: for (int i=0;i<n;++i) ans[i] = LOGICAL(elem)[i]; break;
+  case REALSXP: for (int i=0;i<n;++i) ans[i] = REAL(elem)[i] > 0; break; // # nocov
+  case INTSXP: for (int i=0;i<n;++i) ans[i] = INTEGER(elem)[i] > 0; break; // # nocov
+  default: throw std::string(str) + " must be a logical or something interpretable as a logical value"; break; // # nocov
+  }
+
+  return ans;
+}
+
 #endif
