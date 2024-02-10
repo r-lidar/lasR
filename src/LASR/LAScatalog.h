@@ -20,7 +20,7 @@ class LAScatalog
 public:
   LAScatalog();
   ~LAScatalog();
-  bool read(const std::vector<std::string>& files);
+  bool read(const std::vector<std::string>& files, bool progress = false);
   bool write_vpc(const std::string& file);
   void set_buffer(double buffer) { this->buffer = buffer; };
   void add_query(double xmin, double ymin, double xmax, double ymax);

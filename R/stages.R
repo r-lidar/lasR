@@ -248,9 +248,9 @@ local_maximum = function(ws, min_height = 2, filter = "", ofile = tempfile(filee
 
 # ===== N ====
 
-nothing = function()
+nothing = function(read = FALSE, stream = FALSE)
 {
-  ans <- list(algoname = "nothing")
+  ans <- list(algoname = "nothing", read = read, stream = stream)
   set_lasr_class(ans)
 }
 

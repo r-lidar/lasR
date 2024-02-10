@@ -466,7 +466,7 @@ BOOL LASreaderBuffered::read_point_default()
     if (lasreader->read_point())
     {
       point = lasreader->point;
-      p_count++;
+      p_count = lasreader->p_count;
       return TRUE;
     }
     else if (point_count < buffered_points)

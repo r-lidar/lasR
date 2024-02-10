@@ -1,5 +1,6 @@
 // LASR
 #include "LAScatalog.h"
+#include "Progress.hpp"
 
 // LASlib
 #include "lasreader.hpp"
@@ -16,10 +17,17 @@
 
 namespace pt = boost::property_tree;
 
-bool LAScatalog::read(const std::vector<std::string>& files)
+bool LAScatalog::read(const std::vector<std::string>& files, bool progress)
 {
+  Progress pb;
+  pb.set_total(files.size());
+  pb.set_prefix("Read files headers");
+  pb.set_display(progress);
+
   for (auto& file : files)
   {
+    pb++;
+    pb.show();
     PathType type = parse_path(file);
 
     // A LAS or LAZ file
@@ -66,6 +74,8 @@ bool LAScatalog::read(const std::vector<std::string>& files)
       return false;
     }
   }
+
+  pb.done();
 
   if (epsg_set.size() > 1) eprint("WARNING: mix epsg found. First one retained\n");
   if (wkt_set.size() > 1) eprint("WARNING: mix wkt crs found. First one retained.\n");

@@ -4,7 +4,8 @@
 #' to actually process the point-cloud
 #'
 #' @param pipeline a LASRpipeline. A serie of algorithms called in order
-#' @param ncores integer. Not yet supported.
+#' @param ncores integer. Number of cores to use. Some stages or some steps in some stages
+#' are parallelised but overall one file is process at a time.
 #' @param progress boolean. Displays a progress bar.
 #' @param ... unused
 #'
@@ -22,7 +23,7 @@
 #' ans <- processor(pipeline)
 #' }
 #' @export
-processor = function(pipeline, ncores = 1L, progress = FALSE, ...)
+processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
 {
   dots <- list(...)
   verbose <- if (is.null(dots$verbose)) FALSE else TRUE
