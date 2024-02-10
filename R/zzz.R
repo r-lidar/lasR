@@ -60,7 +60,7 @@ check_update = function()
     msg = paste("lasR", curr, "is an unstable development version")
   }
 
-  if (!is.null(msg)) packageStartupMessage(msg)
+  if (!is.null(msg) & interactive()) packageStartupMessage(msg)
   return(NULL)
 }
 
