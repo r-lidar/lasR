@@ -588,7 +588,7 @@ ofile = paste0(tempdir(), "/chm_*.tif") # wildcard
 x = c(885100, 885100)
 y = c(629200, 629600)
 
-pipeline = reader(f, xc = x, yc = y, radius = 20) + rasterize(2, "max", ofile = ofile)
+pipeline = reader(f, xc = x, yc = y, r = 20) + rasterize(2, "max", ofile = ofile)
 ans = processor(pipeline)
 
 r1 = terra::rast(ans[1])
