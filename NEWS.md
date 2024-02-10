@@ -1,4 +1,4 @@
-# lasR 0.1.2 ()
+# lasR 0.1.2 (2024-02-10)
 
 - New: progress bar when reading the header of the files (`LAScatalog`) can be enabled with `progress = TRUE`
 - Fix: progress bar starts to appear earlier i.e. from 0%. For some pipeline it affects the feeling of progress.
