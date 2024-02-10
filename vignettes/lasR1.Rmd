@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup, echo = F}
-library(lasR)
+suppressPackageStartupMessages(library(lasR))
 ```
 
 ## Rationnale for `lasR` vs. `lidR`

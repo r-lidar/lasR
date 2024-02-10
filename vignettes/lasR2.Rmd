@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup, echo = FALSE}
-library(lasR)
+suppressPackageStartupMessages(library(lasR))
 col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(15)
 print.list <- function(my_list, indent = 0) {
   if (is.null(names(my_list))) {

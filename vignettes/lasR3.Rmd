@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup, echo=F}
-library(lasR)
+suppressPackageStartupMessages(library(lasR))
 ```
 
 After reading the [tutorial](lasR2.html), one may have noticed that writing certain pipelines can be tedious, especially when normalizing a dataset, which always implies using the same code.
