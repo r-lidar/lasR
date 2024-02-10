@@ -381,6 +381,12 @@ void LAScatalog::add_query(double xmin, double ymin, double xmax, double ymax)
   queries.push_back(rect);
 }
 
+void LAScatalog::add_query(double xcenter, double ycenter, double radius)
+{
+  Circle* circ = new Circle(xcenter, ycenter, radius);
+  queries.push_back(circ);
+}
+
 bool LAScatalog::set_noprocess(const std::vector<bool>& b)
 {
   if (b.size() != files.size())
@@ -404,12 +410,6 @@ void LAScatalog::set_chunk_size(double size)
 void LAScatalog::set_chunk_is_file()
 {
   chunk_size = 0;
-}
-
-void LAScatalog::add_query(double xcenter, double ycenter, double radius)
-{
-  Circle* circ = new Circle(xcenter, ycenter, radius);
-  queries.push_back(circ);
 }
 
 bool LAScatalog::get_chunk(int i, Chunk& chunk)
