@@ -106,6 +106,51 @@ test_that("reader_dataframe works with extrabytes",
   expect_false(is.integer(las$bar))
 })
 
+test_that("reader_dataframe works with RGB",
+{
+  f = system.file("extdata", "Example.rds", package="lasR")
+  las = readRDS(f)
+  las$R = 10L
+  las$G = 20L
+  las$B = 30L
+  read = reader(las)
+  write = write_las()
+
+  expect_error(ans <- processor(read+write), NA)
+  expect_equal(basename(ans), "data.frame.las")
+  expect_true(file.exists(ans))
+
+  las = read_las(ans)
+
+  expect_true(all(c("R", "G", "B") %in% names(las)))
+  expect_equal(las$R[1], 10L)
+  expect_equal(las$G[1], 20L)
+  expect_equal(las$B[1], 30L)
+})
+
+test_that("reader_dataframe works with NIR",
+{
+  # there is an issue with point format 8 both in rlas ans lasR.
+  skip("The problem is also in rlas")
+
+  f = system.file("extdata", "Example.rds", package="lasR")
+  las = readRDS(f)
+  las$NIR = 10L
+  read = reader(las)
+  write = write_las()
+
+  expect_error(ans <- processor(read+write), NA)
+  expect_equal(basename(ans), "data.frame.las")
+  expect_true(file.exists(ans))
+
+  las = read_las(ans)
+
+  expect_true(all(c("R", "G", "B", "NIR") %in% names(las)))
+  expect_equal(las$R[1], 0L)
+  expect_equal(las$G[1], 0L)
+  expect_equal(las$B[1], 0L)
+  expect_true(las$NIR[1], 10L)
+})
 
 test_that("reader_dataframe propagates the CRS",
 {
