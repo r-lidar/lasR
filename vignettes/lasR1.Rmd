@@ -105,7 +105,9 @@ I want to segment the trees, explore different methods, and test different param
 
 ### Example 3
 
-I want to extract circular ground inventories and compute metrics for each plot. If the dataset is already normalized, you can use either `lasR` or `lidR`; this is pretty much equivalent. `lidR` will be easier to use; `lasR` will be a little bit more efficient but more difficult to use (yet the [pipeline vignette](lasR3.html) contains a copy-pastable code for that). If your dataset is not normalized, `lasR` will be much simpler in that case, thanks to the pipeline processor that allows adding a normalization stage before computing the metrics.
+I want to extract circular ground inventories and compute metrics for each plot. 
+
+&rarr; If the dataset is already normalized, you can use either `lasR` or `lidR`; this is pretty much equivalent. `lidR` will be easier to use; `lasR` will be a little bit more efficient but more difficult to use (yet the [pipeline vignette](lasR3.html) contains a copy-pastable code for that). If your dataset is not normalized, `lasR` will be much simpler in that case, thanks to the pipeline processor that allows adding a normalization stage before computing the metrics.
 
 ### Example 4
 

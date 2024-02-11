@@ -22,7 +22,7 @@ The following benchmark compares how much time and RAM memory it takes for `lasR
 
 ## Installation
 
-There is currently no plan for releasing `lasR` on CRAN. You must compile and install the package from Github.
+There is currently no plan for releasing `lasR` on CRAN. You must compile and install the package from Github. On Windows you must install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) first to be able to build the package the use the package `remotes` to install the package:
 
 ``` r
 remotes::install_github("r-lidar/lasR")

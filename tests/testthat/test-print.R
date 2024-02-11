@@ -2,11 +2,13 @@ test_that("prints works with complex pipeline",
 {
   count = function(data) { length(data$X) }
   f = paste0(system.file(package="lasR"), "/extdata/bcts/")
+  f = list.files(f, full.names = T)
   read = reader(f)
   del = triangulate(filter = keep_ground())
   npts = callback(count, expose = "x")
+  hull = hulls(del)
   sum = summarise()
-  pipeline = read + del + npts + sum
+  pipeline = read + del + npts + sum + hull
 
   sink(tempfile())
   expect_error(print(pipeline), NA)
