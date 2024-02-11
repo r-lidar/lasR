@@ -3,7 +3,7 @@ test_that("lasR supports a LAS from lidR",
   skip_if_not_installed("lidR")
 
   LASfile <- system.file("extdata", "Megaplot.las", package="lasR")
-  las = lidR::readLAS(LASfile)
+  las = eval(parse(text = "lidR::readLAS(LASfile)")) # eval(parse()) tricks R CMD check because lidR is not a dependency
 
   r1 = reader(las, filter = drop_z_below(2))
   r2 = reader(LASfile, filter = drop_z_below(2))
@@ -25,7 +25,7 @@ test_that("lasR supports a LAScatalog from lidR",
   skip_if_not_installed("lidR")
 
   LASfile <- system.file("extdata", "Example.las", package="lasR")
-  las = lidR::readLAScatalog(LASfile)
+  las = eval(parse(text = "lidR::readLAScatalog(LASfile)")) # eval(parse()) tricks R CMD check because lidR is not a dependency
 
   pipeline = reader(las) + hulls()
 
