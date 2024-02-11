@@ -11,6 +11,7 @@ public:
   LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, LASRalgorithm* algorithm);
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
+  double need_buffer() const override { return MAX(raster.get_xres(), window); };
   bool is_streamable() const override { return algorithm == 0; };
   std::string get_name() const override { return "rasterize"; };
 
