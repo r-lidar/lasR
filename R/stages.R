@@ -484,8 +484,9 @@ reader_files_coverage = function(files, filter = "", buffer = 0, ...)
 
   if (methods::is(files, "LAScatalog"))
   {
+    processed <- files$processed
     files <- files$filename
-    if (!is.null(files$processed)) noprocess = !files$processed
+    if (!is.null(processed)) noprocess = !processed
   }
 
   if (!is.character(files))

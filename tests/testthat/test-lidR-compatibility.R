@@ -30,4 +30,4 @@ test_that("lasR supports a LAScatalog from lidR",
   pipeline = reader(las) + hulls()
 
   expect_error(processor(pipeline), NA)
-  })
+})
