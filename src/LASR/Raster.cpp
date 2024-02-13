@@ -3,6 +3,7 @@
 
 #include "Rcompatibility.h"
 
+// Default constructor creates a Raster from (0,0) to (0,0) with a resolution of 0
 Raster::Raster() : Grid(0, 0, 0, 0, 0, 0), GDALdataset()
 {
   extent[0] = this->xmin;
@@ -12,21 +13,11 @@ Raster::Raster() : Grid(0, 0, 0, 0, 0, 0), GDALdataset()
 
   buffer = 0;
 
-  set_raster(0, 0, 0, 0, 0);
+  GDALdataset::set_raster(0, 0, 0, 0, 0);
   nodata  = NA_F32_RASTER;
 }
 
-Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset(raster)
-{
-  extent[0] = this->xmin;
-  extent[1] = this->ymin;
-  extent[2] = this->xmax;
-  extent[3] = this->ymax;
-
-  buffer = raster.buffer;
-  nodata = raster.nodata;
-}
-
+// Constructor from bounding box and resolution. Can assign a number of bands.
 Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, int layers) : Grid (xmin, ymin, xmax, ymax, res), GDALdataset()
 {
   extent[0] = this->xmin;
@@ -36,11 +27,12 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, i
 
   buffer = 0;
 
-  set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
+  GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
   set_nbands(layers);
   nodata = NA_F32_RASTER;
 }
 
+// Constructor from bounding box and number of row and cols. Can assign a number of bands.
 /*Raster::Raster(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols, int layers) : Grid (xmin, ymin, xmax, ymax, nrows, ncols), GDALdataset()
 {
   extent[0] = this->xmin;
@@ -54,6 +46,36 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, i
   set_nbands(layers);
   nodata  = NA_F32_RASTER;
 }*/
+
+// Copy constructor creates a Raster identical to the input but the underlying gdaldataset
+// is not initialized and there is no file name associated to the new raster.
+Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset(raster)
+{
+  extent[0] = this->xmin;
+  extent[1] = this->ymin;
+  extent[2] = this->xmax;
+  extent[3] = this->ymax;
+
+  buffer = raster.buffer;
+  nodata = raster.nodata;
+}
+
+// Copy constructor with bounding box. Creates a raster identical to the input
+// (same number of bands, crs, band names, etc.) but with an extent that is different.
+Raster::Raster(const Raster& raster, double xmin, double ymin, double xmax, double ymax) : Grid (xmin, ymin, xmax, ymax, raster.get_xres()), GDALdataset()
+{
+  extent[0] = this->xmin;
+  extent[1] = this->ymin;
+  extent[2] = this->xmax;
+  extent[3] = this->ymax;
+
+  GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
+  set_chunk_buffer(raster.get_buffer());
+  set_nbands(raster.nBands);
+  band_names = raster.band_names;
+  nodata = raster.nodata;
+  oSRS = raster.oSRS;
+}
 
 float& Raster::get_value(double x, double y, int layer)
 {

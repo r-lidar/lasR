@@ -11,7 +11,7 @@ Vector::Vector() : GDALdataset()
   extent[1] = 0;
   extent[2] = 0;
   extent[3] = 0;
-  set_vector(wkbUnknown);
+  GDALdataset::set_vector(wkbUnknown);
 }
 
 Vector::Vector(double xmin, double ymin, double xmax, double ymax, int nattr) : GDALdataset()
@@ -21,7 +21,19 @@ Vector::Vector(double xmin, double ymin, double xmax, double ymax, int nattr) : 
   extent[1] = ymin;
   extent[2] = xmax;
   extent[3] = ymax;
-  set_vector(wkbUnknown);
+  GDALdataset::set_vector(wkbUnknown);
+}
+
+Vector::Vector(const Vector& vector, double xmin, double ymin, double xmax, double ymax) : GDALdataset()
+{
+  extent[0] = xmin;
+  extent[1] = ymin;
+  extent[2] = xmax;
+  extent[3] = ymax;
+
+  nattr = vector.nattr;
+  eGType = vector.eGType;
+  oSRS = vector.oSRS;
 }
 
 /*bool Vector::write_point(double x, double y, double z)

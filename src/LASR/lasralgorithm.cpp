@@ -67,23 +67,16 @@ bool LASRalgorithmRaster::set_chunk(const Chunk& chunk)
 {
   LASRalgorithm::set_chunk(chunk);
 
+  // merged = true: there is only one master raster that cover the file collection. Each chunk
+  //    is written to this master file
+  // merged = false: each chunk is written in a new file. We must destroy the previous raster object
+  //    and create a new one with the same properties (CRS, band names, resolution, etc...).
+  //    Destroying a raster closes the underlying file.
   if (merged)
-  {
     raster.set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
-  }
   else
-  {
-    // TODO: need a copy function
-    int nbands = raster.nBands;
-    int buffer = raster.get_buffer();
-    double res = raster.get_xres();
-    OGRSpatialReference oSRS = raster.oSRS;
-    std::vector<std::string> band_names = raster.band_names;
-    raster = Raster(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax, res, nbands);
-    raster.set_chunk_buffer(buffer);
-    raster.band_names = band_names;
-    raster.oSRS = oSRS;
-  }
+    raster = Raster(raster, chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
+
   return true;
 }
 
@@ -146,7 +139,7 @@ void LASRalgorithmRaster::clear(bool last)
 
 /* ==============
  *  VECTOR
- *  ============= */
+ * ============= */
 
 LASRalgorithmVector::LASRalgorithmVector()
 {
@@ -162,19 +155,16 @@ bool LASRalgorithmVector::set_chunk(const Chunk& chunk)
 {
   LASRalgorithm::set_chunk(chunk);
 
+  // merged = true: there is only one master vector file that cover the file collection. Each chunk
+  //    is written to this master file
+  // merged = false: each chunk is written in a new file. We must destroy the previous vector object
+  //    and create a new one with the same properties (CRS, number of attributes, etc...).
+  //    Destroying a vector closes the underlying file.
   if (merged)
-  {
     vector.set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
-  }
   else
-  {
-    // TODO: need a copy function
-    OGRwkbGeometryType eGType = vector.eGType;
-    OGRSpatialReference oSRS = vector.oSRS;
-    vector = Vector(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
-    vector.eGType = eGType;
-    vector.oSRS = oSRS;
-  }
+    vector = Vector(vector, chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
+
   return true;
 }
 

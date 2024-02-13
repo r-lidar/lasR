@@ -8,13 +8,14 @@ class Raster : public Grid, public GDALdataset
 {
 public:
   Raster();
-  Raster(const Raster& raster);
   Raster(double xmin, double ymin, double xmax, double ymax, double res, int layers = 1);
   //Raster(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols, int layers = 1);
+  Raster(const Raster& raster);
+  Raster(const Raster& raster, double xmin, double ymin, double xmax, double ymax);
   void set_value(double x, double y, float value, int layer = 1);
   void set_value(int cell, float value, int layer = 1);
   bool set_nbands(int nbands);
-  int get_buffer() { return buffer; };
+  int get_buffer() const { return buffer; };
   float& get_value(double x, double y, int layer = 1);
   float& get_value(int cell, int layer = 1);
   const std::vector<float>& get_data() const { return data; };

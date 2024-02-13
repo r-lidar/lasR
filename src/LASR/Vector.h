@@ -9,6 +9,7 @@ class Vector : public GDALdataset
 public:
   Vector();
   Vector(double xmin, double ymin, double xmax, double ymax, int nattr = 1);
+  Vector(const Vector& vector, double xmin, double ymin, double xmax, double ymax);
   //bool write_point(double x, double y, double z);
   //bool write_point(const PointXYZ& p);
   bool write_point(const PointLAS& p);
