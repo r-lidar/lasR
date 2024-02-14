@@ -10,6 +10,7 @@ public:
   std::string get_name() const override { return "write_vpc"; }
   bool need_points() const override { return false; }
   bool is_streamable() const override { return true; }
+  LASRvpcwriter* clone() const override { return new LASRvpcwriter(*this); };
 };
 
 #endif

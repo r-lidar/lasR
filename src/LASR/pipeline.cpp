@@ -4,7 +4,7 @@
 #include "lasralgorithm.h"
 #include "Progress.h"
 #include "macros.h"
-#include "openmp.h" // available_threads()
+#include "openmp.h"
 
 Pipeline::Pipeline()
 {
@@ -101,14 +101,11 @@ bool Pipeline::run()
 
 void Pipeline::merge(const Pipeline& other)
 {
-  print("Pipeline::merge\n");
-
   auto it1 = this->pipeline.begin();
   auto it2 = other.pipeline.begin();
 
   while (it1 != this->pipeline.end() && it2 != other.pipeline.end())
   {
-    print("stage: %s / %s\n", (*it1)->get_name().c_str(), (*it2)->get_name().c_str());
     (*it1)->merge(it2->get());
     ++it1;
     ++it2;
