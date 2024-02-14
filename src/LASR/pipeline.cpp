@@ -2,34 +2,58 @@
 #include "LAS.h"
 #include "LAScatalog.h"
 #include "lasralgorithm.h"
-#include "Progress.hpp"
+#include "Progress.h"
 #include "macros.h"
 #include "openmp.h" // available_threads()
 
 Pipeline::Pipeline()
 {
-  read_payload = false;
-  streamable = true;
-  buffer = 0;
+  ncpu = 1;
   parsed = false;
   verbose = false;
+  streamable = true;
+  read_payload = false;
+  buffer = 0;
+
   header = nullptr;
   point = nullptr;
   las = nullptr;
   catalog = nullptr;
 }
 
+// The copy constructor is used for multithreading. It creates a copy of pipeline
+// where each stage is deep copyed but with shared ressource  such as file connection and
+// gdal datasets.
+Pipeline::Pipeline(const Pipeline& other)
+{
+  ncpu = other.ncpu;
+  parsed = other.parsed;
+  verbose = other.verbose;
+  streamable = other.streamable;
+  read_payload = other.read_payload;
+  buffer = other.buffer;
+
+  header = nullptr;
+  point = nullptr;
+  las = nullptr;
+  catalog = other.catalog;
+
+  for (const auto& stage : other.pipeline)
+  {
+    pipeline.push_back(std::unique_ptr<LASRalgorithm>(stage->clone()));
+  }
+}
+
 Pipeline::~Pipeline()
 {
   clean();
-  delete catalog;
-  catalog = nullptr;
 }
 
 bool Pipeline::pre_run()
 {
   // Only used by write_vpc
-  return process(catalog);
+  LAScatalog* ctg = catalog.get();
+  return process(ctg);
 }
 
 bool Pipeline::run()
@@ -73,6 +97,22 @@ bool Pipeline::run()
 
   clean();
   return true;
+}
+
+void Pipeline::merge(const Pipeline& other)
+{
+  print("Pipeline::merge\n");
+
+  auto it1 = this->pipeline.begin();
+  auto it2 = other.pipeline.begin();
+
+  while (it1 != this->pipeline.end() && it2 != other.pipeline.end())
+  {
+    print("stage: %s / %s\n", (*it1)->get_name().c_str(), (*it2)->get_name().c_str());
+    (*it1)->merge(it2->get());
+    ++it1;
+    ++it2;
+  }
 }
 
 bool Pipeline::set_chunk(const Chunk& chunk)

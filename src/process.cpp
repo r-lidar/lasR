@@ -12,23 +12,22 @@
 #include <vector>
 
 // lasR
+#include "openmp.h"
 #include "error.h"
 #include "pipeline.h"
 #include "LAScatalog.h"
 
 SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbose)
 {
+  int ncpu = Rf_asInteger(sexpncpu);
+  bool progrss = Rf_asLogical(sexpprogrss);
+  bool verbose = Rf_asLogical(sexpverbose);
+
   try
   {
-    #ifdef USING_R
-    int ncpu = Rf_asInteger(sexpncpu);
-    bool progrss = Rf_asLogical(sexpprogrss);
-    bool verbose = Rf_asLogical(sexpverbose);
-    #endif
-
     Pipeline pipeline;
     pipeline.set_verbose(verbose);
-    pipeline.set_ncpu(ncpu);
+    pipeline.set_ncpu(1);
 
     if (!pipeline.parse(sexppipeline, true, progrss))
     {
@@ -36,9 +35,10 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     }
 
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
-    lascatalog->set_chunk_size(0);
+    lascatalog->set_chunk_size(0);                   // currently only 0 is supported
 
     int n = lascatalog->get_number_chunks();
+    if (ncpu > n) ncpu = n;
 
     if (verbose)
     {
@@ -58,9 +58,10 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     progress.set_total(n);
     progress.set_display(progrss);
     progress.create_subprocess();
-
     pipeline.set_progress(&progress);
 
+    // Pre-run processes the LAScatalog
+    // write_vpc() is the only stage that processed the LAScatalog
     if (!pipeline.pre_run())
     {
       throw last_error;
@@ -68,45 +69,76 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
     progress.show();
 
-    for (int i = 0 ; i < n ; ++i)
+    #pragma omp parallel num_threads(ncpu)
     {
-      bool last_chunk = i+1 == n;
+      // We need a copy of the pipeline. The copy constructor of the pipeline and stages
+      // ensures that that shared resources are protected (such as connection to output files)
+      // and private data are copied
+      Pipeline pipeline_cpy(pipeline);
 
-      Chunk chunk;
-      if (!lascatalog->get_chunk(i, chunk))
+      #pragma omp for
+      for (int i = 0 ; i < n ; ++i)
       {
-        throw last_error;
+        bool last_chunk = i+1 == n; // TODO:: need to be revised for parallel code
+
+        // We query the chunk i (thread safe)
+        Chunk chunk;
+        if (!lascatalog->get_chunk(i, chunk))
+        {
+          throw last_error;
+        }
+
+        if (verbose)
+        {
+          print("Processing chunk %d/%d in thread %d: %s\n", i+1, n, omp_get_thread_num(), chunk.name.c_str()); // # nocov
+        }
+
+        // If the chunk is not flagged "process" it is a file that is only used as buffer
+        // we can skip the processing
+        if (!chunk.process)
+        {
+          progress.update(i+1, true);
+          progress.show();
+          if (verbose) print("Chunk %d is flagged for not being processed. Skipped.", i);
+          continue;
+        }
+
+        // set_chunk() initialize the region we are working with which is a sub-part of the
+        // overall processed region
+        if (!pipeline_cpy.set_chunk(chunk))
+        {
+          throw last_error;
+        }
+
+        // run() does execute the pipeline. This is encapsulated but at the end each stage
+        // is supposed to contains the data for the current chunk and optionally write the
+        // result into a file
+        if (!pipeline_cpy.run())
+        {
+          throw last_error;
+        }
+
+        // clear() is used by some stages to clean data between two chunks. This is useful
+        // to clear an std::map like in the aggregate pipeline
+        pipeline_cpy.clear(last_chunk);
+
+        #pragma omp critical
+        {
+          progress.update(i+1, true);
+          progress.show();
+        }
       }
 
-      if (verbose)
+      // We have multiple pipelines that each process some chunks and each have a partial
+      // output. We mege in the main pipeline
+      #pragma omp critical
       {
-        print("Processing chunk %d/%d: %s\n", i+1, n, chunk.name.c_str()); // # nocov
+        pipeline.merge(pipeline_cpy);
       }
-
-      if (!chunk.process)
-      {
-        progress.update(i+1, true);
-        progress.show();
-        if (verbose) print("Chunk %d is flagged for not being processed. Skipped.", i);
-        continue;
-      }
-
-      if (!pipeline.set_chunk(chunk))
-      {
-        throw last_error;
-      }
-
-      if (!pipeline.run())
-      {
-        throw last_error;
-      }
-
-      pipeline.clear(last_chunk);
-
-      // Progress bar
-      progress.update(i+1, true);
-      progress.show();
     }
+
+    // We are no longer in the parallel region we can return to R by allocating safely
+    // some R memory
 
     progress.done(true);
 

@@ -16,9 +16,15 @@ public:
   bool is_streamable() const override { return true; }
   std::string get_name() const override { return "summary"; }
 
+  LASRsummary* clone() const override { return new LASRsummary(*this); };
+  void merge(const LASRalgorithm* other) override;
+
 #ifdef USING_R
   SEXP to_R() override;
 #endif
+
+private:
+  void merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2);
 
 private:
   uint64_t npoints;

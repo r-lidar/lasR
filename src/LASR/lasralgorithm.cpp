@@ -26,6 +26,13 @@ LASRalgorithm::~LASRalgorithm()
   #endif
 }
 
+bool LASRalgorithm::set_chunk(const Chunk& chunk)
+{
+  set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
+  if (chunk.shape == ShapeType::CIRCLE) circular = true;
+  return true;
+}
+
 /* ==============
  *  WRITER
  *  ============= */

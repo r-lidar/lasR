@@ -14,6 +14,7 @@ public:
   std::string get_name() const override { return "nothing"; };
   bool is_streamable() const override { return streamable; };
   bool need_points() const override { return read_points; };
+  LASRnothing* clone() const override { return new LASRnothing(*this); };
 
   private:
     bool streamable;

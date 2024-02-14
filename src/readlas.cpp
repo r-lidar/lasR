@@ -8,6 +8,14 @@ LASRlasreader::LASRlasreader()
   lasheader = nullptr;
 }
 
+LASRlasreader::LASRlasreader(const LASRlasreader& other) : LASRalgorithm(other)
+{
+  lasreadopener = nullptr;
+  lasreader = nullptr;
+  lasheader = nullptr;
+  filter = other.filter;
+}
+
 LASRlasreader::~LASRlasreader()
 {
   // This happens when an error occurs in the pipeline otherwise

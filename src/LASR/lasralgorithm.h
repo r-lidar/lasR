@@ -30,6 +30,7 @@ class LASRalgorithm
 {
 public:
   LASRalgorithm();
+
   virtual ~LASRalgorithm() = 0;
   virtual bool process(LASheader*& header) { return true; };
   virtual bool process(LASpoint*& p) { return true; };
@@ -37,12 +38,7 @@ public:
   virtual bool process(LAScatalog*& las) { return true; };
   virtual bool write() { return true; };
   virtual void clear(bool last = false) { return; };
-  virtual bool set_chunk(const Chunk& chunk)
-  {
-    set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
-    if (chunk.shape == ShapeType::CIRCLE) circular = true;
-    return true;
-  };
+  virtual bool set_chunk(const Chunk& chunk);
   virtual bool set_crs(int epsg) { return false; };
   virtual bool set_crs(std::string wkt) { return false; };
   virtual void set_output_file(std::string file) { ofile = file; };
@@ -52,8 +48,13 @@ public:
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
   virtual void set_filter(std::string f) { char* s = const_cast<char*>(f.c_str()); lasfilter.parse(s); };
-
   virtual std::string get_name() const = 0;
+
+  // For multi-threading when processing several files in parallel.
+  // Each stage MUST have a clone() method to create a copy of itself sharing or not the resources.
+  // Each stage CAN have a merge() method to merge the output computed in each thread.
+  virtual LASRalgorithm* clone() const { return nullptr; }; // = 0
+  virtual void merge(const LASRalgorithm* other) { return; };
 
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
   void set_verbose(bool verbose) { this->verbose = verbose; };
@@ -62,6 +63,7 @@ public:
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
   std::string get_uid() { return uid; };
 
+  // The default method consist in returning the string 'ofile'.
   #ifdef USING_R
   virtual SEXP to_R()
   {
@@ -92,7 +94,6 @@ protected:
   int nsexpprotected;
 #endif
 };
-
 
 class LASRalgorithmWriter : public LASRalgorithm
 {

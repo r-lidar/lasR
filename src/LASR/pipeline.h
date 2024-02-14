@@ -24,10 +24,12 @@ class Pipeline
 {
   public:
     Pipeline();
+    Pipeline(const Pipeline& other);
     ~Pipeline();
     bool parse(const SEXP sexpargs, bool build_catalog = true, bool progress = false); // implemented in parser.cpp
     bool pre_run();
     bool run();
+    void merge(const Pipeline& other);
     void clear(bool last = false);
     bool is_streamable();
     double need_buffer();
@@ -39,7 +41,7 @@ class Pipeline
     void set_verbose(bool verbose);
     //void set_buffer(double buffer);
     void set_progress(Progress* progress);
-    LAScatalog* get_catalog() const { return catalog; };
+    LAScatalog* get_catalog() const { return catalog.get(); };
 
     #ifdef USING_R
     SEXP to_R();
@@ -61,11 +63,13 @@ private:
     bool streamable;
     bool read_payload;
     double buffer;
+    std::string last_error;
 
     LAS* las;
     LASpoint* point;
     LASheader* header;
-    LAScatalog* catalog;
+
+    std::shared_ptr<LAScatalog> catalog;
 
     std::list<std::unique_ptr<LASRalgorithm>> pipeline;
 };

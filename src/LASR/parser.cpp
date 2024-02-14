@@ -36,8 +36,6 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
   parsed = false;
   pipeline.clear();
-  delete catalog;
-  catalog = nullptr;
 
   for (auto i = 0; i < Rf_length(sexpargs); ++i)
   {
@@ -72,7 +70,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       {
         std::vector<std::string> files = get_element_as_vstring(stage, "files");
 
-        catalog = new LAScatalog;
+        catalog = std::make_shared<LAScatalog>();
         if (!catalog->read(files, progress))
         {
           last_error = "In the parser while reading the file collection: " + last_error; // # nocov
@@ -155,7 +153,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
       if (build_catalog)
       {
-        catalog = new LAScatalog;
+        catalog = std::make_shared<LAScatalog>();
         catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
         catalog->set_wkt(wkt);
 

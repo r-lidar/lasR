@@ -58,6 +58,7 @@ void Progress::create_subprocess()
   if (sub) delete sub;
   sub = new Progress();
   sub->set_display(this->display);
+  //print("Progress::create_subprocess main %p, sub %p\n", this, sub);
 }
 
 void Progress::set_prefix(std::string prefix)
@@ -83,6 +84,8 @@ void Progress::update(uint64_t current, bool main)
 
 void Progress::reset()
 {
+  //print("Progress::reset main %p, sub %p\n", this, sub);
+
   if (sub)
   {
     sub->reset();
