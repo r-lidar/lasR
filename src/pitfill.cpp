@@ -52,7 +52,7 @@ bool LASRpitfill::process(LAS*& las)
   float med_size = 3;
   float dil_radius = 0;
 
-  float* ans = st_onge::chm_prep(&geom[0], snlin, sncol, lap_size, thr_lap, thr_spk, med_size, dil_radius, rin.nodata);
+  float* ans = st_onge::chm_prep(&geom[0], snlin, sncol, lap_size, thr_lap, thr_spk, med_size, dil_radius, rin.get_nodata());
 
   if (ans == NULL)
   {
