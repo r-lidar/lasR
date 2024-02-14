@@ -1,5 +1,4 @@
 #include "aggregate.h"
-#include "Progress.hpp"
 
 #ifdef USING_R
 

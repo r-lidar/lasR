@@ -1,5 +1,4 @@
 #include "localmaximum.h"
-#include "Progress.hpp"
 #include "openmp.h"
 
 #include <chrono>

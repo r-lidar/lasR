@@ -1,5 +1,4 @@
 #include "sampling.h"
-#include "Progress.hpp"
 #include "Grid.h"
 
 #include <unordered_set>

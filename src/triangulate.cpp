@@ -1,6 +1,5 @@
 #include "triangulate.h"
 
-#include "Progress.hpp"
 #include "Raster.h"
 #include "Shape.h"
 #include "openmp.h"

@@ -22,7 +22,7 @@
 #include "LAScatalog.h"
 #include "Raster.h"
 #include "Vector.h"
-#include "Progress.hpp"
+#include "Progress.h"
 #include "Rcompatibility.h"
 #include "error.h"
 
