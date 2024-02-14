@@ -413,7 +413,7 @@ void LAScatalog::set_chunk_is_file()
   chunk_size = 0;
 }
 
-bool LAScatalog::get_chunk(int i, Chunk& chunk)
+bool LAScatalog::get_chunk(int i, Chunk& chunk) const
 {
   if (i < 0 || i > get_number_chunks())
   {
@@ -422,7 +422,9 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   }
 
   if (!laskdtree->was_built())
-    laskdtree->build();
+  {
+    last_error = "internal error: spatial index of tile not built";
+  }
 
   bool success = false;
 
@@ -436,7 +438,7 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk)
   return success;
 }
 
-bool LAScatalog::get_chunk_regular(int i, Chunk& chunk)
+bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
 {
   chunk.clear();
 
@@ -490,7 +492,7 @@ bool LAScatalog::get_chunk_regular(int i, Chunk& chunk)
   return true;
 }
 
-bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk)
+bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
 {
   unsigned int index;
   chunk.clear();
@@ -582,6 +584,11 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk)
   }
 
   return true;
+}
+
+void LAScatalog::build_index()
+{
+  if (!laskdtree->was_built()) laskdtree->build();
 }
 
 bool LAScatalog::check_spatial_index()

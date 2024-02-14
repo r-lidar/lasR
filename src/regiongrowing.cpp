@@ -100,7 +100,7 @@ bool LASRregiongrowing::process(LAS*& las)
         for(unsigned int i = 0 ; i < neighbours.size() ; i++) // For each neighbouring pixel
         {
           int cell = neighbours[i];
-          if (raster.get_value(cell) != raster.nodata) continue;
+          if (raster.get_value(cell) != raster.get_nodata()) continue;
 
           float val = image.get_value(cell);
           double threshold1 = MIN3(th_tree, hSeed*th_seed, mhCrown*th_crown);

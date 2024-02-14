@@ -80,7 +80,7 @@ bool LASRtransformwith::process(LAS*& las)
     while (las->read_point())
     {
       float val = raster.get_value(las->point.get_x(), las->point.get_y());
-      if (val != raster.nodata) hag[las->current_point] = val;
+      if (val != raster.get_nodata()) hag[las->current_point] = val;
     }
   }
 

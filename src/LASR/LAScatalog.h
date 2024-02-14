@@ -34,7 +34,7 @@ public:
   std::string get_wkt() const { return wkt; };
   void set_epsg(int epsg) { this->epsg = epsg; };
   int get_epsg() const { return epsg; };
-  bool get_chunk(int index, Chunk& chunk);
+  bool get_chunk(int index, Chunk& chunk) const;
   int get_number_chunks() const;
   int get_number_files() const;
   int get_number_indexed_files() const;
@@ -44,6 +44,7 @@ public:
   double get_xmax() const { return xmax; };
   double get_ymax() const { return ymax; };
   bool check_spatial_index();
+  void build_index();
   void clear();
 
   #ifdef USING_R
@@ -62,8 +63,8 @@ private:
   void add_wkt(const std::string& wkt);
   void add_epsg(int epsg);
   void add_crs(const LASheader* header);
-  bool get_chunk_regular(int index, Chunk& chunk);
-  bool get_chunk_with_query(int index, Chunk& chunk);
+  bool get_chunk_regular(int index, Chunk& chunk) const;
+  bool get_chunk_with_query(int index, Chunk& chunk) const;
   PathType parse_path(const std::string& path);
 
 private:

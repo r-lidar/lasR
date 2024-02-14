@@ -15,13 +15,14 @@ public:
   void set_value(double x, double y, float value, int layer = 1);
   void set_value(int cell, float value, int layer = 1);
   bool set_nbands(int nbands);
+  void set_chunk(double xmin, double ymin, double xmax, double ymax);
+  void set_chunk_buffer(int buffer);
   int get_buffer() const { return buffer; };
+  float get_nodata() const { return nodata; };
   float& get_value(double x, double y, int layer = 1);
   float& get_value(int cell, int layer = 1);
   const std::vector<float>& get_data() const { return data; };
   bool write();
-  void set_chunk(double xmin, double ymin, double xmax, double ymax);
-  void set_chunk_buffer(int buffer);
   void show() const;
   float& operator()(int row, int col)
   {
