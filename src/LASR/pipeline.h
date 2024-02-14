@@ -68,7 +68,7 @@ private:
     LASheader* header;
     LAScatalog* catalog;
     std::string last_error;
-    std::list<std::shared_ptr<LASRalgorithm>> pipeline;
+    std::list<std::unique_ptr<LASRalgorithm>> pipeline;
 };
 
 #endif

@@ -57,8 +57,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       }
 
       // Create a reader stage
-      auto v = std::make_shared<LASRlasreader>();
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRlasreader>();
+      pipeline.push_back(std::move(v));
 
       // This is the buffer provided by the user. The actual buffer may be larger
       // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
@@ -150,8 +150,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
         if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
       }
 
-      auto v = std::make_shared<LASRdataframereader>(xmin, ymin, xmax, ymax, dataframe, accuracy, wkt);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRdataframereader>(xmin, ymin, xmax, ymax, dataframe, accuracy, wkt);
+      pipeline.push_back(std::move(v));
 
       if (build_catalog)
       {
@@ -187,20 +187,20 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       {
         double window = get_element_as_double(stage, "window");
         std::vector<int> methods = get_element_as_vint(stage, "method");
-        auto v = std::make_shared<LASRrasterize>(xmin, ymin, xmax, ymax, res, window, methods);
-        pipeline.push_back(v);
+        auto v = std::make_unique<LASRrasterize>(xmin, ymin, xmax, ymax, res, window, methods);
+        pipeline.push_back(std::move(v));
       }
       else
       {
         std::string uid = get_element_as_string(stage, "connect");
-        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
         if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
         LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
         if (p)
         {
-          auto v = std::make_shared<LASRrasterize>(xmin, ymin, xmax, ymax, res, p);
-          pipeline.push_back(v);
+          auto v = std::make_unique<LASRrasterize>(xmin, ymin, xmax, ymax, res, p);
+          pipeline.push_back(std::move(v));
         }
         else
         {
@@ -214,58 +214,58 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       double ws = get_element_as_double(stage, "ws");
       double min_height = get_element_as_double(stage, "min_height");
       std::string use_attribute = get_element_as_string(stage, "use_attribute");
-      auto v = std::make_shared<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, use_attribute);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, use_attribute);
+      pipeline.push_back(std::move(v));
     }
     else if (name == "summarise")
     {
       double zwbin = get_element_as_double(stage, "zwbin");
       double iwbin = get_element_as_double(stage, "iwbin");
-      auto v = std::make_shared<LASRsummary>(xmin, ymin, xmax, ymax, zwbin, iwbin);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRsummary>(xmin, ymin, xmax, ymax, zwbin, iwbin);
+      pipeline.push_back(std::move(v));
     }
     else if (name == "triangulate")
     {
       double max_edge = get_element_as_double(stage, "max_edge");
       std::string use_attribute = get_element_as_string(stage, "use_attribute");
-      auto v = std::make_shared<LASRtriangulate>(xmin, ymin, xmax, ymax, max_edge, use_attribute);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRtriangulate>(xmin, ymin, xmax, ymax, max_edge, use_attribute);
+      pipeline.push_back(std::move(v));
     }
     else if (name == "write_las")
     {
       bool keep_buffer = get_element_as_bool(stage, "keep_buffer");
-      auto v = std::make_shared<LASRlaswriter>(xmin, xmax, ymin, ymax, keep_buffer);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRlaswriter>(xmin, xmax, ymin, ymax, keep_buffer);
+      pipeline.push_back(std::move(v));
     }
     else if (name == "write_lax")
     {
-      auto v = std::make_shared<LASRlaxwriter>();
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRlaxwriter>();
+      pipeline.push_back(std::move(v));
     }
     else if (name == "write_vpc")
     {
-      auto v = std::make_shared<LASRvpcwriter>();
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRvpcwriter>();
+      pipeline.push_back(std::move(v));
     }
     else if (name == "transform_with")
     {
       std::string uid = get_element_as_string(stage, "connect");
       std::string op = get_element_as_string(stage, "operator");
       std::string attr = get_element_as_string(stage, "store_in_attribute");
-      auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+      auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
       if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
       LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
       LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(it->get());
       if (p)
       {
-        auto v = std::make_shared<LASRtransformwith>(xmin, ymin, xmax, ymax, p, op, attr);
-        pipeline.push_back(v);
+        auto v = std::make_unique<LASRtransformwith>(xmin, ymin, xmax, ymax, p, op, attr);
+        pipeline.push_back(std::move(v));
       }
       else if(q)
       {
-        auto v = std::make_shared<LASRtransformwith>(xmin, ymin, xmax, ymax, q, op, attr);
-        pipeline.push_back(v);
+        auto v = std::make_unique<LASRtransformwith>(xmin, ymin, xmax, ymax, q, op, attr);
+        pipeline.push_back(std::move(v));
       }
       else
       {
@@ -282,14 +282,14 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       int med_size = get_element_as_int(stage, "med_size");
       int dil_radius = get_element_as_int(stage, "dil_radius");
 
-      auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+      auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
       if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
       LASRrasterize * p = dynamic_cast<LASRrasterize*>(it->get());
       if (p)
       {
-        auto v = std::make_shared<LASRpitfill>(xmin, ymin, xmax, ymax, lap_size, thr_lap, thr_spk, med_size, dil_radius, p);
-        pipeline.push_back(v);
+        auto v = std::make_unique<LASRpitfill>(xmin, ymin, xmax, ymax, lap_size, thr_lap, thr_spk, med_size, dil_radius, p);
+        pipeline.push_back(std::move(v));
       }
       else
       {
@@ -300,14 +300,14 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     else if (name  == "sampling_voxel")
     {
       double res = get_element_as_double(stage, "res");
-      auto v = std::make_shared<LASRsamplingvoxels>(xmin, ymin, xmax, ymax, res);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRsamplingvoxels>(xmin, ymin, xmax, ymax, res);
+      pipeline.push_back(std::move(v));
     }
     else if (name  == "sampling_pixel")
     {
       double res = get_element_as_double(stage, "res");
-      auto v = std::make_shared<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res);
+      pipeline.push_back(std::move(v));
     }
     else if (name  == "region_growing")
     {
@@ -318,17 +318,17 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
       std::string uid1 = get_element_as_string(stage, "connect1");
       std::string uid2 = get_element_as_string(stage, "connect2");
-      auto it1 = std::find_if(pipeline.begin(), pipeline.end(), [&uid1](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid1; });
+      auto it1 = std::find_if(pipeline.begin(), pipeline.end(), [&uid1](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid1; });
       if (it1 == pipeline.end()) { last_error = "Cannot find stage with this uid";  return false; }
-      auto it2 = std::find_if(pipeline.begin(), pipeline.end(), [&uid2](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid2; });
+      auto it2 = std::find_if(pipeline.begin(), pipeline.end(), [&uid2](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid2; });
       if (it2 == pipeline.end()) { last_error = "Cannot find stage with this uid";  return false; }
 
       LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(it1->get());
       LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(it2->get());
       if (p && q)
       {
-        auto v = std::make_shared<LASRregiongrowing>(xmin, ymin, xmax, ymax,th_tree, th_seed, th_cr, max_cr, q, p);
-        pipeline.push_back(v);
+        auto v = std::make_unique<LASRregiongrowing>(xmin, ymin, xmax, ymax,th_tree, th_seed, th_cr, max_cr, q, p);
+        pipeline.push_back(std::move(v));
       }
       else
       {
@@ -342,7 +342,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       if (contains_element(stage, "connect"))
       {
         std::string uid = get_element_as_string(stage, "connect");
-        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::shared_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
         if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
         p = dynamic_cast<LASRtriangulate*>(it->get());
         if (p == nullptr)
@@ -352,16 +352,16 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
         }
       }
 
-      auto v = std::make_shared<LASRboundaries>(xmin, ymin, xmax, ymax, p);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRboundaries>(xmin, ymin, xmax, ymax, p);
+      pipeline.push_back(std::move(v));
     }
     else if (name == "classify_isolated_points")
     {
       double res = get_element_as_double(stage, "res");
       int n = get_element_as_int(stage, "n");
       int classification = get_element_as_int(stage, "class");
-      auto v = std::make_shared<LASRnoiseivf>(xmin, ymin, xmax, ymax, res, n, classification);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRnoiseivf>(xmin, ymin, xmax, ymax, res, n, classification);
+      pipeline.push_back(std::move(v));
     }
     else if (name == "add_extrabytes")
     {
@@ -370,15 +370,15 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       std::string desc = get_element_as_string(stage, "description");
       double scale = get_element_as_double(stage, "scale");
       double offset = get_element_as_double(stage, "offset");
-      auto v = std::make_shared<LASRaddattribute>(data_type, name, desc, scale, offset);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRaddattribute>(data_type, name, desc, scale, offset);
+      pipeline.push_back(std::move(v));
     }
     else if (name == "nothing")
     {
       bool read = get_element_as_bool(stage, "read");
       bool stream = get_element_as_bool(stage, "stream");
-      auto v = std::make_shared<LASRnothing>(read, stream);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRnothing>(read, stream);
+      pipeline.push_back(std::move(v));
     }
     #ifdef USING_R
     else if (name == "aggregate")
@@ -387,8 +387,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       SEXP env = get_element(stage, "env");
       double res = get_element_as_double(stage, "res");
       double win = get_element_as_double(stage, "window");
-      auto v = std::make_shared<LASRaggregate>(xmin, ymin, xmax, ymax, res, win, call, env);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRaggregate>(xmin, ymin, xmax, ymax, res, win, call, env);
+      pipeline.push_back(std::move(v));
     }
     else if (name  == "callback")
     {
@@ -397,8 +397,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       bool drop_buffer = get_element_as_bool(stage, "drop_buffer");
       SEXP fun = get_element(stage, "fun");
       SEXP args = get_element(stage, "args");
-      auto v = std::make_shared<LASRcallback>(xmin, ymin, xmax, ymax, expose, fun, args, modify, drop_buffer);
-      pipeline.push_back(v);
+      auto v = std::make_unique<LASRcallback>(xmin, ymin, xmax, ymax, expose, fun, args, modify, drop_buffer);
+      pipeline.push_back(std::move(v));
     }
     #endif
     else
@@ -407,7 +407,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       return false; // # nocov
     }
 
-    auto it = pipeline.back();
+    auto& it = pipeline.back();
     it->set_uid(uid);
     it->set_filter(filter);
     it->set_output_file(output);
@@ -444,8 +444,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     // only if needed.
     if (!catalog->check_spatial_index())
     {
-      auto v = std::make_shared<LASRlaxwriter>();
-      pipeline.push_front(v);
+      auto v = std::make_unique<LASRlaxwriter>();
+      pipeline.push_front(std::move(v));
       print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n", catalog->get_number_files()-catalog->get_number_indexed_files());
     }
   }
