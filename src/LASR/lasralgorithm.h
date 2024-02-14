@@ -24,6 +24,7 @@
 #include "Vector.h"
 #include "Progress.hpp"
 #include "Rcompatibility.h"
+#include "error.h"
 
 class LASRalgorithm
 {
@@ -60,7 +61,6 @@ public:
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
   std::string get_uid() { return uid; };
-  std::string get_last_error() { return last_error; };
 
   #ifdef USING_R
   virtual SEXP to_R()
@@ -85,7 +85,6 @@ protected:
   std::string ifile;
   std::string ofile;
   std::string uid;
-  std::string last_error;
   LASfilter lasfilter;
   Progress* progress;
 

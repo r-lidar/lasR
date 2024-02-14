@@ -40,7 +40,6 @@ class Pipeline
     //void set_buffer(double buffer);
     void set_progress(Progress* progress);
     LAScatalog* get_catalog() const { return catalog; };
-    std::string get_last_error() const { return last_error; };
 
     #ifdef USING_R
     SEXP to_R();
@@ -67,7 +66,7 @@ private:
     LASpoint* point;
     LASheader* header;
     LAScatalog* catalog;
-    std::string last_error;
+
     std::list<std::unique_ptr<LASRalgorithm>> pipeline;
 };
 

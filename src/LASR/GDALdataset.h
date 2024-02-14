@@ -1,6 +1,8 @@
 #ifndef GDALDASET_H
 #define GDALDASET_H
 
+#include "error.h"
+
 #include <gdal_priv.h>
 #include <ogrsf_frmts.h>
 
@@ -35,13 +37,11 @@ public:
   int nXsize;
   int nYsize;
   int nBands;
-  int last_error_code;
   double geo_transform[6];
 
   float nodata;
 
   std::string file;
-  std::string last_error;
   std::vector<std::string> band_names;
 
   GDALDatasetType dType;

@@ -75,7 +75,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
         catalog = new LAScatalog;
         if (!catalog->read(files, progress))
         {
-          last_error = "In the parser while reading the file collection: " + catalog->last_error; // # nocov
+          last_error = "In the parser while reading the file collection: " + last_error; // # nocov
           return false; // # nocov
         }
 
@@ -84,7 +84,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
           std::vector<bool> noproces = get_element_as_vbool(stage, "noprocess");
           if (!catalog->set_noprocess(noproces))
           {
-            last_error = "In the parser while reading the file collection: " + catalog->last_error; // # nocov
+            last_error = "In the parser while reading the file collection: " + last_error; // # nocov
             return false; // # nocov
           }
         }

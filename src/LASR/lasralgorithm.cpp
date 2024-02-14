@@ -125,7 +125,6 @@ bool LASRalgorithmRaster::write()
 {
   if (ofile.empty()) return true;
   if (raster.write()) return true;
-  last_error = raster.last_error; // # nocov
   return false; // # nocov
 }
 

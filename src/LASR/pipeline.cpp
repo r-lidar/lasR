@@ -81,7 +81,7 @@ bool Pipeline::set_chunk(const Chunk& chunk)
   {
     if (!stage->set_chunk(chunk))
     {
-      last_error = "in " + stage->get_name() + " while initalizing: " + stage->get_last_error(); // # nocov
+      last_error = "in " + stage->get_name() + " while initalizing: " + last_error; // # nocov
       return false; // # nocov
     }
 
@@ -143,7 +143,7 @@ bool Pipeline::process(LASheader*& header)
     success = stage->process(header);
     if (!success)
     {
-      last_error = "in '" + stage->get_name() + "' while processing the header: " + stage->get_last_error(); // # nocov
+      last_error = "in '" + stage->get_name() + "' while processing the header: " + last_error; // # nocov
       return false; // # nocov
     }
   }
@@ -165,7 +165,7 @@ bool Pipeline::process(LASpoint*& point)
 
       if (!success)
       {
-        last_error = "in '" + stage->get_name() + "' while processing a point: " + stage->get_last_error(); // # nocov
+        last_error = "in '" + stage->get_name() + "' while processing a point: " + last_error; // # nocov
         return false; // # nocov
       }
 
@@ -192,7 +192,7 @@ bool Pipeline::process(LAS*& las)
     bool success = stage->process(las);
     if (!success)
     {
-      last_error = "in '" + stage->get_name() + "' while processing the point cloud: " + stage->get_last_error();
+      last_error = "in '" + stage->get_name() + "' while processing the point cloud: " + last_error;
       return false;
     }
   }
@@ -207,7 +207,7 @@ bool Pipeline::process(LAScatalog*& catalog)
     bool success = stage->process(catalog);
     if (!success)
     {
-      last_error = "in '" + stage->get_name() + "' while processing the catalog: " + stage->get_last_error(); // # nocov
+      last_error = "in '" + stage->get_name() + "' while processing the catalog: " + last_error; // # nocov
       return false; // # nocov
     }
   }
@@ -222,7 +222,7 @@ bool Pipeline::write()
     bool success = stage->write();
     if (!success)
     {
-      last_error = "in " + stage->get_name() + " while writing the output: " + stage->get_last_error();
+      last_error = "in " + stage->get_name() + " while writing the output: " + last_error;
       return false;
     }
   }

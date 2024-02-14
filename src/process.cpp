@@ -12,6 +12,7 @@
 #include <vector>
 
 // lasR
+#include "error.h"
 #include "pipeline.h"
 #include "LAScatalog.h"
 
@@ -31,7 +32,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
     if (!pipeline.parse(sexppipeline, true, progrss))
     {
-      throw pipeline.get_last_error();
+      throw last_error;
     }
 
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
@@ -62,7 +63,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
     if (!pipeline.pre_run())
     {
-      throw pipeline.get_last_error();
+      throw last_error;
     }
 
     progress.show();
@@ -74,7 +75,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       Chunk chunk;
       if (!lascatalog->get_chunk(i, chunk))
       {
-        throw lascatalog->last_error;
+        throw last_error;
       }
 
       if (verbose)
@@ -92,12 +93,12 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
       if (!pipeline.set_chunk(chunk))
       {
-        throw pipeline.get_last_error();
+        throw last_error;
       }
 
       if (!pipeline.run())
       {
-        throw pipeline.get_last_error();
+        throw last_error;
       }
 
       pipeline.clear(last_chunk);
@@ -175,7 +176,7 @@ SEXP get_pipeline_info(SEXP sexppipeline)
     Pipeline pipeline;
     if (!pipeline.parse(sexppipeline, false))
     {
-      throw pipeline.get_last_error();
+      throw last_error;
     }
     bool is_streamable = pipeline.is_streamable();
     bool read_points = pipeline.need_points();

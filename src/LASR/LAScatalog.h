@@ -1,6 +1,8 @@
 #ifndef LASCATALOG_H
 #define LASCATALOG_H
 
+#include "error.h"
+
 #include "Chunk.h"
 #include "Shape.h"
 
@@ -63,9 +65,6 @@ private:
   bool get_chunk_regular(int index, Chunk& chunk);
   bool get_chunk_with_query(int index, Chunk& chunk);
   PathType parse_path(const std::string& path);
-
-public:
-  std::string last_error;
 
 private:
 

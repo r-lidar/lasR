@@ -145,7 +145,7 @@ bool LASRlocalmaximum::write()
   {
     if (!vector.write_point(p))
     {
-      if (vector.last_error_code != GDALdataset::DUPFID)
+      if (last_error_code != GDALdataset::DUPFID)
         return false;
       else
         dupfid++;

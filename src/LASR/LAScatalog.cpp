@@ -1,6 +1,7 @@
 // LASR
 #include "LAScatalog.h"
 #include "Progress.hpp"
+#include "error.h"
 
 // LASlib
 #include "lasreader.hpp"
