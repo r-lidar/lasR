@@ -49,7 +49,7 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, i
 
 // Copy constructor creates a Raster identical to the input but the underlying gdaldataset
 // is not initialized and there is no file name associated to the new raster.
-Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset(raster)
+/*Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset(raster)
 {
   extent[0] = this->xmin;
   extent[1] = this->ymin;
@@ -58,7 +58,7 @@ Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset(raster)
 
   buffer = raster.buffer;
   nodata = raster.nodata;
-}
+}*/
 
 // Copy constructor with bounding box. Creates a raster identical to the input
 // (same number of bands, crs, band names, etc.) but with an extent that is different.
