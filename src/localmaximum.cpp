@@ -18,8 +18,11 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
 
   this->use_attribute = use_attribute;
 
+
+
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
+  vector.set_fields_for(Vector::writable::POINTLAS);
 }
 
 bool LASRlocalmaximum::process(LAS*& las)
@@ -143,7 +146,7 @@ bool LASRlocalmaximum::write()
 
   for (const auto& p : lm)
   {
-    if (!vector.write_point(p))
+    if (!vector.write(p))
     {
       if (last_error_code != GDALdataset::DUPFID)
         return false;

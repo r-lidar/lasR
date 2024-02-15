@@ -6,6 +6,7 @@
 
 Vector::Vector() : GDALdataset()
 {
+  writetype = UNDEFINED;
   nattr = 0;
   extent[0] = 0;
   extent[1] = 0;
@@ -16,6 +17,7 @@ Vector::Vector() : GDALdataset()
 
 Vector::Vector(double xmin, double ymin, double xmax, double ymax, int nattr) : GDALdataset()
 {
+  writetype = UNDEFINED;
   this->nattr = nattr;
   extent[0] = xmin;
   extent[1] = ymin;
@@ -34,6 +36,7 @@ Vector::Vector(const Vector& vector, double xmin, double ymin, double xmax, doub
   nattr = vector.nattr;
   eGType = vector.eGType;
   oSRS = vector.oSRS;
+  writetype = vector.writetype;
 }
 
 /*bool Vector::write_point(double x, double y, double z)
@@ -81,15 +84,15 @@ bool Vector::write_point(const PointXYZ& p)
   return write_point(p.x, p.y, p.z);
 }*/
 
-bool Vector::write_point(const PointLAS& p)
+bool Vector::create_file()
 {
-  if (!dataset)
+  if (!GDALdataset::create_file())
   {
-    if (!create_file())
-    {
-      return false; // # nocov
-    }
+    return false;
+  }
 
+  if (writetype == POINTLAS)
+  {
     OGRFieldDefn intensity("Intensity", OFTInteger);
     layer->CreateField(&intensity);
 
@@ -104,6 +107,17 @@ bool Vector::write_point(const PointLAS& p)
 
     OGRFieldDefn scanangle("ScanAngle", OFTReal);
     layer->CreateField(&scanangle);
+  }
+
+  return true;
+}
+
+bool Vector::write(const PointLAS& p)
+{
+  if (!dataset)
+  {
+    last_error = "cannot write with uninitialized GDALDataset"; // # nocov
+    return false;
   }
 
   if (eGType != wkbPoint25D)
@@ -159,14 +173,12 @@ bool Vector::write_point(const PointLAS& p)
   return true;
 }
 
-bool Vector::write_triangulation(const std::vector<TriangleXYZ>& triangles)
+bool Vector::write(const std::vector<TriangleXYZ>& triangles)
 {
   if (!dataset)
   {
-    if (!create_file())
-    {
-      return false; // # nocov
-    }
+    last_error = "cannot write with uninitialized GDALDataset"; // # nocov
+    return false;
   }
 
   if (eGType != wkbMultiPolygon25D)
@@ -209,14 +221,12 @@ bool Vector::write_triangulation(const std::vector<TriangleXYZ>& triangles)
   return true;
 }
 
-bool Vector::write_polygon(const std::vector<PolygonXY>& poly)
+bool Vector::write(const std::vector<PolygonXY>& poly)
 {
   if (!dataset)
   {
-    if (!create_file())
-    {
-      return false; // # nocov
-    }
+    last_error = "cannot write with uninitialized GDALDataset"; // # nocov
+    return false;
   }
 
   if (eGType != wkbPolygon)

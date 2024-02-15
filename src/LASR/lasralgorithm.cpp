@@ -202,6 +202,10 @@ void LASRalgorithmVector::set_input_file_name(std::string file)
   {
     ofile.replace(pos, 1, ifile);
     vector.set_file(ofile);
+    if (!vector.create_file())
+    {
+      throw last_error;
+    }
     written.push_back(ofile);
   }
 }
@@ -216,6 +220,10 @@ void LASRalgorithmVector::set_output_file(std::string file)
   {
     merged = true;
     vector.set_file(file);
+    if (!vector.create_file())
+    {
+      throw last_error;
+    }
     written.push_back(file);
   }
 }

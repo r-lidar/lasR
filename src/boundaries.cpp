@@ -109,7 +109,7 @@ void LASRboundaries::clear(bool last)
 
 bool LASRboundaries::write()
 {
-  return vector.write_polygon(contour);
+  return vector.write(contour);
 }
 
 bool LASRboundaries::need_points() const

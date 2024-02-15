@@ -249,11 +249,6 @@ bool GDALdataset::set_crs(int epsg)
     // # nocov end
   }
 
-  if (dataset)
-  {
-    dataset->SetSpatialRef(&oSRS);
-  }
-
   return true;
 }
 
@@ -267,11 +262,6 @@ bool GDALdataset::set_crs(std::string wkt)
     last_error = std::string(buffer);
     return false;
     // # nocov end
-  }
-
-  if (dataset)
-  {
-    dataset->SetSpatialRef(&oSRS);
   }
 
   return true;

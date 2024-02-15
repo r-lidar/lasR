@@ -341,7 +341,7 @@ bool LASRtriangulate::write()
 
   if (lastransform) delete lastransform;
 
-  vector.write_triangulation(triangles);
+  vector.write(triangles);
 
   if (verbose)
   {
