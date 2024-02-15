@@ -386,8 +386,9 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       SEXP call = get_element(stage, "call");
       SEXP env = get_element(stage, "env");
       double res = get_element_as_double(stage, "res");
+      int nmetrics = get_element_as_int(stage, "nmetrics");
       double win = get_element_as_double(stage, "window");
-      auto v = std::make_unique<LASRaggregate>(xmin, ymin, xmax, ymax, res, win, call, env);
+      auto v = std::make_unique<LASRaggregate>(xmin, ymin, xmax, ymax, res, nmetrics, win, call, env);
       pipeline.push_back(std::move(v));
     }
     else if (name  == "callback")

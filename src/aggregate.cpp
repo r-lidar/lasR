@@ -3,7 +3,7 @@
 
 #ifdef USING_R
 
-LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, double window, SEXP call, SEXP env)
+LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, int nmetrics, double window, SEXP call, SEXP env)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -12,11 +12,14 @@ LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax,
   this->call = call;
   this->env = env;
   this->window = (window > res) ? (window-res)/2 : 0;
+  this->expected_type = ANYSXP;
 
-  nmetrics = 1;
-  expected_type = ANYSXP;
+  // This is the expected number of metrics. We need to know it to be able to create
+  // the appropriate number of layers in the raster. We need to record it to check, in
+  // in each pixel, if the user-defined function returns the proper number of metrics
+  this->nmetrics = nmetrics;
 
-  raster = Raster(xmin, ymin, xmax, ymax, res);
+  raster = Raster(xmin, ymin, xmax, ymax, res, nmetrics);
 }
 
 bool LASRaggregate::process(LAS*& las)
@@ -268,9 +271,13 @@ bool LASRaggregate::process(LAS*& las)
     {
       expected_type = TYPEOF(res);
 
-      // how many metrics are supposed to be returned
-      nmetrics = Rf_length(res);
-      if (nmetrics > 1) raster.set_nbands(nmetrics);
+      // How many metrics are supposed to be returned. Check if it matches the declaration
+      if (Rf_length(res) != nmetrics)
+      {
+        error = 1;
+        last_error = "user expression does not return the number of items declared (" + std::to_string(Rf_length(res)) + " vs. " +  std::to_string(nmetrics) + ")";
+        break;
+      }
 
       SEXP names = Rf_getAttrib(res, R_NamesSymbol);
 
@@ -283,6 +290,8 @@ bool LASRaggregate::process(LAS*& las)
         }
       }
     }
+    // This is not the first times we evaluate the user defined expression. Check if
+    // it matches with previous evaluations
     else
     {
       if (Rf_length(res) != nmetrics)

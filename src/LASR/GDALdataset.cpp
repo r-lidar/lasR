@@ -216,7 +216,7 @@ bool GDALdataset::create_file()
 
 bool GDALdataset::set_band_name(std::string name, int band)
 {
-  if (!check_dataset_is_not_initialized() && !check_dataset_is_raster())
+  if (!check_dataset_is_raster())
   {
     return false; // # nocov
   }
@@ -229,16 +229,16 @@ bool GDALdataset::set_band_name(std::string name, int band)
 
   band_names[band] = name;
 
+  if (dataset)
+  {
+    dataset->GetRasterBand(band+1)->SetDescription(band_names[band].c_str());
+  }
+
   return true;
 }
 
 bool GDALdataset::set_crs(int epsg)
 {
-  if (!check_dataset_is_not_initialized())
-  {
-    return false; // # nocov
-  }
-
   if (oSRS.importFromEPSG(epsg) != OGRERR_NONE)
   {
     // # nocov start
@@ -247,6 +247,31 @@ bool GDALdataset::set_crs(int epsg)
     last_error = std::string(buffer);
     return false;
     // # nocov end
+  }
+
+  if (dataset)
+  {
+    dataset->SetSpatialRef(&oSRS);
+  }
+
+  return true;
+}
+
+bool GDALdataset::set_crs(std::string wkt)
+{
+  if (oSRS.importFromWkt(wkt.c_str()) != OGRERR_NONE)
+  {
+    // # nocov start
+    char buffer[512];
+    snprintf(buffer, sizeof(buffer), "error %d while creating GDAL dataset. %s", CPLGetLastErrorNo(),  CPLGetLastErrorMsg());
+    last_error = std::string(buffer);
+    return false;
+    // # nocov end
+  }
+
+  if (dataset)
+  {
+    dataset->SetSpatialRef(&oSRS);
   }
 
   return true;
@@ -259,26 +284,6 @@ void GDALdataset::close()
     GDALClose(dataset);
     dataset = nullptr;
   }
-}
-
-bool GDALdataset::set_crs(std::string wkt)
-{
-  if (!check_dataset_is_not_initialized())
-  {
-    return false;
-  }
-
-  if (oSRS.importFromWkt(wkt.c_str()) != OGRERR_NONE)
-  {
-    // # nocov start
-    char buffer[512];
-    snprintf(buffer, sizeof(buffer), "error %d while creating GDAL dataset. %s", CPLGetLastErrorNo(),  CPLGetLastErrorMsg());
-    last_error = std::string(buffer);
-    return false;
-    // # nocov end
-  }
-
-  return true;
 }
 
 bool GDALdataset::check_dataset_is_not_initialized()

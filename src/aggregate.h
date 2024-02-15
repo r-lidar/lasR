@@ -9,7 +9,7 @@
 class LASRaggregate: public LASRalgorithmRaster
 {
 public:
-  LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, double window, SEXP call, SEXP env);
+  LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, int nmetrics, double window, SEXP call, SEXP env);
   bool process(LAS*& las) override;
   void clear(bool last) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
