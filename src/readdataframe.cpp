@@ -292,7 +292,7 @@ bool LASRdataframereader::process(LAS*& las)
   return true;
 }
 
-int LASRdataframereader::get_point_data_record_length(int point_data_format)
+int LASRdataframereader::get_point_data_record_length(int point_data_format) const
 {
   switch (point_data_format)
   {
@@ -311,7 +311,7 @@ int LASRdataframereader::get_point_data_record_length(int point_data_format)
   }
 }
 
-int LASRdataframereader::guess_point_data_format()
+int LASRdataframereader::guess_point_data_format() const
 {
   std::vector<int> formats = {0,1,2,3,6,7,8};
 
@@ -339,7 +339,7 @@ int LASRdataframereader::guess_point_data_format()
   return formats[0];
 }
 
-int LASRdataframereader::get_header_size(int minor_version)
+int LASRdataframereader::get_header_size(int minor_version) const
 {
   int header_size = 0;
 
@@ -364,7 +364,7 @@ int LASRdataframereader::get_header_size(int minor_version)
   return header_size;
 }
 
-double LASRdataframereader::guess_accuracy(SEXP x)
+double LASRdataframereader::guess_accuracy(SEXP x) const
 {
   std::vector<int> table = {0,0,0,0,0,0,0,0,0,0};
 

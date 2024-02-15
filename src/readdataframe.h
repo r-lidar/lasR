@@ -19,10 +19,10 @@ public:
   std::string get_name() const override { return "reader_dataframe"; }
 
 private:
-  int get_point_data_record_length(int point_data_format);
-  int get_header_size(int minor_version);
-  int guess_point_data_format();
-  double guess_accuracy(SEXP x);
+  int get_point_data_record_length(int point_data_format) const;
+  int get_header_size(int minor_version) const;
+  int guess_point_data_format() const;
+  double guess_accuracy(const SEXP x) const;
 
 
 private:
