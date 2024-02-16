@@ -70,77 +70,84 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     progress.show();
 
     bool failure = false;
-
     #pragma omp parallel num_threads(ncpu)
     {
-      // We need a copy of the pipeline. The copy constructor of the pipeline and stages
-      // ensures that that shared resources are protected (such as connection to output files)
-      // and private data are copied
-      Pipeline pipeline_cpy(pipeline);
-
-      #pragma omp for
-      for (int i = 0 ; i < n ; ++i)
+      try
       {
-        if (failure) continue;
+        // We need a copy of the pipeline. The copy constructor of the pipeline and stages
+        // ensures that that shared resources are protected (such as connection to output files)
+        // and private data are copied
+        Pipeline pipeline_cpy(pipeline);
 
-        bool last_chunk = i+1 == n; // TODO:: need to be revised for parallel code
-
-        // We query the chunk i (thread safe)
-        Chunk chunk;
-        if (!lascatalog->get_chunk(i, chunk))
+        #pragma omp for
+        for (int i = 0 ; i < n ; ++i)
         {
-          failure = true;
-          continue;
+          if (failure) continue;
+
+          bool last_chunk = i+1 == n; // TODO:: need to be revised for parallel code
+
+          // We query the chunk i (thread safe)
+          Chunk chunk;
+          if (!lascatalog->get_chunk(i, chunk))
+          {
+            failure = true;
+            continue;
+          }
+
+          if (verbose)
+          {
+            print("Processing chunk %d/%d in thread %d: %s\n", i+1, n, omp_get_thread_num(), chunk.name.c_str()); // # nocov
+          }
+
+          // If the chunk is not flagged "process" it is a file that is only used as buffer
+          // we can skip the processing
+          if (!chunk.process)
+          {
+            progress.update(i+1, true);
+            progress.show();
+            if (verbose) print("Chunk %d is flagged for not being processed. Skipped.", i);
+            continue;
+          }
+
+          // set_chunk() initialize the region we are working with which is a sub-part of the
+          // overall processed region
+          if (!pipeline_cpy.set_chunk(chunk))
+          {
+            failure = true;
+            continue;
+          }
+
+          // run() does execute the pipeline. This is encapsulated but at the end each stage
+          // is supposed to contains the data for the current chunk and optionally write the
+          // result into a file
+          if (!pipeline_cpy.run())
+          {
+            failure = true;
+            continue;
+          }
+
+          // clear() is used by some stages to clean data between two chunks. This is useful
+          // to clear an std::map like in the aggregate pipeline
+          pipeline_cpy.clear(last_chunk);
+
+          #pragma omp critical
+          {
+            progress.update(i+1, true);
+            progress.show();
+          }
         }
 
-        if (verbose)
-        {
-          print("Processing chunk %d/%d in thread %d: %s\n", i+1, n, omp_get_thread_num(), chunk.name.c_str()); // # nocov
-        }
-
-        // If the chunk is not flagged "process" it is a file that is only used as buffer
-        // we can skip the processing
-        if (!chunk.process)
-        {
-          progress.update(i+1, true);
-          progress.show();
-          if (verbose) print("Chunk %d is flagged for not being processed. Skipped.", i);
-          continue;
-        }
-
-        // set_chunk() initialize the region we are working with which is a sub-part of the
-        // overall processed region
-        if (!pipeline_cpy.set_chunk(chunk))
-        {
-          failure = true;
-          continue;
-        }
-
-        // run() does execute the pipeline. This is encapsulated but at the end each stage
-        // is supposed to contains the data for the current chunk and optionally write the
-        // result into a file
-        if (!pipeline_cpy.run())
-        {
-          failure = true;
-          continue;
-        }
-
-        // clear() is used by some stages to clean data between two chunks. This is useful
-        // to clear an std::map like in the aggregate pipeline
-        pipeline_cpy.clear(last_chunk);
-
+        // We have multiple pipelines that each process some chunks and each have a partial
+        // output. We merge in the main pipeline
         #pragma omp critical
         {
-          progress.update(i+1, true);
-          progress.show();
+          pipeline.merge(pipeline_cpy);
         }
       }
-
-      // We have multiple pipelines that each process some chunks and each have a partial
-      // output. We mege in the main pipeline
-      #pragma omp critical
+      catch (std::string e)
       {
-        pipeline.merge(pipeline_cpy);
+        last_error = e;
+        failure = true;
       }
     }
 

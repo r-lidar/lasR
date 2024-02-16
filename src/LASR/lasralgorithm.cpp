@@ -33,16 +33,15 @@ LASRalgorithm::LASRalgorithm(const LASRalgorithm& other)
   progress = other.progress;
   connections = other.connections;
 
-
-
+  // Special treatment for LASfilter which is why we need a copy constructor
+  // LASfilter is full of pointer, pointer on pointers without copy constructor.
+  // We are better to build a new one for each copy.
   lasfilter = LASfilter();
   set_filter(other.filter);
 
-  print("Copy contructor: filter = %s\n", filter.c_str());
-
-#ifdef USING_R
+  #ifdef USING_R
   nsexpprotected = 0;
-#endif
+  #endif
 }
 
 LASRalgorithm::~LASRalgorithm()
