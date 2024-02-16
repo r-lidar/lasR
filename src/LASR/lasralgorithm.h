@@ -10,6 +10,7 @@
 
 // STL
 #include <string>
+#include <unordered_map>
 
 // LASlib
 #include "laszip.hpp"
@@ -61,12 +62,16 @@ public:
   void set_uid(std::string s) { uid = s; };
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
+
   std::string get_uid() const { return uid; };
 
   // The default method consist in returning the string 'ofile'.
   #ifdef USING_R
   virtual SEXP to_R();
   #endif
+
+protected:
+  void set_connection(LASRalgorithm* stage);
 
 protected:
   int ncpu;
@@ -81,6 +86,7 @@ protected:
   std::string uid;
   LASfilter lasfilter;
   Progress* progress;
+  std::map<std::string, LASRalgorithm*> connections;
 
 #ifdef USING_R
   int nsexpprotected;

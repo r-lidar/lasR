@@ -17,7 +17,6 @@ public:
   std::string get_name() const override { return "hulls"; }
 
 private:
-  LASRalgorithm* algorithm; // Not the owner
   std::vector<PolygonXY> contour;
 };
 

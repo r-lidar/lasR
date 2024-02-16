@@ -13,7 +13,6 @@ public:
   std::string get_name() const override { return "transform_with"; }
 
 private:
-  LASRalgorithm* algorithm; // Not the owner
   int op;
   std::string attribute;
   enum operators {ADD, SUB};

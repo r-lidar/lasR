@@ -11,7 +11,8 @@ LASRboundaries::LASRboundaries(double xmin, double ymin, double xmax, double yma
   this->xmax = xmax;
   this->ymax = ymax;
   this->ofile = ofile;
-  this->algorithm = algorithm;
+
+  set_connection(algorithm);
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPolygon);
@@ -19,7 +20,7 @@ LASRboundaries::LASRboundaries(double xmin, double ymin, double xmax, double yma
 
 bool LASRboundaries::process(LASheader*& header)
 {
-  if (algorithm) return true;
+  if (!connections.empty()) return true;
 
   double xmin, ymin, xmax, ymax;
 
@@ -50,11 +51,13 @@ bool LASRboundaries::process(LASheader*& header)
 
 bool LASRboundaries::process(LAS*& las)
 {
-  if (!algorithm) return true;
+  if (connections.empty())  return true;
 
-  LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(algorithm);
-
-  if (p == 0)
+  // 'connections' contains a single stage that is supposed to be a triangulation stage.
+  // This is the only supported stage as of feb 2024
+  auto it = connections.begin();
+  LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->second);
+  if (p == nullptr)
   {
     last_error  = "Internal error. Invalid pointer dynamic cast. Expecting a pointer to LASRtriangulate"; // # nocov
     return false; // # nocov
@@ -114,5 +117,5 @@ bool LASRboundaries::write()
 
 bool LASRboundaries::need_points() const
 {
-  return algorithm != nullptr;
+  return !connections.empty();
 }

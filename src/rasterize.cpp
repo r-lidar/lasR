@@ -8,7 +8,6 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   this->xmax = xmax;
   this->ymax = ymax;
   this->ofile = ofile;
-  this->algorithm = nullptr;
   this->window = (window > res) ? (window-res)/2 : 0;
 
   raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
@@ -42,8 +41,9 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   this->xmax = xmax;
   this->ymax = ymax;
   this->ofile = ofile;
-  this->algorithm = algorithm;
   this->window = 0;
+
+  set_connection(algorithm);
 
   raster = Raster(xmin, ymin, xmax, ymax, res, 1);
 }
@@ -79,7 +79,9 @@ bool LASRrasterize::process(LASpoint*& p)
 
 bool LASRrasterize::process(LAS*& las)
 {
-  if (!algorithm)
+  // If 'connections' contains something it means that we want to rasterize an object from
+  // another stage. If empty, then we want to rasterize the point cloud.
+  if (connections.empty())
   {
     LASpoint* p;
     while (las->read_point())
@@ -91,8 +93,11 @@ bool LASRrasterize::process(LAS*& las)
     return true;
   }
 
-  LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(algorithm);
-  if (!p)
+  // 'connections' contains a single stage that is supposed to be a triangulation stage.
+  // This is the only supported stage as of feb 2024
+  auto it = connections.begin();
+  LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->second);
+  if (p == nullptr)
   {
     last_error  = "invalid pointer. Expecting a pointer to LASRtriangulate (internal error, please report)"; // # nocov
     return false; // # nocov
