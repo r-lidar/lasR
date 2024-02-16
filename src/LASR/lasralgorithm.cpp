@@ -153,9 +153,12 @@ bool LASRalgorithmRaster::set_crs(std::string wkt)
 
 bool LASRalgorithmRaster::write()
 {
-  if (ofile.empty()) return true;
-  if (raster.write()) return true;
-  return false; // # nocov
+  #pragma omp critical (write_raster)
+  {
+    if (ofile.empty()) return true;
+    if (raster.write()) return true;
+    return false; // # nocov
+  }
 }
 
 /*void LASRalgorithmRaster::clear(bool last)

@@ -24,7 +24,7 @@ GDALdataset::GDALdataset()
   dType = GDALDatasetType::UNDEFINED;
 }
 
-GDALdataset::GDALdataset(const GDALdataset& other)
+/*GDALdataset::GDALdataset(const GDALdataset& other)
 {
   nBands = other.nBands;
   nXsize = other.nXsize;
@@ -42,7 +42,7 @@ GDALdataset::GDALdataset(const GDALdataset& other)
   band_names = other.band_names;
 
   oSRS = other.oSRS;
-}
+}*/
 
 bool GDALdataset::set_raster(double xmin, double ymax, int ncols, int nrows, double res)
 {

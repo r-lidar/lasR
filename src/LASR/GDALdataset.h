@@ -12,7 +12,7 @@ class GDALdataset
 {
 public:
   GDALdataset();
-  GDALdataset(const GDALdataset& other);
+  // GDALdataset(const GDALdataset& other);
   //~GDALdataset();
   bool create_file();
   void set_file(std::string file) { this->file = file; }

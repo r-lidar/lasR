@@ -14,6 +14,7 @@ public:
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
   bool is_streamable() const override { return algorithm == 0; };
   std::string get_name() const override { return "rasterize"; };
+  LASRrasterize* clone() const override { return new LASRrasterize(*this); };
 
 private:
   double window;

@@ -26,8 +26,8 @@
 processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
 {
   dots <- list(...)
-  verbose <- if (is.null(dots$verbose)) FALSE else TRUE
-  noread <- if (is.null(dots$noread)) FALSE else TRUE
+  verbose <- isTRUE(dots$verbose)
+  noread <- isTRUE(dots$noread)
 
   ans <- .Call(`C_process`, pipeline, progress, ncores, verbose)
 
