@@ -159,10 +159,8 @@ bool Raster::write()
 
   if (!dataset)
   {
-    if (!create_file())
-    {
-      return false; // # nocov
-    }
+    last_error = "cannot write with uninitialized GDALDataset"; // # nocov
+    return false;
   }
 
   // We usually work only with a chunk. We need to compute the xy offsets considering that

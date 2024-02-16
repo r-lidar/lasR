@@ -54,14 +54,14 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #' @seealso
 #' \link{rasterize}
 #' @noRd
-aggregate = function(res, call, filter = "", ofile = tempfile(fileext = ".tif"))
+aggregate = function(res, call, filter = "", ofile = tempfile(fileext = ".tif"), ...)
 {
   call <- substitute(call)
   env <- new.env(parent=parent.frame())
-  aggregate_q(res, call, filter, ofile, env)
+  aggregate_q(res, call, filter, ofile, env, ...)
 }
 
-aggregate_q = function(res, call, filter, ofile, env)
+aggregate_q = function(res, call, filter, ofile, env, ...)
 {
   res_raster  <- res[1]
   res_window <- res[1]
@@ -69,7 +69,18 @@ aggregate_q = function(res, call, filter, ofile, env)
     res_window <- res[2]
 
   call <- as.call(call)
-  ans <- list(algoname = "aggregate", res = res_raster, window = res_window, call = call, filter = filter, output = ofile, env = env)
+
+  # evaluate the number of metrics returned by user's expression to be able to initialize
+  # a raster with the correct number of bands.
+  dots <- list(...)
+  nmetrics <- dots$nmetrics
+  if (is.null(nmetrics))
+  {
+    nmetrics <- eval_number_of_metrics(call, env)
+    if (is.na(nmetrics)) stop(paste0("Cannot evaluate the number of metrics returned by ", deparse(call)))
+  }
+
+  ans <- list(algoname = "aggregate", res = res_raster, nmetrics = nmetrics, window = res_window, call = call, filter = filter, output = ofile, env = env)
   set_lasr_class(ans)
 }
 

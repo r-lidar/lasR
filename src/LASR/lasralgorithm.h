@@ -61,19 +61,11 @@ public:
   void set_uid(std::string s) { uid = s; };
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
-  std::string get_uid() { return uid; };
+  std::string get_uid() const { return uid; };
 
   // The default method consist in returning the string 'ofile'.
   #ifdef USING_R
-  virtual SEXP to_R()
-  {
-    if (ofile.empty()) return R_NilValue;
-    SEXP R_string = PROTECT(Rf_mkChar(ofile.c_str()));
-    SEXP R_string_vector = PROTECT(Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(R_string_vector, 0, R_string);
-    nsexpprotected += 2;
-    return R_string_vector;
-  };
+  virtual SEXP to_R();
   #endif
 
 protected:

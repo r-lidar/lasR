@@ -8,7 +8,7 @@ test_that("aggreate handles explicit errors",
   f = system.file("extdata", "Example.las", package="lasR")
 
   read = reader(f)
-  agg = lasR:::aggregate(5, ferr(Intensity))
+  agg = lasR:::aggregate(5, ferr(Intensity), nmetrics = 1L)
 
   expect_error(processor(read + agg), "explicit error")
 })
@@ -18,8 +18,8 @@ test_that("aggreate handles inconsistancies",
   f = system.file("extdata", "Example.las", package="lasR")
 
   read = reader(f, filter = "")
-  agg  = lasR:::aggregate(0.5, gerr(X))
-  agg2 = lasR:::aggregate(0.5, ger2(X))
+  agg  = lasR:::aggregate(0.5, gerr(X), nmetrics = 1L)
+  agg2 = lasR:::aggregate(0.5, ger2(X), nmetrics = 2L)
 
   expect_error(processor(read + agg), "inconsistant number of items")
   expect_error(processor(read + agg2), "inconsistant number of items") # test that it does no depends on unordered_map order.

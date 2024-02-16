@@ -33,6 +33,18 @@ bool LASRalgorithm::set_chunk(const Chunk& chunk)
   return true;
 }
 
+#ifdef USING_R
+SEXP LASRalgorithm::to_R()
+{
+  if (ofile.empty()) return R_NilValue;
+  SEXP R_string = PROTECT(Rf_mkChar(ofile.c_str()));
+  SEXP R_string_vector = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(R_string_vector, 0, R_string);
+  nsexpprotected += 2;
+  return R_string_vector;
+}
+#endif
+
 /* ==============
  *  WRITER
  *  ============= */
@@ -100,10 +112,17 @@ void LASRalgorithmRaster::set_input_file_name(std::string file)
   {
     ofile.replace(pos, 1, ifile);
     raster.set_file(ofile);
+    if (!raster.create_file())
+    {
+      throw last_error;
+    }
     written.push_back(ofile);
   }
 }
 
+// Called in the parser before any process. It assigns the name of the raster file in
+// which the data will be written. The string may contain a wildcard in this case
+// the string is a template and a new raster file is created for each chunk
 void LASRalgorithmRaster::set_output_file(std::string file)
 {
   if (file.empty()) return;
@@ -114,6 +133,10 @@ void LASRalgorithmRaster::set_output_file(std::string file)
   {
     merged = true;
     raster.set_file(file);
+    if (!raster.create_file())
+    {
+      throw last_error;
+    }
     written.push_back(file);
   }
 }
@@ -186,6 +209,10 @@ void LASRalgorithmVector::set_input_file_name(std::string file)
   {
     ofile.replace(pos, 1, ifile);
     vector.set_file(ofile);
+    if (!vector.create_file())
+    {
+      throw last_error;
+    }
     written.push_back(ofile);
   }
 }
@@ -200,6 +227,10 @@ void LASRalgorithmVector::set_output_file(std::string file)
   {
     merged = true;
     vector.set_file(file);
+    if (!vector.create_file())
+    {
+      throw last_error;
+    }
     written.push_back(file);
   }
 }
