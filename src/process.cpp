@@ -69,6 +69,8 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
     progress.show();
 
+    bool failure = false;
+
     #pragma omp parallel num_threads(ncpu)
     {
       // We need a copy of the pipeline. The copy constructor of the pipeline and stages
@@ -79,13 +81,16 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       #pragma omp for
       for (int i = 0 ; i < n ; ++i)
       {
+        if (failure) continue;
+
         bool last_chunk = i+1 == n; // TODO:: need to be revised for parallel code
 
         // We query the chunk i (thread safe)
         Chunk chunk;
         if (!lascatalog->get_chunk(i, chunk))
         {
-          throw last_error;
+          failure = true;
+          continue;
         }
 
         if (verbose)
@@ -107,7 +112,8 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
         // overall processed region
         if (!pipeline_cpy.set_chunk(chunk))
         {
-          throw last_error;
+          failure = true;
+          continue;
         }
 
         // run() does execute the pipeline. This is encapsulated but at the end each stage
@@ -115,7 +121,8 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
         // result into a file
         if (!pipeline_cpy.run())
         {
-          throw last_error;
+          failure = true;
+          continue;
         }
 
         // clear() is used by some stages to clean data between two chunks. This is useful
@@ -135,6 +142,11 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       {
         pipeline.merge(pipeline_cpy);
       }
+    }
+
+    if (failure)
+    {
+      throw last_error;
     }
 
     // We are no longer in the parallel region we can return to R by allocating safely
