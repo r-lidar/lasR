@@ -15,7 +15,6 @@ public:
   bool process(LAS*& las) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
-  void set_filter(std::string filter) override { this->filter = filter; };
   std::string get_name() const override { return "reader_dataframe"; }
 
 private:
@@ -37,7 +36,6 @@ private:
   double offset[3];
   std::vector<int> col_names;
   std::string wkt;
-  std::string filter;
   SEXP dataframe;
 
   LASheader lasheader;

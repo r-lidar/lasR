@@ -19,6 +19,32 @@ LASRalgorithm::LASRalgorithm()
   #endif
 }
 
+LASRalgorithm::LASRalgorithm(const LASRalgorithm& other)
+{
+  ncpu = other.ncpu;
+  xmin = other.xmin;
+  ymin = other.ymin;
+  xmax = other.xmax;
+  ymax = other.ymax;
+  circular = other.circular;
+  verbose = other.verbose;
+  ifile = other.ifile;
+  uid = other.uid;
+  progress = other.progress;
+  connections = other.connections;
+
+
+
+  lasfilter = LASfilter();
+  set_filter(other.filter);
+
+  print("Copy contructor: filter = %s\n", filter.c_str());
+
+#ifdef USING_R
+  nsexpprotected = 0;
+#endif
+}
+
 LASRalgorithm::~LASRalgorithm()
 {
   #ifdef USING_R
@@ -31,6 +57,14 @@ bool LASRalgorithm::set_chunk(const Chunk& chunk)
   set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
   if (chunk.shape == ShapeType::CIRCLE) circular = true;
   return true;
+}
+
+void LASRalgorithm::set_filter(const std::string& f)
+{
+  filter = f;
+  std::string cpy = f;
+  char* s = const_cast<char*>(cpy.c_str());
+  lasfilter.parse(s);
 }
 
 #ifdef USING_R
@@ -50,9 +84,29 @@ void LASRalgorithm::set_connection(LASRalgorithm* stage)
   if (stage) connections[stage->get_uid()] = stage;
 }
 
+void LASRalgorithm::update_connection(LASRalgorithm* stage)
+{
+  if (!stage) return;
+  if (connections.empty()) return;
+
+  // Check if the key exists
+  auto key = stage->get_uid();
+  auto it = connections.find(key);
+  if (it != connections.end()) it->second = stage;
+}
+
 /* ==============
  *  WRITER
  *  ============= */
+
+void LASRalgorithmWriter::merge(const LASRalgorithm* other)
+{
+  if (!merged)
+  {
+    const LASRalgorithmWriter* o = dynamic_cast<const LASRalgorithmWriter*>(other);
+    written.insert(written.end(), o->written.begin(), o->written.end());
+  }
+}
 
 #ifdef USING_R
 SEXP LASRalgorithmWriter::to_R()
@@ -158,12 +212,16 @@ bool LASRalgorithmRaster::set_crs(std::string wkt)
 
 bool LASRalgorithmRaster::write()
 {
+  if (ofile.empty()) return true;
+
+  bool success;
+
   #pragma omp critical (write_raster)
   {
-    if (ofile.empty()) return true;
-    if (raster.write()) return true;
-    return false; // # nocov
+    success = raster.write();
   }
+
+  return success;
 }
 
 /*void LASRalgorithmRaster::clear(bool last)

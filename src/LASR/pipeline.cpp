@@ -21,9 +21,9 @@ Pipeline::Pipeline()
   catalog = nullptr;
 }
 
-// The copy constructor is used for multithreading. It creates a copy of pipeline
-// where each stage is deep copyed but with shared ressource  such as file connection and
-// gdal datasets.
+// The copy constructor is used for multi-threading. It creates a copy of the pipeline
+// where each stage is deep copied but with shared resources  such as file connection and
+// gdal datasets
 Pipeline::Pipeline(const Pipeline& other)
 {
   ncpu = other.ncpu;
@@ -36,11 +36,27 @@ Pipeline::Pipeline(const Pipeline& other)
   header = nullptr;
   point = nullptr;
   las = nullptr;
+
   catalog = other.catalog;
 
   for (const auto& stage : other.pipeline)
   {
     pipeline.push_back(std::unique_ptr<LASRalgorithm>(stage->clone()));
+  }
+
+  // At this stage, we have a clone of the pipeline. However some stages may contain a pointer
+  // to another stage they are connected to. The pointers have been copied 'has is' because
+  // we don't the new address of the stages. We need to update the connections to other stages
+  // with the new addresses.
+  // We can loop over all the stages, and for each stage that come after this one, update the
+  // connections with this stage. The matching is done by the UID of each stage so if the two
+  // stage are not connected nothing happens.
+  for (auto it1 = pipeline.begin(); it1 != pipeline.end(); ++it1)
+  {
+    for (auto it2 = it1; it2 != pipeline.end(); ++it2)
+    {
+      (*it2)->update_connection(it1->get());
+    }
   }
 }
 

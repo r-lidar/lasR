@@ -10,7 +10,7 @@
 
 // STL
 #include <string>
-#include <unordered_map>
+#include <map>
 
 // LASlib
 #include "laszip.hpp"
@@ -31,7 +31,7 @@ class LASRalgorithm
 {
 public:
   LASRalgorithm();
-
+  LASRalgorithm(const LASRalgorithm& other);
   virtual ~LASRalgorithm() = 0;
   virtual bool process(LASheader*& header) { return true; };
   virtual bool process(LASpoint*& p) { return true; };
@@ -48,7 +48,6 @@ public:
   virtual bool is_streamable() const { return false; };
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
-  virtual void set_filter(std::string f) { char* s = const_cast<char*>(f.c_str()); lasfilter.parse(s); };
   virtual std::string get_name() const = 0;
 
   // For multi-threading when processing several files in parallel.
@@ -60,9 +59,10 @@ public:
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
   void set_verbose(bool verbose) { this->verbose = verbose; };
   void set_uid(std::string s) { uid = s; };
+  void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
-
+  void update_connection(LASRalgorithm* stage);
   std::string get_uid() const { return uid; };
 
   // The default method consist in returning the string 'ofile'.
@@ -84,6 +84,7 @@ protected:
   std::string ifile;
   std::string ofile;
   std::string uid;
+  std::string filter;
   LASfilter lasfilter;
   Progress* progress;
   std::map<std::string, LASRalgorithm*> connections;
@@ -96,6 +97,8 @@ protected:
 class LASRalgorithmWriter : public LASRalgorithm
 {
 public:
+  void merge(const LASRalgorithm* other) override;
+
   #ifdef USING_R
   SEXP to_R() override;
   #endif

@@ -60,8 +60,6 @@ bool LASRsummary::process(LAS*& las)
 
 void LASRsummary::merge(const LASRalgorithm* other)
 {
-  print("LASRsummary::merge\n");
-
   const LASRsummary* o = dynamic_cast<const LASRsummary*>(other);
 
   npoints += o->npoints;

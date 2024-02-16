@@ -20,12 +20,10 @@ public:
   void clear(bool last = false) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
-  void set_filter(std::string filter) override { this->filter = filter; };
   std::string get_name() const override { return "reader_las"; }
   LASRlasreader* clone() const override { return new LASRlasreader(*this); };
 
 private:
-  std::string filter;
   LASreadOpener* lasreadopener;
   LASreader* lasreader;
   LASheader* lasheader;
