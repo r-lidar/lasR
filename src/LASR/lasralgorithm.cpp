@@ -158,13 +158,13 @@ bool LASRalgorithmRaster::write()
   return false; // # nocov
 }
 
-void LASRalgorithmRaster::clear(bool last)
+/*void LASRalgorithmRaster::clear(bool last)
 {
   if (!merged || last)
   {
     raster.close();
   }
-}
+}*/
 
 /* ==============
  *  VECTOR
@@ -245,11 +245,11 @@ bool LASRalgorithmVector::set_crs(std::string wkt)
   return vector.set_crs(wkt);
 }
 
-void LASRalgorithmVector::clear(bool last)
+/*void LASRalgorithmVector::clear(bool last)
 {
   if (!merged || last)
   {
     vector.close();
   }
-}
+}*/
 

@@ -111,7 +111,7 @@ public:
   bool set_crs(int epsg) override;
   bool set_crs(std::string wkt) override;
   bool write() override;
-  void clear(bool last) override;
+  //void clear(bool last) override;
   Raster& get_raster() { return raster; };
 
 protected:
@@ -128,7 +128,7 @@ public:
   void set_output_file(std::string file) override;
   bool set_crs(int epsg) override;
   bool set_crs(std::string wkt) override;
-  void clear(bool last) override;
+  //void clear(bool last) override;
   Vector& get_vector() { return vector; };
 
 protected:

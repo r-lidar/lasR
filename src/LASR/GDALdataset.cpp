@@ -44,11 +44,6 @@ GDALdataset::GDALdataset(const GDALdataset& other)
   oSRS = other.oSRS;
 }
 
-GDALdataset::~GDALdataset()
-{
-  close();
-}
-
 bool GDALdataset::set_raster(double xmin, double ymax, int ncols, int nrows, double res)
 {
   if (!check_dataset_is_not_initialized())
@@ -167,7 +162,7 @@ bool GDALdataset::create_file()
     // # nocov end
   }
 
-  dataset = driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, nullptr);
+  dataset.reset(driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, nullptr), GDALClose);
 
   if (!dataset)
   {
@@ -267,14 +262,14 @@ bool GDALdataset::set_crs(std::string wkt)
   return true;
 }
 
-void GDALdataset::close()
+/*void GDALdataset::close()
 {
   if (dataset)
   {
     GDALClose(dataset);
     dataset = nullptr;
   }
-}
+}*/
 
 bool GDALdataset::check_dataset_is_not_initialized()
 {
