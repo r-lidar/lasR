@@ -7,7 +7,8 @@ LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int
   this->ymin = ymin;
   this->xmax = xmax;
   this->ymax = ymax;
-  this->algorithm = algorithm;
+
+  set_connection(algorithm);
 
   this->lap_size = lap_size;
   this->thr_lap = thr_lap;
@@ -16,7 +17,6 @@ LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int
   this->dil_radius = dil_radius;
 
   LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(algorithm);
-
   if (p)
   {
     int buffer = MAX3(lap_size, med_size, dil_radius);
@@ -27,14 +27,16 @@ LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int
 
 bool LASRpitfill::process(LAS*& las)
 {
-  if (!algorithm)
+  if (connections.empty())
   {
     last_error = "Unitialized pointer to LASRalgorithm"; // # nocov
     return false; // # nocov
   }
 
-  LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(algorithm);
-
+  // 'connections' contains a single stage that is supposed to be a raster stage
+  // This is the only supported stage as of feb 2024
+  auto it = connections.begin();
+  LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->second);
   if (!p)
   {
     last_error = "Invalid pointer dynamic cast. Expecting a pointer to LASRalgorithmRaster"; // # nocov

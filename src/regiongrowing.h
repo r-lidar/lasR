@@ -12,8 +12,6 @@ public:
   std::string get_name() const override { return "region_growing"; }
 
 private:
-  LASRalgorithm* algorithm_input_rasters;
-  LASRalgorithm* algorithm_input_seeds;
   double th_seed;
   double th_crown;
   double th_tree;

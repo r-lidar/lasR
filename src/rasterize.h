@@ -12,7 +12,7 @@ public:
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
-  bool is_streamable() const override { return algorithm == 0; };
+  bool is_streamable() const override { return connections.size() == 0; };
   std::string get_name() const override { return "rasterize"; };
 
 private:
@@ -22,7 +22,6 @@ private:
   float pcount(float x, float y) { if (x == NA_F32_RASTER) return 1; return x+1; }
   typedef float (LASRrasterize::*FunctionPointer)(float x, float y);
   std::vector<FunctionPointer> operators;
-  LASRalgorithm* algorithm; // Not the owner
 };
 
 #endif

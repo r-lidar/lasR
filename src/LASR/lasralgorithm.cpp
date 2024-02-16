@@ -26,6 +26,11 @@ LASRalgorithm::~LASRalgorithm()
   #endif
 }
 
+void LASRalgorithm::set_connection(LASRalgorithm* stage)
+{
+  if (stage) connections[stage->get_uid()] = stage;
+}
+
 /* ==============
  *  WRITER
  *  ============= */
