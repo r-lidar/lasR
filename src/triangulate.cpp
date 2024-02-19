@@ -349,7 +349,10 @@ bool LASRtriangulate::write()
 
   if (lastransform) delete lastransform;
 
-  vector.write(triangles);
+  #pragma omp critical (write_triangulation)
+  {
+    vector.write(triangles);
+  }
 
   if (verbose)
   {

@@ -32,7 +32,7 @@ bool LASRlaxwriter::set_chunk(const Chunk& chunk)
     {
       lasreader->close();
       delete lasreader;
-      return false;
+      return true;
     }
 
     lasreadopener.set_decompress_selective(LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY);

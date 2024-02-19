@@ -89,7 +89,7 @@ bool LASRtransformwith::process(LAS*& las)
     }
   }
 
-  U32 deleted = 0;
+  unsigned int deleted = 0;
   while (las->read_point())
   {
     double z = hag[las->current_point];
@@ -116,7 +116,8 @@ bool LASRtransformwith::process(LAS*& las)
     las->update_point();
   }
 
-  if (deleted) warning("%u points outside delaunay triangulation were discarded\n", deleted);
+  // TODO: should be a thread safe warning
+  if (deleted) print("%u points outside delaunay triangulation were discarded\n", deleted);
 
   return true;
 }

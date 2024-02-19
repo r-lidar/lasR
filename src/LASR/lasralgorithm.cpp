@@ -126,6 +126,23 @@ SEXP LASRalgorithmWriter::to_R()
 }
 #endif
 
+
+/* ==============
+ *  WITER
+ * ============= */
+
+LASRalgorithmWriter::LASRalgorithmWriter()
+{
+  merged = false;
+}
+
+LASRalgorithmWriter::LASRalgorithmWriter(const LASRalgorithmWriter& other) : LASRalgorithm(other)
+{
+  merged = other.merged;
+  template_filename = other.template_filename;
+  written.clear();
+}
+
 /* ==============
  *  RASTER
  *  ============= */
@@ -133,6 +150,11 @@ SEXP LASRalgorithmWriter::to_R()
 LASRalgorithmRaster::LASRalgorithmRaster()
 {
   merged = false;
+}
+
+LASRalgorithmRaster::LASRalgorithmRaster(const LASRalgorithmRaster& other) : LASRalgorithmWriter(other)
+{
+  raster = other.raster;
 }
 
 LASRalgorithmRaster::~LASRalgorithmRaster()
@@ -238,6 +260,11 @@ bool LASRalgorithmRaster::write()
 LASRalgorithmVector::LASRalgorithmVector()
 {
   merged = false;
+}
+
+LASRalgorithmVector::LASRalgorithmVector(const LASRalgorithmVector& other) : LASRalgorithmWriter(other)
+{
+  vector = other.vector;
 }
 
 LASRalgorithmVector::~LASRalgorithmVector()

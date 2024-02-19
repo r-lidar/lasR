@@ -141,7 +141,10 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
         // output. We merge in the main pipeline
         #pragma omp critical
         {
-          pipeline.merge(pipeline_cpy);
+          if (!failure)
+          {
+            pipeline.merge(pipeline_cpy);
+          }
         }
       }
       catch (std::string e)

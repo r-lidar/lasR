@@ -41,7 +41,6 @@ Pipeline::Pipeline(const Pipeline& other)
 
   for (const auto& stage : other.pipeline)
   {
-    print("clone %s\n", stage->get_name().c_str());
     LASRalgorithm* ptr = stage->clone();
     if (ptr == nullptr)
     {
@@ -86,7 +85,7 @@ bool Pipeline::run()
   // Each stage process the LASheader. The first stage being a reader, the LASheader, which is
   // initially nullptr, will be initialized by pipeline[0]
   success = process(header);
-  if (!success) return false;
+  if (!success)  return false;
 
   if (header->number_of_point_records == 0 && header->extended_number_of_point_records == 0)
   {
@@ -99,7 +98,7 @@ bool Pipeline::run()
   // Each stage process the LASpoint. The first stage being a reader, the LASpoint, which is
   // initially nullptr, will be initialized by pipeline[0]
   success = process(point);
-  if (!success) return false;
+  if (!success) { return false; }
 
   // If the pipeline is not streamable we need an object that stores and spatially index all the point
   // Each stage process the LAS. The first stage being a reader, the LAS, which is
@@ -190,11 +189,6 @@ void Pipeline::set_verbose(bool verbose)
   this->verbose = verbose;
 }
 
-/*void Pipeline::set_buffer(double buffer)
-{
-  this->buffer = buffer;
-}*/
-
 bool Pipeline::process(LASheader*& header)
 {
   bool success;
@@ -279,7 +273,8 @@ bool Pipeline::write()
 {
   for (auto&& stage : pipeline)
   {
-    bool success = stage->write();
+    bool success;
+    success = stage->write();
     if (!success)
     {
       last_error = "in " + stage->get_name() + " while writing the output: " + last_error;
@@ -367,3 +362,20 @@ void Pipeline::clean()
   point = nullptr;
   las = nullptr;
 }
+
+/*void Pipeline::show()
+{
+  // # nocov start
+  #pragma
+  print("-------------\n");
+  for (auto&& stage : pipeline)
+  {
+    print("Stage %s: %s at %p\n", stage->get_uid().c_str(), stage->get_name().c_str(), stage.get());
+    for (auto con : stage->connections)
+    {
+      print("  connected to %s at %p\n", con.first.c_str(), con.second);
+    }
+  }
+  print("-------------\n");
+  // # nocov end
+}*/

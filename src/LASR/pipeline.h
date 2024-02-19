@@ -39,7 +39,7 @@ class Pipeline
     bool set_crs(std::string wkt);
     void set_ncpu(int ncpu);
     void set_verbose(bool verbose);
-    //void set_buffer(double buffer);
+    //void show();
     void set_progress(Progress* progress);
     LAScatalog* get_catalog() const { return catalog.get(); };
 
@@ -63,7 +63,6 @@ private:
     bool streamable;
     bool read_payload;
     double buffer;
-    std::string last_error;
 
     LAS* las;
     LASpoint* point;

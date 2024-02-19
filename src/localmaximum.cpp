@@ -145,19 +145,27 @@ bool LASRlocalmaximum::write()
 
   for (const auto& p : lm)
   {
-    if (!vector.write(p))
+    bool success;
+    #pragma omp critical
     {
+      success = vector.write(p);
+    }
+
+    if (!success)
+    {
+      // /!\ TODO: not thread safe
       if (last_error_code != GDALdataset::DUPFID)
         return false;
       else
         dupfid++;
     }
+
     (*progress)++;
     progress->show();
   }
 
   if (dupfid)
-    warning("%d points skipped: trying to insert points with and FID that is already in the database. This may be due to overlapping tiles.", dupfid);
+    print("%d points skipped: trying to insert points with and FID that is already in the database. This may be due to overlapping tiles.", dupfid);
 
   return true;
 }

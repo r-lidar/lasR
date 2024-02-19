@@ -112,7 +112,14 @@ void LASRboundaries::clear(bool last)
 
 bool LASRboundaries::write()
 {
-  return vector.write(contour);
+  bool sucess;
+
+  #pragma omp critical (write_contour)
+  {
+    sucess = vector.write(contour);
+  }
+
+  return sucess;
 }
 
 bool LASRboundaries::need_points() const

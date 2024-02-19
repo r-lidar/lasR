@@ -50,25 +50,26 @@ public:
   virtual bool need_points() const { return true; };
   virtual std::string get_name() const = 0;
 
-  // For multi-threading when processing several files in parallel.
-  // Each stage MUST have a clone() method to create a copy of itself sharing or not the resources.
-  // Each stage CAN have a merge() method to merge the output computed in each thread.
-  virtual LASRalgorithm* clone() const { return nullptr; }; // = 0
-  virtual void merge(const LASRalgorithm* other) { return; };
-
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
   void set_verbose(bool verbose) { this->verbose = verbose; };
   void set_uid(std::string s) { uid = s; };
   void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
-  void update_connection(LASRalgorithm* stage);
   std::string get_uid() const { return uid; };
 
   // The default method consist in returning the string 'ofile'.
   #ifdef USING_R
   virtual SEXP to_R();
   #endif
+
+  // For multi-threading when processing several files in parallel.
+  // Each stage MUST have a clone() method to create a copy of itself sharing or not the resources.
+  // Each stage CAN have a merge() method to merge the output computed in each thread.
+  // Each stage must update the pointers to the other stages it depends on.
+  virtual LASRalgorithm* clone() const { return nullptr; };
+  virtual void merge(const LASRalgorithm* other) { return; };
+  void update_connection(LASRalgorithm* stage);
 
 protected:
   void set_connection(LASRalgorithm* stage);
@@ -97,6 +98,8 @@ protected:
 class LASRalgorithmWriter : public LASRalgorithm
 {
 public:
+  LASRalgorithmWriter();
+  LASRalgorithmWriter(const LASRalgorithmWriter& other);
   void merge(const LASRalgorithm* other) override;
 
   #ifdef USING_R
@@ -113,6 +116,7 @@ class LASRalgorithmRaster : public LASRalgorithmWriter
 {
 public:
   LASRalgorithmRaster();
+  LASRalgorithmRaster(const LASRalgorithmRaster& other);
   ~LASRalgorithmRaster() override;
   bool set_chunk(const Chunk& chunk) override;
   void set_input_file_name(std::string file) override;
@@ -131,6 +135,7 @@ class LASRalgorithmVector : public LASRalgorithmWriter
 {
 public:
   LASRalgorithmVector();
+  LASRalgorithmVector(const LASRalgorithmVector& other);
   ~LASRalgorithmVector() override;
   bool set_chunk(const Chunk& chunk) override;
   void set_input_file_name(std::string file) override;
