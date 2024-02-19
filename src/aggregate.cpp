@@ -68,6 +68,9 @@ bool LASRaggregate::process(LAS*& las)
   // Size of the largest group (i.e. the pixel with most numerous points)
   int nalloc = grouper.largest_group_size(); // Size of the biggest group
 
+  #pragma omp critical (RAPI)
+  {
+
   // Create environments in which the call takes place
   SEXP list = PROTECT(Rf_allocVector(VECSXP, nattr)); nsexpprotected++;
 
@@ -348,6 +351,8 @@ bool LASRaggregate::process(LAS*& las)
   }
 
   UNPROTECT(nsexpprotected); nsexpprotected = 0;
+
+  } // end omp critical
 
   return (error == 0);
 }
