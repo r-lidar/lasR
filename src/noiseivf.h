@@ -9,7 +9,8 @@ public:
   LASRnoiseivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification);
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; };
-  std::string get_name() const override { return "ivf"; }
+  std::string get_name() const override { return "ivf"; };
+  LASRnoiseivf* clone() const override { return new LASRnoiseivf(*this); };
 
 private:
   double res;
