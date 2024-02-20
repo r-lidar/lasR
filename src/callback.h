@@ -14,7 +14,7 @@ public:
   SEXP to_R() override;
   std::string get_name() const override { return "callback";  }
   LASRcallback* clone() const override { return new LASRcallback(*this); };
-  void merge(const LASRcallback* other);
+  void merge(const LASRalgorithm* other) override;
 
 private:
   bool modify;

@@ -464,9 +464,10 @@ bool LASRcallback::process(LAS*& las)
   return true;
 }
 
-void LASRcallback::merge(const LASRcallback* other)
+void LASRcallback::merge(const LASRalgorithm* other)
 {
-  ans = other->ans;
+  const LASRcallback* o = dynamic_cast<const LASRcallback*>(other);
+  ans = o->ans;
 }
 
 SEXP LASRcallback::to_R()
