@@ -40,6 +40,11 @@ Progress::~Progress()
 
 Progress& Progress::operator++(int)
 {
+  if (omp_get_thread_num() != 0)
+  {
+    return *this;
+  }
+
   if (sub)
   {
     (*sub)++;
@@ -62,6 +67,11 @@ void Progress::create_subprocess()
 
 void Progress::set_prefix(std::string prefix)
 {
+  if (omp_get_thread_num() != 0)
+  {
+    return;
+  }
+
   if (sub)
     sub->set_prefix(prefix);
   else
@@ -83,6 +93,11 @@ void Progress::update(uint64_t current, bool main)
 
 void Progress::reset()
 {
+  if (omp_get_thread_num() != 0)
+  {
+    return;
+  }
+
   if (sub)
   {
     sub->reset();
@@ -104,6 +119,11 @@ void Progress::set_display(bool display)
 
 void Progress::set_total(uint64_t nmax)
 {
+  if (omp_get_thread_num() != 0)
+  {
+    return;
+  }
+
   if (sub)
     sub->set_total(nmax);
   else
@@ -161,6 +181,11 @@ void Progress::pause()
 // # nocov start
 void Progress::show(bool flush)
 {
+  if (omp_get_thread_num() != 0)
+  {
+    return;
+  }
+
   if (display && must_show())
   {
     if (ntotal > 0)

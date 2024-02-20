@@ -70,6 +70,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     progress.show();
 
     bool failure = false;
+    int k = 0;
     #pragma omp parallel num_threads(ncpu)
     {
       try
@@ -132,7 +133,8 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
           #pragma omp critical
           {
-            progress.update(i+1, true);
+            k++;
+            progress.update(k, true);
             progress.show();
           }
         }
