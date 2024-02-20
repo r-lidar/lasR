@@ -5,7 +5,6 @@
 
 LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_attribute)
 {
-  counter = 0;
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
@@ -17,7 +16,8 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
 
   this->use_attribute = use_attribute;
 
-
+  counter = std::make_shared<unsigned int>(0);
+  unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
@@ -87,7 +87,7 @@ bool LASRlocalmaximum::process(LAS*& las)
       if (pt.z < pp.z) status[pt.FID] = NLM; // If the point is below the central we can pretag it as not a LM
     }
 
-    #pragma omp critical
+    #pragma omp critical (assign_lm_ids)
     {
       if (status[i] == LMX)
       {
@@ -100,13 +100,13 @@ bool LASRlocalmaximum::process(LAS*& las)
          }*/
 
         uint64_t FID = ((uint64_t)las->point.quantizer->get_X(pp.x) << 32) | (uint64_t)(las->point.quantizer->get_Y(pp.y));
-        auto it = unicity_table.find(FID);
-        if (it == unicity_table.end())
+        auto it = unicity_table->find(FID);
+        if (it == unicity_table->end())
         {
-          unicity_table[FID] = counter;
+          (*unicity_table)[FID] = *counter;
           lm.push_back(pp);
-          lm.back().FID = counter;
-          counter++;
+          lm.back().FID = *counter;
+          (*counter)++;
         }
         else
         {

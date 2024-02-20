@@ -10,6 +10,8 @@ public:
   bool process(LAS*& las) override;
   double need_buffer() const override { return 50; };
   std::string get_name() const override { return "region_growing"; }
+  LASRregiongrowing* clone() const override { return new LASRregiongrowing(*this); };
+
 
 private:
   double th_seed;
