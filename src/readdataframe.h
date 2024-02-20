@@ -17,6 +17,10 @@ public:
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "reader_dataframe"; }
 
+  // multi-threading
+  bool is_parallelizable() const override { return false; };
+  LASRdataframereader* clone() const override { return new LASRdataframereader(*this); };
+
 private:
   int get_point_data_record_length(int point_data_format) const;
   int get_header_size(int minor_version) const;

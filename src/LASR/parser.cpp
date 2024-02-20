@@ -410,9 +410,6 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
   }
 
   parsed = true;
-  streamable = is_streamable();
-  buffer = need_buffer();
-  read_payload = need_points();
 
   for (auto&& stage : pipeline)
   {
@@ -468,6 +465,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n", catalog->get_number_files()-catalog->get_number_indexed_files());
     }
   }
+
+  streamable = is_streamable();
+  buffer = need_buffer();
+  read_payload = need_points();
+  parallelizable = is_parallelizable();
 
   return true;
 }

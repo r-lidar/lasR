@@ -21,6 +21,9 @@ public:
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "reader_las"; }
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRlasreader* clone() const override { return new LASRlasreader(*this); };
 
 private:

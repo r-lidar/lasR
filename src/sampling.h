@@ -10,6 +10,9 @@ public:
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; }
   std::string get_name() const override { return "voxel_sampling"; }
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRsamplingvoxels* clone() const override { return new LASRsamplingvoxels(*this); };
 
 private:
@@ -23,6 +26,9 @@ public:
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; }
   std::string get_name() const override { return "pixel_sampling"; }
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRsamplingpixels* clone() const override { return new LASRsamplingpixels(*this); };
 
 private:

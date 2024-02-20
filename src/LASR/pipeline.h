@@ -31,6 +31,7 @@ class Pipeline
     bool run();
     void merge(const Pipeline& other);
     void clear(bool last = false);
+    bool is_parallelizable();
     bool is_streamable();
     double need_buffer();
     bool need_points();
@@ -61,6 +62,7 @@ private:
     bool parsed;
     bool verbose;
     bool streamable;
+    bool parallelizable;
     bool read_payload;
     double buffer;
 

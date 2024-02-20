@@ -19,6 +19,9 @@ public:
   double need_buffer() const override { return ws; }
   std::string get_name() const override { return "local_maximum"; }
   std::vector<PointLAS>& get_maxima() { return lm; };
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRlocalmaximum* clone() const override { return new LASRlocalmaximum(*this); };
 
 private:

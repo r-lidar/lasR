@@ -3,9 +3,27 @@
 #' Process the pipeline. Every other functions do nothing. This function must be called on a pipeline
 #' to actually process the point-cloud
 #'
-#' @param pipeline a LASRpipeline. A serie of algorithms called in order
-#' @param ncores integer. Number of cores to use. Some stages or some steps in some stages
-#' are parallelised but overall one file is process at a time.
+#' There are 4 modes of parallelization:
+#' \describe{
+#' \item{Sequential}{No parallelization at all: `ncores = 1`, `n_concurrent_files = 1`}
+#' \item{Concurent points}{Files are process sequentially one by one and inside the pipeline
+#' some parts/stages are parallelized and are able to process multiple points simultaneously.
+#' `ncores = n`, `n_concurrent_files = 1`}
+#' \item{Concurent files}{Files are process in parallel. Several files are loaded in memory
+#' and processed simultaneously. The entire pipeline is parallelized but inside each stage
+#' the points are process sequentially. `ncores = 1`, `n_concurrent_files = n`}
+#' \item{Mixed}{Files are process in parallel. Several files are loaded in memory
+#' and processed simultaneously. The entire pipeline is parallelized and inside each stage
+#' the points are process in parallel `ncores = n`, `n_concurrent_files = m`}
+#' }
+#' `Mixed` is reserved for experts. `Concurent file` is likely the most desirable option
+#' on modern laptop with fast drive and many cores. However it uses more memory because it
+#' loads multiples files. Also some stages do not support this type a parallelism because
+#' they call R code and R is not multi-threaded. For example a stage that implies \link{callback()}
+#' does not support concurrent files multi-threading because some R code is involved.
+#'
+#' @param pipeline a LASRpipeline. A serie of stages called in order
+#' @param ncores,n_concurrent_files integer. Number of cores to use. See details.
 #' @param progress boolean. Displays a progress bar.
 #' @param ... unused
 #'
@@ -23,13 +41,14 @@
 #' ans <- processor(pipeline)
 #' }
 #' @export
-processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
+#' @md
+processor = function(pipeline, ncores = 1L, n_concurrent_files = 2L, progress = FALSE, ...)
 {
   dots <- list(...)
   verbose <- isTRUE(dots$verbose)
   noread <- isTRUE(dots$noread)
 
-  ans <- .Call(`C_process`, pipeline, progress, ncores, verbose)
+  ans <- .Call(`C_process`, pipeline, progress, ncores, n_concurrent_files, verbose)
 
   if (inherits(ans, "error"))
   {

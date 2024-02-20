@@ -9,7 +9,6 @@ LASRlaswriter::LASRlaswriter(double xmin, double ymin, double xmax, double ymax,
   this->xmax = xmax;
   this->ymax = ymax;
   this->keep_buffer = keep_buffer;
-  merged = false;
   laswriter = nullptr;
   lasheader = nullptr;
 }
@@ -116,4 +115,10 @@ void LASRlaswriter::clear(bool last)
       laswriter = nullptr;
     }
   }
+}
+
+void LASRlaswriter::merge(const LASRalgorithm* other)
+{
+  const LASRlaswriter* o = dynamic_cast<const LASRlaswriter*>(other);
+  written = o->written;
 }

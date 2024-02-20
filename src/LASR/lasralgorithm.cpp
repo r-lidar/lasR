@@ -98,13 +98,25 @@ void LASRalgorithm::update_connection(LASRalgorithm* stage)
  *  WRITER
  *  ============= */
 
+LASRalgorithmWriter::LASRalgorithmWriter()
+{
+  merged = false;
+}
+
+LASRalgorithmWriter::LASRalgorithmWriter(const LASRalgorithmWriter& other) : LASRalgorithm(other)
+{
+  merged = other.merged;
+  template_filename = other.template_filename;
+  written.clear();
+}
+
+
 void LASRalgorithmWriter::merge(const LASRalgorithm* other)
 {
+  const LASRalgorithmWriter* o = dynamic_cast<const LASRalgorithmWriter*>(other);
+
   if (!merged)
-  {
-    const LASRalgorithmWriter* o = dynamic_cast<const LASRalgorithmWriter*>(other);
     written.insert(written.end(), o->written.begin(), o->written.end());
-  }
 }
 
 #ifdef USING_R
@@ -128,28 +140,11 @@ SEXP LASRalgorithmWriter::to_R()
 
 
 /* ==============
- *  WITER
- * ============= */
-
-LASRalgorithmWriter::LASRalgorithmWriter()
-{
-  merged = false;
-}
-
-LASRalgorithmWriter::LASRalgorithmWriter(const LASRalgorithmWriter& other) : LASRalgorithm(other)
-{
-  merged = other.merged;
-  template_filename = other.template_filename;
-  written.clear();
-}
-
-/* ==============
  *  RASTER
  *  ============= */
 
 LASRalgorithmRaster::LASRalgorithmRaster()
 {
-  merged = false;
 }
 
 LASRalgorithmRaster::LASRalgorithmRaster(const LASRalgorithmRaster& other) : LASRalgorithmWriter(other)
@@ -259,7 +254,6 @@ bool LASRalgorithmRaster::write()
 
 LASRalgorithmVector::LASRalgorithmVector()
 {
-  merged = false;
 }
 
 LASRalgorithmVector::LASRalgorithmVector(const LASRalgorithmVector& other) : LASRalgorithmWriter(other)

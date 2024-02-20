@@ -14,6 +14,9 @@ public:
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
   bool is_streamable() const override { return connections.size() == 0; };
   std::string get_name() const override { return "rasterize"; };
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRrasterize* clone() const override { return new LASRrasterize(*this); };
 
 private:

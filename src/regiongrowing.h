@@ -10,6 +10,9 @@ public:
   bool process(LAS*& las) override;
   double need_buffer() const override { return 50; };
   std::string get_name() const override { return "region_growing"; }
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRregiongrowing* clone() const override { return new LASRregiongrowing(*this); };
 
 

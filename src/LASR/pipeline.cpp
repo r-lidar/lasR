@@ -300,6 +300,21 @@ bool Pipeline::is_streamable()
   return b;
 }
 
+bool Pipeline::is_parallelizable()
+{
+  bool b = true;
+  for (auto&& stage : pipeline)
+  {
+    if (!stage->is_parallelizable())
+    {
+      b = false;
+      break;
+    }
+  }
+
+  return b;
+}
+
 bool Pipeline::need_points()
 {
   bool b = false;

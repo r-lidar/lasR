@@ -13,6 +13,9 @@ public:
   bool process(LAS*& las) override;
   SEXP to_R() override;
   std::string get_name() const override { return "callback";  }
+
+  // multi-threading
+  bool is_parallelizable() const override { return false; };
   LASRcallback* clone() const override { return new LASRcallback(*this); };
   void merge(const LASRalgorithm* other) override;
 

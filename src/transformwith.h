@@ -11,6 +11,9 @@ public:
   LASRtransformwith(double xmin, double ymin, double xmax, double ymax, LASRalgorithm* algorithm, std::string op, std::string attribute);
   bool process(LAS*& las) override;
   std::string get_name() const override { return "transform_with"; }
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRtransformwith* clone() const override { return new LASRtransformwith(*this); };
 
 private:

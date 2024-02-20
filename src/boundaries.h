@@ -15,6 +15,9 @@ public:
   bool need_points() const override;
   bool is_streamable() const override { return true; }
   std::string get_name() const override { return "hulls"; }
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRboundaries* clone() const override { return new LASRboundaries(*this); }
 
 private:

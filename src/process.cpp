@@ -17,9 +17,10 @@
 #include "pipeline.h"
 #include "LAScatalog.h"
 
-SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbose)
+SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpnfiles, SEXP sexpverbose)
 {
   int ncpu = Rf_asInteger(sexpncpu);
+  int nfiles = Rf_asInteger(sexpnfiles);
   bool progrss = Rf_asLogical(sexpprogrss);
   bool verbose = Rf_asLogical(sexpverbose);
 
@@ -27,7 +28,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
   {
     Pipeline pipeline;
     pipeline.set_verbose(verbose);
-    pipeline.set_ncpu(1);
+    pipeline.set_ncpu(ncpu);
 
     if (!pipeline.parse(sexppipeline, true, progrss))
     {
@@ -36,9 +37,20 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
     lascatalog->set_chunk_size(0);                   // currently only 0 is supported
-
     int n = lascatalog->get_number_chunks();
-    if (ncpu > n) ncpu = n;
+
+    // Test with respect to multi-threding
+    if (nfiles > available_threads())
+    {
+      warning("Number of cores requested %d but only %d available\n", ncpu, available_threads());
+      nfiles = available_threads();
+    }
+    if (nfiles > n) nfiles = n;
+    if (!pipeline.is_parallelizable())
+    {
+      warning("This pipeline involves stages injecting R code and is not currently parallelizable. Using only one thread.\n");
+      nfiles = 1;
+    }
 
     if (verbose)
     {
@@ -47,6 +59,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       print("  Read points: %s\n", pipeline.need_points() ? "true" : "false");
       print("  Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
       print("  Buffer: %.1lf\n", pipeline.need_buffer());
+      print("  Parallelizable: %s\n", pipeline.is_parallelizable() ? "true" : "false");
       print("  Chunks: %d\n", n);
       print("\n");
       // # nocov end
@@ -71,7 +84,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
     bool failure = false;
     int k = 0;
-    #pragma omp parallel num_threads(ncpu)
+    #pragma omp parallel num_threads(nfiles)
     {
       try
       {
@@ -237,18 +250,21 @@ SEXP get_pipeline_info(SEXP sexppipeline)
       throw last_error;
     }
     bool is_streamable = pipeline.is_streamable();
+    bool is_parallelizable = pipeline.is_parallelizable();
     bool read_points = pipeline.need_points();
     double buffer = pipeline.need_buffer();
 
-    SEXP ans =  PROTECT(Rf_allocVector(VECSXP, 3));
+    SEXP ans =  PROTECT(Rf_allocVector(VECSXP, 4));
     SET_VECTOR_ELT(ans, 0, Rf_ScalarLogical(is_streamable));
     SET_VECTOR_ELT(ans, 1, Rf_ScalarLogical(read_points));
     SET_VECTOR_ELT(ans, 2, Rf_ScalarReal(buffer));
+    SET_VECTOR_ELT(ans, 3, Rf_ScalarLogical(is_parallelizable));
 
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 3));
+    SEXP names = PROTECT(Rf_allocVector(STRSXP, 4));
     SET_STRING_ELT(names, 0, Rf_mkChar("streamable"));
     SET_STRING_ELT(names, 1, Rf_mkChar("read_points"));
     SET_STRING_ELT(names, 2, Rf_mkChar("buffer"));
+    SET_STRING_ELT(names, 3, Rf_mkChar("parallelizable"));
     Rf_setAttrib(ans, R_NamesSymbol, names);
 
     UNPROTECT(2);
