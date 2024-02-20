@@ -19,9 +19,9 @@ public:
   LASRsummary* clone() const override { return new LASRsummary(*this); };
   void merge(const LASRalgorithm* other) override;
 
-#ifdef USING_R
+  #ifdef USING_R
   SEXP to_R() override;
-#endif
+  #endif
 
 private:
   void merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2);

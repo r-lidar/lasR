@@ -22,6 +22,8 @@ public:
   void clear(bool last) override;
   std::string get_name() const override { return "write_las"; }
 
+  LASRlaswriter* clone() const override { return new LASRlaswriter(*this); };
+
 private:
   bool keep_buffer;
   LASwriter* laswriter;

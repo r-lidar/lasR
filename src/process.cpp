@@ -76,7 +76,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
       try
       {
         // We need a copy of the pipeline. The copy constructor of the pipeline and stages
-        // ensures that that shared resources are protected (such as connection to output files)
+        // ensure that shared resources are protected (such as connection to output files)
         // and private data are copied
         Pipeline pipeline_cpy(pipeline);
 
@@ -129,7 +129,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
 
           // clear() is used by some stages to clean data between two chunks. This is useful
           // to clear an std::map like in the aggregate pipeline
-          pipeline_cpy.clear(last_chunk);
+          pipeline_cpy.clear();
 
           #pragma omp critical
           {
@@ -139,8 +139,10 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
           }
         }
 
+        pipeline_cpy.clear(true);
+
         // We have multiple pipelines that each process some chunks and each have a partial
-        // output. We merge in the main pipeline
+        // output. We reduce in the main pipeline
         #pragma omp critical
         {
           if (!failure)
