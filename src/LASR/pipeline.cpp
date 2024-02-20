@@ -241,7 +241,7 @@ bool Pipeline::process(LAS*& las)
 
   for (auto&& stage : pipeline)
   {
-    if(verbose) print(" %s\n", stage->get_name().c_str());
+    if(verbose) print(" %s in thread %d\n", stage->get_name().c_str(), omp_get_thread_num());
 
     bool success = stage->process(las);
     if (!success)

@@ -146,7 +146,7 @@ bool LASRlocalmaximum::write()
   for (const auto& p : lm)
   {
     bool success;
-    #pragma omp critical
+    #pragma omp critical (write_localmax)
     {
       success = vector.write(p);
     }

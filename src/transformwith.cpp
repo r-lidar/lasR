@@ -117,7 +117,7 @@ bool LASRtransformwith::process(LAS*& las)
   }
 
   // TODO: should be a thread safe warning
-  if (deleted) print("%u points outside delaunay triangulation were discarded\n", deleted);
+  if (deleted) warning("%u points outside delaunay triangulation were discarded\n", deleted);
 
   return true;
 }
