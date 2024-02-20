@@ -31,7 +31,7 @@ class LASRalgorithm
 {
 public:
   LASRalgorithm();
-  LASRalgorithm(const LASRalgorithm& other);
+  LASRalgorithm(const LASRalgorithm& other); // copy constructor is for multi-threading
   virtual ~LASRalgorithm() = 0;
   virtual bool process(LASheader*& header) { return true; };
   virtual bool process(LASpoint*& p) { return true; };
@@ -46,8 +46,10 @@ public:
   virtual void set_input_file_name(std::string file) { return; };
   virtual void set_header(LASheader*& header) { return; };
   virtual bool is_streamable() const { return false; };
+  virtual bool is_parallelizable() const { return false; };
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
+
   virtual std::string get_name() const = 0;
 
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
@@ -58,7 +60,7 @@ public:
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
   std::string get_uid() const { return uid; };
 
-  // The default method consist in returning the string 'ofile'.
+  // The default method consists in returning the string 'ofile'.
   #ifdef USING_R
   virtual SEXP to_R();
   #endif
@@ -66,7 +68,8 @@ public:
   // For multi-threading when processing several files in parallel.
   // Each stage MUST have a clone() method to create a copy of itself sharing or not the resources.
   // Each stage CAN have a merge() method to merge the output computed in each thread.
-  // Each stage must update the pointers to the other stages it depends on.
+  // Each stage must update the pointers to the other stages it depends on. This performed
+  // in the copy constructor of the pipeline.
   virtual LASRalgorithm* clone() const { return nullptr; };
   virtual void merge(const LASRalgorithm* other) { return; };
   void update_connection(LASRalgorithm* stage);

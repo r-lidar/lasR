@@ -464,6 +464,11 @@ bool LASRcallback::process(LAS*& las)
   return true;
 }
 
+void LASRcallback::merge(const LASRcallback* other)
+{
+  ans = other->ans;
+}
+
 SEXP LASRcallback::to_R()
 {
   if (Rf_length(ans) == 0)

@@ -13,6 +13,8 @@ public:
   bool process(LAS*& las) override;
   SEXP to_R() override;
   std::string get_name() const override { return "callback";  }
+  LASRcallback* clone() const override { return new LASRcallback(*this); };
+  void merge(const LASRcallback* other);
 
 private:
   bool modify;
