@@ -25,6 +25,29 @@ LASRdataframereader::LASRdataframereader(double xmin, double ymin, double xmax, 
   npoints = Rf_length(VECTOR_ELT(dataframe, 0));
 }
 
+LASRdataframereader::LASRdataframereader(const LASRdataframereader& other)
+{
+  xmin = other.xmin;
+  ymin = other.ymin;
+  xmax = other.xmax;
+  ymax = other.ymax;
+  dataframe = other.dataframe;
+  wkt = other.wkt;
+  scale[0] = other.scale[0];
+  scale[1] = other.scale[1];
+  scale[2] = other.scale[2];
+  offset[0] = other.offset[0];
+  offset[1] = other.offset[1];
+  offset[2] = other.offset[2];
+  has_gps = other.has_gps;
+  has_nir = other.has_nir;
+  has_rgb = other.has_rgb;
+  is_extended = other.is_extended;
+  current_point = other.current_point;
+  num_extrabytes = other.num_extrabytes;
+  npoints = other.npoints;
+}
+
 bool LASRdataframereader::set_chunk(const Chunk& chunk)
 {
   const char* tmp = filter.c_str();

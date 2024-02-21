@@ -9,6 +9,7 @@ class LASRdataframereader: public LASRalgorithm
 {
 public:
   LASRdataframereader(double xmin, double ymin, double xmax, double ymax, const SEXP dataframe, const std::vector<double>& accuracy, const std::string& wkt);
+  LASRdataframereader(const LASRdataframereader& other);
   bool set_chunk(const Chunk& chunk) override;
   bool process(LASheader*& header) override;
   bool process(LASpoint*& point) override;
