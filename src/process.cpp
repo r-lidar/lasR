@@ -117,9 +117,14 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpnfiles
           // we can skip the processing
           if (!chunk.process)
           {
-            progress.update(i+1, true);
-            progress.show();
-            if (verbose) print("Chunk %d is flagged for not being processed. Skipped.", i);
+            #pragma omp critical
+            {
+              k++;
+              progress.update(k, true);
+              progress.show();
+              if (verbose) print("Chunk %d is flagged for not being processed. Skipped.", i);
+            }
+
             continue;
           }
 

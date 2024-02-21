@@ -11,7 +11,6 @@ class LASRlasreader: public LASRalgorithm
 {
 public:
   LASRlasreader();
-  LASRlasreader(const LASRlasreader& other);
   ~LASRlasreader();
   bool process(LASheader*& header) override;
   bool process(LASpoint*& point) override;
@@ -22,7 +21,7 @@ public:
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "reader_las"; }
 
-  // multi-threading
+
   bool is_parallelizable() const override { return true; };
   LASRlasreader* clone() const override { return new LASRlasreader(*this); };
 

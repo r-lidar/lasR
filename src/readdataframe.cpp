@@ -25,7 +25,7 @@ LASRdataframereader::LASRdataframereader(double xmin, double ymin, double xmax, 
   npoints = Rf_length(VECTOR_ELT(dataframe, 0));
 }
 
-LASRdataframereader::LASRdataframereader(const LASRdataframereader& other)
+LASRdataframereader::LASRdataframereader(const LASRdataframereader& other) : LASRalgorithm(other)
 {
   xmin = other.xmin;
   ymin = other.ymin;

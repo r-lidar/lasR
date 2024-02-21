@@ -311,8 +311,10 @@ bool LASRcallback::process(LAS*& las)
     else if (las->header->get_attribute_index(sname.c_str()) != -1) col_names[i] = las->header->get_attribute_index(sname.c_str()) + 100;
     else
     {
-      col_names[i] = -1;
-      warning("non supported column '%s'\n", sname.c_str());
+      last_error = "non supported column '" + sname +"'";
+      UNPROTECT(nsexpprotected);
+      nsexpprotected = 0;
+      return false;
     }
   }
 

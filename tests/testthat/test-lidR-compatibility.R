@@ -22,6 +22,7 @@ test_that("lasR supports a LAS from lidR",
 
 test_that("lasR supports a LAScatalog from lidR",
 {
+  skip("C stack usage  is too close to the limit")
   skip_if_not_installed("lidR")
 
   LASfile <- system.file("extdata", "Example.las", package="lasR")

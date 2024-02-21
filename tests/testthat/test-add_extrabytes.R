@@ -6,7 +6,7 @@ gun = function(data) { data }
 test_that("callback cannot add attribute without EB",
 {
   pipeline = reader(f) + callback(fun)
-  expect_warning(processor(pipeline), "non supported column 'HAG'")
+  expect_error(processor(pipeline), "non supported column 'HAG'")
 })
 
 test_that("callback can add attribute witht EB",

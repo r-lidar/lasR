@@ -56,7 +56,7 @@ test_that("callback cannot add an attribute not compatble with the format.",
   read = reader(f)
   call = callback(fun, expose = "xyzi")
   pipeline = read + call
-  expect_warning(processor(pipeline), "non supported column 'R'")
+  expect_error(processor(pipeline), "non supported column 'R'")
 })
 
 test_that("callback fails if an attribute is of incorrect type.",

@@ -16,6 +16,8 @@ public:
   bool is_streamable() const override { return true; }
   std::string get_name() const override { return "summary"; }
 
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
   LASRsummary* clone() const override { return new LASRsummary(*this); };
   void merge(const LASRalgorithm* other) override;
 
