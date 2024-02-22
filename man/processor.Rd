@@ -7,7 +7,7 @@
 processor(
   pipeline,
   ncores = half_cores(),
-  n_concurrent_files = 1L,
+  mode = getOption("lasR.default_parallel_mode"),
   progress = FALSE,
   ...
 )
@@ -15,7 +15,9 @@ processor(
 \arguments{
 \item{pipeline}{a LASRpipeline. A serie of stages called in order}
 
-\item{ncores, n_concurrent_files}{integer. Number of cores to use. See details.}
+\item{ncores}{integer. Number of cores to use.}
+
+\item{mode}{string. The parallelization mode. See details}
 
 \item{progress}{boolean. Displays a progress bar.}
 
@@ -26,24 +28,25 @@ Process the pipeline. Every other functions do nothing. This function must be ca
 to actually process the point-cloud
 }
 \details{
-There are 4 modes of parallelization:
+There are 4 modes of parallel processing:
 \describe{
-\item{"Sequential"}{No parallelization at all: \code{ncores = 1}, \code{n_concurrent_files = 1}}
-\item{"Concurent points"}{Files are process sequentially one by one and inside the pipeline
-some parts/stages are parallelized and are able to process multiple points simultaneously.
-\code{ncores = n}, \code{n_concurrent_files = 1}}
-\item{"Concurent files"}{Files are process in parallel. Several files are loaded in memory
+\item{sequential}{No parallelization at all. \code{ncores = 1} not matter the actual user input.}
+\item{concurent-points}{Point cloud files are process sequentially one by one. Inside the pipeline
+some stages are parallelized and are able to process multiple points simultaneously. Not all stages
+are natively parallelized.}
+\item{concurent-files}{Files are process in parallel. Several files are loaded in memory
 and processed simultaneously. The entire pipeline is parallelized but inside each stage
-the points are process sequentially. \code{ncores = 1}, \code{n_concurrent_files = n}}
-\item{"Mixed"}{Files are process in parallel. Several files are loaded in memory
-and processed simultaneously. The entire pipeline is parallelized and inside each stage
-the points are process in parallel \code{ncores = n}, \code{n_concurrent_files = m}}
+the points are process sequentially.}
+\item{nested}{\strong{Not yet supported}. Files are process in parallel. Several files are loaded in memory
+and processed simultaneously and inside some stages the points are process in parallel.}
 }
-\code{Mixed} is reserved for experts. \verb{Concurent file} is likely the most desirable option
-on modern laptop with fast drive and many cores. However it uses more memory because it
-loads multiples files. Also some stages do not support this type a parallelism because
-they call R code and R is not multi-threaded. For example a stage that implies \link{callback()}
-does not support concurrent files multi-threading because some R code is involved.
+\code{concurent-files} is likely the most desirable and fastest option on modern computers with
+fast drive and many cores. However it uses more memory because it loads multiples files.
+Also some stages do not support this type a parallelism because they call R code and R
+is not multithreaded. For example a pipeline that implies the \link{callback()} stage
+does not support \code{concurrent-files} multithreading because some R code is involved. The default
+is \code{concurent-points} and can be changed globally using
+\code{options("lasR.default_parallel_mode") = "concurent-files"}
 }
 \examples{
 \dontrun{
@@ -58,4 +61,7 @@ met <- rasterize(2, mean(Intensity))
 pipeline <- read + tri + dtm + lmf + met
 ans <- processor(pipeline)
 }
+}
+\seealso{
+\code{\link[=ncore]{ncore()}} \code{\link[=half_cores]{half_cores()}} \code{\link[=sequential]{sequential()}} \code{\link[=concurrent_points]{concurrent_points()}} \code{\link[=concurrent_files]{concurrent_files()}}
 }

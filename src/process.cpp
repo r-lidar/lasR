@@ -17,18 +17,25 @@
 #include "pipeline.h"
 #include "LAScatalog.h"
 
-SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpnfiles, SEXP sexpverbose)
+SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, SEXP sexpverbose)
 {
   int ncpu = Rf_asInteger(sexpncpu);
-  int nfiles = Rf_asInteger(sexpnfiles);
+  int mode = Rf_asInteger(sexpmode);
   bool progrss = Rf_asLogical(sexpprogrss);
   bool verbose = Rf_asLogical(sexpverbose);
+
+  if (ncpu > available_threads()) {
+    warning("Number of cores requested %d but only %d available\n", ncpu, available_threads());
+    ncpu = available_threads();
+  }
+  int ncpu_lvl1 = 1; // concurrent files
+  int ncpu_lvl2 = 1; // concurrent points
+  if (mode == 2) ncpu_lvl2 = ncpu;
+  if (mode == 3) ncpu_lvl1 = ncpu;
 
   try
   {
     Pipeline pipeline;
-    pipeline.set_verbose(verbose);
-    pipeline.set_ncpu(ncpu);
 
     if (!pipeline.parse(sexppipeline, true, progrss))
     {
@@ -39,18 +46,17 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpnfiles
     lascatalog->set_chunk_size(0);                   // currently only 0 is supported
     int n = lascatalog->get_number_chunks();
 
-    // Test with respect to multi-threding
-    if (nfiles > available_threads())
+    // Check some multithreading stuff
+    if (ncpu_lvl1 > n) ncpu_lvl1 = n;
+    if (!pipeline.is_parallelizable() && ncpu_lvl1 > 1)
     {
-      warning("Number of cores requested %d but only %d available\n", ncpu, available_threads());
-      nfiles = available_threads();
+      warning("This pipeline involves stages with R code and is not currently parallelizable in 'concurent files' mode. Using 'concurent points' mode.\n");
+      ncpu_lvl2 = ncpu_lvl1;
+      ncpu_lvl1 = 1;
     }
-    if (nfiles > n) nfiles = n;
-    if (!pipeline.is_parallelizable())
-    {
-      warning("This pipeline involves stages injecting R code and is not currently parallelizable. Using only one thread.\n");
-      nfiles = 1;
-    }
+
+    pipeline.set_verbose(verbose);
+    pipeline.set_ncpu(ncpu);
 
     if (verbose)
     {
@@ -59,7 +65,8 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpnfiles
       print("  Read points: %s\n", pipeline.need_points() ? "true" : "false");
       print("  Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
       print("  Buffer: %.1lf\n", pipeline.need_buffer());
-      print("  Parallelizable: %s\n", pipeline.is_parallelizable() ? "true" : "false");
+      print("  Concurrent files: %d\n", ncpu_lvl1);
+      print("  Concurrent points: %d\n", ncpu_lvl2);
       print("  Chunks: %d\n", n);
       print("\n");
       // # nocov end
@@ -84,7 +91,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpnfiles
 
     bool failure = false;
     int k = 0;
-    #pragma omp parallel num_threads(nfiles)
+    #pragma omp parallel num_threads(ncpu_lvl1)
     {
       try
       {

@@ -159,10 +159,12 @@ void Pipeline::set_ncpu(int ncpu)
 {
   if (ncpu > available_threads())
   {
-    warning("Number of cores requested %d but only %d available", ncpu, available_threads());
-    ncpu = available_threads();
+    warning("Number of cores requested %d but only %d available", ncpu, available_threads()); // # nocov
+    ncpu = available_threads(); // # nocov
   }
+
   this->ncpu = ncpu;
+  for (auto&& stage : pipeline) stage->set_ncpu(ncpu);
 }
 
 bool Pipeline::set_crs(int epsg)
@@ -187,6 +189,7 @@ void Pipeline::set_header(LASheader*& header)
 void Pipeline::set_verbose(bool verbose)
 {
   this->verbose = verbose;
+  for (auto&& stage : pipeline) stage->set_verbose(verbose);
 }
 
 bool Pipeline::process(LASheader*& header)

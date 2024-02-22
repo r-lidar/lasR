@@ -78,8 +78,8 @@ bool LAScatalog::read(const std::vector<std::string>& files, bool progress)
 
   pb.done();
 
-  if (epsg_set.size() > 1) eprint("WARNING: mix epsg found. First one retained\n");
-  if (wkt_set.size() > 1) eprint("WARNING: mix wkt crs found. First one retained.\n");
+  if (epsg_set.size() > 1) warning("mix epsg found. First one retained\n");
+  if (wkt_set.size() > 1) warning("mix wkt crs found. First one retained.\n");
   if (epsg_set.size() > 0) { wkt = ""; epsg = *epsg_set.begin(); }
   if (wkt_set.size() > 0) { wkt = *wkt_set.begin(); epsg = 0; }
 
