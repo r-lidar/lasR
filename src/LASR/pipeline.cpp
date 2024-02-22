@@ -29,49 +29,88 @@ Pipeline::~Pipeline()
 bool Pipeline::pre_run()
 {
   // Only used by write_vpc
-  return process(catalog);
+  for (auto&& stage : pipeline)
+  {
+    bool success = stage->process(catalog);
+    if (!success)
+    {
+      last_error = "in '" + stage->get_name() + "' while processing the catalog: " + last_error; // # nocov
+      return false; // # nocov
+    }
+  }
+
+  return true;
 }
 
 bool Pipeline::run()
 {
   bool success;
+  bool last_point = false;
 
-  // Each stage process the LASheader. The first stage being a reader, the LASheader, which is
-  // initially nullptr, will be initialized by pipeline[0]
-  success = process(header);
-  if (!success) return false;
-
-  if (header->number_of_point_records == 0 && header->extended_number_of_point_records == 0)
+  while(!last_point)
   {
-    return true; // # nocov
-  }
+    if (!read_payload)
+      last_point = true;
+    else
+      last_point = !streamable;
 
-  set_header(header);
+    for (auto&& stage : pipeline)
+    {
+      // Some stage process the header. The first stage being a reader, the LASheader, which is
+      // initially nullptr, will be initialized by pipeline[0]
+      success = stage->process(header);
+      if (!success) return false;
 
-  // If the pipeline is streamable can process all the point without storing them
-  // Each stage process the LASpoint. The first stage being a reader, the LASpoint, which is
-  // initially nullptr, will be initialized by pipeline[0]
-  success = process(point);
-  if (!success) return false;
+      // Special case: pipeline[0] could be write_lax, in this case the first stage does not
+      // initialize the header. We must go to pipeline[1] immediately
+      if (header == nullptr) continue;
 
-  // If the pipeline is not streamable we need an object that stores and spatially index all the point
-  // Each stage process the LAS. The first stage being a reader, the LAS, which is
-  // initially nullptr, will be initialized by pipeline[0]
-  success = process(las);
-  if (!success)
-  {
-    clean();
-    return false;
-  }
+      // There is no point to read
+      uint64_t npoints = 0;
+      npoints += header->number_of_point_records;
+      npoints += header->extended_number_of_point_records;
+      if (npoints == 0) return true;
 
-  success = write();
-  if (!success)
-  {
-    clean();
-    return false;
+      // Some stages need the header to get initialized (write_las is the only one)
+      stage->set_header(header);
+
+      // If the pipeline is streamable can process all the point without storing them
+      // Each stage process the LASpoint. The first stage being a reader, the LASpoint, which is
+      // initially nullptr, will be initialized by pipeline[0]
+      if (read_payload && streamable)
+      {
+        success = stage->process(point);
+
+        if (!success)
+        {
+          last_error = "in '" + stage->get_name() + "' while processing a point: " + last_error; // # nocov
+          return false; // # nocov
+        }
+
+        if (point == nullptr)
+        {
+          last_point = true;
+          break;
+        }
+      }
+
+      // If the pipeline is not streamable we need an object that stores and spatially index all the point
+      // Each stage process the LAS. The first stage being a reader, the LAS, which is
+      // initially nullptr, will be initialized by pipeline[0]
+      if (read_payload && !streamable)
+      {
+        success = stage->process(las);
+        if (!success) return false;
+      }
+
+      // Each stage is writing its own output
+      success = stage->write();
+      if (!success) return false;
+    }
   }
 
   clean();
+
   return true;
 }
 
@@ -120,114 +159,9 @@ bool Pipeline::set_crs(std::string wkt)
   return true;
 }
 
-void Pipeline::set_header(LASheader*& header)
-{
-  for (auto&& stage : pipeline) stage->set_header(header);
-}
-
 void Pipeline::set_verbose(bool verbose)
 {
   this->verbose = verbose;
-}
-
-/*void Pipeline::set_buffer(double buffer)
-{
-  this->buffer = buffer;
-}*/
-
-bool Pipeline::process(LASheader*& header)
-{
-  bool success;
-  for (auto&& stage : pipeline)
-  {
-    success = stage->process(header);
-    if (!success)
-    {
-      last_error = "in '" + stage->get_name() + "' while processing the header: " + last_error; // # nocov
-      return false; // # nocov
-    }
-  }
-
-  return true;
-}
-
-bool Pipeline::process(LASpoint*& point)
-{
-  if (!read_payload || !streamable)
-    return true;
-
-  bool last_point = false;
-  while(!last_point)
-  {
-    for (auto&& stage : pipeline)
-    {
-      bool success = stage->process(point);
-
-      if (!success)
-      {
-        last_error = "in '" + stage->get_name() + "' while processing a point: " + last_error; // # nocov
-        return false; // # nocov
-      }
-
-      if (point == nullptr)
-      {
-        last_point = true;
-        break;
-      }
-    }
-  }
-
-  return true;
-}
-
-bool Pipeline::process(LAS*& las)
-{
-  if (!read_payload || streamable)
-    return true;
-
-  for (auto&& stage : pipeline)
-  {
-    if(verbose) print(" %s\n", stage->get_name().c_str());
-
-    bool success = stage->process(las);
-    if (!success)
-    {
-      last_error = "in '" + stage->get_name() + "' while processing the point cloud: " + last_error;
-      return false;
-    }
-  }
-
-    return true;
-}
-
-bool Pipeline::process(LAScatalog*& catalog)
-{
-  for (auto&& stage : pipeline)
-  {
-    bool success = stage->process(catalog);
-    if (!success)
-    {
-      last_error = "in '" + stage->get_name() + "' while processing the catalog: " + last_error; // # nocov
-      return false; // # nocov
-    }
-  }
-
-  return true;
-}
-
-bool Pipeline::write()
-{
-  for (auto&& stage : pipeline)
-  {
-    bool success = stage->write();
-    if (!success)
-    {
-      last_error = "in " + stage->get_name() + " while writing the output: " + last_error;
-      return false;
-    }
-  }
-
-  return true;
 }
 
 bool Pipeline::is_streamable()

@@ -46,6 +46,8 @@ bool LASRdataframereader::set_chunk(const Chunk& chunk)
 
 bool LASRdataframereader::process(LASheader*& header)
 {
+  if (header != nullptr) return true;
+
   col_names.resize(Rf_length(dataframe));
   SEXP names_attr = Rf_getAttrib(dataframe, R_NamesSymbol);
 

@@ -46,13 +46,7 @@ class Pipeline
     #endif
 
 private:
-  bool process(LASheader*& header);
-  bool process(LASpoint*& p);
-  bool process(LAS*& las);
-  bool process(LAScatalog*& catalog);
-  bool write();
   void clean();
-  void set_header(LASheader*& header);
 
   private:
     int ncpu;
