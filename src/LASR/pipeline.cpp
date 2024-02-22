@@ -45,15 +45,24 @@ bool Pipeline::pre_run()
 bool Pipeline::run()
 {
   bool success;
+
+  if (streamable)
+    success = run_streamed();
+  else
+    success = run_loaded();
+
+  clean();
+
+  return success;
+}
+
+bool Pipeline::run_streamed()
+{
+  bool success;
   bool last_point = false;
 
   while(!last_point)
   {
-    if (!read_payload)
-      last_point = true;
-    else
-      last_point = !streamable;
-
     for (auto&& stage : pipeline)
     {
       // Some stage process the header. The first stage being a reader, the LASheader, which is
@@ -74,10 +83,9 @@ bool Pipeline::run()
       // Some stages need the header to get initialized (write_las is the only one)
       stage->set_header(header);
 
-      // If the pipeline is streamable can process all the point without storing them
       // Each stage process the LASpoint. The first stage being a reader, the LASpoint, which is
       // initially nullptr, will be initialized by pipeline[0]
-      if (read_payload && streamable)
+      if (read_payload)
       {
         success = stage->process(point);
 
@@ -93,14 +101,9 @@ bool Pipeline::run()
           break;
         }
       }
-
-      // If the pipeline is not streamable we need an object that stores and spatially index all the point
-      // Each stage process the LAS. The first stage being a reader, the LAS, which is
-      // initially nullptr, will be initialized by pipeline[0]
-      if (read_payload && !streamable)
+      else
       {
-        success = stage->process(las);
-        if (!success) return false;
+        last_point = true;
       }
 
       // Each stage is writing its own output
@@ -109,7 +112,46 @@ bool Pipeline::run()
     }
   }
 
-  clean();
+  return true;
+}
+
+bool Pipeline::run_loaded()
+{
+  bool success;
+
+  for (auto&& stage : pipeline)
+  {
+    // Some stage process the header. The first stage being a reader, the LASheader, which is
+    // initially nullptr, will be initialized by pipeline[0]
+    success = stage->process(header);
+    if (!success) return false;
+
+    // Special case: pipeline[0] could be write_lax, in this case the first stage does not
+    // initialize the header. We must go to pipeline[1] immediately
+    if (header == nullptr) continue;
+
+    // There is no point to read
+    uint64_t npoints = 0;
+    npoints += header->number_of_point_records;
+    npoints += header->extended_number_of_point_records;
+    if (npoints == 0) return true;
+
+    // Some stages need the header to get initialized (write_las is the only one)
+    stage->set_header(header);
+
+    // If the pipeline is not streamable we need an object that stores and spatially index all the point
+    // Each stage process the LAS. The first stage being a reader, the LAS, which is
+    // initially nullptr, will be initialized by pipeline[0]
+    if (read_payload)
+    {
+      success = stage->process(las);
+      if (!success) return false;
+    }
+
+    // Each stage is writing its own output
+    success = stage->write();
+    if (!success) return false;
+  }
 
   return true;
 }

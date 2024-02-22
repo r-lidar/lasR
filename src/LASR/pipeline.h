@@ -46,6 +46,8 @@ class Pipeline
     #endif
 
 private:
+  bool run_streamed();
+  bool run_loaded();
   void clean();
 
   private:
