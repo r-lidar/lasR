@@ -8,7 +8,7 @@
 
 bool LASRmetrics::parse(const std::vector<std::string>& names)
 {
-  // Check is we have only streamable metrics
+  // Check if we have only streamable metrics
   streamable = true;
   for (const auto name : names)
   {
@@ -48,6 +48,10 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
         regular_operators.push_back(&LASRmetrics::zmean);
       else if (name == "zmedian")
         regular_operators.push_back(&LASRmetrics::zmedian);
+      else if (name == "zsd")
+        regular_operators.push_back(&LASRmetrics::zsd);
+      else if (name == "zcv")
+        regular_operators.push_back(&LASRmetrics::zcv);
       else
       {
         last_error = "metric " + name + "not recognized";
@@ -64,6 +68,10 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
         regular_operators.push_back(&LASRmetrics::imean);
       else if (name == "imedian")
         regular_operators.push_back(&LASRmetrics::imedian);
+      else if (name == "isd")
+        regular_operators.push_back(&LASRmetrics::isd);
+      else if (name == "icv")
+        regular_operators.push_back(&LASRmetrics::icv);
       else
       {
         last_error = "metric " + name + "not recognized";
@@ -112,10 +120,15 @@ float LASRmetrics::zmax() const { return (float)z[n-1]; }
 float LASRmetrics::zmin() const { return (float)z[0]; }
 float LASRmetrics::zmean() const { return (float)zsum/n; }
 float LASRmetrics::zmedian() const { return (n % 2 == 0) ? (float)((z[n/2 - 1] + z[n/2])/2) : (float)z[n/2]; }
+float LASRmetrics::zsd() const { float m = zmean(); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(z[j]-m, 2); } return std::sqrt(sd)/n; }
+float LASRmetrics::zcv() const { return zsd()/zmean(); }
 float LASRmetrics::imax() const { return (float)i[i.size()-1]; }
 float LASRmetrics::imin() const { return (float)i[0]; }
 float LASRmetrics::imean() const { return (float)isum/n; }
 float LASRmetrics::imedian() const { return (n % 2 == 0) ? (float)((i[n/2 - 1] + i[n/2])/2) : (float)i[n/2]; }
+float LASRmetrics::isd() const { float m = imean(); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(i[j]-m, 2); } return std::sqrt(sd)/n; }
+float LASRmetrics::icv() const { return isd()/imean(); }
+
 float LASRmetrics::count() const { return (float)n; }
 
 float LASRmetrics::get_metric(int index, float x, float y)
@@ -139,7 +152,7 @@ float LASRmetrics::get_metric(int index)
   return (this->*f)();
 }
 
-/*float LASRmetrics::percentile(std::vector<double>& x, double p)
+/*float LASRmetrics::percentile(const std::vector<double>& x, double p) const
 {
   // x is already sorted
   double rank = (p / 100.0) * ((double)n - 1) + 1;

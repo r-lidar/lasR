@@ -24,6 +24,7 @@ public:
 
 private:
   void clean();
+  //float percentile(const std::vector<double>& x, double p) const;
 
   // streamable metrics
   float pmax  (float x, float y) const;
@@ -35,10 +36,14 @@ private:
   float zmin() const;
   float zmean() const;
   float zmedian() const;
+  float zsd() const;
+  float zcv() const;
   float imax() const;
   float imin() const;
   float imean() const;
   float imedian() const;
+  float isd() const;
+  float icv() const;
   float count() const;
 
   // data storage
