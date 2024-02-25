@@ -3,13 +3,16 @@ test_that("rasterize fast works",
   f = system.file("extdata", "Topography.las", package="lasR")
 
   read = reader(f, filter = "")
-  met = rasterize(5, "min")
+  met = rasterize(5, c("min", "max", "count"))
   pipeline = read + met
   u = processor(pipeline)
 
   expect_s4_class(u, "SpatRaster")
-  expect_equal(dim(u), c(58, 58, 1))
-  expect_equal(mean(u[], na.rm = T), 804.996, tolerance = 0.001)
+  expect_equal(names(u), c("min", "max", "count"))
+  expect_equal(dim(u), c(58, 58, 3))
+  expect_equal(mean(u[[1]][], na.rm = T), 804.996, tolerance = 0.001)
+  expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 0.001)
+  expect_equal(mean(u[[3]][], na.rm = T), 24.129, tolerance = 0.001)
 })
 
 test_that("rasterize expression works",
