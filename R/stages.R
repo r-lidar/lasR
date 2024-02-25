@@ -307,6 +307,10 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' Rasterize a point cloud using different approaches. This algorithm does not modify the point cloud.
 #' It produces a derived product in raster format.
 #'
+#' If `operators` is a string or a vector of strings it uses internally optimized metrics. Available metrics
+#' are "zmax", "zmin", "zmean", "zmedian" for the Z coordinates. The same metrics are available with
+#' the letter "i" for intensity such as "imax". Other available metrics are "count".
+#' \cr\cr
 #' If `operators` is a user-defined expression, the function must return either a vector of numbers
 #' or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
 #' These are valid operators:
@@ -334,9 +338,10 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' @param res numeric. The resolution of the raster. Can be a vector with two resolutions.
 #' In this case it does not correspond to the x and y resolution but to a buffed rasterization.
 #' (see details)
-#' @param operators Can be a character vector. "min", "max" and "count" are accepted. Can also
-#' rasterize a triangulation if the input is a LASRalgorithm for triangulation (see examples).
-#' Can also be a user-defined expression (see example and details).
+#' @param operators Can be a character vector. "min", "max" and "count" are accepted as well
+#' as many others (see details). Can also rasterize a triangulation if the input is a
+#' LASRalgorithm for triangulation (see examples). Can also be a user-defined expression
+#' (see example and details).
 #' @template param-filter
 #' @template param-ofile
 #'
@@ -398,11 +403,10 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
   }
   else if (is.character(operators))
   {
-    supported_operators <- c("max", "min", "count")
+    supported_operators <- c("max", "min", "count", "zmax", "zmin", "zmean", "zmedian", "imax", "imin", "imean", "imedian")
     valid <- operators %in% supported_operators
     if (!all(valid)) stop("Non supported operators")
-    id <- match(operators, supported_operators)
-    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = id, filter = filter, output = ofile)
+    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile)
   }
   else
   {

@@ -16,9 +16,10 @@ rasterize(
 In this case it does not correspond to the x and y resolution but to a buffed rasterization.
 (see details)}
 
-\item{operators}{Can be a character vector. "min", "max" and "count" are accepted. Can also
-rasterize a triangulation if the input is a LASRalgorithm for triangulation (see examples).
-Can also be a user-defined expression (see example and details).}
+\item{operators}{Can be a character vector. "min", "max" and "count" are accepted as well
+as many others (see details). Can also rasterize a triangulation if the input is a
+LASRalgorithm for triangulation (see examples). Can also be a user-defined expression
+(see example and details).}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
@@ -36,6 +37,10 @@ Rasterize a point cloud using different approaches. This algorithm does not modi
 It produces a derived product in raster format.
 }
 \details{
+If \code{operators} is a string or a vector of strings it uses internally optimized metrics. Available metrics
+are "zmax", "zmin", "zmean", "zmedian" for the Z coordinates. The same metrics are available with
+the letter "i" for intensity such as "imax". Other available metrics are "count".
+\cr\cr
 If \code{operators} is a user-defined expression, the function must return either a vector of numbers
 or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
 These are valid operators:
