@@ -41,17 +41,47 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
     if (name[0] == 'z')
     {
       if (name == "zmax")
+      {
         regular_operators.push_back(&LASRmetrics::zmax);
+        param.push_back(0);
+      }
       else if (name == "zmin")
+      {
         regular_operators.push_back(&LASRmetrics::zmin);
+        param.push_back(0);
+      }
       else if (name == "zmean")
+      {
         regular_operators.push_back(&LASRmetrics::zmean);
+        param.push_back(0);
+      }
       else if (name == "zmedian")
+      {
         regular_operators.push_back(&LASRmetrics::zmedian);
+        param.push_back(0);
+      }
       else if (name == "zsd")
+      {
         regular_operators.push_back(&LASRmetrics::zsd);
+        param.push_back(0);
+      }
       else if (name == "zcv")
+      {
         regular_operators.push_back(&LASRmetrics::zcv);
+        param.push_back(0);
+      }
+      else if (name[1] == 'p')
+      {
+        std::string probs = name.substr(2);
+        int number = std::stoi(probs);
+        if (number < 0 || number > 100)
+        {
+          last_error = "Percentile out of range (0-100)";
+          return false;
+        }
+        regular_operators.push_back(&LASRmetrics::zpx);
+        param.push_back(number);
+      }
       else
       {
         last_error = "metric " + name + "not recognized";
@@ -61,17 +91,47 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
     else if (name[0] == 'i')
     {
       if (name == "imax")
+      {
         regular_operators.push_back(&LASRmetrics::imax);
+        param.push_back(0);
+      }
       else if (name == "imin")
+      {
         regular_operators.push_back(&LASRmetrics::imin);
+        param.push_back(0);
+      }
       else if (name == "imean")
+      {
         regular_operators.push_back(&LASRmetrics::imean);
+        param.push_back(0);
+      }
       else if (name == "imedian")
+      {
         regular_operators.push_back(&LASRmetrics::imedian);
+        param.push_back(0);
+      }
       else if (name == "isd")
+      {
         regular_operators.push_back(&LASRmetrics::isd);
+        param.push_back(0);
+      }
       else if (name == "icv")
+      {
         regular_operators.push_back(&LASRmetrics::icv);
+        param.push_back(0);
+      }
+      else if (name[1] == 'p')
+      {
+        std::string probs = name.substr(2);
+        int number = std::stoi(probs);
+        if (number < 0 || number > 100)
+        {
+          last_error = "Percentile out of range (0-100)";
+          return false;
+        }
+        regular_operators.push_back(&LASRmetrics::ipx);
+        param.push_back(number);
+      }
       else
       {
         last_error = "metric " + name + "not recognized";
@@ -79,7 +139,10 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
       }
     }
     else if (name == "count")
+    {
       regular_operators.push_back(&LASRmetrics::count);
+      param.push_back(0);
+    }
     else
     {
       last_error = "metric " + name + "not recognized";
@@ -116,20 +179,21 @@ float LASRmetrics::pmin  (float x, float y) const { if (x == NA_F32_RASTER) retu
 float LASRmetrics::pcount(float x, float y) const { if (x == NA_F32_RASTER) return 1; return x+1; }
 
 // batch metrics
-float LASRmetrics::zmax() const { return (float)z[n-1]; }
-float LASRmetrics::zmin() const { return (float)z[0]; }
-float LASRmetrics::zmean() const { return (float)zsum/n; }
-float LASRmetrics::zmedian() const { return (n % 2 == 0) ? (float)((z[n/2 - 1] + z[n/2])/2) : (float)z[n/2]; }
-float LASRmetrics::zsd() const { float m = zmean(); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(z[j]-m, 2); } return std::sqrt(sd)/n; }
-float LASRmetrics::zcv() const { return zsd()/zmean(); }
-float LASRmetrics::imax() const { return (float)i[i.size()-1]; }
-float LASRmetrics::imin() const { return (float)i[0]; }
-float LASRmetrics::imean() const { return (float)isum/n; }
-float LASRmetrics::imedian() const { return (n % 2 == 0) ? (float)((i[n/2 - 1] + i[n/2])/2) : (float)i[n/2]; }
-float LASRmetrics::isd() const { float m = imean(); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(i[j]-m, 2); } return std::sqrt(sd)/n; }
-float LASRmetrics::icv() const { return isd()/imean(); }
-
-float LASRmetrics::count() const { return (float)n; }
+float LASRmetrics::zmax(float p) const { return (float)z[n-1]; }
+float LASRmetrics::zmin(float p) const { return (float)z[0]; }
+float LASRmetrics::zmean(float p) const { return (float)zsum/n; }
+float LASRmetrics::zmedian(float p) const { return (n % 2 == 0) ? (float)((z[n/2 - 1] + z[n/2])/2) : (float)z[n/2]; }
+float LASRmetrics::zsd(float p) const { float m = zmean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(z[j]-m, 2); } return std::sqrt(sd)/n; }
+float LASRmetrics::zcv(float p) const { return zsd(0)/zmean(0); }
+float LASRmetrics::zpx(float p) const { return percentile(z, p); }
+float LASRmetrics::imax(float p) const { return (float)i[i.size()-1]; }
+float LASRmetrics::imin(float p) const { return (float)i[0]; }
+float LASRmetrics::imean(float p) const { return (float)isum/n; }
+float LASRmetrics::imedian(float p) const { return (n % 2 == 0) ? (float)((i[n/2 - 1] + i[n/2])/2) : (float)i[n/2]; }
+float LASRmetrics::isd(float p) const { float m = imean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(i[j]-m, 2); } return std::sqrt(sd)/n; }
+float LASRmetrics::icv(float p) const { return isd(0)/imean(0); }
+float LASRmetrics::ipx(float p) const { return percentile(i, p); }
+float LASRmetrics::count(float p) const { return (float)n; }
 
 float LASRmetrics::get_metric(int index, float x, float y)
 {
@@ -149,10 +213,10 @@ float LASRmetrics::get_metric(int index)
   if (n == 0) return NA_F32_RASTER;
 
   RegularMetric& f = regular_operators[index];
-  return (this->*f)();
+  return (this->*f)(param[index]);
 }
 
-/*float LASRmetrics::percentile(const std::vector<double>& x, double p) const
+float LASRmetrics::percentile(const std::vector<double>& x, float p) const
 {
   // x is already sorted
   double rank = (p / 100.0) * ((double)n - 1) + 1;
@@ -171,7 +235,7 @@ float LASRmetrics::get_metric(int index)
     double upperValue = x[upperIndex];
     return lowerValue + (upperValue - lowerValue) * (rank - std::floor(rank));
   }
-}*/
+}
 
 
 LASRmetrics::LASRmetrics()

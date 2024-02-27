@@ -308,8 +308,9 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' It produces a derived product in raster format.
 #'
 #' If `operators` is a string or a vector of strings it uses internally optimized metrics. Available metrics
-#' are "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", for the Z coordinates. The same metrics are available with
-#' the letter "i" for intensity such as "imax" and so on. Other available metrics are "count".
+#' are "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zpXX", for the Z coordinates. "zpXX" corresponds to
+#' the percentile XX, for example "zp95". The same metrics are available with the letter "i" for intensity
+#' such as "imax" and so on. Other available metrics are "count".
 #' \cr\cr
 #' If `operators` is a user-defined expression, the function must return either a vector of numbers
 #' or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
@@ -336,8 +337,8 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #'
 #'
 #' @param res numeric. The resolution of the raster. Can be a vector with two resolutions.
-#' In this case it does not correspond to the x and y resolution but to a buffed rasterization.
-#' (see details)
+#' In this case it does not correspond to the x and y resolution but to a buffured rasterization.
+#' (see details and examples)
 #' @param operators Can be a character vector. "min", "max" and "count" are accepted as well
 #' as many others (see details). Can also rasterize a triangulation if the input is a
 #' LASRalgorithm for triangulation (see examples). Can also be a user-defined expression
@@ -405,6 +406,10 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
   {
     supported_operators <- c("max", "min", "count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "imax", "imin", "imean", "imedian", "isd", "icv")
     valid <- operators %in% supported_operators
+    invalid_operator = operators[!valid]
+    if (length(invalid_operator) > 0)
+      valid[!valid] = grepl("^(zp|ip)([0-9]|[1-9][0-9]|100)$", invalid_operator)
+
     if (!all(valid)) stop("Non supported operators")
     ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile)
   }

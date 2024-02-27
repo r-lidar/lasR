@@ -24,7 +24,7 @@ public:
 
 private:
   void clean();
-  //float percentile(const std::vector<double>& x, double p) const;
+  float percentile(const std::vector<double>& x, float p) const;
 
   // streamable metrics
   float pmax  (float x, float y) const;
@@ -32,19 +32,23 @@ private:
   float pcount(float x, float y) const;
 
   // batch metrics
-  float zmax() const;
-  float zmin() const;
-  float zmean() const;
-  float zmedian() const;
-  float zsd() const;
-  float zcv() const;
-  float imax() const;
-  float imin() const;
-  float imean() const;
-  float imedian() const;
-  float isd() const;
-  float icv() const;
-  float count() const;
+  float zmax(float) const;
+  float zmin(float) const;
+  float zmean(float) const;
+  float zmedian(float) const;
+  float zsd(float) const;
+  float zcv(float) const;
+  float zpx(float) const;
+  float imax(float) const;
+  float imin(float) const;
+  float imean(float) const;
+  float imedian(float) const;
+  float isd(float) const;
+  float icv(float) const;
+  float ipx(float) const;
+  float count(float) const;
+
+  std::vector<float> param;
 
   // data storage
   std::vector<double> i;
@@ -58,8 +62,8 @@ private:
   bool streamable;
 
   // metrics to apply
-  typedef float (LASRmetrics::*RegularMetric)() const;
-  typedef float (LASRmetrics::*StreamingMetric)(float x, float y) const;
+  typedef float (LASRmetrics::*RegularMetric)(float) const;
+  typedef float (LASRmetrics::*StreamingMetric)(float, float) const;
   std::vector<StreamingMetric> streaming_operators;
   std::vector<RegularMetric> regular_operators;
 };
