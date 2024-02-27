@@ -4,6 +4,10 @@
 - New: `rasterize()` gains numerous native metrics such as `zmax`, `zmean`, `zmedian`, `imax`, `imean` and so on.
 - New: the internal engine gains the ability to skip the processing of some files of the collection and use these files only to load a buffer. This feature works with a `LAScatalog` from `lidR` respecting the `processed` attribute used in `lidR`
 
+# lasR 0.1.3 
+
+- Fix: loading the package being offline created a bug were R no longer handles errors.
+
 # lasR 0.1.2 (2024-02-10)
 
 - New: progress bar when reading the header of the files (`LAScatalog`) can be enabled with `progress = TRUE`
