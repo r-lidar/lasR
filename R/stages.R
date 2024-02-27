@@ -318,6 +318,11 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' Rasterize a point cloud using different approaches. This algorithm does not modify the point cloud.
 #' It produces a derived product in raster format.
 #'
+#' If `operators` is a string or a vector of strings it uses internally optimized metrics. Available metrics
+#' are "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zpXX", for the Z coordinates. "zpXX" corresponds to
+#' the percentile XX, for example "zp95". The same metrics are available with the letter "i" for intensity
+#' such as "imax" and so on. Other available metrics are "count".
+#' \cr\cr
 #' If `operators` is a user-defined expression, the function must return either a vector of numbers
 #' or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
 #' These are valid operators:
@@ -343,11 +348,12 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #'
 #'
 #' @param res numeric. The resolution of the raster. Can be a vector with two resolutions.
-#' In this case it does not correspond to the x and y resolution but to a buffed rasterization.
-#' (see details)
-#' @param operators Can be a character vector. "min", "max" and "count" are accepted. Can also
-#' rasterize a triangulation if the input is a LASRalgorithm for triangulation (see examples).
-#' Can also be a user-defined expression (see example and details).
+#' In this case it does not correspond to the x and y resolution but to a buffured rasterization.
+#' (see details and examples)
+#' @param operators Can be a character vector. "min", "max" and "count" are accepted as well
+#' as many others (see details). Can also rasterize a triangulation if the input is a
+#' LASRalgorithm for triangulation (see examples). Can also be a user-defined expression
+#' (see example and details).
 #' @template param-filter
 #' @template param-ofile
 #'
@@ -366,23 +372,23 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #'
 #' # Demonstration of buffered rasterization
 #'
-#' # A good resolution for computing point density is 4 meters.
-#' c0 <- rasterize(4, "count")
+#' # A good resolution for computing point density is 5 meters.
+#' c0 <- rasterize(5, "count")
 #'
 #' # Computing point density at too fine a resolution doesn't make sense since there is
 #' # either zero or one point per pixel. Therefore, producing a point density raster with
-#' # a 1 m resolution is not feasible with classical rasterization.
-#' c1 <- rasterize(1, "count")
+#' # a 2 m resolution is not feasible with classical rasterization.
+#' c1 <- rasterize(2, "count")
 #'
-#' # Using a buffered approach, we can produce a raster with a 1-meter resolution where
-#' # the metrics for each pixel are computed using a 4-meter window.
-#' c2  <- rasterize(c(1,4), "count")
+#' # Using a buffered approach, we can produce a raster with a 2-meter resolution where
+#' # the metrics for each pixel are computed using a 5-meter window.
+#' c2  <- rasterize(c(2,5), "count")
 #'
 #' pipeline = read + c0 + c1 + c2
 #' res <- processor(pipeline)
-#' terra::plot(res[[1]]/16)  # divide by 16 to get the density
-#' terra::plot(res[[2]]/1)   # divide by 1 to get the density
-#' terra::plot(res[[3]]/16)  # divide by 16 to get the density
+#' terra::plot(res[[1]]/25)  # divide by 25 to get the density
+#' terra::plot(res[[2]]/4)   # divide by 4 to get the density
+#' terra::plot(res[[3]]/25)  # divide by 25 to get the density
 #' @export
 #' @md
 rasterize = function(res, operators = "max", filter = "", ofile = tempfile(fileext = ".tif"))
@@ -409,11 +415,14 @@ rasterize = function(res, operators = "max", filter = "", ofile = tempfile(filee
   }
   else if (is.character(operators))
   {
-    supported_operators <- c("max", "min", "count")
+    supported_operators <- c("max", "min", "count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "imax", "imin", "imean", "imedian", "isd", "icv")
     valid <- operators %in% supported_operators
+    invalid_operator = operators[!valid]
+    if (length(invalid_operator) > 0)
+      valid[!valid] = grepl("^(zp|ip)([0-9]|[1-9][0-9]|100)$", invalid_operator)
+
     if (!all(valid)) stop("Non supported operators")
-    id <- match(operators, supported_operators)
-    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = id, filter = filter, output = ofile)
+    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile)
   }
   else
   {

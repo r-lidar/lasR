@@ -1,15 +1,39 @@
-test_that("rasterize fast works",
+test_that("rasterize streamed works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
 
   read = reader(f, filter = "")
-  met = rasterize(5, "min")
+  met = rasterize(5, c("min", "max", "count"))
   pipeline = read + met
   u = processor(pipeline)
 
   expect_s4_class(u, "SpatRaster")
-  expect_equal(dim(u), c(58, 58, 1))
-  expect_equal(mean(u[], na.rm = T), 804.996, tolerance = 0.001)
+  expect_equal(names(u), c("min", "max", "count"))
+  expect_equal(dim(u), c(58, 58, 3))
+  expect_equal(mean(u[[1]][], na.rm = T), 804.996, tolerance = 0.001)
+  expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 0.001)
+  expect_equal(mean(u[[3]][], na.rm = T), 24.129, tolerance = 0.001)
+})
+
+test_that("rasterize non streamed works",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+
+  read = reader(f, filter = "")
+  met = rasterize(5, c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
+  pipeline = read + met
+  u = processor(pipeline)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u),  c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
+  expect_equal(dim(u), c(58, 58, 15))
+  expect_equal(mean(u[[1]][], na.rm = T), 24.129, tolerance = 0.001) # count
+  expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 0.001) # zmax
+  expect_equal(mean(u[[3]][], na.rm = T), 804.996, tolerance = 0.001) # zmin
+  expect_equal(mean(u[[9]][], na.rm = T), 1380.56, tolerance = 0.001) # imax
+  expect_equal(mean(u[[12]][], na.rm = T), 942.822, tolerance = 0.001) # imedian
+  expect_equal(u[[5]][], u[[8]][], ignore_attr = TRUE) # median = percentile 50
+  expect_equal(u[[9]][], u[[15]][], ignore_attr = TRUE) # max = percentile 100
 })
 
 test_that("rasterize expression works",

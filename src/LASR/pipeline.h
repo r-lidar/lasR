@@ -49,13 +49,9 @@ class Pipeline
     #endif
 
 private:
-  bool process(LASheader*& header);
-  bool process(LASpoint*& p);
-  bool process(LAS*& las);
-  bool process(LAScatalog*& catalog);
-  bool write();
+  bool run_streamed();
+  bool run_loaded();
   void clean();
-  void set_header(LASheader*& header);
 
   private:
     int ncpu;
@@ -66,11 +62,10 @@ private:
     bool read_payload;
     double buffer;
 
-    LAS* las;
-    LASpoint* point;
-    LASheader* header;
-
-    std::shared_ptr<LAScatalog> catalog;
+    LAS* las;                             // owned by this
+    LASpoint* point;                      // owned by LASreader in stage reader_las or by las
+    LASheader* header;                    // owned by LASreader in stage reader_las or by las
+    std::shared_ptr<LAScatalog> catalog;  // owned by this and shared in cloned pipelines
 
     std::list<std::unique_ptr<LASRalgorithm>> pipeline;
 };

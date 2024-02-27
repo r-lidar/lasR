@@ -183,7 +183,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       if (!contains_element(stage, "connect"))
       {
         double window = get_element_as_double(stage, "window");
-        std::vector<int> methods = get_element_as_vint(stage, "method");
+        std::vector<std::string> methods = get_element_as_vstring(stage, "method");
         auto v = std::make_unique<LASRrasterize>(xmin, ymin, xmax, ymax, res, window, methods);
         pipeline.push_back(std::move(v));
       }
