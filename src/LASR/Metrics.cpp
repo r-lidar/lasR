@@ -218,25 +218,18 @@ float LASRmetrics::get_metric(int index)
 
 float LASRmetrics::percentile(const std::vector<double>& x, float p) const
 {
-  // x is already sorted
-  double rank = (p / 100.0) * ((double)n - 1) + 1;
-
-  // Check if rank is an integer
-  if (std::floor(rank) == rank)
-  {
-    return x[(int)(rank) - 1];
-  }
-  else
-  {
-    // Interpolating when rank is not an integer
-    int lowerIndex = (int)(std::floor(rank)) - 1;
-    int upperIndex = (int)(std::ceil(rank)) - 1;
-    double lowerValue = x[lowerIndex];
-    double upperValue = x[upperIndex];
-    return lowerValue + (upperValue - lowerValue) * (rank - std::floor(rank));
-  }
+  float rank = (p / 100.0f) * ((float)n - 1) + 1;
+  int lowerIndex = (int)(std::floor(rank)) - 1;
+  int upperIndex = (int)(std::ceil(rank)) - 1;
+  double lowerValue = x[lowerIndex];
+  double upperValue = x[upperIndex];
+  return lowerValue + (upperValue - lowerValue) * (rank - std::floor(rank));
 }
 
+int LASRmetrics::size() const
+{
+  return (streamable) ? (int)streaming_operators.size() : (int)regular_operators.size();
+};
 
 LASRmetrics::LASRmetrics()
 {

@@ -4,8 +4,6 @@
 #include <vector>
 #include <string>
 
-#include "macros.h"
-
 #include "laszip.hpp"
 #include "laspoint.hpp"
 
@@ -17,7 +15,7 @@ public:
   bool parse(const std::vector<std::string>& names);
   void add_point(const LASpoint* p);
   void reset();
-  int size() const { return (streamable) ? streaming_operators.size() : regular_operators.size(); };
+  int size() const;
   float get_metric(int index);
   float get_metric(int index, float x, float y);
   bool is_streamable() const { return streamable; }
@@ -48,6 +46,7 @@ private:
   float ipx(float) const;
   float count(float) const;
 
+  // Some metrics can take a parameter such as zpx
   std::vector<float> param;
 
   // data storage
@@ -57,7 +56,7 @@ private:
   double zsum;
   int n;
 
-  // internal stage
+  // internal state
   bool sorted;
   bool streamable;
 
