@@ -4,14 +4,17 @@ library(lasR)
 lasR = TRUE
 test = 1
 
-#set_lidr_threads(half_cores())
+set_lidr_threads(half_cores())
+
 
 f = c("/home/jr/Documents/Ulaval/ALS data/BCTS//092L072244_BCTS_2.laz",
       "/home/jr/Documents/Ulaval/ALS data/BCTS//092L072422_BCTS_2.laz",
       "/home/jr/Documents/Ulaval/ALS data/BCTS//092L073133_BCTS_2.laz",
       "/home/jr/Documents/Ulaval/ALS data/BCTS//092L073311_BCTS_2.laz")
 
-#ctg = readLAScatalog(f)
+f = system.file("extdata", "bcts/", package = "lasR")
+
+ctg = readLAScatalog(f)
 
 ti = Sys.time()
 
@@ -19,7 +22,7 @@ if (test == 1)
 {
   if (lasR)
   {
-    pipeline = reader(f) + rasterize(1, "max")
+    pipeline = reader(ctg) + rasterize(1, "max")
     processor(pipeline, progress = TRUE, noread = T)
   }
   else
