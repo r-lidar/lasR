@@ -1,3 +1,7 @@
+# lasR 0.1.3 
+
+- Fix: loading the package being offline created a bug were R no longer handles errors.
+
 # lasR 0.1.2 (2024-02-10)
 
 - New: progress bar when reading the header of the files (`LAScatalog`) can be enabled with `progress = TRUE`

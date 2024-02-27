@@ -44,18 +44,19 @@ check_update = function()
   f <- paste0(tempdir(), "/LASRDESCRIPTION")
 
   ans <- tryCatch(
-    {
-      nullcon <- file(nullfile(), open = "wb")
-      sink(nullcon, type = "message")
-      utils::download.file("https://raw.githubusercontent.com/r-lidar/lasR/main/DESCRIPTION", f)
-      sink(type = "message")
-      close(nullcon)
-      TRUE
-    },
-    error = function(e)
-    {
-      return(FALSE)
-    })
+  {
+    nullcon <- file(nullfile(), open = "wb")
+    sink(nullcon, type = "message")
+    utils::download.file("https://raw.githubusercontent.com/r-lidar/lasR/main/DESCRIPTION", f)
+    sink(type = "message")
+    close(nullcon)
+    TRUE
+  },
+  error = function(e)
+  {
+    sink(type = "message")
+    return(FALSE)
+  })
 
   if (isFALSE(ans))
     return(NULL)
