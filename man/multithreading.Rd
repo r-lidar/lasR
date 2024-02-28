@@ -6,7 +6,7 @@
 \alias{sequential}
 \alias{concurrent_files}
 \alias{concurrent_points}
-\title{Determine the number of available cores}
+\title{Parallel processing tools}
 \usage{
 ncores()
 
@@ -14,15 +14,20 @@ half_cores()
 
 sequential()
 
-concurrent_files()
+concurrent_files(ncores = half_cores())
 
-concurrent_points()
+concurrent_points(ncores = half_cores())
+}
+\arguments{
+\item{ncores}{integer. Number of cores.}
 }
 \value{
-An integer representing the number of available CPU cores.
+An integer representing the number of available CPU cores or the number of cores to use.
+\code{sequential()}, \code{concurrent_files()} and \code{concurrent_points()} return a number with an attribute
+\code{strategy}.
 }
 \description{
 \code{ncores()} returns the number of available CPU cores that can be utilized. \code{half_cores()}
 returns half this number. \code{sequential()}, \code{concurrent_files()} and \code{concurrent_points()}
-are convenient functions to assign a parallelization mode in \link{processor}.
+are functions to assign a parallelization strategy in \link{processor}.
 }

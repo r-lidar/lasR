@@ -23,7 +23,7 @@
 
   op <- options()
   op.lidR <- list(
-    lasR.default_parallel_mode = concurrent_points()
+    lasR.default_parallel_strategy = concurrent_points()
     #lasR.read_vector = lasR.read_vector,
     #lasR.read_raster = lasR.read_raster,
     #lasR.read_las = nothing

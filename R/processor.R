@@ -1,31 +1,33 @@
 #' Process the pipeline
 #'
-#' Process the pipeline. Every other functions do nothing. This function must be called on a pipeline
-#' to actually process the point-cloud
+#' Process the pipeline. Every other functions of the package do nothing. This function must be
+#' called on a pipeline in order to actually process the point-cloud.
 #'
-#' There are 4 modes of parallel processing:
+#' @section Multithreading:
+#' There are 4 strategies of parallel processing:
 #' \describe{
-#' \item{sequential}{No parallelization at all. `ncores = 1` not matter the actual user input.}
+#' \item{sequential}{No parallelization at all: \link{sequential}}
 #' \item{concurent-points}{Point cloud files are process sequentially one by one. Inside the pipeline
 #' some stages are parallelized and are able to process multiple points simultaneously. Not all stages
-#' are natively parallelized.}
+#' are natively parallelized: \link{concurrent_points}}
 #' \item{concurent-files}{Files are process in parallel. Several files are loaded in memory
 #' and processed simultaneously. The entire pipeline is parallelized but inside each stage
-#' the points are process sequentially.}
+#' the points are process sequentially: \link{concurrent_files}}
 #' \item{nested}{**Not yet supported**. Files are process in parallel. Several files are loaded in memory
 #' and processed simultaneously and inside some stages the points are process in parallel.}
 #' }
-#' `concurent-files` is likely the most desirable and fastest option on modern computers with
+#' `concurrent-files` is likely the most desirable and fastest option on modern computers with
 #' fast drive and many cores. However it uses more memory because it loads multiples files.
 #' Also some stages do not support this type a parallelism because they call R code and R
 #' is not multithreaded. For example a pipeline that implies the \link{callback()} stage
 #' does not support `concurrent-files` multithreading because some R code is involved. The default
-#' is `concurent-points` and can be changed globally using
-#' `options("lasR.default_parallel_mode") = "concurent-files"`
+#' is `concurrent-points` and can be changed globally using
+#' `options("lasR.default_parallel_strategy") = concurrent_files(4)`
 #'
-#' @param pipeline a LASRpipeline. A serie of stages called in order
-#' @param ncores integer. Number of cores to use.
-#' @param mode string. The parallelization mode. See details
+#' @param pipeline a LASRpipeline. A serie of stages called in order (see examples)
+#' @param ncores integer. Number of cores to use. Use one of \link{sequential} \link{concurrent_points}
+#' \link{conccurent_files} rather than a raw integer to select a parallelization strategy (see section Multithreading).
+#' If a raw number is provided the default is `concurrent-points`
 #' @param progress boolean. Displays a progress bar.
 #' @param ... unused
 #'
@@ -38,21 +40,23 @@
 #' tri <- triangulate(15)
 #' dtm <- rasterize(5, tri)
 #' lmf <- local_maximum(5)
-#' met <- rasterize(2, mean(Intensity))
+#' met <- rasterize(2, "imean")
 #' pipeline <- read + tri + dtm + lmf + met
-#' ans <- processor(pipeline)
+#' ans <- processor(pipeline, ncores = concurrent_files(4), progress = T)
 #' }
-#' @seealso [ncore()] [half_cores()] [sequential()] [concurrent_points()] [concurrent_files()]
+#' @seealso [ncores()] [half_cores()] [sequential()] [concurrent_points()] [concurrent_files()]
 #'
 #' @export
 #' @md
-processor = function(pipeline, ncores = half_cores(), mode = getOption("lasR.default_parallel_mode"), progress = FALSE, ...)
+processor = function(pipeline, ncores = getOption("lasR.default_parallel_strategy"), progress = FALSE, ...)
 {
   dots <- list(...)
   verbose <- isTRUE(dots$verbose)
   noread <- isTRUE(dots$noread)
 
   modes <- c("sequential", "concurrent-points", "concurrent-files")
+  mode <- attr(ncores, "strategy")
+  if (is.null(mode)) ncores = concurrent_points(ncores)
   mode <- match.arg(mode, modes)
   mode <- match(mode, modes)
 
