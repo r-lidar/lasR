@@ -81,6 +81,7 @@ get_latest_version = function()
   },
   error = function(e)
   {
+    sink(type = "message")
     return(FALSE)
   })
 
