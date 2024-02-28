@@ -105,11 +105,14 @@ bool Pipeline::run_streamed()
       {
         last_point = true;
       }
-
-      // Each stage is writing its own output
-      success = stage->write();
-      if (!success) return false;
     }
+  }
+
+  // Each stage is writing its own output
+  for (auto&& stage : pipeline)
+  {
+    success = stage->write();
+    if (!success) return false;
   }
 
   return true;
