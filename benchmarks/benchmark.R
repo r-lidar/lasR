@@ -1,20 +1,24 @@
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
+
+if (length(args) != 2) {
+  stop("At least 2 argument must be supplied", call.=FALSE)
+} else {
+  lasR = args[1] == "lasR"
+  test = as.integer(args[2])
+}
+
 library(lidR)
 library(lasR)
 
-lasR = TRUE
-test = 1
-
 set_lidr_threads(half_cores())
-
 
 f = c("/home/jr/Documents/Ulaval/ALS data/BCTS//092L072244_BCTS_2.laz",
       "/home/jr/Documents/Ulaval/ALS data/BCTS//092L072422_BCTS_2.laz",
       "/home/jr/Documents/Ulaval/ALS data/BCTS//092L073133_BCTS_2.laz",
       "/home/jr/Documents/Ulaval/ALS data/BCTS//092L073311_BCTS_2.laz")
 
-f = system.file("extdata", "bcts/", package = "lasR")
-
-ctg = readLAScatalog(f)
+#f = system.file("extdata", "bcts/", package = "lasR")
 
 ti = Sys.time()
 
@@ -22,11 +26,12 @@ if (test == 1)
 {
   if (lasR)
   {
-    pipeline = reader(ctg) + rasterize(1, "max")
+    pipeline = reader(f) + rasterize(1, "max")
     processor(pipeline, progress = TRUE, noread = T)
   }
   else
   {
+    ctg = readLAScatalog(f)
     chm = rasterize_canopy(ctg, 1, p2r())
   }
 }
@@ -36,11 +41,12 @@ if (test == 2)
   if (lasR)
   {
     tri = triangulate()
-    pipeline = reader(ctg, filter = keep_ground()) + tri + rasterize(1, tri)
+    pipeline = reader(f, filter = keep_ground()) + tri + rasterize(1, tri)
     processor(pipeline)
   }
   else
   {
+    ctg = readLAScatalog(f)
     dtm = rasterize_terrain(ctg, 1, tin())
   }
 }
@@ -50,7 +56,7 @@ if (test == 3)
   if (lasR)
   {
     custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
-    read = reader(folder)
+    read = reader(f)
     chm = rasterize(1, "max")
     met = rasterize(20, custom_function(Z, Intensity))
     den = rasterize(5, "count")
@@ -71,16 +77,15 @@ if (test == 4)
 {
   if (lasR)
   {
-    ctg = readLAScatalog(f)
-    read = reader(ctg)
-    del = triangulate(filter = "-keep_class 2")
+    read = reader(f)
+    del = triangulate(filter = keep_ground())
     norm = transform_with_triangulation(del)
     dtm = rasterize(1, del)
     chm = rasterize(1, "max")
     seed = local_maximum(3)
     tree = region_growing(chm, seed)
     write = write_las()
-    pipeline = read + del + norm + write + dtm + chm +  seed + tree
+    pipeline = read + del + norm + write + dtm + chm + seed + tree
     ans = processor(pipeline, progress = TRUE)
   }
   else
