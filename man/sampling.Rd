@@ -19,7 +19,7 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 \link{filters}.}
 }
 \description{
-Sample the point cloud, keeping one random point per pixel or per voxel. This algorithm modifies
+Sample the point cloud, keeping one random point per pixel or per voxel. This stage modifies
 the point cloud in the pipeline but does not produce any output.
 }
 \examples{

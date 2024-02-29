@@ -13,13 +13,13 @@ rasterize(
 }
 \arguments{
 \item{res}{numeric. The resolution of the raster. Can be a vector with two resolutions.
-In this case it does not correspond to the x and y resolution but to a buffured rasterization.
-(see details and examples)}
+In this case it does not correspond to the x and y resolution but to a buffered rasterization.
+(see section 'Buffered' and examples)}
 
 \item{operators}{Can be a character vector. "min", "max" and "count" are accepted as well
-as many others (see details). Can also rasterize a triangulation if the input is a
+as many others (see section 'Operators'). Can also rasterize a triangulation if the input is a
 LASRalgorithm for triangulation (see examples). Can also be a user-defined expression
-(see example and details).}
+(see example and section 'Operators').}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
@@ -28,23 +28,25 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 \link{filters}.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
-then the algorithm will not store the result on disk and will return nothing. It will however
-hold partial output results temporarily in memory. This is useful for algorithm that are only
+then the stage will not store the result on disk and will return nothing. It will however
+hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 }
 \description{
-Rasterize a point cloud using different approaches. This algorithm does not modify the point cloud.
+Rasterize a point cloud using different approaches. This stage does not modify the point cloud.
 It produces a derived product in raster format.
 }
-\details{
-If \code{operators} is a string or a vector of strings it uses internally optimized metrics. Available metrics
-are "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zpXX", for the Z coordinates. "zpXX" corresponds to
-the percentile XX, for example "zp95". The same metrics are available with the letter "i" for intensity
-such as "imax" and so on. Other available metrics are "count".
+\section{Operators}{
+
+If \code{operators} is a string or a vector of strings, the function employs internally optimized metrics.
+The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", and "zpXX" for the
+Z coordinates. Here, "zpXX" represents the XXth percentile, for instance, "zp95" signifies the 95th
+percentile. Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
+and others. Additionally, "count" is another available metric.
 \cr\cr
-If \code{operators} is a user-defined expression, the function must return either a vector of numbers
-or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
-These are valid operators:
+If \code{operators} is a user-defined expression, the function should return either a vector of numbers
+or a \code{list} containing atomic numbers. To assign a band name to the raster, the vector or the \code{list}
+must be named accordingly. The following are valid operators:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{f = function(x) \{ return(mean(x)) \}
 g = function(x,y) \{ return(c(avg = mean(x), med = median(y))) \}
@@ -53,24 +55,29 @@ rasterize(10, f(Intensity))
 rasterize(10, g(Z, Intensity))
 rasterize(10, h(Z))
 }\if{html}{\out{</div>}}
-
-\cr
-If the argument \code{res} is a vector with two numbers, the first number represents the resolution of
-the output raster, and the second number represents the size of the windows used to compute the metrics.
-This approach is called Buffered Area Based Approach (BABA). In classical rasterization, the metrics
-are computed independently for each pixel using the points. For example, predicting a resource typically
-involves computing metrics with a 400 m2 pixel, resulting in a raster with a resolution of 20 m.
-It is not possible to achieve a finer granularity with this method. However, with buffered rasterization,
-it is possible to compute the raster at a resolution of 10 m (i.e., computing metrics every 10 meters)
-while using 20 x 20 windows for metric computation. In this case, the windows overlap, essentially
-creating a moving window effect. This option does not makes when rasterizing a triangulation and
-the second value is not considered in this case
 }
+
+\section{Buffered}{
+
+If the argument \code{res} is a vector with two numbers, the first number represents the resolution of
+the output raster, and the second number represents the size of the windows used to compute the
+metrics. This approach is called Buffered Area Based Approach (BABA).\cr
+In classical rasterization, the metrics are computed independently for each pixel. For example,
+predicting a resource typically involves computing metrics with a 400 square meter pixel, resulting
+in a raster with a resolution of 20 meters. It is not possible to achieve a finer granularity with
+this method.\cr
+However, with buffered rasterization, it is possible to compute the raster at a resolution of 10
+meters (i.e., computing metrics every 10 meters) while using 20 x 20 windows for metric computation.
+In this case, the windows overlap, essentially creating a moving window effect.\cr
+This option does not apply when rasterizing a triangulation, and the second value is not considered
+in this case.
+}
+
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 read <- reader(f)
-tri  <- triangulate(filter = "-keep_class 2")
-dtm  <- rasterize(1, tri) # input is a triangulation algorithm
+tri  <- triangulate(filter = keep_ground())
+dtm  <- rasterize(1, tri) # input is a triangulation stage
 avgi <- rasterize(10, mean(Intensity)) # input is a user expression
 chm  <- rasterize(2, "max") # input is a character vector
 pipeline <- read + tri + dtm + avgi + chm

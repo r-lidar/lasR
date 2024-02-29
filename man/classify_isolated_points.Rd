@@ -14,8 +14,8 @@ classify_isolated_points(res = 5, n = 6L, class = 18L)
 \item{class}{integer. The class to assign to the points that match the condition.}
 }
 \description{
-The algorithm identifies points that have only a few other points in their surrounding
+The stage identifies points that have only a few other points in their surrounding
 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification. Used with class 18,
 it classifies points as noise and is similar to \href{https://rapidlasso.de/lasnoise/}{lasnoise}
-from lastools. This algorithm modifies the point cloud in the pipeline but does not produce any output.
+from LAStools. This stage modifies the point cloud in the pipeline but does not produce any output.
 }

@@ -1,7 +1,7 @@
 # lasR
 
 ![license](https://img.shields.io/badge/Licence-GPL--3-blue.svg)
-![Lifecycle:Experimental](https://img.shields.io/badge/Lifecycle-Experimental-339999)
+![Lifecycle:Maturing](https://img.shields.io/badge/Lifecycle-Maturing-339999)
 [![R-CMD-check](https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml)
 [![Codecov test coverage](https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg)](https://app.codecov.io/gh/r-lidar/lasR?branch=main)
 
@@ -21,6 +21,14 @@ There is currently no plan for releasing `lasR` on CRAN. You must compile and in
 remotes::install_github("r-lidar/lasR")
 ```
 
+Users can't rely on the CRAN versioning system and RStudio update button to get the latest version of `lasR`. When loading `lasR` with `library(lasR)`, an internal routine checks on GitHub for the latest version and prints a message if a new version is available. Updates are more frequent this way.
+
+```r
+library(lasR)
+#> lasR 0.1.3 is now available. You are using 0.1.1
+#> remotes::install_github("r-lidar/lasR")
+```
+
 ## Benchmark
 
 The following benchmark compares how much time and RAM memory it takes for `lasR` and `lidR` to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the [benchmark](https://r-lidar.github.io/lasR/articles/lasR4.html) vignette.
@@ -37,16 +45,6 @@ The following benchmark compares how much time and RAM memory it takes for `lasR
 - Has only 2 strong dependencies: `boost` and `gdal`. But if `sf` and  `terra` are installed the experience is better.
 
 More details in the corresponding [vignette](https://r-lidar.github.io/lasR/articles/lasR1.html#main-differences-between-lasr-and-lidr)
-
-## Updates
-
-There is currently no plan for releasing `lasR` on CRAN. Thus, users can't rely on the CRAN versioning system and RStudio update button to get the latest version of `lasR`. When loading `lasR` with `library(lasR)`, an internal routine checks on GitHub for the latest version and prints a message if a new version is available. Updates are more frequent this way.
-
-```r
-library(lasR)
-#> lasR 0.1.3 is now available. You are using 0.1.1
-#> remotes::install_github("r-lidar/lasR")
-```
 
 ## Copyright Information
 

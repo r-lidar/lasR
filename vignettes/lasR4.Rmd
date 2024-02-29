@@ -15,7 +15,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.align='center', fig.width=6, fig.height=4)
+knitr::opts_chunk$set(echo = TRUE, fig.height = 3, fig.width = 4)
 col1 = rgb(0, 0.5, 1, alpha = 0.5)
 col2 = rgb(1, 0, 0, alpha = 0.5)
 col3 = rgb(0.5, 0.5, 1, alpha = 0.5)
@@ -62,7 +62,7 @@ processor(pipeline)
 
 ### Result
 
-```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 #1
 
 f = system.file("extdata/benchmarks", "lasR_test_1_jr-ThinkPad-T450s.data", package = "lasR")
@@ -89,7 +89,7 @@ mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
 x = t_lidr
 y = m_lidr/1000
 
-par(mar = c(4,4,1,1))
+par(mar = c(4,4,1,1), cex = 0.8)
 
 plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U")
 
@@ -149,7 +149,7 @@ processor(pipeline)
 
 ### Result
 
-```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 # 2
 f = system.file("extdata/benchmarks", "lasR_test_2_jr-ThinkPad-T450s.data", package = "lasR")
 m_lasr = read.table(f)$V1
@@ -175,7 +175,7 @@ mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
 x = t_lidr
 y = m_lidr/1000
 
-par(mar = c(4,4,1,1))
+par(mar = c(4,4,1,1), cex = 0.8)
 
 plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U")
 
@@ -188,7 +188,7 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 
 # Latitude
 
@@ -207,7 +207,7 @@ polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 ```
 
 ## Multiple raster
@@ -238,7 +238,7 @@ processor(pipeline)
 
 
 
-```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 # 3
 f = system.file("extdata/benchmarks", "lasR_test_3_jr-ThinkPad-T450s.data", package = "lasR")
 m_lasr = read.table(f)$V1
@@ -262,7 +262,7 @@ mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
 x = t_lidr
 y = m_lidr/1000
 
-par(mar = c(4,4,1,1))
+par(mar = c(4,4,1,1), cex = 0.8)
 
 plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U CPU")
 
@@ -275,7 +275,7 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 
 # Latitude
 
@@ -293,7 +293,7 @@ y = m_lasr2/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 ```
 
 
@@ -315,7 +315,7 @@ pipeline = read + del + norm + write + dtm + chm +  seed + tree
 ans = processor(pipeline, progress = TRUE)
 ```
 
-```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 f = system.file("extdata/benchmarks", "lasR_test_4_FFGG-1009803.data", package = "lasR")
 m_lasr = read.table(f)$V1
 
@@ -331,7 +331,7 @@ col2 = rgb(1, 0, 0, alpha = 0.5)
 x = t_lidr
 y = m_lidr/1000
 
-par(mar = c(4,4,1,1))
+par(mar = c(4,4,1,1), cex = 0.8)
 
 plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-1355U")
 
@@ -344,5 +344,5 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 ```

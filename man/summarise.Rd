@@ -17,7 +17,7 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 }
 \description{
 Summarize the dataset by counting the number of points, first returns, classes. It also produces
-a histogram of Z and Intensity. This algorithm does not modify the point cloud. It produces a
+a histogram of Z and Intensity. This stage does not modify the point cloud. It produces a
 summary as a `list`.
 }
 \examples{

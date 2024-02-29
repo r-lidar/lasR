@@ -26,8 +26,8 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 \link{filters}.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
-then the algorithm will not store the result on disk and will return nothing. It will however
-hold partial output results temporarily in memory. This is useful for algorithm that are only
+then the stage will not store the result on disk and will return nothing. It will however
+hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 
 \item{use_attribute}{character. By default the local maximum is performed on the coordinate Z. Can also be
@@ -35,8 +35,8 @@ the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'In
 probably no use case for that one.}
 }
 \description{
-The Local Maximum algorithm identifies points that are locally maximum. The window size is
-fixed and circular. This algorithm does not modify the point cloud. It produces a derived product
+The Local Maximum stage identifies points that are locally maximum. The window size is
+fixed and circular. This stage does not modify the point cloud. It produces a derived product
 in vector format.
 }
 \examples{

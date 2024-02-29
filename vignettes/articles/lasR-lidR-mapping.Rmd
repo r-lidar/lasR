@@ -1,5 +1,5 @@
 ---
-title: "5. How lidR functions map to lasR functions"
+title: "How lidR functions map to lasR functions"
 author: "Jean-Romain Roussel"
 output:
   html_document:
@@ -8,10 +8,6 @@ output:
       collapsed: false
       smooth_scroll: false
     toc_depth: 2
-vignette: >
-  %\VignetteIndexEntry{5. How lidR functions map to lasR functions}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}

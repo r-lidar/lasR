@@ -12,8 +12,8 @@ write_las(
 }
 \arguments{
 \item{ofile}{character. Output file names. The string must contain a wildcard * so the wildcard can
-be replaced by the algorithm name of the original tile and preserve the tiling pattern. If the wildcard
-is omitted, everything will be written into a single file. This may be the desired behaviour in some
+be replaced by the name of the original tile and preserve the tiling pattern. If the wildcard
+is omitted, everything will be written into a single file. This may be the desired behavior in some
 circumstances, e.g., to merge some files.}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
@@ -25,14 +25,14 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 \item{keep_buffer}{bool. The buffer is removed to write file but it can be preserved.}
 }
 \description{
-Write a LAS or LAZ file at any step of the pipeline (typically at the end). Unlike other algorithms,
+Write a LAS or LAZ file at any step of the pipeline (typically at the end). Unlike other stages,
 the output won't be written into a single large file but in multiple tiled files corresponding
 to the original collection of files.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 read <- reader(f)
-tri  <- triangulate(filter = "-keep_class 2")
+tri  <- triangulate(filter = keep_ground())
 normalize <- tri + transform_with(tri)
 pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 processor(pipeline)

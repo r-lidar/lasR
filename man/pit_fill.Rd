@@ -15,7 +15,7 @@ pit_fill(
 )
 }
 \arguments{
-\item{raster}{LASRalgorithm. An algorithm that produces a raster.}
+\item{raster}{LASRalgorithm. A stage that produces a raster.}
 
 \item{lap_size}{integer. Size of the Laplacian filter kernel (integer value, in pixels).}
 
@@ -30,8 +30,8 @@ value will be considered a spike). A negative value.}
 \item{dil_radius}{integer. Dilation radius (integer value, in pixels).}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
-then the algorithm will not store the result on disk and will return nothing. It will however
-hold partial output results temporarily in memory. This is useful for algorithm that are only
+then the stage will not store the result on disk and will return nothing. It will however
+hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 }
 \description{
@@ -41,7 +41,7 @@ is from St-Onge 2008 (see reference).
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package="lasR")
 
-reader <- reader(f, filter = "-keep_first")
+reader <- reader(f, filter = keep_first())
 tri <- triangulate()
 chm <- rasterize(0.25, tri)
 pit <- pit_fill(chm)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/stages.R
 \name{transform_with}
 \alias{transform_with}
-\title{Transform a point cloud using a triangulation}
+\title{Transform a point cloud using another stage}
 \usage{
 transform_with(stage, operator = "-", store_in_attribute = "")
 }
@@ -14,11 +14,9 @@ transform_with(stage, operator = "-", store_in_attribute = "")
 \item{store_in_attribute}{numeric. Use an extra bytes attribute to store the result.}
 }
 \description{
-This algorithm uses a Delaunay triangulation and, for each point, it linearly interpolates the
-triangulation to retrieve the value of the mesh at the exact location of the point. Then it
-performs an operation with this value to modify the point cloud. This can typically be used
-to build a normalization algorithm. This algorithm modifies the point cloud in the pipeline but
-does not produce any output.
+This stage uses another stage that produced a Delaunay triangulation or a raster and performs an
+operation to modify the point cloud. This can typically be used to build a normalization stage
+This stage modifies the point cloud in the pipeline but does not produce any output.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
