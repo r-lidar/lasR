@@ -32,7 +32,7 @@ This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The
 - **CPU:** 
   - Intel Core i7-5600U CPU (5th generation Intel Core) 
   - Intel Core i7-1355U (13th generation Intel Core) 
-- **Date:** update 2024-02-07
+- **Date:** update 2024-02-29
 - **Version:** 
   - lidR 4.1.1
   - lasR 0.2.0
@@ -65,13 +65,13 @@ processor(pipeline)
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
 #1
 
-m_lasr = c(0, 93.38, 93.38, 93.38, 93.38, 93.38, 93.38, 93.38, 122.01, 122.01, 122.01, 122.01, 122.01, 122.01, 122.01, 122.53, 122.53, 122.53, 122.53, 122.53, 122.53, 141.60, 
-141.60, 141.60, 141.60, 141.60, 141.60, 141.60, 140.92, 149.46,0)
+f = system.file("extdata/benchmarks", "lasR_test_1_jr-ThinkPad-T450s.data", package = "lasR")
+m_lasr = read.table(f)$V1
 t_lasr = (1:length(m_lasr)-1)*2/60
 
-m_lidr = c(0,104.70, 342.79, 571.07, 793.16, 1028.55, 1388.56, 2027.17, 1888.13, 2164.38, 2381.46, 2519.50, 2280.10, 2519.86, 2783.66, 2984.50, 2266.93, 2379.23, 2635.35, 
-2868.93, 2997.68, 2127.28, 0)
-t_lidr = (1:length(m_lidr)-1)*5/60
+f = system.file("extdata/benchmarks", "lidR_test_1_jr-ThinkPad-T450s.data", package = "lasR")
+m_lidr =  read.table(f)$V1
+t_lidr = (1:length(m_lidr)-1)*2/60
 
 f = system.file("extdata/benchmarks", "lidR_test_1_FFGG-1009803.data", package = "lasR")
 m_lidr2 = read.table(f)$V1
@@ -102,7 +102,7 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 
 # Latitude
 
@@ -121,7 +121,7 @@ polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 ```
 
 ## Digital Terrain Model
@@ -151,13 +151,13 @@ processor(pipeline)
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
 # 2
+f = system.file("extdata/benchmarks", "lasR_test_2_jr-ThinkPad-T450s.data", package = "lasR")
+m_lasr = read.table(f)$V1
+t_lasr = (1:length(m_lasr)-1)*2/60
 
-m_lasr = c(0, 79.67, 93.66, 116.75, 133.85, 146.74, 165.05, 257.17, 455.17, 767.38, 833.30, 833.30, 833.30, 846.70, 854.83, 862.04, 869.00, 874.93, 874.93, 894.53, 853.06, 853.06, 
-863.89, 872.39, 889.12, 902.23, 618.84, 1002.46, 1013.65, 1013.65, 1022.16, 1041.49, 1049.07, 1055.26, 1061.45, 1061.45, 177.75, 0)
-t_lasr = (1:length(m_lasr)-1)*3/60
-
-m_lidr = c(0,124.56, 356.59, 376.44, 966.76, 2048.83, 1790.97, 1790.97, 1754.86, 1754.86, 2457.66, 2169.17, 2169.17, 2170.71, 2304.78, 2654.14, 2172.81, 2195.75, 2170.75, 2231.33, 2579.38, 0)
-t_lidr = (1:length(m_lidr)-1)*10/60
+f = system.file("extdata/benchmarks", "lidR_test_2_jr-ThinkPad-T450s.data", package = "lasR")
+m_lidr = read.table(f)$V1
+t_lidr = (1:length(m_lidr)-1)*2/60
 
 f = system.file("extdata/benchmarks", "lidR_test_2_FFGG-1009803.data", package = "lasR")
 m_lidr2 = read.table(f)$V1
@@ -188,7 +188,7 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 
 # Latitude
 
@@ -207,7 +207,7 @@ polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 ```
 
 ## Multiple raster
@@ -240,15 +240,13 @@ processor(pipeline)
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", out.width="50%"}
 # 3
-m_lasr = c(0, 82.03, 170.51, 354.01, 531.90, 711.60, 895.17, 1074.86, 1214.60, 1259.20, 1297.35, 1297.35, 435.67,550.40, 692.43, 831.39, 971.39, 1113.44, 1282.57, 1285.92, 1345.21, 
-1345.21, 498.85, 559.43, 697.85, 837.33, 977.29, 1127.08, 1258.82, 1240.92, 1240.92, 1240.92, 480.92, 606.07, 749.79, 887.94, 1026.13, 1169.48, 1358.71, 1378.30, 1423.42, 1423.42, 
-554.91, 560.07, 0)
+f = system.file("extdata/benchmarks", "lasR_test_3_jr-ThinkPad-T450s.data", package = "lasR")
+m_lasr = read.table(f)$V1
 t_lasr = 1:length(m_lasr)*2/60
 
-m_lidr = c(0, 104.86, 456.99, 802.07, 1116.71, 1765.46, 2116.21, 2502.28, 2276.53, 2666.14, 2986.86, 2300.90, 2686.19, 2989.73, 2004.21, 2579.39, 3195.28, 2827.48, 3512.35, 4633.82, 
-5221.53, 5639.37, 3357.23, 4434.14, 5110.58, 4302.41, 3457.53, 4052.46, 4702.15, 4430.27, 4585.12, 4937.42, 5243.30,4713.65, 5063.31, 5376.67, 2866.46, 3207.25, 3459.13, 3188.25, 
-3523.44, 3733.16, 0)
-t_lidr = 1:length(m_lidr)*8/60
+f = system.file("extdata/benchmarks", "lidR_test_3_jr-ThinkPad-T450s.data", package = "lasR")
+m_lidr = read.table(f)$V1
+t_lidr = 1:length(m_lidr)*2/60
 
 f = system.file("extdata/benchmarks", "lidR_test_3_FFGG-1009803.data", package = "lasR")
 m_lidr2 = read.table(f)$V1
@@ -277,7 +275,7 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 
 # Latitude
 
@@ -295,7 +293,7 @@ y = m_lasr2/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 ```
 
 
@@ -351,5 +349,5 @@ y = m_lasr/1000
 polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
 lines(x, y, col = "red", lwd = 2)
 
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.1.0"), fill = c(col1, col2), border = NA)
+legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
 ```
