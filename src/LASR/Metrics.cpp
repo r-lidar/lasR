@@ -24,9 +24,9 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
   {
     for (const auto& name : names)
     {
-      if (name == "max" | name== "zmax")
+      if (name == "max" || name== "zmax")
         streaming_operators.push_back(&LASRmetrics::pmax);
-      else if (name == "min" | name == "zmin")
+      else if (name == "min" || name == "zmin")
         streaming_operators.push_back(&LASRmetrics::pmin);
       else if (name == "count")
         streaming_operators.push_back(&LASRmetrics::pcount);
