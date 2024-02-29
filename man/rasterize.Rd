@@ -13,8 +13,8 @@ rasterize(
 }
 \arguments{
 \item{res}{numeric. The resolution of the raster. Can be a vector with two resolutions.
-In this case it does not correspond to the x and y resolution but to a buffed rasterization.
-(see details)}
+In this case it does not correspond to the x and y resolution but to a buffured rasterization.
+(see details and examples)}
 
 \item{operators}{Can be a character vector. "min", "max" and "count" are accepted as well
 as many others (see details). Can also rasterize a triangulation if the input is a
@@ -38,8 +38,9 @@ It produces a derived product in raster format.
 }
 \details{
 If \code{operators} is a string or a vector of strings it uses internally optimized metrics. Available metrics
-are "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", for the Z coordinates. The same metrics are available with
-the letter "i" for intensity such as "imax" and so on. Other available metrics are "count".
+are "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zpXX", for the Z coordinates. "zpXX" corresponds to
+the percentile XX, for example "zp95". The same metrics are available with the letter "i" for intensity
+such as "imax" and so on. Other available metrics are "count".
 \cr\cr
 If \code{operators} is a user-defined expression, the function must return either a vector of numbers
 or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.

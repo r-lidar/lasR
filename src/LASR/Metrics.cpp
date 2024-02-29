@@ -10,7 +10,7 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
 {
   // Check if we have only streamable metrics
   streamable = true;
-  for (const auto name : names)
+  for (const auto& name : names)
   {
     if (name != "max" && name != "min" && name != "count" && name != "zmax" && name != "zmin")
     {
@@ -22,7 +22,7 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
   // If we have only streamable metrics
   if (streamable)
   {
-    for (const auto name : names)
+    for (const auto& name : names)
     {
       if (name == "max" | name== "zmax")
         streaming_operators.push_back(&LASRmetrics::pmax);
@@ -36,7 +36,7 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
   }
 
   // Regular case including non streamable metrics
-  for (const auto name : names)
+  for (const auto& name : names)
   {
     if (name[0] == 'z')
     {
