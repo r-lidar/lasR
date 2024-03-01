@@ -225,13 +225,17 @@ the R code injected.</li>
 <li>Rasterize a Delaunay triangulation.</li>
 </ol>
 <p>With these variations, users can build a CHM, a DTM, a predictive
-model, or anything else. Let’s build a DTM using a triangulation of the
-ground points and the <code><a href="../reference/rasterize.html">rasterize()</a></code> stage. In the following
-pipeline, the LAS files are read, points are loaded for each LAS file
-<strong>with a buffer</strong>, a Delaunay triangulation of the ground
-points is built, and then the triangulation is interpolated and
-rasterized. By default, <code><a href="../reference/rasterize.html">rasterize()</a></code> writes the raster in a
-temporary file, so the result is not discarded.</p>
+model, or anything else.</p>
+<div class="section level3">
+<h3 id="rasterize---triangulation">Rasterize - triangulation<a class="anchor" aria-label="anchor" href="#rasterize---triangulation"></a>
+</h3>
+<p>Let’s build a DTM using a triangulation of the ground points and the
+<code><a href="../reference/rasterize.html">rasterize()</a></code> stage. In the following pipeline, the LAS files
+are read, points are loaded for each LAS file <strong>with a
+buffer</strong>, a Delaunay triangulation of the ground points is built,
+and then the triangulation is interpolated and rasterized. By default,
+<code><a href="../reference/rasterize.html">rasterize()</a></code> writes the raster in a temporary file, so the
+result is not discarded.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
 <span><span class="va">del</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -244,8 +248,8 @@ temporary file, so the result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file22a23a290eac.tif </span></span>
-<span><span class="co">#&gt; name        : file22a23a290eac</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file227d3d70d703.tif </span></span>
+<span><span class="co">#&gt; name        : file227d3d70d703</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -257,14 +261,18 @@ elements, but only one returns something.</p>
 high-level function with names like <code>rasterize_terrain()</code>.
 Instead, <code>lasR</code> is made up of low-level functions that are
 more versatile but also more challenging to use.</p>
+</div>
+<div class="section level3">
+<h3 id="rasterize---internal-metrics">Rasterize - internal metrics<a class="anchor" aria-label="anchor" href="#rasterize---internal-metrics"></a>
+</h3>
 <p>Let’s build two CHMs: one based on the highest point per pixel with a
 resolution of 2 meters, and the second based on the triangulation of the
 first returns with a resolution of 50 cm.</p>
 <p>In the following pipeline, we are using two variations of
 <code><a href="../reference/rasterize.html">rasterize()</a></code>: one capable of rasterizing a triangulation and
 the other capable of rasterizing the point cloud with a predefined
-operator (here <code>max</code>). The output is a named list with two
-<code>SpatRaster</code>.</p>
+operator (here <code>max</code>). The output is a named
+<code>list</code> with two <code>SpatRaster</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
 <span><span class="va">del</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_first</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -281,6 +289,10 @@ For simplicity the package has pre-installed pipelines named
 <code><a href="../reference/chm.html">chm()</a></code> and <code><a href="../reference/dtm.html">dtm()</a></code> that do what is explained
 above.
 </blockquote>
+</div>
+<div class="section level3">
+<h3 id="rasterize---custom-metrics">Rasterize - custom metrics<a class="anchor" aria-label="anchor" href="#rasterize---custom-metrics"></a>
+</h3>
 <p>Last but not least, let’s compute the map of the median intensity by
 injecting a user-defined expression. Like in <code>lidR</code>, the
 attributes of the point cloud are named: <code>X</code>, <code>Y</code>,
@@ -302,12 +314,17 @@ always named <code>ScanAngle</code> and is numeric. Also flags are named
 <span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">heat.colors</a></span><span class="op">(</span><span class="fl">15</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="lasR2_files/figure-html/rasterize3-1.png" width="700"></p>
+</div>
+<div class="section level3">
+<h3 id="rasterize---buffered">Rasterize - buffered<a class="anchor" aria-label="anchor" href="#rasterize---buffered"></a>
+</h3>
 <blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 The <code>lasR</code> package introduced the concept of a buffered
 area-based approach to enhance the resolution of prediction maps.
 However, this concept is not covered in detail in this tutorial. For
 further information, readers can refer to the <a href="baba.html">dedicated article</a>
 </blockquote>
+</div>
 </div>
 <div class="section level2">
 <h2 id="transform-with">Transform with<a class="anchor" aria-label="anchor" href="#transform-with"></a>
@@ -384,8 +401,8 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">write1</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write2</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/RtmppAwtLk/bcts_1_ground.laz /tmp/RtmppAwtLk/bcts_2_ground.laz </span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/RtmppAwtLk/bcts_1_normalized.laz /tmp/RtmppAwtLk/bcts_2_normalized.laz</span></span></code></pre></div>
+<span><span class="co">#&gt;  - write_las : /tmp/RtmpfIMS7m/bcts_1_ground.laz /tmp/RtmpfIMS7m/bcts_2_ground.laz </span></span>
+<span><span class="co">#&gt;  - write_las : /tmp/RtmpfIMS7m/bcts_1_normalized.laz /tmp/RtmpfIMS7m/bcts_2_normalized.laz</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -399,7 +416,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmppAwtLk/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpfIMS7m/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -706,11 +723,11 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt;  - npoints_per_class : 61347 8159 3897</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  - npoints : 12745 </span></span>
-<span><span class="co">#&gt;  - nsingle : 5071 </span></span>
+<span><span class="co">#&gt;  - nsingle : 5032 </span></span>
 <span><span class="co">#&gt;  - nwithheld : 0 </span></span>
 <span><span class="co">#&gt;  - nsynthetic : 0 </span></span>
-<span><span class="co">#&gt;  - npoints_per_return : 9460 2573 620 86 5 1 </span></span>
-<span><span class="co">#&gt;  - npoints_per_class : 10802 1569 374</span></span></code></pre></div>
+<span><span class="co">#&gt;  - npoints_per_return : 9472 2549 638 84 2 </span></span>
+<span><span class="co">#&gt;  - npoints_per_class : 10788 1586 371</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
