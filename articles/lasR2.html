@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,11 +41,12 @@
 <li class="active nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
+    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
     <a class="dropdown-item" href="../articles/lasR4.html">4. Benchmarks of lasR vs. lidR</a>
-    <a class="dropdown-item" href="../articles/lasR5.html">5. How lidR functions map to lasR functions</a>
   </div>
 </li>
 <li class="nav-item">
@@ -243,8 +244,8 @@ temporary file, so the result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file217010b233de.tif </span></span>
-<span><span class="co">#&gt; name        : file217010b233de</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file22a23a290eac.tif </span></span>
+<span><span class="co">#&gt; name        : file22a23a290eac</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -301,6 +302,12 @@ always named <code>ScanAngle</code> and is numeric. Also flags are named
 <span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">heat.colors</a></span><span class="op">(</span><span class="fl">15</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="lasR2_files/figure-html/rasterize3-1.png" width="700"></p>
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+The <code>lasR</code> package introduced the concept of a buffered
+area-based approach to enhance the resolution of prediction maps.
+However, this concept is not covered in detail in this tutorial. For
+further information, readers can refer to the <a href="baba.html">dedicated article</a>
+</blockquote>
 </div>
 <div class="section level2">
 <h2 id="transform-with">Transform with<a class="anchor" aria-label="anchor" href="#transform-with"></a>
@@ -377,8 +384,8 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">write1</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write2</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/RtmpNKq4bM/bcts_1_ground.laz /tmp/RtmpNKq4bM/bcts_2_ground.laz </span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/RtmpNKq4bM/bcts_1_normalized.laz /tmp/RtmpNKq4bM/bcts_2_normalized.laz</span></span></code></pre></div>
+<span><span class="co">#&gt;  - write_las : /tmp/RtmppAwtLk/bcts_1_ground.laz /tmp/RtmppAwtLk/bcts_2_ground.laz </span></span>
+<span><span class="co">#&gt;  - write_las : /tmp/RtmppAwtLk/bcts_1_normalized.laz /tmp/RtmppAwtLk/bcts_2_normalized.laz</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -392,7 +399,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpNKq4bM/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmppAwtLk/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -567,7 +574,7 @@ the outputs.</p>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span><span class="op">$</span><span class="va">pit_fill</span>, col <span class="op">=</span> <span class="va">col</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span><span class="op">$</span><span class="va">region_growing</span>, col <span class="op">=</span> <span class="va">col</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fl">25</span>, <span class="fl">297</span>, <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span><span class="op">$</span><span class="va">local_maximum</span><span class="op">$</span><span class="va">geom</span>, add <span class="op">=</span> <span class="cn">T</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
-<p><img src="lasR2_files/figure-html/unnamed-chunk-10-1.png" width="50%"><img src="lasR2_files/figure-html/unnamed-chunk-10-2.png" width="50%"><img src="lasR2_files/figure-html/unnamed-chunk-10-3.png" width="50%"></p>
+<p><img src="lasR2_files/figure-html/unnamed-chunk-10-1.png" width="384"><img src="lasR2_files/figure-html/unnamed-chunk-10-2.png" width="384"><img src="lasR2_files/figure-html/unnamed-chunk-10-3.png" width="384"></p>
 </div>
 <div class="section level2">
 <h2 id="buffer">Buffer<a class="anchor" aria-label="anchor" href="#buffer"></a>
@@ -699,11 +706,11 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt;  - npoints_per_class : 61347 8159 3897</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  - npoints : 12745 </span></span>
-<span><span class="co">#&gt;  - nsingle : 5139 </span></span>
+<span><span class="co">#&gt;  - nsingle : 5071 </span></span>
 <span><span class="co">#&gt;  - nwithheld : 0 </span></span>
 <span><span class="co">#&gt;  - nsynthetic : 0 </span></span>
-<span><span class="co">#&gt;  - npoints_per_return : 9520 2480 651 90 4 </span></span>
-<span><span class="co">#&gt;  - npoints_per_class : 10819 1556 370</span></span></code></pre></div>
+<span><span class="co">#&gt;  - npoints_per_return : 9460 2573 620 86 5 1 </span></span>
+<span><span class="co">#&gt;  - npoints_per_class : 10802 1569 374</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>

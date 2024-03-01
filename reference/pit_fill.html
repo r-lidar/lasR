@@ -12,7 +12,7 @@ is from St-Onge 2008 (see reference)."><!-- mathjax --><script src="https://cdnj
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -26,11 +26,12 @@ is from St-Onge 2008 (see reference)."><!-- mathjax --><script src="https://cdnj
 <li class="nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
+    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
     <a class="dropdown-item" href="../articles/lasR4.html">4. Benchmarks of lasR vs. lidR</a>
-    <a class="dropdown-item" href="../articles/lasR5.html">5. How lidR functions map to lasR functions</a>
   </div>
 </li>
 <li class="nav-item">
@@ -78,7 +79,7 @@ is from St-Onge 2008 (see reference).</p>
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>raster</dt>
-<dd><p>LASRalgorithm. An algorithm that produces a raster.</p></dd>
+<dd><p>LASRalgorithm. A stage that produces a raster.</p></dd>
 
 
 <dt>lap_size</dt>
@@ -105,8 +106,8 @@ value will be considered a spike). A negative value.</p></dd>
 
 <dt>ofile</dt>
 <dd><p>character. Full outputs are always stored on disk. If <code>ofile = ""</code>
-then the algorithm will not store the result on disk and will return nothing. It will however
-hold partial output results temporarily in memory. This is useful for algorithm that are only
+then the stage will not store the result on disk and will return nothing. It will however
+hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.</p></dd>
 
 </dl></div>
@@ -121,7 +122,7 @@ images created using alidar digital surface model, Proceedings of the Silvilaser
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"MixedConifer.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, filter <span class="op">=</span> <span class="st">"-keep_first"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, filter <span class="op">=</span> <span class="fu"><a href="filters.html">keep_first</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tri</span> <span class="op">&lt;-</span> <span class="fu"><a href="triangulate.html">triangulate</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">chm</span> <span class="op">&lt;-</span> <span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="va">tri</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pit</span> <span class="op">&lt;-</span> <span class="fu">pit_fill</span><span class="op">(</span><span class="va">chm</span><span class="op">)</span></span></span>

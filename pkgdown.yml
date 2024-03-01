@@ -1,11 +1,12 @@
-pandoc: 2.19.2
+pandoc: 3.1.11
 pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
+  baba: baba.html
+  lasR-lidR-mapping: lasR-lidR-mapping.html
   lasR1: lasR1.html
   lasR2: lasR2.html
   lasR3: lasR3.html
   lasR4: lasR4.html
-  lasR5: lasR5.html
-last_built: 2024-02-12T19:58Z
+last_built: 2024-03-01T03:40Z
 

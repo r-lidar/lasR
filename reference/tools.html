@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,11 +24,12 @@
 <li class="nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
+    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
     <a class="dropdown-item" href="../articles/lasR4.html">4. Benchmarks of lasR vs. lidR</a>
-    <a class="dropdown-item" href="../articles/lasR5.html">5. How lidR functions map to lasR functions</a>
   </div>
 </li>
 <li class="nav-item">
@@ -91,26 +92,29 @@ c(...)</code></pre></div>
 <span class="r-in"><span><span class="va">algo2</span> <span class="op">&lt;-</span> <span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">4</span>, <span class="st">"min"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">algo1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:hzUKpY)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:cqGOVP)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   method : 1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   method : max </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter :  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/Rtmpw9XET3/file1fa345d6bea.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpK6OWGb/file205c939b02e.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">algo1</span> <span class="op">+</span> <span class="va">algo2</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:hzUKpY)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:cqGOVP)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   method : 1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   method : max </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter :  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/Rtmpw9XET3/file1fa345d6bea.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpK6OWGb/file205c939b02e.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:JGCySH)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:PQurPA)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   res : 4 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   method : 2 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 4 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   method : min </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter :  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/Rtmpw9XET3/file1fa3188424ba.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpK6OWGb/file205c2e7e77a6.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
 </code></pre></div>
     </div>

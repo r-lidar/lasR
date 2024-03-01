@@ -4,7 +4,13 @@
     <loc>/404.html</loc>
   </url>
   <url>
+    <loc>/articles/baba.html</loc>
+  </url>
+  <url>
     <loc>/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>/articles/lasR-lidR-mapping.html</loc>
   </url>
   <url>
     <loc>/articles/lasR1.html</loc>
@@ -17,9 +23,6 @@
   </url>
   <url>
     <loc>/articles/lasR4.html</loc>
-  </url>
-  <url>
-    <loc>/articles/lasR5.html</loc>
   </url>
   <url>
     <loc>/authors.html</loc>

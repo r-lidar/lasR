@@ -30,7 +30,7 @@
     
     <a class="navbar-brand me-2" href="index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,11 +45,12 @@
 <li class="nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="articles/baba.html">Buffered Area Based Approach</a>
+    <a class="dropdown-item" href="articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="articles/lasR3.html">3. Pipelines</a>
     <a class="dropdown-item" href="articles/lasR4.html">4. Benchmarks of lasR vs. lidR</a>
-    <a class="dropdown-item" href="articles/lasR5.html">5. How lidR functions map to lasR functions</a>
   </div>
 </li>
 <li class="nav-item">
@@ -77,23 +78,28 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="lasr">lasR<a class="anchor" aria-label="anchor" href="#lasr"></a>
 </h1></div>
-<p><img src="https://img.shields.io/badge/Licence-GPL--3-blue.svg" alt="license"><img src="https://img.shields.io/badge/Lifecycle-Experimental-339999" alt="Lifecycle:Experimental"><a href="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/r-lidar/lasR?branch=main" class="external-link"><img src="https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></p>
+<p><img src="https://img.shields.io/badge/Licence-GPL--3-blue.svg" alt="license"><img src="https://img.shields.io/badge/Lifecycle-Maturing-339999" alt="Lifecycle:Maturing"><a href="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/r-lidar/lasR?branch=main" class="external-link"><img src="https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></p>
 <p>R Package for Fast Airborne LiDAR Data Processing</p>
 <p><strong>This package is in under early stage of development.</strong></p>
-<p>The <code>lasR</code> package (pronounce laser) <strong>does not</strong> intent to supersede the <code>lidR</code> package, but is designed to be much more efficient than <code>lidR</code> for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages. <code>lidR</code> intends to be a tool box to make data exploration and innovation easy. <code>lasR</code> on another hand focuses exclusively on memory and speed optimization of common tasks and make no trade off with other aspects of the development.</p>
+<p>The <code>lasR</code> package (pronounce laser) <strong>does not</strong> intent to supersede the <code>lidR</code> package, but is designed to be much more efficient than <code>lidR</code> for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages. <code>lidR</code> intends to be a tool box to make data exploration and innovation easy. <code>lasR</code> on another hand focuses on production, being optimized for memory and speed and makes no trade off with other aspects of the development.</p>
 <p><span class="emoji" data-emoji="book">📖</span> Read <a href="https://r-lidar.github.io/lasR/articles/lasR2.html" class="external-link">the tutorial</a> to start with <code>lasR</code></p>
-<div class="section level2">
-<h2 id="benchmark">Benchmark<a class="anchor" aria-label="anchor" href="#benchmark"></a>
-</h2>
-<p>The following benchmark compares how much time and RAM memory it takes for <code>lasR</code> and <code>lidR</code> to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the <a href="https://r-lidar.github.io/lasR/articles/lasR4.html" class="external-link">benchmark</a> vignette.</p>
-<p><img src="reference/figures/readme_benchmark.png" style="display: block; margin: auto;"></p>
-</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>There is currently no plan for releasing <code>lasR</code> on CRAN. You must compile and install the package from Github. On Windows you must install <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> first to be able to build the package the use the package <code>remotes</code> to install the package:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"r-lidar/lasR"</span><span class="op">)</span></span></code></pre></div>
+<p>Users can’t rely on the CRAN versioning system and RStudio update button to get the latest version of <code>lasR</code>. When loading <code>lasR</code> with <code><a href="https://github.com/r-lidar/lasR" class="external-link">library(lasR)</a></code>, an internal routine checks on GitHub for the latest version and prints a message if a new version is available. Updates are more frequent this way.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lasR" class="external-link">lasR</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; lasR 0.1.3 is now available. You are using 0.1.1</span></span>
+<span><span class="co">#&gt; remotes::install_github("r-lidar/lasR")</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="benchmark">Benchmark<a class="anchor" aria-label="anchor" href="#benchmark"></a>
+</h2>
+<p>The following benchmark compares how much time and RAM memory it takes for <code>lasR</code> and <code>lidR</code> to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the <a href="https://r-lidar.github.io/lasR/articles/lasR4.html" class="external-link">benchmark</a> vignette.</p>
+<p><img src="reference/figures/readme_benchmark.png" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="main-differences-with-lidr">Main differences with <code>lidR</code>
