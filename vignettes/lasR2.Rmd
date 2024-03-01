@@ -7,7 +7,7 @@ output:
     toc_float:
       collapsed: false
       smooth_scroll: false
-    toc_depth: 2
+    toc_depth: 3
 vignette: >
   %\VignetteIndexEntry{2. Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
@@ -141,7 +141,11 @@ Using `triangulate()` without any other stage in the pipeline is usually not ver
 2. Rasterize by injecting a user-defined R expression. This is equivalent to `pixel_metrics()` from the package `lidR`. Any user-defined function can be mapped, making it extremely versatile but slower and limited in speed by the quality of the R code injected.
 3. Rasterize a Delaunay triangulation.
 
-With these variations, users can build a CHM, a DTM, a predictive model, or anything else. Let's build a DTM using a triangulation of the ground points and the `rasterize()` stage. In the following pipeline, the LAS files are read, points are loaded for each LAS file **with a buffer**, a Delaunay triangulation of the ground points is built, and then the triangulation is interpolated and rasterized. By default, `rasterize()` writes the raster in a temporary file, so the result is not discarded.
+With these variations, users can build a CHM, a DTM, a predictive model, or anything else. 
+
+### Rasterize - triangulation
+
+Let's build a DTM using a triangulation of the ground points and the `rasterize()` stage. In the following pipeline, the LAS files are read, points are loaded for each LAS file **with a buffer**, a Delaunay triangulation of the ground points is built, and then the triangulation is interpolated and rasterized. By default, `rasterize()` writes the raster in a temporary file, so the result is not discarded.
 
 ```{r rasterize}
 read = reader(f)
@@ -160,9 +164,11 @@ terra::plot(ans, col = gray.colors(25,0,1), mar = c(1, 1, 1, 3))
 
 Notice that, contrary to the lidR package, there is usually no high-level function with names like `rasterize_terrain()`. Instead, `lasR` is made up of low-level functions that are more versatile but also more challenging to use. 
 
+### Rasterize - internal metrics
+
 Let's build two CHMs: one based on the highest point per pixel with a resolution of 2 meters, and the second based on the triangulation of the first returns with a resolution of 50 cm.
 
-In the following pipeline, we are using two variations of `rasterize()`: one capable of rasterizing a triangulation and the other capable of rasterizing the point cloud with a predefined operator (here `max`). The output is a named list with two `SpatRaster`.
+In the following pipeline, we are using two variations of `rasterize()`: one capable of rasterizing a triangulation and the other capable of rasterizing the point cloud with a predefined operator (here `max`). The output is a named `list` with two `SpatRaster`.
 
 ```{r, echo = FALSE}
 f <- system.file("extdata", "Megaplot.las", package="lasR")
@@ -184,6 +190,8 @@ terra::plot(ans[[2]], mar = c(1, 1, 1, 3), col = col)
 For simplicity the package has pre-installed pipelines named `chm()` and `dtm()` that do what is explained above.
 </blockquote>
 
+### Rasterize - custom metrics
+
 Last but not least, let's compute the map of the median intensity by injecting a user-defined expression. Like in `lidR`, the attributes of the point cloud are named: `X`, `Y`, `Z`, `Intensity`, `gpstime`, `ReturnNumber`, `NumberOfreturns`, `Classification`, `UserData`, `PointSourceID`, `R`, `G`, `B`, `NIR`. For users familiar with the `lidR` package, note that there is no `ScanAngleRank/ScanAngle`;  instead the scanner angle is always named `ScanAngle` and is numeric. Also flags are named `Withheld`, `Synthetic` and `Keypoint`.
 
 ```{r rasterize3, fig.height=3.5}
@@ -194,6 +202,12 @@ ans = processor(pipeline)
 
 terra::plot(ans, mar = c(1, 1, 1, 3), col = heat.colors(15))
 ```
+
+### Rasterize - buffered
+
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+The `lasR` package introduced the concept of a buffered area-based approach to enhance the resolution of prediction maps. However, this concept is not covered in detail in this tutorial. For further information, readers can refer to the [dedicated article](baba.html)
+</blockquote>
 
 ## Transform with
 
@@ -387,7 +401,7 @@ pipeline = read + del + chm + chm2 +  seed + tree
 ans = processor(pipeline)
 ```
 
-```{r, fig.show="hold", fig.height=6, out.width="50%"}
+```{r, fig.show="hold", fig.width=4}
 col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(25)
 terra::plot(ans$rasterize, col = col, mar = c(1, 1, 1, 3))
 terra::plot(ans$pit_fill, col = col, mar = c(1, 1, 1, 3))

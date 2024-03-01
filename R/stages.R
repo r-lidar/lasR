@@ -4,7 +4,7 @@
 #'
 #' According to the \href{https://www.asprs.org/a/society/committees/standards/LAS_1_4_r13.pdf}{LAS specifications},
 #' a LAS file contains a core of defined attributes, such as XYZ coordinates, intensity, return number,
-#' and so on, for each point. It is possible to add supplementary attributes. This algorithm adds an
+#' and so on, for each point. It is possible to add supplementary attributes. This stages adds an
 #' extra bytes attribute to the points. Values are zeroed. It edits the point cloud but returns nothing.
 #'
 #' @param name character. The name of the extra bytes attribute to add to the file.
@@ -35,8 +35,8 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #' Aggregate a point cloud and compute metrics for each group
 #'
 #' Aggregate a point cloud and compute metrics for each group. The currently supported grouping method
-#' is per pixel with a raster output. This is the algorithm returned when using \link{rasterize} with
-#' a user-defined expression. At this stage, this algorithm only aims to drive \link{rasterize}.
+#' is per pixel with a raster output. This is the stage returned when using \link{rasterize} with
+#' a user-defined expression. At this stage, this stage only aims to drive \link{rasterize}.
 #'
 #' @param res numeric. The resolution of the raster.
 #' @param call expression. User-defined expression.
@@ -97,7 +97,7 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
 #'
 #' In `lasR`, the point cloud is not exposed to R in a `data.frame` like in lidR. It is stored internally
 #' in a C++ structure and cannot be seen or modified directly by users using R code. The `callback` function
-#' is the only algorithm that allows direct interaction with the point cloud by **copying** it
+#' is the only stage that allows direct interaction with the point cloud by **copying** it
 #' temporarily into a `data.frame` to apply a user-defined function.\cr\cr
 #' **expose:** the 'expose' argument specifies the data that will actually be exposed to R. For example,
 #' 'xyzia' means that the x, y, and z coordinates, the intensity, and the scan angle will be loaded.
@@ -166,10 +166,10 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 
 #' Classify isolated points
 #'
-#' The algorithm identifies points that have only a few other points in their surrounding
+#' The stage identifies points that have only a few other points in their surrounding
 #' 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification. Used with class 18,
 #' it classifies points as noise and is similar to \href{https://rapidlasso.de/lasnoise/}{lasnoise}
-#' from lastools. This algorithm modifies the point cloud in the pipeline but does not produce any output.
+#' from LAStools. This stage modifies the point cloud in the pipeline but does not produce any output.
 #'
 #' @param res numeric. Resolution of the voxels.
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
@@ -184,20 +184,21 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 
 # ===== H =====
 
-#' Contour of a Delaunay triangulation
+#' Contour of a point cloud
 #'
-#' This algorithm uses a Delaunay triangulation and computes its contour. The contour of a strict
+#' This stage uses a Delaunay triangulation and computes its contour. The contour of a strict
 #' Delaunay triangulation is the convex hull, but in lasR, the triangulation has a `max_edge` argument.
-#' Thus, the contour might be a convex hull with holes.
+#' Thus, the contour might be a convex hull with holes. Used without triangulation it returns the bouding
+#' box of the points.
 #'
-#' @param mesh NULL or LASRalgorithm. A `triangulate` algorithm. If NULL take the bounding box of the
+#' @param mesh NULL or LASRalgorithm. A `triangulate` stage. If NULL take the bounding box of the
 #' header of each file.
 #' @template param-ofile
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
 #' read <- reader(f)
-#' tri <- triangulate(20, filter = "-keep_class 2")
+#' tri <- triangulate(20, filter = keep_ground())
 #' contour <- hulls(tri)
 #' pipeline <- read + tri + contour
 #' ans <- processor(pipeline)
@@ -229,8 +230,8 @@ hulls = function(mesh = NULL, ofile = tempfile(fileext = ".gpkg"))
 
 #' Local Maximum
 #'
-#' The Local Maximum algorithm identifies points that are locally maximum. The window size is
-#' fixed and circular. This algorithm does not modify the point cloud. It produces a derived product
+#' The Local Maximum stage identifies points that are locally maximum. The window size is
+#' fixed and circular. This stage does not modify the point cloud. It produces a derived product
 #' in vector format.
 #'
 #' @param ws numeric. Diameter of the moving window used to detect the local maxima in the units of
@@ -272,7 +273,7 @@ nothing = function(read = FALSE, stream = FALSE)
 #' Pits and spikes filling for raster. Typically used for post-processing CHM. This algorithm
 #' is from St-Onge 2008 (see reference).
 #'
-#' @param raster LASRalgorithm. An algorithm that produces a raster.
+#' @param raster LASRalgorithm. A stage that produces a raster.
 #' @param lap_size integer. Size of the Laplacian filter kernel (integer value, in pixels).
 #' @param thr_lap numeric. Threshold Laplacian value for detecting a cavity (all values above this
 #' value will be considered a cavity). A positive value.
@@ -290,7 +291,7 @@ nothing = function(read = FALSE, stream = FALSE)
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package="lasR")
 #'
-#' reader <- reader(f, filter = "-keep_first")
+#' reader <- reader(f, filter = keep_first())
 #' tri <- triangulate()
 #' chm <- rasterize(0.25, tri)
 #' pit <- pit_fill(chm)
@@ -315,17 +316,19 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 
 #' Rasterize a point cloud
 #'
-#' Rasterize a point cloud using different approaches. This algorithm does not modify the point cloud.
+#' Rasterize a point cloud using different approaches. This stage does not modify the point cloud.
 #' It produces a derived product in raster format.
 #'
-#' If `operators` is a string or a vector of strings it uses internally optimized metrics. Available metrics
-#' are "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zpXX", for the Z coordinates. "zpXX" corresponds to
-#' the percentile XX, for example "zp95". The same metrics are available with the letter "i" for intensity
-#' such as "imax" and so on. Other available metrics are "count".
+#' @section Operators:
+#' If `operators` is a string or a vector of strings, the function employs internally optimized metrics.
+#' The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", and "zpXX" for the
+#' Z coordinates. Here, "zpXX" represents the XXth percentile, for instance, "zp95" signifies the 95th
+#' percentile. Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
+#' and others. Additionally, "count" is another available metric.
 #' \cr\cr
-#' If `operators` is a user-defined expression, the function must return either a vector of numbers
-#' or a list with atomic numbers. To assign a band name to the raster the vector or the list must be named.
-#' These are valid operators:
+#' If `operators` is a user-defined expression, the function should return either a vector of numbers
+#' or a `list` containing atomic numbers. To assign a band name to the raster, the vector or the `list`
+#' must be named accordingly. The following are valid operators:
 #' ```
 #' f = function(x) { return(mean(x)) }
 #' g = function(x,y) { return(c(avg = mean(x), med = median(y))) }
@@ -334,34 +337,36 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' rasterize(10, g(Z, Intensity))
 #' rasterize(10, h(Z))
 #' ````
-#' \cr
-#' If the argument `res` is a vector with two numbers, the first number represents the resolution of
-#' the output raster, and the second number represents the size of the windows used to compute the metrics.
-#' This approach is called Buffered Area Based Approach (BABA). In classical rasterization, the metrics
-#' are computed independently for each pixel using the points. For example, predicting a resource typically
-#' involves computing metrics with a 400 m2 pixel, resulting in a raster with a resolution of 20 m.
-#' It is not possible to achieve a finer granularity with this method. However, with buffered rasterization,
-#' it is possible to compute the raster at a resolution of 10 m (i.e., computing metrics every 10 meters)
-#' while using 20 x 20 windows for metric computation. In this case, the windows overlap, essentially
-#' creating a moving window effect. This option does not makes when rasterizing a triangulation and
-#' the second value is not considered in this case
 #'
+#' @section Buffered:
+#' If the argument `res` is a vector with two numbers, the first number represents the resolution of
+#' the output raster, and the second number represents the size of the windows used to compute the
+#' metrics. This approach is called Buffered Area Based Approach (BABA).\cr
+#' In classical rasterization, the metrics are computed independently for each pixel. For example,
+#' predicting a resource typically involves computing metrics with a 400 square meter pixel, resulting
+#' in a raster with a resolution of 20 meters. It is not possible to achieve a finer granularity with
+#' this method.\cr
+#' However, with buffered rasterization, it is possible to compute the raster at a resolution of 10
+#' meters (i.e., computing metrics every 10 meters) while using 20 x 20 windows for metric computation.
+#' In this case, the windows overlap, essentially creating a moving window effect.\cr
+#' This option does not apply when rasterizing a triangulation, and the second value is not considered
+#' in this case.
 #'
 #' @param res numeric. The resolution of the raster. Can be a vector with two resolutions.
-#' In this case it does not correspond to the x and y resolution but to a buffured rasterization.
-#' (see details and examples)
+#' In this case it does not correspond to the x and y resolution but to a buffered rasterization.
+#' (see section 'Buffered' and examples)
 #' @param operators Can be a character vector. "min", "max" and "count" are accepted as well
-#' as many others (see details). Can also rasterize a triangulation if the input is a
+#' as many others (see section 'Operators'). Can also rasterize a triangulation if the input is a
 #' LASRalgorithm for triangulation (see examples). Can also be a user-defined expression
-#' (see example and details).
+#' (see example and section 'Operators').
 #' @template param-filter
 #' @template param-ofile
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader(f)
-#' tri  <- triangulate(filter = "-keep_class 2")
-#' dtm  <- rasterize(1, tri) # input is a triangulation algorithm
+#' tri  <- triangulate(filter = keep_ground())
+#' dtm  <- rasterize(1, tri) # input is a triangulation stage
 #' avgi <- rasterize(10, mean(Intensity)) # input is a user expression
 #' chm  <- rasterize(2, "max") # input is a character vector
 #' pipeline <- read + tri + dtm + avgi + chm
@@ -603,12 +608,12 @@ reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter
 #' Region growing
 #'
 #' Region growing for individual tree segmentation based on Dalponte and Coomes (2016) algorithm (see reference).
-#' Note that this algorithm strictly performs segmentation, while the original method described in
+#' Note that this stage strictly performs segmentation, while the original method described in
 #' the manuscript also performs pre- and post-processing tasks. Here, these tasks are expected to be
 #' done by the user in separate functions.
 #'
-#' @param raster LASRalgoritm an algorithm producing a raster.
-#' @param seeds LASRalgoritm an algorithm producing points used as seeds.
+#' @param raster LASRalgoritm. A stage producing a raster.
+#' @param seeds LASRalgoritm. A stage producing points used as seeds.
 #' @param th_tree numeric. Threshold below which a pixel cannot be a tree. Default is 2.
 #' @param th_seed numeric. Growing threshold 1. See reference in Dalponte et al. 2016. A pixel
 #' is added to a region if its height is greater than the tree height multiplied by this value.
@@ -630,8 +635,8 @@ reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package="lasR")
 #'
-#' reader <- reader(f, filter = "-keep_first")
-#' reader <- reader(f, filter = "-keep_first")
+#' reader <- reader(f, filter = keep_first())
+#' reader <- reader(f, filter = keep_first())
 #' chm <- rasterize(1, "max")
 #' lmx <- local_maximum(5)
 #' tree <- region_growing(chm, lmx, max_cr = 10)
@@ -652,7 +657,7 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
 
 #' Sample the point cloud keeping one random point per units
 #'
-#' Sample the point cloud, keeping one random point per pixel or per voxel. This algorithm modifies
+#' Sample the point cloud, keeping one random point per pixel or per voxel. This stage modifies
 #' the point cloud in the pipeline but does not produce any output.
 #'
 #' @param res numeric. voxel resolution
@@ -683,7 +688,7 @@ sampling_pixel = function(res = 2, filter = "")
 #' Summary
 #'
 #' Summarize the dataset by counting the number of points, first returns, classes. It also produces
-#' a histogram of Z and Intensity. This algorithm does not modify the point cloud. It produces a
+#' a histogram of Z and Intensity. This stage does not modify the point cloud. It produces a
 #' summary as a `list`.
 #'
 #' @param zwbin,iwbin numeric. Width of the bins for the histograms of Z and Intensity.
@@ -706,8 +711,8 @@ summarise = function(zwbin = 2, iwbin = 25, filter = "")
 #' Delaunay triangulation
 #'
 #' Delaunay triangulation. Can be used to build a DTM, a CHM, normalize a point cloud, or any other
-#' application. This algorithm is typically used as an intermediate process without an output file.
-#' This algorithm does not modify the point cloud.
+#' application. This stage is typically used as an intermediate process without an output file.
+#' This stage does not modify the point cloud.
 #'
 #' @param max_edge numeric. Maximum edge length of a triangle in the Delaunay triangulation. If a
 #' triangle has an edge length greater than this value, it will be removed. If max_edge = 0, no trimming
@@ -720,7 +725,7 @@ summarise = function(zwbin = 2, iwbin = 25, filter = "")
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader(f)
-#' tri1 <- triangulate(25, filter = "-keep_class 2", ofile = tempfile(fileext = ".gpkg"))
+#' tri1 <- triangulate(25, filter = keep_ground(), ofile = tempfile(fileext = ".gpkg"))
 #' filter <- "-keep_last -keep_random_fraction 0.1"
 #' tri2 <- triangulate(filter = filter, ofile = tempfile(fileext = ".gpkg"))
 #' pipeline <- read + tri1 + tri2
@@ -734,13 +739,11 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
   set_lasr_class(ans)
 }
 
-#' Transform a point cloud using a triangulation
+#' Transform a point cloud using another stage
 #'
-#' This algorithm uses a Delaunay triangulation and, for each point, it linearly interpolates the
-#' triangulation to retrieve the value of the mesh at the exact location of the point. Then it
-#' performs an operation with this value to modify the point cloud. This can typically be used
-#' to build a normalization algorithm. This algorithm modifies the point cloud in the pipeline but
-#' does not produce any output.
+#' This stage uses another stage that produced a Delaunay triangulation or a raster and performs an
+#' operation to modify the point cloud. This can typically be used to build a normalization stage
+#' This stage modifies the point cloud in the pipeline but does not produce any output.
 #'
 #' @param stage LASRpipeline. A stage that produces a triangulation or a raster.
 #' @param operator string. '-' and '+' are supported.
@@ -774,13 +777,13 @@ transform_with = function(stage, operator = "-", store_in_attribute = "")
 
 #' Write LAS or LAZ files
 #'
-#' Write a LAS or LAZ file at any step of the pipeline (typically at the end). Unlike other algorithms,
+#' Write a LAS or LAZ file at any step of the pipeline (typically at the end). Unlike other stages,
 #' the output won't be written into a single large file but in multiple tiled files corresponding
 #' to the original collection of files.
 #'
 #' @param ofile character. Output file names. The string must contain a wildcard * so the wildcard can
-#' be replaced by the algorithm name of the original tile and preserve the tiling pattern. If the wildcard
-#' is omitted, everything will be written into a single file. This may be the desired behaviour in some
+#' be replaced by the name of the original tile and preserve the tiling pattern. If the wildcard
+#' is omitted, everything will be written into a single file. This may be the desired behavior in some
 #' circumstances, e.g., to merge some files.
 #' @param keep_buffer bool. The buffer is removed to write file but it can be preserved.
 #' @template param-filter
@@ -788,7 +791,7 @@ transform_with = function(stage, operator = "-", store_in_attribute = "")
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader(f)
-#' tri  <- triangulate(filter = "-keep_class 2")
+#' tri  <- triangulate(filter = keep_ground())
 #' normalize <- tri + transform_with(tri)
 #' pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 #' processor(pipeline)

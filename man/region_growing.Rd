@@ -15,9 +15,9 @@ region_growing(
 )
 }
 \arguments{
-\item{raster}{LASRalgoritm an algorithm producing a raster.}
+\item{raster}{LASRalgoritm. A stage producing a raster.}
 
-\item{seeds}{LASRalgoritm an algorithm producing points used as seeds.}
+\item{seeds}{LASRalgoritm. A stage producing points used as seeds.}
 
 \item{th_tree}{numeric. Threshold below which a pixel cannot be a tree. Default is 2.}
 
@@ -34,21 +34,21 @@ Default is 20. \strong{BE CAREFUL} this algorithm exists in the \code{lidR} pack
 pixels in \code{lidR}.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
-then the algorithm will not store the result on disk and will return nothing. It will however
-hold partial output results temporarily in memory. This is useful for algorithm that are only
+then the stage will not store the result on disk and will return nothing. It will however
+hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 }
 \description{
 Region growing for individual tree segmentation based on Dalponte and Coomes (2016) algorithm (see reference).
-Note that this algorithm strictly performs segmentation, while the original method described in
+Note that this stage strictly performs segmentation, while the original method described in
 the manuscript also performs pre- and post-processing tasks. Here, these tasks are expected to be
 done by the user in separate functions.
 }
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package="lasR")
 
-reader <- reader(f, filter = "-keep_first")
-reader <- reader(f, filter = "-keep_first")
+reader <- reader(f, filter = keep_first())
+reader <- reader(f, filter = keep_first())
 chm <- rasterize(1, "max")
 lmx <- local_maximum(5)
 tree <- region_growing(chm, lmx, max_cr = 10)

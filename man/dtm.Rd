@@ -13,8 +13,8 @@ dtm(res = 1, add_class = NULL, ofile = tempfile(fileext = ".tif"))
 to provide additional classes such as 9 for water.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
-then the algorithm will not store the result on disk and will return nothing. It will however
-hold partial output results temporarily in memory. This is useful for algorithm that are only
+then the stage will not store the result on disk and will return nothing. It will however
+hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 }
 \description{

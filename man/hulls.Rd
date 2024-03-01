@@ -2,28 +2,29 @@
 % Please edit documentation in R/stages.R
 \name{hulls}
 \alias{hulls}
-\title{Contour of a Delaunay triangulation}
+\title{Contour of a point cloud}
 \usage{
 hulls(mesh = NULL, ofile = tempfile(fileext = ".gpkg"))
 }
 \arguments{
-\item{mesh}{NULL or LASRalgorithm. A \code{triangulate} algorithm. If NULL take the bounding box of the
+\item{mesh}{NULL or LASRalgorithm. A \code{triangulate} stage. If NULL take the bounding box of the
 header of each file.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
-then the algorithm will not store the result on disk and will return nothing. It will however
-hold partial output results temporarily in memory. This is useful for algorithm that are only
+then the stage will not store the result on disk and will return nothing. It will however
+hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 }
 \description{
-This algorithm uses a Delaunay triangulation and computes its contour. The contour of a strict
+This stage uses a Delaunay triangulation and computes its contour. The contour of a strict
 Delaunay triangulation is the convex hull, but in lasR, the triangulation has a \code{max_edge} argument.
-Thus, the contour might be a convex hull with holes.
+Thus, the contour might be a convex hull with holes. Used without triangulation it returns the bouding
+box of the points.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package = "lasR")
 read <- reader(f)
-tri <- triangulate(20, filter = "-keep_class 2")
+tri <- triangulate(20, filter = keep_ground())
 contour <- hulls(tri)
 pipeline <- read + tri + contour
 ans <- processor(pipeline)

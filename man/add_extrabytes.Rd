@@ -19,7 +19,7 @@ add_extrabytes(data_type, name, description, scale = 1, offset = 0)
 \description{
 According to the \href{https://www.asprs.org/a/society/committees/standards/LAS_1_4_r13.pdf}{LAS specifications},
 a LAS file contains a core of defined attributes, such as XYZ coordinates, intensity, return number,
-and so on, for each point. It is possible to add supplementary attributes. This algorithm adds an
+and so on, for each point. It is possible to add supplementary attributes. This stages adds an
 extra bytes attribute to the points. Values are zeroed. It edits the point cloud but returns nothing.
 }
 \examples{

@@ -18,8 +18,8 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 \link{filters}.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
-then the algorithm will not store the result on disk and will return nothing. It will however
-hold partial output results temporarily in memory. This is useful for algorithm that are only
+then the stage will not store the result on disk and will return nothing. It will however
+hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 
 \item{use_attribute}{character. By default the triangulation is performed on the coordinate Z. Can also be
@@ -27,13 +27,13 @@ the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'In
 }
 \description{
 Delaunay triangulation. Can be used to build a DTM, a CHM, normalize a point cloud, or any other
-application. This algorithm is typically used as an intermediate process without an output file.
-This algorithm does not modify the point cloud.
+application. This stage is typically used as an intermediate process without an output file.
+This stage does not modify the point cloud.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 read <- reader(f)
-tri1 <- triangulate(25, filter = "-keep_class 2", ofile = tempfile(fileext = ".gpkg"))
+tri1 <- triangulate(25, filter = keep_ground(), ofile = tempfile(fileext = ".gpkg"))
 filter <- "-keep_last -keep_random_fraction 0.1"
 tri2 <- triangulate(filter = filter, ofile = tempfile(fileext = ".gpkg"))
 pipeline <- read + tri1 + tri2

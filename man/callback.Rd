@@ -28,7 +28,7 @@ function can, therefore, be used to modify the point cloud using a user-defined 
 \details{
 In \code{lasR}, the point cloud is not exposed to R in a \code{data.frame} like in lidR. It is stored internally
 in a C++ structure and cannot be seen or modified directly by users using R code. The \code{callback} function
-is the only algorithm that allows direct interaction with the point cloud by \strong{copying} it
+is the only stage that allows direct interaction with the point cloud by \strong{copying} it
 temporarily into a \code{data.frame} to apply a user-defined function.\cr\cr
 \strong{expose:} the 'expose' argument specifies the data that will actually be exposed to R. For example,
 'xyzia' means that the x, y, and z coordinates, the intensity, and the scan angle will be loaded.
