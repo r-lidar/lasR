@@ -11,6 +11,7 @@
 #include <R.h> // for R_FlushConsole
 #endif
 
+// Called only once in the processor function
 Progress::Progress()
 {
   percentage = 0.0f;
@@ -22,30 +23,20 @@ Progress::Progress()
   sub = 0;
 };
 
-Progress::Progress(uint64_t ntotal)
-{
-  percentage = 0;
-  current = 0;
-  this->ntotal = ntotal;
-  prefix = "";
-  display = false;
-  prev = -1.0f;
-  sub = 0;
-};
-
+// Called only once in the processor function
 Progress::~Progress()
 {
   if (sub) delete sub;
 }
 
+// Operator ++ is called only within stages. The main progress bar is using update() and MUST NOT
+// call ++. It is thread safe: only the thread 0 can call the operator ++
 Progress& Progress::operator++(int)
 {
   if (omp_get_thread_num() != 0)
-  {
     return *this;
-  }
 
-  if (sub)
+  if (sub != nullptr)
   {
     (*sub)++;
   }
@@ -58,6 +49,7 @@ Progress& Progress::operator++(int)
   return *this;
 };
 
+// Called only once in the processor function
 void Progress::create_subprocess()
 {
   if (sub) delete sub;
@@ -65,12 +57,13 @@ void Progress::create_subprocess()
   sub->set_display(this->display);
 }
 
+// Called by every stage and the main progress bar before to create a sub progress bar. When called
+// it applies to the sub-progress this is why is is called before to create a sub progress in the
+// processor
 void Progress::set_prefix(std::string prefix)
 {
   if (omp_get_thread_num() != 0)
-  {
     return;
-  }
 
   if (sub)
     sub->set_prefix(prefix);
@@ -78,12 +71,27 @@ void Progress::set_prefix(std::string prefix)
     this->prefix = prefix;
 };
 
+// Can be called either by the main progress or sub progress. Like other functions by default it
+// applies to the sub progress. If we are trying to update the main progress we can do it for each thread in
+// a critical region. If we are trying to update in a stage we can do it only in thread 0
 void Progress::update(uint64_t current, bool main)
 {
-  if (main == false && sub)
+  if (main)
   {
-    sub->update(current);
+    #pragma omp critical (progress)
+    {
+      this->current = current;
+      this->compute_percentage();
+    }
+
+    return;
   }
+
+  if (omp_get_thread_num() != 0)
+    return;
+
+  if (sub != nullptr)
+    sub->update(current);
   else
   {
     this->current = current;
@@ -91,12 +99,11 @@ void Progress::update(uint64_t current, bool main)
   }
 };
 
+// Called by every stage and can be applied only by thread 0
 void Progress::reset()
 {
   if (omp_get_thread_num() != 0)
-  {
     return;
-  }
 
   if (sub)
   {
@@ -111,18 +118,19 @@ void Progress::reset()
   }
 }
 
+// Called only once in the processor function
 void Progress::set_display(bool display)
 {
   this->display = display;
   if (sub) sub->set_display(display);
 }
 
+
+// Called by every stage and can be applied only by thread 0
 void Progress::set_total(uint64_t nmax)
 {
   if (omp_get_thread_num() != 0)
-  {
     return;
-  }
 
   if (sub)
     sub->set_total(nmax);
@@ -130,16 +138,13 @@ void Progress::set_total(uint64_t nmax)
     this->ntotal = nmax;
 }
 
-float Progress::get_progress()
-{
-  if (sub)
-    return sub->get_progress();
-  else
-    return this->percentage*100.0f;
-}
-
+// Called by every stage and can be applied only by thread 0. It is also called by the processor
+// outside open mp region
 void Progress::done(bool main)
 {
+  if (omp_get_thread_num() != 0)
+    return;
+
   if (sub)
   {
     sub->current = ntotal;
@@ -182,9 +187,7 @@ void Progress::pause()
 void Progress::show(bool flush)
 {
   if (omp_get_thread_num() != 0)
-  {
     return;
-  }
 
   if (display && must_show())
   {

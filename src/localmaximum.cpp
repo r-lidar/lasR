@@ -55,17 +55,22 @@ bool LASRlocalmaximum::process(LAS*& las)
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
+  // The next for loop is at the level a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
+
   PointLAS pp;
   #pragma omp parallel for num_threads(ncpu) private(pp)
   for (auto i = 0 ; i < las->npoints ; ++i)
   {
-    #pragma omp critical
+    if (main_thread)
     {
-      (*progress)++;
-    }
-    if (omp_get_thread_num() == 0)
-    {
-      progress->show();
+      #pragma omp critical
+      {
+        // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+        (*progress)++;
+        progress->show();
+      }
     }
 
     if (!las->get_point(i, pp, &lasfilter, lastransform)) { status[i] = NLM; continue; } // The point was either filtered or withhelded

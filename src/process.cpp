@@ -56,7 +56,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
     }
 
     pipeline.set_verbose(verbose);
-    pipeline.set_ncpu(ncpu);
+    pipeline.set_ncpu(ncpu_lvl2);
 
     if (verbose)
     {
@@ -70,6 +70,11 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
       print("  Chunks: %d\n", n);
       print("\n");
       // # nocov end
+    }
+
+    if (ncpu_lvl1 > 1 && ncpu_lvl2 > 1)
+    {
+      omp_set_max_active_levels(2);
     }
 
     // Initialize progress bars

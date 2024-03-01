@@ -9,7 +9,6 @@ class Progress
 {
 public:
   Progress();
-  Progress(uint64_t ntotal);
   ~Progress();
   Progress &operator++(int);
   void create_subprocess();
@@ -18,7 +17,6 @@ public:
   void reset();
   void set_display(bool display);
   void set_total(uint64_t nmax);
-  float get_progress();
   void done(bool main = false);
   void pause();
   void show(bool flush = true);

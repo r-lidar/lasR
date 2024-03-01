@@ -108,6 +108,7 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
   progress->reset();
   progress->set_total(vd.num_vertices());
   progress->set_prefix("Interpolation");
+  progress->show();
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -117,6 +118,10 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
     res.resize(raster->get_ncells());
 
   std::fill(res.begin(), res.end(), NA_F64);
+
+  // The next for loop is at the level a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
 
   // 1. loop through the triangles, search the point inside triangle, interpolate
   #pragma omp parallel for num_threads(ncpu)
@@ -186,13 +191,14 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
 
     } while (edge != vertex.incident_edge());
 
-    #pragma omp critical
+    if (main_thread)
     {
-      (*progress)++;
-    }
-    if (omp_get_thread_num() == 0)
-    {
-      progress->show();
+      // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+      #pragma omp critical
+      {
+        (*progress)++;
+        progress->show();
+      }
     }
   }
 
@@ -222,6 +228,11 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
   progress->reset();
   progress->set_prefix("Delaunay contours");
   progress->set_total(vd.num_vertices());
+  progress->show();
+
+  // The next for loop is at the level a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
 
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < vd.num_vertices() ; ++i)
@@ -266,8 +277,15 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
 
     } while (edge != vertex.incident_edge());
 
-    progress->update(i);
-    progress->show();
+    if (main_thread)
+    {
+      #pragma omp critical
+      {
+        // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+        progress->update(i);
+        progress->show();
+      }
+    }
   }
 
   for (const auto& elmt : edges) e.push_back(elmt);
@@ -304,6 +322,7 @@ bool LASRtriangulate::write()
 
   progress->set_total(vd.num_vertices());
   progress->set_prefix("Write triangulation");
+  progress->show();
 
   auto start_time = std::chrono::high_resolution_clock::now();
 

@@ -119,6 +119,12 @@ bool LASRrasterize::process(LAS*& las)
 
   // Loop through each group on which we want to apply the call
   auto map = grouper.map;
+
+  progress->reset();
+  progress->set_prefix("Rasterize");
+  progress->set_total(map.size());
+  progress->show();
+
   for (const auto& pair : map)
   {
     int cell = pair.first;
@@ -140,7 +146,11 @@ bool LASRrasterize::process(LAS*& las)
     }
 
     metrics.reset();
+
+    (*progress)++;
   }
+
+  progress->done();
 
   return true;
 }
