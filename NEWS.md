@@ -1,4 +1,4 @@
-# lasR 0.2.0
+# lasR 0.2.0 (2024-03-01)
 
 - New: `rasterize()` gains the ability to perform a multi-resolution or buffered rasterization. See documentation.
 - New: `rasterize()` gains numerous native metrics such as `zmax`, `zmean`, `zmedian`, `imax`, `imean` and so on.
