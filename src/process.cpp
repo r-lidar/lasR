@@ -17,6 +17,9 @@
 #include "pipeline.h"
 #include "LAScatalog.h"
 
+
+#include "openmp.h"
+
 SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, SEXP sexpverbose)
 {
   int ncpu = Rf_asInteger(sexpncpu);
@@ -48,12 +51,12 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
 
     // Check some multithreading stuff
     if (ncpu_lvl1 > n) ncpu_lvl1 = n;
-    if (!pipeline.is_parallelizable() && ncpu_lvl1 > 1)
+    /*if (!pipeline.is_parallelizable() && ncpu_lvl1 > 1)
     {
-      warning("This pipeline involves stages with R code and is not currently parallelizable in 'concurent files' mode. Using 'concurent points' mode.\n");
+      warning("This pipeline involves stages with R code and is not currently parallelizable with 'concurent-files' strategy. Using 'concurent-points' strategy.\n");
       ncpu_lvl2 = ncpu_lvl1;
       ncpu_lvl1 = 1;
-    }
+    }*/
 
     pipeline.set_verbose(verbose);
     pipeline.set_ncpu(ncpu_lvl2);
@@ -196,6 +199,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
 
+    print("done\n");
     progress.done(true);
 
     return pipeline.to_R();
