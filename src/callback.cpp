@@ -255,7 +255,13 @@ bool LASRcallback::process(LAS*& las)
   }
 
   // Evaluate the input R function within the data frame's environment
-  SEXP res = PROTECT(Rf_eval(lang, R_GlobalEnv));  nsexpprotected++;
+  int eval_error = 0;
+  SEXP res = PROTECT(R_tryEvalSilent(lang, R_GlobalEnv, &eval_error));  nsexpprotected++;
+  if (eval_error)
+  {
+    last_error = R_curErrorBuf();
+    return false;
+  }
 
   // If modify = false or res is not a data.frame we can already push the result and return
   if (!modify || (TYPEOF(res) != VECSXP) || Rf_length(VECTOR_ELT(res, 0)) != las->npoints)
