@@ -96,6 +96,7 @@ bool Pipeline::run()
   else
     success = run_loaded();
 
+  clear();
   clean();
 
   return success;
@@ -356,6 +357,14 @@ void Pipeline::clear(bool last)
   }
 }
 
+void Pipeline::clean()
+{
+  delete las;
+  header = nullptr;
+  point = nullptr;
+  las = nullptr;
+}
+
 #ifdef USING_R
 SEXP Pipeline::to_R()
 {
@@ -374,14 +383,6 @@ SEXP Pipeline::to_R()
   return ans;
 }
 #endif
-
-void Pipeline::clean()
-{
-  delete las;
-  header = nullptr;
-  point = nullptr;
-  las = nullptr;
-}
 
 /*void Pipeline::show()
 {

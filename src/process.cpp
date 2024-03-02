@@ -3,9 +3,11 @@
 #define R_NO_REMAP 1
 #include <R.h>
 #include <Rinternals.h>
+#define CSTACK_DEFNS 1
+#include <Rinterface.h> // R_CStackLimit
 #endif
-
 #include "Rcompatibility.h"
+
 
 // STL
 #include <memory>
@@ -16,9 +18,12 @@
 #include "error.h"
 #include "pipeline.h"
 #include "LAScatalog.h"
-
-
 #include "openmp.h"
+
+#define SEQUENTIAL 1
+#define CONCURRENTPOINTS 2
+#define CONCURRENTFILES 3
+#define NESTED 4
 
 SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, SEXP sexpverbose)
 {
@@ -27,14 +32,19 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
   bool progrss = Rf_asLogical(sexpprogrss);
   bool verbose = Rf_asLogical(sexpverbose);
 
-  if (ncpu > available_threads()) {
+  // Check some multithreading stuff
+  if (ncpu > available_threads())
+  {
     warning("Number of cores requested %d but only %d available\n", ncpu, available_threads());
     ncpu = available_threads();
   }
-  int ncpu_lvl1 = 1; // concurrent files
-  int ncpu_lvl2 = 1; // concurrent points
-  if (mode == 2) ncpu_lvl2 = ncpu;
-  if (mode == 3) ncpu_lvl1 = ncpu;
+  int ncpu_outer_loop = 1; // concurrent files
+  int ncpu_inner_loops = 1; // concurrent points
+  if (mode == CONCURRENTPOINTS) ncpu_inner_loops = ncpu;
+  if (mode == CONCURRENTFILES) ncpu_outer_loop = ncpu;
+  if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
+
+  uintptr_t original_CStackLimit = R_CStackLimit;
 
   try
   {
@@ -50,16 +60,19 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
     int n = lascatalog->get_number_chunks();
 
     // Check some multithreading stuff
-    if (ncpu_lvl1 > n) ncpu_lvl1 = n;
-    /*if (!pipeline.is_parallelizable() && ncpu_lvl1 > 1)
+    if (ncpu_outer_loop > n) ncpu_outer_loop = n;
+    if (!pipeline.is_parallelizable() && ncpu_outer_loop > 1)
     {
-      warning("This pipeline involves stages with R code and is not currently parallelizable with 'concurent-files' strategy. Using 'concurent-points' strategy.\n");
-      ncpu_lvl2 = ncpu_lvl1;
-      ncpu_lvl1 = 1;
-    }*/
+      // The R's C stack is now unprotected — the work with R just become more dangerous
+      // but we can run parallel stuff without strange problems like C stack usage is too close to the limit
+      // It is supposed to be safe because every single call to the R'c C API is protected in a critical section
+      // https://stats.blogoverflow.com/2011/08/using-openmp-ized-c-code-with-r/
+      // https://stat.ethz.ch/pipermail/r-devel/2007-June/046207.html
+      R_CStackLimit=(uintptr_t)-1;
+    }
 
     pipeline.set_verbose(verbose);
-    pipeline.set_ncpu(ncpu_lvl2);
+    pipeline.set_ncpu(ncpu_inner_loops);
 
     if (verbose)
     {
@@ -68,16 +81,11 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
       print("  Read points: %s\n", pipeline.need_points() ? "true" : "false");
       print("  Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
       print("  Buffer: %.1lf\n", pipeline.need_buffer());
-      print("  Concurrent files: %d\n", ncpu_lvl1);
-      print("  Concurrent points: %d\n", ncpu_lvl2);
+      print("  Concurrent files: %d\n", ncpu_outer_loop);
+      print("  Concurrent points: %d\n", ncpu_inner_loops);
       print("  Chunks: %d\n", n);
       print("\n");
       // # nocov end
-    }
-
-    if (ncpu_lvl1 > 1 && ncpu_lvl2 > 1)
-    {
-      omp_set_max_active_levels(2);
     }
 
     // Initialize progress bars
@@ -99,18 +107,20 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
 
     bool failure = false;
     int k = 0;
-    #pragma omp parallel num_threads(ncpu_lvl1)
+    #pragma omp parallel num_threads(ncpu_outer_loop)
     {
       try
       {
         // We need a copy of the pipeline. The copy constructor of the pipeline and stages
         // ensure that shared resources are protected (such as connection to output files)
-        // and private data are copied
-        Pipeline pipeline_cpy(pipeline);
+        // and private data are copied.
+        Pipeline private_pipeline(pipeline);
 
         #pragma omp for
         for (int i = 0 ; i < n ; ++i)
         {
+          // We cannot exit a parallel loop easily. Instead we can rather run the loop until the end
+          // skipping the processing
           if (failure) continue;
 
           bool last_chunk = i+1 == n; // TODO:: need to be revised for parallel code
@@ -145,7 +155,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
 
           // set_chunk() initialize the region we are working with which is a sub-part of the
           // overall processed region
-          if (!pipeline_cpy.set_chunk(chunk))
+          if (!private_pipeline.set_chunk(chunk))
           {
             failure = true;
             continue;
@@ -154,15 +164,11 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
           // run() does execute the pipeline. This is encapsulated but at the end each stage
           // is supposed to contains the data for the current chunk and optionally write the
           // result into a file
-          if (!pipeline_cpy.run())
+          if (!private_pipeline.run())
           {
             failure = true;
             continue;
           }
-
-          // clear() is used by some stages to clean data between two chunks. This is useful
-          // to clear an std::map like in the aggregate pipeline
-          pipeline_cpy.clear();
 
           #pragma omp critical
           {
@@ -172,7 +178,8 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
           }
         }
 
-        pipeline_cpy.clear(true);
+        // We are outside the main loop. We can clear the pipeline with last = true;
+        private_pipeline.clear(true);
 
         // We have multiple pipelines that each process some chunks and each have a partial
         // output. We reduce in the main pipeline
@@ -180,7 +187,7 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
         {
           if (!failure)
           {
-            pipeline.merge(pipeline_cpy);
+            pipeline.merge(private_pipeline);
           }
         }
       }
@@ -191,21 +198,24 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
       }
     }
 
+    // We are no longer in the parallel region we can return to R by allocating safely
+    // some R memory
+
+    R_CStackLimit=original_CStackLimit;
+
     if (failure)
     {
       throw last_error;
     }
 
-    // We are no longer in the parallel region we can return to R by allocating safely
-    // some R memory
-
-    print("done\n");
     progress.done(true);
 
     return pipeline.to_R();
   }
   catch (std::string e)
   {
+    R_CStackLimit=original_CStackLimit;
+
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 
     SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
@@ -231,6 +241,8 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
   }
   catch(...)
   {
+    R_CStackLimit=original_CStackLimit;
+
     // # nocov start
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 
