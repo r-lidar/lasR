@@ -1,3 +1,7 @@
+# lasR 0.2.1
+
+- Fix: `callback()` properly handles errors from the injected function
+
 # lasR 0.2.0 (2024-03-01)
 
 - New: `rasterize()` gains the ability to perform a multi-resolution or buffered rasterization. See documentation.
