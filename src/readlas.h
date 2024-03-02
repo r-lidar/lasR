@@ -21,8 +21,7 @@ public:
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "reader_las"; }
 
-
-  bool is_parallelizable() const override { return true; };
+  // multi-threading
   LASRlasreader* clone() const override { return new LASRlasreader(*this); };
 
 private:

@@ -11,7 +11,6 @@ public:
   std::string get_name() const override { return "add_extrabytes"; };
 
   // multi-threading
-  bool is_parallelizable() const override { return true; };
   LASRaddattribute* clone() const override { return new LASRaddattribute(*this); };
 
 private:

@@ -31,10 +31,12 @@ class Pipeline
     bool run();
     void merge(const Pipeline& other);
     void clear(bool last = false);
-    bool is_parallelizable();
-    bool is_streamable();
+    bool is_parallelizable() const;
+    bool is_parallelized() const;
+    bool is_streamable() const;
+    bool use_rcapi() const;
     double need_buffer();
-    bool need_points();
+    bool need_points() const;
     bool set_chunk(const Chunk& chunk);
     bool set_crs(int epsg);
     bool set_crs(std::string wkt);

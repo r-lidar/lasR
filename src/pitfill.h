@@ -13,7 +13,6 @@ public:
   std::string get_name() const override { return "pit_fill"; }
 
   // multi-threading
-  bool is_parallelizable() const override { return true; };
   LASRpitfill* clone() const override { return new LASRpitfill(*this); };
 
 private:

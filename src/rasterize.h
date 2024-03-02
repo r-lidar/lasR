@@ -17,7 +17,6 @@ public:
   std::string get_name() const override { return "rasterize"; };
 
   // multi-threading
-  bool is_parallelizable() const override { return true; };
   LASRrasterize* clone() const override { return new LASRrasterize(*this); };
 
 private:

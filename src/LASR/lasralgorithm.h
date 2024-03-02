@@ -46,7 +46,9 @@ public:
   virtual void set_input_file_name(std::string file) { return; };
   virtual void set_header(LASheader*& header) { return; };
   virtual bool is_streamable() const { return false; };
-  virtual bool is_parallelizable() const { return false; };
+  virtual bool is_parallelizable() const { return true; }; // concurrent-files
+  virtual bool is_parallelized() const { return false; };  // concurrent-points
+  virtual bool use_rcapi() const { return false; };
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
 

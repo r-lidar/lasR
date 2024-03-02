@@ -16,7 +16,6 @@ public:
   bool need_points() const override { return read_points; };
 
   // multi-threading
-  bool is_parallelizable() const override { return true; };
   LASRnothing* clone() const override { return new LASRnothing(*this); };
 
   private:

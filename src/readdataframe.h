@@ -17,9 +17,9 @@ public:
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "reader_dataframe"; }
+  bool use_rcapi() const override { return true; };
 
   // multi-threading
-  bool is_parallelizable() const override { return false; };
   LASRdataframereader* clone() const override { return new LASRdataframereader(*this); };
 
 private:

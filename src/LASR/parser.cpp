@@ -467,7 +467,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
   }
 
   streamable = is_streamable();
-  buffer = need_buffer();
+  buffer = MAX(buffer, need_buffer());
   read_payload = need_points();
   parallelizable = is_parallelizable();
 

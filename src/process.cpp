@@ -55,17 +55,27 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
       throw last_error;
     }
 
+    bool use_rcapi = pipeline.use_rcapi();
+    bool is_parallelized = pipeline.is_parallelized();      // concurrent-points
+    bool is_parallelizable = pipeline.is_parallelizable();  // concurrent-files
+
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
     lascatalog->set_chunk_size(0);                   // currently only 0 is supported
     int n = lascatalog->get_number_chunks();
 
-    // Check some multithreading stuff
-    if (ncpu_outer_loop > n) ncpu_outer_loop = n;
-    if (!pipeline.is_parallelizable() && ncpu_outer_loop > 1)
+    // Check some multi-threading stuff
+    if (!is_parallelizable && ncpu_outer_loop > 1)
     {
-      // The R's C stack is now unprotected — the work with R just become more dangerous
-      // but we can run parallel stuff without strange problems like C stack usage is too close to the limit
-      // It is supposed to be safe because every single call to the R'c C API is protected in a critical section
+      ncpu_inner_loops = ncpu_outer_loop;
+      ncpu_outer_loop = 1;
+      warning("This pipeline is not parallizable using 'conccurent-files' strategy.\n");
+    }
+    if (ncpu_outer_loop > n) ncpu_outer_loop = n;
+    if (pipeline.use_rcapi() && ncpu_outer_loop > 1)
+    {
+      // The R's C stack is now unprotected — the work with R C API becomes more dangerous
+      // but we can run parallel stuff without strange problems like: C stack usage is too close to the limit
+      // It is supposed to be safe because every single call to the R's C API is protected in a critical section
       // https://stats.blogoverflow.com/2011/08/using-openmp-ized-c-code-with-r/
       // https://stat.ethz.ch/pipermail/r-devel/2007-June/046207.html
       R_CStackLimit=(uintptr_t)-1;
@@ -284,20 +294,26 @@ SEXP get_pipeline_info(SEXP sexppipeline)
     }
     bool is_streamable = pipeline.is_streamable();
     bool is_parallelizable = pipeline.is_parallelizable();
+    bool is_parallelized = pipeline.is_parallelized();
     bool read_points = pipeline.need_points();
+    bool use_rcapi = pipeline.use_rcapi();
     double buffer = pipeline.need_buffer();
 
-    SEXP ans =  PROTECT(Rf_allocVector(VECSXP, 4));
+    SEXP ans =  PROTECT(Rf_allocVector(VECSXP, 6));
     SET_VECTOR_ELT(ans, 0, Rf_ScalarLogical(is_streamable));
     SET_VECTOR_ELT(ans, 1, Rf_ScalarLogical(read_points));
     SET_VECTOR_ELT(ans, 2, Rf_ScalarReal(buffer));
     SET_VECTOR_ELT(ans, 3, Rf_ScalarLogical(is_parallelizable));
+    SET_VECTOR_ELT(ans, 4, Rf_ScalarLogical(is_parallelized));
+    SET_VECTOR_ELT(ans, 5, Rf_ScalarLogical(use_rcapi));
 
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 4));
+    SEXP names = PROTECT(Rf_allocVector(STRSXP, 6));
     SET_STRING_ELT(names, 0, Rf_mkChar("streamable"));
     SET_STRING_ELT(names, 1, Rf_mkChar("read_points"));
     SET_STRING_ELT(names, 2, Rf_mkChar("buffer"));
     SET_STRING_ELT(names, 3, Rf_mkChar("parallelizable"));
+    SET_STRING_ELT(names, 4, Rf_mkChar("parallelized"));
+    SET_STRING_ELT(names, 5, Rf_mkChar("R_API"));
     Rf_setAttrib(ans, R_NamesSymbol, names);
 
     UNPROTECT(2);

@@ -291,7 +291,7 @@ void Pipeline::set_verbose(bool verbose)
   for (auto&& stage : pipeline) stage->set_verbose(verbose);
 }
 
-bool Pipeline::is_streamable()
+bool Pipeline::is_streamable() const
 {
   bool b = true;
   for (auto&& stage : pipeline)
@@ -306,7 +306,7 @@ bool Pipeline::is_streamable()
   return b;
 }
 
-bool Pipeline::is_parallelizable()
+bool Pipeline::is_parallelizable() const
 {
   bool b = true;
   for (auto&& stage : pipeline)
@@ -321,7 +321,37 @@ bool Pipeline::is_parallelizable()
   return b;
 }
 
-bool Pipeline::need_points()
+bool Pipeline::is_parallelized() const
+{
+  bool b = false;
+  for (auto&& stage : pipeline)
+  {
+    if (stage->is_parallelized())
+    {
+      b = true;
+      break;
+    }
+  }
+
+  return b;
+}
+
+bool Pipeline::use_rcapi() const
+{
+  bool b = false;
+  for (auto&& stage : pipeline)
+  {
+    if (stage->use_rcapi())
+    {
+      b = true;
+      break;
+    }
+  }
+
+  return b;
+}
+
+bool Pipeline::need_points() const
 {
   bool b = false;
   for (auto&& stage : pipeline)

@@ -12,7 +12,6 @@ public:
   std::string get_name() const override { return "region_growing"; }
 
   // multi-threading
-  bool is_parallelizable() const override { return true; };
   LASRregiongrowing* clone() const override { return new LASRregiongrowing(*this); };
 
 
