@@ -8,7 +8,7 @@ local_maximum(
   ws,
   min_height = 2,
   filter = "",
-  ofile = tempfile(fileext = ".gpkg"),
+  ofile = tempgpkg(),
   use_attribute = "Z"
 )
 }

@@ -4,12 +4,7 @@
 \alias{rasterize}
 \title{Rasterize a point cloud}
 \usage{
-rasterize(
-  res,
-  operators = "max",
-  filter = "",
-  ofile = tempfile(fileext = ".tif")
-)
+rasterize(res, operators = "max", filter = "", ofile = temptif())
 }
 \arguments{
 \item{res}{numeric. The resolution of the raster. Can be a vector with two resolutions.

@@ -11,7 +11,7 @@ pit_fill(
   thr_spk = -0.1,
   med_size = 3L,
   dil_radius = 0L,
-  ofile = tempfile(fileext = ".tif")
+  ofile = temptif()
 )
 }
 \arguments{
