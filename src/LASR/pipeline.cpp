@@ -113,7 +113,11 @@ bool Pipeline::run_streamed()
       // Some stage process the header. The first stage being a reader, the LASheader, which is
       // initially nullptr, will be initialized by pipeline[0]
       success = stage->process(header);
-      if (!success) return false;
+      if (!success)
+      {
+        last_error = "in '" + stage->get_name() + "' while processing the header: " + last_error;
+        return false;
+      }
 
       // Special case: pipeline[0] could be write_lax, in this case the first stage does not
       // initialize the header. We must go to pipeline[1] immediately
@@ -157,7 +161,11 @@ bool Pipeline::run_streamed()
   for (auto&& stage : pipeline)
   {
     success = stage->write();
-    if (!success) return false;
+    if (!success)
+    {
+      last_error = "in '" + stage->get_name() + "' while writing the output: " + last_error;
+      return false;
+    }
   }
 
   return true;
@@ -172,7 +180,11 @@ bool Pipeline::run_loaded()
     // Some stage process the header. The first stage being a reader, the LASheader, which is
     // initially nullptr, will be initialized by pipeline[0]
     success = stage->process(header);
-    if (!success) return false;
+    if (!success)
+    {
+      last_error = "in '" + stage->get_name() + "' while processing the header: " + last_error;
+      return false;
+    }
 
     // Special case: pipeline[0] could be write_lax, in this case the first stage does not
     // initialize the header. We must go to pipeline[1] immediately
@@ -193,12 +205,20 @@ bool Pipeline::run_loaded()
     if (read_payload)
     {
       success = stage->process(las);
-      if (!success) return false;
+      if (!success)
+      {
+        last_error = "in '" + stage->get_name() + "' while processing the point cloud: " + last_error;
+        return false;
+      }
     }
 
     // Each stage is writing its own output
     success = stage->write();
-    if (!success) return false;
+    if (!success)
+    {
+      last_error = "in '" + stage->get_name() + "' while writing the output: " + last_error;
+      return false;
+    }
   }
 
   return true;
