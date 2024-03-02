@@ -95,7 +95,7 @@ bool LASRcallback::process(LAS*& las)
 
   int nattr = names.size(); // Number of attribute to expose
 
-  bool error = false;
+  int error = 0;
 
   #pragma omp critical (RAPI)
   {
@@ -255,16 +255,14 @@ bool LASRcallback::process(LAS*& las)
   }
 
   // Evaluate the input R function within the data frame's environment
-  int eval_error = 0;
-  SEXP res = PROTECT(R_tryEvalSilent(lang, R_GlobalEnv, &eval_error));  nsexpprotected++;
-  if (eval_error)
+  SEXP res = PROTECT(R_tryEvalSilent(lang, R_GlobalEnv, &error));  nsexpprotected++;
+  if (error)
   {
     last_error = R_curErrorBuf();
-    return false;
   }
 
   // If modify = false or res is not a data.frame we can already push the result and return
-  if (!modify || (TYPEOF(res) != VECSXP) || Rf_length(VECTOR_ELT(res, 0)) != las->npoints)
+  if (!error &&  (!modify || (TYPEOF(res) != VECSXP) || Rf_length(VECTOR_ELT(res, 0)) != las->npoints))
   {
     UNPROTECT(nsexpprotected); // unprotect all the vectors (ncols) + 5 objects created in this function;
     nsexpprotected = 0;
@@ -277,7 +275,7 @@ bool LASRcallback::process(LAS*& las)
     SET_VECTOR_ELT(ans, i, res);
   }
   // Else it is the original data_frame. We update las with it.
-  else
+  else if (!error)
   {
     // for each element of the list get the name
     std::vector<int> col_names(Rf_length(res));
@@ -287,7 +285,7 @@ bool LASRcallback::process(LAS*& las)
       last_error = "the data.frame has no names";
       UNPROTECT(nsexpprotected);
       nsexpprotected = 0;
-      error = true;
+      error = 1;
     }
 
     if (!error)
@@ -325,7 +323,7 @@ bool LASRcallback::process(LAS*& las)
           last_error = "non supported column '" + sname +"'";
           UNPROTECT(nsexpprotected);
           nsexpprotected = 0;
-          error = true;
+          error = 1;
           break;
         }
       }
@@ -341,28 +339,28 @@ bool LASRcallback::process(LAS*& las)
 
         switch(col_names[j])
         {
-        case attributes::X: if (type != REALSXP) { last_error = "X is expected to be numeric"; error = true; } break;
-          case attributes::Y: if (type != REALSXP) { last_error = "Y is expected to be numeric"; error = true; } break;
-          case attributes::Z: if (type != REALSXP) { last_error = "Z is expected to be numeric"; error = true; } break;
-          case attributes::I: if (type != INTSXP) { last_error = "Intensity is expected to be integer"; error = true; } break;
-          case attributes::T: if (type != REALSXP) { last_error = "gpstime is expected to be numeric"; error = true; } break;
-          case attributes::RN: if (type != INTSXP) { last_error = "ReturnNumber is expected to be integer"; error = true; } break;
-          case attributes::NOR: if (type != INTSXP) { last_error = "NumberOfReturns is expected to be integer"; error = true; } break;
-          case attributes::SDF: if (type != LGLSXP) { last_error = "ScanDirectionFlag is expected to be logical"; error = true; } break;
-          case attributes::EoF: if (type != INTSXP) { last_error = "EdgeOfFlightline is expected to be logical"; error = true; } break;
-          case attributes::CLASS: if (type != INTSXP) { last_error = "Classification is expected to be integer"; error = true; } break;
-          case attributes::SYNT: if (type != LGLSXP) { last_error = "Synthetic is expected to be logical"; error = true; } break;
-          case attributes::KEYP: if (type != LGLSXP) { last_error = "Keypoint is expected to be logical"; error = true; } break;
-          case attributes::WITH: if (type != LGLSXP) { last_error = "Withheld is expected to be logical"; error = true; } break;
-          case attributes::OVER: if (type != LGLSXP) { last_error = "Overlap is expected to be logical"; error = true; } break;
-          case attributes::SA: if (type != REALSXP) { last_error = "ScanAngle is expected to be numeric"; error = true; } break;
-          case attributes::UD: if (type != INTSXP) { last_error = "UserData is expected to be integer"; error = true; } break;
-          case attributes::PSID: if (type != INTSXP) { last_error = "PointSourceID is expected to be integer"; error = true; } break;
-          case attributes::R: if (type != INTSXP) { last_error = "R is expected to be integer"; error = true; } break;
-          case attributes::G: if (type != INTSXP) { last_error = "G is expected to be integer"; error = true; } break;
-          case attributes::B: if (type != INTSXP) { last_error = "B is expected to be integer"; error = true; } break;
-          case attributes::NIR: if (type != INTSXP) { last_error = "NIR is expected to be integer"; error = true; } break;
-          case attributes::CHAN: if (type != INTSXP) { last_error = "Channel is expected to be integer"; error = true; } break;
+        case attributes::X: if (type != REALSXP) { last_error = "X is expected to be numeric"; error = 1; } break;
+          case attributes::Y: if (type != REALSXP) { last_error = "Y is expected to be numeric"; error = 1; } break;
+          case attributes::Z: if (type != REALSXP) { last_error = "Z is expected to be numeric"; error = 1; } break;
+          case attributes::I: if (type != INTSXP) { last_error = "Intensity is expected to be integer"; error = 1; } break;
+          case attributes::T: if (type != REALSXP) { last_error = "gpstime is expected to be numeric"; error = 1; } break;
+          case attributes::RN: if (type != INTSXP) { last_error = "ReturnNumber is expected to be integer"; error = 1; } break;
+          case attributes::NOR: if (type != INTSXP) { last_error = "NumberOfReturns is expected to be integer"; error = 1; } break;
+          case attributes::SDF: if (type != LGLSXP) { last_error = "ScanDirectionFlag is expected to be logical"; error = 1; } break;
+          case attributes::EoF: if (type != INTSXP) { last_error = "EdgeOfFlightline is expected to be logical"; error = 1; } break;
+          case attributes::CLASS: if (type != INTSXP) { last_error = "Classification is expected to be integer"; error = 1; } break;
+          case attributes::SYNT: if (type != LGLSXP) { last_error = "Synthetic is expected to be logical"; error = 1; } break;
+          case attributes::KEYP: if (type != LGLSXP) { last_error = "Keypoint is expected to be logical"; error = 1; } break;
+          case attributes::WITH: if (type != LGLSXP) { last_error = "Withheld is expected to be logical"; error = 1; } break;
+          case attributes::OVER: if (type != LGLSXP) { last_error = "Overlap is expected to be logical"; error = 1; } break;
+          case attributes::SA: if (type != REALSXP) { last_error = "ScanAngle is expected to be numeric"; error = 1; } break;
+          case attributes::UD: if (type != INTSXP) { last_error = "UserData is expected to be integer"; error = 1; } break;
+          case attributes::PSID: if (type != INTSXP) { last_error = "PointSourceID is expected to be integer"; error = 1; } break;
+          case attributes::R: if (type != INTSXP) { last_error = "R is expected to be integer"; error = 1; } break;
+          case attributes::G: if (type != INTSXP) { last_error = "G is expected to be integer"; error = 1; } break;
+          case attributes::B: if (type != INTSXP) { last_error = "B is expected to be integer"; error = 1; } break;
+          case attributes::NIR: if (type != INTSXP) { last_error = "NIR is expected to be integer"; error = 1; } break;
+          case attributes::CHAN: if (type != INTSXP) { last_error = "Channel is expected to be integer"; error = 1; } break;
           case attributes::BUFF: break;
           case -1: break;
           default: //exra bytes
@@ -377,7 +375,7 @@ bool LASRcallback::process(LAS*& las)
                 char buffer[64];
                 snprintf(buffer, sizeof(buffer), "%s is expected to be numeric", attr.name);
                 last_error = std::string(buffer);
-                error = true;
+                error = 1;
               }
             }
 
@@ -485,7 +483,7 @@ bool LASRcallback::process(LAS*& las)
 
   } // end omp critical
 
-  return !error;
+  return error == 0;
 }
 
 void LASRcallback::merge(const LASRalgorithm* other)

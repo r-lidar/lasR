@@ -8,5 +8,5 @@
 
 library(testthat)
 library(lasR)
-options(lasR.default_parallel_mode = "concurent-files")
+options(lasR.default_parallel_strategy = concurrent_files(2))
 test_check("lasR")
