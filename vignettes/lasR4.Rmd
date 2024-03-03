@@ -61,7 +61,7 @@ read_benchmark = function(file)
 
 plot_benchmark = function(lidr, lasr)
 {
-  vlidr = paste("lidR", packageVersion("lidR"))
+  vlidr = "lidR 4.1.1"
   vlasr = paste("lasR", packageVersion("lasR"))
   
   cpu_name = c("Intel Core i7-5600U", "Intel Core i7-1355U")
