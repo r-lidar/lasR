@@ -226,6 +226,38 @@ bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter
 }
 
 // Thread safe
+bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter, LAStransform* const lastransform) const
+{
+  LASpoint p;
+  p.init(point.quantizer, point.num_items, point.items, point.attributer);
+
+  addr.clear();
+
+  if (intervals.size() == 0) return false;
+
+  for (const auto& interval : intervals)
+  {
+    for (int i = interval.start ; i <= interval.end ; i++)
+    {
+      p.copy_from(buffer + i * p.total_point_size);
+
+      if (lasfilter && lasfilter->filter(&p)) continue;
+
+      if (point.get_withheld_flag() == 0)
+      {
+        if (lastransform) lastransform->transform(&p);
+
+        PointLAS pl(&p);
+        pl.FID = i;
+        addr.push_back(pl);
+      }
+    }
+  }
+
+  return addr.size() > 0;
+}
+
+// Thread safe
 bool LAS::get_point(int pos, PointLAS& pt, LASfilter* const lasfilter, LAStransform* const lastransform) const
 {
   LASpoint p;

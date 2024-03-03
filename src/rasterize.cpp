@@ -116,21 +116,30 @@ bool LASRrasterize::process(LAS*& las)
     cells.clear();
   }
 
-  // Loop through each group on which we want to apply the call
-  auto map = grouper.map;
-  for (const auto& pair : map)
+  // OpenMP cannot parallelize on a map. Create vectors to hold keys and references to corresponding vectors
+  size_t n = grouper.map.size();
+  std::vector<int> keys;
+  std::vector<std::vector<Interval>*> intervals;
+  keys.reserve(n);
+  intervals.reserve(n);
+  for (auto& pair : grouper.map)
   {
-    int cell = pair.first;
-    las->set_intervals_to_read(pair.second);
+    keys.push_back(pair.first);
+    intervals.push_back(&pair.second);
+  }
 
-    // Read the points of the query and populate the list
-    while (las->read_point())
-    {
-      if (lasfilter.filter(&las->point))
-        continue;
+  progress->reset();
+  progress->set_total(n);
+  progress->set_prefix("Rasterization");
 
-      metrics.add_point(&las->point);
-    }
+  #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
+  for (size_t i = 0; i < n; ++i)
+  {
+    std::vector<PointLAS> pts;
+    int cell = keys[i];
+    las->query(*intervals[i], pts, &lasfilter);
+
+    for (const auto& p : pts) metrics.add_point(p);
 
     for (int i = 0 ; i < metrics.size() ; i++)
     {
@@ -139,6 +148,15 @@ bool LASRrasterize::process(LAS*& las)
     }
 
     metrics.reset();
+
+    #pragma omp critical
+    {
+      (*progress)++;
+    }
+    if (omp_get_thread_num() == 0)
+    {
+      progress->show();
+    };
   }
 
   return true;

@@ -4,8 +4,7 @@
 #include <vector>
 #include <string>
 
-#include "laszip.hpp"
-#include "laspoint.hpp"
+#include "Shape.h"
 
 class LASRmetrics
 {
@@ -13,7 +12,7 @@ public:
   LASRmetrics();
   ~LASRmetrics();
   bool parse(const std::vector<std::string>& names);
-  void add_point(const LASpoint* p);
+  void add_point(const PointLAS& p);
   void reset();
   int size() const;
   float get_metric(int index);
