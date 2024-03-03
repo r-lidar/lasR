@@ -45,6 +45,64 @@ f = c("/home/jr/Documents/Ulaval/ALS data/BCTS/092L073113_BCTS_2.laz",
 "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073114_BCTS_2.laz", 
 "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073131_BCTS_2.laz", 
 "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073132_BCTS_2.laz")
+
+read_benchmarks = function(pkg, test)
+{
+  list(
+  read_benchmark(paste0(pkg, "_test_", test, "_jr-ThinkPad-T450s.data")),
+  read_benchmark(paste0(pkg, "_test_", test, "_FFGG-1009803.data")))
+}
+
+read_benchmark = function(file)
+{
+  f = system.file("extdata/benchmarks", file, package = "lasR")
+  read.table(f)$V1  
+}
+
+plot_benchmark = function(lidr, lasr)
+{
+  vlidr = "lidR 4.1.1"
+  vlasr = paste("lasR", packageVersion("lasR"))
+  
+  cpu_name = c("Intel Core i7-5600U", "Intel Core i7-1355U")
+  
+  mmax = 0
+  tmax = 0
+  for (i in seq_along(lidr))
+  {
+    m_lidr = lidr[[i]]
+    m_lasr = lasr[[i]]
+    t_lasr = (1:length(m_lasr)-1)*2/60
+    t_lidr = (1:length(m_lidr)-1)*2/60
+    tmax = max(t_lidr, t_lasr, tmax)
+    mmax = max(m_lidr, m_lasr, mmax)
+  }
+  mmax = mmax/1000
+  
+  par(mar = c(4,4,1,1), cex = 0.8)
+    
+  for (i in seq_along(lidr))
+  {
+    if (is.null(lidr[[i]])) next
+    m_lidr = lidr[[i]]
+    m_lasr = lasr[[i]]
+    t_lasr = (1:length(m_lasr)-1)*2/60
+    t_lidr = (1:length(m_lidr)-1)*2/60
+    
+    x = t_lidr
+    y = m_lidr/1000
+    plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = cpu_name[i])
+    polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
+    lines(x, y, col = "blue", lwd = 2)
+    
+    x = t_lasr
+    y = m_lasr/1000
+    polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+    lines(x, y, col = "red", lwd = 2)
+    
+    legend("topleft", legend = c(vlidr, vlasr), fill = c(col1, col2), border = NA)
+  }
+}
 ```
 
 ### lidR
@@ -63,65 +121,9 @@ processor(pipeline)
 ### Result
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
-#1
-
-f = system.file("extdata/benchmarks", "lasR_test_1_jr-ThinkPad-T450s.data", package = "lasR")
-m_lasr = read.table(f)$V1
-t_lasr = (1:length(m_lasr)-1)*2/60
-
-f = system.file("extdata/benchmarks", "lidR_test_1_jr-ThinkPad-T450s.data", package = "lasR")
-m_lidr =  read.table(f)$V1
-t_lidr = (1:length(m_lidr)-1)*2/60
-
-f = system.file("extdata/benchmarks", "lidR_test_1_FFGG-1009803.data", package = "lasR")
-m_lidr2 = read.table(f)$V1
-t_lidr2 = (1:length(m_lidr2)-1)*2/60
-
-f = system.file("extdata/benchmarks", "lasR_test_1_FFGG-1009803.data", package = "lasR")
-m_lasr2 = read.table(f)$V1
-t_lasr2 = (1:length(m_lasr2)-1)*2/60
-
-tmax = max(t_lidr, t_lasr, t_lidr2, t_lasr2)
-mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
-
-# Thinkpad
-
-x = t_lidr
-y = m_lidr/1000
-
-par(mar = c(4,4,1,1), cex = 0.8)
-
-plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U")
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
-lines(x, y, col = "blue", lwd = 2)
-
-x = t_lasr
-y = m_lasr/1000
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
-lines(x, y, col = "red", lwd = 2)
-
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
-
-# Latitude
-
-x = t_lidr2
-y = m_lidr2/1000
-
-plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-1355U")
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1 , border = NA)
-lines(x, y, col = "blue", lwd = 2)
-
-x = t_lasr2
-y = m_lasr2/1000
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
-lines(x, y, col = "red", lwd = 2)
-
-
-legend("topleft", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+m_lasr = read_benchmarks("lasR", 1)
+m_lidr = read_benchmarks("lidR", 1)
+plot_benchmark(m_lidr, m_lasr)
 ```
 
 ## Digital Terrain Model
@@ -150,64 +152,9 @@ processor(pipeline)
 ### Result
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
-# 2
-f = system.file("extdata/benchmarks", "lasR_test_2_jr-ThinkPad-T450s.data", package = "lasR")
-m_lasr = read.table(f)$V1
-t_lasr = (1:length(m_lasr)-1)*2/60
-
-f = system.file("extdata/benchmarks", "lidR_test_2_jr-ThinkPad-T450s.data", package = "lasR")
-m_lidr = read.table(f)$V1
-t_lidr = (1:length(m_lidr)-1)*2/60
-
-f = system.file("extdata/benchmarks", "lidR_test_2_FFGG-1009803.data", package = "lasR")
-m_lidr2 = read.table(f)$V1
-t_lidr2 = (1:length(m_lidr2)-1)*2/60
-
-f = system.file("extdata/benchmarks", "lasR_test_2_FFGG-1009803.data", package = "lasR")
-m_lasr2 = read.table(f)$V1
-t_lasr2 = (1:length(m_lasr2)-1)*2/60
-
-tmax = max(t_lidr, t_lasr, t_lidr2, t_lasr2)
-mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
-
-# Thinkpad
-
-x = t_lidr
-y = m_lidr/1000
-
-par(mar = c(4,4,1,1), cex = 0.8)
-
-plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U")
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
-lines(x, y, col = "blue", lwd = 2)
-
-x = t_lasr
-y = m_lasr/1000
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
-lines(x, y, col = "red", lwd = 2)
-
-legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
-
-# Latitude
-
-x = t_lidr2
-y = m_lidr2/1000
-
-plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-1355U")
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1 , border = NA)
-lines(x, y, col = "blue", lwd = 2)
-
-x = t_lasr2
-y = m_lasr2/1000
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
-lines(x, y, col = "red", lwd = 2)
-
-
-legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+m_lasr = read_benchmarks("lasR", 2)
+m_lidr = read_benchmarks("lidR", 2)
+plot_benchmark(m_lidr, m_lasr)
 ```
 
 ## Multiple raster
@@ -239,61 +186,9 @@ processor(pipeline)
 
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
-# 3
-f = system.file("extdata/benchmarks", "lasR_test_3_jr-ThinkPad-T450s.data", package = "lasR")
-m_lasr = read.table(f)$V1
-t_lasr = 1:length(m_lasr)*2/60
-
-f = system.file("extdata/benchmarks", "lidR_test_3_jr-ThinkPad-T450s.data", package = "lasR")
-m_lidr = read.table(f)$V1
-t_lidr = 1:length(m_lidr)*2/60
-
-f = system.file("extdata/benchmarks", "lidR_test_3_FFGG-1009803.data", package = "lasR")
-m_lidr2 = read.table(f)$V1
-t_lidr2 = 1:length(m_lidr2)*2/60
-
-f = system.file("extdata/benchmarks", "lasR_test_3_FFGG-1009803.data", package = "lasR")
-m_lasr2 = read.table(f)$V1
-t_lasr2 = 1:length(m_lasr2)*2/60
-
-tmax = max(t_lidr, t_lasr, t_lidr2, t_lasr2)
-mmax = max(m_lidr, m_lasr, m_lidr2, m_lasr2)/1000
-
-x = t_lidr
-y = m_lidr/1000
-
-par(mar = c(4,4,1,1), cex = 0.8)
-
-plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-5600U CPU")
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
-lines(x, y, col = "blue", lwd = 2)
-
-x = t_lasr
-y = m_lasr/1000
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
-lines(x, y, col = "red", lwd = 2)
-
-legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
-
-# Latitude
-
-x = t_lidr2
-y = m_lidr2/1000
-
-plot(x, y, type = "n",  xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-1355U")
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
-lines(x, y, col = "blue", lwd = 2)
-
-x = t_lasr2
-y = m_lasr2/1000
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
-lines(x, y, col = "red", lwd = 2)
-
-legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+m_lasr = read_benchmarks("lasR", 3)
+m_lidr = read_benchmarks("lidR", 3)
+plot_benchmark(m_lidr, m_lasr)
 ```
 
 
@@ -316,33 +211,7 @@ ans = processor(pipeline, progress = TRUE)
 ```
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
-f = system.file("extdata/benchmarks", "lasR_test_4_FFGG-1009803.data", package = "lasR")
-m_lasr = read.table(f)$V1
-
-f = system.file("extdata/benchmarks", "lidR_test_4_FFGG-1009803.data", package = "lasR")
-m_lidr = read.table(f)$V1
-
-t_lasr = (1:length(m_lasr)-1)*2/60
-t_lidr = (1:length(m_lidr)-1)*2/60
-
-col1 = rgb(0, 0.5, 1, alpha = 0.5)
-col2 = rgb(1, 0, 0, alpha = 0.5)
-
-x = t_lidr
-y = m_lidr/1000
-
-par(mar = c(4,4,1,1), cex = 0.8)
-
-plot(x, y, type = "n", ylim = c(0, max(y)), ylab = "Memory (GB)", xlab = "Time (min)", main = "Intel Core i7-1355U")
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
-lines(x, y, col = "blue", lwd = 2)
-
-x = t_lasr
-y = m_lasr/1000
-
-polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
-lines(x, y, col = "red", lwd = 2)
-
-legend("topright", legend = c("lidR 4.1.1", "lasR 0.2.0"), fill = c(col1, col2), border = NA)
+m_lasr = list(NULL, read_benchmark("lasR_test_4_FFGG-1009803.data"))
+m_lidr = list(NULL, read_benchmark("lidR_test_4_FFGG-1009803.data"))
+plot_benchmark(m_lidr, m_lasr)
 ```

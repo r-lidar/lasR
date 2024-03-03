@@ -54,7 +54,7 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #' @seealso
 #' \link{rasterize}
 #' @noRd
-aggregate = function(res, call, filter = "", ofile = tempfile(fileext = ".tif"), ...)
+aggregate = function(res, call, filter = "", ofile = temptif(), ...)
 {
   call <- substitute(call)
   env <- new.env(parent=parent.frame())
@@ -209,7 +209,7 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #'
 #' @export
 #' @md
-hulls = function(mesh = NULL, ofile = tempfile(fileext = ".gpkg"))
+hulls = function(mesh = NULL, ofile = tempgpkg())
 {
   if (!is.null(mesh))
   {
@@ -252,7 +252,7 @@ hulls = function(mesh = NULL, ofile = tempfile(fileext = ".gpkg"))
 #' ans <- processor(read + lmf)
 #' ans
 #' @export
-local_maximum = function(ws, min_height = 2, filter = "", ofile = tempfile(fileext = ".gpkg"), use_attribute = "Z")
+local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z")
 {
   ans <- list(algoname = "local_maximum", ws = ws, min_height = min_height, filter = filter, output = ofile, use_attribute = use_attribute)
   set_lasr_class(ans)
@@ -302,7 +302,7 @@ nothing = function(read = FALSE, stream = FALSE)
 #'
 #' #terra::plot(c(chm, sto), col = lidR::height.colors(25))
 #' @export
-pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_size = 3L, dil_radius = 0L, ofile = tempfile(fileext = ".tif"))
+pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_size = 3L, dil_radius = 0L, ofile = temptif())
 {
   if (!methods::is(raster, "LASRpipeline")) stop("rasterizator must be a 'LASRpipeline'")  # nocov
   if (length(raster) != 1L) stop("cannot input a complex pipeline")  # nocov
@@ -396,7 +396,7 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' terra::plot(res[[3]]/25)  # divide by 25 to get the density
 #' @export
 #' @md
-rasterize = function(res, operators = "max", filter = "", ofile = tempfile(fileext = ".tif"))
+rasterize = function(res, operators = "max", filter = "", ofile = temptif())
 {
   class <- tryCatch({class(operators)}, error = function(x) return("call"))
 
@@ -643,7 +643,7 @@ reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter
 #' u <- processor(reader + chm + lmx + tree)
 #'
 #' @md
-region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.55, max_cr = 20, ofile = tempfile(fileext = ".tif"))
+region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.55, max_cr = 20, ofile = temptif())
 {
   if (!methods::is(raster, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")  # nocov
   if (!methods::is(seeds, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")  # nocov
@@ -725,9 +725,9 @@ summarise = function(zwbin = 2, iwbin = 25, filter = "")
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader(f)
-#' tri1 <- triangulate(25, filter = keep_ground(), ofile = tempfile(fileext = ".gpkg"))
+#' tri1 <- triangulate(25, filter = keep_ground(), ofile = tempgpkg())
 #' filter <- "-keep_last -keep_random_fraction 0.1"
-#' tri2 <- triangulate(filter = filter, ofile = tempfile(fileext = ".gpkg"))
+#' tri2 <- triangulate(filter = filter, ofile = tempgpkg())
 #' pipeline <- read + tri1 + tri2
 #' ans <- processor(pipeline)
 #' #plot(ans[[1]])

@@ -11,7 +11,7 @@ region_growing(
   th_seed = 0.45,
   th_cr = 0.55,
   max_cr = 20,
-  ofile = tempfile(fileext = ".tif")
+  ofile = temptif()
 )
 }
 \arguments{

@@ -4,7 +4,7 @@
 \alias{hulls}
 \title{Contour of a point cloud}
 \usage{
-hulls(mesh = NULL, ofile = tempfile(fileext = ".gpkg"))
+hulls(mesh = NULL, ofile = tempgpkg())
 }
 \arguments{
 \item{mesh}{NULL or LASRalgorithm. A \code{triangulate} stage. If NULL take the bounding box of the

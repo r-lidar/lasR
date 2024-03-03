@@ -153,12 +153,12 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
   return true;
 }
 
-void LASRmetrics::add_point(const LASpoint* p)
+void LASRmetrics::add_point(const PointLAS& p)
 {
-  z.push_back(p->get_z());
-  i.push_back(p->get_intensity());
-  zsum += p->get_z();
-  isum += p->get_intensity();
+  z.push_back(p.z);
+  i.push_back(p.intensity);
+  zsum += p.z;
+  isum += p.intensity;
   n++;
 }
 

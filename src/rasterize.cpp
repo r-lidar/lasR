@@ -1,6 +1,7 @@
 #include "rasterize.h"
 #include "triangulate.h"
 #include "Grouper.h"
+#include "openmp.h"
 
 LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods)
 {
@@ -125,19 +126,34 @@ bool LASRrasterize::process(LAS*& las)
   progress->set_total(map.size());
   progress->show();
 
-  for (const auto& pair : map)
+  // OpenMP cannot parallelize on a map. Create vectors to hold keys and references to corresponding vectors
+  size_t n = grouper.map.size();
+  std::vector<int> keys;
+  std::vector<std::vector<Interval>*> intervals;
+  keys.reserve(n);
+  intervals.reserve(n);
+  for (auto& pair : grouper.map)
   {
-    int cell = pair.first;
-    las->set_intervals_to_read(pair.second);
+    keys.push_back(pair.first);
+    intervals.push_back(&pair.second);
+  }
 
-    // Read the points of the query and populate the list
-    while (las->read_point())
-    {
-      if (lasfilter.filter(&las->point))
-        continue;
+  progress->reset();
+  progress->set_total(n);
+  progress->set_prefix("Rasterization");
 
-      metrics.add_point(&las->point);
-    }
+  // The next for loop is at the level 2 of a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
+
+  #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
+  for (size_t i = 0; i < n; ++i)
+  {
+    std::vector<PointLAS> pts;
+    int cell = keys[i];
+    las->query(*intervals[i], pts, &lasfilter);
+
+    for (const auto& p : pts) metrics.add_point(p);
 
     for (int i = 0 ; i < metrics.size() ; i++)
     {
@@ -147,7 +163,15 @@ bool LASRrasterize::process(LAS*& las)
 
     metrics.reset();
 
-    (*progress)++;
+    if (main_thread)
+    {
+      #pragma omp critical
+      {
+        // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+        (*progress)++;
+        progress->show();
+      }
+    }
   }
 
   progress->done();

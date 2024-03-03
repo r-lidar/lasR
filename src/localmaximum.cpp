@@ -55,7 +55,7 @@ bool LASRlocalmaximum::process(LAS*& las)
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  // The next for loop is at the level a nested parallel region. Printing the progress bar
+  // The next for loop is at the level 2 of a nested parallel region. Printing the progress bar
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
 
