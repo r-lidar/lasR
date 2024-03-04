@@ -1,36 +1,14 @@
 #' Process the pipeline
 #'
 #' Process the pipeline. Every other functions of the package do nothing. This function must be
-#' called on a pipeline in order to actually process the point-cloud.
-#'
-#' @section Multithreading:
-#' There are 4 strategies of parallel processing:
-#' \describe{
-#' \item{sequential}{No parallelization at all: \link{sequential}}
-#' \item{concurent-points}{Point cloud files are process sequentially one by one. Inside the pipeline
-#' some stages are parallelized and are able to process multiple points simultaneously. Not all stages
-#' are natively parallelized: \link{concurrent_points}}
-#' \item{concurent-files}{Files are process in parallel. Several files are loaded in memory
-#' and processed simultaneously. The entire pipeline is parallelized but inside each stage
-#' the points are process sequentially: \link{concurrent_files}}
-#' \item{nested}{**Not yet supported**. Files are process in parallel. Several files are loaded in memory
-#' and processed simultaneously and inside some stages the points are process in parallel.}
-#' }
-#' `concurrent-files` is likely the most desirable and fastest option on modern computers with
-#' fast drive and many cores. However it uses more memory because it loads multiples files.
-#' Also some stages do not support this type a parallelism because they call R code and R
-#' is not multithreaded. For example a pipeline that implies the \link{callback()} stage
-#' does not support `concurrent-files` multithreading because some R code is involved. The default
-#' is `concurrent-points` and can be changed globally using
-#' `options("lasR.default_parallel_strategy") = concurrent_files(4)`
+#' called on a pipeline in order to actually process the point-cloud. To process in parallel using
+#' multiple cores, refer to the \link{multithreading} page.
 #'
 #' @param pipeline a LASRpipeline. A serie of stages called in order (see examples)
-#' @param ncores integer. Number of cores to use. Use one of \link{sequential} \link{concurrent_points}
-#' \link{conccurent_files} rather than a raw integer to select a parallelization strategy (see section Multithreading).
-#' If a raw number is provided the default is `concurrent-points`
 #' @param progress boolean. Displays a progress bar.
 #' @param ... unused
 #'
+#' @seealso [multithreading]
 #' @examples
 #' \dontrun{
 #' f <- paste0(system.file(package="lasR"), "/extdata/bcts/")
@@ -42,25 +20,30 @@
 #' lmf <- local_maximum(5)
 #' met <- rasterize(2, "imean")
 #' pipeline <- read + tri + dtm + lmf + met
-#' ans <- processor(pipeline, ncores = concurrent_files(4), progress = T)
-#' }
-#' @seealso [ncores()] [half_cores()] [sequential()] [concurrent_points()] [concurrent_files()]
 #'
+#' set_lasr_strategy(concurrent_files(4))
+#' ans <- processor(pipeline, progress = T)
+#' }
 #' @export
 #' @md
-processor = function(pipeline, ncores = getOption("lasR.default_parallel_strategy"), progress = FALSE, ...)
+processor = function(pipeline, progress = FALSE, ...)
 {
   dots <- list(...)
   verbose <- isTRUE(dots$verbose)
   noread <- isTRUE(dots$noread)
 
-  modes <- c("sequential", "concurrent-points", "concurrent-files")
-  mode <- attr(ncores, "strategy")
-  if (is.null(mode)) ncores = concurrent_points(ncores)
-  mode <- match.arg(mode, modes)
-  mode <- match(mode, modes)
+  if (!is.null(dots$ncores))
+  {
+    warning("Argument ncores is deprecated. Use 'set_lasr_strategy()' instead")
+    set_lasr_strategy(concurrent_points(dots$ncores))
+  }
+  else
+  {
+    ncores <- LASRTHREADS$ncores
+    strategy <- LASRTHREADS$strategy
+  }
 
-  ans <- .Call(`C_process`, pipeline, progress, ncores, mode, verbose)
+  ans <- .Call(`C_process`, pipeline, progress, ncores, strategy, verbose)
 
   if (inherits(ans, "error"))
   {

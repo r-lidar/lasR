@@ -16,23 +16,7 @@
 
 .onLoad <- function(libname, pkgname)
 {
-  #installed <- row.names(installed.packages())
-  #nothing <- function(x) { return(x)}
-  #lasR.read_vector = if ("sf" %in% installed) sf::read_sf else nothing
-  #lasR.read_raster = if ("terra" %in% installed) terra::rast else nothing
-
-  op <- options()
-  op.lidR <- list(
-    lasR.default_parallel_strategy = concurrent_points()
-    #lasR.read_vector = lasR.read_vector,
-    #lasR.read_raster = lasR.read_raster,
-    #lasR.read_las = nothing
-    )
-
-  toset <- !(names(op.lidR) %in% names(op))
-  if (any(toset)) options(op.lidR[toset])
-
-  invisible()
+  set_lasr_strategy(concurrent_points())
 }
 
 .onUnload <- function(libpath)

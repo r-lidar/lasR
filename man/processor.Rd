@@ -4,19 +4,10 @@
 \alias{processor}
 \title{Process the pipeline}
 \usage{
-processor(
-  pipeline,
-  ncores = getOption("lasR.default_parallel_strategy"),
-  progress = FALSE,
-  ...
-)
+processor(pipeline, progress = FALSE, ...)
 }
 \arguments{
 \item{pipeline}{a LASRpipeline. A serie of stages called in order (see examples)}
-
-\item{ncores}{integer. Number of cores to use. Use one of \link{sequential} \link{concurrent_points}
-\link{conccurent_files} rather than a raw integer to select a parallelization strategy (see section Multithreading).
-If a raw number is provided the default is \code{concurrent-points}}
 
 \item{progress}{boolean. Displays a progress bar.}
 
@@ -24,31 +15,9 @@ If a raw number is provided the default is \code{concurrent-points}}
 }
 \description{
 Process the pipeline. Every other functions of the package do nothing. This function must be
-called on a pipeline in order to actually process the point-cloud.
+called on a pipeline in order to actually process the point-cloud. To process in parallel using
+multiple cores, refer to the \link{multithreading} page.
 }
-\section{Multithreading}{
-
-There are 4 strategies of parallel processing:
-\describe{
-\item{sequential}{No parallelization at all: \link{sequential}}
-\item{concurent-points}{Point cloud files are process sequentially one by one. Inside the pipeline
-some stages are parallelized and are able to process multiple points simultaneously. Not all stages
-are natively parallelized: \link{concurrent_points}}
-\item{concurent-files}{Files are process in parallel. Several files are loaded in memory
-and processed simultaneously. The entire pipeline is parallelized but inside each stage
-the points are process sequentially: \link{concurrent_files}}
-\item{nested}{\strong{Not yet supported}. Files are process in parallel. Several files are loaded in memory
-and processed simultaneously and inside some stages the points are process in parallel.}
-}
-\code{concurrent-files} is likely the most desirable and fastest option on modern computers with
-fast drive and many cores. However it uses more memory because it loads multiples files.
-Also some stages do not support this type a parallelism because they call R code and R
-is not multithreaded. For example a pipeline that implies the \link{callback()} stage
-does not support \code{concurrent-files} multithreading because some R code is involved. The default
-is \code{concurrent-points} and can be changed globally using
-\code{options("lasR.default_parallel_strategy") = concurrent_files(4)}
-}
-
 \examples{
 \dontrun{
 f <- paste0(system.file(package="lasR"), "/extdata/bcts/")
@@ -60,9 +29,11 @@ dtm <- rasterize(5, tri)
 lmf <- local_maximum(5)
 met <- rasterize(2, "imean")
 pipeline <- read + tri + dtm + lmf + met
-ans <- processor(pipeline, ncores = concurrent_files(4), progress = T)
+
+set_lasr_strategy(concurrent_files(4))
+ans <- processor(pipeline, progress = T)
 }
 }
 \seealso{
-\code{\link[=ncores]{ncores()}} \code{\link[=half_cores]{half_cores()}} \code{\link[=sequential]{sequential()}} \code{\link[=concurrent_points]{concurrent_points()}} \code{\link[=concurrent_files]{concurrent_files()}}
+\link{multithreading}
 }

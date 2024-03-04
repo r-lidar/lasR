@@ -42,6 +42,11 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
   int ncpu_inner_loops = 1; // concurrent points
   if (mode == CONCURRENTPOINTS) ncpu_inner_loops = ncpu;
   if (mode == CONCURRENTFILES) ncpu_outer_loop = ncpu;
+  if (mode == NESTED)
+  {
+    ncpu_outer_loop = ncpu;
+    ncpu_inner_loops = INTEGER(sexpncpu)[1];
+  }
   if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
 
   uintptr_t original_CStackLimit = R_CStackLimit;
@@ -64,11 +69,15 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
     int n = lascatalog->get_number_chunks();
 
     // Check some multi-threading stuff
+    if (!is_parallelized && ncpu_inner_loops > 1)
+    {
+      ncpu_inner_loops = 1;
+    }
     if (!is_parallelizable && ncpu_outer_loop > 1)
     {
       ncpu_inner_loops = ncpu_outer_loop;
       ncpu_outer_loop = 1;
-      warning("This pipeline is not parallizable using 'conccurent-files' strategy.\n");
+      warning("This pipeline is not parallizable using 'concurrent-files' strategy.\n");
     }
     if (ncpu_outer_loop > n) ncpu_outer_loop = n;
     if (pipeline.use_rcapi() && ncpu_outer_loop > 1)
