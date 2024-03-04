@@ -15,7 +15,8 @@ License: GPL-3
 Depends: R (>= 3.6.0)
 Imports: 
     methods,
-    utils
+    utils,
+    stats
 Suggests: 
     knitr,
     rmarkdown,

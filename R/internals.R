@@ -15,7 +15,7 @@ eval_number_of_metrics = function(call, env = globalenv())
       }
     }
 
-    data = matrix(runif(10*nsymbols), nrow = 10, ncol = nsymbols)
+    data = matrix(stats::runif(10*nsymbols), nrow = 10, ncol = nsymbols)
     data = as.data.frame(data)
     names(data) <- csymbols
     res = eval(call, envir = data, enclos = env)

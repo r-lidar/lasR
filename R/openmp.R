@@ -1,27 +1,27 @@
 #' Parallel processing tools
 #'
-#' `set_lasr_strategy()` globally changes the strategy used to process the point-clouds. `ncores()`
-#' returns the number of available CPU cores that can be utilized. `half_cores()`
-#' returns half this number. `sequential()`, `concurrent_files()` and `concurrent_points()`
-#' are functions to assign a parallelization strategy to \link{processor} (see Details)
+#' `set_lasr_strategy()` globally changes the strategy used to process the point clouds.
+#' `sequential()`, `concurrent_files()`, `concurrent_points()`, and `nested()` are functions to assign
+#' a parallelization strategy (see Details).
 #'
 #' There are 4 strategies of parallel processing:
 #' \describe{
 #' \item{sequential}{No parallelization at all: `sequential()`}
-#' \item{concurent-points}{Point cloud files are process sequentially one by one. Inside the pipeline
+#' \item{concurrent-points}{Point cloud files are processed sequentially one by one. Inside the pipeline,
 #' some stages are parallelized and are able to process multiple points simultaneously. Not all stages
-#' are natively parallelized: `concurrent_points(4)` }
-#' \item{concurent-files}{Files are process in parallel. Several files are loaded in memory
-#' and processed simultaneously. The entire pipeline is parallelized but inside each stage
-#' the points are process sequentially: `concurrent_files(4)`}
-#' \item{nested}{Files are process in parallel. Several files are loaded in memory
-#' and processed simultaneously and inside some stages the points are process in parallel: `nested(4,2)` }
+#' are natively parallelized. E.g. `concurrent_points(4)`}
+#' \item{concurrent-files}{Files are processed in parallel. Several files are loaded in memory
+#' and processed simultaneously. The entire pipeline is parallelized, but inside each stage,
+#' the points are processed sequentially. E.g. `concurrent_files(4)`}
+#' \item{nested}{Files are processed in parallel. Several files are loaded in memory
+#' and processed simultaneously, and inside some stages, the points are processed in parallel. E.g. `nested(4,2)`}
 #' }
-#' `concurrent-files` is likely the most desirable and fastest option on modern computers with
-#' fast drive and many cores. However it uses more memory because it loads multiples files. The default
-#' is `concurrent-points` and can be changed globally using e.g. `set_lasr_strategy(concurrent_files(4))`
+#' `concurrent-files` is likely the most desirable and fastest option. However, it uses more memory
+#' because it loads multiple files. The default is `concurrent_points(half_cores())` and can be changed
+#' globally using e.g. `set_lasr_strategy(concurrent_files(4))`
+
 #'
-#' @param strategy An object return by one of `sequential()`, `concurrent_points()`, `concurrent_files` or
+#' @param strategy An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files` or
 #' `nested()`.
 #' @param ncores integer. Number of cores.
 #' @param ncores2 integer.  Number of cores. For `nested` strategy `ncores` is the number of concurrent

@@ -29,7 +29,7 @@ concurrent_points(ncores = half_cores())
 nested(ncores = ncores()/4L, ncores2 = 2L)
 }
 \arguments{
-\item{strategy}{An object return by one of \code{sequential()}, \code{concurrent_points()}, \code{concurrent_files} or
+\item{strategy}{An object returned by one of \code{sequential()}, \code{concurrent_points()}, \code{concurrent_files} or
 \code{nested()}.}
 
 \item{ncores}{integer. Number of cores.}
@@ -38,27 +38,26 @@ nested(ncores = ncores()/4L, ncores2 = 2L)
 files and \code{ncores2} is the number of concurrent points.}
 }
 \description{
-\code{set_lasr_strategy()} globally changes the strategy used to process the point-clouds. \code{ncores()}
-returns the number of available CPU cores that can be utilized. \code{half_cores()}
-returns half this number. \code{sequential()}, \code{concurrent_files()} and \code{concurrent_points()}
-are functions to assign a parallelization strategy to \link{processor} (see Details)
+\code{set_lasr_strategy()} globally changes the strategy used to process the point clouds.
+\code{sequential()}, \code{concurrent_files()}, \code{concurrent_points()}, and \code{nested()} are functions to assign
+a parallelization strategy (see Details).
 }
 \details{
 There are 4 strategies of parallel processing:
 \describe{
 \item{sequential}{No parallelization at all: \code{sequential()}}
-\item{concurent-points}{Point cloud files are process sequentially one by one. Inside the pipeline
+\item{concurrent-points}{Point cloud files are processed sequentially one by one. Inside the pipeline,
 some stages are parallelized and are able to process multiple points simultaneously. Not all stages
-are natively parallelized: \code{concurrent_points(4)} }
-\item{concurent-files}{Files are process in parallel. Several files are loaded in memory
-and processed simultaneously. The entire pipeline is parallelized but inside each stage
-the points are process sequentially: \code{concurrent_files(4)}}
-\item{nested}{Files are process in parallel. Several files are loaded in memory
-and processed simultaneously and inside some stages the points are process in parallel: \code{nested(4,2)} }
+are natively parallelized. E.g. \code{concurrent_points(4)}}
+\item{concurrent-files}{Files are processed in parallel. Several files are loaded in memory
+and processed simultaneously. The entire pipeline is parallelized, but inside each stage,
+the points are processed sequentially. E.g. \code{concurrent_files(4)}}
+\item{nested}{Files are processed in parallel. Several files are loaded in memory
+and processed simultaneously, and inside some stages, the points are processed in parallel. E.g. \code{nested(4,2)}}
 }
-\code{concurrent-files} is likely the most desirable and fastest option on modern computers with
-fast drive and many cores. However it uses more memory because it loads multiples files. The default
-is \code{concurrent-points} and can be changed globally using e.g. \code{set_lasr_strategy(concurrent_files(4))}
+\code{concurrent-files} is likely the most desirable and fastest option. However, it uses more memory
+because it loads multiple files. The default is \code{concurrent_points(half_cores())} and can be changed
+globally using e.g. \code{set_lasr_strategy(concurrent_files(4))}
 }
 \examples{
 \dontrun{
