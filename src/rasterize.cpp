@@ -146,8 +146,8 @@ bool LASRrasterize::process(LAS*& las)
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
 
-  // Set value is not thread safe. It initializes the memory if needed. By assigning a NA value
-  // here we ensure that next calls are thread safe without using critical section.
+  // Protect against data race. The first call initialize the memory and is not thread safe
+  // Next calls, all touch a different cell and are thus thread safe
   raster.set_value(0, NA_F32_RASTER, 1);
 
   #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)

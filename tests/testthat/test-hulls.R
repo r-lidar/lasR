@@ -1,4 +1,4 @@
-test_that("hulls works",
+test_that("hulls works with multiple files",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
   read = reader(f)
