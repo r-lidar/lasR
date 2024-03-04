@@ -254,10 +254,11 @@ bool Vector::write(const std::vector<PolygonXY>& poly)
     polygon.addRing(&ring);
   }
 
-  if (!polygon.IsValid())
+  // Commented to fix #temporarily
+  /*if (!polygon.IsValid())
   {
     eprint("WARNING: invalid polygon\n");
-  }
+  }*/
 
   OGRFeature* feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
   feature->SetGeometry(&polygon);
