@@ -24,7 +24,7 @@ test_that("rasterize non streamed works",
   pipeline = read + met
   u = processor(pipeline)
 
-  terra::plot(u, col = lidR::height.colors(25))
+  #terra::plot(u, col = lidR::height.colors(25))
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(names(u),  c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
