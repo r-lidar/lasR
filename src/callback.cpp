@@ -489,7 +489,15 @@ bool LASRcallback::process(LAS*& las)
 void LASRcallback::merge(const LASRalgorithm* other)
 {
   const LASRcallback* o = dynamic_cast<const LASRcallback*>(other);
-  ans = o->ans;
+
+  #pragma omp critical (RAPI)
+  {
+    int nnew = Rf_length(o->ans);
+    int nmain = Rf_length(this->ans);
+    this->ans = Rf_lengthgets(this->ans, nmain+nnew);
+    for (int i = 0 ; i < nnew ; i++)
+      SET_VECTOR_ELT(this->ans, nmain+i, VECTOR_ELT(o->ans, i));
+  }
 }
 
 SEXP LASRcallback::to_R()
