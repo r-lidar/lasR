@@ -1,0 +1,1 @@
+set_lasr_strategy(concurrent_files(2))

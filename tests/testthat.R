@@ -8,5 +8,4 @@
 
 library(testthat)
 library(lasR)
-set_lasr_strategy(concurrent_files(2))
 test_check("lasR")
