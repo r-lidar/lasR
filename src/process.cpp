@@ -70,17 +70,14 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpmode, 
     int n = lascatalog->get_number_chunks();
 
     // Check some multi-threading stuff
-    if (!is_parallelized && ncpu_inner_loops > 1)
-    {
-      ncpu_inner_loops = 1;
-    }
+    if (ncpu_outer_loop > n) ncpu_outer_loop = n;
+    if (!is_parallelized && ncpu_inner_loops > 1) ncpu_inner_loops = 1;
     if (!is_parallelizable && ncpu_outer_loop > 1)
     {
       ncpu_inner_loops = ncpu_outer_loop;
       ncpu_outer_loop = 1;
       warning("This pipeline is not parallizable using 'concurrent-files' strategy.\n");
     }
-    if (ncpu_outer_loop > n) ncpu_outer_loop = n;
     if (pipeline.use_rcapi() && ncpu_outer_loop > 1)
     {
       // The R's C stack is now unprotected — the work with R C API becomes more dangerous
