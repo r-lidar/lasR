@@ -48,15 +48,16 @@ bool LASRlocalmaximum::process(LAS*& las)
 
   // Local maximum algorithm
   double hws = ws/2;
-  std::vector<U8> status(las->npoints);
+  std::vector<char> status(las->npoints);
   std::fill(status.begin(), status.end(), UKN);
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  PointLAS pp;
-  #pragma omp parallel for num_threads(ncpu) private(pp)
-  for (auto i = 0 ; i < las->npoints ; ++i)
+  //#pragma omp parallel for num_threads(ncpu)
+  for (auto i = 0 ; i < las->npoints ; i++)
   {
+    PointLAS pp;
+
     #pragma omp critical
     {
       (*progress)++;
@@ -66,37 +67,32 @@ bool LASRlocalmaximum::process(LAS*& las)
       progress->show();
     }
 
-    if (!las->get_point(i, pp, &lasfilter, lastransform)) { status[i] = NLM; continue; } // The point was either filtered or withhelded
-    if (pp.z < min_height) { status[i] = NLM; continue; }
-    if (status[i] == NLM) { continue; }
-
-    status[i] = LMX;
+    if (!las->get_point(i, pp, &lasfilter, lastransform)) { status[i] = NLM; } // The point was either filtered or withhelded
+    if (pp.z < min_height) { status[i] = NLM; }
+    if (status[i] == NLM) continue;
 
     Circle windows(pp.x, pp.y, hws);
     std::vector<PointLAS> points;
     las->query(&windows, points, &lasfilter, lastransform);
 
-    // It seems there is a data race here but no because in the worst case the update status[pt.FID]
-    // is non-synchronize with other iterations and it will simply prevent skipping one computation early
+    // It seems there is a data race here but no. In the worst case updating status[pt.FID]
+    // is non-synchronized with other iterations and it will simply prevent skipping one computation early
     for (auto& pt : points)
     {
-      if (pt.z == pp.z && pt.x!= pp.x && pt.y != pp.y && status[pt.FID] == LMX) status[i] = NLM; // Handle duplicated height for different points
+      if (pt.z == pp.z && pt.x != pp.x && pt.y != pp.y && status[pt.FID] == LMX) status[i] = NLM; // Handle duplicated height for different points
       if (pt.z > pp.z) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
-      if (pt.z < pp.z) status[pt.FID] = NLM; // If the point is below the central we can pretag it as not a LM
+      if (pt.z < pp.z) status[pt.FID] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
     }
 
-    #pragma omp critical
+    if (status[i] == UKN) status[i] = LMX; // If the status is still unknown it is a local max
+
+    if (status[i] == LMX)
     {
-      if (status[i] == LMX)
+      #pragma omp critical
       {
         // If the point is in the buffer we must guarantee it will be assigned the same ID the next
         // time we meet it. FID is a 64 bit geographic ID that is guaranteed to be unique. But we need
         // a 32 bit ID so we have a correspondence table.
-        /*if (pp.x < xmin || pp.y < ymin || pp.x > xmax || pp.y > ymax)
-         {
-
-         }*/
-
         uint64_t FID = ((uint64_t)las->point.quantizer->get_X(pp.x) << 32) | (uint64_t)(las->point.quantizer->get_Y(pp.y));
         auto it = unicity_table.find(FID);
         if (it == unicity_table.end())
