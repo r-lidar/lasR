@@ -132,6 +132,10 @@ bool LASRrasterize::process(LAS*& las)
   progress->set_total(n);
   progress->set_prefix("Rasterization");
 
+  // Protect against data race. The first call initialize the memory and is not thread safe
+  // Next calls, all touch a different cell and are thus thread safe
+  raster.set_value(0, NA_F32_RASTER, 1);
+
   #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
   for (size_t i = 0; i < n; ++i)
   {
