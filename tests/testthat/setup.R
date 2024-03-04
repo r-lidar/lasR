@@ -1,1 +1,1 @@
-set_lasr_strategy(concurrent_files(2))
+set_parallel_strategy(concurrent_files(2))

@@ -1,6 +1,6 @@
 #' Parallel processing tools
 #'
-#' `set_lasr_strategy()` globally changes the strategy used to process the point clouds.
+#' `set_parallel_strategy()` globally changes the strategy used to process the point clouds.
 #' `sequential()`, `concurrent_files()`, `concurrent_points()`, and `nested()` are functions to assign
 #' a parallelization strategy (see Details).
 #'
@@ -18,7 +18,7 @@
 #' }
 #' `concurrent-files` is likely the most desirable and fastest option. However, it uses more memory
 #' because it loads multiple files. The default is `concurrent_points(half_cores())` and can be changed
-#' globally using e.g. `set_lasr_strategy(concurrent_files(4))`
+#' globally using e.g. `set_parallel_strategy(concurrent_files(4))`
 
 #'
 #' @param strategy An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files` or
@@ -39,14 +39,14 @@
 #' met <- rasterize(2, "imean")
 #' pipeline <- read + met
 #'
-#' set_lasr_strategy(concurrent_files(4))
+#' set_parallel_strategy(concurrent_files(4))
 #' ans <- processor(pipeline, progress = TRUE)
 #' }
 NULL
 
 #' @rdname multithreading
 #' @export
-set_lasr_strategy <- function(strategy)
+set_parallel_strategy <- function(strategy)
 {
   ncores <- as.integer(strategy)
   modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
@@ -60,7 +60,7 @@ set_lasr_strategy <- function(strategy)
 
 #' @rdname multithreading
 #' @export
-get_lasr_strategy = function()
+get_parallel_strategy = function()
 {
   modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
   ncores <- LASRTHREADS$ncores

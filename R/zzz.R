@@ -16,7 +16,7 @@
 
 .onLoad <- function(libname, pkgname)
 {
-  set_lasr_strategy(concurrent_points())
+  set_parallel_strategy(concurrent_points())
 }
 
 .onUnload <- function(libpath)

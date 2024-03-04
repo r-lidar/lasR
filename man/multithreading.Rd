@@ -2,8 +2,8 @@
 % Please edit documentation in R/openmp.R
 \name{multithreading}
 \alias{multithreading}
-\alias{set_lasr_strategy}
-\alias{get_lasr_strategy}
+\alias{set_parallel_strategy}
+\alias{get_parallel_strategy}
 \alias{ncores}
 \alias{half_cores}
 \alias{sequential}
@@ -12,9 +12,9 @@
 \alias{nested}
 \title{Parallel processing tools}
 \usage{
-set_lasr_strategy(strategy)
+set_parallel_strategy(strategy)
 
-get_lasr_strategy()
+get_parallel_strategy()
 
 ncores()
 
@@ -38,7 +38,7 @@ nested(ncores = ncores()/4L, ncores2 = 2L)
 files and \code{ncores2} is the number of concurrent points.}
 }
 \description{
-\code{set_lasr_strategy()} globally changes the strategy used to process the point clouds.
+\code{set_parallel_strategy()} globally changes the strategy used to process the point clouds.
 \code{sequential()}, \code{concurrent_files()}, \code{concurrent_points()}, and \code{nested()} are functions to assign
 a parallelization strategy (see Details).
 }
@@ -57,7 +57,7 @@ and processed simultaneously, and inside some stages, the points are processed i
 }
 \code{concurrent-files} is likely the most desirable and fastest option. However, it uses more memory
 because it loads multiple files. The default is \code{concurrent_points(half_cores())} and can be changed
-globally using e.g. \code{set_lasr_strategy(concurrent_files(4))}
+globally using e.g. \code{set_parallel_strategy(concurrent_files(4))}
 }
 \examples{
 \dontrun{
@@ -68,7 +68,7 @@ read <- reader(f)
 met <- rasterize(2, "imean")
 pipeline <- read + met
 
-set_lasr_strategy(concurrent_files(4))
+set_parallel_strategy(concurrent_files(4))
 ans <- processor(pipeline, progress = TRUE)
 }
 }
