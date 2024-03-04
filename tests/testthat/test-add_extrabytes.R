@@ -9,7 +9,7 @@ test_that("callback cannot add attribute without EB",
   expect_warning(processor(pipeline), "non supported column 'HAG'")
 })
 
-test_that("callback can add attribute witht EB",
+test_that("callback can add attribute with EB",
 {
   pipeline = reader(f) + add_extrabytes("double", "HAG", "test") + callback(fun)
   expect_warning(processor(pipeline), NA)
@@ -106,4 +106,5 @@ test_that("callback and add_attribute work with EB of any type",
   expect_true(is.integer(data$attr6))
   expect_true(is.double(data$attr7))
 })
+
 

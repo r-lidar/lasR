@@ -10,9 +10,9 @@ test_that("rasterize streamed works",
   expect_s4_class(u, "SpatRaster")
   expect_equal(names(u), c("min", "max", "count"))
   expect_equal(dim(u), c(58, 58, 3))
-  expect_equal(mean(u[[1]][], na.rm = T), 804.996, tolerance = 0.001)
-  expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 0.001)
-  expect_equal(mean(u[[3]][], na.rm = T), 24.129, tolerance = 0.001)
+  expect_equal(mean(u[[1]][], na.rm = T), 804.9969, tolerance = 1e-6)
+  expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 1e-6)
+  expect_equal(mean(u[[3]][], na.rm = T), 24.12985, tolerance = 1e-6)
 })
 
 test_that("rasterize non streamed works",
@@ -24,14 +24,16 @@ test_that("rasterize non streamed works",
   pipeline = read + met
   u = processor(pipeline)
 
+  terra::plot(u, col = lidR::height.colors(25))
+
   expect_s4_class(u, "SpatRaster")
   expect_equal(names(u),  c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
   expect_equal(dim(u), c(58, 58, 15))
-  expect_equal(mean(u[[1]][], na.rm = T), 24.129, tolerance = 0.001) # count
-  expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 0.001) # zmax
-  expect_equal(mean(u[[3]][], na.rm = T), 804.996, tolerance = 0.001) # zmin
-  expect_equal(mean(u[[9]][], na.rm = T), 1380.56, tolerance = 0.001) # imax
-  expect_equal(mean(u[[12]][], na.rm = T), 942.822, tolerance = 0.001) # imedian
+  expect_equal(mean(u[[1]][], na.rm = T), 24.12985, tolerance = 1e-6) # count
+  expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 1e-6) # zmax
+  expect_equal(mean(u[[3]][], na.rm = T), 804.9969, tolerance = 1e-6) # zmin
+  expect_equal(mean(u[[9]][], na.rm = T), 1380.564, tolerance = 1e-6) # imax
+  expect_equal(mean(u[[12]][], na.rm = T), 942.822, tolerance = 1e-6) # imedian
   expect_equal(u[[5]][], u[[8]][], ignore_attr = TRUE) # median = percentile 50
   expect_equal(u[[9]][], u[[15]][], ignore_attr = TRUE) # max = percentile 100
 })
@@ -47,7 +49,7 @@ test_that("rasterize expression works",
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(58, 58, 1))
-  expect_equal(mean(u[], na.rm = T), 904.078, tolerance = 0.001)
+  expect_equal(mean(u[], na.rm = T), 904.078, tolerance = 1e-6)
 })
 
 test_that("rasterize expression works multiband",
@@ -76,7 +78,7 @@ test_that("rasterize expression works with extrabytes",
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(2, 5, 1))
-  expect_equal(mean(u[], na.rm = T), 9.17, tolerance = 0.001)
+  expect_equal(mean(u[], na.rm = T), 9.1736, tolerance = 1e-5)
 })
 
 
@@ -121,7 +123,7 @@ test_that("rasterize triangulation works with 1 file",
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(58, 58, 1))
-  expect_equal(mean(u[], na.rm = T), 805.44, tolerance = 0.01)
+  expect_equal(mean(u[], na.rm = T), 805.4077, tolerance = 1e-6)
   expect_equal(sum(is.na(u[])), 713)
   #terra::plot(u[[2]])
 })
@@ -143,7 +145,7 @@ test_that("rasterize triangulation works with 4 files",
   expect_equal(dim(dtm), c(213, 42, 1))
 
   payload = u[]
-  expect_equal(mean(payload, na.rm = TRUE), 341.41, tolerance = 0.0001)
+  expect_equal(mean(payload, na.rm = TRUE), 341.4066, tolerance = 1e-6)
   expect_equal(sum(is.na(payload)), 876)
   #terra::plot(u)
 })

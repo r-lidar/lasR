@@ -22,10 +22,21 @@ test_that("growing region works with multiple files",
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
   f = f[1:2]
 
-  reader = reader(f, filter = "-keep_first")
+  reader = reader(f, filter = keep_first())
   chm = rasterize(1, "max")
   lmx = local_maximum(5)
   tree = region_growing(chm, lmx, max_cr = 10)
 
-  expect_error(processor(reader + chm + lmx + tree), NA)
+  u  = processor(reader + chm + lmx + tree)
+
+  #terra::plot(u$rasterize, col = lidR::height.colors(25))
+  #plot(u$local_maximum$geom, add = TRUE, cex = 0.1, pch = 19)
+  #terra::plot(u$region_growing, col = lidR::random.colors(1000))
+  #plot(u$local_maximum$geom, add = TRUE, cex = 0.1, pch = 19)
+
+  expect_equal(range(u$region_growing[], na.rm = TRUE), c(0,2423))
+  expect_equal(length(unique(u$region_growing[])), 2411L)
+  expect_equal(nrow(u$local_maximum), 2412L)
+  expect_equal(sum(is.na(u$rasterize[])), 5367L)
+  expect_equal(sum(is.na(u$region_growing[])), 5369L)
 })
