@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -127,7 +127,7 @@ file)</li>
 <h3 id="lidr">lidR<a class="anchor" aria-label="anchor" href="#lidr"></a>
 </h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">chm</span> <span class="op">=</span> <span class="fu">rasterize_canopy</span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu">p2r</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">chm</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/rasterize.html" class="external-link">rasterize_canopy</a></span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/dsm_point2raster.html" class="external-link">p2r</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="lasr">lasR<a class="anchor" aria-label="anchor" href="#lasr"></a>
@@ -149,7 +149,7 @@ file)</li>
 <h3 id="lidr-1">lidR<a class="anchor" aria-label="anchor" href="#lidr-1"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dtm</span> <span class="op">=</span> <span class="fu">rasterize_terrain</span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu">tin</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">dtm</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/rasterize.html" class="external-link">rasterize_terrain</a></span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/dtm_tin.html" class="external-link">tin</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="lasr-1">lasR<a class="anchor" aria-label="anchor" href="#lasr-1"></a>
@@ -178,10 +178,10 @@ in more efficient memory management.</p>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">custom_function</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">z</span>,<span class="va">i</span><span class="op">)</span> <span class="op">{</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>avgz <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span>, avgi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">i</span><span class="op">)</span><span class="op">)</span> <span class="op">}</span></span>
-<span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">readLAScatalog</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
-<span><span class="va">chm</span> <span class="op">=</span> <span class="fu">rasterize_canopy</span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu">p2r</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">met</span> <span class="op">=</span> <span class="fu">pixel_metrics</span><span class="op">(</span><span class="va">ctg</span>, <span class="op">~</span><span class="fu">custom_function</span><span class="op">(</span><span class="va">Z</span>, <span class="va">Intensity</span><span class="op">)</span>, <span class="fl">20</span><span class="op">)</span></span>
-<span><span class="va">den</span> <span class="op">=</span> <span class="fu">rasterize_density</span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">ctg</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/readLAScatalog.html" class="external-link">readLAScatalog</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
+<span><span class="va">chm</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/rasterize.html" class="external-link">rasterize_canopy</a></span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/dsm_point2raster.html" class="external-link">p2r</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">met</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/aggregate.html" class="external-link">pixel_metrics</a></span><span class="op">(</span><span class="va">ctg</span>, <span class="op">~</span><span class="fu">custom_function</span><span class="op">(</span><span class="va">Z</span>, <span class="va">Intensity</span><span class="op">)</span>, <span class="fl">20</span><span class="op">)</span></span>
+<span><span class="va">den</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/rasterize.html" class="external-link">rasterize_density</a></span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="lasr-2">lasR<a class="anchor" aria-label="anchor" href="#lasr-2"></a>

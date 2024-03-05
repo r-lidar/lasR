@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -144,7 +144,7 @@ This pipeline is already installed in the package.
 <span><span class="op">{</span></span>
 <span>  <span class="va">csf</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">smooth</span>, <span class="va">threshold</span>, <span class="va">resolution</span>, <span class="va">rigidness</span>, <span class="va">iterations</span>, <span class="va">step</span><span class="op">)</span></span>
 <span>  <span class="op">{</span></span>
-<span>    <span class="va">id</span> <span class="op">=</span> <span class="fu">RCSF</span><span class="fu">::</span><span class="fu">CSF</span><span class="op">(</span><span class="va">data</span>, <span class="va">smooth</span>, <span class="va">threshold</span>, <span class="va">resolution</span>, <span class="va">rigidness</span>, <span class="va">iterations</span>, <span class="va">step</span><span class="op">)</span></span>
+<span>    <span class="va">id</span> <span class="op">=</span> <span class="fu">RCSF</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RCSF/man/CSF.html" class="external-link">CSF</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">smooth</span>, <span class="va">threshold</span>, <span class="va">resolution</span>, <span class="va">rigidness</span>, <span class="va">iterations</span>, <span class="va">step</span><span class="op">)</span></span>
 <span>    <span class="va">class</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="va">class</span><span class="op">[</span><span class="va">id</span><span class="op">]</span> <span class="op">=</span> <span class="fl">2L</span></span>
 <span>    <span class="va">data</span><span class="op">$</span><span class="va">Classification</span> <span class="op">&lt;-</span> <span class="va">class</span></span>
@@ -165,7 +165,7 @@ This pipeline is already installed in the package.
 <span><span class="op">{</span></span>
 <span>  <span class="va">csf</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">s</span>, <span class="va">t</span><span class="op">)</span></span>
 <span>  <span class="op">{</span></span>
-<span>    <span class="va">id</span> <span class="op">=</span> <span class="fu">RMCC</span><span class="fu">::</span><span class="fu">MCC</span><span class="op">(</span><span class="va">data</span>, <span class="va">s</span>, <span class="va">t</span><span class="op">)</span></span>
+<span>    <span class="va">id</span> <span class="op">=</span> <span class="fu">RMCC</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RMCC/man/MCC.html" class="external-link">MCC</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">s</span>, <span class="va">t</span><span class="op">)</span></span>
 <span>    <span class="va">class</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="va">class</span><span class="op">[</span><span class="va">id</span><span class="op">]</span> <span class="op">=</span> <span class="fl">2L</span></span>
 <span>    <span class="va">data</span><span class="op">$</span><span class="va">Classification</span> <span class="op">&lt;-</span> <span class="va">class</span></span>
@@ -183,7 +183,7 @@ as a <code>data.frame</code>. One of the reasons why <code>lasR</code>
 is more memory-efficient and faster than <code>lidR</code> is that it
 <strong>does not</strong> expose the point cloud as a
 <code>data.frame</code>. Thus, these pipelines are not very different
-from the <code>classify_ground()</code> function in <code>lidR</code>.
+from the <code><a href="https://rdrr.io/pkg/lidR/man/classify.html" class="external-link">classify_ground()</a></code> function in <code>lidR</code>.
 The advantage of using <code>lasR</code> here is the ability to pipe
 different stages.
 </blockquote>

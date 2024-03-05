@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -167,7 +167,7 @@ leverage functions from other R packages. <code>lidR</code> has
 <span><span class="op">{</span></span>
 <span>  <span class="va">csf</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">smooth</span>, <span class="va">threshold</span>, <span class="va">resolution</span>, <span class="va">rigidness</span>, <span class="va">iterations</span>, <span class="va">step</span><span class="op">)</span></span>
 <span>  <span class="op">{</span></span>
-<span>    <span class="va">id</span> <span class="op">=</span> <span class="fu">RCSF</span><span class="fu">::</span><span class="fu">CSF</span><span class="op">(</span><span class="va">data</span>, <span class="va">smooth</span>, <span class="va">threshold</span>, <span class="va">resolution</span>, <span class="va">rigidness</span>, <span class="va">iterations</span>, <span class="va">step</span><span class="op">)</span></span>
+<span>    <span class="va">id</span> <span class="op">=</span> <span class="fu">RCSF</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RCSF/man/CSF.html" class="external-link">CSF</a></span><span class="op">(</span><span class="va">data</span>, <span class="va">smooth</span>, <span class="va">threshold</span>, <span class="va">resolution</span>, <span class="va">rigidness</span>, <span class="va">iterations</span>, <span class="va">step</span><span class="op">)</span></span>
 <span>    <span class="va">class</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="va">class</span><span class="op">[</span><span class="va">id</span><span class="op">]</span> <span class="op">=</span> <span class="fl">2L</span></span>
 <span>    <span class="va">data</span><span class="op">$</span><span class="va">Classification</span> <span class="op">&lt;-</span> <span class="va">class</span></span>
@@ -362,7 +362,7 @@ is a bit trickier to use inside a function.</p>
 <p>Here, it is interesting to notice the limitation of a pre-built
 function. If the dataset is not normalized, this pipeline builds a
 Digital Elevation Model (similar to
-<code>lidR::rasterize_canopy()</code>). There is no way to obtain a
+<code><a href="https://rdrr.io/pkg/lidR/man/rasterize.html" class="external-link">lidR::rasterize_canopy()</a></code>). There is no way to obtain a
 Canopy Height Model, just like in <code>lidR</code>. However, by using
 only low-level functions to build a custom pipeline, we can normalize
 on-the-fly with a pipeline.</p>

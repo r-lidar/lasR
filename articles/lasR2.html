@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -218,7 +218,7 @@ and even more. There are three variations:</p>
 internally, making the operations as fast as possible, but the number of
 registered operators is low.</li>
 <li>Rasterize by injecting a user-defined R expression. This is
-equivalent to <code>pixel_metrics()</code> from the package
+equivalent to <code><a href="https://rdrr.io/pkg/lidR/man/aggregate.html" class="external-link">pixel_metrics()</a></code> from the package
 <code>lidR</code>. Any user-defined function can be mapped, making it
 extremely versatile but slower and limited in speed by the quality of
 the R code injected.</li>
@@ -248,8 +248,8 @@ result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file227d3d70d703.tif </span></span>
-<span><span class="co">#&gt; name        : file227d3d70d703</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file21d72366ea40.tif </span></span>
+<span><span class="co">#&gt; name        : file21d72366ea40</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/processor.html">processor()</a></code> returns a only a
 <code>SpatRaster</code> because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns
 nothing (<code>NULL</code>). Therefore, the pipeline contains two
@@ -258,7 +258,7 @@ elements, but only one returns something.</p>
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/gray.colors.html" class="external-link">gray.colors</a></span><span class="op">(</span><span class="fl">25</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="lasR2_files/figure-html/plotdtm-1.png" width="700"></p>
 <p>Notice that, contrary to the lidR package, there is usually no
-high-level function with names like <code>rasterize_terrain()</code>.
+high-level function with names like <code><a href="https://rdrr.io/pkg/lidR/man/rasterize.html" class="external-link">rasterize_terrain()</a></code>.
 Instead, <code>lasR</code> is made up of low-level functions that are
 more versatile but also more challenging to use.</p>
 </div>
@@ -401,8 +401,8 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">write1</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write2</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/RtmpfIMS7m/bcts_1_ground.laz /tmp/RtmpfIMS7m/bcts_2_ground.laz </span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/RtmpfIMS7m/bcts_1_normalized.laz /tmp/RtmpfIMS7m/bcts_2_normalized.laz</span></span></code></pre></div>
+<span><span class="co">#&gt;  - write_las : /tmp/RtmpzDbC9b/bcts_1_ground.laz /tmp/RtmpzDbC9b/bcts_2_ground.laz </span></span>
+<span><span class="co">#&gt;  - write_las : /tmp/RtmpzDbC9b/bcts_1_normalized.laz /tmp/RtmpzDbC9b/bcts_2_normalized.laz</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behaviour may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -416,7 +416,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">merge</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpfIMS7m/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpzDbC9b/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="callback">Callback<a class="anchor" aria-label="anchor" href="#callback"></a>
@@ -425,7 +425,7 @@ forming a merge pipeline.</p>
 second and last entry point to inject R code into the pipeline,
 following <code><a href="../reference/rasterize.html">rasterize()</a></code>. For those familiar with the
 <code>lidR</code> package, the initial step often involves reading data
-with <code>lidR::readLAS()</code> to expose the point cloud as a
+with <code><a href="https://rdrr.io/pkg/lidR/man/readLAS.html" class="external-link">lidR::readLAS()</a></code> to expose the point cloud as a
 <code>data.frame</code> object in R. In contrast, <code>lasR</code>
 loads the point cloud optimally in C++ without exposing it directly to
 R. However, with <code>callback</code>, it becomes possible to expose
@@ -537,7 +537,7 @@ one provided by the <code>RCSF</code> package:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">csf</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
-<span>  <span class="va">id</span> <span class="op">=</span> <span class="fu">RCSF</span><span class="fu">::</span><span class="fu">CSF</span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span>  <span class="va">id</span> <span class="op">=</span> <span class="fu">RCSF</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RCSF/man/CSF.html" class="external-link">CSF</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
 <span>  <span class="va">class</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">class</span><span class="op">[</span><span class="va">id</span><span class="op">]</span> <span class="op">=</span> <span class="fl">2L</span></span>
 <span>  <span class="va">data</span><span class="op">$</span><span class="va">Classification</span> <span class="op">&lt;-</span> <span class="va">class</span></span>
@@ -723,11 +723,11 @@ depends on their position in the pipeline:</p>
 <span><span class="co">#&gt;  - npoints_per_class : 61347 8159 3897</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  - npoints : 12745 </span></span>
-<span><span class="co">#&gt;  - nsingle : 5032 </span></span>
+<span><span class="co">#&gt;  - nsingle : 5027 </span></span>
 <span><span class="co">#&gt;  - nwithheld : 0 </span></span>
 <span><span class="co">#&gt;  - nsynthetic : 0 </span></span>
-<span><span class="co">#&gt;  - npoints_per_return : 9472 2549 638 84 2 </span></span>
-<span><span class="co">#&gt;  - npoints_per_class : 10788 1586 371</span></span></code></pre></div>
+<span><span class="co">#&gt;  - npoints_per_return : 9401 2626 618 92 7 1 </span></span>
+<span><span class="co">#&gt;  - npoints_per_class : 10792 1573 380</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="readers">Readers<a class="anchor" aria-label="anchor" href="#readers"></a>
@@ -850,11 +850,11 @@ folder it is possible to pass a <code>LAScatalog</code> or a
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lasR" class="external-link">lasR</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lidR" class="external-link">lidR</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">readLAScatalog</span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
+<span><span class="va">ctg</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/readLAScatalog.html" class="external-link">readLAScatalog</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">ctg</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">las</span> <span class="op">=</span> <span class="fu">readLAS</span><span class="op">(</span><span class="va">file</span><span class="op">)</span></span>
+<span><span class="va">las</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/lidR/man/readLAS.html" class="external-link">readLAS</a></span><span class="op">(</span><span class="va">file</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">las</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
 </div>
