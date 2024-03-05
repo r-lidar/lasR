@@ -1,17 +1,33 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 
-if (length(args) != 2) {
+if (length(args) < 2) {
   stop("At least 2 argument must be supplied", call.=FALSE)
 } else {
   lasR = args[1] == "lasR"
   test = as.integer(args[2])
+  multifile = !is.null(args[3]) && args[3] == "true"
 }
+
+cat("lasR:", lasR, "\n")
+cat("test:", test, "\n")
+cat("multifile:", multifile, "\n")
 
 library(lidR)
 library(lasR)
 
-set_lidr_threads(half_cores())
+if (!multifile)
+{
+  if (lasR)
+    set_parallel_strategy(concurrent_points(half_cores()))
+  else
+    set_lidr_threads(half_cores())
+} else {
+  if (lasR)
+    set_parallel_strategy(concurrent_files(4))
+  else
+    future::plan(future::multicore(workers = 4))
+}
 
 f = c("/home/jr/Documents/Ulaval/ALS data/BCTS//092L072244_BCTS_2.laz",
       "/home/jr/Documents/Ulaval/ALS data/BCTS//092L072422_BCTS_2.laz",
@@ -109,6 +125,37 @@ if (test == 4)
     tree = dalponte2016(chm, seed)()
   }
 }
+
+
+if (test == 5)
+{
+  if (lasR)
+  {
+    pipeline = reader(f) + normalize() + write_las()
+    processor(pipeline)
+  }
+  else
+  {
+    ctg = readLAScatalog(f)
+    opt_output_files(ctg) <- paste0(tempdir(), "/*_norm")
+    norm = normalize_height(ctg, tin())
+  }
+}
+
+if (test == 6)
+{
+  if (lasR)
+  {
+    pipeline = reader(f) + local_maximum(5)
+    processor(pipeline)
+  }
+  else
+  {
+    ctg = readLAScatalog(f)
+    tree = locate_trees(ctg, lmf(5))
+  }
+}
+
 
 tf = Sys.time()
 tf-ti
