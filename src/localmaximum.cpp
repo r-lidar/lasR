@@ -53,7 +53,7 @@ bool LASRlocalmaximum::process(LAS*& las)
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  //#pragma omp parallel for num_threads(ncpu)
+  #pragma omp parallel for num_threads(ncpu)
   for (auto i = 0 ; i < las->npoints ; i++)
   {
     PointLAS pp;

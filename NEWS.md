@@ -1,8 +1,8 @@
-# lasR 0.2.1
+# lasR 0.2.1 (2024-03-05)
 
 - Fix: `callback()` properly handles errors from the injected function
 - New: handy functions `tempxyz()` to generate temp files with extension `.xyz`.
-- New: `rasterize()` is now parallelized with internal metrics.
+- New: `rasterize()` is now parallelized with internal metrics including for buffered area based approach
 - New: `rasterize()` gained a progress bar with internal metrics.
 
 # lasR 0.2.0 (2024-03-01)

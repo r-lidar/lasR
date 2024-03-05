@@ -15,10 +15,10 @@ test_that("local maximum works with multiple files",
   f = f[1:2]
 
   read = reader(f)
-  lmf = local_maximum(5)
+  lmf = local_maximum(5, min_height = 330)
   ans = processor(read + lmf)
 
-  expect_equal(dim(ans), c(2412L, 6)) # There is a data race !!
+  expect_equal(dim(ans), c(2235, 6))
 })
 
 test_that("local maximum works with extra bytes",
