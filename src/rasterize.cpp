@@ -38,6 +38,7 @@ bool LASRrasterize::process(LASpoint*& p)
 {
   // No operator registered means that we are in a non streamable rasterization
   if (metrics.size() == 0) return true;
+  if (p->get_withheld_flag() != 0) return true;
   if (lasfilter.filter(p)) return true;
 
   double x = p->get_x();
