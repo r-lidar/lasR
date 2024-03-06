@@ -1,6 +1,7 @@
 # lasR 0.2.1
 
 - Fix: `summarize()`, `rasterize()` and `write_las()` no longer process withheld points in streaming mode.
+- New: stage `delete_points()` to remove some points in the pipeline.
 
 # lasR 0.2.1 (2024-03-05)
 

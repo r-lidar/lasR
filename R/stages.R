@@ -171,6 +171,30 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
   set_lasr_class(ans)
 }
 
+# ===== D =====
+
+#' Filter and delete points
+#'
+#' Remove some points from the point cloud. This stage modifies the point cloud in the pipeline
+#' but does not produce any output.
+#'
+#' @template param-filter
+#'
+#' @examples
+#' f <- system.file("extdata", "Megaplot.las", package="lasR")
+#' read <- reader(f)
+#' filter <- delete_points(keep_z_above(4))
+#'
+#' pipeline <- read + summarise() + filter + summarise()
+#' processor(pipeline)
+#' @export
+delete_points = function(filter = "")
+{
+  stopifnot(filter != "")
+  ans = list(algoname = "filter", filter = filter)
+  set_lasr_class(ans)
+}
+
 # ===== H =====
 
 #' Contour of a point cloud
