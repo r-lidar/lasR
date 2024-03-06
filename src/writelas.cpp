@@ -50,6 +50,8 @@ void LASRlaswriter::set_output_file(std::string file)
 
 bool LASRlaswriter::process(LASpoint*& p)
 {
+  if (p->get_withheld_flag() != 0) return true;
+
   if (!laswriter)
   {
     LASwriteOpener laswriteopener;
