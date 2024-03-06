@@ -29,6 +29,10 @@ The multi-threading in `lasR` is pretty similar to `lidR`, except it does not us
 In the figures below, the pipelines are represented in an idealized and simplified manner, with, for example, all stages taking the same amount of time and all the cores running in parallel without any overhead.  While this simplification helps understanding, it does not capture the entire actual complexity.
 </blockquote>
 
+<blockquote style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 5px;">
+`lasR` uses `OpenMP` which means that the package supports parallelism on Linux and Windows but not on macOS where Apple has explicitly disabled `OpenMP` support in compilers that they ship in `Xcode`. Interested readers can read the following links: [OpenMP on macOS](https://mac.r-project.org/openmp/); [OpenBLAS and OpenMP on macOS](https://www.btskinner.io/code/install-r-with-openblas-and-openmp-on-macos-mojave/) ; [Enable OpenMP for macOS](https://github.com/Rdatatable/data.table/wiki/Installation#Enable-openmp-for-macos)
+</blockquote>
+
 ## Sequential strategy
 
 ```r
