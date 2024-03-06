@@ -42,6 +42,8 @@ test_that("rasterize fails",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
+  expect_error(rasterize(1, "zp101"), "Non supported operators")
+
   read = reader(f, filter = "")
   met = rasterize(5, c("count"))
   met[[1]]$method = "zp101"
