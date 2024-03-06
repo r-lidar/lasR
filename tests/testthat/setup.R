@@ -1,1 +1,1 @@
-set_parallel_strategy(concurrent_files(2))
+if (has_omp_support()) set_parallel_strategy(concurrent_files(2))

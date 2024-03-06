@@ -10,6 +10,7 @@
 \alias{concurrent_files}
 \alias{concurrent_points}
 \alias{nested}
+\alias{has_omp_support}
 \title{Parallel processing tools}
 \usage{
 set_parallel_strategy(strategy)
@@ -27,6 +28,8 @@ concurrent_files(ncores = half_cores())
 concurrent_points(ncores = half_cores())
 
 nested(ncores = ncores()/4L, ncores2 = 2L)
+
+has_omp_support()
 }
 \arguments{
 \item{strategy}{An object returned by one of \code{sequential()}, \code{concurrent_points()}, \code{concurrent_files} or
@@ -38,9 +41,11 @@ nested(ncores = ncores()/4L, ncores2 = 2L)
 files and \code{ncores2} is the number of concurrent points.}
 }
 \description{
-\code{set_parallel_strategy()} globally changes the strategy used to process the point clouds.
-\code{sequential()}, \code{concurrent_files()}, \code{concurrent_points()}, and \code{nested()} are functions to assign
-a parallelization strategy (see Details).
+\code{lasR} uses OpenMP to paralellize the internal C++ code. \code{set_parallel_strategy()} globally changes
+the strategy used to process the point clouds. \code{sequential()}, \code{concurrent_files()},
+\code{concurrent_points()}, and \code{nested()} are functions to assign a parallelization strategy (see Details).
+\code{has_omp_support()} tells you if the \code{lasR} package was compiled with the support of OpenMP which
+is unlikely to be the case on MacOS.
 }
 \details{
 There are 4 strategies of parallel processing:

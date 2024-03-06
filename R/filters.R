@@ -80,7 +80,6 @@ drop_duplicates = function() { make_filter("-drop_duplicates")}
 filter_usage <- function() { invisible(.Call(`C_lasfilterusage`)) }
 
 transform_usage <- function() { invisible(.Call(`C_lastransformusage`)) }
-available_threads <- function() { .Call(`C_available_threads`) }
 
 make_filter = function(x)
 {

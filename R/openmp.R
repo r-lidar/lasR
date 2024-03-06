@@ -1,8 +1,10 @@
 #' Parallel processing tools
 #'
-#' `set_parallel_strategy()` globally changes the strategy used to process the point clouds.
-#' `sequential()`, `concurrent_files()`, `concurrent_points()`, and `nested()` are functions to assign
-#' a parallelization strategy (see Details).
+#' `lasR` uses OpenMP to paralellize the internal C++ code. `set_parallel_strategy()` globally changes
+#' the strategy used to process the point clouds. `sequential()`, `concurrent_files()`,
+#' `concurrent_points()`, and `nested()` are functions to assign a parallelization strategy (see Details).
+#' `has_omp_support()` tells you if the `lasR` package was compiled with the support of OpenMP which
+#' is unlikely to be the case on MacOS.
 #'
 #' There are 4 strategies of parallel processing:
 #' \describe{
@@ -112,6 +114,11 @@ nested <- function(ncores = ncores()/4L, ncores2 = 2L)
   return(ncores)
 }
 
+#' @rdname multithreading
+#' @export
+has_omp_support = function() { .Call(`C_has_omp_support`) }
+
+available_threads <- function() { .Call(`C_available_threads`) }
 
 LASRTHREADS = new.env()
 LASRTHREADS$ncores = 1L

@@ -7,3 +7,12 @@ int available_threads()
   int n = (max < lim) ? max : lim;
   return n;
 }
+
+bool has_omp_support()
+{
+#ifdef _OPENMP
+  return true;
+#else
+  return false;
+#endif
+}

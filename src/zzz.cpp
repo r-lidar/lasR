@@ -10,12 +10,14 @@ SEXP lastransformusage();
 SEXP get_pipeline_info(SEXP);
 SEXP is_indexed(SEXP sexpfile);
 int available_threads();
+bool has_omp_support();
 
 extern "C" SEXP C_process(SEXP pipeline, SEXP progrss, SEXP ncpu, SEXP nfiles, SEXP verbose) { return process(pipeline, progrss, ncpu, nfiles, verbose); }
 extern "C" SEXP C_lasfilterusage() { return lasfilterusage(); }
 extern "C" SEXP C_lastransformusage() { return lastransformusage(); }
 extern "C" SEXP C_get_pipeline_info(SEXP pipeline) { return get_pipeline_info(pipeline); }
 extern "C" SEXP C_available_threads() { return Rf_ScalarInteger(available_threads()); }
+extern "C" SEXP C_has_omp_support() { return Rf_ScalarLogical(has_omp_support()); }
 extern "C" SEXP C_is_indexed(SEXP file) { return is_indexed(file); }
 
 static const R_CallMethodDef CallEntries[] = {
@@ -24,6 +26,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"C_get_pipeline_info", (DL_FUNC) &C_get_pipeline_info, 1},
   {"C_process", (DL_FUNC) &C_process, 5},
   {"C_available_threads", (DL_FUNC) &C_available_threads, 0},
+  {"C_has_omp_support", (DL_FUNC) &C_has_omp_support, 0},
   {"C_is_indexed", (DL_FUNC) &C_is_indexed, 1},
   {NULL, NULL, 0}
 };
