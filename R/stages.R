@@ -226,10 +226,9 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 {
   if (!is.null(mesh))
   {
-    if (!methods::is(mesh, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'") # nocov
-    if (length(mesh) != 1L) stop("cannot input a complex pipeline")  # nocov
-    if (mesh[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")  # nocov
-    ans <- list(algoname = "hulls", connect = mesh[[1]][["uid"]], output = ofile)
+    mesh = get_stage(mesh)
+    if (mesh$algoname != "triangulate") stop("the stage must be 'triangulate'")  # nocov
+    ans <- list(algoname = "hulls", connect = mesh[["uid"]], output = ofile)
   }
   else
   {
@@ -317,11 +316,10 @@ nothing = function(read = FALSE, stream = FALSE)
 #' @export
 pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_size = 3L, dil_radius = 0L, ofile = temptif())
 {
-  if (!methods::is(raster, "LASRpipeline")) stop("rasterizator must be a 'LASRpipeline'")  # nocov
-  if (length(raster) != 1L) stop("cannot input a complex pipeline")  # nocov
-  if (raster[[1]]$algoname != "rasterize") stop("the algorithm must be 'rasterize'")  # nocov
+  raster = get_stage(raster)
+  if (raster$algoname != "rasterize") stop("the algorithm must be 'rasterize'")  # nocov
 
-  ans <- list(algoname = "pit_fill", connect = raster[[1]][["uid"]],  lap_size = lap_size, thr_lap = thr_lap, thr_spk = thr_spk, med_size = med_size, dil_radius = dil_radius, output = ofile)
+  ans <- list(algoname = "pit_fill", connect = raster[["uid"]],  lap_size = lap_size, thr_lap = thr_lap, thr_spk = thr_spk, med_size = med_size, dil_radius = dil_radius, output = ofile)
   set_lasr_class(ans)
 }
 
@@ -424,12 +422,10 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
     return(aggregate_q(res, substitute(operators), filter, ofile, env))
   }
 
-  if (methods::is(operators, "LASRpipeline"))
+  if (methods::is(operators, "LASRpipeline") || methods::is(operators, "LASRalgorithm"))
   {
-    if (length(operators) == 1)
-      ans <- list(algoname = "rasterize", res = res_raster, connect = operators[[1]][["uid"]], filter = filter, output = ofile)
-    else
-      stop("cannot input a complex pipeline")
+    operators = get_stage(operators)
+    ans <- list(algoname = "rasterize", res = res_raster, connect = operators[["uid"]], filter = filter, output = ofile)
   }
   else if (is.character(operators))
   {
@@ -659,11 +655,9 @@ reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter
 #' @md
 region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.55, max_cr = 20, ofile = temptif())
 {
-  if (!methods::is(raster, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")  # nocov
-  if (!methods::is(seeds, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")  # nocov
-  if (length(raster) > 1 || length(seeds) > 1) stop("cannot input a complex pipeline")  # nocov
-
-  ans <- list(algoname = "region_growing", connect1 = seeds[[1]][["uid"]], connect2 = raster[[1]][["uid"]], th_tree = th_tree, th_seed = th_seed, th_cr = th_cr, max_cr = max_cr, output = ofile)
+  raster <- get_stage(raster)
+  seeds <- get_stage(seeds)
+  ans <- list(algoname = "region_growing", connect1 = seeds[["uid"]], connect2 = raster[["uid"]], th_tree = th_tree, th_seed = th_seed, th_cr = th_cr, max_cr = max_cr, output = ofile)
   set_lasr_class(ans)
 }
 
@@ -779,11 +773,10 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' @export
 transform_with = function(stage, operator = "-", store_in_attribute = "")
 {
-  if (!methods::is(stage, "LASRpipeline")) stop("the stage must be a 'LASRpipeline' object")  # nocov
-  if (length(stage) != 1L) stop("cannot input a complex pipeline")  # nocov
-  if (!stage[[1]]$algoname %in% c("triangulate", "rasterize", "aggregate")) stop("the stage must be a triangulation or a raster stage")  # nocov
+  stage = get_stage(stage)
+  if (!stage$algoname %in% c("triangulate", "rasterize", "aggregate")) stop("the stage must be a triangulation or a raster stage")  # nocov
 
-  ans <- list(algoname = "transform_with", connect = stage[[1]][["uid"]], operator = operator, store_in_attribute = store_in_attribute)
+  ans <- list(algoname = "transform_with", connect = stage[["uid"]], operator = operator, store_in_attribute = store_in_attribute)
   set_lasr_class(ans)
 }
 
@@ -858,6 +851,24 @@ set_lasr_class = function(x)
   x = list(x)
   class(x) <- "LASRpipeline"
   return(x)
+}
+
+get_stage = function(x)
+{
+  call = deparse(substitute(x))
+
+  if (methods::is(x, "LASRalgorithm"))
+    return(x)
+
+  if (methods::is(x, "LASRpipeline"))
+  {
+    if (length(x) != 1L)
+      stop(paste("Cannot input a complex pipeline.", call, "has", length(x), "stages"))
+
+    return(x[[1]])
+  }
+
+  stop(paste("The stage", call, "must be a 'LASRalgorithm'"))
 }
 
 LASATTRIBUTES <- c("X", "Y", "Z", "Intensity",

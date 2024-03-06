@@ -2,6 +2,11 @@
 
 - Fix: `summarize()`, `rasterize()` and `write_las()` no longer process withheld points in streaming mode.
 - New: stage `delete_points()` to remove some points in the pipeline.
+- New: it is now possible to write the following:
+  ```r
+  dtm = dtm()
+  pipeline <- read+ dtm + transform_with(dtm[[2]])
+  ``
 
 # lasR 0.2.1 (2024-03-05)
 
