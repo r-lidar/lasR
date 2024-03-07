@@ -7,7 +7,7 @@
 write_vpc(ofile)
 }
 \arguments{
-\item{ofile}{character. The file path with extnsion .vpc where to write the virtual point cloud file}
+\item{ofile}{character. The file path with extension .vpc where to write the virtual point cloud file}
 }
 \description{
 Borrowing the concept of virtual rasters from GDAL, the VPC file format references other point
@@ -15,7 +15,8 @@ cloud files in virtual point cloud (VPC)
 }
 \examples{
 \dontrun{
-pipeline = reader("folder/") + write_vpc("folder/dataset.vpc")
+pipeline = write_vpc("folder/dataset.vpc")
+exec(pipeline, on = "folder")
 }
 }
 \references{

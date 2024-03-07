@@ -90,8 +90,6 @@ exec = function(pipeline, on, ncores = half_cores(), progress = FALSE, buffer = 
     if (!is.null(processed)) noprocess <- !processed
 
     on <- on$filename
-
-    if (chunk_buffer > buffer) buffer <- chunk_buffer
   }
 
   if (is.character(on))

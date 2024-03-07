@@ -23,11 +23,11 @@ box of the points.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package = "lasR")
-read <- reader(f)
+read <- reader_las()
 tri <- triangulate(20, filter = keep_ground())
 contour <- hulls(tri)
 pipeline <- read + tri + contour
-ans <- processor(pipeline)
+ans <- exec(pipeline, on = f)
 plot(ans)
 
 }

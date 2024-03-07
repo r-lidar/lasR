@@ -47,9 +47,9 @@ f <- system.file("extdata", "Topography.las", package = "lasR")
 read_las <- function(f)
 {
   load <- function(data) { return(data) }
-  read <- reader(f)
+  read <- reader_las()
   call <- callback(load, expose = "xyzi", no_las_update = TRUE)
-  return (processor(read + call))
+  return (exec(read + call, on = f))
 }
 las <- read_las(f)
 head(las)
@@ -64,11 +64,11 @@ convert_intensity_in_range <- function(data, min, max)
   return(data)
 }
 
-read <- reader(f)
+read <- reader_las()
 call <- callback(convert_intensity_in_range, expose = "xyzi", min = 0, max = 255)
 write <- write_las()
 pipeline <- read + call + write
-ans <- processor(pipeline)
+ans <- exec(pipeline, on = f)
 
 las <- read_las(ans)
 head(las)

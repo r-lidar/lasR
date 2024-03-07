@@ -2,9 +2,18 @@
 % Please edit documentation in R/stages.R
 \name{reader_las}
 \alias{reader_las}
+\alias{reader_las_coverage}
+\alias{reader_las_circles}
+\alias{reader_las_rectangles}
 \title{Initialize the pipeline}
 \usage{
 reader_las(filter = "", ...)
+
+reader_las_coverage(filter = "", ...)
+
+reader_las_circles(xc, yc, r, filter = "", ...)
+
+reader_las_rectangles(xmin, ymin, xmax, ymax, filter = "", ...)
 }
 \arguments{
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
@@ -15,30 +24,27 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 
 \item{...}{passed to other readers}
 
-\item{x}{Can be the paths of the files to use, the path of the folder in which the files are stored,
-the path to a \href{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/}{virtual point cloud}
-file or a \code{data.frame} containing hte point cloud. It supports also a \code{LAScatalog} or a \code{LAS} objects
-from \code{lidR}.}
-
-\item{buffer}{numeric. Each file is read with a buffer. The default is 0, which does not mean that
-the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
-pick the greatest value between the internal suggestion and this provided value.}
-
 \item{xc, yc, r}{numeric. Circle centres and radius or radii.}
 
 \item{xmin, ymin, xmax, ymax}{numeric. Coordinates of the rectangles}
 }
 \description{
-This is the first stage that must be called in each pipeline. It specifies which files must be read.
-The stage does nothing and returns nothing if it is not associated to another processing stage.
+This is the first stage that must be called in each pipeline. The stage does nothing and returns
+nothing if it is not associated to another processing stage.
 It only initializes the pipeline. \code{reader()} is the main function that dispatches into to other
 functions. \verb{reader_las_*()} reads from LAS/LAZ files on disk.\code{reader_las_coverage()} processes the entire
 point cloud. \code{reader_las_circles()} and \code{reader_las_rectangles()} read and process only some selected regions
-of interest.
+of interest. If the chosen reader has no options i.e. using \code{reader_las()} it can be omitted.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package = "lasR")
-read <- reader(f)
-ans <- processor(read)
 
+pipeline <- reader_las() + rasterize(10, "zmax")
+ans <- exec(pipeline, on = f)
+
+pipeline <- reader_las(filter = keep_z_above(1.3)) + rasterize(10, "zmean")
+ans <- exec(pipeline, on = f)
+
+# read_las() with no option can be omitted
+ans <- exec(rasterize(10, "zmax"), on = f)
 }

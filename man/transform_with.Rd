@@ -24,8 +24,8 @@ f <- system.file("extdata", "Topography.las", package="lasR")
 # There is a normalize pipeline in lasR but let's create one almost equivalent
 mesh  <- triangulate(filter = keep_ground())
 trans <- transform_with(mesh)
-pipeline <- reader(f) + mesh + trans + write_las()
-ans <- processor(pipeline)
+pipeline <- mesh + trans + write_las()
+ans <- exec(pipeline, on = f)
 
 }
 \seealso{

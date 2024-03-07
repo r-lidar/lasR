@@ -57,28 +57,30 @@ In the following tutorial, the variable `f` refers to one or several file paths 
 
 ## Overall functionality
 
-In `lasR`, the R functions provided to the user are not designed to process the data directly; instead, they are used to create a pipeline. A pipeline consists of stages that are applied to a point cloud. Each stage can either transform the point cloud within the pipeline without generating any output or process the point cloud to produce an output.
+In `lasR`, the R functions provided to the user are not designed to process the data directly; instead, they are used to create a pipeline. A pipeline consists of stages that are applied to a point cloud in order. Each stage can either transform the point cloud within the pipeline without generating any output or process the point cloud to produce an output.
 
 In the figure below, there are 4 LAS/LAZ files and a pipeline that (1) reads a file, (2) builds and writes a DTM on disk, (3) transforms the point cloud by normalizing the elevation, (4) builds a canopy height model using the transformed point cloud, and (5) transforms the point cloud by removing points below 5 m. The resulting version of the point cloud (points above 5m) is discarded and lost because there is no additional stage in this pipeline. However, other stages can be added, such as the application of a predictive model for points above 5 m or a stage that writes the point cloud to disk.
 
 Once the first file completes the entire pipeline, the second file is used, and the pipeline is applied to fill in the missing parts of the geospatial rasters or vectors produced by the pipeline. Each file is loaded with a buffer from neighboring files if needed.
 
-A pipeline created from the R interface does nothing initially. After building the pipeline, users must call the `processor()` function on it to initiate the computation.
+A pipeline created from the R interface does nothing initially. After building the pipeline, users must call the `exec()` function on it to initiate the computation.
 
 ![](pipeline.png)
 
 ## Reader
 
-The `reader` stage MUST be the first stage of any pipeline (blue in the figure above). It takes as input the list of files to process. When creating a pipeline with only this stage, the header of the files are read, but no computation is actually applied. The points are not even read because there is no other stage in the pipeline that require to read the points. No result is returned.
+The `reader_las()` stage MUST be the first stage of any pipeline (blue in the figure above). It takes as input the list of files to process. When creating a pipeline with only this stage, the header of the files are read, but no computation is actually applied. The points are not even read because there is no other stage in the pipeline that require to read the points. No result is returned.
 
 ```{r, echo = F}
 f = paste0(system.file(package="lasR"), "/extdata/bcts")
 ```
 
 ```{r reader}
-read = reader(f)
-processor(read)
+pipeline = reader_las()
+exec(pipeline, on = f)
 ```
+
+In practice when using `read_las()` without argument it can be omitted, the function `exec` adds it on-the-fly.
 
 ## Triangulate
 
@@ -95,18 +97,16 @@ f <- system.file("extdata", "Topography.las", package="lasR")
 ```
 
 ```{r triangulate1}
-read = reader(f)
-del = triangulate(filter = keep_ground())
-ans = processor(read+del)
+pipeline = reader_las() + triangulate(filter = keep_ground())
+ans = exec(pipeline, on = f)
 ans
 ```
 
 In the following pipeline the triangulation is stored in a geopackage file by providing an argument `ofile`:
 
 ```{r triangulate2, fig.width=5, fig.height=5}
-read = reader(f)
-del = triangulate(filter = keep_ground(), ofile = tempfile(fileext = ".gpkg"))
-ans = processor(read+del)
+pipeline = reader_las() + triangulate(filter = keep_ground(), ofile = tempgpkg())
+ans = exec(pipeline, on = f)
 ans
 
 par(mar = c(2, 2, 1, 1))
@@ -116,19 +116,19 @@ plot(ans, axes = T, lwd = 0.5)
 We can also triangulate the first returns. This produce a meshed Digital Surface Model.
 
 ```r
-read = reader(f)
-del = triangulate(filter = keep_first(), ofile = tempfile(fileext = ".gpkg"))
-ans = processor(read+del)
+read = reader_las()
+del = triangulate(filter = keep_first(), ofile = tempgpkg())
+ans = exec(read+del, on = f)
 ```
 
 We can also perform both triangulations in the same pipeline. The idea of `lasR` is to execute all the tasks in one pass using a pipeline:
 
 ```r
-read = reader(f)
+read = reader_las()
 del1 = triangulate(filter = keep_ground(), ofile = tempfile(fileext = ".gpkg"))
 del2 = triangulate(filter = keep_first(), ofile = tempfile(fileext = ".gpkg"))
 pipeline = read + del1 + del2
-ans = processor(pipeline)
+ans = exec(pipeline, on = f)
 ```
 
 Using `triangulate()` without any other stage in the pipeline is usually not very useful. Typically, `triangulate()` is employed without the `ofile` argument as an intermediate step. For instance, it can be used with `rasterize()`.
@@ -137,8 +137,8 @@ Using `triangulate()` without any other stage in the pipeline is usually not ver
 
 `rasterize()` does exactly what users may expect from it and even more. There are three variations:
 
-1. Rasterize with predefined operators. The operators are optimized internally, making the operations as fast as possible, but the number of registered operators is low.
-2. Rasterize by injecting a user-defined R expression. This is equivalent to `pixel_metrics()` from the package `lidR`. Any user-defined function can be mapped, making it extremely versatile but slower and limited in speed by the quality of the R code injected.
+1. Rasterize with predefined operators. The operators are optimized internally, making the operations as fast as possible, but the number of registered operators is finite.
+2. Rasterize by injecting a user-defined R expression. This is equivalent to `pixel_metrics()` from the package `lidR`. Any user-defined function can be mapped, making it extremely versatile but slower.
 3. Rasterize a Delaunay triangulation.
 
 With these variations, users can build a CHM, a DTM, a predictive model, or anything else. 
@@ -148,21 +148,21 @@ With these variations, users can build a CHM, a DTM, a predictive model, or anyt
 Let's build a DTM using a triangulation of the ground points and the `rasterize()` stage. In the following pipeline, the LAS files are read, points are loaded for each LAS file **with a buffer**, a Delaunay triangulation of the ground points is built, and then the triangulation is interpolated and rasterized. By default, `rasterize()` writes the raster in a temporary file, so the result is not discarded.
 
 ```{r rasterize}
-read = reader(f)
+# omitting reader_las() for the example
 del = triangulate(filter = keep_ground())
 dtm = rasterize(1, del)
-pipeline = read + del + dtm
-ans = processor(pipeline)
+pipeline = del + dtm
+ans = exec(pipeline, on = f)
 ans
 ```
 
-Here, `processor()` returns a only a `SpatRaster` because `triangulate()` returns nothing (`NULL`). Therefore, the pipeline contains two elements, but only one returns something.
+Here, `exec()` returns a only one `SpatRaster` because `triangulate()` returns nothing (`NULL`). Therefore, the pipeline contains two stages, but only one returns something.
 
 ```{r plotdtm, fig.height=3.5}
 terra::plot(ans, col = gray.colors(25,0,1), mar = c(1, 1, 1, 3))
 ```
 
-Notice that, contrary to the lidR package, there is usually no high-level function with names like `rasterize_terrain()`. Instead, `lasR` is made up of low-level functions that are more versatile but also more challenging to use. 
+Notice that, contrary to the `lidR` package, there is usually no high-level function with names like `rasterize_terrain()`. Instead, `lasR` is made up of low-level functions that are more versatile but also more challenging to use. 
 
 ### Rasterize - internal metrics
 
@@ -175,12 +175,11 @@ f <- system.file("extdata", "Megaplot.las", package="lasR")
 ```
 
 ```{r rasterize2, fig.show="hold", fig.height=6,  out.width="50%"}
-read <- reader(f)
 del <- triangulate(filter = keep_first())
 chm1 <- rasterize(2, "max")
 chm2 <- rasterize(0.5, del)
-pipeline <- read + del + chm1 + chm2
-ans <- processor(pipeline)
+pipeline <- del + chm1 + chm2
+ans <- exec(pipeline, on = f)
 
 terra::plot(ans[[1]], mar = c(1, 1, 1, 3), col = col)
 terra::plot(ans[[2]], mar = c(1, 1, 1, 3), col = col)
@@ -195,13 +194,13 @@ For simplicity the package has pre-installed pipelines named `chm()` and `dtm()`
 Last but not least, let's compute the map of the median intensity by injecting a user-defined expression. Like in `lidR`, the attributes of the point cloud are named: `X`, `Y`, `Z`, `Intensity`, `gpstime`, `ReturnNumber`, `NumberOfreturns`, `Classification`, `UserData`, `PointSourceID`, `R`, `G`, `B`, `NIR`. For users familiar with the `lidR` package, note that there is no `ScanAngleRank/ScanAngle`;  instead the scanner angle is always named `ScanAngle` and is numeric. Also flags are named `Withheld`, `Synthetic` and `Keypoint`.
 
 ```{r rasterize3, fig.height=3.5}
-read = reader(f)
-avgi = rasterize(10, median(Intensity))
-pipeline = read + avgi
-ans = processor(pipeline)
+pipeline = rasterize(10, median(Intensity))
+ans = exec(pipeline, on = f)
 
 terra::plot(ans, mar = c(1, 1, 1, 3), col = heat.colors(15))
 ```
+
+Notice that, in this specific case, using `rasterize(10, "imean")` is more efficient.
 
 ### Rasterize - buffered
 
@@ -222,11 +221,10 @@ f <- system.file("extdata", "Topography.las", package="lasR")
 ```
 
 ```{r twt, warning=FALSE}
-read = reader(f)
 del = triangulate(filter = keep_ground())
 norm = transform_with(del, "-")
-pipeline = read + del + norm
-ans = processor(pipeline)
+pipeline = del + norm
+ans = exec(pipeline, on = f)
 ans
 ```
 
@@ -242,13 +240,12 @@ For convenience this pipeline is pre-recorded in the package under the name `nor
 To obtain a meaningful output, it is necessary to chain another stage. Here the point cloud has been modified but then, it is discarded because we did nothing with it. For instance, we can compute a Canopy Height Model (CHM) on the normalized point cloud. In the following pipeline, the first rasterization (`chm1`) is applied before normalization, while the second rasterization occurs after `transform_with()`, thus being applied to the transformed point cloud.
 
 ```{r twt2, warning=FALSE, fig.height=4, fig.width=8}
-read = reader(f)
 del = triangulate(filter = keep_ground())
 norm = transform_with(del, "-")
 chm1 = rasterize(2, "max")
 chm2 = rasterize(2, "max")
-pipeline = read + chm1 + del + norm + chm2
-ans = processor(pipeline)
+pipeline = chm1 + del + norm + chm2
+ans = exec(pipeline, on = f)
 
 col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(15)
 terra::plot(c(ans[[1]], ans[[2]]), col = col)
@@ -267,17 +264,16 @@ f = f[1:2]
 ```
 
 ```{r writelas, warning=FALSE}
-read = reader(f)
 write1 = write_las(paste0(tempdir(), "/*_ground.laz"), filter = keep_ground())
 write2 = write_las(paste0(tempdir(), "/*_normalized.laz"), )
 del = triangulate(filter = keep_ground())
 norm = transform_with(del, "-")
-pipeline = read + write1 + del + norm + write2
-ans = processor(pipeline)
+pipeline =  write1 + del + norm + write2
+ans = exec(pipeline, on = f)
 ans
 ```
 
-It is crucial to include a wildcard `*` in the file path; otherwise, a single large file will be created. This behaviour may be intentional. Let's consider creating a file merge pipeline. In the following example, no wildcard `*` is used for the names of the LAS/LAZ files. The input files are read, and points are sequentially written to the single file `dataset_merged.laz`, naturally forming a merge pipeline.
+It is crucial to include a wildcard `*` in the file path; otherwise, a single large file will be created. This behavior may be intentional. Let's consider creating a file merge pipeline. In the following example, no wildcard `*` is used for the names of the LAS/LAZ files. The input files are read, and points are sequentially written to the single file `dataset_merged.laz`, naturally forming a merge pipeline.
 
 
 ```{r, echo = FALSE}
@@ -286,10 +282,9 @@ f = c(f,f)
 ```
 
 ```{r writelas2}
-read = reader(f)
 ofile = paste0(tempdir(), "/dataset_merged.laz")
-merge = write_las(ofile)
-ans = processor(read + merge)
+merge = reader_las() + write_las(ofile)
+ans = exec(merge, on = f)
 ans
 ```
 
@@ -307,9 +302,8 @@ f <- c(system.file("extdata", "Topography.las", package="lasR"), system.file("ex
 
 ```{r callback}
 meanz = function(data){ return(mean(data$Z)) }
-read = reader(f)
 call = callback(meanz, expose = "xyz")
-ans = processor(read+call)
+ans = exec(call, on = f)
 print(ans)
 ```
 Here the output is a `list` with two elements because we processed two files (`f` is not displayed in this document). The average Z elevation are respectively 809.08 and 13.27 in each file.
@@ -318,7 +312,7 @@ Here the output is a `list` with two elements because we processed two files (`f
 Be mindful that, for a given LAS/LAZ file, the point cloud may contain more points than the original file **if the file is loaded with a buffer**. Further clarification on this matter will be provided later.
 </blockquote>
 
-The `callback` function is versatile and can also be employed to edit the point cloud. When the user-defined function returns a `data.frame` with the same number of rows as the original one, the function edits the underlying C++ dataset. This enables users to perform tasks such as assigning a class to a specific point. While physically removing points is not possible, users can flag points as `Withheld`. In such cases, these points will not be processed in subsequent stages
+The `callback` function is versatile and can also be employed to edit the point cloud. When the user-defined function returns a `data.frame` with the same number of rows as the original one, the function edits the underlying C++ dataset. This enables users to perform tasks such as assigning a class to a specific point. While physically removing points is not possible, users can flag points as `Withheld`. In such cases, these points will not be processed in subsequent stages, they are discarded.
 
 
 ```{r callback2}
@@ -330,16 +324,15 @@ edit_points = function(data)
   return(data)
 }
 
-read = reader(f)
 call = callback(edit_points, expose = "xyzc")
-ans = processor(read+call)
+ans = exec(call, on = f)
 ans
 ```
 
 As observed, here, this time `callback` does not explicitly return anything; however, it edited the point cloud internally. To generate an output, users must use another stage such as `write_las()`. It's important to note that `write_las()` will **NOT** write the point number 12 which is flagged `withheld`. Neither any subsequent stage will process it. The point is still in memory but is discarded.
 
 <blockquote style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 5px;">
-For memory and efficiency reasons, it is not possible to physically remove a point from the underlying memory in `lasR`. Instead, the points flagged as `withheld` will **never be processed**. One consequence of this, is that points flagged as withheld in a LAS/LAZ file **will not** be processed in `lasR`. This aligns with the intended purpose of the flag according to the LAS specification but may differ from the default behaviour of many software on the market including `lidR`.
+For memory and efficiency reasons, it is not possible to physically remove a point from the underlying memory in `lasR`. Instead, the points flagged as `withheld` will **never be processed**. One consequence of this, is that points flagged as withheld in a LAS/LAZ file **will not** be processed in `lasR`. This aligns with the intended purpose of the flag according to the LAS specification but may differ from the default behavior of many software on the market including `lidR`.
 </blockquote>
 
 Now, let's explore the capabilities of `callback` further. First, let's create a lidR-like `read_las()` function to expose the point cloud to R. In the following example, the user-defined function is employed to return the `data.frame` as is. When the user's function returns a `data.frame` with the same number of points as the original dataset, this updates the points at the C++ level. Here, we use `no_las_update = TRUE` to explicitly return the result.
@@ -349,9 +342,9 @@ Now, let's explore the capabilities of `callback` further. First, let's create a
 read_las = function(f, select = "xyzi", filter = "")
 {
   load = function(data) { return(data) }
-  read = reader(f, filter = filter)
+  read = reader_las(filter = filter)
   call = callback(load, expose = select, no_las_update = TRUE)
-  return (processor(read+call))
+  return (exec(read+call, on = f))
 }
 
 f <- system.file("extdata", "Topography.las", package="lasR")
@@ -371,34 +364,33 @@ csf = function(data)
   return(data)
 }
 
-read = reader(f)
+read = reader_las()
 classify = callback(csf, expose = "xyz")
 write = write_las()
 pipeline = read + classify + write
-processor(pipeline)
+exec(pipeline, on = f)
 ```
 
 <blockquote style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; font-size: 14px; border-radius: 5px;">
-`callback()` exposes the point cloud as a `data.frame`. This is the only way to present point clouds to users in a manageable way. One of the reasons why `lasR` is more memory-efficient and faster than `lidR` is that it **does not** expose the point cloud as a `data.frame`. Thus, the pipelines using `callback()` are not significantly different from `lidR`. The advantage of using `lasR` here is the ability to pipe different stages.
+`callback()` exposes the point cloud as a `data.frame`. This is the only way to expose the point clouds to users in a manageable way. One of the reasons why `lasR` is more memory-efficient and faster than `lidR` is that it **does not** expose the point cloud as a `data.frame`. Thus, the pipelines using `callback()` are not significantly different from `lidR`. The advantage of using `lasR` here is the ability to pipe different stages.
 </blockquote>
 
 ## Tree Segmentation
 
-This section presents a complex pipeline for tree segmentation using `local_maximum()` to identify tree tops, `region_growing()` to segment the trees using the seeds produced by `local_maximum()`, and a Canopy Height Model (CHM) produced using Delaunay triangulation of first returns. The CHM is post-processed with `pit_fill()`, an algorithm designed to enhance the CHM by filling pits and NAs. In this tutorial, the pipeline is tested on one file to render the page faster. However, this pipeline can be applied to any number of files and will produce a contiguous output, managing the buffer between files. Every intermediate output can be exported, and in this tutorial, we export everything to display all the outputs.
+This section presents a complex pipeline for tree segmentation using `local_maximum()` to identify tree tops, `region_growing()` to segment the trees using the seeds produced by `local_maximum()`, and a Canopy Height Model (CHM) produced using Delaunay triangulation of first returns. The CHM is post-processed with `pit_fill()`, an algorithm designed to enhance the CHM by filling pits and NAs. In this tutorial, the pipeline is tested on one file to render the page faster. However, this pipeline can be applied to any number of files and will produce a continuous output, managing the buffer between files. Every intermediate output can be exported, and in this tutorial, we export everything to display all the outputs.
 
 ```{r, echo = FALSE}
 f <- system.file("extdata", "MixedConifer.las", package="lasR")
 ```
 
 ```{r its}
-read = reader(f)
 del = triangulate(filter = keep_first())
 chm = rasterize(0.5, del)
 chm2 = pit_fill(chm)
 seed = local_maximum(3)
 tree = region_growing(chm2, seed)
-pipeline = read + del + chm + chm2 +  seed + tree
-ans = processor(pipeline)
+pipeline = del + chm + chm2 +  seed + tree
+ans = exec(pipeline, on = f)
 ```
 
 ```{r, fig.show="hold", fig.width=4}
@@ -411,9 +403,9 @@ plot(ans$local_maximum$geom, add = T, pch = 19, cex = 0.5)
 
 ## Buffer
 
-Point clouds are typically stored in multiple contiguous files. To avoid edge artifacts, each file must be loaded with extra points coming from neighbouring files. Everything is handled automatically, except for the `callback()` stage. In `callback()`, the point cloud is exposed as a `data.frame` with the buffer, providing the user-defined function with some spatial context. If `callback` is used to edit the points, everything is handled internally. However, if an R object is returned, it is the responsibility of the user to handle the buffer.
+Point clouds are typically stored in multiple contiguous files. To avoid edge artifacts, each file must be loaded with extra points coming from neighboring files. Everything is handled automatically, except for the `callback()` stage. In `callback()`, the point cloud is exposed as a `data.frame` with the buffer, providing the user-defined function with some spatial context. If `callback` is used to edit the points, everything is handled internally. However, if an R object is returned, it is the responsibility of the user to handle the buffer.
 
-For example, in the following pipeline, we are processing two files, and `callback()` is used to count the number of points. The presence of `triangulate()` implies that each file will be loaded with a buffer. Consequently, counting the points in `callback()` returns more points than `summarise()` because `summarise()` is an internal function that knows how to deal with the buffer.
+For example, in the following pipeline, we are processing two files, and `callback()` is used to count the number of points. The presence of `triangulate()` implies that each file will be loaded with a buffer to make a valid triangulation. Consequently, counting the points in `callback()` returns more points than `summarise()` because `summarise()` is an internal function that knows how to deal with the buffer.
 
 ```{r, echo = FALSE}
 f = paste0(system.file(package="lasR"), "/extdata/bcts")
@@ -423,11 +415,10 @@ f = f[1:2]
 
 ```{r buffer}
 count = function(data) { length(data$X) }
-read = reader(f)
 del = triangulate(filter = keep_ground())
 npts = callback(count, expose = "x")
 sum = summarise()
-ans = processor(read + del + npts + sum)
+ans = exec(del + npts + sum, on = f)
 print(ans$callback)
 ans$callback[[1]]+ ans$callback[[2]]
 ans$summary$npoints
@@ -437,7 +428,7 @@ We can compare this with the pipeline without `triangulate()`. In this case, the
 
 
 ```{r buffer2}
-ans = processor(read + npts + sum)
+ans = exec(npts + sum, on = f)
 ans$callback[[1]]+ ans$callback[[2]]
 ans$summary$npoints
 ```
@@ -451,11 +442,10 @@ count_buffer_aware = function(data) {
   return(list(bbox = bbox, npoints = npoints))
 }
 
-read = reader(f)
 del = triangulate(filter = keep_ground())
 npts = callback(count_buffer_aware, expose = "b") # b for buffer
 sum = summarise()
-ans = processor(read + del + npts + sum)
+ans = exec(del + npts + sum, on = f)
 print(ans$callback)
 ans$callback[[1]]$npoints+ ans$callback[[2]]$npoints
 ans$summary$npoints
@@ -472,9 +462,8 @@ f <- system.file("extdata", "Topography.las", package="lasR")
 ```
 
 ```{r hulls, fig.width=5, fig.height=5}
-read = reader(f)
-del = triangulate(15, filter = keep_ground(), ofile = tempfile(fileext = ".gpkg"))
-ans = processor(read+del)
+del = triangulate(15, filter = keep_ground(), ofile = tempgpkg())
+ans = exec(del, on = f)
 
 par(mar = c(2, 2, 1, 1))
 plot(ans, axes = T, lwd = 0.5)
@@ -483,10 +472,9 @@ plot(ans, axes = T, lwd = 0.5)
 The `hulls()` algorithm computes the contour of the mesh, producing a concave hull with holes:
 
 ```{r hulls2, fig.width=5, fig.height=5}
-read = reader(f)
 del = triangulate(15, filter = keep_ground())
 bound = hulls(del)
-ans = processor(read+del+bound)
+ans = exec(del+bound, on = f)
 
 par(mar = c(2, 2, 1, 1))
 plot(ans, axes = T, lwd = 0.5, col = "gray")
@@ -504,20 +492,19 @@ f <- c(system.file("extdata", "Topography.las", package="lasR"))
 ```
 
 ```{r sampling}
-read = reader(f)
-pipeline = read + summarise() + sampling_voxel(4) + summarise()
-ans = processor(pipeline)
+pipeline = summarise() + sampling_voxel(4) + summarise()
+ans = exec(pipeline, on = f)
 print(head(ans[[1]]))
 print(head(ans[[2]]))
 ```
 
 ## Readers
 
-There are several readers hidden behind `reader()`: 
+`reader_las()` MUST be the first stage of each pipeline even if it can conveniently be omitted in its simplest form. However there are several readers hidden behind `reader_las()`: 
 
-- `reader_coverage()`: will read of the files and process the entire point cloud.
-- `reader_rectangles()`: will read only some rectangular regions of interest of the coverage and process then sequentially.
-- `reader_circles()`: will read only some circular regions of interest of the coverage and process then sequentially.
+- `reader_las_coverage()`: will read of the files and process the entire point cloud. This is the default behavior of `reader_las()`.
+- `reader_las_rectangles()`: will read only some rectangular regions of interest of the coverage and process then sequentially.
+- `reader_las_circles()`: will read only some circular regions of interest of the coverage and process then sequentially.
 
 The following pipeline triangulates the ground points, normalizes the point cloud, and computes some metric of interest **for each file of the entire coverage**. Each file is loaded with a buffer so that triangulation is performed without edge artifacts. Notice the use of `drop_buffer = TRUE` to expose the `data.frame` without the buffer used to perform the triangulation and normalization.
 
@@ -528,17 +515,17 @@ tri <- triangulate(filter = keep_ground())
 trans <- transform_with(tri)
 norm <- tri + trans
 metric <- callback(my_metric_fun, expose = "z", drop_buffer = TRUE)
-pipeline = reader(f) + norm + metric
+pipeline = norm + metric
 ```
 
 The following pipeline, on the contrary, works exactly the same but operates only on circular plots.
 
 
 ```{r, eval = FALSE}
-pipeline = reader_circles(f, xcenter, ycenter, 11.28) + tri + norm + metrics
+pipeline = reader_las_circles(xcenter, ycenter, 11.28) + pipeline
 ```
 
-These readers allow building a ground inventory pipeline, for example.
+These readers allow building a ground inventory pipeline, or a plot extraction for examples
 
 ## Plot inventory
 
@@ -556,7 +543,7 @@ coordinates <- st_coordinates(inventory)
 xcenter <- coordinates[,1]
 ycenter <- coordinates[,2]
 
-read <- reader(f, xc = xcenter, yc = ycenter, r = 11.28) 
+read <- reader_las(xc = xcenter, yc = ycenter, r = 11.28) 
 tri <- triangulate(filter = keep_ground())
 trans <- transform_with(tri)
 norm <- tri + trans
@@ -569,7 +556,7 @@ pipeline = read + trans + write1 + norm + write2
 
 ## Wildcard Usage
 
-Usually, `write_las()` is used with a wildcard in the `ofile` argument (see above) to write one file per processed file. Otherwise, everything is written into a single massive LAS file (which might be the desired behaviour). On the contrary, `rasterize()` is used without a wildcard to write everything into a single raster file, but it also accepts a wildcard to write the results in multiple files, which is very useful with `reader_circles()` to avoid having one massive raster mostly empty. Compare this pipeline with and without the wildcard.
+Usually, `write_las()` is used with a wildcard in the `ofile` argument (see above) to write one file per processed file. Otherwise, everything is written into a single massive LAS file (which might be the desired behavior). On the contrary, `rasterize()` is used without a wildcard to write everything into a single raster file, but it also accepts a wildcard to write the results in multiple files, which is very useful with `reader_las_circles()` to avoid having one massive raster mostly empty. Compare this pipeline with and without the wildcard.
 
 
 ```{r, echo = FALSE}
@@ -587,8 +574,8 @@ ofile = paste0(tempdir(), "/chm.tif")   # no wildcard
 x = c(885100, 885100)
 y = c(629200, 629600)
 
-pipeline = reader(f, xc = x, yc = y, r = 20) + rasterize(2, "max", ofile = ofile)
-r0 = processor(pipeline)
+pipeline = reader_las(xc = x, yc = y, r = 20) + rasterize(2, "max", ofile = ofile)
+r0 = exec(pipeline, on = f)
 
 terra::plot(r0, col = col) # covers the entire collection of files
 ```
@@ -602,8 +589,8 @@ ofile = paste0(tempdir(), "/chm_*.tif") # wildcard
 x = c(885100, 885100)
 y = c(629200, 629600)
 
-pipeline = reader(f, xc = x, yc = y, r = 20) + rasterize(2, "max", ofile = ofile)
-ans = processor(pipeline)
+pipeline = reader_las(xc = x, yc = y, r = 20) + rasterize(2, "max", ofile = ofile)
+ans = exec(pipeline, on = f)
 
 r1 = terra::rast(ans[1])
 r2 = terra::rast(ans[2])
@@ -619,11 +606,13 @@ While `lasR` does not depends on `lidR` it has some compatibility with it. Inste
 library(lasR)
 library(lidR)
 
+pipeline = normalize() + write_las()
+
 ctg = readLAScatalog(folder)
-pipeline = reader(ctg) + normalize() + write_las()
-ans = processor(pipeline)
+ans = exec(pipeline, on = ctg)
 
 las = readLAS(file)
-pipeline = reader(las) + normalize() + write_las()
-ans = processor(pipeline)
+ans = exec(pipeline, on = las)
 ```
+
+In the case of a `LAScatalog`, `exec()` respects the processing options of the `LAScatalog` including the chunk size, chunk buffer, progress bar display and partial processing. In the general case, the same options can be supplied as arguments of the `exec()` functions.

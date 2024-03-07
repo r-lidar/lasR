@@ -25,8 +25,8 @@ extra bytes attribute to the points. Values are zeroed. It edits the point cloud
 \examples{
 f <- system.file("extdata", "Example.las", package = "lasR")
 fun <- function(data) { data$RAND <- runif(nrow(data), 0, 100); return(data) }
-pipeline <- reader(f) +
+pipeline <- reader_las() +
   add_extrabytes("float", "RAND", "Random numbers") +
   callback(fun, expose = "xyz")
-processor(pipeline)
+exec(pipeline, on = f)
 }
