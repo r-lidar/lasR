@@ -15,7 +15,12 @@
 - New: it is now possible to write the following:
   ```r
   dtm = dtm()
-  pipeline <- read+ dtm + transform_with(dtm[[2]])
+  pipeline <- read + dtm + transform_with(dtm[[2]])
+  ```
+- New: it is not possible to omit the reader stage. It automatically adds a default reader
+  ```r
+  pipeline = rasterize(...)
+  exec(pipeline, on = ctg)
   ```
 - Fix: `summarize()`, `rasterize()` and `write_las()` no longer process withheld points in streaming mode.
 

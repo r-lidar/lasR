@@ -40,7 +40,9 @@
 exec = function(pipeline, on, ncores = half_cores(), progress = FALSE, buffer = 0, chunk = 0, ...)
 {
   if (pipeline[[1]]$algoname != "reader_las")
-    stop("The first stage must be 'read_las()'")
+  {
+    pipeline = reader_las() + pipeline
+  }
 
   dots <- list(...)
   noprocess <- dots$noprocess
