@@ -28,8 +28,7 @@ public:
   void add_query(double xmin, double ymin, double xmax, double ymax);
   void add_query(double xcenter, double ycenter, double radius);
   bool set_noprocess(const std::vector<bool>& b);
-  void set_chunk_size(double size);
-  void set_chunk_is_file();
+  bool set_chunk_size(double size);
   void set_wkt(const std::string& wkt) { this->wkt = wkt; };
   std::string get_wkt() const { return wkt; };
   void set_epsg(int epsg) { this->epsg = epsg; };

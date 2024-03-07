@@ -6,6 +6,7 @@
 #endif
 
 #include "Rcompatibility.h"
+#include "R2cpp.h"
 
 // STL
 #include <memory>
@@ -16,15 +17,14 @@
 #include "pipeline.h"
 #include "LAScatalog.h"
 
-SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbose)
+SEXP process(SEXP sexppipeline, SEXP args)
 {
   try
   {
-    #ifdef USING_R
-    int ncpu = Rf_asInteger(sexpncpu);
-    bool progrss = Rf_asLogical(sexpprogrss);
-    bool verbose = Rf_asLogical(sexpverbose);
-    #endif
+    int ncpu = get_element_as_int(args, "ncores");
+    bool progrss = get_element_as_bool(args, "progress");
+    bool verbose = get_element_as_bool(args, "verbose");
+    double chunk_size = get_element_as_double(args, "chunk_size");
 
     Pipeline pipeline;
     pipeline.set_verbose(verbose);
@@ -36,7 +36,11 @@ SEXP process(SEXP sexppipeline, SEXP sexpprogrss, SEXP sexpncpu, SEXP sexpverbos
     }
 
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
-    lascatalog->set_chunk_size(0);
+
+    if (!lascatalog->set_chunk_size(chunk_size))
+    {
+      throw last_error;
+    }
 
     int n = lascatalog->get_number_chunks();
 
