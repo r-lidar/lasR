@@ -44,6 +44,16 @@ exec = function(pipeline, on, ncores = half_cores(), progress = FALSE, buffer = 
     pipeline = reader_las() + pipeline
   }
 
+  # use processor() so exec is backward compatible with previous pipeline format
+  if (missing(on))
+  {
+    reader = pipeline[[1]]
+    if (!is.null(reader$files) || !is.null(reader$dataframe))
+    {
+      return(processor(pipeline, ncores = ncores, progress = progress, ...))
+    }
+  }
+
   dots <- list(...)
   noprocess <- dots$noprocess
   verbose <- if (is.null(dots$verbose)) FALSE else TRUE
@@ -75,6 +85,8 @@ exec = function(pipeline, on, ncores = half_cores(), progress = FALSE, buffer = 
     pipeline[[1]]$algoname = "reader_dataframe"
     pipeline[[1]]$dataframe = on
     pipeline[[1]]$accuracy = acc
+    pipeline[[1]]$buffer = buffer
+    pipeline[[1]]$crs = crs
 
     valid = TRUE
   }
