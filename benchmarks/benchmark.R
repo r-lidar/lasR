@@ -1,6 +1,10 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 
+lasR = TRUE
+test = 0
+multifile = FALSE
+
 if (length(args) < 2) {
   stop("At least 2 argument must be supplied", call.=FALSE)
 } else {
@@ -42,8 +46,8 @@ if (test == 1)
 {
   if (lasR)
   {
-    pipeline = reader(f) + rasterize(1, "max")
-    processor(pipeline, progress = TRUE, noread = T)
+    pipeline = rasterize(1, "max")
+    exec(pipeline, on = f, progress = TRUE, noread = TRUE)
   }
   else
   {
@@ -57,8 +61,8 @@ if (test == 2)
   if (lasR)
   {
     tri = triangulate()
-    pipeline = reader(f, filter = keep_ground()) + tri + rasterize(1, tri)
-    processor(pipeline)
+    pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
+    exec(pipeline, f, progress = TRUE, noread = TRUE)
   }
   else
   {
@@ -72,12 +76,11 @@ if (test == 3)
   if (lasR)
   {
     custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
-    read = reader(f)
     chm = rasterize(1, "max")
     met = rasterize(20, custom_function(Z, Intensity))
     den = rasterize(5, "count")
-    pipeline = read + chm + met + den
-    processor(pipeline)
+    pipeline = chm + met + den
+    exec(pipeline, f)
   }
   else
   {
@@ -93,7 +96,6 @@ if (test == 4)
 {
   if (lasR)
   {
-    read = reader(f)
     del = triangulate(filter = keep_ground())
     norm = transform_with(del)
     dtm = rasterize(1, del)
@@ -101,8 +103,8 @@ if (test == 4)
     seed = local_maximum(3)
     tree = region_growing(chm, seed)
     write = write_las()
-    pipeline = read + del + norm + write + dtm + chm + seed + tree
-    ans = processor(pipeline, progress = TRUE)
+    pipeline = del + norm + write + dtm + chm + seed + tree
+    ans = exec(pipeline, f, progress = TRUE, noread = TRUE)
   }
   else
   {
@@ -131,8 +133,8 @@ if (test == 5)
 {
   if (lasR)
   {
-    pipeline = reader(f) + normalize() + write_las()
-    processor(pipeline)
+    pipeline = normalize() + write_las()
+    exec(pipeline, f, progress = TRUE, noread = TRUE)
   }
   else
   {
@@ -146,8 +148,8 @@ if (test == 6)
 {
   if (lasR)
   {
-    pipeline = reader(f) + local_maximum(5)
-    processor(pipeline)
+    pipeline = local_maximum(5)
+    exec(pipeline, f, progress = TRUE, noread = TRUE)
   }
   else
   {
@@ -156,6 +158,21 @@ if (test == 6)
   }
 }
 
+if (test == 7)
+{
+  if (lasR)
+  {
+    tri = triangulate()
+    pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
+    ans = exec(pipeline, f, progress = TRUE, noread = TRUE, chunk = 1000)
+  }
+  else
+  {
+    ctg = readLAScatalog(f)
+    opt_chunk_size(ctg) = 1000
+    dtm = rasterize_terrain(ctg, 1, tin())
+  }
+}
 
 tf = Sys.time()
 tf-ti

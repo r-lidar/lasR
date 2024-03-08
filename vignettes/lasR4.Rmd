@@ -165,7 +165,7 @@ dtm = rasterize_terrain(ctg, 1, tin())
 
 # lasR
 set_parallel_strategy(...)
-tri = triangulate(filter = keep_ground())
+tri = triangulate()
 pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
 exec(pipeline, on = ctg)
 ```
@@ -175,6 +175,16 @@ exec(pipeline, on = ctg)
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 m_lasr = read_benchmarks("lasR", 2)
 m_lidr = read_benchmarks("lidR", 2)
+plot_benchmark(m_lidr, m_lasr)
+```
+
+## Digital Terrain Model chunked
+
+The same digital terrain pipeline but using `exec(pipeline, ..., chunk = 1000)` for `lasR` and `opt_chunk_size(ctg) = 1000` for `lidR`
+
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
+m_lasr = read_benchmarks("lasR", 7)
+m_lidr = read_benchmarks("lidR", 7)
 plot_benchmark(m_lidr, m_lasr)
 ```
 

@@ -4,7 +4,7 @@ computer_name=$(hostname)
 
 # Define parameters
 p1_options=("lidR" "lasR")
-p2_options=(1 2 3 4 5)
+p2_options=(1 2 3 4 5 6 7)
 p3_options=("false" "true")
 
 # If no parameters are provided, loop over all possible combinations
