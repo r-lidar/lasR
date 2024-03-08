@@ -13,7 +13,9 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   this->window = (window > res) ? (window-res)/2 : 0;
   raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
 
-  metrics.parse(methods);
+  if (!metrics.parse(methods))
+    throw last_error;
+
   for (int j = 0 ; j < metrics.size() ; j++)
     raster.set_band_name(methods[j], j);
 

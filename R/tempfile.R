@@ -5,6 +5,9 @@
 #' @return string. Path to a temporary file.
 #' @name temporary_files
 #' @rdname temporary_files
+#' @examples
+#' tempshp()
+#' templaz()
 NULL
 
 #' @rdname temporary_files

@@ -38,6 +38,30 @@ test_that("rasterize non streamed works",
   expect_equal(u[[9]][], u[[15]][], ignore_attr = TRUE) # max = percentile 100
 })
 
+test_that("rasterize fails",
+{
+  f = system.file("extdata", "Example.las", package="lasR")
+
+  expect_error(rasterize(1, "zp101"), "Non supported operators")
+
+  read = reader(f, filter = "")
+  met = rasterize(5, c("count"))
+  met[[1]]$method = "zp101"
+  expect_error(processor(read+met), "Percentile out of range")
+
+  met[[1]]$method = "ip101"
+  expect_error(processor(read+met), "Percentile out of range")
+
+  met[[1]]$method = "plop"
+  expect_error(processor(read+met), "metric plop not recognized")
+
+  met[[1]]$method = "zup"
+  expect_error(processor(read+met), "metric zup not recognized")
+
+  met[[1]]$method = "iup"
+  expect_error(processor(read+met), "metric iup not recognized")
+})
+
 test_that("rasterize expression works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")

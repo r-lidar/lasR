@@ -19,9 +19,9 @@ but does not produce any output.
 }
 \examples{
 f <- system.file("extdata", "Megaplot.las", package="lasR")
-read <- reader(f)
+read <- reader_las()
 filter <- delete_points(keep_z_above(4))
 
 pipeline <- read + summarise() + filter + summarise()
-processor(pipeline)
+exec(pipeline, on = f)
 }

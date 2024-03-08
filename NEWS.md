@@ -1,7 +1,29 @@
-# lasR 0.2.1
+# lasR 0.3.0
 
-- Fix: `summarize()`, `rasterize()` and `write_las()` no longer process withheld points in streaming mode.
+- Change: `processor()` and `reader()` are deprecated and are replaced by `exec()` and `reader_las()`. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the `LAScatalog` processing options and this was not possible with the previous syntax.
+  ```r
+  ctg = lidR::readLAScatalog()
+  pipeline = reader_las() + rasterize(...)
+  exec(pipeline, on = ctg)
+  ```
+- New: the processor is now able to process by chunk like `lidR`
+  ```r
+  pipeline = reader_las() + rasterize(...)
+  exec(pipeline, on = file, chunk = 500)
+  ```
 - New: stage `delete_points()` to remove some points in the pipeline.
+- New: it is now possible to write the following:
+  ```r
+  dtm = dtm()
+  pipeline <- read + dtm + transform_with(dtm[[2]])
+  ```
+- New: it is not possible to omit the reader stage. It automatically adds a default reader
+  ```r
+  pipeline = rasterize(...)
+  exec(pipeline, on = ctg)
+  ```
+- Fix: `summarize()`, `rasterize()` and `write_las()` no longer process withheld points in streaming mode.
+
 
 # lasR 0.2.1 (2024-03-05)
 

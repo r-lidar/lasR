@@ -25,3 +25,7 @@ string. Path to a temporary file.
 \description{
 Convenient functions to create temporary file with a given extension.
 }
+\examples{
+tempshp()
+templaz()
+}

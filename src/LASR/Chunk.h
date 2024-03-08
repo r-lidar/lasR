@@ -19,7 +19,7 @@ struct Chunk
     ymax = 0;
     shape = ShapeType::UNKNOWN;
     buffer = 0;
-    process = false;
+    process = true;
     name.clear();
     main_files.clear();
     neighbour_files.clear();

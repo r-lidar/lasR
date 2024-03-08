@@ -31,9 +31,9 @@ to the original collection of files.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader(f)
+read <- reader_las()
 tri  <- triangulate(filter = keep_ground())
 normalize <- tri + transform_with(tri)
 pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
-processor(pipeline)
+exec(pipeline, on = f)
 }

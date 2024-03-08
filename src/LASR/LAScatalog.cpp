@@ -2,6 +2,7 @@
 #include "LAScatalog.h"
 #include "Progress.h"
 #include "error.h"
+#include "Grid.h"
 
 // LASlib
 #include "lasreader.hpp"
@@ -400,17 +401,40 @@ bool LAScatalog::set_noprocess(const std::vector<bool>& b)
   return true;
 }
 
-void LAScatalog::set_chunk_size(double size)
-{
-  if (size > 0)
-    chunk_size = size;
-  else
-    chunk_size = 0;
-}
-
-void LAScatalog::set_chunk_is_file()
+bool LAScatalog::set_chunk_size(double size)
 {
   chunk_size = 0;
+
+  if (size > 0)
+  {
+    if (queries.size() > 0)
+    {
+      last_error = "Impossible to set chunk size with queries";
+      return false;
+    }
+
+    if (!laskdtree->was_built())
+    {
+      last_error = "internal error: laskdtree not built"; // # nocov
+      return false; // # nocov
+    }
+
+    chunk_size = size;
+
+    Grid grid(xmin, ymin, xmax, ymax, chunk_size);
+    for (int i = 0 ; i < grid.get_ncells() ; i++)
+    {
+      double x = grid.x_from_cell(i);
+      double y = grid.y_from_cell(i);
+      double hsize = size/2;
+
+      laskdtree->overlap(x-hsize, y-hsize, x+hsize, y+hsize);
+      if (laskdtree->has_overlaps())
+        add_query(x-hsize, y-hsize, x+hsize, y+hsize);
+    }
+  }
+
+  return true;
 }
 
 bool LAScatalog::get_chunk(int i, Chunk& chunk) const
@@ -429,11 +453,15 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
   bool success = false;
 
   if (queries.size() == 0)
+  {
     success = get_chunk_regular(i, chunk);
+    chunk.process = !noprocess[i];
+  }
   else
+  {
     success = get_chunk_with_query(i, chunk);
-
-  chunk.process = !noprocess[i];
+    chunk.process = true;
+  }
 
   return success;
 }
@@ -494,10 +522,16 @@ bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
 
 bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
 {
+  if (!laskdtree->was_built())
+  {
+    last_error = "internal error: laskdtree not built"; // # nocov
+    return false; // # nocov
+  }
+
   unsigned int index;
   chunk.clear();
 
-  // Some shape are provided. We are performing queries i.e not processing the entire collection
+  // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
   Shape* q = queries[i];
   double minx = q->xmin();
   double miny = q->ymin();
@@ -522,6 +556,10 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   chunk.ymin = miny;
   chunk.xmax = maxx;
   chunk.ymax = maxy;
+  if (chunk.xmin < xmin) chunk.xmin = xmin;
+  if (chunk.xmax > xmax) chunk.xmax = xmax;
+  if (chunk.ymin < ymin) chunk.ymin = ymin;
+  if (chunk.ymax > ymax) chunk.ymax = ymax;
   chunk.buffer = buffer;
   chunk.shape = q->type();
 
@@ -537,7 +575,7 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   if (get_number_files() == 1)
   {
     chunk.main_files.push_back(files[0].string());
-    chunk.name = files[0].stem().string();
+    chunk.name = files[0].stem().string() + "_" + std::to_string(i);
     return true;
   }
 

@@ -47,12 +47,11 @@ done by the user in separate functions.
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package="lasR")
 
-reader <- reader(f, filter = keep_first())
-reader <- reader(f, filter = keep_first())
+reader <- reader_las(filter = keep_first())
 chm <- rasterize(1, "max")
 lmx <- local_maximum(5)
 tree <- region_growing(chm, lmx, max_cr = 10)
-u <- processor(reader + chm + lmx + tree)
+u <- exec(reader + chm + lmx + tree, on = f)
 
 }
 \references{

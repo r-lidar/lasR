@@ -10,7 +10,7 @@ name: test-coverage
 
 jobs:
   test-coverage:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
@@ -21,9 +21,13 @@ jobs:
         with:
           use-public-rspm: true
 
+      - name: Install macOS system dependencies
+        if: runner.os == 'macOS'
+        run: brew install gdal proj
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr, r-lidar/lidR
+          extra-packages: any::covr, any::lidR
           needs: coverage
 
       - name: Test coverage

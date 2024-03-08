@@ -79,6 +79,9 @@ test_that("pipleline info works",
   expect_equal(info$streamable, TRUE)
   expect_equal(info$buffer, 0)
   expect_equal(info$read_points, TRUE)
+
+  pipeline[[1]]$algoname = "plop"
+  expect_error(lasR:::get_pipeline_info(pipeline), "Unsupported stage: plop")
 })
 
 test_that("processor fails without reader",

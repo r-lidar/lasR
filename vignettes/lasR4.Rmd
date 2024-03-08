@@ -139,10 +139,11 @@ plot_benchmark = function(lidr, lasr)
 future::plan(future::multicore(...))
 chm = rasterize_canopy(ctg, 1, p2r())
 
+
 # lasR
 set_parallel_strategy(...)
-pipeline = reader(ctg) + rasterize(1, "max")
-processor(pipeline)
+pipeline = rasterize(1, "max")
+exec(pipeline, on = ctg)
 ```
 
 ### Result
@@ -165,8 +166,8 @@ dtm = rasterize_terrain(ctg, 1, tin())
 # lasR
 set_parallel_strategy(...)
 tri = triangulate(filter = keep_ground())
-pipeline = reader(ctg, filter = keep_ground()) + tri + rasterize(1, tri)
-processor(pipeline)
+pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
+exec(pipeline, on = ctg)
 ```
 
 ### Result
@@ -195,12 +196,11 @@ den = rasterize_density(ctg, 5)
 # lasR
 set_parallel_strategy(...)
 custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
-read = reader(folder)
 chm = rasterize(1, "max")
 met = rasterize(20, custom_function(Z, Intensity))
 den = rasterize(5, "count")
-pipeline = read + chm + met + den
-processor(pipeline)
+pipeline = chm + met + den
+exec(pipeline, on = folder)
 ```
 
 ### Result
@@ -266,7 +266,6 @@ In this complex pipeline, the point cloud is normalized and written to new files
 ## Code
 
 ```r
-read = reader(ctg)
 del = triangulate(filter = keep_ground())
 norm = transform_with(del)
 dtm = rasterize(1, del)
@@ -275,7 +274,7 @@ seed = local_maximum(3)
 tree = region_growing(chm, seed)
 write = write_las()
 pipeline = read + del + norm + write + dtm + chm +  seed + tree
-ans = processor(pipeline, progress = TRUE)
+ans = exec(pipeline, on = ctg, progress = TRUE)
 ```
 
 ## Result

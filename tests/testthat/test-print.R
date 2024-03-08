@@ -5,6 +5,7 @@ test_that("prints works with complex pipeline",
   f = list.files(f, full.names = T)
   read = reader(f)
   del = triangulate(filter = keep_ground())
+  met = rasterize(1, mean(Z))
   npts = callback(count, expose = "x")
   hull = hulls(del)
   sum = summarise()

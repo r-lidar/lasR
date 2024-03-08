@@ -22,8 +22,8 @@ summary as a `list`.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader(f)
+read <- reader_las()
 pipeline <- read + summarise()
-ans <- processor(pipeline)
+ans <- exec(pipeline, on = f)
 ans
 }

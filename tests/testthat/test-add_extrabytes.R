@@ -5,24 +5,22 @@ gun = function(data) { data }
 
 test_that("callback cannot add attribute without EB",
 {
-  pipeline = reader(f) + callback(fun)
-  expect_error(processor(pipeline), "non supported column 'HAG'")
+  expect_error(exec(callback(fun), on = f), "non supported column 'HAG'")
 })
 
 test_that("callback can add attribute with EB",
 {
-  pipeline = reader(f) + add_extrabytes("double", "HAG", "test") + callback(fun)
-  expect_warning(processor(pipeline), NA)
+  pipeline = add_extrabytes("double", "HAG", "test") + callback(fun)
+  expect_warning(exec(pipeline, f), NA)
 })
 
 test_that("add_extrabytes work in chain",
 {
-  pipeline = reader(f) +
-    add_extrabytes("double", "HAG", "test")  +
+  pipeline = add_extrabytes("double", "HAG", "test")  +
     add_extrabytes("int", "VAL", "test2") +
     callback(gun, expose = "xyz01", no_las_update = T)
 
-  ans = processor(pipeline)
+  ans = exec(pipeline, f)
 
   expect_true("HAG" %in% names(ans))
   expect_true("VAL" %in% names(ans))
@@ -34,18 +32,16 @@ test_that("add_extrabytes produced writable and readable file (#2)",
   f2 = system.file("extdata", "Example.laz", package="lasR")
   g1 = tempfile(fileext = ".las")
   g2 = tempfile(fileext = ".laz")
-  r1 = reader(f1)
-  r2 = reader(f2)
   w1 = write_las(g1)
   w2 = write_las(g2)
 
   extra = add_extrabytes("double", "HAG", "test")
 
-  ans1 = processor(r1+extra+w1, noread = T)
-  ans2 = processor(r2+extra+w2, noread = T)
+  ans1 = exec(extra+w1, f1, noread = T)
+  ans2 = exec(extra+w2, f2, noread = T)
 
-  expect_error(u1 <- processor(reader(ans1) + summarise()), NA)
-  expect_error(u2 <- processor(reader(ans2) + summarise()), NA)
+  expect_error(u1 <- exec(summarise(), ans1), NA)
+  expect_error(u2 <- exec(summarise(), ans2), NA)
 
   expect_equal(u1$npoints, 30L)
   expect_equal(u2$npoints, 30L)
@@ -69,7 +65,7 @@ test_that("callback and add_attribute work with EB of any type",
     data
   }
 
-  pipeline = reader(f) +
+  pipeline = reader_las() +
     add_extrabytes("uchar", "attr1", "test") +
     add_extrabytes("char", "attr2", "test") +
     add_extrabytes("ushort", "attr3", "test") +
@@ -80,14 +76,13 @@ test_that("callback and add_attribute work with EB of any type",
     callback(fun, expose = "01234567") +
     write_las(g)
 
-  expect_error(processor(pipeline), NA)
+  expect_error(exec(pipeline, f), NA)
 
   read_las = function(f, expose = "xyzi")
   {
     load = function(data) { return(data) }
-    read = reader(f)
     call = callback(load, expose, no_las_update = TRUE)
-    return (processor(read+call))
+    return (exec(call, f))
   }
 
   data = read_las(g, expose = "*")

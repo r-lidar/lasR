@@ -21,7 +21,7 @@
 
 .onUnload <- function(libpath)
 {
-  library.dynam.unload("lasR", libpath)
+  library.dynam.unload("lasR", libpath) # nocov
 }
 
 # Check if the package has more recent version
@@ -34,6 +34,7 @@ check_update = function()
   new_version = !is.null(last) && last > curr
   dev_version = is_dev_version(curr)
 
+  # nocov start
   if (new_version)
   {
     if (dev_version)
@@ -47,6 +48,8 @@ check_update = function()
   }
 
   if (!is.null(msg) & interactive()) packageStartupMessage(msg)
+  # nocov end
+
   return(NULL)
 }
 
@@ -65,12 +68,12 @@ get_latest_version = function()
   },
   error = function(e)
   {
-    sink(type = "message")
-    return(FALSE)
+    sink(type = "message") # nocov
+    return(FALSE) # nocov
   })
 
   if (isFALSE(ans))
-    return(NULL)
+    return(NULL) # nocov
 
   m <- read.dcf(f)
   version <- m[4]
