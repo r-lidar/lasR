@@ -52,13 +52,24 @@ f = c("/home/jr/Documents/Ulaval/ALS data/BCTS/092L073113_BCTS_2.laz",
 "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073131_BCTS_2.laz", 
 "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073132_BCTS_2.laz")
 
+all = FALSE
+
 read_benchmarks = function(pkg, test)
 {
-  list(
-  read_benchmark(paste0(pkg, "_test_", test, "_jr-ThinkPad-T450s.data")),
-  read_benchmark(paste0(pkg, "_test_", test, "_multifile_false_FFGG-1009803.data")),
-  read_benchmark(paste0(pkg, "_test_", test, "_multifile_true_jr-ThinkPad-T450s.data")),
-  read_benchmark(paste0(pkg, "_test_", test, "_multifile_true_FFGG-1009803.data")))
+  if (all)
+  {
+    list(
+    read_benchmark(paste0(pkg, "_test_", test, "_jr-ThinkPad-T450s.data")),
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_false_FFGG-1009803.data")),
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_true_jr-ThinkPad-T450s.data")),
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_true_FFGG-1009803.data")))
+  }
+  else
+  {
+    list(
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_false_FFGG-1009803.data")),
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_true_FFGG-1009803.data")))
+  }
 }
 
 read_benchmark = function(file)
@@ -68,25 +79,31 @@ read_benchmark = function(file)
   read.table(f)$V1  
 }
 
-plot_benchmark = function(lidr, lasr)
+plot_benchmark = function(lidr, lasr, tmax = NULL, max = NULL)
 {
   vlidr = "lidR 4.1.1"
   vlasr = paste("lasR", packageVersion("lasR"))
   
   cpu_name = c("i7-5600U - 1 core", "i7-1355U - 1 core", "i7-5600U - 4 cores", "i7-1355U - 4 cores")
-  
-  mmax = 0
-  tmax = 0
-  for (i in seq_along(lidr))
+  if (!all) cpu_name = cpu_name[c(2,4)]
+
+
+  if (is.null(tmax))
   {
-    m_lidr = lidr[[i]]
-    m_lasr = lasr[[i]]
-    t_lasr = (1:length(m_lasr)-1)*2/60
-    t_lidr = (1:length(m_lidr)-1)*2/60
-    tmax = max(t_lidr, t_lasr, tmax)
-    mmax = max(m_lidr, m_lasr, mmax)
+    mmax = 0
+    tmax = 0
+    for (i in seq_along(lidr))
+    {
+      m_lidr = lidr[[i]]
+      m_lasr = lasr[[i]]
+      t_lasr = (1:length(m_lasr)-1)*2/60
+      t_lidr = (1:length(m_lidr)-1)*2/60
+      tmax = max(t_lidr, t_lasr, tmax)
+      mmax = max(m_lidr, m_lasr, mmax)
+    }
+    
+    mmax = mmax/1000
   }
-  mmax = mmax/1000
   
   unit = "min"
   divider = 60
@@ -181,9 +198,26 @@ plot_benchmark(m_lidr, m_lasr)
 The same digital terrain pipeline but using `exec(pipeline, ..., chunk = 1000)` for `lasR` and `opt_chunk_size(ctg) = 1000` for `lidR` to reduce the memory usage.
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
+lasr = read_benchmarks("lasR", 2)
+lidr = read_benchmarks("lidR", 2)
+
+mmax = 0
+tmax = 0
+for (i in seq_along(lidr))
+{
+  m_lidr = lidr[[i]]
+  m_lasr = lasr[[i]]
+  t_lasr = (1:length(m_lasr)-1)*2/60
+  t_lidr = (1:length(m_lidr)-1)*2/60
+  tmax = max(t_lidr, t_lasr, tmax)
+  mmax = max(m_lidr, m_lasr, mmax)
+}
+mmax = mmax/1000
+
+
 m_lasr = read_benchmarks("lasR", 7)
 m_lidr = read_benchmarks("lidR", 7)
-plot_benchmark(m_lidr, m_lasr)
+plot_benchmark(m_lidr, m_lasr, tmax, mmax)
 ```
 
 ## Multiple raster

@@ -31,7 +31,7 @@ processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
   if (!is.null(dots$ncores))
   {
     warning("Argument ncores is deprecated. Use 'set_lasr_strategy()' instead")
-    set_lasr_strategy(concurrent_points(dots$ncores))
+    set_parallel_strategy(concurrent_points(dots$ncores))
   }
   else
   {
