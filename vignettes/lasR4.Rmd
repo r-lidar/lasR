@@ -178,9 +178,7 @@ m_lidr = read_benchmarks("lidR", 2)
 plot_benchmark(m_lidr, m_lasr)
 ```
 
-## Digital Terrain Model chunked
-
-The same digital terrain pipeline but using `exec(pipeline, ..., chunk = 1000)` for `lasR` and `opt_chunk_size(ctg) = 1000` for `lidR`
+The same digital terrain pipeline but using `exec(pipeline, ..., chunk = 1000)` for `lasR` and `opt_chunk_size(ctg) = 1000` for `lidR` to reduce the memory usage.
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 m_lasr = read_benchmarks("lasR", 7)
@@ -188,7 +186,8 @@ m_lidr = read_benchmarks("lidR", 7)
 plot_benchmark(m_lidr, m_lasr)
 ```
 
-## Multiple rasters
+## Multiple raster
+
 
 The gain in terms of computation time is much more significant when running multiple stages in a single pipeline because files are read only once in `lasR` but multiple times in `lidR`. Here, all operations are executed in a single pass at the C++ level, resulting in more efficient memory management.
 

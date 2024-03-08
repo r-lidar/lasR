@@ -128,7 +128,6 @@ if (test == 4)
   }
 }
 
-
 if (test == 5)
 {
   if (lasR)
