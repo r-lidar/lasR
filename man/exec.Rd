@@ -28,9 +28,6 @@ large files or processing a massive \code{copc} files. If \code{on} is a \code{L
 option set by the \code{LAScatalog} has the precedence.}
 
 \item{...}{unused}
-
-\item{ncores}{integer. Number of cores to use. Some stages or some steps in some stages
-are parallelised but overall one file is process at a time.}
 }
 \description{
 Process the pipeline. Every other functions of the package do nothing. This function must be

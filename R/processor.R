@@ -9,8 +9,6 @@
 #' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
 #' file or a `data.frame` containing tte point cloud. It supports also a `LAScatalog` or a `LAS` objects
 #' from `lidR`.
-#' @param ncores integer. Number of cores to use. Some stages or some steps in some stages
-#' are parallelised but overall one file is process at a time.
 #' @param buffer numeric. Each file is read with a buffer. The default is 0, which does not mean that
 #' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
 #' pick the greatest value between the internal suggestion and this value. If `on` is a `LAScatalog`
