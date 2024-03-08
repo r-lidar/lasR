@@ -110,6 +110,22 @@ if (test == 4)
   }
 }
 
+if (test == 7)
+{
+  if (lasR)
+  {
+    tri = triangulate()
+    pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
+    ans = exec(pipeline, f, progress = TRUE, noread = TRUE, chunk = 1000)
+  }
+  else
+  {
+    ctg = readLAScatalog(f)
+    opt_chunk_size(ctg) = 1000
+    dtm = rasterize_terrain(ctg, 1, tin())
+  }
+}
+
 tf = Sys.time()
 tf-ti
 
