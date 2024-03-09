@@ -3,6 +3,7 @@
 
 #include <unordered_set>
 #include <unordered_map>
+#include <algorithm>
 
 LASRboundaries::LASRboundaries(double xmin, double ymin, double xmax, double ymax, LASRalgorithm* algorithm)
 {

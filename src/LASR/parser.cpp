@@ -26,6 +26,8 @@
 #include "readdataframe.h"
 #endif
 
+#include <algorithm>
+
 bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 {
   int num_stages = Rf_length(sexpargs);
