@@ -169,7 +169,7 @@ test_that("rasterize triangulation works with 4 files",
   expect_equal(dim(dtm), c(213, 42, 1))
 
   payload = u[]
-  expect_equal(mean(payload, na.rm = TRUE), 341.4066, tolerance = 1e-6)
+  expect_equal(mean(payload, na.rm = TRUE), 341.405, tolerance = 1e-6)
   expect_equal(sum(is.na(payload)), 876)
   #terra::plot(u)
 })

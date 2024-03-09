@@ -26,6 +26,8 @@
 #include "readdataframe.h"
 #endif
 
+#include <algorithm>
+
 bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 {
   // This is the extent of the coverage.
