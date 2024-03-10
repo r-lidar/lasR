@@ -2,4 +2,5 @@ src/LASlib/* linguist-vendored
 src/LASzip/* linguist-vendored
 tests/testthat/* linguist-vendored
 src/boost/* linguist-vendored
+src/third_party/nlohmann/* linguist-vendored
 configure.ac text eol=lf
