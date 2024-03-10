@@ -81,7 +81,7 @@ Unlike `lidR`, `lasR` does not load lidar data into a `data.frame`. It is design
 
 ### Dependencies
 
-`lasR` has only one dependency, `boost`. It doesn't even depend on `Rcpp`. `lasR` does not use `terra` and `sf` at the R level for reading and writing spatial data; instead, it links to `GDAL`. If `terra` and `sf` are installed, the output files will be read with these packages. Due to the absence of dependency on R package and the non-loading of data as R objects, there is also no dependency on `rgl`, resulting in no interactive 3D viewer like in `lidR`.
+`lasR` has only 0 dependency. It doesn't even depend on `Rcpp`. `lasR` does not use `terra` and `sf` at the R level for reading and writing spatial data; instead, it links to `GDAL`. If `terra` and `sf` are installed, the output files will be read with these packages. Due to the absence of dependency on R package and the non-loading of data as R objects, there is also no dependency on `rgl`, resulting in no interactive 3D viewer like in `lidR`.
 
 ### Code
 

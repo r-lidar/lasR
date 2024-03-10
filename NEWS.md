@@ -22,8 +22,8 @@
   pipeline = rasterize(...)
   exec(pipeline, on = ctg)
   ```
+- New: triangulation is 4x faster and uses half the memory.
 - Fix: `summarize()`, `rasterize()` and `write_las()` no longer process withheld points in streaming mode.
-
 
 # lasR 0.2.1 (2024-03-05)
 

@@ -7,7 +7,7 @@
 
 #include "lastransform.hpp"
 
-#include "delaunator.hpp"
+#include "delaunator/delaunator.hpp"
 
 #include <chrono>
 
