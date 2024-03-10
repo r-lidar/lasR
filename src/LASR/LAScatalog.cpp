@@ -148,8 +148,6 @@ bool LAScatalog::read_vpc(const std::string& filename)
       std::string file_path = first_asset["href"];
       file_path = std::filesystem::weakly_canonical(parent_folder / file_path).string();
 
-      print("%s\n", file_path.c_str());
-
       int pccount = feature["properties"]["pc:count"].get<int>();
 
       // Get the CRS either in WKT or EPSG
@@ -167,7 +165,6 @@ bool LAScatalog::read_vpc(const std::string& filename)
         continue;
       }
 
-      print("found bbox\n");
       // We are sure there is a bbox
       auto bbox = feature["properties"]["proj:bbox"];
       double min_x, min_y, max_x, max_y;
