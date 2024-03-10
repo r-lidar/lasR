@@ -15,7 +15,7 @@ PKG_LIBS =  \
 
 CXX_STD=CXX17
 
-SOURCES = $(wildcard LASlib/*.cpp LASzip/*.cpp LASR/*.cpp ./third_party/*.cpp ./*.cpp)
+SOURCES = $(wildcard LASlib/*.cpp LASzip/*.cpp LASR/*.cpp ./third_party/*/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
 OBJECTS = $(TEMP1:.c=.o)
 
