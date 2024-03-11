@@ -7,7 +7,7 @@
 #' @param pipeline a pipeline. A serie of stages called in order
 #' @param on Can be the paths of the files to use, the path of the folder in which the files are stored,
 #' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
-#' file or a `data.frame` containing tte point cloud. It supports also a `LAScatalog` or a `LAS` objects
+#' file or a `data.frame` containing the point cloud. It supports also a `LAScatalog` or a `LAS` objects
 #' from `lidR`.
 #' @param buffer numeric. Each file is read with a buffer. The default is 0, which does not mean that
 #' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
@@ -15,9 +15,9 @@
 #' from `lidR` the options set by the `LAScatalog` has the precedence.
 #' @param progress boolean. Displays a progress bar.  If `on` is a `LAScatalog` from `lidR` the
 #' options set by the `LAScatalog` has the precedence.
-#' @param chunk numeric. By default the collection of files is processed by file (`chunk = 0`). It is
-#' possible to process by arbitrary sized chunks. This is useful for e.g. processing collection with
-#' large files or processing a massive `copc` files. If `on` is a `LAScatalog` from `lidR` the
+#' @param chunk numeric. By default the collection of files is processed by file (`chunk = NULL`).
+#' It is  possible to process by arbitrary sized chunks. This is useful for e.g. processing collection
+#' with large files or processing a massive `copc` files. If `on` is a `LAScatalog` from `lidR` the
 #' option set by the `LAScatalog` has the precedence.
 #' @param ... unused
 #'
@@ -54,6 +54,9 @@ exec = function(pipeline, on, progress = FALSE, buffer = 0, chunk = 0, ...)
       return(processor(pipeline, ncores = ncores, progress = progress, ...))
     }
   }
+
+  if (is.null(buffer)) buffer <- 0
+  if (is.null(chunk))  chunk <- 0
 
   dots <- list(...)
   noprocess <- dots$noprocess

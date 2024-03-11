@@ -85,7 +85,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
       ncpu_outer_loop = 1;
       warning("This pipeline is not parallizable using 'concurrent-files' strategy.\n");
     }
-    if (pipeline.use_rcapi() && ncpu_outer_loop > 1)
+    if (use_rcapi && ncpu_outer_loop > 1)
     {
       // The R's C stack is now unprotected — the work with R C API becomes more dangerous
       // but we can run parallel stuff without strange problems like: C stack usage is too close to the limit
@@ -153,8 +153,6 @@ SEXP process(SEXP sexppipeline, SEXP args)
           // We cannot exit a parallel loop easily. Instead we can rather run the loop until the end
           // skipping the processing
           if (failure) continue;
-
-          bool last_chunk = i+1 == n; // TODO:: need to be revised for parallel code
 
           // We query the chunk i (thread safe)
           Chunk chunk;

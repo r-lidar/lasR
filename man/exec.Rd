@@ -11,7 +11,7 @@ exec(pipeline, on, progress = FALSE, buffer = 0, chunk = 0, ...)
 
 \item{on}{Can be the paths of the files to use, the path of the folder in which the files are stored,
 the path to a \href{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/}{virtual point cloud}
-file or a \code{data.frame} containing tte point cloud. It supports also a \code{LAScatalog} or a \code{LAS} objects
+file or a \code{data.frame} containing the point cloud. It supports also a \code{LAScatalog} or a \code{LAS} objects
 from \code{lidR}.}
 
 \item{progress}{boolean. Displays a progress bar.  If \code{on} is a \code{LAScatalog} from \code{lidR} the
@@ -22,9 +22,9 @@ the file won't be buffered. It means that the internal routine knows if a buffer
 pick the greatest value between the internal suggestion and this value. If \code{on} is a \code{LAScatalog}
 from \code{lidR} the options set by the \code{LAScatalog} has the precedence.}
 
-\item{chunk}{numeric. By default the collection of files is processed by file (\code{chunk = 0}). It is
-possible to process by arbitrary sized chunks. This is useful for e.g. processing collection with
-large files or processing a massive \code{copc} files. If \code{on} is a \code{LAScatalog} from \code{lidR} the
+\item{chunk}{numeric. By default the collection of files is processed by file (\code{chunk = NULL}).
+It is  possible to process by arbitrary sized chunks. This is useful for e.g. processing collection
+with large files or processing a massive \code{copc} files. If \code{on} is a \code{LAScatalog} from \code{lidR} the
 option set by the \code{LAScatalog} has the precedence.}
 
 \item{...}{unused}

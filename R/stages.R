@@ -457,10 +457,10 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
 #'
 #' This is the first stage that must be called in each pipeline. The stage does nothing and returns
 #' nothing if it is not associated to another processing stage.
-#' It only initializes the pipeline. `reader()` is the main function that dispatches into to other
-#' functions. `reader_las_*()` reads from LAS/LAZ files on disk.`reader_las_coverage()` processes the entire
-#' point cloud. `reader_las_circles()` and `reader_las_rectangles()` read and process only some selected regions
-#' of interest. If the chosen reader has no options i.e. using `reader_las()` it can be omitted.
+#' It only initializes the pipeline. `reader_las()` is the main function that dispatches into to other
+#' functions. `reader_las_coverage()` processes the entire point cloud. `reader_las_circles()` and
+#' `reader_las_rectangles()` read and process only some selected regions of interest. If the chosen
+#' reader has no options i.e. using `reader_las()` it can be omitted.
 #'
 #' @template param-filter
 #' @param xc,yc,r numeric. Circle centres and radius or radii.
@@ -472,12 +472,26 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
 #'
 #' pipeline <- reader_las() + rasterize(10, "zmax")
 #' ans <- exec(pipeline, on = f)
+#' # terra::plot(ans)
 #'
 #' pipeline <- reader_las(filter = keep_z_above(1.3)) + rasterize(10, "zmean")
 #' ans <- exec(pipeline, on = f)
+#' # terra::plot(ans)
 #'
 #' # read_las() with no option can be omitted
 #' ans <- exec(rasterize(10, "zmax"), on = f)
+#' # terra::plot(ans)
+#'
+#' # Perform a query and apply the pipeline on a subset
+#' pipeline = reader_las_circles(273500, 5274500, 20) + rasterize(2, "zmax")
+#' ans <- exec(pipeline, on = f)
+#' # terra::plot(ans)
+#'
+#' # Perform a query and apply the pipeline on a subset with 1 output files per query
+#' ofile = paste0(tempdir(), "/*_chm.tif")
+#' pipeline = reader_las_circles(273500, 5274500, 20) + rasterize(2, "zmax", ofile = ofile)
+#' ans <- exec(pipeline, on = f)
+#' # terra::plot(ans)
 #' @export
 #' @md
 reader_las = function(filter = "", ...)

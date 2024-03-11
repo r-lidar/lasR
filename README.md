@@ -7,8 +7,6 @@
 
 R Package for Fast Airborne LiDAR Data Processing
 
-**This package is in under early stage of development.**
-
 The `lasR` package (pronounce laser) **does not** intent to supersede the `lidR` package, but is designed to be much more efficient than `lidR` for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages. `lidR` intends to be a tool box to make data exploration and innovation easy. `lasR` on another hand focuses on production, being optimized for memory and speed and makes no trade off with other aspects of the development.
 
 :book: Read [the tutorial](https://r-lidar.github.io/lasR/articles/lasR2.html) to start with `lasR`
@@ -48,13 +46,19 @@ More details in the corresponding [vignette](https://r-lidar.github.io/lasR/arti
 
 ## Copyright Information
 
+- For `lasR`:
+  - © 2023-2024 Jean-Romain Roussel
+  - Provided under GPL-3 license.
 - For `LASlib` and `LASzip`:
   - © 2007-2021 Martin Isenburg - <http://rapidlasso.com>
   - Provided under LGPL license and modified to be R-compliant by
     Jean-Romain Roussel.
-- For `lasR`:
-  - © 2023-2024 Jean-Romain Roussel
-  - Provided under GPL-3 license.
 - For `chm_prep`
   - © 2008-2023 Benoît St-Onge - [Geophoton-inc/chm_prep](https://github.com/Geophoton-inc/chm_prep)
   - Provided under GPL-3 license.
+- For `json` parser:
+  - Lohmann, N. (2023). JSON for Modern C++ (Version 3.11.3) [Computer software]. https://github.com/nlohmann
+  - Provided under MIT license
+- For `delaunator`:
+  - © 2018 Volodymyr Bilonenko. [delfrrr/delaunator-cpp](https://github.com/delfrrr/delaunator-cpp)
+  - Provided under MIT license

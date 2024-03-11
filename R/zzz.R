@@ -57,6 +57,8 @@ get_latest_version = function()
 {
   f <- paste0(tempdir(), "/LASRDESCRIPTION")
 
+  nullcon = NULL
+
   ans <- tryCatch(
   {
     nullcon <- file(nullfile(), open = "wb")
@@ -68,6 +70,7 @@ get_latest_version = function()
   },
   error = function(e)
   {
+    close(nullcon)
     sink(type = "message") # nocov
     return(FALSE) # nocov
   })
