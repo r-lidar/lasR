@@ -16,7 +16,7 @@ box of the points."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/aj
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,7 +31,6 @@ box of the points."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/aj
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -96,11 +95,11 @@ intermediate stage.</p></dd>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package <span class="op">=</span> <span class="st">"lasR"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tri</span> <span class="op">&lt;-</span> <span class="fu"><a href="triangulate.html">triangulate</a></span><span class="op">(</span><span class="fl">20</span>, filter <span class="op">=</span> <span class="fu"><a href="filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">contour</span> <span class="op">&lt;-</span> <span class="fu">hulls</span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">tri</span> <span class="op">+</span> <span class="va">contour</span></span></span>
-<span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ans</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="hulls-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>

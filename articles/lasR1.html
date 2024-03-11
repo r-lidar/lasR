@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,6 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -137,15 +136,15 @@ R code in the C++ pipeline.</p>
 <div class="section level3">
 <h3 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a>
 </h3>
-<p><code>lasR</code> has only one dependency, <code>boost</code>. It
-doesn’t even depend on <code>Rcpp</code>. <code>lasR</code> does not use
-<code>terra</code> and <code>sf</code> at the R level for reading and
-writing spatial data; instead, it links to <code>GDAL</code>. If
-<code>terra</code> and <code>sf</code> are installed, the output files
-will be read with these packages. Due to the absence of dependency on R
-package and the non-loading of data as R objects, there is also no
-dependency on <code>rgl</code>, resulting in no interactive 3D viewer
-like in <code>lidR</code>.</p>
+<p><code>lasR</code> has only 0 dependency. It doesn’t even depend on
+<code>Rcpp</code>. <code>lasR</code> does not use <code>terra</code> and
+<code>sf</code> at the R level for reading and writing spatial data;
+instead, it links to <code>GDAL</code>. If <code>terra</code> and
+<code>sf</code> are installed, the output files will be read with these
+packages. Due to the absence of dependency on R package and the
+non-loading of data as R objects, there is also no dependency on
+<code>rgl</code>, resulting in no interactive 3D viewer like in
+<code>lidR</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="code">Code<a class="anchor" aria-label="anchor" href="#code"></a>

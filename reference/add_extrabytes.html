@@ -16,7 +16,7 @@ extra bytes attribute to the points. Values are zeroed. It edits the point cloud
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,7 +31,6 @@ extra bytes attribute to the points. Values are zeroed. It edits the point cloud
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -98,10 +97,10 @@ extra bytes attribute to the points. Values are zeroed. It edits the point cloud
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Example.las"</span>, package <span class="op">=</span> <span class="st">"lasR"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fun</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span> <span class="va">data</span><span class="op">$</span><span class="va">RAND</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fl">100</span><span class="op">)</span>; <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">}</span></span></span>
-<span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu">add_extrabytes</span><span class="op">(</span><span class="st">"float"</span>, <span class="st">"RAND"</span>, <span class="st">"Random numbers"</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="callback.html">callback</a></span><span class="op">(</span><span class="va">fun</span>, expose <span class="op">=</span> <span class="st">"xyz"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
 </code></pre></div>
     </div>

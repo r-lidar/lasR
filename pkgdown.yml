@@ -3,10 +3,9 @@ pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
   baba: baba.html
-  lasR-lidR-mapping: lasR-lidR-mapping.html
   lasR1: lasR1.html
   lasR2: lasR2.html
   lasR3: lasR3.html
   lasR4: lasR4.html
-last_built: 2024-03-06T00:31Z
+last_built: 2024-03-11T17:24Z
 

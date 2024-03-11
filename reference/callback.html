@@ -18,7 +18,7 @@ function can, therefore, be used to modify the point cloud using a user-defined 
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,6 @@ function can, therefore, be used to modify the point cloud using a user-defined 
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -128,9 +127,9 @@ loaded, and '*' is the wildcard that enables everything to be loaded from the LA
 <span class="r-in"><span><span class="va">read_las</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="va">load</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">}</span></span></span>
-<span class="r-in"><span>  <span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">call</span> <span class="op">&lt;-</span> <span class="fu">callback</span><span class="op">(</span><span class="va">load</span>, expose <span class="op">=</span> <span class="st">"xyzi"</span>, no_las_update <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span> <span class="op">(</span><span class="fu"><a href="processor.html">processor</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">call</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span> <span class="op">(</span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">call</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span><span class="va">las</span> <span class="op">&lt;-</span> <span class="fu">read_las</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">las</span><span class="op">)</span></span></span>
@@ -152,11 +151,11 @@ loaded, and '*' is the wildcard that enables everything to be loaded from the LA
 <span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">call</span> <span class="op">&lt;-</span> <span class="fu">callback</span><span class="op">(</span><span class="va">convert_intensity_in_range</span>, expose <span class="op">=</span> <span class="st">"xyzi"</span>, min <span class="op">=</span> <span class="fl">0</span>, max <span class="op">=</span> <span class="fl">255</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">write</span> <span class="op">&lt;-</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">call</span> <span class="op">+</span> <span class="va">write</span></span></span>
-<span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">las</span> <span class="op">&lt;-</span> <span class="fu">read_las</span><span class="op">(</span><span class="va">ans</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">las</span><span class="op">)</span></span></span>

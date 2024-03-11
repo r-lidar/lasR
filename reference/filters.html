@@ -18,7 +18,7 @@ function that returns the corresponding string."><!-- mathjax --><script src="ht
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,6 @@ function that returns the corresponding string."><!-- mathjax --><script src="ht
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -235,9 +234,9 @@ print(x, ...)
 <span class="r-out co"><span class="r-pr">#&gt;</span> Boolean combination of filters.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   -filter_and</span>
 <span class="r-in"><span><span class="va">gnd</span> <span class="op">=</span> <span class="fu">keep_class</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">9</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">gnd</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="deprecated.html">reader</a></span><span class="op">(</span><span class="va">f</span>, <span class="va">gnd</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> reader_las (uid:2kGJgw)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> reader_las (uid:QdHOrD)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   files : Topography.las</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter : -keep_class 2 9 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   buffer : 0 </span>
@@ -245,7 +244,7 @@ print(x, ...)
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
 <span class="r-in"><span><span class="fu"><a href="triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu">keep_ground</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> triangulate (uid:xHhiYO)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> triangulate (uid:slYqjR)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   max_edge : 0 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter : -keep_class 2 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   output :  </span>
@@ -253,12 +252,12 @@ print(x, ...)
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
 <span class="r-in"><span><span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"max"</span>, filter <span class="op">=</span> <span class="st">"-drop_z_below 5"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:68LSSy)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:mVMuJa)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   method : max </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter : -drop_z_below 5 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpWqYuDa/file1f7b19a33c1a.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpavSsJN/file1f2324a42451.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
 </code></pre></div>
     </div>

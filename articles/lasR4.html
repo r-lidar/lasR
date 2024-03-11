@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,6 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -133,8 +132,8 @@ file)</li>
 <h3 id="lasr">lasR<a class="anchor" aria-label="anchor" href="#lasr"></a>
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">ctg</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"max"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"max"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="result">Result<a class="anchor" aria-label="anchor" href="#result"></a>
@@ -156,14 +155,23 @@ file)</li>
 </h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tri</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">ctg</span>, filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="va">tri</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">tri</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="va">tri</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">tri</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="result-1">Result<a class="anchor" aria-label="anchor" href="#result-1"></a>
 </h3>
 <p><img src="lasR4_files/figure-html/unnamed-chunk-4-1.png" width="384"><img src="lasR4_files/figure-html/unnamed-chunk-4-2.png" width="384"></p>
+<p>The same with chunking option set to 1000 x 1000 m chunks using
+<code>exec(pipeline, ..., chunk = 1000)</code> and
+<code>opt_chunk_buffer(ctg) = 1000</code> to reduce the memory
+usage.</p>
+<p><img src="lasR4_files/figure-html/unnamed-chunk-5-1.png" width="384"></p>
 </div>
+</div>
+<div class="section level2">
+<h2 id="digital-terrain-model-chunked">Digital Terrain Model chunked<a class="anchor" aria-label="anchor" href="#digital-terrain-model-chunked"></a>
+</h2>
 </div>
 <div class="section level2">
 <h2 id="multiple-raster">Multiple raster<a class="anchor" aria-label="anchor" href="#multiple-raster"></a>
@@ -188,13 +196,12 @@ in more efficient memory management.</p>
 </h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">custom_function</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">z</span>,<span class="va">i</span><span class="op">)</span> <span class="op">{</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>avgz <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span>, avgi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">i</span><span class="op">)</span><span class="op">)</span> <span class="op">}</span></span>
-<span><span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
 <span><span class="va">chm</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"max"</span><span class="op">)</span></span>
 <span><span class="va">met</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fu">custom_function</span><span class="op">(</span><span class="va">Z</span>, <span class="va">Intensity</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">den</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">5</span>, <span class="st">"count"</span><span class="op">)</span></span>
-<span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">chm</span> <span class="op">+</span> <span class="va">met</span> <span class="op">+</span> <span class="va">den</span></span>
-<span><span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
-<p><img src="lasR4_files/figure-html/unnamed-chunk-5-1.png" width="384"><img src="lasR4_files/figure-html/unnamed-chunk-5-2.png" width="384"></p>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">chm</span> <span class="op">+</span> <span class="va">met</span> <span class="op">+</span> <span class="va">den</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">folder</span><span class="op">)</span></span></code></pre></div>
+<p><img src="lasR4_files/figure-html/unnamed-chunk-6-1.png" width="384"><img src="lasR4_files/figure-html/unnamed-chunk-6-2.png" width="384"></p>
 </div>
 </div>
 <div class="section level2">
@@ -208,8 +215,7 @@ segments the trees. The <code>lasR</code> pipeline can handle hundreds
 of laser tiles, while <code>lidR</code> may struggle to apply the same
 pipeline, especially during tree segmentation.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">ctg</span><span class="op">)</span></span>
-<span><span class="va">del</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">del</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">norm</span> <span class="op">=</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">del</span><span class="op">)</span></span>
 <span><span class="va">dtm</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">del</span><span class="op">)</span></span>
 <span><span class="va">chm</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"max"</span><span class="op">)</span></span>
@@ -217,8 +223,8 @@ pipeline, especially during tree segmentation.</p>
 <span><span class="va">tree</span> <span class="op">=</span> <span class="fu"><a href="../reference/region_growing.html">region_growing</a></span><span class="op">(</span><span class="va">chm</span>, <span class="va">seed</span><span class="op">)</span></span>
 <span><span class="va">write</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write</span> <span class="op">+</span> <span class="va">dtm</span> <span class="op">+</span> <span class="va">chm</span> <span class="op">+</span>  <span class="va">seed</span> <span class="op">+</span> <span class="va">tree</span></span>
-<span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span>, progress <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="lasR4_files/figure-html/unnamed-chunk-6-1.png" width="384"></p>
+<span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span>, progress <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="lasR4_files/figure-html/unnamed-chunk-7-1.png" width="384"></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>

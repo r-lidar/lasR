@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,7 +25,6 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -56,6 +55,41 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="lasr-030">lasR 0.3.0<a class="anchor" aria-label="anchor" href="#lasr-030"></a></h2>
+<ul><li>
+<p>Change: <code><a href="../reference/deprecated.html">processor()</a></code> and <code><a href="../reference/deprecated.html">reader()</a></code> are deprecated and are replaced by <code><a href="../reference/exec.html">exec()</a></code> and <code><a href="../reference/reader_las.html">reader_las()</a></code>. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the <code>LAScatalog</code> processing options and this was not possible with the previous syntax.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">lidR</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lidR/man/readLAScatalog.html" class="external-link">readLAScatalog</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
+</li>
+<li>
+<p>New: the processor is now able to process by chunk like <code>lidR</code></p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">file</span>, chunk <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span></code></pre></div>
+</li>
+<li><p>New: stage <code><a href="../reference/delete_points.html">delete_points()</a></code> to remove some points in the pipeline.</p></li>
+<li>
+<p>New: it is now possible to write the following:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">dtm</span> <span class="op">=</span> <span class="fu"><a href="../reference/dtm.html">dtm</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">dtm</span> <span class="op">+</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">dtm</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+</li>
+<li>
+<p>New: it is not possible to omit the reader stage. It automatically adds a default reader</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
+</li>
+<li><p>New: triangulation is 4x faster and uses half the memory.</p></li>
+<li><p>Fix: <code>summarize()</code>, <code><a href="../reference/rasterize.html">rasterize()</a></code> and <code><a href="../reference/write_las.html">write_las()</a></code> no longer process withheld points in streaming mode.</p></li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="lasr-021-2024-03-05">lasR 0.2.1 (2024-03-05)<a class="anchor" aria-label="anchor" href="#lasr-021-2024-03-05"></a></h2>
 <ul><li>Fix: <code><a href="../reference/callback.html">callback()</a></code> properly handles errors from the injected function</li>
 <li>New: handy functions <code>tempxyz()</code> to generate temp files with extension <code>.xyz</code>.</li>
@@ -78,7 +112,7 @@
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="lasr-011-2024-02-08">lasR 0.1.1 (2024-02-08)<a class="anchor" aria-label="anchor" href="#lasr-011-2024-02-08"></a></h2>
-<ul><li>Doc: Corrected the documentation for the argument <code>ncores</code> in <code><a href="../reference/processor.html">processor()</a></code>, which incorrectly mentioned that it was not supported.</li>
+<ul><li>Doc: Corrected the documentation for the argument <code>ncores</code> in <code><a href="../reference/deprecated.html">processor()</a></code>, which incorrectly mentioned that it was not supported.</li>
 <li>New: Added new functions <code><a href="../reference/ncores.html">ncores()</a></code> and <code><a href="../reference/ncores.html">half_cores()</a></code>.</li>
 <li>Fix: Corrected the reader progress bar display when reading a las file with a filter and a buffer.</li>
 <li>Fix: Fixed the overall progress bar, which was delayed by one file and was showing incorrect progress.</li>

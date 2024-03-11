@@ -30,7 +30,7 @@
     
     <a class="navbar-brand me-2" href="index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +46,6 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="articles/lasR3.html">3. Pipelines</a>
@@ -80,7 +79,6 @@
 </h1></div>
 <p><img src="https://img.shields.io/badge/Licence-GPL--3-blue.svg" alt="license"><img src="https://img.shields.io/badge/Lifecycle-Maturing-339999" alt="Lifecycle:Maturing"><a href="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/r-lidar/lasR?branch=main" class="external-link"><img src="https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></p>
 <p>R Package for Fast Airborne LiDAR Data Processing</p>
-<p><strong>This package is in under early stage of development.</strong></p>
 <p>The <code>lasR</code> package (pronounce laser) <strong>does not</strong> intent to supersede the <code>lidR</code> package, but is designed to be much more efficient than <code>lidR</code> for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages. <code>lidR</code> intends to be a tool box to make data exploration and innovation easy. <code>lasR</code> on another hand focuses on production, being optimized for memory and speed and makes no trade off with other aspects of the development.</p>
 <p><span class="emoji" data-emoji="book">📖</span> Read <a href="https://r-lidar.github.io/lasR/articles/lasR2.html" class="external-link">the tutorial</a> to start with <code>lasR</code></p>
 <div class="section level2">
@@ -111,7 +109,7 @@
 <li>Uses the code of <code>lidR</code> but brings significant speed and memory improvements.</li>
 <li>Does not load the point cloud into a <code>data.frame</code>. The point cloud is stored in a C++ structure that is not exposed to users.</li>
 <li>Uses GDAL instead of relying on <code>terra</code> and <code>sf</code> for more flexibility at the C++ level.</li>
-<li>Has only 2 strong dependencies: <code>boost</code> and <code>gdal</code>. But if <code>sf</code> and <code>terra</code> are installed the experience is better.</li>
+<li>Has only 1 strong dependencies to <code>gdal</code>. But if <code>sf</code> and <code>terra</code> are installed the experience is better.</li>
 </ul>
 <p>More details in the corresponding <a href="https://r-lidar.github.io/lasR/articles/lasR1.html#main-differences-between-lasr-and-lidr" class="external-link">vignette</a></p>
 </div>
@@ -119,6 +117,12 @@
 <h2 id="copyright-information">Copyright Information<a class="anchor" aria-label="anchor" href="#copyright-information"></a>
 </h2>
 <ul>
+<li>For <code>lasR</code>:
+<ul>
+<li>© 2023-2024 Jean-Romain Roussel</li>
+<li>Provided under GPL-3 license.</li>
+</ul>
+</li>
 <li>For <code>LASlib</code> and <code>LASzip</code>:
 <ul>
 <li>© 2007-2021 Martin Isenburg - <a href="http://rapidlasso.com" class="external-link uri">http://rapidlasso.com</a>
@@ -126,17 +130,25 @@
 <li>Provided under LGPL license and modified to be R-compliant by Jean-Romain Roussel.</li>
 </ul>
 </li>
-<li>For <code>lasR</code>:
-<ul>
-<li>© 2023-2024 Jean-Romain Roussel</li>
-<li>Provided under GPL-3 license.</li>
-</ul>
-</li>
 <li>For <code>chm_prep</code>
 <ul>
 <li>© 2008-2023 Benoît St-Onge - <a href="https://github.com/Geophoton-inc/chm_prep" class="external-link">Geophoton-inc/chm_prep</a>
 </li>
 <li>Provided under GPL-3 license.</li>
+</ul>
+</li>
+<li>For <code>json</code> parser:
+<ul>
+<li>Lohmann, N. (2023). JSON for Modern C++ (Version 3.11.3) [Computer software]. <a href="https://github.com/nlohmann" class="external-link uri">https://github.com/nlohmann</a>
+</li>
+<li>Provided under MIT license</li>
+</ul>
+</li>
+<li>For <code>delaunator</code>:
+<ul>
+<li>© 2018 Volodymyr Bilonenko. <a href="https://github.com/delfrrr/delaunator-cpp" class="external-link">delfrrr/delaunator-cpp</a>
+</li>
+<li>Provided under MIT license</li>
 </ul>
 </li>
 </ul>
@@ -153,7 +165,9 @@
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></li>
+<li>
+<a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a> + file <a href="LICENSE-text.html">LICENSE</a>
+</li>
 </ul>
 </div>
 

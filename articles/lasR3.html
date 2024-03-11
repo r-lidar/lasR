@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,6 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -131,7 +130,7 @@ This pipeline is already installed in the package.
 <span><span class="op">}</span></span></code></pre></div>
 <p>It can be used this way</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/deprecated.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="classify-ground">Classify ground<a class="anchor" aria-label="anchor" href="#classify-ground"></a>
@@ -155,7 +154,7 @@ This pipeline is already installed in the package.
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">classify</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ground_csf</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/deprecated.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ground_csf</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="with-mcc">With MCC<a class="anchor" aria-label="anchor" href="#with-mcc"></a>
@@ -176,7 +175,7 @@ This pipeline is already installed in the package.
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">classify</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ground_mcc</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/deprecated.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ground_mcc</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span></code></pre></div>
 <blockquote style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; font-size: 14px; border-radius: 5px;">
 These pipelines use <code><a href="../reference/callback.html">callback()</a></code> that exposes the point cloud
 as a <code>data.frame</code>. One of the reasons why <code>lasR</code>
@@ -238,9 +237,9 @@ as 9 for water.</p>
 <code class="sourceCode R"><span><span class="va">read_las</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span>, <span class="va">select</span> <span class="op">=</span> <span class="st">"xyzi"</span>, <span class="va">filter</span> <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
 <span>  <span class="va">load</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">}</span></span>
-<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">files</span>, filter <span class="op">=</span> <span class="va">filter</span><span class="op">)</span></span>
+<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="va">filter</span><span class="op">)</span></span>
 <span>  <span class="va">call</span> <span class="op">=</span> <span class="fu"><a href="../reference/callback.html">callback</a></span><span class="op">(</span><span class="va">load</span>, expose <span class="op">=</span> <span class="va">select</span>, no_las_update <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">call</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">call</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -249,9 +248,9 @@ as 9 for water.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">buffer_tiles</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span>, <span class="va">buffer</span>, <span class="va">ofiles</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*_buffered.las"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
-<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">files</span>, buffer <span class="op">=</span> <span class="va">buffer</span><span class="op">)</span></span>
+<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="va">write</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofiles</span>, keep_buffer <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">write</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">write</span>, on <span class="op">=</span> <span class="va">files</span>, buffer <span class="op">=</span> <span class="va">buffer</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -269,14 +268,14 @@ as 9 for water.</p>
 <span>  <span class="va">xcenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span></span>
 <span>  <span class="va">ycenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span></span>
 <span>  </span>
-<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">files</span>, xc <span class="op">=</span> <span class="va">xcenter</span>, yc <span class="op">=</span> <span class="va">ycenter</span>, r <span class="op">=</span> <span class="va">radius</span><span class="op">)</span></span>
+<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span>xc <span class="op">=</span> <span class="va">xcenter</span>, yc <span class="op">=</span> <span class="va">ycenter</span>, r <span class="op">=</span> <span class="va">radius</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">ofiles</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1L</span> <span class="op">&amp;&amp;</span> <span class="va">ofiles</span> <span class="op">==</span> <span class="st">""</span><span class="op">)</span></span>
 <span>    <span class="va">stage</span> <span class="op">=</span> <span class="fu"><a href="../reference/callback.html">callback</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">}</span>, expose <span class="op">=</span> <span class="st">"*"</span>, no_las_update <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span>  <span class="kw">else</span></span>
 <span>    <span class="va">stage</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofiles</span><span class="op">)</span></span>
 <span>  </span>
-<span>  <span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">stage</span><span class="op">)</span></span>
+<span>  <span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">stage</span>, on <span class="op">=</span> <span class="va">files</span><span class="op">)</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">ans</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
@@ -288,8 +287,8 @@ as 9 for water.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">crs</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
-<span>  <span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">files</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/hulls.html">hulls</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>  <span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
+<span>  <span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/hulls.html">hulls</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">files</span><span class="op">)</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crs.html" class="external-link">st_crs</a></span><span class="op">(</span><span class="va">ans</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
@@ -300,7 +299,7 @@ as 9 for water.</p>
 the option to normalize on-the-fly. It returns the same <code>sf</code>
 object with extra attributes.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">inventory_metrics</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">geometry</span>, <span class="va">radius</span>, <span class="va">fun</span>, <span class="va">normalize</span> <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">inventory_metrics</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span>, <span class="va">geometry</span>, <span class="va">radius</span>, <span class="va">fun</span>, <span class="va">normalize</span> <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry_type.html" class="external-link">st_geometry_type</a></span><span class="op">(</span><span class="va">geometry</span>, <span class="cn">FALSE</span><span class="op">)</span> <span class="op">!=</span> <span class="st">"POINT"</span><span class="op">)</span> </span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Expected POINT geometry type"</span><span class="op">)</span></span>
@@ -309,7 +308,7 @@ object with extra attributes.</p>
 <span>  <span class="va">xcenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span></span>
 <span>  <span class="va">ycenter</span> <span class="op">&lt;-</span> <span class="va">coordinates</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span></span>
 <span>  </span>
-<span>  <span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">f</span>, xc <span class="op">=</span> <span class="va">xcenter</span>, yc <span class="op">=</span> <span class="va">ycenter</span>, r <span class="op">=</span> <span class="va">radius</span><span class="op">)</span></span>
+<span>  <span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span>xc <span class="op">=</span> <span class="va">xcenter</span>, yc <span class="op">=</span> <span class="va">ycenter</span>, r <span class="op">=</span> <span class="va">radius</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="va">normalize</span><span class="op">)</span></span>
 <span>  <span class="op">{</span></span>
@@ -319,7 +318,7 @@ object with extra attributes.</p>
 <span>  <span class="op">}</span></span>
 <span></span>
 <span>  <span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">pipeline</span> <span class="op">+</span> <span class="fu"><a href="../reference/callback.html">callback</a></span><span class="op">(</span><span class="va">fun</span>, expose <span class="op">=</span> <span class="st">"*"</span><span class="op">)</span></span>
-<span>  <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span>
+<span>  <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">files</span><span class="op">)</span></span>
 <span>  <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">ans</span>, <span class="va">as.data.frame</span><span class="op">)</span></span>
 <span>  <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">ans</span><span class="op">)</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">geometry</span>, <span class="va">ans</span><span class="op">)</span><span class="op">)</span></span>
@@ -331,9 +330,9 @@ object with extra attributes.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">build_vpc</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">files</span>, <span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="op">{</span></span>
-<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader.html">reader</a></span><span class="op">(</span><span class="va">files</span><span class="op">)</span></span>
+<span>  <span class="va">read</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="va">write</span> <span class="op">=</span> <span class="fu"><a href="../reference/write_vpc.html">write_vpc</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="../reference/processor.html">processor</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">write</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">read</span><span class="op">+</span><span class="va">write</span>, on <span class="op">=</span> <span class="va">files</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 </div>

@@ -10,9 +10,6 @@
     <loc>/articles/index.html</loc>
   </url>
   <url>
-    <loc>/articles/lasR-lidR-mapping.html</loc>
-  </url>
-  <url>
     <loc>/articles/lasR1.html</loc>
   </url>
   <url>
@@ -46,7 +43,16 @@
     <loc>/reference/classify_isolated_points.html</loc>
   </url>
   <url>
+    <loc>/reference/delete_points.html</loc>
+  </url>
+  <url>
+    <loc>/reference/deprecated.html</loc>
+  </url>
+  <url>
     <loc>/reference/dtm.html</loc>
+  </url>
+  <url>
+    <loc>/reference/exec.html</loc>
   </url>
   <url>
     <loc>/reference/filters.html</loc>
@@ -73,13 +79,10 @@
     <loc>/reference/pit_fill.html</loc>
   </url>
   <url>
-    <loc>/reference/processor.html</loc>
-  </url>
-  <url>
     <loc>/reference/rasterize.html</loc>
   </url>
   <url>
-    <loc>/reference/reader.html</loc>
+    <loc>/reference/reader_las.html</loc>
   </url>
   <url>
     <loc>/reference/region_growing.html</loc>

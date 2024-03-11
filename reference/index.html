@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,7 +25,6 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="../articles/lasR-lidR-mapping.html">How lidR functions map to lasR functions</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -87,9 +86,24 @@
         <dd>Classify isolated points</dd>
       </dl><dl><dt>
           
+          <code><a href="delete_points.html">delete_points()</a></code> 
+        </dt>
+        <dd>Filter and delete points</dd>
+      </dl><dl><dt>
+          
+          <code><a href="deprecated.html">processor()</a></code> <code><a href="deprecated.html">reader()</a></code> <code><a href="deprecated.html">reader_coverage()</a></code> <code><a href="deprecated.html">reader_circles()</a></code> <code><a href="deprecated.html">reader_rectangles()</a></code> 
+        </dt>
+        <dd>Deprecated</dd>
+      </dl><dl><dt>
+          
           <code><a href="dtm.html">dtm()</a></code> 
         </dt>
         <dd>Digital Terrain Model</dd>
+      </dl><dl><dt>
+          
+          <code><a href="exec.html">exec()</a></code> 
+        </dt>
+        <dd>Process the pipeline</dd>
       </dl><dl><dt>
           
           <code><a href="filters.html">keep_class()</a></code> <code><a href="filters.html">drop_class()</a></code> <code><a href="filters.html">keep_first()</a></code> <code><a href="filters.html">drop_first()</a></code> <code><a href="filters.html">keep_ground()</a></code> <code><a href="filters.html">drop_ground()</a></code> <code><a href="filters.html">keep_noise()</a></code> <code><a href="filters.html">drop_noise()</a></code> <code><a href="filters.html">keep_z_above()</a></code> <code><a href="filters.html">drop_z_above()</a></code> <code><a href="filters.html">keep_z_below()</a></code> <code><a href="filters.html">drop_z_below()</a></code> <code><a href="filters.html">drop_duplicates()</a></code> <code><a href="filters.html">filter_usage()</a></code> <code><a href="filters.html">print(<i>&lt;laslibfilter&gt;</i>)</a></code> <code><a href="filters.html">`+`(<i>&lt;laslibfilter&gt;</i>)</a></code> 
@@ -127,17 +141,12 @@
         <dd>Pits and spikes filling</dd>
       </dl><dl><dt>
           
-          <code><a href="processor.html">processor()</a></code> 
-        </dt>
-        <dd>Process the pipeline</dd>
-      </dl><dl><dt>
-          
           <code><a href="rasterize.html">rasterize()</a></code> 
         </dt>
         <dd>Rasterize a point cloud</dd>
       </dl><dl><dt>
           
-          <code><a href="reader.html">reader()</a></code> <code><a href="reader.html">reader_coverage()</a></code> <code><a href="reader.html">reader_circles()</a></code> <code><a href="reader.html">reader_rectangles()</a></code> 
+          <code><a href="reader_las.html">reader_las()</a></code> <code><a href="reader_las.html">reader_las_coverage()</a></code> <code><a href="reader_las.html">reader_las_circles()</a></code> <code><a href="reader_las.html">reader_las_rectangles()</a></code> 
         </dt>
         <dd>Initialize the pipeline</dd>
       </dl><dl><dt>
