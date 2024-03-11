@@ -105,15 +105,15 @@ bool LAScatalog::read_vpc(const std::string& filename)
     // Check that it has a FeatureCollection property
     if (vpc.find("type") == vpc.end() || vpc["type"] != "FeatureCollection")
     {
-      last_error = "The input file is not a virtual point cloud file";
-      return false;
+      last_error = "The input file is not a virtual point cloud file"; // # nocov
+      return false; // # nocov
     }
 
     // Check that it has a feature property
     if (vpc.find("features") == vpc.end())
     {
-      last_error = "Missing 'features' key in the virtual point cloud file";
-      return false;
+      last_error = "Missing 'features' key in the virtual point cloud file"; // # nocov
+      return false; // # nocov
     }
 
     // Loop over the features to read the file paths and bounding boxes
@@ -121,26 +121,26 @@ bool LAScatalog::read_vpc(const std::string& filename)
     {
       if (!feature.contains("type") || !feature.contains("stac_version") || !feature.contains("assets") || !feature.contains("properties"))
       {
-        last_error = "Malformed virtual point cloud file: missing properties";
-        return false;
+        last_error = "Malformed virtual point cloud file: missing properties"; // # nocov
+        return false; // # nocov
       }
 
       if (feature["type"] != "Feature")
       {
-        last_error = "Malformed virtual point cloud file: 'type' is not equal to 'Feature'";
-        return false;
+        last_error = "Malformed virtual point cloud file: 'type' is not equal to 'Feature'"; // # nocov
+        return false; // # nocov
       }
 
       if (feature["assets"].empty() || feature["properties"].empty())
       {
-        last_error = "Malformed virtual point cloud file: empty 'assets' or 'properties";
-        return false;
+        last_error = "Malformed virtual point cloud file: empty 'assets' or 'properties"; // # nocov
+        return false; // # nocov
       }
 
       if (feature["stac_version"] != "1.0.0")
       {
-        last_error = "Unsupported STAC version: " + feature["stac_version"].get<std::string>();
-        return false;
+        last_error = "Unsupported STAC version: " + feature["stac_version"].get<std::string>(); // # nocov
+        return false; // # nocov
       }
 
       // Find the path to the file and resolve relative path
@@ -158,11 +158,13 @@ bool LAScatalog::read_vpc(const std::string& filename)
       auto optbbox = feature["properties"].find("proj:bbox");
       if (optbbox == feature["properties"].end())
       {
+        // # nocov start
         if (!add_file(file_path))
         {
           return false;
         }
         continue;
+        // # nocov end
       }
 
       // We are sure there is a bbox
@@ -184,8 +186,8 @@ bool LAScatalog::read_vpc(const std::string& filename)
       }
       else
       {
-        last_error = "Malformed virtual point cloud file: proj:bbox should be 2D or 3D";
-        return false;
+        last_error = "Malformed virtual point cloud file: proj:bbox should be 2D or 3D"; // # nocov
+        return false; // # nocov
       }
 
       bool spatial_index = feature["properties"].value("index:indexed", false);
