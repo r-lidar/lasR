@@ -241,7 +241,9 @@ SEXP process(SEXP sexppipeline, SEXP args)
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
 
+    #if !defined(_WIN32)
     R_CStackLimit=original_CStackLimit;
+    #endif
 
     if (failure)
     {
@@ -254,7 +256,9 @@ SEXP process(SEXP sexppipeline, SEXP args)
   }
   catch (std::string e)
   {
+    #if !defined(_WIN32)
     R_CStackLimit=original_CStackLimit;
+    #endif
 
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 
@@ -281,7 +285,9 @@ SEXP process(SEXP sexppipeline, SEXP args)
   }
   catch(...)
   {
+    #if !defined(_WIN32)
     R_CStackLimit=original_CStackLimit;
+    #endif
 
     // # nocov start
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
