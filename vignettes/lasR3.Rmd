@@ -172,9 +172,9 @@ dtm = function(res, ofile = tempfile(fileext = ".tif"), add_class = NULL)
 read_las = function(files, select = "xyzi", filter = "")
 {
   load = function(data) { return(data) }
-  read = reader(files, filter = filter)
+  read = reader_las(filter = filter)
   call = callback(load, expose = select, no_las_update = TRUE)
-  return(processor(read+call))
+  return(exec(read+call, on = f))
 }
 ```
 
@@ -183,9 +183,9 @@ read_las = function(files, select = "xyzi", filter = "")
 ```{r}
 buffer_tiles = function(files, buffer, ofiles = paste0(tempdir(), "/*_buffered.las"))
 {
-  read = reader(files, buffer = buffer)
+  read = reader_las()
   write = write_las(ofiles, keep_buffer = TRUE)
-  return(processor(read+write))
+  return(exec(read+write, on = files, buffer = buffer))
 }
 ```
 
@@ -203,14 +203,14 @@ clip_circle = function(files, geometry, radius, ofiles = paste0(tempdir(), "/*_c
   xcenter <- coordinates[,1]
   ycenter <- coordinates[,2]
   
-  read = reader(files, xc = xcenter, yc = ycenter, r = radius)
+  read = reader_las(xc = xcenter, yc = ycenter, r = radius)
   
   if (length(ofiles) == 1L && ofiles == "")
     stage = callback(function(data) { return(data) }, expose = "*", no_las_update = T)
   else
     stage = write_las(ofiles)
   
-  ans = processor(read+stage)
+  ans = exec(read+stage, on = files)
   return(ans)
 }
 ```
@@ -222,8 +222,8 @@ A CRS as `sf` object. The cost of applying `hulls()` is virtually null.
 ```{r crs}
 crs = function(files)
 {
-  pipeline = reader(files) + hulls()
-  ans = processor(pipeline)
+  pipeline = reader_las() + hulls()
+  ans = exec(pipeline, on = files)
   return(sf::st_crs(ans))
 }
 ```
@@ -239,7 +239,7 @@ crs(f)
 Using an `sf` object to provide plot centers and offering the option to normalize on-the-fly.  It returns the same `sf` object with extra attributes.
 
 ```{r}
-inventory_metrics = function(f, geometry, radius, fun, normalize = FALSE)
+inventory_metrics = function(files, geometry, radius, fun, normalize = FALSE)
 {
   if (sf::st_geometry_type(geometry, FALSE) != "POINT") 
     stop("Expected POINT geometry type")
@@ -248,7 +248,7 @@ inventory_metrics = function(f, geometry, radius, fun, normalize = FALSE)
   xcenter <- coordinates[,1]
   ycenter <- coordinates[,2]
   
-  pipeline <- reader(f, xc = xcenter, yc = ycenter, r = radius)
+  pipeline <- reader_las(xc = xcenter, yc = ycenter, r = radius)
   
   if (normalize)
   {
@@ -258,7 +258,7 @@ inventory_metrics = function(f, geometry, radius, fun, normalize = FALSE)
   }
 
   pipeline <- pipeline + callback(fun, expose = "*")
-  ans <- processor(pipeline)
+  ans <- exec(pipeline, on = files)
   ans <- lapply(ans, as.data.frame)
   ans <- do.call(rbind, ans)
   return(cbind(geometry, ans))
@@ -285,9 +285,9 @@ inventory_metrics(f, geometry, radius, fun)
 ```{r}
 build_vpc = function(files, ofile)
 {
-  read = reader(files)
+  read = reader_las()
   write = write_vpc(ofile)
-  processor(read+write)
+  exec(read+write, on = files)
 }
 ```
 

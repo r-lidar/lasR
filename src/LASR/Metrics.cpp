@@ -84,7 +84,7 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
       }
       else
       {
-        last_error = "metric " + name + "not recognized";
+        last_error = "metric " + name + " not recognized";
         return false;
       }
     }
@@ -124,9 +124,9 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
       {
         std::string probs = name.substr(2);
         int number = std::stoi(probs);
-        if (number < 0 || number > 100)
+        if (number <= 0 || number > 100)
         {
-          last_error = "Percentile out of range (0-100)";
+          last_error = "Percentile out of range 0-100)";
           return false;
         }
         regular_operators.push_back(&LASRmetrics::ipx);
@@ -134,7 +134,7 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
       }
       else
       {
-        last_error = "metric " + name + "not recognized";
+        last_error = "metric " + name + " not recognized";
         return false;
       }
     }
@@ -145,7 +145,7 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
     }
     else
     {
-      last_error = "metric " + name + "not recognized";
+      last_error = "metric " + name + " not recognized";
       return false;
     }
   }

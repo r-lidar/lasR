@@ -22,6 +22,7 @@ LASRsummary::LASRsummary(double xmin, double ymin, double xmax, double ymax, dou
 
 bool LASRsummary::process(LASpoint*& p)
 {
+  if (p->get_withheld_flag() != 0) return true;
   if (lasfilter.filter(p)) return true;
   if (p->inside_buffer(xmin, ymin, xmax, ymax, circular)) return true; // avoid counting buffer points
 

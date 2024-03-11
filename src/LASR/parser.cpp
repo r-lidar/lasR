@@ -3,6 +3,7 @@
 
 #include "addattribute.h"
 #include "boundaries.h"
+#include "filter.h"
 #include "localmaximum.h"
 #include "noiseivf.h"
 #include "nothing.h"
@@ -24,6 +25,8 @@
 #include "callback.h"
 #include "readdataframe.h"
 #endif
+
+#include <algorithm>
 
 bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 {
@@ -208,6 +211,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
           return false; // # nocov
         }
       }
+    }
+    else if (name == "filter")
+    {
+      auto v = std::make_unique<LASRfilter>();
+      pipeline.push_back(std::move(v));
     }
     else if (name == "local_maximum")
     {

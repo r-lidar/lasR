@@ -7,31 +7,28 @@ test_that("aggregate handles explicit errors",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  read = reader(f)
   agg = lasR:::aggregate(5, ferr(Intensity))
 
-  expect_error(processor(read + agg), "explicit error")
+  expect_error(exec(agg, f), "explicit error")
 })
 
 test_that("aggregate handles inconsistancies",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  read = reader(f)
   agg  = lasR:::aggregate(0.5, gerr(X))
   agg2 = lasR:::aggregate(0.5, ger2(X))
 
-  expect_error(processor(read + agg), "inconsistant number of items")
-  expect_error(processor(read + agg2), "inconsistant number of items") # test that it does no depends on unordered_map order.
+  expect_error(exec(agg, f), "inconsistant number of items")
+  expect_error(exec(agg2, f), "inconsistant number of items") # test that it does no depends on unordered_map order.
 })
 
 test_that("aggregate works with a vector instead of a list",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  read = reader(f)
   agg = lasR:::aggregate(5, herr(Intensity))
-  ans = processor(read + agg)
+  ans = exec(agg, f)
 
   expect_equal(names(ans), c("a", "b"))
   expect_s4_class(ans, "SpatRaster")
@@ -41,20 +38,18 @@ test_that("aggregate fails with unknown type",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  read = reader(f)
   agg = lasR:::aggregate(5, function(x) { return(2i+3) })
 
-  expect_error(processor(read + agg), "numbers")
+  expect_error(exec(agg, f), "numbers")
 })
 
 test_that("aggregate finds attributes",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  read = reader(f)
   agg = lasR:::aggregate(5, mean(Intensity))
 
-  expect_error(processor(read + agg), NA)
+  expect_error(exec(agg, f), NA)
 })
 
 test_that("aggregate catches params",
@@ -64,9 +59,9 @@ test_that("aggregate catches params",
   fun = function(x, a) { mean(x) ; return(a) }
 
   b = 5
-  read = reader(f)
+
   agg = lasR:::aggregate(5, fun(Intensity, a = b))
-  ans = processor(read + agg)
+  ans = exec(agg, f)
 
   expect_true(all(ans[] == 5))
 })
@@ -77,9 +72,8 @@ test_that("aggregate names each band",
 
   fun = function(x) { list(avg = mean(x), max = max(x)) }
 
-  read = reader(f)
   agg = lasR:::aggregate(2, fun(Intensity))
-  ans = processor(read + agg)
+  ans = exec(agg, f)
 
   expect_true(all(names(ans) == c("avg", "max")))
 })
@@ -91,9 +85,9 @@ test_that("aggregate works with multiple filea",
   f = list.files(f, full.names = TRUE, pattern = "\\.laz")
   f = f[1:2]
 
-  read = reader(f, filter = "-keep_every_nth 10")
+  read = reader_las(filter = "-keep_every_nth 10")
   agg = lasR:::aggregate(10, list(iz = mean(Z)))
-  ans = processor(read + agg)
+  ans = exec(read + agg, f)
   ans = ans*1
 
   #terra::plot(ans, col = lidR::height.colors(25))

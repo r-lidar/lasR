@@ -3,10 +3,24 @@
 #' Process the pipeline. Every other functions do nothing. This function must be called on a pipeline
 #' to actually process the point-cloud
 #'
-#' @param pipeline a LASRpipeline. A serie of algorithms called in order
+#' @param pipeline a pipeline. A serie of stages called in order
+#' @param on Can be the paths of the files to use, the path of the folder in which the files are stored,
+#' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
+#' file or a `data.frame` containing the point cloud. It supports also a `LAScatalog` or a `LAS` objects
+#' from `lidR`.
 #' @param ncores integer. Number of cores to use. Some stages or some steps in some stages
 #' are parallelised but overall one file is process at a time.
-#' @param progress boolean. Displays a progress bar.
+#' @param buffer numeric. Each file, each chunk or each query may be read with a buffer. The default
+#' is NULL, which does not mean that point-cloud won't be buffered. It means that the internal routine
+#' knows if a buffer is needed and will pick the greatest value between the internal suggestion and
+#' this value. If `on` is a `LAScatalog` from `lidR` the options set by the `LAScatalog` has the
+#' precedence.
+#' @param progress boolean. Displays a progress bar.  If `on` is a `LAScatalog` from `lidR` the
+#' options set by the `LAScatalog` has the precedence.
+#' @param chunk numeric. By default the collection of files is processed by file (`chunk = NULL`).
+#' It is  possible to process by arbitrary sized chunks. This is useful for e.g. processing collection
+#' with large files or processing a massive `copc` files. If `on` is a `LAScatalog` from `lidR` the
+#' option set by the `LAScatalog` has the precedence.
 #' @param ... unused
 #'
 #' @examples
@@ -14,22 +28,110 @@
 #' f <- paste0(system.file(package="lasR"), "/extdata/bcts/")
 #' f <- list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
 #'
-#' read <- reader(f, filter = "")
+#' read <- reader_las(filter = "")
 #' tri <- triangulate(15)
 #' dtm <- rasterize(5, tri)
 #' lmf <- local_maximum(5)
 #' met <- rasterize(2, mean(Intensity))
 #' pipeline <- read + tri + dtm + lmf + met
-#' ans <- processor(pipeline)
+#' ans <- exec(pipeline, f)
 #' }
+#' @md
 #' @export
-processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
+exec = function(pipeline, on, ncores = half_cores(), progress = FALSE, buffer = NULL, chunk = NULL, ...)
 {
+  if (pipeline[[1]]$algoname != "reader_las")
+  {
+    pipeline = reader_las() + pipeline
+  }
+
+  # use processor() so exec is backward compatible with previous pipeline format
+  if (missing(on))
+  {
+    reader = pipeline[[1]]
+    if (!is.null(reader$files) || !is.null(reader$dataframe))
+    {
+      return(processor(pipeline, ncores = ncores, progress = progress, ...))
+    }
+  }
+
+  if (is.null(buffer)) buffer <- 0
+  if (is.null(chunk))  chunk <- 0
+
   dots <- list(...)
+  noprocess <- dots$noprocess
   verbose <- if (is.null(dots$verbose)) FALSE else TRUE
   noread <- if (is.null(dots$noread)) FALSE else TRUE
 
-  ans <- .Call(`C_process`, pipeline, progress, ncores, verbose)
+  valid = FALSE
+
+  if (methods::is(on, "LAS") || is.data.frame(on))
+  {
+    accuracy = c(0,0,0)
+
+    if (methods::is(on, "LAS"))
+    {
+      accuracy <- c(on@header@PHB[["X scale factor"]], on@header@PHB[["Y scale factor"]], on@header@PHB[["Z scale factor"]])
+      crs <- on@crs$wkt
+      on <- on@data
+      attr(on, "accuracy") <- accuracy
+      attr(on, "crs") <- crs
+    }
+
+    crs <- attr(on, "crs")
+    if (is.null(crs)) crs = ""
+    if (!is.character(crs) & length(crs != 1)) stop("The CRS of this data.frame is not a WKT string")
+
+    acc <- attr(on, "accuracy")
+    if (is.null(acc)) acc = c(0, 0, 0)
+    if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
+
+    pipeline[[1]]$algoname = "reader_dataframe"
+    pipeline[[1]]$dataframe = on
+    pipeline[[1]]$accuracy = acc
+    pipeline[[1]]$buffer = buffer
+    pipeline[[1]]$crs = crs
+
+    valid = TRUE
+  }
+
+  if (methods::is(on, "LAScatalog"))
+  {
+    chunk <- on@chunk_options$size
+    buffer <- on@chunk_options$buffer
+    alignment <- on@chunk_options$alignment
+    progress <- on@processing_options$progress
+
+    processed <- on$processed
+    if (!is.null(processed)) noprocess <- !processed
+
+    on <- on$filename
+  }
+
+  if (is.character(on))
+  {
+    pipeline[[1]]$files <- on
+    pipeline[[1]]$buffer <- buffer
+    pipeline[[1]]$noprocess <- noprocess
+
+    if (!is.null(noprocess))
+    {
+      if (length(noprocess) != length(on))
+        stop("'noprocess' and 'on' have different length")
+    }
+
+    valid = TRUE
+  }
+
+  if (!valid) stop("Invalid argument 'on'.")
+
+
+  args = list(progress = progress,
+              ncores = ncores,
+              verbose = verbose,
+              chunk_size = chunk)
+
+  ans <- .Call(`C_process`, pipeline, args)
 
   if (inherits(ans, "error"))
   {

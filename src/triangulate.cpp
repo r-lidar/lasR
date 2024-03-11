@@ -8,6 +8,8 @@
 
 #include "lastransform.hpp"
 
+#include "delaunator/delaunator.hpp"
+
 #include <chrono>
 
 LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double ymax, double trim, std::string use_attribute)
@@ -21,6 +23,7 @@ LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double y
   this->trim = trim*trim;
   this->npoints = 0;
   this->las = 0;
+  this->d = nullptr;
 
   this->use_attribute = use_attribute;
 
@@ -49,6 +52,8 @@ bool LASRtriangulate::process(LAS*& las)
   progress->set_total(0);
   progress->show();
 
+  std::vector<double> coords;
+
   LASpoint* p;
   while (las->read_point())
   {
@@ -56,14 +61,15 @@ bool LASRtriangulate::process(LAS*& las)
     if (lastransform) lastransform->transform(p);
     if (!lasfilter.filter(p))
     {
-      vb.insert_point(p->get_X(), p->get_Y());
+      coords.push_back(p->get_x());
+      coords.push_back(p->get_y());
       index_map.push_back(las->current_point);
       npoints++;
     }
   }
 
   this->las = las;
-  vb.construct(&vd);
+  d = new delaunator::Delaunator(coords);
 
   progress->done();
 
@@ -73,7 +79,7 @@ bool LASRtriangulate::process(LAS*& las)
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     float second = (float)duration.count()/1000.0f;
-    print("  Construction of voronoi diagram took %.2f sec for %lu vertices\n", second, vd.num_vertices());
+    print("  Construction of triangulation took %.2f sec for %lu triangles\n", second, d->triangles.size()/3);
     // # nocov end
   }
 
@@ -98,7 +104,7 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
   }
 
   progress->reset();
-  progress->set_total(vd.num_vertices());
+  progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Interpolation");
 
   auto start_time = std::chrono::high_resolution_clock::now();
@@ -112,71 +118,62 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
 
   // 1. loop through the triangles, search the point inside triangle, interpolate
   #pragma omp parallel for num_threads(ncpu)
-  for (unsigned int i = 0 ; i < vd.num_vertices() ; ++i)
+  for (unsigned int i = 0 ; i < d->triangles.size() ; i+=3)
   {
-    std::vector<PointXYZ> nodes;
-    const voronoi_diagram<double>::const_vertex_iterator it = vd.vertices().begin() + i;
-    const voronoi_diagram<double>::vertex_type& vertex = *it;
-    const voronoi_diagram<double>::edge_type* edge = vertex.incident_edge();
+    int id;
+    PointLAS A,B,C;
 
-    do
+    id = index_map[d->triangles[i]];
+    las->get_point(id, A, nullptr, lastransform);
+
+    id = index_map[d->triangles[i+1]];
+    las->get_point(id, B, nullptr, lastransform);
+
+    id = index_map[d->triangles[i+2]];
+    las->get_point(id, C, nullptr, lastransform);
+
+    TriangleXYZ triangle(A, B, C);
+
+    // Interpolate in this triangle if the longest edge fulfill requirements
+    bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
+    if (trim == 0 || keep_triangle)
     {
-      unsigned int id = index_map[edge->cell()->source_index()];
-      PointLAS p;
-      las->get_point(id, p, nullptr, lastransform);
-      nodes.push_back(p);
-
-      if (nodes.size() == 3)
+      if (raster)
       {
-        TriangleXYZ triangle(nodes[0], nodes[1], nodes[2]);
+        // Generate the raster points in this triangle
+        double xres = raster->get_xres();
+        double yres = raster->get_yres();
+        double minx = ROUNDANY(triangle.xmin() - 0.5 * xres, xres);
+        double miny = ROUNDANY(triangle.ymin() - 0.5 * yres, yres);
+        double maxx = ROUNDANY(triangle.xmax() - 0.5 * xres, xres) + xres;
+        double maxy = ROUNDANY(triangle.ymax() - 0.5 * yres, yres) + yres;
 
-        // Interpolate in this triangle if the longest edge fulfill requirements
-        bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
-        if (trim == 0 || keep_triangle)
+        for (double x = minx ; x <= maxx ; x += xres)
         {
-          if (raster)
+          for (double y = miny ; y <= maxy ; y += yres)
           {
-            // Generate the raster points in this triangle
-            double xres = raster->get_xres();
-            double yres = raster->get_yres();
-            double minx = ROUNDANY(triangle.xmin() - 0.5 * xres, xres);
-            double miny = ROUNDANY(triangle.ymin() - 0.5 * yres, yres);
-            double maxx = ROUNDANY(triangle.xmax() - 0.5 * xres, xres) + xres;
-            double maxy = ROUNDANY(triangle.ymax() - 0.5 * yres, yres) + yres;
+            if (!triangle.contains({x,y})) continue;
 
-            for (double x = minx ; x <= maxx ; x += xres)
-            {
-              for (double y = miny ; y <= maxy ; y += yres)
-              {
-                if (!triangle.contains({x,y})) continue;
+            PointXYZ p(x,y);
+            triangle.linear_interpolation(p);
 
-                PointXYZ p(x,y);
-                triangle.linear_interpolation(p);
-
-                int cell = raster->cell_from_xy(x,y);
-                if (cell != -1) res[cell] = p.z;
-              }
-            }
-          }
-          else
-          {
-            std::vector<PointLAS> points;
-            las->query(&triangle, points, nullptr, lastransform);
-
-            for (auto& p : points)
-            {
-              triangle.linear_interpolation(p);
-              res[p.FID] = p.z;
-            }
+            int cell = raster->cell_from_xy(x,y);
+            if (cell != -1) res[cell] = p.z;
           }
         }
-
-        nodes.erase(nodes.begin() + 1);
       }
+      else
+      {
+        std::vector<PointLAS> points;
+        las->query(&triangle, points, nullptr, lastransform);
 
-      edge = edge->rot_next();
-
-    } while (edge != vertex.incident_edge());
+        for (auto& p : points)
+        {
+          triangle.linear_interpolation(p);
+          res[p.FID] = p.z;
+        }
+      }
+    }
 
     #pragma omp critical
     {
@@ -213,53 +210,53 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
 
   progress->reset();
   progress->set_prefix("Delaunay contours");
-  progress->set_total(vd.num_vertices());
+  progress->set_total(d->triangles.size()/3);
 
   #pragma omp parallel for num_threads(ncpu)
-  for (unsigned int i = 0 ; i < vd.num_vertices() ; ++i)
+  for (unsigned int i = 0 ; i < d->triangles.size() ; i+=3)
   {
-    std::vector<PointXYZ> nodes;
-    const voronoi_diagram<double>::const_vertex_iterator it = vd.vertices().begin() + i;
-    const voronoi_diagram<double>::vertex_type& vertex = *it;
-    const voronoi_diagram<double>::edge_type* edge = vertex.incident_edge();
+    int id;
+    double xyz[3];
 
-    do
+    id = index_map[d->triangles[i]];
+    las->get_xyz(id, xyz);
+    PointXYZ A({xyz[0], xyz[1], xyz[2]});
+
+    id = index_map[d->triangles[i+1]];
+    las->get_xyz(id, xyz);
+    PointXYZ B({xyz[0], xyz[1], xyz[2]});
+
+    id = index_map[d->triangles[i+2]];
+    las->get_xyz(id, xyz);
+    PointXYZ C({xyz[0], xyz[1], xyz[2]});
+
+    TriangleXYZ triangle(A, B, C);
+
+    bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
+    if (trim == 0 || keep_triangle)
     {
-      unsigned int id = index_map[edge->cell()->source_index()];
-      double xyz[3];
-      las->get_xyz(id, xyz);
-      nodes.push_back({xyz[0], xyz[1], xyz[2]});
+      triangle.make_clock_wise();
 
-      if (nodes.size() == 3)
+      Edge AB = {triangle.A, triangle.B};
+      Edge BC = {triangle.B, triangle.C};
+      Edge CA = {triangle.C, triangle.A};
+
+      #pragma omp critical
       {
-        TriangleXYZ triangle(nodes[0], nodes[1], nodes[2]);
-
-        bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
-        if (trim == 0 || keep_triangle)
-        {
-          triangle.make_clock_wise();
-
-          Edge AB = {triangle.A, triangle.B};
-          Edge BC = {triangle.B, triangle.C};
-          Edge CA = {triangle.C, triangle.A};
-
-          #pragma omp critical
-          {
-            if (edges.count(AB) > 0) edges.erase(AB); else edges.insert(AB);
-            if (edges.count(BC) > 0) edges.erase(BC); else edges.insert(BC);
-            if (edges.count(CA) > 0) edges.erase(CA); else edges.insert(CA);
-          }
-        }
-
-        nodes.erase(nodes.begin() + 1);
+        if (edges.count(AB) > 0) edges.erase(AB); else edges.insert(AB);
+        if (edges.count(BC) > 0) edges.erase(BC); else edges.insert(BC);
+        if (edges.count(CA) > 0) edges.erase(CA); else edges.insert(CA);
       }
+    }
 
-      edge = edge->rot_next();
-
-    } while (edge != vertex.incident_edge());
-
-    progress->update(i);
-    progress->show();
+    #pragma omp critical
+    {
+      (*progress)++;
+    }
+    if (omp_get_thread_num() == 0)
+    {
+      progress->show();
+    }
   }
 
   for (const auto& elmt : edges) e.push_back(elmt);
@@ -294,46 +291,37 @@ bool LASRtriangulate::write()
     }
   }
 
-  progress->set_total(vd.num_vertices());
+  progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Write triangulation");
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
   std::vector<TriangleXYZ> triangles;
 
-  for (unsigned int i = 0 ; i < vd.num_vertices() ; ++i)
+  for (unsigned int i = 0 ; i < d->triangles.size(); i+=3)
   {
-    std::vector<PointXYZ> nodes;
-    const voronoi_diagram<double>::const_vertex_iterator it = vd.vertices().begin() + i;
-    const voronoi_diagram<double>::vertex_type& vertex = *it;
-    const voronoi_diagram<double>::edge_type* edge = vertex.incident_edge();
+    int id;
+    PointLAS A,B,C;
 
-    do
+    id = index_map[d->triangles[i]];
+    las->get_point(id, A, nullptr, lastransform);
+
+    id = index_map[d->triangles[i+1]];
+    las->get_point(id, B, nullptr, lastransform);
+
+    id = index_map[d->triangles[i+2]];
+    las->get_point(id, C, nullptr, lastransform);
+
+    TriangleXYZ triangle(A, B, C);
+
+    bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
+    if (trim == 0 || keep_triangle)
     {
-      unsigned int id = index_map[edge->cell()->source_index()];
-      PointLAS p;
-      las->get_point(id, p, nullptr, lastransform);
-      nodes.push_back(p);
+      triangle.make_clock_wise();
+      triangles.push_back(triangle);
+    }
 
-      if (nodes.size() == 3)
-      {
-        TriangleXYZ triangle(nodes[0], nodes[1], nodes[2]);
-
-        bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
-        if (trim == 0 || keep_triangle)
-        {
-          triangle.make_clock_wise();
-          triangles.push_back(triangle);
-        }
-
-        nodes.erase(nodes.begin() + 1);
-      }
-
-      edge = edge->rot_next();
-
-    } while (edge != vertex.incident_edge());
-
-    progress->update(i);
+    (*progress)++;
     progress->show();
   }
 
@@ -358,8 +346,9 @@ bool LASRtriangulate::write()
 
 void LASRtriangulate::clear(bool last)
 {
-  vd.clear();
-  vb.clear();
+  coords.clear();
   index_map.clear();
+  delete d;
+  d = nullptr;
   npoints = 0;
 }

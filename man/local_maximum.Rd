@@ -41,8 +41,8 @@ in vector format.
 }
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package = "lasR")
-read <- reader(f)
+read <- reader_las()
 lmf <- local_maximum(3)
-ans <- processor(read + lmf)
+ans <- exec(read + lmf, on = f)
 ans
 }

@@ -114,8 +114,8 @@ chm = rasterize_canopy(ctg, 1, p2r())
 ### lasR
 
 ```r
-pipeline = reader(ctg) + rasterize(1, "max")
-processor(pipeline)
+pipeline = rasterize(1, "max")
+exec(pipeline, on = ctg)
 ```
 
 ### Result
@@ -145,8 +145,8 @@ dtm = rasterize_terrain(ctg, 1, tin())
 
 ```r
 tri = triangulate(filter = keep_ground())
-pipeline = reader(ctg, filter = keep_ground()) + tri + rasterize(1, tri)
-processor(pipeline)
+pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
+exec(pipeline, on = ctg)
 ```
 
 ### Result
@@ -156,6 +156,16 @@ m_lasr = read_benchmarks("lasR", 2)
 m_lidr = read_benchmarks("lidR", 2)
 plot_benchmark(m_lidr, m_lasr)
 ```
+
+The same with chunking option set to 1000 x 1000 m chunks using `exec(pipeline, ..., chunk = 1000)` and `opt_chunk_buffer(ctg) = 1000` to reduce the memory usage.
+
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
+m_lasr = list(NULL, read_benchmark("lasR_test_7_FFGG-1009803.data"))
+m_lidr = list(NULL, read_benchmark("lidR_test_7_FFGG-1009803.data"))
+plot_benchmark(m_lidr, m_lasr)
+```
+
+## Digital Terrain Model chunked
 
 ## Multiple raster
 
@@ -175,12 +185,11 @@ den = rasterize_density(ctg, 5)
 
 ```r
 custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
-read = reader(folder)
 chm = rasterize(1, "max")
 met = rasterize(20, custom_function(Z, Intensity))
 den = rasterize(5, "count")
-pipeline = read + chm + met + den
-processor(pipeline)
+pipeline = chm + met + den
+exec(pipeline, on = folder)
 ```
 
 
@@ -198,7 +207,6 @@ In this complex pipeline, the point cloud is normalized and written to new files
 
 
 ```r
-read = reader(ctg)
 del = triangulate(filter = keep_ground())
 norm = transform_with(del)
 dtm = rasterize(1, del)
@@ -207,7 +215,7 @@ seed = local_maximum(3)
 tree = region_growing(chm, seed)
 write = write_las()
 pipeline = read + del + norm + write + dtm + chm +  seed + tree
-ans = processor(pipeline, progress = TRUE)
+ans = exec(pipeline, on = ctg, progress = TRUE)
 ```
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}

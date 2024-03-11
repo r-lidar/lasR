@@ -2,6 +2,7 @@
 #include "LAScatalog.h"
 #include "Progress.hpp"
 #include "error.h"
+#include "Grid.h"
 
 // LASlib
 #include "lasreader.hpp"
@@ -12,11 +13,9 @@
 #include <algorithm>
 #include <filesystem>
 
-// boost
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
-namespace pt = boost::property_tree;
+// To parse JSON VPC
+#include <nlohmann/json.hpp>
+#include <fstream>
 
 bool LAScatalog::read(const std::vector<std::string>& files, bool progress)
 {
@@ -44,7 +43,10 @@ bool LAScatalog::read(const std::vector<std::string>& files, bool progress)
         last_error = "Virtual point cloud file detected mixed with other content";
         return false;
       }
-      read_vpc(file);
+      if (!read_vpc(file))
+      {
+        return false;
+      }
     }
     else if (type == PathType::LAXFILE) // # nocov
     {
@@ -97,92 +99,90 @@ bool LAScatalog::read_vpc(const std::string& filename)
   try
   {
     // read the JSON file
-    pt::ptree vpc;
-    pt::read_json(filename, vpc);
+    std::ifstream file(filename);
+    nlohmann::json vpc = nlohmann::json::parse(file);
 
     // Check that it has a FeatureCollection property
-    if (vpc.find("type") ==  vpc.not_found() || vpc.get<std::string>("type") != "FeatureCollection")
+    if (vpc.find("type") == vpc.end() || vpc["type"] != "FeatureCollection")
     {
-      last_error = std::string("The input file is not a virtual point cloud file"); // # nocov
+      last_error = "The input file is not a virtual point cloud file"; // # nocov
       return false; // # nocov
     }
 
     // Check that it has a feature property
-    if (vpc.find("features") ==  vpc.not_found())
+    if (vpc.find("features") == vpc.end())
     {
       last_error = "Missing 'features' key in the virtual point cloud file"; // # nocov
       return false; // # nocov
     }
 
     // Loop over the features to read the file paths and bounding boxes
-    for (const auto &f : vpc.get_child("features"))
+    for (const auto& feature : vpc["features"])
     {
-      auto& feature = f.second;
-
-      if (feature.find("type") ==  feature.not_found() || feature.find("stac_version") == feature.not_found() || feature.find("assets") == feature.not_found() || feature.find("properties") == feature.not_found())
+      if (!feature.contains("type") || !feature.contains("stac_version") || !feature.contains("assets") || !feature.contains("properties"))
       {
         last_error = "Malformed virtual point cloud file: missing properties"; // # nocov
         return false; // # nocov
       }
 
-      if (feature.get<std::string>("type") != "Feature")
+      if (feature["type"] != "Feature")
       {
         last_error = "Malformed virtual point cloud file: 'type' is not equal to 'Feature'"; // # nocov
         return false; // # nocov
       }
 
-      if (feature.get_child("assets").empty() || feature.get_child("properties").empty())
+      if (feature["assets"].empty() || feature["properties"].empty())
       {
         last_error = "Malformed virtual point cloud file: empty 'assets' or 'properties"; // # nocov
         return false; // # nocov
       }
 
-      if (feature.get<std::string>("stac_version")  != "1.0.0")
+      if (feature["stac_version"] != "1.0.0")
       {
-        last_error =  std::string("Unsupported STAC version: ") + feature.get<std::string>("stac_version"); // # nocov
+        last_error = "Unsupported STAC version: " + feature["stac_version"].get<std::string>(); // # nocov
         return false; // # nocov
       }
 
       // Find the path to the file and resolve relative path
-      auto& first_asset = *feature.get_child("assets").begin();
-      std::string file = first_asset.second.get<std::string>("href");
-      file = std::filesystem::weakly_canonical(parent_folder / file).string();
+      auto first_asset = *feature["assets"].begin();
+      std::string file_path = first_asset["href"];
+      file_path = std::filesystem::weakly_canonical(parent_folder / file_path).string();
 
-      int pccount = feature.get<int>("properties.pc:count");
+      int pccount = feature["properties"]["pc:count"].get<int>();
 
       // Get the CRS either in WKT or EPSG
-      std::string wkt = feature.get<std::string>("properties.proj:wkt2", "");
-      int epsg = feature.get<int>("properties.proj:epsg", 0);
+      std::string wkt = feature["properties"].value("proj:wkt2", "");
+      int epsg = feature["properties"].value("proj:epsg", 0);
 
       // Read the bounding box. If not found fall back to regular file reading
-      auto optbbox = feature.get_child_optional("properties.proj:bbox");
-      if (!optbbox)
+      auto optbbox = feature["properties"].find("proj:bbox");
+      if (optbbox == feature["properties"].end())
       {
-        if (!add_file(file))
+        // # nocov start
+        if (!add_file(file_path))
         {
           return false;
         }
         continue;
+        // # nocov end
       }
 
       // We are sure there is a bbox
-      auto& bbox = feature.get_child("properties.proj:bbox");
-      auto it = bbox.begin();
+      auto bbox = feature["properties"]["proj:bbox"];
       double min_x, min_y, max_x, max_y;
       if (bbox.size() == 6)
       {
-        min_x = it->second.get_value<double>(); it++;
-        min_y = it->second.get_value<double>(); it++;
-        it++; // min_z
-        max_x = it->second.get_value<double>(); it++;
-        max_y = it->second.get_value<double>(); it++;
+        min_x = bbox[0].get<double>();
+        min_y = bbox[1].get<double>();
+        max_x = bbox[3].get<double>();
+        max_y = bbox[4].get<double>();
       }
       else if (bbox.size() == 4)
       {
-        min_x = it->second.get_value<double>(); it++;
-        min_y = it->second.get_value<double>(); it++;
-        max_x = it->second.get_value<double>(); it++;
-        max_y = it->second.get_value<double>();
+        min_x = bbox[0].get<double>();
+        min_y = bbox[1].get<double>();
+        max_x = bbox[2].get<double>();
+        max_y = bbox[3].get<double>();
       }
       else
       {
@@ -190,35 +190,29 @@ bool LAScatalog::read_vpc(const std::string& filename)
         return false; // # nocov
       }
 
-      bool spatial_index = feature.get<bool>("properties.index:indexed", false);
+      bool spatial_index = feature["properties"].value("index:indexed", false);
 
-      //printf("pc:count %d\n", pccount);
-      //printf("pc:wkt %s\n", wkt.c_str());
-      //printf("pc:epsg %d\n", epsg);
-      //printf("file %s\n", file.c_str());
-      //printf("bbox [%.1f %.1f %.1f %.1f]\n", min_x, min_y, max_x, max_y);
-
-      files.push_back(file);
+      files.push_back(file_path);
       add_wkt(wkt);
       add_epsg(epsg);
       add_bbox(min_x, min_y, max_x, max_y, spatial_index);
       npoints.push_back(pccount);
     }
   }
-  catch (const pt::json_parser_error& e)
+  catch (const std::ifstream::failure& e)
   {
-    last_error = std::string("JSON parsing error: ") + e.what(); // # nocov
-    return false; // # nocov
+    last_error = std::string("Failed to read JSON file: ") + e.what();
+    return false;
   }
-  catch (const pt::ptree_error& e)
+  catch (const nlohmann::json::parse_error& e)
   {
-    last_error = std::string("Error reading JSON file: ") + e.what();  // # nocov
-    return false;  // # nocov
+    last_error = std::string("JSON parsing error: ") + e.what();
+    return false;
   }
   catch (const std::exception& e)
   {
-    last_error = std::string("An unexpected error occurred in read_vpc(): ") + e.what(); // # nocov
-    return false; // # nocov
+    last_error = std::string("An unexpected error occurred in read_vpc(): ") + e.what();
+    return false;
   }
 
   return true;
@@ -283,7 +277,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
     if (!wkt.empty()) output << "      \"proj:wtk2\": " << wkt << "," << std::endl;
     else if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
-    output << "      \"index:indexed\": " << index << std::endl;
+    output << "      \"index:indexed\": " << ((index) ? "true" : "false") << std::endl;
     output << "    }," << std::endl;
     output << "    \"links\": []," << std::endl;
     output << "    \"assets\": {" << std::endl;
@@ -400,17 +394,40 @@ bool LAScatalog::set_noprocess(const std::vector<bool>& b)
   return true;
 }
 
-void LAScatalog::set_chunk_size(double size)
-{
-  if (size > 0)
-    chunk_size = size;
-  else
-    chunk_size = 0;
-}
-
-void LAScatalog::set_chunk_is_file()
+bool LAScatalog::set_chunk_size(double size)
 {
   chunk_size = 0;
+
+  if (size > 0)
+  {
+    if (queries.size() > 0)
+    {
+      last_error = "Impossible to set chunk size with queries";
+      return false;
+    }
+
+    if (!laskdtree->was_built())
+    {
+      last_error = "internal error: laskdtree not built"; // # nocov
+      return false; // # nocov
+    }
+
+    chunk_size = size;
+
+    Grid grid(xmin, ymin, xmax, ymax, chunk_size);
+    for (int i = 0 ; i < grid.get_ncells() ; i++)
+    {
+      double x = grid.x_from_cell(i);
+      double y = grid.y_from_cell(i);
+      double hsize = size/2;
+
+      laskdtree->overlap(x-hsize, y-hsize, x+hsize, y+hsize);
+      if (laskdtree->has_overlaps())
+        add_query(x-hsize, y-hsize, x+hsize, y+hsize);
+    }
+  }
+
+  return true;
 }
 
 bool LAScatalog::get_chunk(int i, Chunk& chunk) const
@@ -430,11 +447,15 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
   bool success = false;
 
   if (queries.size() == 0)
+  {
     success = get_chunk_regular(i, chunk);
+    chunk.process = !noprocess[i];
+  }
   else
+  {
     success = get_chunk_with_query(i, chunk);
-
-  chunk.process = !noprocess[i];
+    chunk.process = true;
+  }
 
   return success;
 }
@@ -495,10 +516,16 @@ bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
 
 bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
 {
+  if (!laskdtree->was_built())
+  {
+    last_error = "internal error: laskdtree not built"; // # nocov
+    return false; // # nocov
+  }
+
   unsigned int index;
   chunk.clear();
 
-  // Some shape are provided. We are performing queries i.e not processing the entire collection
+  // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
   Shape* q = queries[i];
   double minx = q->xmin();
   double miny = q->ymin();
@@ -523,6 +550,10 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   chunk.ymin = miny;
   chunk.xmax = maxx;
   chunk.ymax = maxy;
+  if (chunk.xmin < xmin) chunk.xmin = xmin;
+  if (chunk.xmax > xmax) chunk.xmax = xmax;
+  if (chunk.ymin < ymin) chunk.ymin = ymin;
+  if (chunk.ymax > ymax) chunk.ymax = ymax;
   chunk.buffer = buffer;
   chunk.shape = q->type();
 
@@ -538,7 +569,7 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   if (get_number_files() == 1)
   {
     chunk.main_files.push_back(files[0].string());
-    chunk.name = files[0].stem().string();
+    chunk.name = files[0].stem().string() + "_" + std::to_string(i);
     return true;
   }
 

@@ -70,13 +70,13 @@ in this case.
 
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader(f)
+read <- reader_las()
 tri  <- triangulate(filter = keep_ground())
 dtm  <- rasterize(1, tri) # input is a triangulation stage
 avgi <- rasterize(10, mean(Intensity)) # input is a user expression
 chm  <- rasterize(2, "max") # input is a character vector
 pipeline <- read + tri + dtm + avgi + chm
-ans <- processor(pipeline)
+ans <- exec(pipeline, on = f)
 ans[[1]]
 ans[[2]]
 ans[[3]]
@@ -96,7 +96,7 @@ c1 <- rasterize(2, "count")
 c2  <- rasterize(c(2,5), "count")
 
 pipeline = read + c0 + c1 + c2
-res <- processor(pipeline)
+res <- exec(pipeline, on = f)
 terra::plot(res[[1]]/25)  # divide by 25 to get the density
 terra::plot(res[[2]]/4)   # divide by 4 to get the density
 terra::plot(res[[3]]/25)  # divide by 25 to get the density

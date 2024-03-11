@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-namespace st_onge
+namespace geophoton
 {
 
 float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr_cav, float thr_spk, int med_size, int dil_radius, float nodata)

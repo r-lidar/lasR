@@ -18,10 +18,10 @@
 #' @examples
 #' f <- system.file("extdata", "Example.las", package = "lasR")
 #' fun <- function(data) { data$RAND <- runif(nrow(data), 0, 100); return(data) }
-#' pipeline <- reader(f) +
+#' pipeline <- reader_las() +
 #'   add_extrabytes("float", "RAND", "Random numbers") +
 #'   callback(fun, expose = "xyz")
-#' processor(pipeline)
+#' exec(pipeline, on = f)
 add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 {
   types <- c("uchar", "char", "ushort", "short", "uint", "int", "uint64", "int64", "float", "double")
@@ -45,12 +45,9 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
-#' read <- reader(f)
-#' pipeline <- read + summarise()
-#' ans <- processor(pipeline)
-#' # plot(ans[[1]])
-#' # plot(ans[[2]])
-#'
+#' pipeline <- summarise()
+#' ans <- exec(pipeline, on = f)
+#' ans
 #' @seealso
 #' \link{rasterize}
 #' @noRd
@@ -112,9 +109,9 @@ aggregate_q = function(res, call, filter, ofile, env)
 #' read_las <- function(f)
 #' {
 #'   load <- function(data) { return(data) }
-#'   read <- reader(f)
+#'   read <- reader_las()
 #'   call <- callback(load, expose = "xyzi", no_las_update = TRUE)
-#'   return (processor(read + call))
+#'   return (exec(read + call, on = f))
 #' }
 #' las <- read_las(f)
 #' head(las)
@@ -129,11 +126,11 @@ aggregate_q = function(res, call, filter, ofile, env)
 #'   return(data)
 #' }
 #'
-#' read <- reader(f)
+#' read <- reader_las()
 #' call <- callback(convert_intensity_in_range, expose = "xyzi", min = 0, max = 255)
 #' write <- write_las()
 #' pipeline <- read + call + write
-#' ans <- processor(pipeline)
+#' ans <- exec(pipeline, on = f)
 #'
 #' las <- read_las(ans)
 #' head(las)
@@ -171,6 +168,30 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
   set_lasr_class(ans)
 }
 
+# ===== D =====
+
+#' Filter and delete points
+#'
+#' Remove some points from the point cloud. This stage modifies the point cloud in the pipeline
+#' but does not produce any output.
+#'
+#' @template param-filter
+#'
+#' @examples
+#' f <- system.file("extdata", "Megaplot.las", package="lasR")
+#' read <- reader_las()
+#' filter <- delete_points(keep_z_above(4))
+#'
+#' pipeline <- read + summarise() + filter + summarise()
+#' exec(pipeline, on = f)
+#' @export
+delete_points = function(filter = "")
+{
+  stopifnot(filter != "")
+  ans = list(algoname = "filter", filter = filter)
+  set_lasr_class(ans)
+}
+
 # ===== H =====
 
 #' Contour of a point cloud
@@ -186,11 +207,11 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
-#' read <- reader(f)
+#' read <- reader_las()
 #' tri <- triangulate(20, filter = keep_ground())
 #' contour <- hulls(tri)
 #' pipeline <- read + tri + contour
-#' ans <- processor(pipeline)
+#' ans <- exec(pipeline, on = f)
 #' plot(ans)
 #'
 #' @seealso
@@ -202,10 +223,9 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 {
   if (!is.null(mesh))
   {
-    if (!methods::is(mesh, "LASRpipeline")) stop("triangulator must be a 'LASRpipeline'") # nocov
-    if (length(mesh) != 1L) stop("cannot input a complex pipeline")  # nocov
-    if (mesh[[1]]$algoname != "triangulate") stop("the algorithm must be 'triangulate'")  # nocov
-    ans <- list(algoname = "hulls", connect = mesh[[1]][["uid"]], output = ofile)
+    mesh = get_stage(mesh)
+    if (mesh$algoname != "triangulate") stop("the stage must be 'triangulate'")  # nocov
+    ans <- list(algoname = "hulls", connect = mesh[["uid"]], output = ofile)
   }
   else
   {
@@ -236,9 +256,9 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 #'
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
-#' read <- reader(f)
+#' read <- reader_las()
 #' lmf <- local_maximum(3)
-#' ans <- processor(read + lmf)
+#' ans <- exec(read + lmf, on = f)
 #' ans
 #' @export
 local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z")
@@ -280,11 +300,11 @@ nothing = function(read = FALSE, stream = FALSE)
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package="lasR")
 #'
-#' reader <- reader(f, filter = keep_first())
+#' reader <- reader_las(filter = keep_first())
 #' tri <- triangulate()
 #' chm <- rasterize(0.25, tri)
 #' pit <- pit_fill(chm)
-#' u <- processor(reader + tri + chm + pit)
+#' u <- exec(reader + tri + chm + pit, on = f)
 #'
 #' chm <- u[[1]]
 #' sto <- u[[2]]
@@ -293,11 +313,10 @@ nothing = function(read = FALSE, stream = FALSE)
 #' @export
 pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_size = 3L, dil_radius = 0L, ofile = temptif())
 {
-  if (!methods::is(raster, "LASRpipeline")) stop("rasterizator must be a 'LASRpipeline'")  # nocov
-  if (length(raster) != 1L) stop("cannot input a complex pipeline")  # nocov
-  if (raster[[1]]$algoname != "rasterize") stop("the algorithm must be 'rasterize'")  # nocov
+  raster = get_stage(raster)
+  if (raster$algoname != "rasterize") stop("the algorithm must be 'rasterize'")  # nocov
 
-  ans <- list(algoname = "pit_fill", connect = raster[[1]][["uid"]],  lap_size = lap_size, thr_lap = thr_lap, thr_spk = thr_spk, med_size = med_size, dil_radius = dil_radius, output = ofile)
+  ans <- list(algoname = "pit_fill", connect = raster[["uid"]],  lap_size = lap_size, thr_lap = thr_lap, thr_spk = thr_spk, med_size = med_size, dil_radius = dil_radius, output = ofile)
   set_lasr_class(ans)
 }
 
@@ -353,13 +372,13 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader(f)
+#' read <- reader_las()
 #' tri  <- triangulate(filter = keep_ground())
 #' dtm  <- rasterize(1, tri) # input is a triangulation stage
 #' avgi <- rasterize(10, mean(Intensity)) # input is a user expression
 #' chm  <- rasterize(2, "max") # input is a character vector
 #' pipeline <- read + tri + dtm + avgi + chm
-#' ans <- processor(pipeline)
+#' ans <- exec(pipeline, on = f)
 #' ans[[1]]
 #' ans[[2]]
 #' ans[[3]]
@@ -379,7 +398,7 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' c2  <- rasterize(c(2,5), "count")
 #'
 #' pipeline = read + c0 + c1 + c2
-#' res <- processor(pipeline)
+#' res <- exec(pipeline, on = f)
 #' terra::plot(res[[1]]/25)  # divide by 25 to get the density
 #' terra::plot(res[[2]]/4)   # divide by 4 to get the density
 #' terra::plot(res[[3]]/25)  # divide by 25 to get the density
@@ -400,12 +419,10 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
     return(aggregate_q(res, substitute(operators), filter, ofile, env))
   }
 
-  if (methods::is(operators, "LASRpipeline"))
+  if (methods::is(operators, "LASRpipeline") || methods::is(operators, "LASRalgorithm"))
   {
-    if (length(operators) == 1)
-      ans <- list(algoname = "rasterize", res = res_raster, connect = operators[[1]][["uid"]], filter = filter, output = ofile)
-    else
-      stop("cannot input a complex pipeline")
+    operators = get_stage(operators)
+    ans <- list(algoname = "rasterize", res = res_raster, connect = operators[["uid"]], filter = filter, output = ofile)
   }
   else if (is.character(operators))
   {
@@ -427,167 +444,86 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
 
 #' Initialize the pipeline
 #'
-#' This is the first stage that must be called in each pipeline. It specifies which files must be read.
-#' The stage does nothing and returns nothing if it is not associated to another processing stage.
-#' It only initializes the pipeline. `reader()` is the main function that dispatches into to other
-#' functions. `reader_*()` reads from LAS/LAZ files on disk.`reader_coverage()` processes the entire
-#' point cloud. `reader_circles()` and `reader_rectangles()` read and process only some selected regions
-#' of interest.
+#' This is the first stage that must be called in each pipeline. The stage does nothing and returns
+#' nothing if it is not associated to another processing stage.
+#' It only initializes the pipeline. `reader_las()` is the main function that dispatches into to other
+#' functions. `reader_las_coverage()` processes the entire point cloud. `reader_las_circles()` and
+#' `reader_las_rectangles()` read and process only some selected regions of interest. If the chosen
+#' reader has no options i.e. using `reader_las()` it can be omitted.
 #'
-#' @param x Can be the paths of the files to use, the path of the folder in which the files are stored,
-#' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
-#' file or a `data.frame` containing hte point cloud. It supports also a `LAScatalog` or a `LAS` objects
-#' from `lidR`.
 #' @template param-filter
-#' @param buffer numeric. Each file is read with a buffer. The default is 0, which does not mean that
-#' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
-#' pick the greatest value between the internal suggestion and this provided value.
 #' @param xc,yc,r numeric. Circle centres and radius or radii.
 #' @param xmin,ymin,xmax,ymax numeric. Coordinates of the rectangles
 #' @param ... passed to other readers
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
-#' read <- reader(f)
-#' ans <- processor(read)
 #'
+#' pipeline <- reader_las() + rasterize(10, "zmax")
+#' ans <- exec(pipeline, on = f)
+#' # terra::plot(ans)
+#'
+#' pipeline <- reader_las(filter = keep_z_above(1.3)) + rasterize(10, "zmean")
+#' ans <- exec(pipeline, on = f)
+#' # terra::plot(ans)
+#'
+#' # read_las() with no option can be omitted
+#' ans <- exec(rasterize(10, "zmax"), on = f)
+#' # terra::plot(ans)
+#'
+#' # Perform a query and apply the pipeline on a subset
+#' pipeline = reader_las_circles(273500, 5274500, 20) + rasterize(2, "zmax")
+#' ans <- exec(pipeline, on = f)
+#' # terra::plot(ans)
+#'
+#' # Perform a query and apply the pipeline on a subset with 1 output files per query
+#' ofile = paste0(tempdir(), "/*_chm.tif")
+#' pipeline = reader_las_circles(273500, 5274500, 20) + rasterize(2, "zmax", ofile = ofile)
+#' ans <- exec(pipeline, on = f)
+#' # terra::plot(ans)
 #' @export
 #' @md
-reader = function(x, filter = "", buffer = 0, ...)
+reader_las = function(filter = "", ...)
 {
   p <- list(...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
 
-  if (circle) return(reader_circles(x, p$xc, p$yc, p$r, filter = filter, buffer = buffer, ...))
-  if (rectangle) return(reader_rectangles(x, p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, buffer = buffer, ...))
-  return(reader_coverage(x, filter = filter, buffer = buffer, ...))
+  if (circle) return(reader_las_circles(p$xc, p$yc, p$r, filter = filter, ...))
+  if (rectangle) return(reader_las_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, ...))
+  return(reader_las_coverage(filter = filter, ...))
 }
 
 #' @export
-#' @rdname reader
-reader_coverage = function(x, filter = "", buffer = 0, ...)
+#' @rdname reader_las
+reader_las_coverage = function(filter = "", ...)
 {
-  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_coverage(x, filter, buffer, ...))
-  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_coverage(x, filter, buffer, ...))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
-}
-
-#' @export
-#' @rdname reader
-reader_circles = function(x, xc, yc, r, filter = "", buffer = 0, ...)
-{
-  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_circles(x, xc, yc, r, filter, buffer, ...))
-  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_circles(x, xc, yc, r, filter, buffer, ...))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
-}
-
-#' @export
-#' @rdname reader
-reader_rectangles = function(x, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
-{
-  if (methods::is(x, "LAScatalog") | is.character(x)) return(reader_files_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer, ...))
-  if (methods::is(x, "LAS") | is.data.frame(x)) return(reader_dataframe_rectangles(x, xmin, ymin, xmax, ymax, filter, buffer, ...))
-  stop("'x' must be a character vector, a data.frame or a LAS* object from lidR.") # nocov
-}
-
-reader_files_coverage = function(files, filter = "", buffer = 0, ...)
-{
-  p <- list(...)
-  noprocess = p$noprocess
-
-  if (methods::is(files, "LAScatalog"))
-  {
-    processed <- files$processed
-    files <- files$filename
-    if (!is.null(processed)) noprocess = !processed
-  }
-
-  if (!is.character(files))
-  {
-    stop("'files' must be character or a LAScatalog")  # nocov
-  }
-
-  if (!is.null(noprocess))
-  {
-    if (length(noprocess) != length(files))
-      stop("'noprocess' and 'files' have different length")
-  }
-
-  files <- normalizePath(files)
-  ans <- list(algoname = "reader_las", files = files, filter = filter, buffer = buffer, noprocess = noprocess)
+  ans <- list(algoname = "reader_las", filter = filter)
   set_lasr_class(ans)
 }
 
-reader_files_circles = function(files, xc, yc, r, filter = "", buffer = 0, ...)
+#' @export
+#' @rdname reader_las
+reader_las_circles = function(xc, yc, r, filter = "", ...)
 {
   stopifnot(length(xc) == length(yc))
   if (length(r) == 1) r <- rep(r, length(xc))
   if (length(r) > 1) stopifnot(length(xc) == length(r))
 
-  ans <- reader_files_coverage(files, filter, buffer, ...)
+  ans <- reader_las_coverage(filter, ...)
   ans[[1]]$xcenter <- xc
   ans[[1]]$ycenter <- yc
   ans[[1]]$radius <- r
   ans
 }
 
-reader_files_rectangles = function(files, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
+#' @export
+#' @rdname reader_las
+reader_las_rectangles = function(xmin, ymin, xmax, ymax, filter = "", ...)
 {
   stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
 
-  ans <- reader_files_coverage(files, filter, buffer)
-  ans[[1]]$xmin <- xmin
-  ans[[1]]$ymin <- ymin
-  ans[[1]]$xmax <- xmax
-  ans[[1]]$ymax <- ymax
-  ans
-}
-
-reader_dataframe_coverage = function(dataframe, filter = "", buffer = 0, ...)
-{
-  accuracy = c(0,0,0)
-  if (methods::is(dataframe, "LAS"))
-  {
-    accuracy <- c(dataframe@header@PHB[["X scale factor"]], dataframe@header@PHB[["Y scale factor"]], dataframe@header@PHB[["Z scale factor"]])
-    crs <- dataframe@crs$wkt
-    dataframe <- dataframe@data
-    attr(dataframe, "accuracy") <- accuracy
-    attr(dataframe, "crs") <- crs
-  }
-
-  stopifnot(is.data.frame(dataframe))
-
-  crs <- attr(dataframe, "crs")
-  if (is.null(crs)) crs = ""
-  if (!is.character(crs) & length(crs != 1)) stop("The CRS of this data.frame is not a WKT string")
-
-  acc <- attr(dataframe, "accuracy")
-  if (is.null(acc)) acc = c(0, 0, 0)
-  if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
-
-  ans <- list(algoname = "reader_dataframe", dataframe = dataframe, accuracy = acc, crs = crs, filter = filter, buffer = buffer)
-  set_lasr_class(ans)
-}
-
-reader_dataframe_circles = function(dataframe, xc, yc, r, filter = "", buffer = 0, ...)
-{
-  stopifnot(length(xc) == length(yc))
-  if (length(r) == 1) r <- rep(r, length(xc))
-  if (length(r) > 1) stopifnot(length(xc) == length(r))
-
-  ans <- reader_dataframe_coverage(dataframe, filter, buffer)
-  ans[[1]]$xcenter <- xc
-  ans[[1]]$ycenter <- yc
-  ans[[1]]$radius <- r
-  ans
-}
-
-reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter = "", buffer = 0, ...)
-{
-  stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
-
-  ans <- reader_dataframe_coverage(dataframe, filter, buffer)
+  ans <- reader_las_coverage(filter, ...)
   ans[[1]]$xmin <- xmin
   ans[[1]]$ymin <- ymin
   ans[[1]]$xmax <- xmax
@@ -625,21 +561,18 @@ reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package="lasR")
 #'
-#' reader <- reader(f, filter = keep_first())
-#' reader <- reader(f, filter = keep_first())
+#' reader <- reader_las(filter = keep_first())
 #' chm <- rasterize(1, "max")
 #' lmx <- local_maximum(5)
 #' tree <- region_growing(chm, lmx, max_cr = 10)
-#' u <- processor(reader + chm + lmx + tree)
+#' u <- exec(reader + chm + lmx + tree, on = f)
 #'
 #' @md
 region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.55, max_cr = 20, ofile = temptif())
 {
-  if (!methods::is(raster, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")  # nocov
-  if (!methods::is(seeds, "LASRpipeline")) stop("'chm' must be a 'LASRpipeline'")  # nocov
-  if (length(raster) > 1 || length(seeds) > 1) stop("cannot input a complex pipeline")  # nocov
-
-  ans <- list(algoname = "region_growing", connect1 = seeds[[1]][["uid"]], connect2 = raster[[1]][["uid"]], th_tree = th_tree, th_seed = th_seed, th_cr = th_cr, max_cr = max_cr, output = ofile)
+  raster <- get_stage(raster)
+  seeds <- get_stage(seeds)
+  ans <- list(algoname = "region_growing", connect1 = seeds[["uid"]], connect2 = raster[["uid"]], th_tree = th_tree, th_seed = th_seed, th_cr = th_cr, max_cr = max_cr, output = ofile)
   set_lasr_class(ans)
 }
 
@@ -654,11 +587,11 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
 #' @template param-filter
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader(f)
+#' read <- reader_las()
 #' vox <- sampling_voxel(5)
 #' write <- write_las()
 #' pipeline <- read + vox + write
-#' processor(pipeline)
+#' exec(pipeline, on = f)
 #' @export
 #' @rdname sampling
 sampling_voxel = function(res = 2, filter = "")
@@ -685,9 +618,9 @@ sampling_pixel = function(res = 2, filter = "")
 #' @template param-filter
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader(f)
+#' read <- reader_las()
 #' pipeline <- read + summarise()
-#' ans <- processor(pipeline)
+#' ans <- exec(pipeline, on = f)
 #' ans
 #' @export
 summarise = function(zwbin = 2, iwbin = 25, filter = "")
@@ -714,12 +647,12 @@ summarise = function(zwbin = 2, iwbin = 25, filter = "")
 #' @template param-ofile
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader(f)
+#' read <- reader_las()
 #' tri1 <- triangulate(25, filter = keep_ground(), ofile = tempgpkg())
 #' filter <- "-keep_last -keep_random_fraction 0.1"
 #' tri2 <- triangulate(filter = filter, ofile = tempgpkg())
 #' pipeline <- read + tri1 + tri2
-#' ans <- processor(pipeline)
+#' ans <- exec(pipeline, on = f)
 #' #plot(ans[[1]])
 #' #plot(ans[[2]])
 #' @export
@@ -745,8 +678,8 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' # There is a normalize pipeline in lasR but let's create one almost equivalent
 #' mesh  <- triangulate(filter = keep_ground())
 #' trans <- transform_with(mesh)
-#' pipeline <- reader(f) + mesh + trans + write_las()
-#' ans <- processor(pipeline)
+#' pipeline <- mesh + trans + write_las()
+#' ans <- exec(pipeline, on = f)
 #'
 #' @seealso
 #' \link{reader}
@@ -755,11 +688,10 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' @export
 transform_with = function(stage, operator = "-", store_in_attribute = "")
 {
-  if (!methods::is(stage, "LASRpipeline")) stop("the stage must be a 'LASRpipeline' object")  # nocov
-  if (length(stage) != 1L) stop("cannot input a complex pipeline")  # nocov
-  if (!stage[[1]]$algoname %in% c("triangulate", "rasterize", "aggregate")) stop("the stage must be a triangulation or a raster stage")  # nocov
+  stage = get_stage(stage)
+  if (!stage$algoname %in% c("triangulate", "rasterize", "aggregate")) stop("the stage must be a triangulation or a raster stage")  # nocov
 
-  ans <- list(algoname = "transform_with", connect = stage[[1]][["uid"]], operator = operator, store_in_attribute = store_in_attribute)
+  ans <- list(algoname = "transform_with", connect = stage[["uid"]], operator = operator, store_in_attribute = store_in_attribute)
   set_lasr_class(ans)
 }
 
@@ -780,11 +712,11 @@ transform_with = function(stage, operator = "-", store_in_attribute = "")
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader(f)
+#' read <- reader_las()
 #' tri  <- triangulate(filter = keep_ground())
 #' normalize <- tri + transform_with(tri)
 #' pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
-#' processor(pipeline)
+#' exec(pipeline, on = f)
 #' @export
 write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE)
 {
@@ -797,13 +729,14 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' Borrowing the concept of virtual rasters from GDAL, the VPC file format references other point
 #' cloud files in virtual point cloud (VPC)
 #'
-#' @param ofile character. The file path with extnsion .vpc where to write the virtual point cloud file
+#' @param ofile character. The file path with extension .vpc where to write the virtual point cloud file
 #' @references
 #' \url{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/}\cr
 #' \url{https://github.com/PDAL/wrench/blob/main/vpc-spec.md}
 #' @examples
 #' \dontrun{
-#' pipeline = reader("folder/") + write_vpc("folder/dataset.vpc")
+#' pipeline = write_vpc("folder/dataset.vpc")
+#' exec(pipeline, on = "folder")
 #' }
 #' @export
 write_vpc = function(ofile)
@@ -834,6 +767,24 @@ set_lasr_class = function(x)
   x = list(x)
   class(x) <- "LASRpipeline"
   return(x)
+}
+
+get_stage = function(x)
+{
+  call = deparse(substitute(x))
+
+  if (methods::is(x, "LASRalgorithm"))
+    return(x)
+
+  if (methods::is(x, "LASRpipeline"))
+  {
+    if (length(x) != 1L)
+      stop(paste("Cannot input a complex pipeline.", call, "has", length(x), "stages"))
+
+    return(x[[1]])
+  }
+
+  stop(paste("The stage", call, "must be a 'LASRalgorithm'"))
 }
 
 LASATTRIBUTES <- c("X", "Y", "Z", "Intensity",

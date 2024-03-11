@@ -5,18 +5,19 @@ test_that("lasR supports a LAS from lidR",
   LASfile <- system.file("extdata", "Megaplot.las", package="lasR")
   las = eval(parse(text = "lidR::readLAS(LASfile)")) # eval(parse()) tricks R CMD check because lidR is not a dependency
 
-  r1 = reader(las, filter = drop_z_below(2))
-  r2 = reader(LASfile, filter = drop_z_below(2))
+  r1 = reader_las(filter = drop_z_below(2))
+  r2 = reader_las(filter = drop_z_below(2))
 
   tri = triangulate(25)
   h = hulls(tri)
   pipeline1 = r1  + tri + h
   pipeline2 = r2  + tri + h
 
-  ans1 = processor(pipeline1)
-  ans2 = processor(pipeline2)
+  ans1 = exec(pipeline1, on = las)
+  ans2 = exec(pipeline2, on = LASfile)
 
   expect_s3_class(ans1, "sf")
+  expect_equal(nrow(ans1$geom[[1]][[1]]), 85L)
   expect_equal(nrow(ans1$geom[[1]][[1]]), nrow(ans2$geom[[1]][[1]]))
 })
 
@@ -26,8 +27,25 @@ test_that("lasR supports a LAScatalog from lidR",
 
   LASfile <- system.file("extdata", "Example.las", package="lasR")
   las = eval(parse(text = "lidR::readLAScatalog(LASfile)")) # eval(parse()) tricks R CMD check because lidR is not a dependency
+  las@processing_options$progress = FALSE
+  pipeline = hulls()
 
-  pipeline = reader(las) + hulls()
+  expect_error(exec(pipeline, on = las), NA)
+})
 
-  expect_error(processor(pipeline), NA)
+test_that("exec works with old pipelin",
+{
+  f <- system.file("extdata", "Megaplot.las", package="lasR")
+
+  r = reader(f, filter = drop_z_below(2))
+  tri = triangulate(25)
+  h = hulls(tri)
+  pipeline = r  + tri + h
+
+  ans1 = exec(pipeline)
+  ans2 = exec(pipeline, on = f)
+
+  expect_s3_class(ans1, "sf")
+  expect_equal(nrow(ans1$geom[[1]][[1]]), 85L)
+  expect_equal(nrow(ans2$geom[[1]][[1]]), 85L)
 })

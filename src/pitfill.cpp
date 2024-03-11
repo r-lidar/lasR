@@ -1,5 +1,5 @@
 #include "pitfill.h"
-#include "chm_prep.h"
+#include "geophoton/chm_prep.h"
 
 LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int lap_size, float thr_lap, float thr_spk, int med_size, float dil_radius, LASRalgorithm* algorithm)
 {
@@ -52,7 +52,7 @@ bool LASRpitfill::process(LAS*& las)
   float med_size = 3;
   float dil_radius = 0;
 
-  float* ans = st_onge::chm_prep(&geom[0], snlin, sncol, lap_size, thr_lap, thr_spk, med_size, dil_radius, rin.get_nodata());
+  float* ans = geophoton::chm_prep(&geom[0], snlin, sncol, lap_size, thr_lap, thr_spk, med_size, dil_radius, rin.get_nodata());
 
   if (ans == NULL)
   {

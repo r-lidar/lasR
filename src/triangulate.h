@@ -5,13 +5,14 @@
 #include "Vector.h"
 #include "Shape.h"
 
-#include <boost/polygon/voronoi_builder.hpp>
-#include <boost/polygon/voronoi_diagram.hpp>
-using boost::polygon::voronoi_diagram;
-
 #include <unordered_set>
 
 class Raster;
+
+namespace delaunator
+{
+  class Delaunator;
+}
 
 class LASRtriangulate : public LASRalgorithmVector
 {
@@ -29,10 +30,10 @@ private:
   bool keep_large;
   double trim;
   unsigned int npoints;
-  std::vector<U32> index_map;
+  std::vector<double> coords;
+  std::vector<int> index_map;
   std::string use_attribute;
-  boost::polygon::voronoi_builder<int> vb;
-  boost::polygon::voronoi_diagram<double> vd;
+  delaunator::Delaunator* d;
   LAS* las;
 };
 

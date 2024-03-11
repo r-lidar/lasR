@@ -24,9 +24,9 @@ the point cloud in the pipeline but does not produce any output.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader(f)
+read <- reader_las()
 vox <- sampling_voxel(5)
 write <- write_las()
 pipeline <- read + vox + write
-processor(pipeline)
+exec(pipeline, on = f)
 }

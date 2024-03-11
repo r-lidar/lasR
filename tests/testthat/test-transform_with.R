@@ -43,3 +43,24 @@ test_that("tw can normalize with a raster",
   expect_equal(sd(u), 0.138, tolerance = 0.003)
 })
 
+test_that("tw can normalize with extrabyte",
+{
+  f <- system.file("extdata", "Topography.las", package="lasR")
+
+  olas = templas()
+  pipeline <- reader(f) + normalize(extrabytes = TRUE) + write_las(olas)
+  ans = processor(pipeline) |> suppressWarnings()
+
+  del = triangulate(use_attribute = "HAG")
+  dtm = rasterize(2, del)
+  pipeline <- reader(olas, filter = keep_ground()) + del + dtm
+  ans = processor(pipeline)
+
+  expect_true(all(as.numeric(na.omit(as.numeric(ans[]))) == 0))
+
+  del = triangulate(use_attribute = "PP")
+  dtm = rasterize(2, del)
+  pipeline <- reader(olas, filter = keep_ground()) + del + dtm
+  expect_error(processor(pipeline), "no extrabyte attribute 'PP' found")
+})
+
