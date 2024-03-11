@@ -25,8 +25,10 @@ Useful links:
 
 Other contributors:
 \itemize{
-  \item Martin Isenburg (Is the author of the LASlib and LASzip libraries) [copyright holder]
-  \item Benoît St-Onge (Is the author of the 'chm_prep' function) [copyright holder]
+  \item Martin Isenburg (Is the author of the included LASlib and LASzip libraries) [copyright holder]
+  \item Benoît St-Onge (Is the author of the included 'chm_prep' function) [copyright holder]
+  \item Niels Lohmann (Is the author of the included json parser) [copyright holder]
+  \item Volodymyr Bilonenko (Is the author of the included delaunator triangulation) [copyright holder]
 }
 
 }

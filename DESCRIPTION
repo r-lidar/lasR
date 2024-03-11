@@ -4,14 +4,16 @@ Title: Fast and Pipable Airborne LiDAR Data Tools
 Version: 0.2.2
 Authors@R: c(
     person("Jean-Romain", "Roussel", email = "jean-romain.roussel.1@ulaval.ca", role = c("aut", "cre", "cph")),
-    person("Martin", "Isenburg", email = "", role = "cph", comment = "Is the author of the LASlib and LASzip libraries"),
-    person("Benoît", "St-Onge", email = "", role = "cph", comment = "Is the author of the 'chm_prep' function"))
+    person("Martin", "Isenburg", email = "", role = "cph", comment = "Is the author of the included LASlib and LASzip libraries"),
+    person("Benoît", "St-Onge", email = "", role = "cph", comment = "Is the author of the included 'chm_prep' function"),
+    person("Niels", "Lohmann", email = "", role = "cph", comment = "Is the author of the included json parser"),
+    person("Volodymyr", "Bilonenko", email = "", role = "cph", comment = "Is the author of the included delaunator triangulation"))
 Description: Fast and Pipepable Airborne LiDAR (Light Detection and Ranging) processing tools. Read/write 
     'las' and 'laz' files, computation of metrics in area based approach, point filtering, normalization,
     individual tree segmentation and other manipulations.
 URL: https://github.com/r-lidar/lasR
 BugReports: https://github.com/r-lidar/lasR/issues
-License: GPL-3
+License: GPL-3 + file LICENSE
 Depends: R (>= 3.6.0)
 Imports: 
     methods,
