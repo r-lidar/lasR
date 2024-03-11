@@ -6,19 +6,20 @@
 #' @param pipeline a pipeline. A serie of stages called in order
 #' @param on Can be the paths of the files to use, the path of the folder in which the files are stored,
 #' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
-#' file or a `data.frame` containing tte point cloud. It supports also a `LAScatalog` or a `LAS` objects
+#' file or a `data.frame` containing the point cloud. It supports also a `LAScatalog` or a `LAS` objects
 #' from `lidR`.
 #' @param ncores integer. Number of cores to use. Some stages or some steps in some stages
 #' are parallelised but overall one file is process at a time.
-#' @param buffer numeric. Each file is read with a buffer. The default is 0, which does not mean that
-#' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
-#' pick the greatest value between the internal suggestion and this value. If `on` is a `LAScatalog`
-#' from `lidR` the options set by the `LAScatalog` has the precedence.
+#' @param buffer numeric. Each file, each chunk or each query may be read with a buffer. The default
+#' is NULL, which does not mean that point-cloud won't be buffered. It means that the internal routine
+#' knows if a buffer is needed and will pick the greatest value between the internal suggestion and
+#' this value. If `on` is a `LAScatalog` from `lidR` the options set by the `LAScatalog` has the
+#' precedence.
 #' @param progress boolean. Displays a progress bar.  If `on` is a `LAScatalog` from `lidR` the
 #' options set by the `LAScatalog` has the precedence.
-#' @param chunk numeric. By default the collection of files is processed by file (`chunk = 0`). It is
-#' possible to process by arbitrary sized chunks. This is useful for e.g. processing collection with
-#' large files or processing a massive `copc` files. If `on` is a `LAScatalog` from `lidR` the
+#' @param chunk numeric. By default the collection of files is processed by file (`chunk = NULL`).
+#' It is  possible to process by arbitrary sized chunks. This is useful for e.g. processing collection
+#' with large files or processing a massive `copc` files. If `on` is a `LAScatalog` from `lidR` the
 #' option set by the `LAScatalog` has the precedence.
 #' @param ... unused
 #'
@@ -37,7 +38,7 @@
 #' }
 #' @md
 #' @export
-exec = function(pipeline, on, ncores = half_cores(), progress = FALSE, buffer = 0, chunk = 0, ...)
+exec = function(pipeline, on, ncores = half_cores(), progress = FALSE, buffer = NULL, chunk = NULL, ...)
 {
   if (pipeline[[1]]$algoname != "reader_las")
   {
@@ -53,6 +54,9 @@ exec = function(pipeline, on, ncores = half_cores(), progress = FALSE, buffer = 
       return(processor(pipeline, ncores = ncores, progress = progress, ...))
     }
   }
+
+  if (is.null(buffer)) buffer <- 0
+  if (is.null(chunk))  chunk <- 0
 
   dots <- list(...)
   noprocess <- dots$noprocess

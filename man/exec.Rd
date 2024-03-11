@@ -9,8 +9,8 @@ exec(
   on,
   ncores = half_cores(),
   progress = FALSE,
-  buffer = 0,
-  chunk = 0,
+  buffer = NULL,
+  chunk = NULL,
   ...
 )
 }
@@ -19,7 +19,7 @@ exec(
 
 \item{on}{Can be the paths of the files to use, the path of the folder in which the files are stored,
 the path to a \href{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/}{virtual point cloud}
-file or a \code{data.frame} containing tte point cloud. It supports also a \code{LAScatalog} or a \code{LAS} objects
+file or a \code{data.frame} containing the point cloud. It supports also a \code{LAScatalog} or a \code{LAS} objects
 from \code{lidR}.}
 
 \item{ncores}{integer. Number of cores to use. Some stages or some steps in some stages
@@ -28,14 +28,15 @@ are parallelised but overall one file is process at a time.}
 \item{progress}{boolean. Displays a progress bar.  If \code{on} is a \code{LAScatalog} from \code{lidR} the
 options set by the \code{LAScatalog} has the precedence.}
 
-\item{buffer}{numeric. Each file is read with a buffer. The default is 0, which does not mean that
-the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
-pick the greatest value between the internal suggestion and this value. If \code{on} is a \code{LAScatalog}
-from \code{lidR} the options set by the \code{LAScatalog} has the precedence.}
+\item{buffer}{numeric. Each file, each chunk or each query may be read with a buffer. The default
+is NULL, which does not mean that point-cloud won't be buffered. It means that the internal routine
+knows if a buffer is needed and will pick the greatest value between the internal suggestion and
+this value. If \code{on} is a \code{LAScatalog} from \code{lidR} the options set by the \code{LAScatalog} has the
+precedence.}
 
-\item{chunk}{numeric. By default the collection of files is processed by file (\code{chunk = 0}). It is
-possible to process by arbitrary sized chunks. This is useful for e.g. processing collection with
-large files or processing a massive \code{copc} files. If \code{on} is a \code{LAScatalog} from \code{lidR} the
+\item{chunk}{numeric. By default the collection of files is processed by file (\code{chunk = NULL}).
+It is  possible to process by arbitrary sized chunks. This is useful for e.g. processing collection
+with large files or processing a massive \code{copc} files. If \code{on} is a \code{LAScatalog} from \code{lidR} the
 option set by the \code{LAScatalog} has the precedence.}
 
 \item{...}{unused}

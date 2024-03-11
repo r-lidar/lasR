@@ -31,20 +31,34 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 \description{
 This is the first stage that must be called in each pipeline. The stage does nothing and returns
 nothing if it is not associated to another processing stage.
-It only initializes the pipeline. \code{reader()} is the main function that dispatches into to other
-functions. \verb{reader_las_*()} reads from LAS/LAZ files on disk.\code{reader_las_coverage()} processes the entire
-point cloud. \code{reader_las_circles()} and \code{reader_las_rectangles()} read and process only some selected regions
-of interest. If the chosen reader has no options i.e. using \code{reader_las()} it can be omitted.
+It only initializes the pipeline. \code{reader_las()} is the main function that dispatches into to other
+functions. \code{reader_las_coverage()} processes the entire point cloud. \code{reader_las_circles()} and
+\code{reader_las_rectangles()} read and process only some selected regions of interest. If the chosen
+reader has no options i.e. using \code{reader_las()} it can be omitted.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package = "lasR")
 
 pipeline <- reader_las() + rasterize(10, "zmax")
 ans <- exec(pipeline, on = f)
+# terra::plot(ans)
 
 pipeline <- reader_las(filter = keep_z_above(1.3)) + rasterize(10, "zmean")
 ans <- exec(pipeline, on = f)
+# terra::plot(ans)
 
 # read_las() with no option can be omitted
 ans <- exec(rasterize(10, "zmax"), on = f)
+# terra::plot(ans)
+
+# Perform a query and apply the pipeline on a subset
+pipeline = reader_las_circles(273500, 5274500, 20) + rasterize(2, "zmax")
+ans <- exec(pipeline, on = f)
+# terra::plot(ans)
+
+# Perform a query and apply the pipeline on a subset with 1 output files per query
+ofile = paste0(tempdir(), "/*_chm.tif")
+pipeline = reader_las_circles(273500, 5274500, 20) + rasterize(2, "zmax", ofile = ofile)
+ans <- exec(pipeline, on = f)
+# terra::plot(ans)
 }
