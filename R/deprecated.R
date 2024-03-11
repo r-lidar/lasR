@@ -20,6 +20,8 @@
 #' @name deprecated
 NULL
 
+# nocov start
+
 #' @rdname deprecated
 #' @export
 processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
@@ -203,3 +205,5 @@ reader_dataframe_rectangles = function(dataframe, xmin, ymin, xmax, ymax, filter
   ans[[1]]$ymax <- ymax
   ans
 }
+
+# nocov end
