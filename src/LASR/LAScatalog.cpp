@@ -440,7 +440,8 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
 
   if (!laskdtree->was_built())
   {
-    last_error = "internal error: spatial index of tile not built";
+    last_error = "internal error: spatial index of tile not built"; // # nocov
+    return false; // # nocov
   }
 
   bool success = false;
