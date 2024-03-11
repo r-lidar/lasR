@@ -84,8 +84,8 @@ get_latest_version = function()
   },
   error = function(e)
   {
-    close(nullcon)
-    sink(type = "message") # nocov
+    sink(NULL, type = "message") # nocov
+    close(nullcon) # nocov
     return(FALSE) # nocov
   })
 
