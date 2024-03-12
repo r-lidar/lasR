@@ -31,6 +31,7 @@
   # if (any(toset)) options(op.lidR[toset])
   #
   # invisible()
+  set_proj_lib()
 }
 
 .onUnload <- function(libpath)
@@ -103,6 +104,15 @@ is_dev_version = function(version)
   class(version) <- "list"
   version = version[[1]]
   return(length(version) == 4)
+}
+
+set_proj_lib <- function()
+{
+  # should exist on windows
+  if (file.exists(prj <- system.file("proj", package = "lasR")[1]))
+  {
+    Sys.setenv(PROJ_LIB = prj)
+  }
 }
 
 
