@@ -1,6 +1,7 @@
 # lasR 0.3.2
 
 - Fix: CRS are working on Windows
+- Fix: `library(lasR)` transparently checks for latest version on Windows.
 
 # lasR 0.3.1
 

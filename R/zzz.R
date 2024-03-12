@@ -80,7 +80,7 @@ get_latest_version = function()
   {
     nullcon <- file(nullfile(), open = "wb")
     sink(nullcon, type = "message")
-    suppressWarnings(utils::download.file("https://raw.githubusercontent.com/r-lidar/lasR/main/DESCRIPTION", f))
+    suppressWarnings(utils::download.file("https://raw.githubusercontent.com/r-lidar/lasR/main/DESCRIPTION", f, quiet = TRUE))
     sink(type = "message")
     close(nullcon)
     TRUE
