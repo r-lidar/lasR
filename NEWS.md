@@ -1,3 +1,7 @@
+# lasR 0.3.2
+
+- Fix: CRS are working on Windows
+
 # lasR 0.3.1
 
 - Fix: bugs when making a spatial query on multiple files with multiple spatial indexing systems (e.g. lax+nothing, lax+copc)

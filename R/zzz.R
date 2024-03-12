@@ -17,6 +17,23 @@
 .onLoad <- function(libname, pkgname)
 {
   set_parallel_strategy(concurrent_points())
+  set_proj_lib()
+
+  # installed <- row.names(installed.packages())
+  # nothing <- function(x) { return(x)}
+  # lasR.read_vector = if ("sf" %in% installed) sf::read_sf else nothing
+  # lasR.read_raster = if ("terra" %in% installed) terra::rast else nothing
+  #
+  # op <- options()
+  # op.lidR <- list(
+  #   lasR.read_vector = lasR.read_vector,
+  #   lasR.read_raster = lasR.read_raster,
+  #   lasR.read_las = nothing)
+  #
+  # toset <- !(names(op.lidR) %in% names(op))
+  # if (any(toset)) options(op.lidR[toset])
+  #
+  # invisible()
 }
 
 .onUnload <- function(libpath)
@@ -89,6 +106,15 @@ is_dev_version = function(version)
   class(version) <- "list"
   version = version[[1]]
   return(length(version) == 4)
+}
+
+set_proj_lib <- function()
+{
+  # should exist on windows
+  if (file.exists(prj <- system.file("proj", package = "lasR")[1]))
+  {
+    Sys.setenv(PROJ_LIB = prj)
+  }
 }
 
 
