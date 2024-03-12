@@ -4,9 +4,12 @@
   #include <R.h>
   #include <Rinternals.h>
 
-  #if !defined(_WIN32)
+  #ifndef _WIN32
     #define CSTACK_DEFNS 1
     #include <Rinterface.h> // R_CStackLimit
+  #else
+    #include <windows.h>
+    extern __declspec(dllimport) uintptr_t R_CStackLimit; /* C stack limit */
   #endif
 #endif
 
@@ -56,9 +59,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   }
   if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
 
-  #if !defined(_WIN32)
   uintptr_t original_CStackLimit = R_CStackLimit;
-  #endif
 
   try
   {
@@ -98,9 +99,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
       // It is supposed to be safe because every single call to the R's C API is protected in a critical section
       // https://stats.blogoverflow.com/2011/08/using-openmp-ized-c-code-with-r/
       // https://stat.ethz.ch/pipermail/r-devel/2007-June/046207.html
-      #if !defined(_WIN32)
       R_CStackLimit=(uintptr_t)-1;
-      #endif
     }
 
     pipeline.set_verbose(verbose);
@@ -240,10 +239,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
 
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
-
-    #if !defined(_WIN32)
     R_CStackLimit=original_CStackLimit;
-    #endif
 
     if (failure)
     {
@@ -256,9 +252,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   }
   catch (std::string e)
   {
-    #if !defined(_WIN32)
     R_CStackLimit=original_CStackLimit;
-    #endif
 
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 
@@ -285,9 +279,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   }
   catch(...)
   {
-    #if !defined(_WIN32)
     R_CStackLimit=original_CStackLimit;
-    #endif
 
     // # nocov start
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
