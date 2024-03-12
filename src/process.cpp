@@ -9,7 +9,6 @@
     #define CSTACK_DEFNS 1
     #include <Rinterface.h> // R_CStackLimit
   #else
-    #include <windows.h>
     extern __declspec(dllimport) uintptr_t R_CStackLimit; /* C stack limit */
   #endif
 #endif
