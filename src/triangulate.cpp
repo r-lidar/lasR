@@ -28,15 +28,6 @@ LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double y
   vector.set_geometry_type(wkbMultiPolygon25D);
 }
 
-LASRtriangulate::LASRtriangulate(const LASRtriangulate& other) : LASRalgorithmVector(other)
-{
-  keep_large = other.keep_large;
-  trim = other.trim;
-  npoints = 0;
-  las = nullptr;
-  use_attribute = other.use_attribute;
-}
-
 bool LASRtriangulate::process(LAS*& las)
 {
   auto start_time = std::chrono::high_resolution_clock::now();
