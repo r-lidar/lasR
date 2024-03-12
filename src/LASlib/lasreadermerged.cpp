@@ -1515,6 +1515,10 @@ BOOL LASreaderMerged::open_next_file()
         eprint( "ERROR: could not open lasreaderlas for file '%s'\n", file_names[file_name_current]);
         return FALSE;
       }
+
+      lasreaderlas->set_index(0);
+      lasreaderlas->set_copcindex(0);
+
       LASindex *index = new LASindex;
       if (index->read(file_names[file_name_current]))
         lasreaderlas->set_index(index);
@@ -1547,6 +1551,9 @@ BOOL LASreaderMerged::open_next_file()
         eprint( "ERROR: could not open lasreaderbin for file '%s'\n", file_names[file_name_current]);
         return FALSE;
       }
+
+      lasreaderbin->set_index(0);
+
       LASindex* index = new LASindex;
       if (index->read(file_names[file_name_current]))
         lasreaderbin->set_index(index);
@@ -1576,6 +1583,9 @@ BOOL LASreaderMerged::open_next_file()
         eprint( "ERROR: could not open lasreaderbil for file '%s'\n", file_names[file_name_current]);
         return FALSE;
       }
+
+      lasreaderbil->set_index(0);
+
       LASindex* index = new LASindex;
       if (index->read(file_names[file_name_current]))
         lasreaderbil->set_index(index);
@@ -1589,6 +1599,9 @@ BOOL LASreaderMerged::open_next_file()
         eprint( "ERROR: could not open lasreaderdtm for file '%s'\n", file_names[file_name_current]);
         return FALSE;
       }
+
+      lasreaderdtm->set_index(0);
+
       LASindex* index = new LASindex;
       if (index->read(file_names[file_name_current]))
         lasreaderdtm->set_index(index);
@@ -1602,6 +1615,9 @@ BOOL LASreaderMerged::open_next_file()
         eprint( "ERROR: could not open lasreaderply for file '%s'\n", file_names[file_name_current]);
         return FALSE;
       }
+
+      lasreaderply->set_index(0);
+
       LASindex* index = new LASindex;
       if (index->read(file_names[file_name_current]))
         lasreaderply->set_index(index);
@@ -1615,6 +1631,9 @@ BOOL LASreaderMerged::open_next_file()
         eprint( "ERROR: could not open lasreaderqfit for file '%s'\n", file_names[file_name_current]);
         return FALSE;
       }
+
+      lasreaderqfit->set_index(0);
+
       LASindex* index = new LASindex;
       if (index->read(file_names[file_name_current]))
         lasreaderqfit->set_index(index);
