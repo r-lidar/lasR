@@ -1,5 +1,6 @@
 // R
 #ifdef USING_R
+  #define STRICT_R_HEADERS
   #define R_NO_REMAP 1
   #include <R.h>
   #include <Rinternals.h>
