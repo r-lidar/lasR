@@ -25,6 +25,19 @@ struct Chunk
     neighbour_files.clear();
   };
 
+  // # nocov start
+  void dump() const
+  {
+    printf("name: %s\n", name.c_str());
+    printf("bbox %.1lf %.1lf %.1lf %.1lf\n", xmin, ymin, xmax, ymax);
+    printf("buffer %.1lf\n", buffer);
+    printf("Files:\n");
+    for (const auto& file : main_files) printf("  %s\n", file.c_str());
+    printf("Neighbour:\n");
+    for (const auto& file : neighbour_files) printf("  %s\n", file.c_str());
+  };
+  // # nocov end
+
   double xmin;
   double ymin;
   double xmax;
