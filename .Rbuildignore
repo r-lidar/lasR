@@ -27,3 +27,5 @@
 ^pkgdown$
 ^benchmarks$
 ^vignettes/articles$
+^inst/gdal$
+^inst/proj$
