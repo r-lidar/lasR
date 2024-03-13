@@ -27,7 +27,7 @@ LASRlaswriter::~LASRlaswriter()
   }
 }
 
-void LASRlaswriter::set_input_file_name(std::string file)
+void LASRlaswriter::set_input_file_name(const std::string& file)
 {
   ofile = template_filename;
   ifile = file;
@@ -39,7 +39,7 @@ void LASRlaswriter::set_input_file_name(std::string file)
   }
 }
 
-void LASRlaswriter::set_output_file(std::string file)
+void LASRlaswriter::set_output_file(const std::string& file)
 {
   template_filename = file;
   size_t pos = file.find('*');

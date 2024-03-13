@@ -284,7 +284,7 @@ void LAS::set_intervals_to_read(const std::vector<Interval>& intervals)
   intervals_to_read = intervals;
 }
 
-bool LAS::add_attribute(int data_type, std::string name, std::string description, double scale, double offset)
+bool LAS::add_attribute(int data_type, const std::string& name, const std::string& description, double scale, double offset)
 {
   data_type--;
   bool has_scale = scale != 1;

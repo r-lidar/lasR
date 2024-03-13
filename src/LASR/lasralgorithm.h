@@ -44,9 +44,9 @@ public:
     return true;
   };
   virtual bool set_crs(int epsg) { return false; };
-  virtual bool set_crs(std::string wkt) { return false; };
-  virtual void set_output_file(std::string file) { ofile = file; };
-  virtual void set_input_file_name(std::string file) { return; };
+  virtual bool set_crs(const std::string& wkt) { return false; };
+  virtual void set_output_file(const std::string& file) { ofile = file; };
+  virtual void set_input_file_name(const std::string& file) { return; };
   virtual void set_header(LASheader*& header) { return; };
   virtual bool is_streamable() const { return false; };
   virtual double need_buffer() const { return 0; };
@@ -113,10 +113,10 @@ public:
   LASRalgorithmRaster();
   ~LASRalgorithmRaster() override;
   bool set_chunk(const Chunk& chunk) override;
-  void set_input_file_name(std::string file) override;
-  void set_output_file(std::string file) override;
+  void set_input_file_name(const std::string& file) override;
+  void set_output_file(const std::string& file) override;
   bool set_crs(int epsg) override;
-  bool set_crs(std::string wkt) override;
+  bool set_crs(const std::string& wkt) override;
   bool write() override;
   void clear(bool last) override;
   Raster& get_raster() { return raster; };
@@ -131,10 +131,10 @@ public:
   LASRalgorithmVector();
   ~LASRalgorithmVector() override;
   bool set_chunk(const Chunk& chunk) override;
-  void set_input_file_name(std::string file) override;
-  void set_output_file(std::string file) override;
+  void set_input_file_name(const std::string& file) override;
+  void set_output_file(const std::string& file) override;
   bool set_crs(int epsg) override;
-  bool set_crs(std::string wkt) override;
+  bool set_crs(const std::string& wkt) override;
   void clear(bool last) override;
   Vector& get_vector() { return vector; };
 

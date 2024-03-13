@@ -80,7 +80,7 @@ bool LASRalgorithmRaster::set_chunk(const Chunk& chunk)
   return true;
 }
 
-void LASRalgorithmRaster::set_input_file_name(std::string file)
+void LASRalgorithmRaster::set_input_file_name(const std::string& file)
 {
   if (template_filename.empty()) return;
 
@@ -97,7 +97,7 @@ void LASRalgorithmRaster::set_input_file_name(std::string file)
   }
 }
 
-void LASRalgorithmRaster::set_output_file(std::string file)
+void LASRalgorithmRaster::set_output_file(const std::string& file)
 {
   if (file.empty()) return;
 
@@ -116,7 +116,7 @@ bool LASRalgorithmRaster::set_crs(int epsg)
   return raster.set_crs(epsg);
 }
 
-bool LASRalgorithmRaster::set_crs(std::string wkt)
+bool LASRalgorithmRaster::set_crs(const std::string& wkt)
 {
   return raster.set_crs(wkt);
 }
@@ -167,7 +167,7 @@ bool LASRalgorithmVector::set_chunk(const Chunk& chunk)
   return true;
 }
 
-void LASRalgorithmVector::set_input_file_name(std::string file)
+void LASRalgorithmVector::set_input_file_name(const std::string& file)
 {
   if (template_filename.empty()) return;
 
@@ -183,7 +183,7 @@ void LASRalgorithmVector::set_input_file_name(std::string file)
   }
 }
 
-void LASRalgorithmVector::set_output_file(std::string file)
+void LASRalgorithmVector::set_output_file(const std::string& file)
 {
   if (file.empty()) return;
 
@@ -202,7 +202,7 @@ bool LASRalgorithmVector::set_crs(int epsg)
   return vector.set_crs(epsg);
 }
 
-bool LASRalgorithmVector::set_crs(std::string wkt)
+bool LASRalgorithmVector::set_crs(const std::string& wkt)
 {
   return vector.set_crs(wkt);
 }
