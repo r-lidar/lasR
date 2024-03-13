@@ -446,15 +446,19 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
 
   bool success = false;
 
-  if (queries.size() == 0)
+  // Critical section because laskdtree->overlap is not thread safe
+  #pragma omp critical(getchunk)
   {
-    success = get_chunk_regular(i, chunk);
-    chunk.process = !noprocess[i];
-  }
-  else
-  {
-    success = get_chunk_with_query(i, chunk);
-    chunk.process = true;
+    if (queries.size() == 0)
+    {
+      success = get_chunk_regular(i, chunk);
+      chunk.process = !noprocess[i];
+    }
+    else
+    {
+      success = get_chunk_with_query(i, chunk);
+      chunk.process = true;
+    }
   }
 
   return success;
