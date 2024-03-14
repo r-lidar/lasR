@@ -20,11 +20,11 @@ class LAS
 public:
   LAS(LASheader* header);
   ~LAS();
-  bool add_attribute( int data_type, std::string name, std::string description, double scale, double offset);
+  bool add_attribute( int data_type, const std::string& name, const std::string& description, double scale, double offset);
   bool add_point(const LASpoint& p);
   bool seek(int pos);
   bool read_point(bool include_withhelded = false);
-  void set_file(std::string file) {this->file = file; };
+  void set_file(const std::string& file) { this->file = file; };
   void update_point();
   void remove_point();
   bool is_indexed() { return index != 0; };

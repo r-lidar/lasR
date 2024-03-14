@@ -31,6 +31,7 @@
   # if (any(toset)) options(op.lidR[toset])
   #
   # invisible()
+  set_proj_lib()
 }
 
 .onUnload <- function(libpath)
@@ -77,7 +78,7 @@ get_latest_version = function()
   {
     nullcon <- file(nullfile(), open = "wb")
     sink(nullcon, type = "message")
-    suppressWarnings(utils::download.file("https://raw.githubusercontent.com/r-lidar/lasR/main/DESCRIPTION", f))
+    suppressWarnings(utils::download.file("https://raw.githubusercontent.com/r-lidar/lasR/main/DESCRIPTION", f, quiet = TRUE))
     sink(type = "message")
     close(nullcon)
     TRUE
@@ -103,6 +104,15 @@ is_dev_version = function(version)
   class(version) <- "list"
   version = version[[1]]
   return(length(version) == 4)
+}
+
+set_proj_lib <- function()
+{
+  # should exist on windows
+  if (file.exists(prj <- system.file("proj", package = "lasR")[1]))
+  {
+    Sys.setenv(PROJ_LIB = prj)
+  }
 }
 
 
