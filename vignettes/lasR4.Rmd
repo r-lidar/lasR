@@ -20,8 +20,8 @@ col1 = rgb(0, 0.5, 1, alpha = 0.5)
 col2 = rgb(1, 0, 0, alpha = 0.5)
 col3 = rgb(0.5, 0.5, 1, alpha = 0.5)
 col4 = rgb(1, 0, 1, alpha = 0.5)
-
 kernel = Sys.info()[2]
+all = FALSE
 ```
 
 This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The x-axis represents the time spent on the task, while the y-axis represents the memory used for the task. The benchmarks are re-run for every version of `lidR` and `lasR`.
@@ -37,7 +37,7 @@ This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The
 - **Date:** update 2024-03-01
 - **Version:** 
   - lidR 4.1.1
-  - lasR 0.2.0
+  - lasR 0.4.0
   
 <blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 In the following the term `1 core` refers to the processing of one LAS/LAZ file at a time sequentially. But some algorithm such as the local maximum filter are internally parallelized using half of the available cores.  The term `4 cores` refers to the fact that 4 files are processed simultaneously. In `lidR` this is done using the package `future`. In `lasR` this is natively supported.
