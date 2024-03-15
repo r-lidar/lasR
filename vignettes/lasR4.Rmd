@@ -178,8 +178,6 @@ m_lidr = list(NULL, read_benchmark("lidR_test_7_FFGG-1009803.data"))
 plot_benchmark(m_lidr, m_lasr)
 ```
 
-## Digital Terrain Model chunked
-
 ## Multiple raster
 
 The gain in terms of computation time is much more significant when running multiple stages in a single pipeline because files are read only once in `lasR` but multiple times in `lidR`. Here, all operations are executed in a single pass at the C++ level, resulting in more efficient memory management.
