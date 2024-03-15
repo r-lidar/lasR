@@ -154,7 +154,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
         Pipeline private_pipeline(pipeline);
         private_pipelines_ptr[omp_get_thread_num()] = &private_pipeline;
 
-        #pragma omp for
+        #pragma omp for schedule(dynamic)
         for (int i = 0 ; i < n ; ++i)
         {
           // We cannot exit a parallel loop easily. Instead we can rather run the loop until the end
