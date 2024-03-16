@@ -145,6 +145,7 @@ SEXP LASRalgorithmWriter::to_R()
 
 LASRalgorithmRaster::LASRalgorithmRaster()
 {
+  GDALdataset::initialize_gdal();
 }
 
 LASRalgorithmRaster::LASRalgorithmRaster(const LASRalgorithmRaster& other) : LASRalgorithmWriter(other)
@@ -254,6 +255,7 @@ bool LASRalgorithmRaster::write()
 
 LASRalgorithmVector::LASRalgorithmVector()
 {
+  GDALdataset::initialize_gdal();
 }
 
 LASRalgorithmVector::LASRalgorithmVector(const LASRalgorithmVector& other) : LASRalgorithmWriter(other)

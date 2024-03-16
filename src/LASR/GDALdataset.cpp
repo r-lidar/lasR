@@ -1,6 +1,8 @@
 #include "GDALdataset.h"
 #include "NA.h"
 
+bool GDALdataset::initialized = false;
+
 GDALdataset::GDALdataset()
 {
   nBands = 0;
@@ -126,8 +128,8 @@ bool GDALdataset::create_file()
     return false; // # nocov
   }
 
-  // Initialize GDAL
-  GDALAllRegister();
+  initialize_gdal();
+
   GDALDriver* driver = nullptr;
 
   // Extract the driver name from the filename's extension
@@ -291,6 +293,15 @@ bool GDALdataset::check_dataset_is_raster()
   }
 
   return true;
+}
+
+void GDALdataset::initialize_gdal()
+{
+  if (!initialized)
+  {
+    GDALAllRegister(); // Register GDAL drivers
+    initialized = true; // Mark initialization as complete
+  }
 }
 
 const std::map<std::string, std::string> GDALdataset::extension2driver = {

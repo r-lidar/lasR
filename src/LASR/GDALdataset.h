@@ -25,9 +25,9 @@ public:
   bool set_crs(std::string wkt);
   bool is_raster() const { return dType == GDALDatasetType::RASTER; }
   bool is_vector() const { return dType == GDALDatasetType::VECTOR; }
-  //void close();
 
   enum warnings { DUPFID };
+  static void initialize_gdal();
   static const std::map<std::string, std::string> extension2driver;
 
 protected:
@@ -54,6 +54,9 @@ protected:
 
   std::shared_ptr<GDALDataset> dataset; // Owner
   OGRLayer* layer;                      // Own by dataset
+
+private:
+  static bool initialized;
 };
 
 #endif
