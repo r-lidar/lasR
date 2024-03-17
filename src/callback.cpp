@@ -500,6 +500,23 @@ void LASRcallback::merge(const LASRalgorithm* other)
   }
 }
 
+
+void LASRcallback::sort(const std::vector<int>& order)
+{
+  int n = Rf_length(ans);
+
+  if (n <= 1) return;
+
+  SEXP tmp = PROTECT(Rf_allocVector(VECSXP, n)); nsexpprotected++;
+
+  for (size_t i = 0 ; i < order.size() ; ++i)
+    SET_VECTOR_ELT(tmp, order[i], VECTOR_ELT(ans, i));
+
+  UNPROTECT(1); nsexpprotected--;
+
+  std::swap(tmp, ans);
+}
+
 SEXP LASRcallback::to_R()
 {
   if (Rf_length(ans) == 0)
