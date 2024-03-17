@@ -118,7 +118,7 @@ void LASRalgorithmWriter::sort(const std::vector<int>& order)
 
   std::vector<std::string> ordered(written.size());
   for (size_t i = 0 ; i < order.size() ; ++i)
-    ordered[i] = written[order[i]];
+    ordered[order[i]] = written[i];
 
   written.swap(ordered);
   return;
