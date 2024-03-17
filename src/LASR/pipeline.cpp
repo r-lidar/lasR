@@ -242,10 +242,7 @@ void Pipeline::merge(const Pipeline& other)
 
 bool Pipeline::set_chunk(const Chunk& chunk)
 {
-  #pragma omp critical
-  {
-    order.push_back(chunk.id);
-  }
+  order.push_back(chunk.id);
 
   for (auto&& stage : pipeline)
   {
