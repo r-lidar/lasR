@@ -2,9 +2,9 @@
 ===============================================================================
 
   FILE:  lasinterval.hpp
-  
+
   CONTENTS:
-  
+
     Used by lasindex to manage intervals of consecutive LiDAR points that are
     read sequentially.
 
@@ -22,12 +22,12 @@
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  
+
   CHANGE HISTORY:
-  
+
     20 October 2018 -- fixed rare bug in merge_intervals() when verbose is TRUE
     29 April 2011 -- created after cable outage during the royal wedding (-:
-  
+
 ===============================================================================
 */
 #ifndef LAS_INTERVAL_HPP
@@ -47,6 +47,7 @@ public:
   LASintervalCell();
   LASintervalCell(const U32 p_index);
   LASintervalCell(const LASintervalCell* cell);
+  virtual ~LASintervalCell() {}
 };
 
 class LASintervalStartCell : public LASintervalCell
@@ -92,7 +93,7 @@ public:
   // get a particular cell
   BOOL get_cell(const I32 c_index);
 
-  // add cell's intervals to those that will be merged 
+  // add cell's intervals to those that will be merged
   BOOL add_current_cell_to_merge_cell_set();
   BOOL add_cell_to_merge_cell_set(const I32 c_index, const BOOL erase=FALSE);
   BOOL merge(const BOOL erase=FALSE);
