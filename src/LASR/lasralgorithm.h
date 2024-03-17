@@ -72,8 +72,10 @@ public:
   // Each stage CAN have a merge() method to merge the output computed in each thread.
   // Each stage must update the pointers to the other stages it depends on. This performed
   // in the copy constructor of the pipeline.
+  // Each stage can have a sort member call by the pipeline to reorder and preserve order when computing in parallel
   virtual LASRalgorithm* clone() const { return nullptr; };
   virtual void merge(const LASRalgorithm* other) { return; };
+  virtual void sort(const std::vector<int>& order) { return; };
   void update_connection(LASRalgorithm* stage);
 
 protected:
@@ -106,6 +108,7 @@ public:
   LASRalgorithmWriter();
   LASRalgorithmWriter(const LASRalgorithmWriter& other);
   void merge(const LASRalgorithm* other) override;
+  void sort(const std::vector<int>& order) override;
 
   #ifdef USING_R
   SEXP to_R() override;

@@ -107,9 +107,22 @@ LASRalgorithmWriter::LASRalgorithmWriter(const LASRalgorithmWriter& other) : LAS
 {
   merged = other.merged;
   template_filename = other.template_filename;
-  written.clear();
+  written = other.written;
+  if (!merged) written.clear();
 }
 
+void LASRalgorithmWriter::sort(const std::vector<int>& order)
+{
+  if (merged) return;
+  if (written.size() == 0) return;
+
+  std::vector<std::string> ordered(written.size());
+  for (size_t i = 0 ; i < order.size() ; ++i)
+    ordered[i] = written[order[i]];
+
+  written.swap(ordered);
+  return;
+}
 
 void LASRalgorithmWriter::merge(const LASRalgorithm* other)
 {
@@ -117,6 +130,8 @@ void LASRalgorithmWriter::merge(const LASRalgorithm* other)
 
   if (!merged)
     written.insert(written.end(), o->written.begin(), o->written.end());
+  else
+    written = o->written;
 }
 
 #ifdef USING_R

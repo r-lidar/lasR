@@ -226,7 +226,9 @@ SEXP process(SEXP sexppipeline, SEXP args)
           if (!failure)
           {
             for (int i = 0 ; i < ncpu_outer_loop ; i++)
+            {
               pipeline.merge(*private_pipelines_ptr[i]);
+            }
           }
         }
       }
@@ -247,6 +249,8 @@ SEXP process(SEXP sexppipeline, SEXP args)
     }
 
     progress.done(true);
+
+    if (ncpu_outer_loop > 1) pipeline.sort();
 
     return pipeline.to_R();
   }

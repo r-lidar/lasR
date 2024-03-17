@@ -118,16 +118,3 @@ void LASRlaswriter::clear(bool last)
     }
   }
 }
-
-void LASRlaswriter::merge(const LASRalgorithm* other)
-{
-  if (merged)
-  {
-    const LASRlaswriter* o = dynamic_cast<const LASRlaswriter*>(other);
-    written = o->written;
-  }
-  else
-  {
-    LASRalgorithmWriter::merge(other);
-  }
-}

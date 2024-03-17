@@ -17,6 +17,7 @@ struct Chunk
     ymin = 0;
     xmax = 0;
     ymax = 0;
+    id = 0;
     shape = ShapeType::UNKNOWN;
     buffer = 0;
     process = true;
@@ -44,6 +45,7 @@ struct Chunk
   double ymax;
   double buffer;
   bool process;
+  int id;
   ShapeType shape;
   std::string name;
   std::vector<std::string> main_files;

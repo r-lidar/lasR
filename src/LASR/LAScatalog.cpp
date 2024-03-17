@@ -461,6 +461,8 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
     }
   }
 
+  chunk.id = i;
+
   return success;
 }
 

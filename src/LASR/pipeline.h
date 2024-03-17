@@ -42,6 +42,7 @@ class Pipeline
     bool set_crs(std::string wkt);
     void set_ncpu(int ncpu);
     void set_verbose(bool verbose);
+    void sort();
     //void show();
     void set_progress(Progress* progress);
     LAScatalog* get_catalog() const { return catalog.get(); };
@@ -63,6 +64,7 @@ private:
     bool parallelizable;
     bool read_payload;
     double buffer;
+    std::vector<int> order;
 
     LAS* las;                             // owned by this
     LASpoint* point;                      // owned by LASreader in stage reader_las or by las

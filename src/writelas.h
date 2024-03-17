@@ -25,8 +25,6 @@ public:
   // multi-threading
   bool is_parallelizable() const override { return merged == false; };
   LASRlaswriter* clone() const override { return new LASRlaswriter(*this); };
-  void merge(const LASRalgorithm* other) override;
-
 private:
   bool keep_buffer;
   LASwriter* laswriter;

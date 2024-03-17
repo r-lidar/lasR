@@ -227,6 +227,8 @@ bool Pipeline::run_loaded()
 
 void Pipeline::merge(const Pipeline& other)
 {
+  order.insert(order.end(), other.order.begin(), other.order.end());
+
   auto it1 = this->pipeline.begin();
   auto it2 = other.pipeline.begin();
 
@@ -240,6 +242,8 @@ void Pipeline::merge(const Pipeline& other)
 
 bool Pipeline::set_chunk(const Chunk& chunk)
 {
+  order.push_back(chunk.id);
+
   for (auto&& stage : pipeline)
   {
     if (!stage->set_chunk(chunk))
@@ -377,6 +381,14 @@ double Pipeline::need_buffer()
   }
 
   return buffer;
+}
+
+void Pipeline::sort()
+{
+  for (auto&& stage : pipeline)
+  {
+    stage->sort(order);
+  }
 }
 
 void Pipeline::clear(bool last)
