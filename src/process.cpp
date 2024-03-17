@@ -139,11 +139,6 @@ SEXP process(SEXP sexppipeline, SEXP args)
     bool failure = false;
     int k = 0;
 
-    // Records a pointer to the private pipeline of each threads
-    // This allows to know the order of the results
-    std::vector<Pipeline*> private_pipelines_ptr;
-    private_pipelines_ptr.reserve(ncpu_outer_loop);
-
     #pragma omp parallel num_threads(ncpu_outer_loop)
     {
       try
@@ -152,7 +147,6 @@ SEXP process(SEXP sexppipeline, SEXP args)
         // ensure that shared resources are protected (such as connection to output files)
         // and private data are copied.
         Pipeline private_pipeline(pipeline);
-        private_pipelines_ptr[omp_get_thread_num()] = &private_pipeline;
 
         #pragma omp for schedule(dynamic)
         for (int i = 0 ; i < n ; ++i)
@@ -218,18 +212,11 @@ SEXP process(SEXP sexppipeline, SEXP args)
         private_pipeline.clear(true);
 
         // We have multiple pipelines and each processed some chunks and each have a partial
-        // output. We reduce in the main pipeline. To preserve the ordering of the output, first
-        // we put a barrier, then each thread is merged in order
-        #pragma omp barrier
-        #pragma omp single
+        // output. We reduce in the main pipeline. To preserve the ordering of the output we
+        // well call sort() outside the paraellel region
+        #pragma omp critical
         {
-          if (!failure)
-          {
-            for (int i = 0 ; i < ncpu_outer_loop ; i++)
-            {
-              pipeline.merge(*private_pipelines_ptr[i]);
-            }
-          }
+          pipeline.merge(private_pipeline);
         }
       }
       catch (std::string e)
