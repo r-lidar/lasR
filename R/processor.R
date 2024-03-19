@@ -254,8 +254,6 @@ parse_options = function(on, with, ...)
              noread = noread,
              verbose = verbose)
 
-  print(ret)
-
   return(ret)
 }
 
