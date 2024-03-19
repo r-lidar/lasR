@@ -34,7 +34,7 @@ test_that("lasR supports a LAScatalog from lidR",
   expect_error(exec(pipeline, on = las), NA)
 })
 
-test_that("exec works with old pipelin",
+test_that("exec works with old pipeline",
 {
   f <- system.file("extdata", "Megaplot.las", package="lasR")
 

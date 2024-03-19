@@ -40,7 +40,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   int strategy = get_element_as_int(args, "strategy");
   bool progrss = get_element_as_bool(args, "progress");
   bool verbose = get_element_as_bool(args, "verbose");
-  double chunk_size = get_element_as_double(args, "chunk_size");
+  double chunk_size = get_element_as_double(args, "chunk");
 
   // Check some multithreading stuff
   if (ncpu > available_threads())

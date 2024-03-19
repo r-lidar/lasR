@@ -37,8 +37,8 @@ processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
   }
   else
   {
-    ncores <- LASRTHREADS$ncores
-    strategy <- LASRTHREADS$strategy
+    ncores <- LASROPTIONS$ncores
+    strategy <- LASROPTIONS$strategy
   }
 
 
@@ -46,7 +46,7 @@ processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
               ncores = ncores,
               verbose = verbose,
               strategy = strategy,
-              chunk_size = 0)
+              chunk = 0)
 
   ans <- .Call(`C_process`, pipeline, args)
 

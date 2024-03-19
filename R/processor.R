@@ -9,19 +9,13 @@
 #' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
 #' file or a `data.frame` containing the point cloud. It supports also a `LAScatalog` or a `LAS` objects
 #' from `lidR`.
-#' @param buffer numeric. Each file is read with a buffer. The default is 0, which does not mean that
-#' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
-#' pick the greatest value between the internal suggestion and this value. If `on` is a `LAScatalog`
-#' from `lidR` the options set by the `LAScatalog` has the precedence.
-#' @param progress boolean. Displays a progress bar.  If `on` is a `LAScatalog` from `lidR` the
-#' options set by the `LAScatalog` has the precedence.
-#' @param chunk numeric. By default the collection of files is processed by file (`chunk = NULL`).
-#' It is  possible to process by arbitrary sized chunks. This is useful for e.g. processing collection
-#' with large files or processing a massive `copc` files. If `on` is a `LAScatalog` from `lidR` the
-#' option set by the `LAScatalog` has the precedence.
-#' @param ... unused
+#' @param with list. A list of options to control how the pipeline is executed. This includes options to
+#' control parallel processing, progress bar display, tile buffering and so on. See \link{set_exec_options}
+#' for more details on the available options.
+#' @param ... The processing options can be explicitly named and passed outside the `with` argument.
+#' See \link{set_exec_options}
 #'
-#' @seealso [multithreading]
+#' @seealso [multithreading] [set_exec_options]
 #' @examples
 #' \dontrun{
 #' f <- paste0(system.file(package="lasR"), "/extdata/bcts/")
@@ -33,13 +27,14 @@
 #' lmf <- local_maximum(5)
 #' met <- rasterize(2, "imean")
 #' pipeline <- read + tri + dtm + lmf + met
-#' set_lasr_strategy(concurrent_files(4))
-#' ans <- exec(pipeline, f)
+#' ans <- exec(pipeline, on = f, with = list(progress = TRUE))
 #' }
 #' @md
 #' @export
-exec = function(pipeline, on, progress = FALSE, buffer = 0, chunk = 0, ...)
+exec = function(pipeline, on, with = NULL, ...)
 {
+  with = parse_options(on, with, ...)
+
   if (pipeline[[1]]$algoname != "reader_las")
   {
     pipeline = reader_las() + pipeline
@@ -51,19 +46,9 @@ exec = function(pipeline, on, progress = FALSE, buffer = 0, chunk = 0, ...)
     reader = pipeline[[1]]
     if (!is.null(reader$files) || !is.null(reader$dataframe))
     {
-      return(processor(pipeline, ncores = ncores, progress = progress, ...))
+      return(processor(pipeline, ncores = with$ncores, progress = with$progress, ...))
     }
   }
-
-  if (is.null(buffer)) buffer <- 0
-  if (is.null(chunk))  chunk <- 0
-
-  dots <- list(...)
-  noprocess <- dots$noprocess
-  verbose <- isTRUE(dots$verbose)
-  noread <- isTRUE(dots$noread)
-  ncores <- LASRTHREADS$ncores
-  strategy <- LASRTHREADS$strategy
 
   valid = FALSE
 
@@ -91,7 +76,7 @@ exec = function(pipeline, on, progress = FALSE, buffer = 0, chunk = 0, ...)
     pipeline[[1]]$algoname = "reader_dataframe"
     pipeline[[1]]$dataframe = on
     pipeline[[1]]$accuracy = acc
-    pipeline[[1]]$buffer = buffer
+    pipeline[[1]]$buffer = with$buffer
     pipeline[[1]]$crs = crs
 
     valid = TRUE
@@ -99,26 +84,18 @@ exec = function(pipeline, on, progress = FALSE, buffer = 0, chunk = 0, ...)
 
   if (methods::is(on, "LAScatalog"))
   {
-    chunk <- on@chunk_options$size
-    buffer <- on@chunk_options$buffer
-    alignment <- on@chunk_options$alignment
-    progress <- on@processing_options$progress
-
-    processed <- on$processed
-    if (!is.null(processed)) noprocess <- !processed
-
     on <- on$filename
   }
 
   if (is.character(on))
   {
     pipeline[[1]]$files <- on
-    pipeline[[1]]$buffer <- buffer
-    pipeline[[1]]$noprocess <- noprocess
+    pipeline[[1]]$buffer <- with$buffer
+    pipeline[[1]]$noprocess <- with$noprocess
 
-    if (!is.null(noprocess))
+    if (!is.null(with$noprocess))
     {
-      if (length(noprocess) != length(on))
+      if (length(with$noprocess) != length(on))
         stop("'noprocess' and 'on' have different length")
     }
 
@@ -127,21 +104,14 @@ exec = function(pipeline, on, progress = FALSE, buffer = 0, chunk = 0, ...)
 
   if (!valid) stop("Invalid argument 'on'.")
 
-
-  args = list(progress = progress,
-              ncores = ncores,
-              verbose = verbose,
-              chunk_size = chunk,
-              strategy = strategy)
-
-  ans <- .Call(`C_process`, pipeline, args)
+  ans <- .Call(`C_process`, pipeline, with)
 
   if (inherits(ans, "error"))
   {
     stop(ans)
   }
 
-  if (!noread) ans <- read_as_common_r_object(ans)
+  if (!with$noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)
 
   if (length(ans) == 0)
@@ -196,4 +166,149 @@ read_as_common_r_object = function(ans)
   })
 
   return(ans)
+}
+
+parse_options = function(on, with, ...)
+{
+  dots <- list(...)
+
+  # Default
+  buffer <- 0
+  chunk <- 0
+  progress <- FALSE
+  ncores <- concurrent_files(half_cores())
+  noprocess <- NULL
+  verbose <- FALSE
+  noread <- FALSE
+
+  # Explicit options
+  if (!is.null(dots$buffer)) buffer <- dots$buffer
+  if (!is.null(dots$chunk))  chunk <- dots$chunk
+  if (!is.null(dots$progress)) progress <- dots$progress
+  if (!is.null(dots$ncores)) ncores <- dots$ncores
+  if (!is.null(dots$noprocess)) noprocess <- dots$noprocess
+  if (!is.null(dots$verbose)) verbose <- dots$ncores
+  if (!is.null(dots$noread)) noread <- dots$noread
+
+  # 'with' list has precedence
+  if (!is.null(with$buffer)) buffer <- with$buffer
+  if (!is.null(with$chunk))  chunk <- with$chunk
+  if (!is.null(with$progress)) progress <- with$progress
+  if (!is.null(with$ncores))  ncores <- with$ncores
+  if (!is.null(with$noprocess)) noprocess <- with$noprocess
+  if (!is.null(with$verbose)) verbose <- with$verbose
+  if (!is.null(with$noread)) noread <- with$noread
+
+  if (!missing(on))
+  {
+    # If 'on' is a LAScatalog it has the precedence on the 'with' list
+    if (methods::is(on, "LAScatalog"))
+    {
+      chunk <- on@chunk_options$size
+      buffer <- on@chunk_options$buffer
+      alignment <- on@chunk_options$alignment
+      progress <- on@processing_options$progress
+      processed <- on$processed
+      if (!is.null(processed)) noprocess <- !processed
+    }
+  }
+
+  strategy <- ncores
+  ncores <- as.integer(strategy)
+  modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
+  mode <- attr(strategy, "strategy")
+  if (is.null(mode)) mode = "concurrent-points"
+  mode <- match.arg(mode, modes)
+  mode <- match(mode, modes)
+
+  # Global options have precedence on everything
+  if (!is.null(LASROPTIONS$buffer)) buffer <- LASROPTIONS$buffer
+  if (!is.null(LASROPTIONS$chunk))  chunk <- LASROPTIONS$chunk
+  if (!is.null(LASROPTIONS$progress)) progress <- LASROPTIONS$progress
+  if (!is.null(LASROPTIONS$ncores)) ncores <- LASROPTIONS$ncores
+  if (!is.null(LASROPTIONS$strategy)) mode <- LASROPTIONS$strategy
+  if (!is.null(LASROPTIONS$verbose)) verbose <- LASROPTIONS$ncores
+  if (!is.null(LASROPTIONS$noread)) noread <- LASROPTIONS$noread
+
+  stopifnot(is.numeric(buffer))
+  stopifnot(is.numeric(chunk))
+  stopifnot(is.logical(progress))
+  stopifnot(is.numeric(ncores))
+  stopifnot(is.integer(mode))
+  stopifnot(is.logical(verbose))
+  stopifnot(is.logical(noread))
+
+  ret = list(ncores = ncores,
+             strategy = mode,
+             buffer = buffer,
+             progress = progress,
+             noprocess = noprocess,
+             chunk = chunk,
+             noread = noread,
+             verbose = verbose)
+
+  print(ret)
+
+  return(ret)
+}
+
+#' Set global processing options
+#'
+#' Set global processing options for the \link{exec} function. By default, pipelines are executed
+#' without a progress bar, processing one file at a time sequentially. The following options can be
+#' passed to the `exec()` function in four ways. See details.
+#'
+#' There are 4 ways to pass processing options, and it is important to understand the precedence rules:\cr\cr
+#' The first option is by explicitly naming each option. This option is deprecated and used for convenience and
+#' backward compatibility.
+#' \preformatted{
+#' exec(pipeline, on = f, progress = TRUE, ncores = concurrent_files(2))
+#' }
+#' The second option is by passing a `list` to the `with` argument. This option is more explicit
+#' and should be preferred. The `with` argument takes precedence over the explicit arguments.
+#' \preformatted{
+#' exec(pipeline, on = f, with = list(progress = TRUE, ncores = concurrent_files(2)))
+#' }
+#' The third option is by using a `LAScatalog` from the `lidR` package. A `LAScatalog` already carries
+#' some processing options that are respected by the `lasR` package. The options from a `LAScatalog`
+#' take precedence.
+#' \preformatted{
+#' exec(pipeline, on = ctg)
+#' }
+#' The last option is by setting global processing options. This has global precedence and is mainly intended
+#' to provide a way for users to override options if they do not have access to the `exec()` function.
+#' This may happen when a developer creates a function that executes a pipeline internally, and users cannot
+#' provide any options.
+#' \preformatted{
+#' set_exec_options(progress = TRUE, ncores = concurrent_files(2))
+#' exec(pipeline, on = f)
+#' }
+#' @param ncores An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files`, or
+#' `nested()`. See \link{multithreading}.
+#' @param buffer numeric. Each file is read with a buffer. The default is NULL, which does not mean that
+#' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
+#' pick the greatest value between the internal suggestion and this value.
+#' @param progress boolean. Displays a progress bar.
+#' @param chunk numeric. By default, the collection of files is processed by file (`chunk = NULL` or `chunk = 0`).
+#' It is possible to process in arbitrary-sized chunks. This is useful for e.g., processing collections
+#' with large files or processing a massive `copc` files.
+#' @param ... Other internal options not exposed to users.
+#' @seealso [multithreading]
+#' @export
+#' @md
+set_exec_options = function(ncores = NULL, progress = NULL, buffer = NULL, chunk = NULL, ...)
+{
+  if (!is.null(ncores)) stopifnot(is.numeric(ncores))
+  if (!is.null(progress)) stopifnot(is.logical(progress))
+  if (!is.null(buffer)) stopifnot(is.numeric(buffer))
+  if (!is.null(chunk)) stopifnot(is.numeric(chunk))
+
+  dots <- list(...)
+  LASROPTIONS$ncores <- ncores
+  LASROPTIONS$progress <- progress
+  LASROPTIONS$chunk <- chunk
+  LASROPTIONS$buffer <- buffer
+  LASROPTIONS$noread <- dots$noread
+  LASROPTIONS$noprocess <- dots$noprocess
+  LASROPTIONS$verbose <- dots$verbose
 }

@@ -37,12 +37,12 @@
 #' f <- paste0(system.file(package="lasR"), "/extdata/bcts/")
 #' f <- list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
 #'
-#' read <- reader(f)
-#' met <- rasterize(2, "imean")
-#' pipeline <- read + met
+#' pipeline <- reader_las() + rasterize(2, "imean")
+#'
+#' ans <- exec(pipeline, on = f, progress = TRUE, ncores = concurrent_files(4))
 #'
 #' set_parallel_strategy(concurrent_files(4))
-#' ans <- processor(pipeline, progress = TRUE)
+#' ans <- exec(pipeline, on = f, progress = TRUE)
 #' }
 NULL
 
@@ -53,11 +53,19 @@ set_parallel_strategy <- function(strategy)
   ncores <- as.integer(strategy)
   modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
   mode <- attr(strategy, "strategy")
-  if (is.null(mode)) strategy = concurrent_points()
+  if (is.null(mode)) strategy = "concurrent-points"
   mode <- match.arg(mode, modes)
   mode <- match(mode, modes)
-  LASRTHREADS$ncores <- ncores
-  LASRTHREADS$strategy <- mode
+  LASROPTIONS$ncores <- ncores
+  LASROPTIONS$strategy <- mode
+}
+
+#' @rdname multithreading
+#' @export
+unset_parallel_strategy <- function()
+{
+  LASROPTIONS$ncores <- NULL
+  LASROPTIONS$strategy <- NULL
 }
 
 #' @rdname multithreading
@@ -65,8 +73,9 @@ set_parallel_strategy <- function(strategy)
 get_parallel_strategy = function()
 {
   modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
-  ncores <- LASRTHREADS$ncores
-  attr(ncores, "strategy") <- modes[LASRTHREADS$strategy]
+  ncores <- LASROPTIONS$ncores
+  if (is.null(ncores)) return(NULL)
+  attr(ncores, "strategy") <- modes[LASROPTIONS$strategy]
   return(ncores)
 }
 
@@ -119,8 +128,3 @@ nested <- function(ncores = ncores()/4L, ncores2 = 2L)
 has_omp_support = function() { .Call(`C_has_omp_support`) }
 
 available_threads <- function() { .Call(`C_available_threads`) }
-
-LASRTHREADS = new.env()
-LASRTHREADS$ncores = 1L
-LASRTHREADS$strategy <- 1L
-

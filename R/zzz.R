@@ -118,6 +118,8 @@ set_proj_lib <- function()
 }
 
 
+LASROPTIONS = new.env()
+
 # ,@@@
 #  @@@@@@.@                                                           ,#*
 #   @@@@@....*&                                                 @(@@@@@@%

@@ -3,6 +3,7 @@
 \name{multithreading}
 \alias{multithreading}
 \alias{set_parallel_strategy}
+\alias{unset_parallel_strategy}
 \alias{get_parallel_strategy}
 \alias{ncores}
 \alias{half_cores}
@@ -14,6 +15,8 @@
 \title{Parallel processing tools}
 \usage{
 set_parallel_strategy(strategy)
+
+unset_parallel_strategy()
 
 get_parallel_strategy()
 
@@ -69,11 +72,11 @@ globally using e.g. \code{set_parallel_strategy(concurrent_files(4))}
 f <- paste0(system.file(package="lasR"), "/extdata/bcts/")
 f <- list.files(f, pattern = "(?i)\\\\.la(s|z)$", full.names = TRUE)
 
-read <- reader(f)
-met <- rasterize(2, "imean")
-pipeline <- read + met
+pipeline <- reader_las() + rasterize(2, "imean")
+
+ans <- exec(pipeline, on = f, progress = TRUE, ncores = concurrent_files(4))
 
 set_parallel_strategy(concurrent_files(4))
-ans <- processor(pipeline, progress = TRUE)
+ans <- exec(pipeline, on = f, progress = TRUE)
 }
 }
