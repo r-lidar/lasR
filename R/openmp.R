@@ -50,6 +50,12 @@ NULL
 #' @export
 set_parallel_strategy <- function(strategy)
 {
+  if (!has_omp_support())
+  {
+    warning("This version of lasR has no OpenMP support")
+    return(invisible())
+  }
+
   ncores <- as.integer(strategy)
   modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
   mode <- attr(strategy, "strategy")

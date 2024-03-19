@@ -221,6 +221,13 @@ parse_options = function(on, with, ...)
   mode <- match.arg(mode, modes)
   mode <- match(mode, modes)
 
+  if (!has_omp_support())
+  {
+    if (ncores > 1) warning("This version of lasR has no OpenMP support")
+    ncores = 1L
+    mode = 1L
+  }
+
   # Global options have precedence on everything
   if (!is.null(LASROPTIONS$buffer)) buffer <- LASROPTIONS$buffer
   if (!is.null(LASROPTIONS$chunk))  chunk <- LASROPTIONS$chunk
@@ -262,12 +269,12 @@ parse_options = function(on, with, ...)
 #' The first option is by explicitly naming each option. This option is deprecated and used for convenience and
 #' backward compatibility.
 #' \preformatted{
-#' exec(pipeline, on = f, progress = TRUE, ncores = concurrent_files(2))
+#' exec(pipeline, on = f, progress = TRUE)
 #' }
 #' The second option is by passing a `list` to the `with` argument. This option is more explicit
 #' and should be preferred. The `with` argument takes precedence over the explicit arguments.
 #' \preformatted{
-#' exec(pipeline, on = f, with = list(progress = TRUE, ncores = concurrent_files(2)))
+#' exec(pipeline, on = f, with = list(progress = TRUE, chunk = 500))
 #' }
 #' The third option is by using a `LAScatalog` from the `lidR` package. A `LAScatalog` already carries
 #' some processing options that are respected by the `lasR` package. The options from a `LAScatalog`
@@ -283,6 +290,8 @@ parse_options = function(on, with, ...)
 #' set_exec_options(progress = TRUE, ncores = concurrent_files(2))
 #' exec(pipeline, on = f)
 #' }
+#' By default lasR already set a global options for `ncores`. Thus providing `ncores` has no effect unless
+#' you call \link{unset_parallel_strategy} first.
 #' @param ncores An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files`, or
 #' `nested()`. See \link{multithreading}.
 #' @param buffer numeric. Each file is read with a buffer. The default is NULL, which does not mean that

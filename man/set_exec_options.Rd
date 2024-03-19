@@ -38,12 +38,12 @@ There are 4 ways to pass processing options, and it is important to understand t
 The first option is by explicitly naming each option. This option is deprecated and used for convenience and
 backward compatibility.
 \preformatted{
-exec(pipeline, on = f, progress = TRUE, ncores = concurrent_files(2))
+exec(pipeline, on = f, progress = TRUE)
 }
 The second option is by passing a \code{list} to the \code{with} argument. This option is more explicit
 and should be preferred. The \code{with} argument takes precedence over the explicit arguments.
 \preformatted{
-exec(pipeline, on = f, with = list(progress = TRUE, ncores = concurrent_files(2)))
+exec(pipeline, on = f, with = list(progress = TRUE, chunk = 500))
 }
 The third option is by using a \code{LAScatalog} from the \code{lidR} package. A \code{LAScatalog} already carries
 some processing options that are respected by the \code{lasR} package. The options from a \code{LAScatalog}
@@ -59,6 +59,8 @@ provide any options.
 set_exec_options(progress = TRUE, ncores = concurrent_files(2))
 exec(pipeline, on = f)
 }
+By default lasR already set a global options for \code{ncores}. Thus providing \code{ncores} has no effect unless
+you call \link{unset_parallel_strategy} first.
 }
 \seealso{
 \link{multithreading}

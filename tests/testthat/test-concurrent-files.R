@@ -3,6 +3,8 @@ f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
 
 test_that("set_strategy works",
 {
+  skip_if_not(has_omp_support())
+
   strategy = get_parallel_strategy()
   expect_equal(strategy, concurrent_files(2))
 
@@ -12,7 +14,9 @@ test_that("set_strategy works",
 })
 
 
-test_that("Running pipelines in parallel works with R-based stages", {
+test_that("Running pipelines in parallel works with R-based stages",
+{
+  skip_if_not(has_omp_support())
 
   set_parallel_strategy(concurrent_files(2))
 
