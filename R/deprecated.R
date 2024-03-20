@@ -30,17 +30,25 @@ processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
   verbose <- if (is.null(dots$verbose)) FALSE else TRUE
   noread <- if (is.null(dots$noread)) FALSE else TRUE
 
-  if (!is.null(dots$ncores))
+  strategy <- 1L
+
+  if (has_omp_support())
   {
-    warning("Argument ncores is deprecated. Use 'set_lasr_strategy()' instead")
-    set_parallel_strategy(concurrent_points(dots$ncores))
+    if (is.null(LASROPTIONS$ncores))
+    {
+      warning("Argument ncores is deprecated. Use 'set_parallel_strategy()' instead")
+      strategy <- 2L
+    }
+    else
+    {
+      ncores <- LASROPTIONS$ncores
+      strategy <- LASROPTIONS$strategy
+    }
   }
   else
   {
-    ncores <- LASROPTIONS$ncores
-    strategy <- LASROPTIONS$strategy
+    ncores <- 1L
   }
-
 
   args = list(progress = progress,
               ncores = ncores,

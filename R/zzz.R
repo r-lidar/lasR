@@ -18,8 +18,6 @@
 {
   if (has_omp_support())
     set_parallel_strategy(concurrent_points())
-  else
-    set_parallel_strategy(sequential())
 
   set_proj_lib()
 

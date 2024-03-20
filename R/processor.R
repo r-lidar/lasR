@@ -223,9 +223,9 @@ parse_options = function(on, with, ...)
 
   if (!has_omp_support())
   {
-    if (ncores > 1) warning("This version of lasR has no OpenMP support")
-    ncores = 1L
-    mode = 1L
+    if (ncores[1] > 1) warning("This version of lasR has no OpenMP support")
+    ncores <- 1L
+    mode <- 1L
   }
 
   # Global options have precedence on everything
