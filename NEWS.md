@@ -1,3 +1,7 @@
+# lasR 0.3.3
+
+- Fix: #12 write lax with buffered chunk
+
 # lasR 0.3.2
 
 - Fix: CRS are working on Windows
