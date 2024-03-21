@@ -187,7 +187,7 @@ parse_options = function(on, with, ...)
   if (!is.null(dots$progress)) progress <- dots$progress
   if (!is.null(dots$ncores)) ncores <- dots$ncores
   if (!is.null(dots$noprocess)) noprocess <- dots$noprocess
-  if (!is.null(dots$verbose)) verbose <- dots$ncores
+  if (!is.null(dots$verbose)) verbose <- dots$verbose
   if (!is.null(dots$noread)) noread <- dots$noread
 
   # 'with' list has precedence
