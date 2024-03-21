@@ -542,7 +542,7 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   double epsilon = 1e-8;
 
   // Search if there is a match
-  laskdtree->overlap(minx, miny,  maxx, maxy);
+  laskdtree->overlap(minx - buffer, miny - buffer,  maxx + buffer, maxy + buffer);
   if (!laskdtree->has_overlaps())
   {
     char buff[64];

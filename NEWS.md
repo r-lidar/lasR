@@ -1,6 +1,7 @@
 # lasR 0.3.3
 
 - Fix: #12 write lax with buffered chunk
+- Fix: #13 processing by chunk was not buffered
 
 # lasR 0.3.2
 
