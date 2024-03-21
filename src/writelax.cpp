@@ -77,7 +77,6 @@ bool LASRlaxwriter::set_chunk(const Chunk& chunk)
 
       lasreader->close();
       delete lasreader;
-<<<<<<< HEAD
 
       int minimum_points = 100000;
       int maximum_intervals = -20;
@@ -89,9 +88,6 @@ bool LASRlaxwriter::set_chunk(const Chunk& chunk)
       }
 
       progress->done();
-=======
-      return true;
->>>>>>> devel
     }
   }
 
