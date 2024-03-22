@@ -9,7 +9,7 @@ public:
   LASRpitfill(double xmin, double ymin, double xmax, double ymax, int lap_size, float thr_lap, float thr_spk, int med_size, float dil_radius, LASRalgorithm* algorithm);
   bool process(LAS*& las) override;
   bool is_streamable() const override { return algorithm == 0; };
-  double need_buffer() const override { return 10; };
+  double need_buffer() const override;
   std::string get_name() const override { return "pit_fill"; }
 
 private:
