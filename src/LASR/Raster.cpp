@@ -75,6 +75,8 @@ Raster::Raster(const Raster& raster, double xmin, double ymin, double xmax, doub
   band_names = raster.band_names;
   nodata = raster.nodata;
   oSRS = raster.oSRS;
+
+  set_chunk(xmin, ymin, xmax, ymax); // #16 resize the grid including the buffer
 }
 
 float& Raster::get_value(double x, double y, int layer)

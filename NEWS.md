@@ -3,6 +3,11 @@
 - New: parallelism on multiple files.
 - Doc: new article on the website about parallelism
 
+# lasR 0.3.4
+
+- Fix: #16 `pit_fill` producing corrupted output
+- Fix: `pit_fill` was not respecting the parameters given by the user
+
 # lasR 0.3.3
 
 - Fix: #12 write lax with buffered chunk

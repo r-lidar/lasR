@@ -48,12 +48,6 @@ bool LASRpitfill::process(LAS*& las)
   int sncol = rin.get_ncols();
   int snlin = rin.get_nrows();
 
-  int lap_size = 3;
-  float thr_lap = 0.1;
-  float thr_spk = -0.1;
-  float med_size = 3;
-  float dil_radius = 0;
-
   float* ans = geophoton::chm_prep(&geom[0], snlin, sncol, lap_size, thr_lap, thr_spk, med_size, dil_radius, rin.get_nodata());
 
   if (ans == NULL)
@@ -70,4 +64,10 @@ bool LASRpitfill::process(LAS*& las)
   free(ans);
 
   return true;
+}
+
+double LASRpitfill::need_buffer() const
+{
+  int buff = MAX3(lap_size, med_size, dil_radius);
+  return buff*raster.get_xres();
 }
