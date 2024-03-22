@@ -1,3 +1,8 @@
+# las 0.4.0
+
+- New: parallelism on multiple files.
+- Doc: new article on the website about parallelism
+
 # lasR 0.3.3
 
 - Fix: #12 write lax with buffered chunk
