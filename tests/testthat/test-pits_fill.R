@@ -1,3 +1,14 @@
+test_that("pits filling works",
+{
+  f <- system.file("extdata", "MixedConifer.las", package="lasR")
+
+  chm = chm()
+  pit = pit_fill(chm)
+
+  ans = exec(chm + pit, on = f)
+})
+
+
 test_that("pits filling works with multiple files",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
@@ -31,3 +42,5 @@ test_that("pits filling works with multiple files",
   expect_equal(unname(unlist(chm[c(1000L,5000L,10000L)])), c(349.4998, 331.9043, 341.8822),  tolerance = 1e-6)
   expect_equal(unname(unlist(sto[c(1000L,5000L,10000L)])), c(NA_real_, 331.9043, 344.8956),  tolerance = 1e-6)
 })
+
+
