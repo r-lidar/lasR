@@ -73,7 +73,7 @@ public:
   // Each stage must update the pointers to the other stages it depends on. This performed
   // in the copy constructor of the pipeline.
   // Each stage can have a sort member call by the pipeline to reorder and preserve order when computing in parallel
-  virtual LASRalgorithm* clone() const { return nullptr; };
+  virtual LASRalgorithm* clone() const = 0;
   virtual void merge(const LASRalgorithm* other) { return; };
   virtual void sort(const std::vector<int>& order) { return; };
   void update_connection(LASRalgorithm* stage);
