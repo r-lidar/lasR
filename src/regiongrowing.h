@@ -11,9 +11,11 @@ public:
   double need_buffer() const override { return 50; };
   std::string get_name() const override { return "region_growing"; }
 
+  // multi-threading
+  LASRregiongrowing* clone() const override { return new LASRregiongrowing(*this); };
+
+
 private:
-  LASRalgorithm* algorithm_input_rasters;
-  LASRalgorithm* algorithm_input_seeds;
   double th_seed;
   double th_crown;
   double th_tree;

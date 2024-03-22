@@ -15,9 +15,12 @@ public:
   bool need_points() const override;
   bool is_streamable() const override { return true; }
   std::string get_name() const override { return "hulls"; }
+  bool is_parallelized() const override { return true; };
+
+  // multi-threading
+  LASRboundaries* clone() const override { return new LASRboundaries(*this); }
 
 private:
-  LASRalgorithm* algorithm; // Not the owner
   std::vector<PolygonXY> contour;
 };
 

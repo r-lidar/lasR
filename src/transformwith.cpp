@@ -8,8 +8,9 @@ LASRtransformwith::LASRtransformwith(double xmin, double ymin, double xmax, doub
   this->ymin = ymin;
   this->xmax = xmax;
   this->ymax = ymax;
-  this->algorithm = algorithm;
   this->attribute = attribute;
+
+  set_connection(algorithm);
 
   this->op = SUB;
   if (op == "-") this->op = SUB;
@@ -18,16 +19,20 @@ LASRtransformwith::LASRtransformwith(double xmin, double ymin, double xmax, doub
 
 bool LASRtransformwith::process(LAS*& las)
 {
-  if (algorithm == nullptr)
+  if (connections.empty())
   {
     last_error = "unitialized pointer to LASRalgorithm"; // # nocov
     return false; // # nocov
   }
 
-  LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(algorithm);
-  LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(algorithm);
+  // 'connections' contains a single stage that is supposed to be a either a triangulation stage.
+  // or a raster stage. This is the only two supported stage as of feb 2024
+  auto it = connections.begin();
+  LASRtriangulate* triangulation = dynamic_cast<LASRtriangulate*>(it->second);
+  LASRalgorithmRaster* rasterization = dynamic_cast<LASRalgorithmRaster*>(it->second);
 
-  if (p == nullptr && q == nullptr)
+  // The stage is neither a triangulation nor a raster stage
+  if (triangulation == nullptr && rasterization == nullptr)
   {
     last_error = "invalid dynamic cast. Expecting a pointer to LASRtriangulate or LASalgorithmRaster"; // # nocov
     return false; // # nocov
@@ -67,13 +72,13 @@ bool LASRtransformwith::process(LAS*& las)
 
   std::vector<double> hag;
 
-  if (p != nullptr)
+  if (triangulation != nullptr)
   {
-    p->interpolate(hag, nullptr);
+    triangulation->interpolate(hag, nullptr);
   }
   else
   {
-    Raster& raster = q->get_raster();
+    Raster& raster = rasterization->get_raster();
     hag.resize(las->npoints);
     std::fill(hag.begin(), hag.end(), NA_F64);
 
@@ -84,7 +89,7 @@ bool LASRtransformwith::process(LAS*& las)
     }
   }
 
-  U32 deleted = 0;
+  unsigned int deleted = 0;
   while (las->read_point())
   {
     double z = hag[las->current_point];
@@ -111,7 +116,7 @@ bool LASRtransformwith::process(LAS*& las)
     las->update_point();
   }
 
-  if (deleted) warning("%u points outside delaunay triangulation were discarded\n", deleted);
+  //if (deleted) warning("%u points outside delaunay triangulation were discarded\n", deleted);
 
   return true;
 }

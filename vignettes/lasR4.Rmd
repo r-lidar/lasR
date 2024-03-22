@@ -20,12 +20,13 @@ col1 = rgb(0, 0.5, 1, alpha = 0.5)
 col2 = rgb(1, 0, 0, alpha = 0.5)
 col3 = rgb(0.5, 0.5, 1, alpha = 0.5)
 col4 = rgb(1, 0, 1, alpha = 0.5)
+kernel = Sys.info()[2]
 all = FALSE
 ```
 
-This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The x-axis represents the time spent on the task, while the y-axis represents the memory used for the task.
+This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The x-axis represents the time spent on the task, while the y-axis represents the memory used for the task. The benchmarks are re-run for every version of `lidR` and `lasR`.
 
-- **Number of files:** 4
+- **Number of files:** 4 (spatially indexed with `.lax` files)
 - **Number of points:** 119 million (30 million per file)
 - **Coverage:** 10.3 km² (2.5 km² per file)
 - **Density:** 12 points/m²
@@ -33,10 +34,14 @@ This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The
 - **CPU:** 
   - Intel Core i7-5600U CPU (5th generation Intel Core) 
   - Intel Core i7-1355U (13th generation Intel Core) 
-- **Date:** update 2024-02-29
+- **Date:** update 2024-03-01
 - **Version:** 
   - lidR 4.1.1
-  - lasR 0.3.0
+  - lasR 0.4.0
+  
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+In the following the term `1 core` refers to the processing of one LAS/LAZ file at a time sequentially. But some algorithm such as the local maximum filter are internally parallelized using half of the available cores.  The term `4 cores` refers to the fact that 4 files are processed simultaneously. In `lidR` this is done using the package `future`. In `lasR` this is natively supported.
+</blockquote>
 
 ## Canopy Height Model
 
@@ -47,86 +52,113 @@ f = c("/home/jr/Documents/Ulaval/ALS data/BCTS/092L073113_BCTS_2.laz",
 "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073131_BCTS_2.laz", 
 "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073132_BCTS_2.laz")
 
+all = FALSE
+
 read_benchmarks = function(pkg, test)
 {
   if (all)
   {
-  x = list(
-  read_benchmark(paste0(pkg, "_test_", test, "_jr-ThinkPad-T450s.data")),
-  read_benchmark(paste0(pkg, "_test_", test, "_FFGG-1009803.data")))
+    list(
+    read_benchmark(paste0(pkg, "_test_", test, "_jr-ThinkPad-T450s.data")),
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_false_FFGG-1009803.data")),
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_true_jr-ThinkPad-T450s.data")),
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_true_FFGG-1009803.data")))
   }
   else
   {
-    x = list(read_benchmark(paste0(pkg, "_test_", test, "_FFGG-1009803.data")))
+    list(
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_false_FFGG-1009803.data")),
+    read_benchmark(paste0(pkg, "_test_", test, "_multifile_true_FFGG-1009803.data")))
   }
-  
-  return(x)
 }
 
 read_benchmark = function(file)
 {
   f = system.file("extdata/benchmarks", file, package = "lasR")
+  if (!file.exists(f)) return(NULL)
   read.table(f)$V1  
 }
 
-plot_benchmark = function(lidr, lasr)
+plot_benchmark = function(lidr, lasr, tmax = NULL, max = NULL)
 {
   vlidr = "lidR 4.1.1"
   vlasr = paste("lasR", packageVersion("lasR"))
   
-  if (all)
-    cpu_name = c("Intel Core i7-5600U", "Intel Core i7-1355U")
-  else
-    cpu_name = c("Intel Core i7-1355U")
-  
-  mmax = 0
-  tmax = 0
-  for (i in seq_along(lidr))
+  cpu_name = c("i7-5600U - 1 core", "i7-1355U - 1 core", "i7-5600U - 4 cores", "i7-1355U - 4 cores")
+  if (!all) cpu_name = cpu_name[c(2,4)]
+
+
+  if (is.null(tmax))
   {
-    m_lidr = lidr[[i]]
-    m_lasr = lasr[[i]]
-    t_lasr = (1:length(m_lasr)-1)*2/60
-    t_lidr = (1:length(m_lidr)-1)*2/60
-    tmax = max(t_lidr, t_lasr, tmax)
-    mmax = max(m_lidr, m_lasr, mmax)
+    mmax = 0
+    tmax = 0
+    for (i in seq_along(lidr))
+    {
+      m_lidr = lidr[[i]]
+      m_lasr = lasr[[i]]
+      t_lasr = (1:length(m_lasr)-1)*2/60
+      t_lidr = (1:length(m_lidr)-1)*2/60
+      tmax = max(t_lidr, t_lasr, tmax)
+      mmax = max(m_lidr, m_lasr, mmax)
+    }
+    
+    mmax = mmax/1000
   }
-  mmax = mmax/1000
+  
+  unit = "min"
+  divider = 60
+  if (tmax < 1.5)
+  {
+    tmax = tmax*60
+    unit = "sec"
+    divider = 1
+  }
   
   par(mar = c(4,4,1,1), cex = 0.8)
     
   for (i in seq_along(lidr))
   {
-    if (is.null(lidr[[i]])) next
-    m_lidr = lidr[[i]]
-    m_lasr = lasr[[i]]
-    t_lasr = (1:length(m_lasr)-1)*2/60
-    t_lidr = (1:length(m_lidr)-1)*2/60
+    plot(0, 0, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = paste0("Time (", unit, ")") , main = cpu_name[i])
+    if (is.null(lidr[[i]]) && is.null(lasr[[i]])) next
     
-    x = t_lidr
-    y = m_lidr/1000
-    plot(x, y, type = "n", xlim = c(0, tmax), ylim = c(0, mmax), ylab = "Memory (GB)", xlab = "Time (min)", main = cpu_name[i])
-    polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
-    lines(x, y, col = "blue", lwd = 2)
+    if (!is.null(lidr[[i]]))
+    {
+      m_lidr = lidr[[i]]
+      t_lidr = (1:length(m_lidr)-1)*2/divider
+      
+      x = t_lidr
+      y = m_lidr/1000
+      
+      polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col1, border = NA)
+      lines(x, y, col = "blue", lwd = 2)
+    }
     
-    x = t_lasr
-    y = m_lasr/1000
-    polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
-    lines(x, y, col = "red", lwd = 2)
+    if (!is.null(lasr[[i]]))
+    {
+      m_lasr = lasr[[i]]
+      t_lasr = (1:length(m_lasr)-1)*2/divider
+      
+      x = t_lasr
+      y = m_lasr/1000
+      polygon(c(x, rev(x)), c(rep(0, length(x)), rev(y)), col = col2 , border = NA)
+      lines(x, y, col = "red", lwd = 2)
+    }
     
-    legend("topleft", legend = c(vlidr, vlasr), fill = c(col1, col2), border = NA)
+    legend("topright", legend = c(vlidr, vlasr), fill = c(col1, col2), border = NA)
   }
 }
 ```
 
-### lidR
+### Code
 
 ```r
+# lidR
+future::plan(future::multicore(...))
 chm = rasterize_canopy(ctg, 1, p2r())
-```
 
-### lasR
 
-```r
+# lasR
+set_parallel_strategy(...)
 pipeline = rasterize(1, "max")
 exec(pipeline, on = ctg)
 ```
@@ -141,23 +173,16 @@ plot_benchmark(m_lidr, m_lasr)
 
 ## Digital Terrain Model
 
-```{r, echo=FALSE}
-f = c("/home/jr/Documents/Ulaval/ALS data/BCTS/092L073113_BCTS_2.laz", 
-"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073114_BCTS_2.laz", 
-"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073131_BCTS_2.laz", 
-"/home/jr/Documents/Ulaval/ALS data/BCTS/092L073132_BCTS_2.laz")
-```
-
-### lidR
+### Code
 
 ```r
+# lidR
+future::plan(future::multicore(...))
 dtm = rasterize_terrain(ctg, 1, tin())
-```
 
-### lasR
-
-```r
-tri = triangulate(filter = keep_ground())
+# lasR
+set_parallel_strategy(...)
+tri = triangulate()
 pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
 exec(pipeline, on = ctg)
 ```
@@ -170,31 +195,49 @@ m_lidr = read_benchmarks("lidR", 2)
 plot_benchmark(m_lidr, m_lasr)
 ```
 
-The same with chunking option set to 1000 x 1000 m chunks using `exec(pipeline, ..., chunk = 1000)` and `opt_chunk_buffer(ctg) = 1000` to reduce the memory usage.
+The same digital terrain pipeline but using `exec(pipeline, ..., chunk = 1000)` for `lasR` and `opt_chunk_size(ctg) = 1000` for `lidR` to reduce the memory usage.
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
-m_lasr = list(NULL, read_benchmark("lasR_test_7_FFGG-1009803.data"))
-m_lidr = list(NULL, read_benchmark("lidR_test_7_FFGG-1009803.data"))
-plot_benchmark(m_lidr, m_lasr)
+lasr = read_benchmarks("lasR", 2)
+lidr = read_benchmarks("lidR", 2)
+
+mmax = 0
+tmax = 0
+for (i in seq_along(lidr))
+{
+  m_lidr = lidr[[i]]
+  m_lasr = lasr[[i]]
+  t_lasr = (1:length(m_lasr)-1)*2/60
+  t_lidr = (1:length(m_lidr)-1)*2/60
+  tmax = max(t_lidr, t_lasr, tmax)
+  mmax = max(m_lidr, m_lasr, mmax)
+}
+mmax = mmax/1000
+
+
+m_lasr = read_benchmarks("lasR", 7)
+m_lidr = read_benchmarks("lidR", 7)
+plot_benchmark(m_lidr, m_lasr, tmax, mmax)
 ```
 
 ## Multiple raster
 
+
 The gain in terms of computation time is much more significant when running multiple stages in a single pipeline because files are read only once in `lasR` but multiple times in `lidR`. Here, all operations are executed in a single pass at the C++ level, resulting in more efficient memory management.
 
-### lidR
+### Code
 
 ```r
+# lidR
+future::plan(future::multicore(...))
 custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
 ctg = readLAScatalog(f)
 chm = rasterize_canopy(ctg, 1, p2r())
 met = pixel_metrics(ctg, ~custom_function(Z, Intensity), 20)
 den = rasterize_density(ctg, 5)
-```
 
-### lasR
-
-```r
+# lasR
+set_parallel_strategy(...)
 custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
 chm = rasterize(1, "max")
 met = rasterize(20, custom_function(Z, Intensity))
@@ -203,11 +246,58 @@ pipeline = chm + met + den
 exec(pipeline, on = folder)
 ```
 
-
+### Result
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 m_lasr = read_benchmarks("lasR", 3)
 m_lidr = read_benchmarks("lidR", 3)
+plot_benchmark(m_lidr, m_lasr)
+```
+
+## Normalization
+
+### Code
+
+```r
+# lidR
+future::plan(future::multicore(...))
+opt_output_files(ctg) <- paste0(tempdir(), "/*_norm")
+norm = normalize_height(ctg, tin())
+
+# lasR
+set_parallel_strategy(...)
+pipeline = reader(f) + normalize() + write_las()
+processor(pipeline)
+```
+
+### Result
+
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
+m_lasr = read_benchmarks("lasR", 5)
+m_lidr = read_benchmarks("lidR", 5)
+plot_benchmark(m_lidr, m_lasr)
+```
+
+## Local maximum
+
+### Code
+
+```r
+# lidR
+future::plan(future::multicore(...))
+tree = locate_trees(ctg, lmf(5))
+
+# lasR
+set_parallel_strategy(...)
+pipeline = reader(f) + local_maximum(5)
+processor(pipeline)
+```
+
+### Result
+
+```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
+m_lasr = read_benchmarks("lasR", 6)
+m_lidr = read_benchmarks("lidR", 6)
 plot_benchmark(m_lidr, m_lasr)
 ```
 
@@ -216,6 +306,7 @@ plot_benchmark(m_lidr, m_lasr)
 
 In this complex pipeline, the point cloud is normalized and written to new files. A Digital Terrain Model (DTM) is produced, a Canopy Height Model (CHM) is built, and individual trees are detected. These detected trees are then used as seeds for a region-growing algorithm that segments the trees. The `lasR` pipeline can handle hundreds of laser tiles, while `lidR` may struggle to apply the same pipeline, especially during tree segmentation.
 
+## Code
 
 ```r
 del = triangulate(filter = keep_ground())
@@ -229,8 +320,10 @@ pipeline = read + del + norm + write + dtm + chm +  seed + tree
 ans = exec(pipeline, on = ctg, progress = TRUE)
 ```
 
+## Result
+
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
-m_lasr = list(NULL, read_benchmark("lasR_test_4_FFGG-1009803.data"))
-m_lidr = list(NULL, read_benchmark("lidR_test_4_FFGG-1009803.data"))
+m_lasr = read_benchmarks("lasR", 4)
+m_lidr = read_benchmarks("lidR", 4)
 plot_benchmark(m_lidr, m_lasr)
 ```

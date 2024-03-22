@@ -1,6 +1,6 @@
 // LASR
 #include "LAScatalog.h"
-#include "Progress.hpp"
+#include "Progress.h"
 #include "error.h"
 #include "Grid.h"
 
@@ -80,8 +80,8 @@ bool LAScatalog::read(const std::vector<std::string>& files, bool progress)
 
   pb.done();
 
-  if (epsg_set.size() > 1) eprint("WARNING: mix epsg found. First one retained\n");
-  if (wkt_set.size() > 1) eprint("WARNING: mix wkt crs found. First one retained.\n");
+  if (epsg_set.size() > 1) warning("mix epsg found. First one retained\n");
+  if (wkt_set.size() > 1) warning("mix wkt crs found. First one retained.\n");
   if (epsg_set.size() > 0) { wkt = ""; epsg = *epsg_set.begin(); }
   if (wkt_set.size() > 0) { wkt = *wkt_set.begin(); epsg = 0; }
 
@@ -446,16 +446,22 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
 
   bool success = false;
 
-  if (queries.size() == 0)
+  // Critical section because laskdtree->overlap is not thread safe
+  #pragma omp critical(getchunk)
   {
-    success = get_chunk_regular(i, chunk);
-    chunk.process = !noprocess[i];
+    if (queries.size() == 0)
+    {
+      success = get_chunk_regular(i, chunk);
+      chunk.process = !noprocess[i];
+    }
+    else
+    {
+      success = get_chunk_with_query(i, chunk);
+      chunk.process = true;
+    }
   }
-  else
-  {
-    success = get_chunk_with_query(i, chunk);
-    chunk.process = true;
-  }
+
+  chunk.id = i;
 
   return success;
 }

@@ -2,36 +2,81 @@
 #include "LAS.h"
 #include "LAScatalog.h"
 #include "lasralgorithm.h"
-#include "Progress.hpp"
+#include "Progress.h"
 #include "macros.h"
-#include "openmp.h" // available_threads()
+#include "openmp.h"
 
 Pipeline::Pipeline()
 {
-  read_payload = false;
-  streamable = true;
-  buffer = 0;
+  ncpu = 1;
   parsed = false;
   verbose = false;
+  streamable = true;
+  read_payload = false;
+  buffer = 0;
+
   header = nullptr;
   point = nullptr;
   las = nullptr;
   catalog = nullptr;
 }
 
+// The copy constructor is used for multi-threading. It creates a copy of the pipeline
+// where each stage is deep copied but with shared resources  such as file connection and
+// gdal datasets
+Pipeline::Pipeline(const Pipeline& other)
+{
+  ncpu = other.ncpu;
+  parsed = other.parsed;
+  verbose = other.verbose;
+  streamable = other.streamable;
+  read_payload = other.read_payload;
+  buffer = other.buffer;
+
+  header = nullptr;
+  point = nullptr;
+  las = nullptr;
+
+  catalog = other.catalog;
+
+  for (const auto& stage : other.pipeline)
+  {
+    LASRalgorithm* ptr = stage->clone();
+    if (ptr == nullptr)
+    {
+      last_error = "Internal error: the stage '" + stage->get_name() + "' does not have valid clone() method";
+      throw last_error;
+    }
+    pipeline.push_back(std::unique_ptr<LASRalgorithm>(ptr));
+  }
+
+  // At this stage, we have a clone of the pipeline. However some stages may contain a pointer
+  // to another stage they are connected to. The pointers have been copied 'has is' because
+  // we don't the new address of the stages. We need to update the connections to other stages
+  // with the new addresses.
+  // We can loop over all the stages, and for each stage that come after this one, update the
+  // connections with this stage. The matching is done by the UID of each stage so if the two
+  // stage are not connected nothing happens.
+  for (auto it1 = pipeline.begin(); it1 != pipeline.end(); ++it1)
+  {
+    for (auto it2 = it1; it2 != pipeline.end(); ++it2)
+    {
+      (*it2)->update_connection(it1->get());
+    }
+  }
+}
+
 Pipeline::~Pipeline()
 {
   clean();
-  delete catalog;
-  catalog = nullptr;
 }
 
 bool Pipeline::pre_run()
 {
-  // Only used by write_vpc
+  LAScatalog* ctg = catalog.get();
   for (auto&& stage : pipeline)
   {
-    bool success = stage->process(catalog);
+    bool success = stage->process(ctg);
     if (!success)
     {
       last_error = "in '" + stage->get_name() + "' while processing the catalog: " + last_error; // # nocov
@@ -51,6 +96,7 @@ bool Pipeline::run()
   else
     success = run_loaded();
 
+  clear();
   clean();
 
   return success;
@@ -179,8 +225,25 @@ bool Pipeline::run_loaded()
   return true;
 }
 
+void Pipeline::merge(const Pipeline& other)
+{
+  order.insert(order.end(), other.order.begin(), other.order.end());
+
+  auto it1 = this->pipeline.begin();
+  auto it2 = other.pipeline.begin();
+
+  while (it1 != this->pipeline.end() && it2 != other.pipeline.end())
+  {
+    (*it1)->merge(it2->get());
+    ++it1;
+    ++it2;
+  }
+}
+
 bool Pipeline::set_chunk(const Chunk& chunk)
 {
+  order.push_back(chunk.id);
+
   for (auto&& stage : pipeline)
   {
     if (!stage->set_chunk(chunk))
@@ -204,10 +267,12 @@ void Pipeline::set_ncpu(int ncpu)
 {
   if (ncpu > available_threads())
   {
-    warning("Number of cores requested %d but only %d available", ncpu, available_threads());
-    ncpu = available_threads();
+    warning("Number of cores requested %d but only %d available", ncpu, available_threads()); // # nocov
+    ncpu = available_threads(); // # nocov
   }
+
   this->ncpu = ncpu;
+  for (auto&& stage : pipeline) stage->set_ncpu(ncpu);
 }
 
 bool Pipeline::set_crs(int epsg)
@@ -227,9 +292,10 @@ bool Pipeline::set_crs(std::string wkt)
 void Pipeline::set_verbose(bool verbose)
 {
   this->verbose = verbose;
+  for (auto&& stage : pipeline) stage->set_verbose(verbose);
 }
 
-bool Pipeline::is_streamable()
+bool Pipeline::is_streamable() const
 {
   bool b = true;
   for (auto&& stage : pipeline)
@@ -244,7 +310,52 @@ bool Pipeline::is_streamable()
   return b;
 }
 
-bool Pipeline::need_points()
+bool Pipeline::is_parallelizable() const
+{
+  bool b = true;
+  for (auto&& stage : pipeline)
+  {
+    if (!stage->is_parallelizable())
+    {
+      b = false;
+      break;
+    }
+  }
+
+  return b;
+}
+
+bool Pipeline::is_parallelized() const
+{
+  bool b = false;
+  for (auto&& stage : pipeline)
+  {
+    if (stage->is_parallelized())
+    {
+      b = true;
+      break;
+    }
+  }
+
+  return b;
+}
+
+bool Pipeline::use_rcapi() const
+{
+  bool b = false;
+  for (auto&& stage : pipeline)
+  {
+    if (stage->use_rcapi())
+    {
+      b = true;
+      break;
+    }
+  }
+
+  return b;
+}
+
+bool Pipeline::need_points() const
 {
   bool b = false;
   for (auto&& stage : pipeline)
@@ -272,12 +383,28 @@ double Pipeline::need_buffer()
   return buffer;
 }
 
+void Pipeline::sort()
+{
+  for (auto&& stage : pipeline)
+  {
+    stage->sort(order);
+  }
+}
+
 void Pipeline::clear(bool last)
 {
   for (auto&& stage : pipeline)
   {
     stage->clear(last);
   }
+}
+
+void Pipeline::clean()
+{
+  delete las;
+  header = nullptr;
+  point = nullptr;
+  las = nullptr;
 }
 
 #ifdef USING_R
@@ -299,10 +426,19 @@ SEXP Pipeline::to_R()
 }
 #endif
 
-void Pipeline::clean()
+/*void Pipeline::show()
 {
-  delete las;
-  header = nullptr;
-  point = nullptr;
-  las = nullptr;
-}
+  // # nocov start
+  #pragma
+  print("-------------\n");
+  for (auto&& stage : pipeline)
+  {
+    print("Stage %s: %s at %p\n", stage->get_uid().c_str(), stage->get_name().c_str(), stage.get());
+    for (auto con : stage->connections)
+    {
+      print("  connected to %s at %p\n", con.first.c_str(), con.second);
+    }
+  }
+  print("-------------\n");
+  // # nocov end
+}*/

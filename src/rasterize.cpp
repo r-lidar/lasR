@@ -1,6 +1,7 @@
 #include "rasterize.h"
 #include "triangulate.h"
 #include "Grouper.h"
+#include "openmp.h"
 
 LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods)
 {
@@ -9,7 +10,6 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   this->xmax = xmax;
   this->ymax = ymax;
   this->ofile = ofile;
-  this->algorithm = nullptr;
   this->window = (window > res) ? (window-res)/2 : 0;
   raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
 
@@ -29,9 +29,10 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   this->xmax = xmax;
   this->ymax = ymax;
   this->ofile = ofile;
-  this->algorithm = algorithm;
   this->window = 0;
   this->streamable = false;
+
+  set_connection(algorithm);
 
   raster = Raster(xmin, ymin, xmax, ymax, res, 1);
 }
@@ -84,9 +85,10 @@ bool LASRrasterize::process(LAS*& las)
 
   // We have a connection to LASRtriangulate:
   // we want to rasterize a triangulation mesh
-  if (algorithm != nullptr)
+  if (connections.size() > 0)
   {
-    LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(algorithm);
+    auto it = connections.begin();
+    LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->second);
     if (!p)
     {
       last_error  = "invalid pointer. Expecting a pointer to LASRtriangulate (internal error, please report)"; // # nocov
@@ -119,6 +121,14 @@ bool LASRrasterize::process(LAS*& las)
     cells.clear();
   }
 
+  // Loop through each group on which we want to apply the call
+  auto map = grouper.map;
+
+  progress->reset();
+  progress->set_prefix("Rasterize");
+  progress->set_total(map.size());
+  progress->show();
+
   // OpenMP cannot parallelize on a map. Create vectors to hold keys and references to corresponding vectors
   size_t n = grouper.map.size();
   std::vector<int> keys;
@@ -134,6 +144,10 @@ bool LASRrasterize::process(LAS*& las)
   progress->reset();
   progress->set_total(n);
   progress->set_prefix("Rasterization");
+
+  // The next for loop is at the level 2 of a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
 
   // Protect against data race. The first call initialize the memory and is not thread safe
   // Next calls, all touch a different cell and are thus thread safe
@@ -156,15 +170,18 @@ bool LASRrasterize::process(LAS*& las)
 
     metrics.reset();
 
-    #pragma omp critical
+    if (main_thread)
     {
-      (*progress)++;
+      #pragma omp critical
+      {
+        // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+        (*progress)++;
+        progress->show();
+      }
     }
-    if (omp_get_thread_num() == 0)
-    {
-      progress->show();
-    };
   }
+
+  progress->done();
 
   return true;
 }

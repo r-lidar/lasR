@@ -30,6 +30,8 @@
 
 bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 {
+  int num_stages = Rf_length(sexpargs);
+
   // This is the extent of the coverage.
   // We don't know it yet. We need to parse a reader first
   double xmin = 0;
@@ -39,17 +41,12 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
   parsed = false;
   pipeline.clear();
-  delete catalog;
-  catalog = nullptr;
 
-  for (auto i = 0; i < Rf_length(sexpargs); ++i)
+  for (auto i = 0; i < num_stages; ++i)
   {
     SEXP stage = VECTOR_ELT(sexpargs, i);
-
-    std::string name   = get_element_as_string(stage, "algoname");
+    std::string name = get_element_as_string(stage, "algoname");
     std::string uid    = get_element_as_string(stage, "uid");
-    std::string filter = get_element_as_string(stage, "filter");
-    std::string output = get_element_as_string(stage, "output");
 
     if (name == "reader_las")
     {
@@ -75,7 +72,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       {
         std::vector<std::string> files = get_element_as_vstring(stage, "files");
 
-        catalog = new LAScatalog;
+        catalog = std::make_shared<LAScatalog>();
         if (!catalog->read(files, progress))
         {
           last_error = "In the parser while reading the file collection: " + last_error; // # nocov
@@ -158,7 +155,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
       if (build_catalog)
       {
-        catalog = new LAScatalog;
+        catalog = std::make_shared<LAScatalog>();
         catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
         catalog->set_wkt(wkt);
 
@@ -394,8 +391,9 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       SEXP call = get_element(stage, "call");
       SEXP env = get_element(stage, "env");
       double res = get_element_as_double(stage, "res");
+      int nmetrics = get_element_as_int(stage, "nmetrics");
       double win = get_element_as_double(stage, "window");
-      auto v = std::make_unique<LASRaggregate>(xmin, ymin, xmax, ymax, res, win, call, env);
+      auto v = std::make_unique<LASRaggregate>(xmin, ymin, xmax, ymax, res, nmetrics, win, call, env);
       pipeline.push_back(std::move(v));
     }
     else if (name  == "callback")
@@ -417,14 +415,9 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
     auto& it = pipeline.back();
     it->set_uid(uid);
-    it->set_filter(filter);
-    it->set_output_file(output);
   }
 
   parsed = true;
-  streamable = is_streamable();
-  buffer = need_buffer();
-  read_payload = need_points();
 
   for (auto&& stage : pipeline)
   {
@@ -432,6 +425,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     stage->set_verbose(verbose);
   }
 
+  // If build catalog == false we do not build a catalog and thus
+  // it means that we do not have access to the files. The pipeline is parsed
+  // but can't be executed and won't be executed. This happens only in get_pipeline_info()
+  // that parses the pipeline in order to know if a buffer is needed or if the pipeline is
+  // streamable.
   if (build_catalog)
   {
     // Check that the first stage is a reader
@@ -444,9 +442,27 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     // We parse the pipeline so we know if we need a buffer
     catalog->set_buffer(need_buffer());
 
-    // The catlog is build, we know the CRS of the collection
+    // The catalog is build, we know the CRS of the collection
     set_crs(catalog->get_epsg());
     set_crs(catalog->get_wkt());
+
+    // The catalog is build we have the bbox of all the LAS file. We can build a spatial index
+    catalog->build_index();
+
+    // We iterate over all the stage again to assign the filter and the output file.
+    // This is done here because set_output_file() does create a file on disk and we want
+    // it to happen only if we plan to actually process something
+    auto it = pipeline.begin();
+    for (auto i = 0; i < num_stages; ++i)
+    {
+      SEXP stage = VECTOR_ELT(sexpargs, i);
+      std::string filter = get_element_as_string(stage, "filter");
+      std::string output = get_element_as_string(stage, "output");
+
+      (*it)->set_filter(filter);
+      (*it)->set_output_file(output);
+      it++;
+    }
 
     // Write lax is the very first algorithm. Even before read_las. It is called
     // only if needed.
@@ -456,9 +472,12 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       pipeline.push_front(std::move(v));
       print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n", catalog->get_number_files()-catalog->get_number_indexed_files());
     }
-
-    catalog->build_index();
   }
+
+  streamable = is_streamable();
+  buffer = MAX(buffer, need_buffer());
+  read_payload = need_points();
+  parallelizable = is_parallelizable();
 
   return true;
 }

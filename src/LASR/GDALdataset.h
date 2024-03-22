@@ -3,6 +3,8 @@
 
 #include "error.h"
 
+#include <memory>
+
 #include <gdal_priv.h>
 #include <ogrsf_frmts.h>
 
@@ -10,8 +12,8 @@ class GDALdataset
 {
 public:
   GDALdataset();
-  GDALdataset(const GDALdataset& other);
-  ~GDALdataset();
+  // GDALdataset(const GDALdataset& other);
+  //~GDALdataset();
   bool create_file();
   void set_file(std::string file) { this->file = file; }
   bool set_raster(double xmin, double ymax, int ncols, int nrows, double res);
@@ -23,9 +25,9 @@ public:
   bool set_crs(std::string wkt);
   bool is_raster() const { return dType == GDALDatasetType::RASTER; }
   bool is_vector() const { return dType == GDALDatasetType::VECTOR; }
-  void close();
 
   enum warnings { DUPFID };
+  static void initialize_gdal();
   static const std::map<std::string, std::string> extension2driver;
 
 protected:
@@ -47,10 +49,14 @@ protected:
 
   GDALDatasetType dType;    // The type of dataset (vector or raster or undefined)
   GDALDataType eType;       // The type of data in the dataset for rasters (is GDT_Float32)
-  GDALDataset* dataset;
-  OGRLayer* layer;
   OGRSpatialReference oSRS;
   OGRwkbGeometryType eGType; // Type of geometry
+
+  std::shared_ptr<GDALDataset> dataset; // Owner
+  OGRLayer* layer;                      // Own by dataset
+
+private:
+  static bool initialized;
 };
 
 #endif

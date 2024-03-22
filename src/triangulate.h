@@ -26,6 +26,10 @@ public:
   bool write() override;
   std::string get_name() const override { return "triangulate"; }
 
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
+  LASRtriangulate* clone() const override { return new LASRtriangulate(*this); };
+
 private:
   bool keep_large;
   double trim;

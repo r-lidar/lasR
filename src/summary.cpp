@@ -1,4 +1,5 @@
 #include "summary.h"
+#include "openmp.h"
 
 #include <iterator>
 
@@ -26,6 +27,8 @@ bool LASRsummary::process(LASpoint*& p)
   if (lasfilter.filter(p)) return true;
   if (p->inside_buffer(xmin, ymin, xmax, ymax, circular)) return true; // avoid counting buffer points
 
+  #pragma omp critical
+  {
   npoints++;
   npoints_per_return[p->get_return_number()]++;
   npoints_per_class[p->get_classification()]++;
@@ -39,6 +42,7 @@ bool LASRsummary::process(LASpoint*& p)
   int i = (int) std::round(p->get_intensity() / iwbin) * iwbin;
   (zhistogram.find(z) == zhistogram.end()) ?  zhistogram[z] = 1 : zhistogram[z]++;
   (ihistogram.find(i) == ihistogram.end()) ?  ihistogram[i] = 1 : ihistogram[i]++;
+  }
 
   return true;
 }
@@ -53,6 +57,32 @@ bool LASRsummary::process(LAS*& las)
   }
 
   return true;
+}
+
+void LASRsummary::merge(const LASRalgorithm* other)
+{
+  const LASRsummary* o = dynamic_cast<const LASRsummary*>(other);
+
+  npoints += o->npoints;
+  nsingle += o->nsingle;
+  nwithheld += o->nwithheld;
+  nsynthetic += o->nsynthetic;
+
+  merge_maps(npoints_per_return, o->npoints_per_return);
+  merge_maps(npoints_per_class, o->npoints_per_class);
+  merge_maps(npoints_per_sdf, o->npoints_per_return);
+  merge_maps(zhistogram, o->zhistogram);
+  merge_maps(ihistogram, o->ihistogram);
+}
+
+void LASRsummary::merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2)
+{
+  for (const auto& pair : map2)
+  {
+    int key = pair.first;
+    int value = pair.second;
+    map1[key] += value;
+  }
 }
 
 #ifdef USING_R

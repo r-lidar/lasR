@@ -5,7 +5,7 @@ gun = function(data) { data }
 
 test_that("callback cannot add attribute without EB",
 {
-  expect_warning(exec(callback(fun), on = f), "non supported column 'HAG'")
+  expect_error(exec(callback(fun), on = f), "non supported column 'HAG'")
 })
 
 test_that("callback can add attribute with EB",

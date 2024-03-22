@@ -22,6 +22,7 @@ test_that("reader_circle perform a queries",
   # between two tiles with a buffer
   pipeline = reader_las_circles(885150, 629400, 10) + read_las()
   ans = exec(pipeline, f, buffer = 5)
+
   expect_equal(dim(ans), c(14074, 5L))
   expect_equal(sum(ans$Buffer), 7706L)
 

@@ -9,11 +9,15 @@
 class LASRaggregate: public LASRalgorithmRaster
 {
 public:
-  LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, double window, SEXP call, SEXP env);
+  LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, int nmetrics, double window, SEXP call, SEXP env);
   bool process(LAS*& las) override;
   void clear(bool last) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
   std::string get_name() const override { return "aggregate"; };
+  bool use_rcapi() const override { return true; };
+
+  // multi-threading
+  LASRaggregate* clone() const override { return new LASRaggregate(*this); };
 
 private:
   // for consistency check

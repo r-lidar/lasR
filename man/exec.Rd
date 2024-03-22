@@ -4,15 +4,7 @@
 \alias{exec}
 \title{Process the pipeline}
 \usage{
-exec(
-  pipeline,
-  on,
-  ncores = half_cores(),
-  progress = FALSE,
-  buffer = NULL,
-  chunk = NULL,
-  ...
-)
+exec(pipeline, on, with = NULL, ...)
 }
 \arguments{
 \item{pipeline}{a pipeline. A serie of stages called in order}
@@ -22,40 +14,32 @@ the path to a \href{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-po
 file or a \code{data.frame} containing the point cloud. It supports also a \code{LAScatalog} or a \code{LAS} objects
 from \code{lidR}.}
 
-\item{ncores}{integer. Number of cores to use. Some stages or some steps in some stages
-are parallelised but overall one file is process at a time.}
+\item{with}{list. A list of options to control how the pipeline is executed. This includes options to
+control parallel processing, progress bar display, tile buffering and so on. See \link{set_exec_options}
+for more details on the available options.}
 
-\item{progress}{boolean. Displays a progress bar.  If \code{on} is a \code{LAScatalog} from \code{lidR} the
-options set by the \code{LAScatalog} has the precedence.}
-
-\item{buffer}{numeric. Each file, each chunk or each query may be read with a buffer. The default
-is NULL, which does not mean that point-cloud won't be buffered. It means that the internal routine
-knows if a buffer is needed and will pick the greatest value between the internal suggestion and
-this value. If \code{on} is a \code{LAScatalog} from \code{lidR} the options set by the \code{LAScatalog} has the
-precedence.}
-
-\item{chunk}{numeric. By default the collection of files is processed by file (\code{chunk = NULL}).
-It is  possible to process by arbitrary sized chunks. This is useful for e.g. processing collection
-with large files or processing a massive \code{copc} files. If \code{on} is a \code{LAScatalog} from \code{lidR} the
-option set by the \code{LAScatalog} has the precedence.}
-
-\item{...}{unused}
+\item{...}{The processing options can be explicitly named and passed outside the \code{with} argument.
+See \link{set_exec_options}}
 }
 \description{
-Process the pipeline. Every other functions do nothing. This function must be called on a pipeline
-to actually process the point-cloud
+Process the pipeline. Every other functions of the package do nothing. This function must be
+called on a pipeline in order to actually process the point-cloud. To process in parallel using
+multiple cores, refer to the \link{multithreading} page.
 }
 \examples{
 \dontrun{
 f <- paste0(system.file(package="lasR"), "/extdata/bcts/")
 f <- list.files(f, pattern = "(?i)\\\\.la(s|z)$", full.names = TRUE)
 
-read <- reader_las(filter = "")
+read <- reader_las()
 tri <- triangulate(15)
 dtm <- rasterize(5, tri)
 lmf <- local_maximum(5)
-met <- rasterize(2, mean(Intensity))
+met <- rasterize(2, "imean")
 pipeline <- read + tri + dtm + lmf + met
-ans <- exec(pipeline, f)
+ans <- exec(pipeline, on = f, with = list(progress = TRUE))
 }
+}
+\seealso{
+\link{multithreading} \link{set_exec_options}
 }

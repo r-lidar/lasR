@@ -23,12 +23,16 @@ LASRregiongrowing::LASRregiongrowing(double xmin, double ymin, double xmax, doub
   this->th_crown = th_crown;
   this->th_tree = th_tree;
   this->DIST = DIST*DIST;
-  this->algorithm_input_rasters = algorithm_input_rasters;
-  this->algorithm_input_seeds = algorithm_input_seeds;
+
+  set_connection(algorithm_input_rasters);
+  set_connection(algorithm_input_seeds);
 
   LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(algorithm_input_seeds);
   LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(algorithm_input_rasters);
 
+  // If both are valid pointers. We can modify the underlying raster of the raster stage
+  // to ensure it has a buffer. We need the raster to be buffered in order to perform
+  // a correct segmentation of the regions
   if (p && q)
   {
     q->get_raster().set_chunk_buffer(p->need_buffer());
@@ -39,8 +43,23 @@ LASRregiongrowing::LASRregiongrowing(double xmin, double ymin, double xmax, doub
 bool LASRregiongrowing::process(LAS*& las)
 {
   double ti = taketime();
-  LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(algorithm_input_seeds);
-  LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(algorithm_input_rasters);
+
+  // We do not know, in the map, which pointer is the pointer to the seeds and which one
+  // is the pointer to the raster because the map is ordered by UID.
+  LASRlocalmaximum* p = nullptr;
+  LASRalgorithmRaster* q = nullptr;
+  auto it1 = connections.begin();
+  auto it2 = --connections.end();
+  p = dynamic_cast<LASRlocalmaximum*>(it1->second);
+  if (p == nullptr)
+  {
+    p = dynamic_cast<LASRlocalmaximum*>(it2->second);
+    q = dynamic_cast<LASRalgorithmRaster*>(it1->second);
+  }
+  else
+  {
+    q = dynamic_cast<LASRalgorithmRaster*>(it2->second);
+  }
 
   if (p == nullptr || q == nullptr)
   {

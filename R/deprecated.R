@@ -30,10 +30,31 @@ processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
   verbose <- if (is.null(dots$verbose)) FALSE else TRUE
   noread <- if (is.null(dots$noread)) FALSE else TRUE
 
+  strategy <- 1L
+
+  if (has_omp_support())
+  {
+    if (is.null(LASROPTIONS$ncores))
+    {
+      warning("Argument ncores is deprecated. Use 'set_parallel_strategy()' instead")
+      strategy <- 2L
+    }
+    else
+    {
+      ncores <- LASROPTIONS$ncores
+      strategy <- LASROPTIONS$strategy
+    }
+  }
+  else
+  {
+    ncores <- 1L
+  }
+
   args = list(progress = progress,
               ncores = ncores,
               verbose = verbose,
-              chunk_size = 0)
+              strategy = strategy,
+              chunk = 0)
 
   ans <- .Call(`C_process`, pipeline, args)
 

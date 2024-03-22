@@ -1,6 +1,8 @@
 #include "GDALdataset.h"
 #include "NA.h"
 
+bool GDALdataset::initialized = false;
+
 GDALdataset::GDALdataset()
 {
   nBands = 0;
@@ -24,7 +26,7 @@ GDALdataset::GDALdataset()
   dType = GDALDatasetType::UNDEFINED;
 }
 
-GDALdataset::GDALdataset(const GDALdataset& other)
+/*GDALdataset::GDALdataset(const GDALdataset& other)
 {
   nBands = other.nBands;
   nXsize = other.nXsize;
@@ -42,12 +44,7 @@ GDALdataset::GDALdataset(const GDALdataset& other)
   band_names = other.band_names;
 
   oSRS = other.oSRS;
-}
-
-GDALdataset::~GDALdataset()
-{
-  close();
-}
+}*/
 
 bool GDALdataset::set_raster(double xmin, double ymax, int ncols, int nrows, double res)
 {
@@ -131,8 +128,8 @@ bool GDALdataset::create_file()
     return false; // # nocov
   }
 
-  // Initialize GDAL
-  GDALAllRegister();
+  initialize_gdal();
+
   GDALDriver* driver = nullptr;
 
   // Extract the driver name from the filename's extension
@@ -167,7 +164,7 @@ bool GDALdataset::create_file()
     // # nocov end
   }
 
-  dataset = driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, nullptr);
+  dataset.reset(driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, nullptr), GDALClose);
 
   if (!dataset)
   {
@@ -216,7 +213,7 @@ bool GDALdataset::create_file()
 
 bool GDALdataset::set_band_name(std::string name, int band)
 {
-  if (!check_dataset_is_not_initialized() && !check_dataset_is_raster())
+  if (!check_dataset_is_raster())
   {
     return false; // # nocov
   }
@@ -229,16 +226,16 @@ bool GDALdataset::set_band_name(std::string name, int band)
 
   band_names[band] = name;
 
+  if (dataset)
+  {
+    dataset->GetRasterBand(band+1)->SetDescription(band_names[band].c_str());
+  }
+
   return true;
 }
 
 bool GDALdataset::set_crs(int epsg)
 {
-  if (!check_dataset_is_not_initialized())
-  {
-    return false; // # nocov
-  }
-
   if (oSRS.importFromEPSG(epsg) != OGRERR_NONE)
   {
     // # nocov start
@@ -252,22 +249,8 @@ bool GDALdataset::set_crs(int epsg)
   return true;
 }
 
-void GDALdataset::close()
-{
-  if (dataset)
-  {
-    GDALClose(dataset);
-    dataset = nullptr;
-  }
-}
-
 bool GDALdataset::set_crs(std::string wkt)
 {
-  if (!check_dataset_is_not_initialized())
-  {
-    return false;
-  }
-
   if (oSRS.importFromWkt(wkt.c_str()) != OGRERR_NONE)
   {
     // # nocov start
@@ -280,6 +263,15 @@ bool GDALdataset::set_crs(std::string wkt)
 
   return true;
 }
+
+/*void GDALdataset::close()
+{
+  if (dataset)
+  {
+    GDALClose(dataset);
+    dataset = nullptr;
+  }
+}*/
 
 bool GDALdataset::check_dataset_is_not_initialized()
 {
@@ -301,6 +293,15 @@ bool GDALdataset::check_dataset_is_raster()
   }
 
   return true;
+}
+
+void GDALdataset::initialize_gdal()
+{
+  if (!initialized)
+  {
+    GDALAllRegister(); // Register GDAL drivers
+    initialized = true; // Mark initialization as complete
+  }
 }
 
 const std::map<std::string, std::string> GDALdataset::extension2driver = {

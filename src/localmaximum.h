@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 class LASRlocalmaximum : public LASRalgorithmVector
 {
@@ -18,15 +19,20 @@ public:
   double need_buffer() const override { return ws; }
   std::string get_name() const override { return "local_maximum"; }
   std::vector<PointLAS>& get_maxima() { return lm; };
+  bool is_parallelized() const override { return true; };
+
+  // multi-threading
+  LASRlocalmaximum* clone() const override { return new LASRlocalmaximum(*this); };
 
 private:
   double ws;
   double min_height;
 
-  unsigned int counter;
   std::string use_attribute;
   std::vector<PointLAS> lm;
-  std::unordered_map<uint64_t, unsigned int> unicity_table;
+
+  std::shared_ptr<unsigned int> counter;
+  std::shared_ptr<std::unordered_map<uint64_t, unsigned int>> unicity_table;
 
   enum states {UKN, NLM, LMX};
 };

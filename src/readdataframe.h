@@ -9,14 +9,18 @@ class LASRdataframereader: public LASRalgorithm
 {
 public:
   LASRdataframereader(double xmin, double ymin, double xmax, double ymax, const SEXP dataframe, const std::vector<double>& accuracy, const std::string& wkt);
+  LASRdataframereader(const LASRdataframereader& other);
   bool set_chunk(const Chunk& chunk) override;
   bool process(LASheader*& header) override;
   bool process(LASpoint*& point) override;
   bool process(LAS*& las) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
-  void set_filter(std::string filter) override { this->filter = filter; };
   std::string get_name() const override { return "reader_dataframe"; }
+  bool use_rcapi() const override { return true; };
+
+  // multi-threading
+  LASRdataframereader* clone() const override { return new LASRdataframereader(*this); };
 
 private:
   int get_point_data_record_length(int point_data_format) const;
@@ -37,7 +41,6 @@ private:
   double offset[3];
   std::vector<int> col_names;
   std::string wkt;
-  std::string filter;
   SEXP dataframe;
 
   LASheader lasheader;

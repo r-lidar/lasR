@@ -15,6 +15,9 @@ public:
   bool is_streamable() const override { return streamable; };
   bool need_points() const override { return read_points; };
 
+  // multi-threading
+  LASRnothing* clone() const override { return new LASRnothing(*this); };
+
   private:
     bool streamable;
     bool read_points;

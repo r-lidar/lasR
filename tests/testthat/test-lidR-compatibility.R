@@ -28,12 +28,13 @@ test_that("lasR supports a LAScatalog from lidR",
   LASfile <- system.file("extdata", "Example.las", package="lasR")
   las = eval(parse(text = "lidR::readLAScatalog(LASfile)")) # eval(parse()) tricks R CMD check because lidR is not a dependency
   las@processing_options$progress = FALSE
+
   pipeline = hulls()
 
   expect_error(exec(pipeline, on = las), NA)
 })
 
-test_that("exec works with old pipelin",
+test_that("exec works with old pipeline",
 {
   f <- system.file("extdata", "Megaplot.las", package="lasR")
 

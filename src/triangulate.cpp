@@ -1,6 +1,5 @@
 #include "triangulate.h"
 
-#include "Progress.hpp"
 #include "Raster.h"
 #include "Shape.h"
 #include "openmp.h"
@@ -22,9 +21,8 @@ LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double y
   this->keep_large = trim < 0;
   this->trim = trim*trim;
   this->npoints = 0;
-  this->las = 0;
+  this->las = nullptr;
   this->d = nullptr;
-
   this->use_attribute = use_attribute;
 
   vector.set_geometry_type(wkbMultiPolygon25D);
@@ -106,6 +104,7 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
   progress->reset();
   progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Interpolation");
+  progress->show();
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -115,6 +114,10 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
     res.resize(raster->get_ncells());
 
   std::fill(res.begin(), res.end(), NA_F64);
+
+  // The next for loop is at the level a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
 
   // 1. loop through the triangles, search the point inside triangle, interpolate
   #pragma omp parallel for num_threads(ncpu)
@@ -175,13 +178,14 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
       }
     }
 
-    #pragma omp critical
+    if (main_thread)
     {
-      (*progress)++;
-    }
-    if (omp_get_thread_num() == 0)
-    {
-      progress->show();
+      // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+      #pragma omp critical
+      {
+        (*progress)++;
+        progress->show();
+      }
     }
   }
 
@@ -211,6 +215,11 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
   progress->reset();
   progress->set_prefix("Delaunay contours");
   progress->set_total(d->triangles.size()/3);
+  progress->show();
+
+  // The next for loop is at the level a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
 
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < d->triangles.size() ; i+=3)
@@ -249,13 +258,14 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
       }
     }
 
-    #pragma omp critical
+    if (main_thread)
     {
-      (*progress)++;
-    }
-    if (omp_get_thread_num() == 0)
-    {
-      progress->show();
+      #pragma omp critical
+      {
+        // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+        (*progress)++;
+        progress->show();
+      }
     }
   }
 
@@ -293,6 +303,7 @@ bool LASRtriangulate::write()
 
   progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Write triangulation");
+  progress->show();
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -329,7 +340,10 @@ bool LASRtriangulate::write()
 
   if (lastransform) delete lastransform;
 
-  vector.write_triangulation(triangles);
+  #pragma omp critical (write_triangulation)
+  {
+    vector.write(triangles);
+  }
 
   if (verbose)
   {

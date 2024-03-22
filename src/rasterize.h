@@ -14,13 +14,16 @@ public:
   bool process(LAS*& las) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
   bool is_streamable() const override { return streamable; };
+  bool is_parallelized() const override { return !streamable; };
   std::string get_name() const override { return "rasterize"; };
+
+  // multi-threading
+  LASRrasterize* clone() const override { return new LASRrasterize(*this); };
 
 private:
   bool streamable;
   double window;
   LASRmetrics metrics;
-  LASRalgorithm* algorithm; // Not the owner
 };
 
 #endif

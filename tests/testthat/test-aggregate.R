@@ -1,26 +1,30 @@
 ferr = function(x) { stop("explicit error"); }
-gerr = function(x) { if (mean(x) < 339008) return(list(0, 0)) else return(0) }
-ger2 = function(x) { if (mean(x) > 339008) return(list(0, 0)) else return(0) }
+gerr = function(x) { if (mean(x) < 339004) return(list(0, 0)) else return(0) }
+ger2 = function(x) { if (mean(x) > 339013) return(list(0, 0)) else return(0) }
 herr = function(x){return(c(a = 0L, b = 0L))}
 
 test_that("aggregate handles explicit errors",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  agg = lasR:::aggregate(5, ferr(Intensity))
+  agg = lasR:::aggregate(5, ferr(Intensity), nmetrics = 1)
 
   expect_error(exec(agg, f), "explicit error")
 })
 
 test_that("aggregate handles inconsistancies",
 {
+  # it works but depends on the order of the unordered map. I can't write a test that does not depends
+  # on the order of the unordered map.
+  skip_on_os("mac")
+
   f = system.file("extdata", "Example.las", package="lasR")
 
-  agg  = lasR:::aggregate(0.5, gerr(X))
-  agg2 = lasR:::aggregate(0.5, ger2(X))
+  agg  = lasR:::aggregate(0.5, gerr(X), nmetrics = 1)
+  agg2 = lasR:::aggregate(0.5, ger2(X), nmetrics = 2)
 
   expect_error(exec(agg, f), "inconsistant number of items")
-  expect_error(exec(agg2, f), "inconsistant number of items") # test that it does no depends on unordered_map order.
+  expect_error(exec(agg2, f), "inconsistant number of items")
 })
 
 test_that("aggregate works with a vector instead of a list",

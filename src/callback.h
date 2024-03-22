@@ -13,6 +13,12 @@ public:
   bool process(LAS*& las) override;
   SEXP to_R() override;
   std::string get_name() const override { return "callback";  }
+  bool use_rcapi() const override { return true; };
+
+  // multi-threading
+  LASRcallback* clone() const override { return new LASRcallback(*this); };
+  void merge(const LASRalgorithm* other) override;
+  void sort(const std::vector<int>& order) override;
 
 private:
   bool modify;

@@ -16,6 +16,11 @@
 
 .onLoad <- function(libname, pkgname)
 {
+  if (has_omp_support())
+    set_parallel_strategy(concurrent_points())
+
+  set_proj_lib()
+
   # installed <- row.names(installed.packages())
   # nothing <- function(x) { return(x)}
   # lasR.read_vector = if ("sf" %in% installed) sf::read_sf else nothing
@@ -31,7 +36,6 @@
   # if (any(toset)) options(op.lidR[toset])
   #
   # invisible()
-  set_proj_lib()
 }
 
 .onUnload <- function(libpath)
@@ -115,6 +119,8 @@ set_proj_lib <- function()
   }
 }
 
+
+LASROPTIONS = new.env()
 
 # ,@@@
 #  @@@@@@.@                                                           ,#*

@@ -1,12 +1,10 @@
 #include "localmaximum.h"
-#include "Progress.hpp"
 #include "openmp.h"
 
 #include <chrono>
 
 LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_attribute)
 {
-  counter = 0;
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
@@ -18,8 +16,12 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
 
   this->use_attribute = use_attribute;
 
+  counter = std::make_shared<unsigned int>(0);
+  unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
+
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
+  vector.set_fields_for(Vector::writable::POINTLAS);
 }
 
 bool LASRlocalmaximum::process(LAS*& las)
@@ -53,18 +55,23 @@ bool LASRlocalmaximum::process(LAS*& las)
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
+  // The next for loop is at the level 2 of a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
+
   #pragma omp parallel for num_threads(ncpu)
-  for (auto i = 0 ; i < las->npoints ; i++)
+  for (auto i = 0 ; i < las->npoints ; ++i)
   {
     PointLAS pp;
 
-    #pragma omp critical
+    if (main_thread)
     {
-      (*progress)++;
-    }
-    if (omp_get_thread_num() == 0)
-    {
-      progress->show();
+      #pragma omp critical
+      {
+        // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+        (*progress)++;
+        progress->show();
+      }
     }
 
     if (!las->get_point(i, pp, &lasfilter, lastransform)) { status[i] = NLM; } // The point was either filtered or withhelded
@@ -88,19 +95,19 @@ bool LASRlocalmaximum::process(LAS*& las)
 
     if (status[i] == LMX)
     {
-      #pragma omp critical
+      #pragma omp critical(assign_lm_ids)
       {
         // If the point is in the buffer we must guarantee it will be assigned the same ID the next
         // time we meet it. FID is a 64 bit geographic ID that is guaranteed to be unique. But we need
         // a 32 bit ID so we have a correspondence table.
         uint64_t FID = ((uint64_t)las->point.quantizer->get_X(pp.x) << 32) | (uint64_t)(las->point.quantizer->get_Y(pp.y));
-        auto it = unicity_table.find(FID);
-        if (it == unicity_table.end())
+        auto it = unicity_table->find(FID);
+        if (it == unicity_table->end())
         {
-          unicity_table[FID] = counter;
+          (*unicity_table)[FID] = *counter;
           lm.push_back(pp);
-          lm.back().FID = counter;
-          counter++;
+          lm.back().FID = *counter;
+          (*counter)++;
         }
         else
         {
@@ -139,19 +146,27 @@ bool LASRlocalmaximum::write()
 
   for (const auto& p : lm)
   {
-    if (!vector.write_point(p))
+    bool success;
+    #pragma omp critical (write_localmax)
     {
+      success = vector.write(p);
+    }
+
+    if (!success)
+    {
+      // /!\ TODO: not thread safe
       if (last_error_code != GDALdataset::DUPFID)
         return false;
       else
         dupfid++;
     }
+
     (*progress)++;
     progress->show();
   }
 
   if (dupfid)
-    warning("%d points skipped: trying to insert points with and FID that is already in the database. This may be due to overlapping tiles.", dupfid);
+    print("%d points skipped: trying to insert points with and FID that is already in the database. This may be due to overlapping tiles.\n", dupfid);
 
   return true;
 }
