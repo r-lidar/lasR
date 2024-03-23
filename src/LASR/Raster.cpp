@@ -32,37 +32,9 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, i
   nodata = NA_F32_RASTER;
 }
 
-// Constructor from bounding box and number of row and cols. Can assign a number of bands.
-/*Raster::Raster(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols, int layers) : Grid (xmin, ymin, xmax, ymax, nrows, ncols), GDALdataset()
-{
-  extent[0] = this->xmin;
-  extent[1] = this->ymin;
-  extent[2] = this->xmax;
-  extent[3] = this->ymax;
-
-  buffer = 0;
-
-  set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
-  set_nbands(layers);
-  nodata  = NA_F32_RASTER;
-}*/
-
-// Copy constructor creates a Raster identical to the input but the underlying gdaldataset
-// is not initialized and there is no file name associated to the new raster.
-/*Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset(raster)
-{
-  extent[0] = this->xmin;
-  extent[1] = this->ymin;
-  extent[2] = this->xmax;
-  extent[3] = this->ymax;
-
-  buffer = raster.buffer;
-  nodata = raster.nodata;
-}*/
-
-// Copy constructor with bounding box. Creates a raster identical to the input
+// Copy constructor with Chunk. Creates a raster identical to the input
 // (same number of bands, crs, band names, etc.) but with an extent that is different.
-Raster::Raster(const Raster& raster, double xmin, double ymin, double xmax, double ymax) : Grid (xmin, ymin, xmax, ymax, raster.get_xres()), GDALdataset()
+Raster::Raster(const Raster& raster, const Chunk& chunk) : Grid (chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax, raster.get_xres()), GDALdataset()
 {
   extent[0] = this->xmin;
   extent[1] = this->ymin;
@@ -70,13 +42,12 @@ Raster::Raster(const Raster& raster, double xmin, double ymin, double xmax, doub
   extent[3] = this->ymax;
 
   GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
-  set_chunk_buffer(raster.get_buffer());
   set_nbands(raster.nBands);
   band_names = raster.band_names;
   nodata = raster.nodata;
   oSRS = raster.oSRS;
 
-  set_chunk(xmin, ymin, xmax, ymax); // #16 resize the grid including the buffer
+  set_chunk(chunk); // #15 resize the grid including the buffer
 }
 
 float& Raster::get_value(double x, double y, int layer)
@@ -132,23 +103,20 @@ bool Raster::set_nbands(int nbands)
   return true;
 }
 
-void Raster::set_chunk(double xmin, double ymin, double xmax, double ymax)
+void Raster::set_chunk(const Chunk& chunk)
 {
-  this->xmin = ROUNDANY(xmin - buffer*xres - 0.5 * xres, xres) ;
-  this->ymin = ROUNDANY(ymin - buffer*yres - 0.5 * xres, xres) ;
-  this->xmax = ROUNDANY(xmax + buffer*xres - 0.5 * xres, xres) + xres;
-  this->ymax = ROUNDANY(ymax + buffer*yres - 0.5 * yres, yres) + yres;
+  buffer = std::ceil(chunk.buffer/xres);
 
-  this->ncols = std::round((this->xmax-this->xmin)/xres);
-  this->nrows = std::round((this->ymax-this->ymin)/yres);
-  this->ncells = ncols*nrows;
+  xmin = ROUNDANY(chunk.xmin - buffer*xres - 0.5 * xres, xres) ;
+  ymin = ROUNDANY(chunk.ymin - buffer*yres - 0.5 * xres, xres) ;
+  xmax = ROUNDANY(chunk.xmax + buffer*xres - 0.5 * xres, xres) + xres;
+  ymax = ROUNDANY(chunk.ymax + buffer*yres - 0.5 * yres, yres) + yres;
+
+  ncols = std::round((xmax-xmin)/xres);
+  nrows = std::round((ymax-ymin)/yres);
+  ncells = ncols*nrows;
 
   data.clear();
-}
-
-void Raster::set_chunk_buffer(int buffer)
-{
-  this->buffer = buffer;
 }
 
 bool Raster::write()

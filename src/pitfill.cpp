@@ -16,13 +16,9 @@ LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int
   this->med_size = med_size;
   this->dil_radius = dil_radius;
 
+  // Initialize the output raster from input raster
   LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(algorithm);
-  if (p)
-  {
-    int buffer = MAX3(lap_size, med_size, dil_radius);
-    p->get_raster().set_chunk_buffer(buffer); // Need the raster to be buffered. We can directly modify the raster from another algorithm since no data has been initialized.
-    raster = Raster(p->get_raster());
-  }
+  if (p) raster = Raster(p->get_raster());
 }
 
 bool LASRpitfill::process(LAS*& las)
@@ -58,7 +54,9 @@ bool LASRpitfill::process(LAS*& las)
 
   for (int i = 0 ; i < snlin*sncol ; i++)
   {
-    raster.set_value(i, ans[i]);
+    double x = rin.x_from_cell(i);
+    double y = rin.y_from_cell(i);
+    raster.set_value(x, y, ans[i]);
   }
 
   free(ans);

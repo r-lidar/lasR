@@ -183,9 +183,9 @@ bool LASRalgorithmRaster::set_chunk(const Chunk& chunk)
   //    and create a new one with the same properties (CRS, band names, resolution, etc...).
   //    Destroying a raster closes the underlying file.
   if (merged)
-    raster.set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
+    raster.set_chunk(chunk); // Same gdal dataset but new location
   else
-    raster = Raster(raster, chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
+    raster = Raster(raster, chunk); // New gdal datset and new location
 
   return true;
 }

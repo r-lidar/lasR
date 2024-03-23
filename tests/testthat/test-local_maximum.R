@@ -43,3 +43,18 @@ test_that("local maximum fails with missing extra bytes",
 
   expect_error(suppressWarnings(processor(read + lmf)), "no extrabyte attribute 'Foo' found")
 })
+
+test_that("local maximum works with a raster",
+{
+  f <- system.file("extdata", "MixedConifer.las", package="lasR")
+
+  chm = chm()
+  pit = pit_fill(chm)
+  lmf1 = local_maximum_raster(chm, 4)
+  lmf2 = local_maximum_raster(pit, 4)
+
+  ans = exec(chm  + lmf1 + pit + lmf2, on = f)
+
+  expect_equal(dim(ans[[2]]), c(262L, 6L))
+  expect_equal(dim(ans[[4]]), c(222L, 6L))
+})

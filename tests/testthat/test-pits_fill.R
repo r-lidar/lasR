@@ -17,7 +17,6 @@ test_that("pits filling works (no streaming)",
   expect_equal(unname(unlist(sto[c(1000L,5000L,10000L)])), c(5.9, 16.98625, NA_real_),  tolerance = 1e-6)
 })
 
-
 test_that("pits filling works with multiple files",
 {
   f <- system.file("extdata", "bcts/", package="lasR")

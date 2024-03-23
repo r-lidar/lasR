@@ -49,10 +49,14 @@ f <- system.file("extdata", "MixedConifer.las", package="lasR")
 
 reader <- reader_las(filter = keep_first())
 chm <- rasterize(1, "max")
-lmx <- local_maximum(5)
+lmx <- local_maximum_raster(chm, 5)
 tree <- region_growing(chm, lmx, max_cr = 10)
 u <- exec(reader + chm + lmx + tree, on = f)
 
+# terra::plot(u$rasterize)
+# plot(u$local_maximum, add = T, pch = 19, cex = 0.5)
+# terra::plot(u$region_growing, col = rainbow(150))
+# plot(u$local_maximum, add = T, pch = 19, cex = 0.5)
 }
 \references{
 Dalponte, M. and Coomes, D. A. (2016), Tree-centric mapping of forest carbon density from

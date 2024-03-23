@@ -68,7 +68,7 @@ test_that("Rasterize works with a moving window and multiple files",
   #expect_equal(names(chm), "")
   #expect_equal(names(sto), "")
   expect_equal(mean(u[[1]][], na.rm = T), 334.1049, tolerance = 1e-6)
-  expect_equal(mean(u[[2]][], na.rm = T), 334.1218, tolerance = 1e-6)
+  expect_equal(mean(u[[2]][], na.rm = T), 334.116, tolerance = 1e-6)
   expect_equal(sum(is.na(u[[1]][])), 5L)
   expect_equal(sum(is.na(u[[2]][])), 1L)
 })

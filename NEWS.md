@@ -2,6 +2,7 @@
 
 - New: parallelism on multiple files.
 - Doc: new article on the website about parallelism
+- New: `local_maximum_raster` stage to compute local maximum on a raster
 
 # lasR 0.3.4
 

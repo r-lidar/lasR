@@ -178,6 +178,13 @@ bool Pipeline::run_loaded()
 
   for (auto&& stage : pipeline)
   {
+    success = stage->process();
+    if (!success)
+    {
+      last_error = "in '" + stage->get_name() + "' while processing: " + last_error;
+      return false;
+    }
+
     // Some stage process the header. The first stage being a reader, the LASheader, which is
     // initially nullptr, will be initialized by pipeline[0]
     success = stage->process(header);

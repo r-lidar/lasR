@@ -3,16 +3,41 @@
 
 #include <chrono>
 
+LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, LASRalgorithm* algorithm)
+{
+  this->xmin = xmin;
+  this->ymin = ymin;
+  this->xmax = xmax;
+  this->ymax = ymax;
+
+  this->ws = ws;
+  this->min_height = min_height;
+
+  this->use_raster = true;
+
+  this->use_attribute = "Z";
+
+  set_connection(algorithm);
+
+  counter = std::make_shared<unsigned int>(0);
+  unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
+
+  vector = Vector(xmin, ymin, xmax, ymax);
+  vector.set_geometry_type(wkbPoint25D);
+  vector.set_fields_for(Vector::writable::POINTLAS);
+}
+
 LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_attribute)
 {
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
   this->ymax = ymax;
-  this->ofile = ofile;
 
   this->ws = ws;
   this->min_height = min_height;
+
+  this->use_raster = false;
 
   this->use_attribute = use_attribute;
 
@@ -24,8 +49,77 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
   vector.set_fields_for(Vector::writable::POINTLAS);
 }
 
+bool LASRlocalmaximum::process()
+{
+  // Not working on a raster
+  if (!use_raster) return true;
+
+  auto it = connections.begin();
+  LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->second);
+  Raster& raster = p->get_raster();
+
+  // Convert the raster to a LAS
+
+  LASheader lasheader;
+  lasheader.file_source_ID       = 0;
+  lasheader.version_major        = 1;
+  lasheader.version_minor        = 2;
+  lasheader.header_size          = 227;
+  lasheader.offset_to_point_data = 227;
+  lasheader.file_creation_year   = 0;
+  lasheader.file_creation_day    = 0;
+  lasheader.point_data_format    = 0;
+  lasheader.x_scale_factor       = 0.01;
+  lasheader.y_scale_factor       = 0.01;
+  lasheader.z_scale_factor       = 0.01;
+  lasheader.x_offset             = xmin;
+  lasheader.y_offset             = ymin;
+  lasheader.z_offset             = 0;
+  lasheader.number_of_point_records = 0;
+  lasheader.min_x                = xmin;
+  lasheader.min_y                = ymin;
+  lasheader.max_x                = xmax;
+  lasheader.max_y                = ymax;
+  lasheader.point_data_record_length = 20;
+
+  LAS las(&lasheader);
+
+  LASpoint laspoint;
+  laspoint.init(&lasheader, lasheader.point_data_format, lasheader.point_data_record_length, &lasheader);
+
+  float nodata = raster.get_nodata();
+
+  for (int i = 0 ; i < raster.get_ncells() ; i++)
+  {
+    float z = raster.get_value(i);
+
+    if (z != nodata)
+    {
+      double x = raster.x_from_cell(i);
+      double y = raster.y_from_cell(i);
+
+      laspoint.set_x(x);
+      laspoint.set_y(y);
+      laspoint.set_z((double)z);
+
+      las.add_point(laspoint);
+    }
+  }
+
+  // Process the LAS
+
+  use_raster = false; // deactivate to process a LAS
+  LAS* ptr = &las;
+  bool success = process(ptr);
+  use_raster = true;
+
+  return success;
+}
+
 bool LASRlocalmaximum::process(LAS*& las)
 {
+  if (use_raster) return true;
+
   if (!las)
   {
     last_error = "Uninitialized pointer to LAS object"; // # nocov

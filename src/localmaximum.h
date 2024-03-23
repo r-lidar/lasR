@@ -12,11 +12,14 @@
 class LASRlocalmaximum : public LASRalgorithmVector
 {
 public:
+  LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, LASRalgorithm* algorithm);
   LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_sttribute);
+  bool process() override;
   bool process(LAS*& las) override;
   bool write() override;
   void clear(bool last) override;
   double need_buffer() const override { return ws; }
+  bool need_points() const override { return !use_raster; }
   std::string get_name() const override { return "local_maximum"; }
   std::vector<PointLAS>& get_maxima() { return lm; };
   bool is_parallelized() const override { return true; };
@@ -25,6 +28,8 @@ public:
   LASRlocalmaximum* clone() const override { return new LASRlocalmaximum(*this); };
 
 private:
+  bool use_raster;
+
   double ws;
   double min_height;
 

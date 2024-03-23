@@ -3,20 +3,18 @@
 
 #include "GDALdataset.h"
 #include "Grid.h"
+#include "Chunk.h"
 
 class Raster : public Grid, public GDALdataset
 {
 public:
   Raster();
   Raster(double xmin, double ymin, double xmax, double ymax, double res, int layers = 1);
-  //Raster(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols, int layers = 1);
-  //Raster(const Raster& raster);
-  Raster(const Raster& raster, double xmin, double ymin, double xmax, double ymax);
+  Raster(const Raster& raster, const Chunk& chunk);
   void set_value(double x, double y, float value, int layer = 1);
   void set_value(int cell, float value, int layer = 1);
   bool set_nbands(int nbands);
-  void set_chunk(double xmin, double ymin, double xmax, double ymax);
-  void set_chunk_buffer(int buffer);
+  void set_chunk(const Chunk& chunk);
   int get_buffer() const { return buffer; };
   float get_nodata() const { return nodata; };
   float& get_value(double x, double y, int layer = 1);

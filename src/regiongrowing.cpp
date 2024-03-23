@@ -27,17 +27,10 @@ LASRregiongrowing::LASRregiongrowing(double xmin, double ymin, double xmax, doub
   set_connection(algorithm_input_rasters);
   set_connection(algorithm_input_seeds);
 
+  // Initialize the output raster from input raster
   LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(algorithm_input_seeds);
   LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(algorithm_input_rasters);
-
-  // If both are valid pointers. We can modify the underlying raster of the raster stage
-  // to ensure it has a buffer. We need the raster to be buffered in order to perform
-  // a correct segmentation of the regions
-  if (p && q)
-  {
-    q->get_raster().set_chunk_buffer(p->need_buffer());
-    raster = Raster(q->get_raster());
-  }
+  if (p && q)  raster = Raster(q->get_raster());
 }
 
 bool LASRregiongrowing::process(LAS*& las)

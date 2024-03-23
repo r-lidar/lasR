@@ -252,7 +252,7 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 #'
 #' The Local Maximum stage identifies points that are locally maximum. The window size is
 #' fixed and circular. This stage does not modify the point cloud. It produces a derived product
-#' in vector format.
+#' in vector format. The function `local_maximum_raster` applies on a raster instead of the point cloud
 #'
 #' @param ws numeric. Diameter of the moving window used to detect the local maxima in the units of
 #' the input data (usually meters).
@@ -261,6 +261,7 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 #' @param use_attribute character. By default the local maximum is performed on the coordinate Z. Can also be
 #' the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity' but there is
 #' probably no use case for that one.
+#' @param raster LASRalgorithm. A stage that produces a raster.
 #'
 #' @template param-filter
 #' @template param-ofile
@@ -268,15 +269,32 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
 #' read <- reader_las()
-#' lmf <- local_maximum(3)
+#' lmf <- local_maximum(5)
 #' ans <- exec(read + lmf, on = f)
 #' ans
+#'
+#' chm <- rasterize(1, "max")
+#' lmf <- local_maximum_raster(chm, 5)
+#' ans <- exec(read + chm + lmf, on = f)
+#' # terra::plot(ans$rasterize)
+#' # plot(ans$local_maximum, add = T, pch = 19)
 #' @export
+#' @md
 local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z")
 {
   ans <- list(algoname = "local_maximum", ws = ws, min_height = min_height, filter = filter, output = ofile, use_attribute = use_attribute)
   set_lasr_class(ans)
 }
+
+#' @export
+#' @rdname local_maximum
+local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile = tempgpkg())
+{
+  raster = get_stage(raster)
+  ans <- list(algoname = "local_maximum", connect = raster[["uid"]], ws = ws, min_height = min_height, filter = filter, output = ofile)
+  set_lasr_class(ans)
+}
+
 
 # ===== N ====
 
@@ -574,10 +592,14 @@ reader_las_rectangles = function(xmin, ymin, xmax, ymax, filter = "", ...)
 #'
 #' reader <- reader_las(filter = keep_first())
 #' chm <- rasterize(1, "max")
-#' lmx <- local_maximum(5)
+#' lmx <- local_maximum_raster(chm, 5)
 #' tree <- region_growing(chm, lmx, max_cr = 10)
 #' u <- exec(reader + chm + lmx + tree, on = f)
 #'
+#' # terra::plot(u$rasterize)
+#' # plot(u$local_maximum, add = T, pch = 19, cex = 0.5)
+#' # terra::plot(u$region_growing, col = rainbow(150))
+#' # plot(u$local_maximum, add = T, pch = 19, cex = 0.5)
 #' @md
 region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.55, max_cr = 20, ofile = temptif())
 {

@@ -218,9 +218,31 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     {
       double ws = get_element_as_double(stage, "ws");
       double min_height = get_element_as_double(stage, "min_height");
-      std::string use_attribute = get_element_as_string(stage, "use_attribute");
-      auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, use_attribute);
-      pipeline.push_back(std::move(v));
+
+      if (!contains_element(stage, "connect"))
+      {
+        std::string use_attribute = get_element_as_string(stage, "use_attribute");
+        auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, use_attribute);
+        pipeline.push_back(std::move(v));
+      }
+      else
+      {
+        std::string uid = get_element_as_string(stage, "connect");
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
+
+        LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->get());
+        if (p)
+        {
+          auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, p);
+          pipeline.push_back(std::move(v));
+        }
+        else
+        {
+          last_error = "Incompatible stage combination for local_maximum"; // # nocov
+          return false; // # nocov
+        }
+      }
     }
     else if (name == "summarise")
     {

@@ -2,6 +2,7 @@
 % Please edit documentation in R/stages.R
 \name{local_maximum}
 \alias{local_maximum}
+\alias{local_maximum_raster}
 \title{Local Maximum}
 \usage{
 local_maximum(
@@ -10,6 +11,14 @@ local_maximum(
   filter = "",
   ofile = tempgpkg(),
   use_attribute = "Z"
+)
+
+local_maximum_raster(
+  raster,
+  ws,
+  min_height = 2,
+  filter = "",
+  ofile = tempgpkg()
 )
 }
 \arguments{
@@ -33,16 +42,24 @@ intermediate stage.}
 \item{use_attribute}{character. By default the local maximum is performed on the coordinate Z. Can also be
 the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity' but there is
 probably no use case for that one.}
+
+\item{raster}{LASRalgorithm. A stage that produces a raster.}
 }
 \description{
 The Local Maximum stage identifies points that are locally maximum. The window size is
 fixed and circular. This stage does not modify the point cloud. It produces a derived product
-in vector format.
+in vector format. The function \code{local_maximum_raster} applies on a raster instead of the point cloud
 }
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package = "lasR")
 read <- reader_las()
-lmf <- local_maximum(3)
+lmf <- local_maximum(5)
 ans <- exec(read + lmf, on = f)
 ans
+
+chm <- rasterize(1, "max")
+lmf <- local_maximum_raster(chm, 5)
+ans <- exec(read + chm + lmf, on = f)
+# terra::plot(ans$rasterize)
+# plot(ans$local_maximum, add = T, pch = 19)
 }
