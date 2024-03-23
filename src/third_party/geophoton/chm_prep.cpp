@@ -22,8 +22,8 @@
 #include "chm_prep.h"
 #include "Rcompatibility.h"
 
-#include <stdlib.h>
-#include <math.h>
+#include <cstdlib>
+#include <cmath>
 
 namespace geophoton
 {
