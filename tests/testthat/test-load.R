@@ -4,11 +4,11 @@ test_that("load raster works",
   f = paste0(system.file(package="lasR"), "/extdata/bcts/")
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
   rr =  load_raster(r)
-  pipeline <- rr + pit_fill(rr, ofile = "/tmp/pitfill.tif")
+  pipeline <- rr + pit_fill(rr)
   ans1 = exec(pipeline, on = f, verbose = F)
 
   rr = chm(5)
-  pipeline <- rr + pit_fill(rr, ofile = "/tmp/pitfill2.tif")
+  pipeline <- rr + pit_fill(rr)
   ans = exec(pipeline, on = f, verbose = F)
   ans2 = ans[[2]]
 

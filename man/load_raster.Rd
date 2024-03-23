@@ -26,6 +26,6 @@ f <- list.files(f, pattern = "(?i)\\\\.la(s|z)$", full.names = TRUE)
 # The internal engine is capable of knowing that, and the LAS files won't actually be
 # read. Yet the raster r will be processed by chunk following the LAS file pattern.
 rr <- load_raster(r)
-pipeline <- rr + pit_fill(rr, ofile = "/tmp/pitfill.tif")
+pipeline <- rr + pit_fill(rr)
 ans <- exec(pipeline, on = f, verbose = FALSE)
 }
