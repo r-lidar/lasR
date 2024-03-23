@@ -7,6 +7,7 @@
 
 - Fix: #16 `pit_fill` producing corrupted output
 - Fix: `pit_fill` was not respecting the parameters given by the user
+- Fix: `pit_fill` in combination with `rasterize("max")` was not working properly
 
 # lasR 0.3.3
 

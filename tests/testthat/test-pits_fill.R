@@ -1,3 +1,23 @@
+test_that("pits filling works (no streaming)",
+{
+  f <- system.file("extdata", "MixedConifer.las", package="lasR")
+
+  chm = chm()
+  pit = pit_fill(chm)
+
+  ans <- exec(chm + pit, on = f)
+  chm <- ans[[1]]
+  sto <- ans[[2]]
+
+  expect_s4_class(sto, "SpatRaster")
+  expect_equal(terra::res(sto), c(1,1))
+  expect_equal(dim(sto), c(90L,90L,1L))
+  expect_equal(mean(sto[], na.rm = T), 15.1813, tolerance = 1e-6)
+  expect_equal(sum(is.na(sto[])), 557L)
+  expect_equal(unname(unlist(sto[c(1000L,5000L,10000L)])), c(5.9, 16.98625, NA_real_),  tolerance = 1e-6)
+})
+
+
 test_that("pits filling works with multiple files",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
@@ -31,3 +51,5 @@ test_that("pits filling works with multiple files",
   expect_equal(unname(unlist(chm[c(1000L,5000L,10000L)])), c(349.4998, 331.9043, 341.8822),  tolerance = 1e-6)
   expect_equal(unname(unlist(sto[c(1000L,5000L,10000L)])), c(NA_real_, 331.9043, 344.8956),  tolerance = 1e-6)
 })
+
+
