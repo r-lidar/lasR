@@ -1,8 +1,11 @@
 # las 0.4.0
 
-- New: parallelism on multiple files.
-- Doc: new article on the website about parallelism
-- New: `local_maximum_raster` stage to compute local maximum on a raster
+- New: parallelism on multiple files. See `?multithreading`
+- New: `local_maximum_raster()` stage to compute local maximum on a raster
+- New argument `with` in `exec` to pass processing options that should be preferred over direct naming.
+- New function `set_exec_options()` to assign global processing options and override arguments potentially hard coded in `exec()`
+- Doc: new article on the website about parallelism for an illustrated version of `?multithreading`
+- Doc: improve documentation about processing options in `?exec` and `?set_exec_options`
 
 # lasR 0.3.4
 
