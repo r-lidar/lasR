@@ -256,14 +256,6 @@ bool LASRalgorithmRaster::write()
   return success;
 }
 
-/*void LASRalgorithmRaster::clear(bool last)
-{
-  if (!merged || last)
-  {
-    raster.close();
-  }
-}*/
-
 /* ==============
  *  VECTOR
  * ============= */

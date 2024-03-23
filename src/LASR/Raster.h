@@ -10,7 +10,9 @@ class Raster : public Grid, public GDALdataset
 public:
   Raster();
   Raster(double xmin, double ymin, double xmax, double ymax, double res, int layers = 1);
+  Raster(const Raster& raster);
   Raster(const Raster& raster, const Chunk& chunk);
+  bool read_file();
   void set_value(double x, double y, float value, int layer = 1);
   void set_value(int cell, float value, int layer = 1);
   bool set_nbands(int nbands);
@@ -19,6 +21,7 @@ public:
   float get_nodata() const { return nodata; };
   float& get_value(double x, double y, int layer = 1);
   float& get_value(int cell, int layer = 1);
+  bool get_chunk(const Chunk& chunk, int band_index);
   const std::vector<float>& get_data() const { return data; };
   bool write();
   void show() const;

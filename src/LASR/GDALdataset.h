@@ -15,6 +15,7 @@ public:
   // GDALdataset(const GDALdataset& other);
   //~GDALdataset();
   bool create_file();
+  bool read_file();
   void set_file(std::string file) { this->file = file; }
   bool set_raster(double xmin, double ymax, int ncols, int nrows, double res);
   bool set_vector(OGRwkbGeometryType geometry_type);

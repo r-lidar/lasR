@@ -4,6 +4,7 @@
 #include "addattribute.h"
 #include "boundaries.h"
 #include "filter.h"
+#include "loadraster.h"
 #include "localmaximum.h"
 #include "noiseivf.h"
 #include "nothing.h"
@@ -209,6 +210,13 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
         }
       }
     }
+    else if (name == "load_raster")
+    {
+      std::string file = get_element_as_string(stage, "file");
+      int band = get_element_as_int(stage, "band");
+      auto v = std::make_unique<LASRloadraster>(file, band);
+      pipeline.push_back(std::move(v));
+    }
     else if (name == "filter")
     {
       auto v = std::make_unique<LASRfilter>();
@@ -312,7 +320,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
       if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
-      LASRrasterize * p = dynamic_cast<LASRrasterize*>(it->get());
+      LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->get());
       if (p)
       {
         auto v = std::make_unique<LASRpitfill>(xmin, ymin, xmax, ymax, lap_size, thr_lap, thr_spk, med_size, dil_radius, p);
@@ -320,7 +328,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       }
       else
       {
-        last_error = "Incompatible stage combination for 'rasterize'"; // # nocov
+        last_error = "Incompatible stage combination for 'pit_fill'"; // # nocov
         return false; // # nocov
       }
     }

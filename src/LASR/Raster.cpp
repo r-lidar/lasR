@@ -3,7 +3,11 @@
 
 #include "Rcompatibility.h"
 
+#include <cmath>
+
 // Default constructor creates a Raster from (0,0) to (0,0) with a resolution of 0
+// GDALdataset is NOT initialized.
+// data is NOT initialized
 Raster::Raster() : Grid(0, 0, 0, 0, 0, 0), GDALdataset()
 {
   extent[0] = this->xmin;
@@ -18,6 +22,8 @@ Raster::Raster() : Grid(0, 0, 0, 0, 0, 0), GDALdataset()
 }
 
 // Constructor from bounding box and resolution. Can assign a number of bands.
+// GDALdataset is NOT initialized.
+// data is NOT initialized
 Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, int layers) : Grid (xmin, ymin, xmax, ymax, res), GDALdataset()
 {
   extent[0] = this->xmin;
@@ -32,7 +38,24 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, i
   nodata = NA_F32_RASTER;
 }
 
-// Copy constructor with Chunk. Creates a raster identical to the input
+// Copy constructor creates a Raster identical to the input but the underlying GDALDataset
+// is not initialized and there is no file name associated to the new raster.
+Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset()
+{
+  extent[0] = this->xmin;
+  extent[1] = this->ymin;
+  extent[2] = this->xmax;
+  extent[3] = this->ymax;
+
+  GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
+  buffer = raster.buffer;
+  set_nbands(raster.nBands);
+  band_names = raster.band_names;
+  nodata = raster.nodata;
+  oSRS = raster.oSRS;
+}
+
+// Copy constructor with bounding box. Creates a raster identical to the input
 // (same number of bands, crs, band names, etc.) but with an extent that is different.
 Raster::Raster(const Raster& raster, const Chunk& chunk) : Grid (chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax, raster.get_xres()), GDALdataset()
 {
@@ -48,6 +71,42 @@ Raster::Raster(const Raster& raster, const Chunk& chunk) : Grid (chunk.xmin, chu
   oSRS = raster.oSRS;
 
   set_chunk(chunk); // #15 resize the grid including the buffer
+}
+
+bool Raster::read_file()
+{
+  if (!GDALdataset::read_file())
+  {
+    return false;
+  }
+
+  if (!is_raster())
+  {
+    last_error = "This dataset is not a raster";
+    return false;
+  }
+
+  // Multiple band reading not supported yet
+  nBands = 1;
+
+  // Compute Grid members
+  ncols = nXsize;
+  nrows = nYsize;
+  ncells = ncols*nrows*ncells;
+  xres = geo_transform[1];
+  yres = geo_transform[5]*-1;
+  xmin = geo_transform[0];
+  ymax = geo_transform[3];
+  xmax = xmin + nXsize * geo_transform[1];
+  ymin = ymax + nYsize * geo_transform[5];
+
+  // Compute Raster members
+  extent[0] = xmin;
+  extent[1] = ymin;
+  extent[2] = xmax;
+  extent[3] = ymax;
+
+  return true;
 }
 
 float& Raster::get_value(double x, double y, int layer)
@@ -105,18 +164,109 @@ bool Raster::set_nbands(int nbands)
 
 void Raster::set_chunk(const Chunk& chunk)
 {
-  buffer = std::ceil(chunk.buffer/xres);
+  buffer = std::ceil(chunk.buffer/xres); // buffer in pixel
 
-  xmin = ROUNDANY(chunk.xmin - buffer*xres - 0.5 * xres, xres) ;
-  ymin = ROUNDANY(chunk.ymin - buffer*yres - 0.5 * xres, xres) ;
-  xmax = ROUNDANY(chunk.xmax + buffer*xres - 0.5 * xres, xres) + xres;
-  ymax = ROUNDANY(chunk.ymax + buffer*yres - 0.5 * yres, yres) + yres;
+  //print("Chunk %.1lf %.1lf %.1lf %.1lf (+%.1lf m)\n", chunk.xmin, chunk.xmax, chunk.ymin, chunk.ymax, chunk.buffer);
+
+  // Adjust the grid to the chunk
+  xmin = ROUNDANY(chunk.xmin - 0.5 * xres, xres) ;
+  ymin = ROUNDANY(chunk.ymin - 0.5 * xres, xres) ;
+  xmax = ROUNDANY(chunk.xmax - 0.5 * xres, xres) + xres;
+  ymax = ROUNDANY(chunk.ymax - 0.5 * yres, yres) + yres;
+
+  //print("Raster %.1lf %.1lf %.1lf %.1lf (+%d pix)\n", xmin, xmax, ymin, ymax, buffer);
+
+  // Add a buffer
+  xmin -= buffer*xres;
+  ymin -= buffer*xres;
+  xmax += buffer*xres;
+  ymax += buffer*xres;
+
+  //print("Raster %.1lf %.1lf %.1lf %.1lf (+%d pix)\n\n", xmin, xmax, ymin, ymax, buffer);
 
   ncols = std::round((xmax-xmin)/xres);
   nrows = std::round((ymax-ymin)/yres);
   ncells = ncols*nrows;
 
   data.clear();
+}
+
+bool Raster::get_chunk(const Chunk& chunk, int band_index)
+{
+  if (!dataset)
+  {
+    last_error = "Internal error: cannot get a raster chunk from uninitialized GDALDataset"; // nocov
+    return false; // nocov
+  }
+
+  if (dataset->GetRasterCount() > band_index)
+  {
+    last_error = "Cannot read this band that is beyond the number of bands of this dataset";
+    return false;
+  }
+
+  // Compute the size and number of cells of this chunk. Initialize the grid for this chunk.
+  //double extended = buffer*xres; // buffer is given in pixel for a raster
+  set_chunk(chunk);
+
+  /*
+   The query may be outside the actual raster on disk for two reasons:
+    1. A buffer: is requested but we are on the edges of the raster.
+    2. User error: and the point cloud is larger than the raster leading to a query outside the raster
+       GDAL does not support querying a chunk that does not fit the underlying data. But in lasR
+       we MUST NOT fail. Instead, everything that is beyond the raster must be loaded with NAs
+   */
+  double minx = this->xmin;
+  double miny = this->ymin;
+  double maxx = this->xmax;
+  double maxy = this->ymax;
+  if (minx < extent[0]) minx = extent[0];
+  if (miny < extent[1]) miny = extent[1];
+  if (maxx > extent[2]) maxx = extent[2];
+  if (maxy > extent[3]) maxy = extent[3];
+  int ncols = std::round((maxx-minx)/xres);
+  int nrows = std::round((maxy-miny)/yres);
+  int ncells = ncols*nrows;
+
+  // Read raster data
+  GDALRasterBand *band = dataset->GetRasterBand(band_index);
+  eType = band->GetRasterDataType();
+  nodata = band->GetNoDataValue();
+
+  // We usually work only with a chunk. We need to compute the xy offsets considering that
+  // we only have partial data in memory
+  int xoffset = std::floor((minx - geo_transform[0]) / geo_transform[1]);
+  int yoffset = std::floor((maxy - geo_transform[3]) / geo_transform[5]);
+
+  // Read raster data
+  void* gdal_buffer = CPLMalloc(ncells*sizeof(float));
+  CPLErr err = band->RasterIO(GF_Read, xoffset, yoffset, ncols, nrows, gdal_buffer, ncols, nrows, GDT_Float32, 0, 0);
+
+  if (err != CE_None)
+  {
+    last_error = std::string(CPLGetLastErrorMsg()); // # nocov
+    return false;
+  }
+
+  // This is the grid corresponding the data actually read
+  Grid gdal_grid(minx, miny, maxx, maxy, nrows, ncols);
+
+  // Allocate memory for the actual raster data with potentially more cells than what was actually read
+  data.resize(this->ncells);
+  std::fill(data.begin(), data.end(), nodata);
+
+  // Copy the data read from the raster to the actual chunk by celll
+  for (int i = 0 ; i < ncols*nrows ; i++)
+  {
+    double x = gdal_grid.x_from_cell(i);
+    double y = gdal_grid.y_from_cell(i);
+    int cell = cell_from_xy(x,y);
+    if (cell != -1) data[cell] = ((float*)gdal_buffer)[i];
+  }
+
+  CPLFree(gdal_buffer);
+
+  return true;
 }
 
 bool Raster::write()

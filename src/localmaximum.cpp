@@ -93,17 +93,16 @@ bool LASRlocalmaximum::process()
   {
     float z = raster.get_value(i);
 
-    if (z != nodata)
-    {
-      double x = raster.x_from_cell(i);
-      double y = raster.y_from_cell(i);
+    if (std::isnan(z) || z == nodata) continue;
 
-      laspoint.set_x(x);
-      laspoint.set_y(y);
-      laspoint.set_z((double)z);
+    double x = raster.x_from_cell(i);
+    double y = raster.y_from_cell(i);
 
-      las.add_point(laspoint);
-    }
+    laspoint.set_x(x);
+    laspoint.set_y(y);
+    laspoint.set_z((double)z);
+
+    las.add_point(laspoint);
   }
 
   // Process the LAS

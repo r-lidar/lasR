@@ -211,6 +211,52 @@ bool GDALdataset::create_file()
   return true;
 }
 
+bool GDALdataset::read_file()
+{
+  if (!check_dataset_is_not_initialized())
+  {
+    return false; // # nocov
+  }
+
+  initialize_gdal();
+
+  // Open the raster dataset
+  dataset.reset((GDALDataset*)GDALOpen(file.c_str(), GA_ReadOnly));
+  if (dataset == nullptr)
+  {
+    last_error = "Error: Unable to open raster dataset.";
+    return false;
+  }
+
+  // Get CRS information
+  const char *wkt = dataset->GetProjectionRef();
+  if (wkt != nullptr && strlen(wkt) > 0)
+  {
+    oSRS.importFromWkt(wkt);
+  }
+
+  // Check if the dataset if a raster or a vector
+  nBands = dataset->GetRasterCount();
+  if (nBands == 0)
+  {
+    last_error = "Only raster are supported in read mode";
+    return false;
+  }
+  else
+  {
+    // Get raster information
+    nXsize = dataset->GetRasterXSize();
+    nYsize = dataset->GetRasterYSize();
+    nBands = dataset->GetRasterCount();
+
+    // Get geotransform information
+    dataset->GetGeoTransform(geo_transform);
+
+    dType = GDALDatasetType::RASTER;
+  }
+
+  return true;
+}
 bool GDALdataset::set_band_name(std::string name, int band)
 {
   if (!check_dataset_is_raster())

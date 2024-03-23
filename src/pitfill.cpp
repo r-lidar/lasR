@@ -21,8 +21,9 @@ LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int
   if (p) raster = Raster(p->get_raster());
 }
 
-bool LASRpitfill::process(LAS*& las)
+bool LASRpitfill::process()
 {
+
   if (connections.empty())
   {
     last_error = "Unitialized pointer to LASRalgorithm"; // # nocov
@@ -43,6 +44,12 @@ bool LASRpitfill::process(LAS*& las)
   const auto geom = rin.get_data();
   int sncol = rin.get_ncols();
   int snlin = rin.get_nrows();
+
+  if (geom.size() != sncol*snlin)
+  {
+    last_error = "Internal error: wrong data size. Please report."; // # nocov
+    return false; // # nocov
+  }
 
   float* ans = geophoton::chm_prep(&geom[0], snlin, sncol, lap_size, thr_lap, thr_spk, med_size, dil_radius, rin.get_nodata());
 

@@ -34,7 +34,7 @@ float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr
   int mini, maxi, minj, maxj;
   unsigned char *hole_map2;
   long int n;
-  float minz = 999999.0;
+  float minz = std::numeric_limits<float>::max();
 
   // Set the min and max i and j.
   minj=0;
@@ -47,9 +47,14 @@ float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr
     return NULL;  // # nocov
   }
 
+  // Replace nodata by -99999.0 and find the global min. Later restore nodata for data < minz
   for(n=0;n<snlin*sncol;n++) {
-    if (*(geom+n) != nodata && *(geom+n) < minz) minz = *(geom+n);
-    *(image+n)=*(geom+n);
+    if (std::isnan(*(geom+n)) || *(geom+n) == nodata) {
+      *(image+n)= -99999.0f;
+    } else {
+      if( *(geom+n) < minz) minz = *(geom+n);
+      *(image+n)=*(geom+n);
+    }
   }
 
   /* Filter slope is hardcoded to 5.0 below as this value seems to work well for all situations. */
@@ -90,6 +95,7 @@ float *chm_prep(const float *geom, int snlin, int sncol, int lap_size, float thr
 
   //printf("  Filtering pass completed.\n");
 
+  // Restor nodata
   for(n=0;n<snlin*sncol;n++) {
     if (*(out_scene+n) < minz) {
       *(out_scene+n)=nodata;

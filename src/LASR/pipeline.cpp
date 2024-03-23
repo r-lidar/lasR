@@ -178,6 +178,10 @@ bool Pipeline::run_loaded()
 
   for (auto&& stage : pipeline)
   {
+    if (verbose) print("Stage: %s\n", stage->get_name().c_str());
+
+    // Some stages need no input, they are connected another stage
+    // (such as pit_fill which is connected to a raster stage and does not need any point)
     success = stage->process();
     if (!success)
     {
@@ -185,7 +189,7 @@ bool Pipeline::run_loaded()
       return false;
     }
 
-    // Some stage process the header. The first stage being a reader, the LASheader, which is
+    // Some stages process the header. The first stage being a reader, the LASheader, which is
     // initially nullptr, will be initialized by pipeline[0]
     success = stage->process(header);
     if (!success)
@@ -207,9 +211,9 @@ bool Pipeline::run_loaded()
     // Some stages need the header to get initialized (write_las is the only one)
     stage->set_header(header);
 
-    // If the pipeline is not streamable we need an object that stores and spatially index all the point
-    // Each stage process the LAS. The first stage being a reader, the LAS, which is
-    // initially nullptr, will be initialized by pipeline[0]
+    // The pipeline is not streamable we need an object that stores and spatially index all the points
+    // Each stage process the LAS. The first stage being a reader, the LAS, which is initially nullptr,
+    // will be initialized by pipeline[0] (or pipeline[1] if there is a write_lax stage)
     if (read_payload)
     {
       success = stage->process(las);

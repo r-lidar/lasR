@@ -33,11 +33,11 @@ public:
   LASRalgorithm();
   LASRalgorithm(const LASRalgorithm& other); // copy constructor is for multi-threading
   virtual ~LASRalgorithm() = 0;
+  virtual bool process() { return true; };
   virtual bool process(LASheader*& header) { return true; };
   virtual bool process(LASpoint*& p) { return true; };
   virtual bool process(LAS*& las) { return true; };
   virtual bool process(LAScatalog*& las) { return true; };
-  virtual bool process() { return true; };
   virtual bool write() { return true; };
   virtual void clear(bool last = false) { return; };
   virtual bool set_chunk(const Chunk& chunk);

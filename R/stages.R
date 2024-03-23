@@ -78,7 +78,7 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
   }
 
   ans <- list(algoname = "aggregate", res = res_raster, nmetrics = nmetrics, window = res_window, call = call, filter = filter, output = ofile, env = env)
-  set_lasr_class(ans)
+  set_lasr_class(ans, raster = TRUE)
 }
 
 # ===== C =====
@@ -243,10 +243,37 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
     ans <- list(algoname = "hulls", output = ofile)
   }
 
-  set_lasr_class(ans)
+  set_lasr_class(ans, vector = TRUE)
 }
 
 # ===== L =====
+#' Load a raster for later use
+#'
+#' Load a raster from a disk file for later use. For example, load a DTM to feed the \link{transform_with}
+#' stage or load a CHM to feed the \link{pit_fill} stage. The raster is never loaded entirely. Internally, only
+#' chunks corresponding to the currently processed point cloud are loaded. Be careful: internally, the raster
+#' is read as float no matter the original datatype.
+#'
+#' @param file character. Path to a raster file.
+#' @param band integer. The band to load. It reads and loads only a single band.
+#' @export
+#' @examples
+#' r <- system.file("extdata/bcts", "bcts_dsm_5m.tif", package = "lasR")
+#' f <- paste0(system.file(package = "lasR"), "/extdata/bcts/")
+#' f <- list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+#'
+#' # In the following pipeline, neither load_raster nor pit_fill process any points.
+#' # The internal engine is capable of knowing that, and the LAS files won't actually be
+#' # read. Yet the raster r will be processed by chunk following the LAS file pattern.
+#' rr <- load_raster(r)
+#' pipeline <- rr + pit_fill(rr, ofile = "/tmp/pitfill.tif")
+#' ans <- exec(pipeline, on = f, verbose = FALSE)
+load_raster = function(file, band = 1L)
+{
+  file <- normalizePath(file)
+  ans <- list(algoname = "load_raster", file = file, band = band)
+  set_lasr_class(ans, raster = TRUE)
+}
 
 #' Local Maximum
 #'
@@ -283,7 +310,7 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z")
 {
   ans <- list(algoname = "local_maximum", ws = ws, min_height = min_height, filter = filter, output = ofile, use_attribute = use_attribute)
-  set_lasr_class(ans)
+  set_lasr_class(ans, vector = TRUE)
 }
 
 #' @export
@@ -292,7 +319,7 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
 {
   raster = get_stage(raster)
   ans <- list(algoname = "local_maximum", connect = raster[["uid"]], ws = ws, min_height = min_height, filter = filter, output = ofile)
-  set_lasr_class(ans)
+  set_lasr_class(ans, vector = TRUE)
 }
 
 
@@ -343,10 +370,10 @@ nothing = function(read = FALSE, stream = FALSE)
 pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_size = 3L, dil_radius = 0L, ofile = temptif())
 {
   raster = get_stage(raster)
-  if (raster$algoname != "rasterize") stop("the algorithm must be 'rasterize'")  # nocov
+  if (!methods::is(raster, "LASRraster")) stop("'raster' must be a raster stage")  # nocov
 
   ans <- list(algoname = "pit_fill", connect = raster[["uid"]],  lap_size = lap_size, thr_lap = thr_lap, thr_spk = thr_spk, med_size = med_size, dil_radius = dil_radius, output = ofile)
-  set_lasr_class(ans)
+  set_lasr_class(ans, raster = TRUE)
 }
 
 # ===== R =====
@@ -468,7 +495,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
   {
     stop("Invalid operators") # nocov
   }
-  set_lasr_class(ans)
+  set_lasr_class(ans, raster = TRUE)
 }
 
 #' Initialize the pipeline
@@ -606,7 +633,7 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
   raster <- get_stage(raster)
   seeds <- get_stage(seeds)
   ans <- list(algoname = "region_growing", connect1 = seeds[["uid"]], connect2 = raster[["uid"]], th_tree = th_tree, th_seed = th_seed, th_cr = th_cr, max_cr = max_cr, output = ofile)
-  set_lasr_class(ans)
+  set_lasr_class(ans, raster = TRUE)
 }
 
 # ==== S =====
@@ -692,7 +719,7 @@ summarise = function(zwbin = 2, iwbin = 25, filter = "")
 triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z")
 {
   ans <- list(algoname = "triangulate", max_edge = max_edge, filter = filter, output = ofile, use_attribute = use_attribute)
-  set_lasr_class(ans)
+  set_lasr_class(ans, vector = TRUE)
 }
 
 #' Transform a point cloud using another stage
@@ -785,7 +812,7 @@ generate_uid <- function(size = 6)
   paste(sample(c(letters, LETTERS, as.character(0:9)), size, replace = TRUE), collapse = "")
 }
 
-set_lasr_class = function(x)
+set_lasr_class = function(x, raster = FALSE, vector = FALSE)
 {
   x[["uid"]] = generate_uid()
 
@@ -796,7 +823,11 @@ set_lasr_class = function(x)
 
   x[["output"]] = normalizePath(x[["output"]], mustWork = FALSE)
 
-  class(x) <- "LASRalgorithm"
+  cl <- "LASRalgorithm"
+  if (raster) cl <- c(cl, "LASRraster")
+  if (vector) cl <- c(cl, "LASRvector")
+
+  class(x) <- cl
   x = list(x)
   class(x) <- "LASRpipeline"
   return(x)
