@@ -26,12 +26,12 @@ Vector::Vector(double xmin, double ymin, double xmax, double ymax, int nattr) : 
   GDALdataset::set_vector(wkbUnknown);
 }
 
-Vector::Vector(const Vector& vector, double xmin, double ymin, double xmax, double ymax) : GDALdataset()
+Vector::Vector(const Vector& vector, const Chunk& chunk) : GDALdataset()
 {
-  extent[0] = xmin;
-  extent[1] = ymin;
-  extent[2] = xmax;
-  extent[3] = ymax;
+  extent[0] = chunk.xmin;
+  extent[1] = chunk.ymin;
+  extent[2] = chunk.xmax;
+  extent[3] = chunk.ymax;
 
   nattr = vector.nattr;
   eGType = vector.eGType;
@@ -274,10 +274,10 @@ bool Vector::write(const std::vector<PolygonXY>& poly)
   return true;
 }
 
-void Vector::set_chunk(double xmin, double ymin, double xmax, double ymax)
+void Vector::set_chunk(const Chunk& chunk)
 {
-  extent[0] = xmin;
-  extent[1] = ymin;
-  extent[2] = xmax;
-  extent[3] = ymax;
+  extent[0] = chunk.xmin;
+  extent[1] = chunk.ymin;
+  extent[2] = chunk.xmax;
+  extent[3] = chunk.ymax;
 }

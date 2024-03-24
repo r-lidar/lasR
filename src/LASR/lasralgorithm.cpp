@@ -285,9 +285,9 @@ bool LASRalgorithmVector::set_chunk(const Chunk& chunk)
   //    and create a new one with the same properties (CRS, number of attributes, etc...).
   //    Destroying a vector closes the underlying file.
   if (merged)
-    vector.set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
+    vector.set_chunk(chunk);
   else
-    vector = Vector(vector, chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
+    vector = Vector(vector, chunk);
 
   return true;
 }
