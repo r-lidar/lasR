@@ -1,9 +1,9 @@
 #ifndef LASRWRITEVPC_H
 #define LASRWRITEVPC_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
-class LASRvpcwriter: public LASRalgorithm
+class LASRvpcwriter: public Stage
 {
 public:
   bool process(LAScatalog*& p) override;

@@ -1,13 +1,13 @@
 #ifndef BOUNDARIES_H
 #define BOUNDARIES_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 #include "Vector.h"
 
-class LASRboundaries : public LASRalgorithmVector
+class LASRboundaries : public StageVector
 {
 public:
-  LASRboundaries(double xmin, double ymin, double xmax, double ymax, LASRalgorithm* algorithm);
+  LASRboundaries(double xmin, double ymin, double xmax, double ymax, Stage* algorithm);
   bool process(LASheader*& header) override;
   bool process(LAS*& las) override;
   void clear(bool last) override;

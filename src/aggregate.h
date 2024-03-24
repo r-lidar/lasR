@@ -3,10 +3,10 @@
 
 #ifdef USING_R
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 #include "GridPartition.h" // Must create a file Grouper
 
-class LASRaggregate: public LASRalgorithmRaster
+class LASRaggregate: public StageRaster
 {
 public:
   LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, int nmetrics, double window, SEXP call, SEXP env);

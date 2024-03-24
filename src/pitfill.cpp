@@ -1,7 +1,7 @@
 #include "pitfill.h"
 #include "geophoton/chm_prep.h"
 
-LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int lap_size, float thr_lap, float thr_spk, int med_size, float dil_radius, LASRalgorithm* algorithm)
+LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int lap_size, float thr_lap, float thr_spk, int med_size, float dil_radius, Stage* algorithm)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -17,7 +17,7 @@ LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int
   this->dil_radius = dil_radius;
 
   // Initialize the output raster from input raster
-  LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(algorithm);
+  StageRaster* p = dynamic_cast<StageRaster*>(algorithm);
   if (p) raster = Raster(p->get_raster());
 }
 
@@ -26,17 +26,17 @@ bool LASRpitfill::process()
 
   if (connections.empty())
   {
-    last_error = "Unitialized pointer to LASRalgorithm"; // # nocov
+    last_error = "Unitialized pointer to Stage"; // # nocov
     return false; // # nocov
   }
 
   // 'connections' contains a single stage that is supposed to be a raster stage
   // This is the only supported stage as of feb 2024
   auto it = connections.begin();
-  LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->second);
+  StageRaster* p = dynamic_cast<StageRaster*>(it->second);
   if (!p)
   {
-    last_error = "Invalid pointer dynamic cast. Expecting a pointer to LASRalgorithmRaster"; // # nocov
+    last_error = "Invalid pointer dynamic cast. Expecting a pointer to StageRaster"; // # nocov
     return false; // # nocov
   }
 

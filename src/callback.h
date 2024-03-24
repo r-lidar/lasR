@@ -3,10 +3,10 @@
 
 #ifdef USING_R
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 #include <vector>
 
-class LASRcallback : public LASRalgorithm
+class LASRcallback : public Stage
 {
 public:
   LASRcallback(double xmin, double ymin, double xmax, double ymax, std::string select, SEXP fun, SEXP args, bool modify, bool drop_buffer);
@@ -17,7 +17,7 @@ public:
 
   // multi-threading
   LASRcallback* clone() const override { return new LASRcallback(*this); };
-  void merge(const LASRalgorithm* other) override;
+  void merge(const Stage* other) override;
   void sort(const std::vector<int>& order) override;
 
 private:

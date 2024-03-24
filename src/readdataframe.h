@@ -1,11 +1,11 @@
 #ifndef LASRREADATAFRAME_H
 #define LASRREADATAFRAME_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
 class LASheader;
 
-class LASRdataframereader: public LASRalgorithm
+class LASRdataframereader: public Stage
 {
 public:
   LASRdataframereader(double xmin, double ymin, double xmax, double ymax, const SEXP dataframe, const std::vector<double>& accuracy, const std::string& wkt);

@@ -1,9 +1,9 @@
 #ifndef LOADRASTER_H
 #define LOADRASTER_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
-class LASRloadraster : public LASRalgorithmRaster
+class LASRloadraster : public StageRaster
 {
 public:
   LASRloadraster(const std::string& file, int band);

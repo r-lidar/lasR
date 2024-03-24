@@ -1,7 +1,7 @@
 #ifndef LASRLMF_H
 #define LASRLMF_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 #include "Vector.h"
 
 #include <inttypes.h>
@@ -9,10 +9,10 @@
 #include <unordered_map>
 #include <memory>
 
-class LASRlocalmaximum : public LASRalgorithmVector
+class LASRlocalmaximum : public StageVector
 {
 public:
-  LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, LASRalgorithm* algorithm);
+  LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, Stage* algorithm);
   LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_sttribute);
   bool process() override;
   bool process(LAS*& las) override;

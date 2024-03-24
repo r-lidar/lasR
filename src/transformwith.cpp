@@ -2,7 +2,7 @@
 #include "triangulate.h"
 #include "NA.h"
 
-LASRtransformwith::LASRtransformwith(double xmin, double ymin, double xmax, double ymax, LASRalgorithm* algorithm, std::string op, std::string attribute)
+LASRtransformwith::LASRtransformwith(double xmin, double ymin, double xmax, double ymax, Stage* algorithm, std::string op, std::string attribute)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -21,7 +21,7 @@ bool LASRtransformwith::process(LAS*& las)
 {
   if (connections.empty())
   {
-    last_error = "unitialized pointer to LASRalgorithm"; // # nocov
+    last_error = "unitialized pointer to Stage"; // # nocov
     return false; // # nocov
   }
 
@@ -29,7 +29,7 @@ bool LASRtransformwith::process(LAS*& las)
   // or a raster stage. This is the only two supported stage as of feb 2024
   auto it = connections.begin();
   LASRtriangulate* triangulation = dynamic_cast<LASRtriangulate*>(it->second);
-  LASRalgorithmRaster* rasterization = dynamic_cast<LASRalgorithmRaster*>(it->second);
+  StageRaster* rasterization = dynamic_cast<StageRaster*>(it->second);
 
   // The stage is neither a triangulation nor a raster stage
   if (triangulation == nullptr && rasterization == nullptr)

@@ -1,9 +1,9 @@
 #ifndef LASRADDATTR_H
 #define LASRADDATTR_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
-class LASRaddattribute: public LASRalgorithm
+class LASRaddattribute: public Stage
 {
 public:
   LASRaddattribute(std::string data_type, std::string name, std::string description, double scale = 1, double offset = 0);

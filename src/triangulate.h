@@ -1,7 +1,7 @@
 #ifndef LASRTRIANGULATE_H
 #define LASRTRIANGULATE_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 #include "Vector.h"
 #include "Shape.h"
 
@@ -14,7 +14,7 @@ namespace delaunator
   class Delaunator;
 }
 
-class LASRtriangulate : public LASRalgorithmVector
+class LASRtriangulate : public StageVector
 {
 public:
   LASRtriangulate(double xmin, double ymin, double xmax, double ymax, double trim, std::string use_attribute);

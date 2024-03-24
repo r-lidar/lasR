@@ -194,7 +194,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       else
       {
         std::string uid = get_element_as_string(stage, "connect");
-        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
         if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
         LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
@@ -236,10 +236,10 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       else
       {
         std::string uid = get_element_as_string(stage, "connect");
-        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
         if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
-        LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->get());
+        StageRaster* p = dynamic_cast<StageRaster*>(it->get());
         if (p)
         {
           auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, p);
@@ -287,11 +287,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       std::string uid = get_element_as_string(stage, "connect");
       std::string op = get_element_as_string(stage, "operator");
       std::string attr = get_element_as_string(stage, "store_in_attribute");
-      auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+      auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
       if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
       LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
-      LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(it->get());
+      StageRaster* q = dynamic_cast<StageRaster*>(it->get());
       if (p)
       {
         auto v = std::make_unique<LASRtransformwith>(xmin, ymin, xmax, ymax, p, op, attr);
@@ -317,10 +317,10 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       int med_size = get_element_as_int(stage, "med_size");
       int dil_radius = get_element_as_int(stage, "dil_radius");
 
-      auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+      auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
       if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
 
-      LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->get());
+      StageRaster* p = dynamic_cast<StageRaster*>(it->get());
       if (p)
       {
         auto v = std::make_unique<LASRpitfill>(xmin, ymin, xmax, ymax, lap_size, thr_lap, thr_spk, med_size, dil_radius, p);
@@ -353,13 +353,13 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
       std::string uid1 = get_element_as_string(stage, "connect1");
       std::string uid2 = get_element_as_string(stage, "connect2");
-      auto it1 = std::find_if(pipeline.begin(), pipeline.end(), [&uid1](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid1; });
+      auto it1 = std::find_if(pipeline.begin(), pipeline.end(), [&uid1](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid1; });
       if (it1 == pipeline.end()) { last_error = "Cannot find stage with this uid";  return false; }
-      auto it2 = std::find_if(pipeline.begin(), pipeline.end(), [&uid2](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid2; });
+      auto it2 = std::find_if(pipeline.begin(), pipeline.end(), [&uid2](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid2; });
       if (it2 == pipeline.end()) { last_error = "Cannot find stage with this uid";  return false; }
 
       LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(it1->get());
-      LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(it2->get());
+      StageRaster* q = dynamic_cast<StageRaster*>(it2->get());
       if (p && q)
       {
         auto v = std::make_unique<LASRregiongrowing>(xmin, ymin, xmax, ymax,th_tree, th_seed, th_cr, max_cr, q, p);
@@ -377,7 +377,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       if (contains_element(stage, "connect"))
       {
         std::string uid = get_element_as_string(stage, "connect");
-        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<LASRalgorithm>& obj) { return obj->get_uid() == uid; });
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
         if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
         p = dynamic_cast<LASRtriangulate*>(it->get());
         if (p == nullptr)

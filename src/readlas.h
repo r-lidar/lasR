@@ -1,13 +1,13 @@
 #ifndef LASRREADLAS_H
 #define LASRREADLAS_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
 class LASreadOpener;
 class LASreader;
 class LASheader;
 
-class LASRlasreader: public LASRalgorithm
+class LASRlasreader: public Stage
 {
 public:
   LASRlasreader();

@@ -1,14 +1,14 @@
 #ifndef LASRWRITELAS_H
 #define LASRWRITELAS_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
 class LASwriter;
 class LASheader;
 //class LASindex;
 //class LASquadtree;
 
-class LASRlaswriter: public LASRalgorithmWriter
+class LASRlaswriter: public StageWriter
 {
 public:
   LASRlaswriter(double xmin, double ymin, double xmax, double ymax, bool keep_buffer);

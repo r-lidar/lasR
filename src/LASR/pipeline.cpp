@@ -1,7 +1,7 @@
 #include "pipeline.h"
 #include "LAS.h"
 #include "LAScatalog.h"
-#include "lasralgorithm.h"
+#include "Stage.h"
 #include "Progress.h"
 #include "macros.h"
 #include "openmp.h"
@@ -41,8 +41,8 @@ Pipeline::Pipeline(const Pipeline& other)
 
   for (const auto& stage : other.pipeline)
   {
-    LASRalgorithm* ptr = stage->clone();
-    pipeline.push_back(std::unique_ptr<LASRalgorithm>(ptr));
+    Stage* ptr = stage->clone();
+    pipeline.push_back(std::unique_ptr<Stage>(ptr));
   }
 
   // At this stage, we have a clone of the pipeline. However some stages may contain a pointer

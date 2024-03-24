@@ -1,10 +1,10 @@
-#include "lasralgorithm.h"
+#include "Stage.h"
 
 /* ==============
  *  VIRTUAL
  *  ============= */
 
-LASRalgorithm::LASRalgorithm()
+Stage::Stage()
 {
   xmin = 0;
   ymin = 0;
@@ -19,7 +19,7 @@ LASRalgorithm::LASRalgorithm()
   #endif
 }
 
-LASRalgorithm::LASRalgorithm(const LASRalgorithm& other)
+Stage::Stage(const Stage& other)
 {
   ncpu = other.ncpu;
   xmin = other.xmin;
@@ -44,21 +44,21 @@ LASRalgorithm::LASRalgorithm(const LASRalgorithm& other)
   #endif
 }
 
-LASRalgorithm::~LASRalgorithm()
+Stage::~Stage()
 {
   #ifdef USING_R
   if (nsexpprotected > 0) UNPROTECT(nsexpprotected);
   #endif
 }
 
-bool LASRalgorithm::set_chunk(const Chunk& chunk)
+bool Stage::set_chunk(const Chunk& chunk)
 {
   set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
   if (chunk.shape == ShapeType::CIRCLE) circular = true;
   return true;
 }
 
-void LASRalgorithm::set_filter(const std::string& f)
+void Stage::set_filter(const std::string& f)
 {
   filter = f;
   std::string cpy = f;
@@ -67,7 +67,7 @@ void LASRalgorithm::set_filter(const std::string& f)
 }
 
 #ifdef USING_R
-SEXP LASRalgorithm::to_R()
+SEXP Stage::to_R()
 {
   if (ofile.empty()) return R_NilValue;
   SEXP R_string = PROTECT(Rf_mkChar(ofile.c_str()));
@@ -78,12 +78,12 @@ SEXP LASRalgorithm::to_R()
 }
 #endif
 
-void LASRalgorithm::set_connection(LASRalgorithm* stage)
+void Stage::set_connection(Stage* stage)
 {
   if (stage) connections[stage->get_uid()] = stage;
 }
 
-void LASRalgorithm::update_connection(LASRalgorithm* stage)
+void Stage::update_connection(Stage* stage)
 {
   if (!stage) return;
   if (connections.empty()) return;
@@ -98,12 +98,12 @@ void LASRalgorithm::update_connection(LASRalgorithm* stage)
  *  WRITER
  *  ============= */
 
-LASRalgorithmWriter::LASRalgorithmWriter()
+StageWriter::StageWriter()
 {
   merged = false;
 }
 
-LASRalgorithmWriter::LASRalgorithmWriter(const LASRalgorithmWriter& other) : LASRalgorithm(other)
+StageWriter::StageWriter(const StageWriter& other) : Stage(other)
 {
   merged = other.merged;
   template_filename = other.template_filename;
@@ -111,7 +111,7 @@ LASRalgorithmWriter::LASRalgorithmWriter(const LASRalgorithmWriter& other) : LAS
   if (!merged) written.clear();
 }
 
-void LASRalgorithmWriter::sort(const std::vector<int>& order)
+void StageWriter::sort(const std::vector<int>& order)
 {
   if (merged) return;
   if (written.size() == 0) return;
@@ -124,9 +124,9 @@ void LASRalgorithmWriter::sort(const std::vector<int>& order)
   return;
 }
 
-void LASRalgorithmWriter::merge(const LASRalgorithm* other)
+void StageWriter::merge(const Stage* other)
 {
-  const LASRalgorithmWriter* o = dynamic_cast<const LASRalgorithmWriter*>(other);
+  const StageWriter* o = dynamic_cast<const StageWriter*>(other);
 
   if (!merged)
     written.insert(written.end(), o->written.begin(), o->written.end());
@@ -135,7 +135,7 @@ void LASRalgorithmWriter::merge(const LASRalgorithm* other)
 }
 
 #ifdef USING_R
-SEXP LASRalgorithmWriter::to_R()
+SEXP StageWriter::to_R()
 {
   if (written.size() == 0) return R_NilValue;
 
@@ -158,24 +158,24 @@ SEXP LASRalgorithmWriter::to_R()
  *  RASTER
  *  ============= */
 
-LASRalgorithmRaster::LASRalgorithmRaster()
+StageRaster::StageRaster()
 {
   GDALdataset::initialize_gdal();
 }
 
-LASRalgorithmRaster::LASRalgorithmRaster(const LASRalgorithmRaster& other) : LASRalgorithmWriter(other)
+StageRaster::StageRaster(const StageRaster& other) : StageWriter(other)
 {
   raster = other.raster;
 }
 
-LASRalgorithmRaster::~LASRalgorithmRaster()
+StageRaster::~StageRaster()
 {
 
 }
 
-bool LASRalgorithmRaster::set_chunk(const Chunk& chunk)
+bool StageRaster::set_chunk(const Chunk& chunk)
 {
-  LASRalgorithm::set_chunk(chunk);
+  Stage::set_chunk(chunk);
 
   // merged = true: there is only one master raster that cover the file collection. Each chunk
   //    is written to this master file
@@ -190,7 +190,7 @@ bool LASRalgorithmRaster::set_chunk(const Chunk& chunk)
   return true;
 }
 
-void LASRalgorithmRaster::set_input_file_name(const std::string& file)
+void StageRaster::set_input_file_name(const std::string& file)
 {
   if (template_filename.empty()) return;
 
@@ -214,7 +214,7 @@ void LASRalgorithmRaster::set_input_file_name(const std::string& file)
 // Called in the parser before any process. It assigns the name of the raster file in
 // which the data will be written. The string may contain a wildcard in this case
 // the string is a template and a new raster file is created for each chunk
-void LASRalgorithmRaster::set_output_file(const std::string& file)
+void StageRaster::set_output_file(const std::string& file)
 {
   if (file.empty()) return;
 
@@ -232,17 +232,17 @@ void LASRalgorithmRaster::set_output_file(const std::string& file)
   }
 }
 
-bool LASRalgorithmRaster::set_crs(int epsg)
+bool StageRaster::set_crs(int epsg)
 {
   return raster.set_crs(epsg);
 }
 
-bool LASRalgorithmRaster::set_crs(const std::string& wkt)
+bool StageRaster::set_crs(const std::string& wkt)
 {
   return raster.set_crs(wkt);
 }
 
-bool LASRalgorithmRaster::write()
+bool StageRaster::write()
 {
   if (ofile.empty()) return true;
 
@@ -260,24 +260,24 @@ bool LASRalgorithmRaster::write()
  *  VECTOR
  * ============= */
 
-LASRalgorithmVector::LASRalgorithmVector()
+StageVector::StageVector()
 {
   GDALdataset::initialize_gdal();
 }
 
-LASRalgorithmVector::LASRalgorithmVector(const LASRalgorithmVector& other) : LASRalgorithmWriter(other)
+StageVector::StageVector(const StageVector& other) : StageWriter(other)
 {
   vector = other.vector;
 }
 
-LASRalgorithmVector::~LASRalgorithmVector()
+StageVector::~StageVector()
 {
 
 }
 
-bool LASRalgorithmVector::set_chunk(const Chunk& chunk)
+bool StageVector::set_chunk(const Chunk& chunk)
 {
-  LASRalgorithm::set_chunk(chunk);
+  Stage::set_chunk(chunk);
 
   // merged = true: there is only one master vector file that cover the file collection. Each chunk
   //    is written to this master file
@@ -292,7 +292,7 @@ bool LASRalgorithmVector::set_chunk(const Chunk& chunk)
   return true;
 }
 
-void LASRalgorithmVector::set_input_file_name(const std::string& file)
+void StageVector::set_input_file_name(const std::string& file)
 {
   if (template_filename.empty()) return;
 
@@ -312,7 +312,7 @@ void LASRalgorithmVector::set_input_file_name(const std::string& file)
   }
 }
 
-void LASRalgorithmVector::set_output_file(const std::string& file)
+void StageVector::set_output_file(const std::string& file)
 {
   if (file.empty()) return;
 
@@ -330,17 +330,17 @@ void LASRalgorithmVector::set_output_file(const std::string& file)
   }
 }
 
-bool LASRalgorithmVector::set_crs(int epsg)
+bool StageVector::set_crs(int epsg)
 {
   return vector.set_crs(epsg);
 }
 
-bool LASRalgorithmVector::set_crs(const std::string& wkt)
+bool StageVector::set_crs(const std::string& wkt)
 {
   return vector.set_crs(wkt);
 }
 
-/*void LASRalgorithmVector::clear(bool last)
+/*void StageVector::clear(bool last)
 {
   if (!merged || last)
   {

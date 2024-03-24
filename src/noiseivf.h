@@ -1,9 +1,9 @@
 #ifndef IVF_H
 #define IVF_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
-class LASRnoiseivf: public LASRalgorithm
+class LASRnoiseivf: public Stage
 {
 public:
   LASRnoiseivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification);

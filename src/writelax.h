@@ -1,9 +1,9 @@
 #ifndef LASRWRITELAX_H
 #define LASRWRITELAX_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
-class LASRlaxwriter: public LASRalgorithm
+class LASRlaxwriter: public Stage
 {
 public:
   bool set_chunk(const Chunk& chunk) override;

@@ -13,7 +13,7 @@ static double taketime()
 }
 
 
-LASRregiongrowing::LASRregiongrowing(double xmin, double ymin, double xmax, double ymax, double th_seed, double th_crown, double th_tree, double DIST, LASRalgorithm* algorithm_input_rasters, LASRalgorithm* algorithm_input_seeds)
+LASRregiongrowing::LASRregiongrowing(double xmin, double ymin, double xmax, double ymax, double th_seed, double th_crown, double th_tree, double DIST, Stage* algorithm_input_rasters, Stage* algorithm_input_seeds)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -29,7 +29,7 @@ LASRregiongrowing::LASRregiongrowing(double xmin, double ymin, double xmax, doub
 
   // Initialize the output raster from input raster
   LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(algorithm_input_seeds);
-  LASRalgorithmRaster* q = dynamic_cast<LASRalgorithmRaster*>(algorithm_input_rasters);
+  StageRaster* q = dynamic_cast<StageRaster*>(algorithm_input_rasters);
   if (p && q)  raster = Raster(q->get_raster());
 }
 
@@ -40,23 +40,23 @@ bool LASRregiongrowing::process(LAS*& las)
   // We do not know, in the map, which pointer is the pointer to the seeds and which one
   // is the pointer to the raster because the map is ordered by UID.
   LASRlocalmaximum* p = nullptr;
-  LASRalgorithmRaster* q = nullptr;
+  StageRaster* q = nullptr;
   auto it1 = connections.begin();
   auto it2 = --connections.end();
   p = dynamic_cast<LASRlocalmaximum*>(it1->second);
   if (p == nullptr)
   {
     p = dynamic_cast<LASRlocalmaximum*>(it2->second);
-    q = dynamic_cast<LASRalgorithmRaster*>(it1->second);
+    q = dynamic_cast<StageRaster*>(it1->second);
   }
   else
   {
-    q = dynamic_cast<LASRalgorithmRaster*>(it2->second);
+    q = dynamic_cast<StageRaster*>(it2->second);
   }
 
   if (p == nullptr || q == nullptr)
   {
-    last_error = "invalid pointers: must be 'LASRlocalmaximum' and 'LASRalgorithmRaster'. Please report this error."; // # nocov
+    last_error = "invalid pointers: must be 'LASRlocalmaximum' and 'StageRaster'. Please report this error."; // # nocov
     return false; // # nocov
   }
 

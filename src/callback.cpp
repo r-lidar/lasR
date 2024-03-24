@@ -486,7 +486,7 @@ bool LASRcallback::process(LAS*& las)
   return error == 0;
 }
 
-void LASRcallback::merge(const LASRalgorithm* other)
+void LASRcallback::merge(const Stage* other)
 {
   const LASRcallback* o = dynamic_cast<const LASRcallback*>(other);
 

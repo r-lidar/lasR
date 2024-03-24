@@ -1,13 +1,13 @@
 #ifndef LASRSUMMARY_H
 #define LASRSUMMARY_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
 #include <map>
 #include <vector>
 #include <inttypes.h>
 
-class LASRsummary: public LASRalgorithm
+class LASRsummary: public Stage
 {
 public:
   LASRsummary(double xmin, double ymin, double xmax, double ymax, double zwbin, double iwbin);
@@ -19,7 +19,7 @@ public:
   // multi-threading
   bool is_parallelizable() const override { return true; };
   LASRsummary* clone() const override { return new LASRsummary(*this); };
-  void merge(const LASRalgorithm* other) override;
+  void merge(const Stage* other) override;
 
   #ifdef USING_R
   SEXP to_R() override;

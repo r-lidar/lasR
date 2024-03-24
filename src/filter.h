@@ -1,9 +1,9 @@
 #ifndef LASRFILTER_H
 #define LASRFILTER_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
-class LASRfilter : public LASRalgorithm
+class LASRfilter : public Stage
 {
 public:
   bool process(LASpoint*& p) override;

@@ -27,12 +27,12 @@
 #include "Rcompatibility.h"
 #include "error.h"
 
-class LASRalgorithm
+class Stage
 {
 public:
-  LASRalgorithm();
-  LASRalgorithm(const LASRalgorithm& other); // copy constructor is for multi-threading
-  virtual ~LASRalgorithm() = 0;
+  Stage();
+  Stage(const Stage& other); // copy constructor is for multi-threading
+  virtual ~Stage() = 0;
   virtual bool process() { return true; };
   virtual bool process(LASheader*& header) { return true; };
   virtual bool process(LASpoint*& p) { return true; };
@@ -74,13 +74,13 @@ public:
   // Each stage must update the pointers to the other stages it depends on. This performed
   // in the copy constructor of the pipeline.
   // Each stage can have a sort member call by the pipeline to reorder and preserve order when computing in parallel
-  virtual LASRalgorithm* clone() const = 0;
-  virtual void merge(const LASRalgorithm* other) { return; };
+  virtual Stage* clone() const = 0;
+  virtual void merge(const Stage* other) { return; };
   virtual void sort(const std::vector<int>& order) { return; };
-  void update_connection(LASRalgorithm* stage);
+  void update_connection(Stage* stage);
 
 protected:
-  void set_connection(LASRalgorithm* stage);
+  void set_connection(Stage* stage);
 
 protected:
   int ncpu;
@@ -96,19 +96,19 @@ protected:
   std::string filter;
   LASfilter lasfilter;
   Progress* progress;
-  std::map<std::string, LASRalgorithm*> connections;
+  std::map<std::string, Stage*> connections;
 
 #ifdef USING_R
   int nsexpprotected;
 #endif
 };
 
-class LASRalgorithmWriter : public LASRalgorithm
+class StageWriter : public Stage
 {
 public:
-  LASRalgorithmWriter();
-  LASRalgorithmWriter(const LASRalgorithmWriter& other);
-  void merge(const LASRalgorithm* other) override;
+  StageWriter();
+  StageWriter(const StageWriter& other);
+  void merge(const Stage* other) override;
   void sort(const std::vector<int>& order) override;
 
   #ifdef USING_R
@@ -121,12 +121,12 @@ protected:
   std::vector<std::string> written;
 };
 
-class LASRalgorithmRaster : public LASRalgorithmWriter
+class StageRaster : public StageWriter
 {
 public:
-  LASRalgorithmRaster();
-  LASRalgorithmRaster(const LASRalgorithmRaster& other);
-  ~LASRalgorithmRaster() override;
+  StageRaster();
+  StageRaster(const StageRaster& other);
+  ~StageRaster() override;
   bool set_chunk(const Chunk& chunk) override;
   void set_input_file_name(const std::string& file) override;
   void set_output_file(const std::string& file) override;
@@ -140,12 +140,12 @@ protected:
   Raster raster;
 };
 
-class LASRalgorithmVector : public LASRalgorithmWriter
+class StageVector : public StageWriter
 {
 public:
-  LASRalgorithmVector();
-  LASRalgorithmVector(const LASRalgorithmVector& other);
-  ~LASRalgorithmVector() override;
+  StageVector();
+  StageVector(const StageVector& other);
+  ~StageVector() override;
   bool set_chunk(const Chunk& chunk) override;
   void set_input_file_name(const std::string& file) override;
   void set_output_file(const std::string& file) override;

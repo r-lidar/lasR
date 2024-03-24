@@ -9,7 +9,7 @@
 #endif
 
 // LASR
-#include "lasralgorithm.h"
+#include "Stage.h"
 
 // STL
 #include <memory>
@@ -71,7 +71,7 @@ private:
     LASheader* header;                    // owned by LASreader in stage reader_las or by las
     std::shared_ptr<LAScatalog> catalog;  // owned by this and shared in cloned pipelines
 
-    std::list<std::unique_ptr<LASRalgorithm>> pipeline;
+    std::list<std::unique_ptr<Stage>> pipeline;
 };
 
 #endif

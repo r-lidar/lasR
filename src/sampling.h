@@ -1,9 +1,9 @@
 #ifndef SAMPLINGVOXEL_H
 #define SAMPLINGVOXEL_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
-class LASRsamplingvoxels : public LASRalgorithm
+class LASRsamplingvoxels : public Stage
 {
 public:
   LASRsamplingvoxels(double xmin, double ymin, double xmax, double ymax, double res);
@@ -19,7 +19,7 @@ private:
   double res;
 };
 
-class LASRsamplingpixels : public LASRalgorithm
+class LASRsamplingpixels : public Stage
 {
 public:
   LASRsamplingpixels(double xmin, double ymin, double xmax, double ymax, double res);

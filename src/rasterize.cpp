@@ -22,7 +22,7 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   this->streamable = metrics.is_streamable();
 }
 
-LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, LASRalgorithm* algorithm)
+LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, Stage* algorithm)
 {
   this->xmin = xmin;
   this->ymin = ymin;

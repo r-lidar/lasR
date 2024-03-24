@@ -1,15 +1,15 @@
 #ifndef LASRRASTERIZE_H
 #define LASRRASTERIZE_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 #include "Metrics.h"
 #include "NA.h"
 
-class LASRrasterize : public LASRalgorithmRaster
+class LASRrasterize : public StageRaster
 {
 public:
   LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods);
-  LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, LASRalgorithm* algorithm);
+  LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, Stage* algorithm);
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };

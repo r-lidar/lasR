@@ -1,14 +1,14 @@
 #ifndef LASRTRANSFORMWITH_H
 #define LASRTRANSFORMWITH_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
 class LASRtriangulate;
 
-class LASRtransformwith: public LASRalgorithm
+class LASRtransformwith: public Stage
 {
 public:
-  LASRtransformwith(double xmin, double ymin, double xmax, double ymax, LASRalgorithm* algorithm, std::string op, std::string attribute);
+  LASRtransformwith(double xmin, double ymin, double xmax, double ymax, Stage* algorithm, std::string op, std::string attribute);
   bool process(LAS*& las) override;
   std::string get_name() const override { return "transform_with"; }
   bool is_parallelized() const override { return true; };

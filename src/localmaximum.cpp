@@ -3,7 +3,7 @@
 
 #include <chrono>
 
-LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, LASRalgorithm* algorithm)
+LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, Stage* algorithm)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -55,7 +55,7 @@ bool LASRlocalmaximum::process()
   if (!use_raster) return true;
 
   auto it = connections.begin();
-  LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->second);
+  StageRaster* p = dynamic_cast<StageRaster*>(it->second);
   const Raster& raster = p->get_raster();
 
   // Convert the raster to a LAS

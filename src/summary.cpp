@@ -59,7 +59,7 @@ bool LASRsummary::process(LAS*& las)
   return true;
 }
 
-void LASRsummary::merge(const LASRalgorithm* other)
+void LASRsummary::merge(const Stage* other)
 {
   const LASRsummary* o = dynamic_cast<const LASRsummary*>(other);
 

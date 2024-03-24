@@ -1,9 +1,9 @@
 #ifndef NOTHING_H
 #define NOTHING_H
 
-#include "lasralgorithm.h"
+#include "Stage.h"
 
-class LASRnothing : public LASRalgorithm
+class LASRnothing : public Stage
 {
 public:
   LASRnothing(bool read, bool stream)
