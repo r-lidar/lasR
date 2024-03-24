@@ -176,13 +176,6 @@ void Progress::done(bool main)
   if (sub) sub->reset();
 }
 
-void Progress::pause()
-{
-  if (sub) sub->prev = -1.0f; // force print
-  this->prev = -1.0f; // force print
-  this->show(false);
-}
-
 // # nocov start
 void Progress::show(bool flush)
 {

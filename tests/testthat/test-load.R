@@ -20,3 +20,18 @@ test_that("load raster works",
   # terra::plot(ans1)
   # terra::plot(ans2)
 })
+
+
+test_that("load raster fails",
+{
+  r = system.file("extdata/bcts", "bcts_dsm_5m.tif", package = "lasR")
+  f = paste0(system.file(package="lasR"), "/extdata/bcts/")
+  f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+
+  pipeline =  load_raster(f[1])
+  expect_error(exec(pipeline, on = f))
+
+  pipeline =  load_raster(r, 2)
+  expect_error(exec(pipeline, on = f), "beyond the number of bands")
+
+})

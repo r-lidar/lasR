@@ -35,3 +35,11 @@ test_that("vpc writer works",
 })
 
 file.remove(f)
+
+test_that("vpc reader fail",
+{
+  f = tempfile(fileext = ".vpc")
+  file.create(f)
+  pipeline = lasR:::nothing()
+  expect_error(exec(pipeline, on = f), "JSON parsing error")
+})

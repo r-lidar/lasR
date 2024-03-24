@@ -237,7 +237,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
 
     progress.done(true);
 
-    if (ncpu_outer_loop > 1) pipeline.sort();
+    pipeline.sort();
 
     return pipeline.to_R();
   }
@@ -270,9 +270,9 @@ SEXP process(SEXP sexppipeline, SEXP args)
   }
   catch(...)
   {
+    // # nocov start
     R_CStackLimit=original_CStackLimit;
 
-    // # nocov start
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 
     SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
@@ -365,9 +365,9 @@ SEXP get_pipeline_info(SEXP sexppipeline)
   }
   catch(...)
   {
-    Rf_error("c++ exception (unknown reason)");
+    Rf_error("c++ exception (unknown reason)"); // # nocov
   }
 
-  return R_NilValue;
+  return R_NilValue; // # nocov
 }
 #endif

@@ -201,8 +201,8 @@ bool LAScatalog::read_vpc(const std::string& filename)
   }
   catch (const std::ifstream::failure& e)
   {
-    last_error = std::string("Failed to read JSON file: ") + e.what();
-    return false;
+    last_error = std::string("Failed to read JSON file: ") + e.what(); // # nocov
+    return false; // # nocov
   }
   catch (const nlohmann::json::parse_error& e)
   {
@@ -211,8 +211,8 @@ bool LAScatalog::read_vpc(const std::string& filename)
   }
   catch (const std::exception& e)
   {
-    last_error = std::string("An unexpected error occurred in read_vpc(): ") + e.what();
-    return false;
+    last_error = std::string("An unexpected error occurred in read_vpc(): ") + e.what(); // # nocov
+    return false; // # nocov
   }
 
   return true;

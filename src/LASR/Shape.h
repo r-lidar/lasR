@@ -74,7 +74,7 @@ struct Shape
   virtual double ymax() const = 0;
   virtual bool contains(double x, double y) const = 0;
   virtual PointXYZ centroid() const = 0;
-  virtual ShapeType type() const { return ShapeType::UNKNOWN; };
+  virtual ShapeType type() const = 0;
 };
 
 struct Rectangle : public Shape

@@ -117,7 +117,7 @@ bool Vector::write(const PointLAS& p)
   if (!dataset)
   {
     last_error = "cannot write with uninitialized GDALDataset"; // # nocov
-    return false;
+    return false; // # nocov
   }
 
   if (eGType != wkbPoint25D)
@@ -178,7 +178,7 @@ bool Vector::write(const std::vector<TriangleXYZ>& triangles)
   if (!dataset)
   {
     last_error = "cannot write with uninitialized GDALDataset"; // # nocov
-    return false;
+    return false; // # nocov
   }
 
   if (eGType != wkbMultiPolygon25D)
@@ -226,7 +226,7 @@ bool Vector::write(const std::vector<PolygonXY>& poly)
   if (!dataset)
   {
     last_error = "cannot write with uninitialized GDALDataset"; // # nocov
-    return false;
+    return false; // # nocov
   }
 
   if (eGType != wkbPolygon)
@@ -254,10 +254,10 @@ bool Vector::write(const std::vector<PolygonXY>& poly)
     polygon.addRing(&ring);
   }
 
-  // Commented to fix #temporarily
+  // Commented to fix #6 temporarily
   /*if (!polygon.IsValid())
   {
-    eprint("WARNING: invalid polygon\n");
+    warning("invalid polygon\n");
   }*/
 
   OGRFeature* feature = OGRFeature::CreateFeature(layer->GetLayerDefn());

@@ -191,11 +191,11 @@ bool Raster::get_chunk(const Chunk& chunk, int band_index)
 {
   if (!dataset)
   {
-    last_error = "Internal error: cannot get a raster chunk from uninitialized GDALDataset"; // nocov
-    return false; // nocov
+    last_error = "Internal error: cannot get a raster chunk from uninitialized GDALDataset"; // # nocov
+    return false; // # nocov
   }
 
-  if (dataset->GetRasterCount() > band_index)
+  if (dataset->GetRasterCount() < band_index)
   {
     last_error = "Cannot read this band that is beyond the number of bands of this dataset";
     return false;
@@ -241,7 +241,7 @@ bool Raster::get_chunk(const Chunk& chunk, int band_index)
   if (err != CE_None)
   {
     last_error = std::string(CPLGetLastErrorMsg()); // # nocov
-    return false;
+    return false; // # nocov
   }
 
   // This is the grid corresponding the data actually read
@@ -276,7 +276,7 @@ bool Raster::write()
   if (!dataset)
   {
     last_error = "cannot write with uninitialized GDALDataset"; // # nocov
-    return false;
+    return false; // # nocov
   }
 
   // We usually work only with a chunk. We need to compute the xy offsets considering that

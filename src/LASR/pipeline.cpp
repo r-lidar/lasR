@@ -42,11 +42,6 @@ Pipeline::Pipeline(const Pipeline& other)
   for (const auto& stage : other.pipeline)
   {
     LASRalgorithm* ptr = stage->clone();
-    if (ptr == nullptr)
-    {
-      last_error = "Internal error: the stage '" + stage->get_name() + "' does not have valid clone() method";
-      throw last_error;
-    }
     pipeline.push_back(std::unique_ptr<LASRalgorithm>(ptr));
   }
 

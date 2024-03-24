@@ -18,7 +18,6 @@ public:
   void set_display(bool display);
   void set_total(uint64_t nmax);
   void done(bool main = false);
-  void pause();
   void show(bool flush = true);
 
 private:
