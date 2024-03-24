@@ -19,13 +19,13 @@ public:
   void set_chunk(const Chunk& chunk);
   int get_buffer() const { return buffer; };
   float get_nodata() const { return nodata; };
-  float& get_value(double x, double y, int layer = 1);
-  float& get_value(int cell, int layer = 1);
+  float get_value(double x, double y, int layer = 1) const;
+  float get_value(int cell, int layer = 1) const;
   bool get_chunk(const Chunk& chunk, int band_index);
   const std::vector<float>& get_data() const { return data; };
   bool write();
   void show() const;
-  float& operator()(int row, int col)
+  float operator()(int row, int col)
   {
     int cell = cell_from_row_col(row,col);
     return get_value(cell);

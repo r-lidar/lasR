@@ -109,20 +109,14 @@ bool Raster::read_file()
   return true;
 }
 
-float& Raster::get_value(double x, double y, int layer)
+float Raster::get_value(double x, double y, int layer) const
 {
   int cell = cell_from_xy(x,y);
   return get_value(cell, layer);
 }
 
-float& Raster::get_value(int cell, int layer)
+float Raster::get_value(int cell, int layer) const
 {
-  if (data.size() == 0)
-  {
-    data.resize(nBands*ncells);
-    std::fill(data.begin(), data.end(), nodata);
-  }
-
   if (cell < ncells && cell >= 0)
     return data[cell + (layer-1)*ncells];
   else
@@ -189,6 +183,8 @@ void Raster::set_chunk(const Chunk& chunk)
   ncells = ncols*nrows;
 
   data.clear();
+  data.resize(nBands*ncells);
+  std::fill(data.begin(), data.end(), nodata);
 }
 
 bool Raster::get_chunk(const Chunk& chunk, int band_index)

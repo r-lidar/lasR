@@ -78,7 +78,7 @@ bool LASRtransformwith::process(LAS*& las)
   }
   else
   {
-    Raster& raster = rasterization->get_raster();
+    const Raster& raster = rasterization->get_raster();
     hag.resize(las->npoints);
     std::fill(hag.begin(), hag.end(), NA_F64);
 

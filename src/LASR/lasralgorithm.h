@@ -134,7 +134,7 @@ public:
   bool set_crs(const std::string& wkt) override;
   bool write() override;
   //void clear(bool last) override;
-  Raster& get_raster() { return raster; };
+  const Raster& get_raster() { return raster; };
 
 protected:
   Raster raster;

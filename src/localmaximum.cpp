@@ -56,7 +56,7 @@ bool LASRlocalmaximum::process()
 
   auto it = connections.begin();
   LASRalgorithmRaster* p = dynamic_cast<LASRalgorithmRaster*>(it->second);
-  Raster& raster = p->get_raster();
+  const Raster& raster = p->get_raster();
 
   // Convert the raster to a LAS
 
