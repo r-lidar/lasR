@@ -1,5 +1,5 @@
-src/third_party/LASlib/* linguist-vendored
-src/third_party/LASzip/* linguist-vendored
-src/third_party/nlohmann/* linguist-vendored
+src/vendor/LASlib/* linguist-vendored
+src/vendor/LASzip/* linguist-vendored
+src/vendor/nlohmann/* linguist-vendored
 tests/testthat/* linguist-vendored
 configure.ac text eol=lf

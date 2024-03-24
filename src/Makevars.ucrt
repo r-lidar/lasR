@@ -4,7 +4,7 @@ LIBSHARPYUV = $(or $(and $(wildcard $(R_TOOLS_SOFT)/lib/libsharpyuv.a),-lsharpyu
 
 PKG_CPPFLAGS =\
 	-I$(RWINLIB)/include \
-	--I./ -I./third_party/LASlib/ -I./third_party/LASzip/ -I./LASR/ -I./third_party/ \
+	--I./ -I./vendor/LASlib/ -I./vendor/LASzip/ -I./LASR/ -I./vendor/ \
 	-DHAVE_PROJ_H \
 	-DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R
 
@@ -15,7 +15,7 @@ PKG_LIBS =  \
 
 CXX_STD=CXX17
 
-SOURCES = $(wildcard LASR/*.cpp third_party/*/*.cpp ./*.cpp)
+SOURCES = $(wildcard LASR/*.cpp vendor/*/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
 OBJECTS = $(TEMP1:.c=.o)
 
