@@ -49,6 +49,7 @@ public:
 private:
   void clean_index();
   void clean_query();
+  bool update_point_and_buffer();
 
 public:
   LASpoint point;
