@@ -106,7 +106,6 @@ sequential <- function()
 #' @export
 concurrent_files <- function(ncores = half_cores())
 {
-  if (ncores > ncores()) ncores <- ncores()
   attr(ncores, "strategy") <- "concurrent-files"
   return(ncores)
 }
@@ -115,7 +114,6 @@ concurrent_files <- function(ncores = half_cores())
 #' @export
 concurrent_points <- function(ncores = half_cores())
 {
-  if (ncores > ncores()) ncores <- ncores()
   attr(ncores, "strategy") <- "concurrent-points"
   return(ncores)
 }
@@ -124,7 +122,6 @@ concurrent_points <- function(ncores = half_cores())
 #' @export
 nested <- function(ncores = ncores()/4L, ncores2 = 2L)
 {
-  ncores = c(ncores, ncores2)
   attr(ncores, "strategy") <- "nested"
   return(ncores)
 }
