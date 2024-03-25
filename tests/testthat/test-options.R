@@ -45,6 +45,5 @@ test_that("parallel stategy tools are working",
 
   x = nested(2,2)
   y = c(2L, 2L) ; attr(y, "strategy") = "nested"
-
   expect_equal(x, y)
 })

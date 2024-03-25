@@ -122,6 +122,7 @@ concurrent_points <- function(ncores = half_cores())
 #' @export
 nested <- function(ncores = ncores()/4L, ncores2 = 2L)
 {
+  ncores <- c(ncores, ncores2)
   attr(ncores, "strategy") <- "nested"
   return(ncores)
 }
