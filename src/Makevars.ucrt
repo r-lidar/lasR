@@ -4,7 +4,7 @@ LIBSHARPYUV = $(or $(and $(wildcard $(R_TOOLS_SOFT)/lib/libsharpyuv.a),-lsharpyu
 
 PKG_CPPFLAGS =\
 	-I$(RWINLIB)/include \
-	--I./ -I./vendor/LASlib/ -I./vendor/LASzip/ -I./LASRcore/ -I./LASRstages/ -I./vendor/ \
+	-I./ -I./vendor/LASlib/ -I./vendor/LASzip/ -I./LASRcore/ -I./LASRstages/ -I./vendor/ \
 	-DHAVE_PROJ_H \
 	-DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R
 
