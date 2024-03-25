@@ -12,7 +12,7 @@ height above ground (HAG). If TRUE the coordinate Z is not modified and a new ex
 named 'HAG' is added to the point cloud.}
 }
 \description{
-Normalize the point cloud using `triangulate()` and `transform_with()`
+Normalize the point cloud using \link{triangulate()} and \link{transform_with()}
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
