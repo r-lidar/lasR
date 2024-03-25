@@ -176,7 +176,7 @@ parse_options = function(on, with, ...)
   buffer <- 0
   chunk <- 0
   progress <- FALSE
-  ncores <- concurrent_files(half_cores())
+  ncores <- if (has_omp_support()) concurrent_files(half_cores()) else sequential()
   noprocess <- NULL
   verbose <- FALSE
   noread <- FALSE
@@ -234,7 +234,7 @@ parse_options = function(on, with, ...)
   if (!is.null(LASROPTIONS$progress)) progress <- LASROPTIONS$progress
   if (!is.null(LASROPTIONS$ncores)) ncores <- LASROPTIONS$ncores
   if (!is.null(LASROPTIONS$strategy)) mode <- LASROPTIONS$strategy
-  if (!is.null(LASROPTIONS$verbose)) verbose <- LASROPTIONS$ncores
+  if (!is.null(LASROPTIONS$verbose)) verbose <- LASROPTIONS$verbose
   if (!is.null(LASROPTIONS$noread)) noread <- LASROPTIONS$noread
 
   stopifnot(is.numeric(buffer))
@@ -318,4 +318,16 @@ set_exec_options = function(ncores = NULL, progress = NULL, buffer = NULL, chunk
   LASROPTIONS$noread <- dots$noread
   LASROPTIONS$noprocess <- dots$noprocess
   LASROPTIONS$verbose <- dots$verbose
+}
+
+#' @export
+#' @rdname set_exec_options
+unset_exec_option = function()
+{
+  LASROPTIONS$progress <- NULL
+  LASROPTIONS$chunk <- NULL
+  LASROPTIONS$buffer <- NULL
+  LASROPTIONS$noread <- NULL
+  LASROPTIONS$noprocess <- NULL
+  LASROPTIONS$verbose <- NULL
 }

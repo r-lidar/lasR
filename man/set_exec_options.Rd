@@ -2,6 +2,7 @@
 % Please edit documentation in R/processor.R
 \name{set_exec_options}
 \alias{set_exec_options}
+\alias{unset_exec_option}
 \title{Set global processing options}
 \usage{
 set_exec_options(
@@ -11,6 +12,8 @@ set_exec_options(
   chunk = NULL,
   ...
 )
+
+unset_exec_option()
 }
 \arguments{
 \item{ncores}{An object returned by one of \code{sequential()}, \code{concurrent_points()}, \code{concurrent_files}, or
