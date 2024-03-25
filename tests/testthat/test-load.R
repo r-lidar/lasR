@@ -29,7 +29,7 @@ test_that("load raster fails",
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
 
   pipeline =  load_raster(f[1])
-  expect_error(exec(pipeline, on = f))
+  expect_error(suppressWarnings(exec(pipeline, on = f)))
 
   pipeline =  load_raster(r, 2)
   expect_error(exec(pipeline, on = f), "beyond the number of bands")

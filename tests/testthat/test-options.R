@@ -5,7 +5,7 @@ test_that("Options are working",
 
   set_exec_options(buffer = 10, chunk = 10, progress = FALSE, ncores = 2L, verbose = FALSE, noread = FALSE)
   with = list(buffer = 10, chunk = 10, progress = FALSE, ncores = 2L, verbose = FALSE, noread = FALSE)
-  expect_error(exec(pipeline, on = f, with = with, buffer = 10, chunk = 10, progress = FALSE, ncores = 1L, verbose = FALSE, noread = FALSE), NA)
+  expect_error(suppressWarnings(exec(pipeline, on = f, with = with, buffer = 10, chunk = 10, progress = FALSE, ncores = 1L, verbose = FALSE, noread = FALSE)), NA)
   unset_exec_option()
 })
 

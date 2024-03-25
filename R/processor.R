@@ -221,13 +221,6 @@ parse_options = function(on, with, ...)
   mode <- match.arg(mode, modes)
   mode <- match(mode, modes)
 
-  if (!has_omp_support())
-  {
-    if (ncores[1] > 1) warning("This version of lasR has no OpenMP support")
-    ncores <- 1L
-    mode <- 1L
-  }
-
   # Global options have precedence on everything
   if (!is.null(LASROPTIONS$buffer)) buffer <- LASROPTIONS$buffer
   if (!is.null(LASROPTIONS$chunk))  chunk <- LASROPTIONS$chunk
@@ -236,6 +229,13 @@ parse_options = function(on, with, ...)
   if (!is.null(LASROPTIONS$strategy)) mode <- LASROPTIONS$strategy
   if (!is.null(LASROPTIONS$verbose)) verbose <- LASROPTIONS$verbose
   if (!is.null(LASROPTIONS$noread)) noread <- LASROPTIONS$noread
+
+  if (!has_omp_support())
+  {
+    if (ncores[1] > 1) warning("This version of lasR has no OpenMP support")
+    ncores <- 1L
+    mode <- 1L
+  }
 
   stopifnot(is.numeric(buffer))
   stopifnot(is.numeric(chunk))
