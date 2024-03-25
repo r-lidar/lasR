@@ -1,6 +1,6 @@
 #' Normalize the point cloud
 #'
-#' Normalize the point cloud using \link{triangulate()} and \link{transform_with()}
+#' Normalize the point cloud using \link{triangulate} and \link{transform_with}
 #'
 #' @param extrabytes bool. If FALSE the coordinate Z of the point cloud is modified and becomes the
 #' height above ground (HAG). If TRUE the coordinate Z is not modified and a new extrabytes attribute
