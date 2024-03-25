@@ -59,7 +59,9 @@ set_parallel_strategy <- function(strategy)
   ncores <- as.integer(strategy)
   modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
   mode <- attr(strategy, "strategy")
-  if (is.null(mode)) strategy = "concurrent-points"
+  if (is.null(mode) & has_omp_support()) strategy = "concurrent-points"
+  if (is.null(mode) & !has_omp_support()) strategy = "sequential"
+  if (strategy == "sequential") ncores = 1L
   mode <- match.arg(mode, modes)
   mode <- match(mode, modes)
   LASROPTIONS$ncores <- ncores

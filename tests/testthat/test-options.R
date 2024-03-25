@@ -3,10 +3,14 @@ test_that("Options are working",
   f <- system.file("extdata", "Example.las", package="lasR")
   pipeline = lasR:::nothing()
 
-  set_exec_options(buffer = 10, chunk = 10, progress = FALSE, ncores = 2L, verbose = FALSE, noread = FALSE)
-  with = list(buffer = 10, chunk = 10, progress = FALSE, ncores = 2L, verbose = FALSE, noread = FALSE)
+  set_exec_options(buffer = 10, chunk = 10, progress = FALSE, ncores = 1L, verbose = FALSE, noread = FALSE)
+  with = list(buffer = 10, chunk = 10, progress = FALSE, ncores = 1L, verbose = FALSE, noread = FALSE)
   expect_error(suppressWarnings(exec(pipeline, on = f, with = with, buffer = 10, chunk = 10, progress = FALSE, ncores = 1L, verbose = FALSE, noread = FALSE)), NA)
+
   unset_exec_option()
+  unset_parallel_strategy()
+  if (has_omp_support()) set_parallel_strategy(concurrent_files(2L))
+
 })
 
 test_that("parallel stategy tools are working",
@@ -26,7 +30,6 @@ test_that("parallel stategy tools are working",
     expect_true(is.null(x))
 
     unset_parallel_strategy()
-    set_parallel_strategy(sequential())
   }
 
   # This is true with or without open mp support. Set parallel strategy check if it is true or not

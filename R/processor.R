@@ -310,8 +310,9 @@ set_exec_options = function(ncores = NULL, progress = NULL, buffer = NULL, chunk
   if (!is.null(buffer)) stopifnot(is.numeric(buffer))
   if (!is.null(chunk)) stopifnot(is.numeric(chunk))
 
+  set_parallel_strategy(ncores)
+
   dots <- list(...)
-  LASROPTIONS$ncores <- ncores
   LASROPTIONS$progress <- progress
   LASROPTIONS$chunk <- chunk
   LASROPTIONS$buffer <- buffer
