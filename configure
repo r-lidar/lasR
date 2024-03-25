@@ -612,7 +612,7 @@ PACKAGE_STRING=''
 PACKAGE_BUGREPORT=''
 PACKAGE_URL=''
 
-ac_unique_file="src/LASR/GDALdataset.cpp"
+ac_unique_file="src/LASRcore/GDALdataset.cpp"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stddef.h>
