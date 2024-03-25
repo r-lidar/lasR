@@ -22,6 +22,7 @@ public:
   ~LAS();
   bool add_attribute( int data_type, const std::string& name, const std::string& description, double scale, double offset);
   bool add_point(const LASpoint& p);
+  bool add_rgb();
   bool seek(int pos);
   bool read_point(bool include_withhelded = false);
   void set_file(const std::string& file) { this->file = file; };

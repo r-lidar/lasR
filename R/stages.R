@@ -32,6 +32,23 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
   set_lasr_class(ans)
 }
 
+#' Add RGB attributes to a LAS file
+#'
+#' Modifies the LAS format to convert into a format with RGB attributes. The value are zeroed, it only
+#' changes the format of the underlying point cloud.
+#'
+#' @examples
+#' f <- system.file("extdata", "Example.las", package="lasR")
+#'
+#' pipeline <- add_rgb() + write_las()
+#' exec(pipeline, on = f)
+#' @export
+add_rgb = function()
+{
+  ans <- list(algoname = "add_rgb")
+  set_lasr_class(ans)
+}
+
 #' Aggregate a point cloud and compute metrics for each group
 #'
 #' Aggregate a point cloud and compute metrics for each group. The currently supported grouping method

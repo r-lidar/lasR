@@ -404,6 +404,59 @@ void LAS::set_index(float res)
   while (read_point()) index->insert(point);
 }*/
 
+
+bool LAS::add_rgb()
+{
+  int pdf = header->point_data_format;
+  int target;
+
+  if (pdf == 2 || pdf == 3 || pdf == 5 || pdf == 7 || pdf == 8 || pdf == 10)
+    return true;
+
+  if (pdf == 0)
+    target = 2;
+  else if (pdf == 1)
+    target = 3;
+  else if (pdf == 4)
+    target = 5;
+  else if (pdf == 6)
+    target = 7;
+  else if (pdf == 9)
+    target = 10;
+
+  header->point_data_format = target;
+  header->point_data_record_length += 3*2; // 3 x 16 bits = 3 x 2 bytes
+
+  if (target == 10)
+    header->point_data_record_length += 2; // 2 bytes for NIR
+
+  LASpoint new_point;
+  new_point.init(header, header->point_data_format, header->point_data_record_length, header);
+
+  if (capacity * point.total_point_size < npoints * new_point.total_point_size)
+  {
+    buffer = (unsigned char*)realloc((void*)buffer, npoints * new_point.total_point_size);
+  }
+
+  if (buffer == 0)
+  {
+    eprint("Memory allocation failed\n"); // # nocov
+    return false;                         // # nocov
+  }
+
+  for (int i = npoints-1 ; i >= 0 ; --i)
+  {
+    seek(i);
+    new_point = point;
+    new_point.copy_to(buffer + i * new_point.total_point_size);
+  }
+
+  point = LASpoint();
+  point.init(header, header->point_data_format, header->point_data_record_length, header);
+
+  return true;
+}
+
 void LAS::clean_index()
 {
   clean_query();

@@ -2,6 +2,7 @@
 #include "LAScatalog.h"
 
 #include "addattribute.h"
+#include "addrgb.h"
 #include "boundaries.h"
 #include "filter.h"
 #include "loadraster.h"
@@ -406,6 +407,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       double scale = get_element_as_double(stage, "scale");
       double offset = get_element_as_double(stage, "offset");
       auto v = std::make_unique<LASRaddattribute>(data_type, name, desc, scale, offset);
+      pipeline.push_back(std::move(v));
+    }
+    else if (name == "add_rgb")
+    {
+      auto v = std::make_unique<LASRaddrgb>();
       pipeline.push_back(std::move(v));
     }
     else if (name == "nothing")
