@@ -7,10 +7,11 @@
 add_rgb()
 }
 \description{
-Modifies the LAS format to convert into a format with RGB attributes. The value are zeroed.
+Modifies the LAS format to convert into a format with RGB attributes. The value are zeroed, it only
+changes the format of the underlying point cloud.
 }
 \examples{
-f <- system.file("extdata", "example.las", package="lasR")
+f <- system.file("extdata", "Example.las", package="lasR")
 
 pipeline <- add_rgb() + write_las()
 exec(pipeline, on = f)
