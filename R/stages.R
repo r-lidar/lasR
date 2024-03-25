@@ -5,7 +5,8 @@
 #' According to the \href{https://www.asprs.org/a/society/committees/standards/LAS_1_4_r13.pdf}{LAS specifications},
 #' a LAS file contains a core of defined attributes, such as XYZ coordinates, intensity, return number,
 #' and so on, for each point. It is possible to add supplementary attributes. This stages adds an
-#' extra bytes attribute to the points. Values are zeroed. It edits the point cloud but returns nothing.
+#' extra bytes attribute to the points. Values are zeroed: the underlying point cloud is edited to support
+#' a new extrabyte attribute. This new attribute can be populated later in another stage
 #'
 #' @param name character. The name of the extra bytes attribute to add to the file.
 #' @param description character. A short description of the extra bytes attribute to add to the file (32 characters).
@@ -34,8 +35,9 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 
 #' Add RGB attributes to a LAS file
 #'
-#' Modifies the LAS format to convert into a format with RGB attributes. The value are zeroed, it only
-#' changes the format of the underlying point cloud.
+#' Modifies the LAS format to convert into a format with RGB attributes. Values are zeroed: the underlying
+#' point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
+#' in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved.
 #'
 #' @examples
 #' f <- system.file("extdata", "Example.las", package="lasR")

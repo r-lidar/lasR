@@ -7,8 +7,9 @@
 add_rgb()
 }
 \description{
-Modifies the LAS format to convert into a format with RGB attributes. The value are zeroed, it only
-changes the format of the underlying point cloud.
+Modifies the LAS format to convert into a format with RGB attributes. Values are zeroed: the underlying
+point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
+in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved.
 }
 \examples{
 f <- system.file("extdata", "Example.las", package="lasR")
