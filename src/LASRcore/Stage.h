@@ -62,6 +62,7 @@ public:
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
   std::string get_uid() const { return uid; };
+  const std::map<std::string, Stage*>& get_connection() { return connections; };
 
   // The default method consists in returning the string 'ofile'.
   #ifdef USING_R
@@ -78,6 +79,7 @@ public:
   virtual void merge(const Stage* other) { return; };
   virtual void sort(const std::vector<int>& order) { return; };
   void update_connection(Stage* stage);
+
 
 protected:
   void set_connection(Stage* stage);

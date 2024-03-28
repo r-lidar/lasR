@@ -28,9 +28,9 @@ LASRregiongrowing::LASRregiongrowing(double xmin, double ymin, double xmax, doub
   set_connection(algorithm_input_seeds);
 
   // Initialize the output raster from input raster
-  LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(algorithm_input_seeds);
-  StageRaster* q = dynamic_cast<StageRaster*>(algorithm_input_rasters);
-  if (p && q)  raster = Raster(q->get_raster());
+  LASRlocalmaximum* lmf = dynamic_cast<LASRlocalmaximum*>(algorithm_input_seeds);
+  StageRaster*  rst = dynamic_cast<StageRaster*>(algorithm_input_rasters);
+  if (lmf && rst)  raster = Raster(rst->get_raster());
 }
 
 bool LASRregiongrowing::process(LAS*& las)
@@ -39,33 +39,52 @@ bool LASRregiongrowing::process(LAS*& las)
 
   // We do not know, in the map, which pointer is the pointer to the seeds and which one
   // is the pointer to the raster because the map is ordered by UID.
-  LASRlocalmaximum* p = nullptr;
-  StageRaster* q = nullptr;
+  LASRlocalmaximum* lmf = nullptr;
+  StageRaster* rst = nullptr;
   auto it1 = connections.begin();
   auto it2 = --connections.end();
-  p = dynamic_cast<LASRlocalmaximum*>(it1->second);
-  if (p == nullptr)
+  lmf = dynamic_cast<LASRlocalmaximum*>(it1->second);
+  if (lmf == nullptr)
   {
-    p = dynamic_cast<LASRlocalmaximum*>(it2->second);
-    q = dynamic_cast<StageRaster*>(it1->second);
+    lmf = dynamic_cast<LASRlocalmaximum*>(it2->second);
+    rst = dynamic_cast<StageRaster*>(it1->second);
   }
   else
   {
-    q = dynamic_cast<StageRaster*>(it2->second);
+    rst = dynamic_cast<StageRaster*>(it2->second);
   }
 
-  if (p == nullptr || q == nullptr)
+  if (lmf == nullptr || rst == nullptr)
   {
     last_error = "invalid pointers: must be 'LASRlocalmaximum' and 'StageRaster'. Please report this error."; // # nocov
     return false; // # nocov
+  }
+
+  // Test if the lmf was computed on a point cloud. If there is no connection it means local maximum was not connected
+  // to a raster stage and was applied on the point cloud. If there is a connection it means it was computed on a raster
+  // we must check if it was computed on the raster we are processing. A possible user error might be to compute lmf on a raster
+  // then process the raster with e.g. pit_fill then feed growing region with pit_fill but proving seeds from the raw chm.
+  if (lmf->get_connection().size() == 0)
+  {
+    warning("computing region_growing on a raster but seeds were found using the point cloud\n");
+  }
+  else
+  {
+    const Raster& ref_rast = ((StageRaster*)lmf->get_connection().begin()->second)->get_raster();
+    const Raster& this_rast = rst->get_raster();
+
+    if (&ref_rast != &this_rast)
+    {
+      warning("computing region_growing on a raster but seeds were found using another raster\n");
+    }
   }
 
   progress->reset();
   progress->set_prefix("growing region");
   progress->set_total(raster.get_ncells());
 
-  const std::vector<PointLAS> lm = p->get_maxima();
-  const Raster& image = q->get_raster();
+  const std::vector<PointLAS> lm = lmf->get_maxima();
+  const Raster& image = rst->get_raster();
 
   struct Region
   {
