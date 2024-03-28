@@ -75,11 +75,11 @@ bool LASRlocalmaximum::process()
   lasheader.x_offset             = xmin;
   lasheader.y_offset             = ymin;
   lasheader.z_offset             = 0;
-  lasheader.number_of_point_records = 0;
-  lasheader.min_x                = xmin;
-  lasheader.min_y                = ymin;
-  lasheader.max_x                = xmax;
-  lasheader.max_y                = ymax;
+  lasheader.number_of_point_records = raster.get_ncells();
+  lasheader.min_x                = raster.get_xmin()-raster.get_xres()/2;
+  lasheader.min_y                = raster.get_ymin()-raster.get_yres()/2;
+  lasheader.max_x                = raster.get_xmax()+raster.get_xres()/2;
+  lasheader.max_y                = raster.get_ymax()-raster.get_yres()/2;
   lasheader.point_data_record_length = 20;
 
   LAS las(&lasheader);

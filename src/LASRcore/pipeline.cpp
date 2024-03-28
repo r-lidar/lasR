@@ -175,7 +175,7 @@ bool Pipeline::run_loaded()
   {
     if (verbose) print("Stage: %s\n", stage->get_name().c_str());
 
-    // Some stages need no input, they are connected another stage
+    // Some stages need no input, they are connected to another stage
     // (such as pit_fill which is connected to a raster stage and does not need any point)
     success = stage->process();
     if (!success)

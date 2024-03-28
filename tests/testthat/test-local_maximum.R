@@ -58,3 +58,22 @@ test_that("local maximum works with a raster",
   expect_equal(dim(ans[[2]]), c(262L, 6L))
   expect_equal(dim(ans[[4]]), c(222L, 6L))
 })
+
+test_that("growing region works with a raster with multiple files",
+{
+  f = paste0(system.file(package="lasR"), "/extdata/bcts/")
+  f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+  f = f[1:2]
+
+  reader = reader(f, filter = keep_first())
+  chm = rasterize(1, "max")
+  lmx = local_maximum_raster(chm, 5, min_height = 330)
+
+  u  = processor(reader + chm + lmx)
+
+  #terra::plot(u$rasterize, col = lidR::height.colors(25))
+  #plot(u$local_maximum$geom, add = TRUE, cex = 0.1, pch = 19)
+
+  expect_equal(nrow(u$local_maximum), 2111L)
+})
+
