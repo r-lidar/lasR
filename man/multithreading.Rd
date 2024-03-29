@@ -35,7 +35,7 @@ nested(ncores = ncores()/4L, ncores2 = 2L)
 has_omp_support()
 }
 \arguments{
-\item{strategy}{An object returned by one of \code{sequential()}, \code{concurrent_points()}, \code{concurrent_files} or
+\item{strategy}{An object returned by one of \code{sequential()}, \code{concurrent_points()}, \code{concurrent_files()} or
 \code{nested()}.}
 
 \item{ncores}{integer. Number of cores.}

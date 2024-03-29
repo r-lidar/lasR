@@ -27,7 +27,7 @@ pick the greatest value between the internal suggestion and this value.}
 
 \item{chunk}{numeric. By default, the collection of files is processed by file (\code{chunk = NULL} or \code{chunk = 0}).
 It is possible to process in arbitrary-sized chunks. This is useful for e.g., processing collections
-with large files or processing a massive \code{copc} files.}
+with large files or processing a massive \code{copc} file.}
 
 \item{...}{Other internal options not exposed to users.}
 }

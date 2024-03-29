@@ -23,7 +23,7 @@
 #' globally using e.g. `set_parallel_strategy(concurrent_files(4))`
 
 #'
-#' @param strategy An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files` or
+#' @param strategy An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files()` or
 #' `nested()`.
 #' @param ncores integer. Number of cores.
 #' @param ncores2 integer.  Number of cores. For `nested` strategy `ncores` is the number of concurrent

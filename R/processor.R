@@ -298,7 +298,7 @@ parse_options = function(on, with, ...)
 #' @param progress boolean. Displays a progress bar.
 #' @param chunk numeric. By default, the collection of files is processed by file (`chunk = NULL` or `chunk = 0`).
 #' It is possible to process in arbitrary-sized chunks. This is useful for e.g., processing collections
-#' with large files or processing a massive `copc` files.
+#' with large files or processing a massive `copc` file.
 #' @param ... Other internal options not exposed to users.
 #' @seealso [multithreading]
 #' @export
