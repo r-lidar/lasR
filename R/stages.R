@@ -337,6 +337,9 @@ local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), us
 local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile = tempgpkg())
 {
   raster = get_stage(raster)
+
+  if (!methods::is(raster, "LASRraster"))  stop("the stage must be a raster stage")
+
   ans <- list(algoname = "local_maximum", connect = raster[["uid"]], ws = ws, min_height = min_height, filter = filter, output = ofile)
   set_lasr_class(ans, vector = TRUE)
 }
@@ -768,7 +771,10 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 transform_with = function(stage, operator = "-", store_in_attribute = "")
 {
   stage = get_stage(stage)
-  if (!stage$algoname %in% c("triangulate", "rasterize", "aggregate", "pit_fill")) stop("the stage must be a triangulation or a raster stage")  # nocov
+
+  # Valid stage are all raster stages or triangulate
+  if (stage$algoname != "triangulate" && !methods::is(stage, "LASRraster"))
+      stop("the stage must be a triangulation or a raster stage")
 
   ans <- list(algoname = "transform_with", connect = stage[["uid"]], operator = operator, store_in_attribute = store_in_attribute)
   set_lasr_class(ans)
