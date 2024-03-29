@@ -689,7 +689,7 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 transform_with = function(stage, operator = "-", store_in_attribute = "")
 {
   stage = get_stage(stage)
-  if (!stage$algoname %in% c("triangulate", "rasterize", "aggregate")) stop("the stage must be a triangulation or a raster stage")  # nocov
+  if (!stage$algoname %in% c("triangulate", "rasterize", "aggregate", "pit_fill")) stop("the stage must be a triangulation or a raster stage")  # nocov
 
   ans <- list(algoname = "transform_with", connect = stage[["uid"]], operator = operator, store_in_attribute = store_in_attribute)
   set_lasr_class(ans)

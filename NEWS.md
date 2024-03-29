@@ -1,6 +1,10 @@
+# lasR 0.3.5
+
+- Fix: #17 `transform_with` can be used with `pit_fill`
+
 # lasR 0.3.4
 
-- Fix: #16 `pit_fill` producing corrupted output
+- Fix: #15 `pit_fill` producing corrupted output
 - Fix: `pit_fill` was not respecting the parameters given by the user
 - Fix: `pit_fill` in combination with `rasterize("max")` was not working properly
 
