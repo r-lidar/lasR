@@ -1,5 +1,6 @@
 #include "LAS.h"
 #include "GridPartition.h"
+#include "Raster.h"
 #include "macros.h"
 #include "error.h"
 
@@ -10,6 +11,7 @@
 LAS::LAS(LASheader* header)
 {
   this->header = header;
+  this->own_header = false;
 
   buffer = 0;
   index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
@@ -29,15 +31,82 @@ LAS::LAS(LASheader* header)
   // Initialize the good point format
   point.init(header, header->point_data_format, header->point_data_record_length, header);
 
-  // This fixes #2 and troubles with add_extrabytes but I don't know exactly why expect
+  // This fixes #2 and troubles with add_extrabytes but I don't know exactly why except
   // it is a matter of item in the compressor
   delete header->laszip;
   header->laszip = 0;
 }
 
+LAS::LAS(const Raster& raster)
+{
+  own_header = true;
+
+  buffer = 0;
+
+  npoints = 0;
+  capacity = 0;
+  current_point = 0;
+  next_point = 0;
+
+  read_started = false;
+
+  // For spatial indexing
+  current_interval = 0;
+  shape = nullptr;
+  inside = false;
+
+  // Convert the raster to a LAS
+  header = new LASheader;
+  header->file_source_ID       = 0;
+  header->version_major        = 1;
+  header->version_minor        = 2;
+  header->header_size          = 227;
+  header->offset_to_point_data = 227;
+  header->file_creation_year   = 0;
+  header->file_creation_day    = 0;
+  header->point_data_format    = 0;
+  header->x_scale_factor       = 0.01;
+  header->y_scale_factor       = 0.01;
+  header->z_scale_factor       = 0.01;
+  header->x_offset             = raster.get_full_extent()[0];
+  header->y_offset             = raster.get_full_extent()[1];
+  header->z_offset             = 0;
+  header->number_of_point_records = 1000;
+  header->min_x                = raster.get_xmin()-raster.get_xres()/2;
+  header->min_y                = raster.get_ymin()-raster.get_yres()/2;
+  header->max_x                = raster.get_xmax()+raster.get_xres()/2;
+  header->max_y                = raster.get_ymax()-raster.get_yres()/2;
+  header->point_data_record_length = 20;
+
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, raster.get_xres()*4);
+
+  point.init(header, header->point_data_format, header->point_data_record_length, header);
+
+  float nodata = raster.get_nodata();
+
+  for (int i = 0 ; i < raster.get_ncells() ; i++)
+  {
+    float z = raster.get_value(i);
+
+    if (std::isnan(z) || z == nodata) continue;
+
+    double x = raster.x_from_cell(i);
+    double y = raster.y_from_cell(i);
+
+    point.set_x(x);
+    point.set_y(y);
+    point.set_z(z);
+
+    add_point(point);
+  }
+
+  header->number_of_point_records = npoints;
+}
+
 LAS::~LAS()
 {
   if (buffer) free(buffer);
+  if (own_header) delete header;
   clean_index();
 }
 

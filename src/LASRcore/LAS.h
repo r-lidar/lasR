@@ -12,6 +12,7 @@
 #include <string>
 
 class GridPartition;
+class Raster;
 class LASfilter;
 class LAStransform;
 
@@ -19,6 +20,7 @@ class LAS
 {
 public:
   LAS(LASheader* header);
+  LAS(const Raster& raster);
   ~LAS();
   bool add_attribute( int data_type, const std::string& name, const std::string& description, double scale, double offset);
   bool add_point(const LASpoint& p);
@@ -61,6 +63,8 @@ private:
   unsigned char* buffer;
   int capacity;
   int next_point;
+
+  bool own_header; // The pointer to the LASheader is owned by LASlib (LASreader) but could, in some cases, be owned by the class
 
   // For spatial indexed search
   GridPartition* index;

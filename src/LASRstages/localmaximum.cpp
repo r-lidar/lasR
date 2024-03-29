@@ -58,57 +58,12 @@ bool LASRlocalmaximum::process()
   StageRaster* p = dynamic_cast<StageRaster*>(it->second);
   const Raster& raster = p->get_raster();
 
-  // Convert the raster to a LAS
-
-  LASheader lasheader;
-  lasheader.file_source_ID       = 0;
-  lasheader.version_major        = 1;
-  lasheader.version_minor        = 2;
-  lasheader.header_size          = 227;
-  lasheader.offset_to_point_data = 227;
-  lasheader.file_creation_year   = 0;
-  lasheader.file_creation_day    = 0;
-  lasheader.point_data_format    = 0;
-  lasheader.x_scale_factor       = 0.01;
-  lasheader.y_scale_factor       = 0.01;
-  lasheader.z_scale_factor       = 0.01;
-  lasheader.x_offset             = xmin;
-  lasheader.y_offset             = ymin;
-  lasheader.z_offset             = 0;
-  lasheader.number_of_point_records = raster.get_ncells();
-  lasheader.min_x                = raster.get_xmin()-raster.get_xres()/2;
-  lasheader.min_y                = raster.get_ymin()-raster.get_yres()/2;
-  lasheader.max_x                = raster.get_xmax()+raster.get_xres()/2;
-  lasheader.max_y                = raster.get_ymax()-raster.get_yres()/2;
-  lasheader.point_data_record_length = 20;
-
-  LAS las(&lasheader);
-
-  LASpoint laspoint;
-  laspoint.init(&lasheader, lasheader.point_data_format, lasheader.point_data_record_length, &lasheader);
-
-  float nodata = raster.get_nodata();
-
-  for (int i = 0 ; i < raster.get_ncells() ; i++)
-  {
-    float z = raster.get_value(i);
-
-    if (std::isnan(z) || z == nodata) continue;
-
-    double x = raster.x_from_cell(i);
-    double y = raster.y_from_cell(i);
-
-    laspoint.set_x(x);
-    laspoint.set_y(y);
-    laspoint.set_z((double)z);
-
-    las.add_point(laspoint);
-  }
+  // Convert the raster to a LAS object to recycle the point cloud based local maximum
+  LAS las(raster);
+  LAS* ptr = &las;
 
   // Process the LAS
-
   use_raster = false; // deactivate to process a LAS
-  LAS* ptr = &las;
   bool success = process(ptr);
   use_raster = true;
 
