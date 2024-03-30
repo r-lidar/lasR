@@ -1,3 +1,7 @@
+# lasR 0.3.6
+
+- Fix: #18 strongly improving arithmetic accuracy in `point_in_triangle`.
+
 # lasR 0.3.5
 
 - Fix: #17 `transform_with` can be used with `pit_fill`
