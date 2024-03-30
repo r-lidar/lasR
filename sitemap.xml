@@ -25,6 +25,9 @@
     <loc>/articles/lasR4.html</loc>
   </url>
   <url>
+    <loc>/articles/multithreading.html</loc>
+  </url>
+  <url>
     <loc>/authors.html</loc>
   </url>
   <url>
@@ -35,6 +38,9 @@
   </url>
   <url>
     <loc>/reference/add_extrabytes.html</loc>
+  </url>
+  <url>
+    <loc>/reference/add_rgb.html</loc>
   </url>
   <url>
     <loc>/reference/callback.html</loc>
@@ -70,10 +76,13 @@
     <loc>/reference/lasR-package.html</loc>
   </url>
   <url>
+    <loc>/reference/load_raster.html</loc>
+  </url>
+  <url>
     <loc>/reference/local_maximum.html</loc>
   </url>
   <url>
-    <loc>/reference/ncores.html</loc>
+    <loc>/reference/multithreading.html</loc>
   </url>
   <url>
     <loc>/reference/normalize.html</loc>
@@ -92,6 +101,9 @@
   </url>
   <url>
     <loc>/reference/sampling.html</loc>
+  </url>
+  <url>
+    <loc>/reference/set_exec_options.html</loc>
   </url>
   <url>
     <loc>/reference/summarise.html</loc>

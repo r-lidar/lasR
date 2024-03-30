@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
+    <a class="dropdown-item" href="../articles/multithreading.html">Multi-threading in the lasR package</a>
     <a class="dropdown-item" href="../articles/lasR1.html">1. Why lasR?</a>
     <a class="dropdown-item" href="../articles/lasR2.html">2. Tutorial</a>
     <a class="dropdown-item" href="../articles/lasR3.html">3. Pipelines</a>
@@ -69,6 +70,11 @@
           <code><a href="add_extrabytes.html">add_extrabytes()</a></code> 
         </dt>
         <dd>Add attributes to a LAS file</dd>
+      </dl><dl><dt>
+          
+          <code><a href="add_rgb.html">add_rgb()</a></code> 
+        </dt>
+        <dd>Add RGB attributes to a LAS file</dd>
       </dl><dl><dt>
           
           <code><a href="callback.html">callback()</a></code> 
@@ -121,14 +127,19 @@
         <dd>lasR: airborne LiDAR for forestry applications</dd>
       </dl><dl><dt>
           
-          <code><a href="local_maximum.html">local_maximum()</a></code> 
+          <code><a href="load_raster.html">load_raster()</a></code> 
+        </dt>
+        <dd>Load a raster for later use</dd>
+      </dl><dl><dt>
+          
+          <code><a href="local_maximum.html">local_maximum()</a></code> <code><a href="local_maximum.html">local_maximum_raster()</a></code> 
         </dt>
         <dd>Local Maximum</dd>
       </dl><dl><dt>
           
-          <code><a href="ncores.html">ncores()</a></code> <code><a href="ncores.html">half_cores()</a></code> 
+          <code><a href="multithreading.html">set_parallel_strategy()</a></code> <code><a href="multithreading.html">unset_parallel_strategy()</a></code> <code><a href="multithreading.html">get_parallel_strategy()</a></code> <code><a href="multithreading.html">ncores()</a></code> <code><a href="multithreading.html">half_cores()</a></code> <code><a href="multithreading.html">sequential()</a></code> <code><a href="multithreading.html">concurrent_files()</a></code> <code><a href="multithreading.html">concurrent_points()</a></code> <code><a href="multithreading.html">nested()</a></code> <code><a href="multithreading.html">has_omp_support()</a></code> 
         </dt>
-        <dd>Determine the number of available cores</dd>
+        <dd>Parallel processing tools</dd>
       </dl><dl><dt>
           
           <code><a href="normalize.html">normalize()</a></code> 
@@ -159,6 +170,11 @@
           <code><a href="sampling.html">sampling_voxel()</a></code> <code><a href="sampling.html">sampling_pixel()</a></code> 
         </dt>
         <dd>Sample the point cloud keeping one random point per units</dd>
+      </dl><dl><dt>
+          
+          <code><a href="set_exec_options.html">set_exec_options()</a></code> <code><a href="set_exec_options.html">unset_exec_option()</a></code> 
+        </dt>
+        <dd>Set global processing options</dd>
       </dl><dl><dt>
           
           <code><a href="summarise.html">summarise()</a></code> 
