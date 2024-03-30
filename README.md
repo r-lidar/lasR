@@ -44,7 +44,7 @@ The following benchmark compares how much time and RAM memory it takes for `lasR
 
 More details in the corresponding [vignette](https://r-lidar.github.io/lasR/articles/lasR1.html#main-differences-between-lasr-and-lidr)
 
-# About
+## About
 
 `lasR` is developed at [Laval University](https://www.ulaval.ca/en).
 
