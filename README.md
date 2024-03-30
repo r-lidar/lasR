@@ -13,7 +13,7 @@ The `lasR` package (pronounce laser) **does not** intent to supersede the `lidR`
 
 ## Installation
 
-There is currently no plan for releasing `lasR` on CRAN. You must compile and install the package from Github. On Windows you must install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) first to be able to build the package the use the package `remotes` to install the package:
+There is currently no plan for releasing `lasR` on CRAN. You must compile and install the package from Github. On Windows you must install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) first to be able to build the package. Then, use the package `remotes` to install `lasR`:
 
 ``` r
 remotes::install_github("r-lidar/lasR")
@@ -43,6 +43,12 @@ The following benchmark compares how much time and RAM memory it takes for `lasR
 - Has only 1 strong dependencies to `gdal`. But if `sf` and  `terra` are installed the experience is better.
 
 More details in the corresponding [vignette](https://r-lidar.github.io/lasR/articles/lasR1.html#main-differences-between-lasr-and-lidr)
+
+# About
+
+`lasR` is developed at [Laval University](https://www.ulaval.ca/en).
+
+<img src="https://upload.wikimedia.org/wikipedia/fr/b/bf/Universit%C3%A9_Laval_logo_et_texte.svg" width="300">
 
 ## Copyright Information
 
