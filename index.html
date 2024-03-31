@@ -85,7 +85,7 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>There is currently no plan for releasing <code>lasR</code> on CRAN. You must compile and install the package from Github. On Windows you must install <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> first to be able to build the package the use the package <code>remotes</code> to install the package:</p>
+<p>There is currently no plan for releasing <code>lasR</code> on CRAN. You must compile and install the package from Github. On Windows you must install <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> first to be able to build the package. Then, use the package <code>remotes</code> to install <code>lasR</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"r-lidar/lasR"</span><span class="op">)</span></span></code></pre></div>
 <p>Users can’t rely on the CRAN versioning system and RStudio update button to get the latest version of <code>lasR</code>. When loading <code>lasR</code> with <code><a href="https://github.com/r-lidar/lasR" class="external-link">library(lasR)</a></code>, an internal routine checks on GitHub for the latest version and prints a message if a new version is available. Updates are more frequent this way.</p>
@@ -113,6 +113,12 @@
 <li>Has only 1 strong dependencies to <code>gdal</code>. But if <code>sf</code> and <code>terra</code> are installed the experience is better.</li>
 </ul>
 <p>More details in the corresponding <a href="https://r-lidar.github.io/lasR/articles/lasR1.html#main-differences-between-lasr-and-lidr" class="external-link">vignette</a></p>
+</div>
+<div class="section level2">
+<h2 id="about">About<a class="anchor" aria-label="anchor" href="#about"></a>
+</h2>
+<p><code>lasR</code> is developed at <a href="https://www.ulaval.ca/en" class="external-link">Laval University</a>.</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/fr/b/bf/Universit%C3%A9_Laval_logo_et_texte.svg" width="300"></p>
 </div>
 <div class="section level2">
 <h2 id="copyright-information">Copyright Information<a class="anchor" aria-label="anchor" href="#copyright-information"></a>
