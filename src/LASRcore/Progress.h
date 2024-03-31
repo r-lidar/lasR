@@ -2,6 +2,7 @@
 #define PROGRESS_H
 
 #include <string>
+#include <cstdint>
 
 #define PROGRESSSYM "=================================================="
 
