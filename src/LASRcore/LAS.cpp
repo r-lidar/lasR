@@ -71,7 +71,7 @@ LAS::LAS(const Raster& raster)
   header->x_offset             = raster.get_full_extent()[0];
   header->y_offset             = raster.get_full_extent()[1];
   header->z_offset             = 0;
-  header->number_of_point_records = 1000;
+  header->number_of_point_records = raster.get_ncells();
   header->min_x                = raster.get_xmin()-raster.get_xres()/2;
   header->min_y                = raster.get_ymin()-raster.get_yres()/2;
   header->max_x                = raster.get_xmax()+raster.get_xres()/2;

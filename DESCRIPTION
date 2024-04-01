@@ -1,7 +1,7 @@
 Package: lasR
 Type: Package
 Title: Fast and Pipable Airborne LiDAR Data Tools
-Version: 0.4.0
+Version: 0.4.1
 Authors@R: c(
     person("Jean-Romain", "Roussel", email = "jean-romain.roussel.1@ulaval.ca", role = c("aut", "cre", "cph")),
     person("Martin", "Isenburg", email = "", role = "cph", comment = "Is the author of the included LASlib and LASzip libraries"),
