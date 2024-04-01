@@ -1,3 +1,8 @@
+# las 0.4.1
+
+- Fix: #20 segfault with `local_maximum_raster`
+- Fix: segfault when reading las files with a header that incorrectly report the number of points.
+
 # las 0.4.0
 
 - New: parallelism on multiple files. See `?multithreading`
