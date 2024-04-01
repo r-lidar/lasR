@@ -133,6 +133,10 @@ bool LAS::add_point(const LASpoint& p)
   {
     uint64_t capacity_max = MAX(header->number_of_point_records, header->extended_number_of_point_records);
 
+    // This may happens if the header is not properly populated
+    if (npoints >= capacity_max)
+      capacity_max = capacity*2; // # nocov
+
     if (capacity_max < (uint64_t)capacity*2)
       capacity = capacity_max;
     else
