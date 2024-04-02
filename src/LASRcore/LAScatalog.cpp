@@ -592,7 +592,7 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   while (laskdtree->get_overlap(index))
   {
     chunk.main_files.push_back(files[index].string());
-    if (chunk.name.empty()) files[index].stem().string() + "_" + std::to_string(i);
+    if (chunk.name.empty()) chunk.name = files[index].stem().string() + "_" + std::to_string(i);
   }
 
   // We search the file that contains the centroid of the query to assign a name to the query
