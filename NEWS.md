@@ -1,3 +1,8 @@
+# lasR 0.4.2
+
+- Fix: `add_attribute()` was incorrectly reallocating the memory causing potential crash especially when adding several attributes.
+- Fix: `reader_las()` crashing if the header of the LAS file did not record the correct number of point.
+
 # las 0.4.1
 
 - Fix: #20 segfault with `local_maximum_raster`
