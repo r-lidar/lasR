@@ -2,3 +2,23 @@ url: ~
 template:
   bootstrap: 5
 
+articles:
+- title: Presentation
+  navbar: Presentation
+  contents:
+  - why
+  - benchmarks
+
+- title: Tutorials
+  navbar: Tutorials
+  contents:
+  - tutorial
+  - multithreading
+  - baba
+
+- title: Ressources
+  navbar: Ressources
+  contents:
+    - pipeline
+
+

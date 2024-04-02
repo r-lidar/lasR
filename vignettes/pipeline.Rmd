@@ -1,5 +1,5 @@
 ---
-title: "3. Pipelines"
+title: "Pipelines"
 author: "Jean-Romain Roussel"
 output:
   html_document:
@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 suppressPackageStartupMessages(library(lasR))
 ```
 
-After reading the [tutorial](lasR2.html), one may have noticed that writing certain pipelines can be tedious, especially when normalizing a dataset, which always implies using the same code.
+After reading the [tutorial](tutorial.html), one may have noticed that writing certain pipelines can be tedious, especially when normalizing a dataset, which always implies using the same code.
 
 ```{r}
 tri <- triangulate(filter = keep_ground())

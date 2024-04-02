@@ -1,5 +1,5 @@
 ---
-title: "4. Benchmarks of lasR vs. lidR"
+title: "Benchmarks of lasR vs. lidR"
 author: "Jean-Romain Roussel"
 output:
   html_document:
