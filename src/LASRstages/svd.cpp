@@ -1,5 +1,5 @@
 #include "svd.h"
-#include "omp.h"
+#include "openmp.h"
 #include "error.h"
 
 #include <stdlib.h>   /* abs */
