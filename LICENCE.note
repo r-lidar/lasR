@@ -16,5 +16,10 @@ The lasR package as a whole is distributed under GPL-3. The lasR package include
 - For `delaunator`:
   - © 2018 Volodymyr Bilonenko. [delfrrr/delaunator-cpp](https://github.com/delfrrr/delaunator-cpp)
   - Provided under MIT license
+- For `Armadillo`:
+  - © 2008-2024 Conrad Sanderson (https://conradsanderson.id.au)
+  - © 2008-2016 National ICT Australia (NICTA)
+  - © 2017-2024 Data61 / CSIRO
+  - Provided under Apache license
 
-Full copies of the license agreements used by these components are included there respective folders (src/LASlib, src/LASzip, src/third_party).
+Full copies of the license agreements used by these components are included there respective folders in `src/vendor`).

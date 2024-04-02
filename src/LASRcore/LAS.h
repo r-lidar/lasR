@@ -22,7 +22,7 @@ public:
   LAS(LASheader* header);
   LAS(const Raster& raster);
   ~LAS();
-  bool add_attribute( int data_type, const std::string& name, const std::string& description, double scale, double offset);
+  bool add_attribute( int data_type, const std::string& name, const std::string& description, double scale = 1, double offset = 0);
   bool add_point(const LASpoint& p);
   bool add_rgb();
   bool seek(int pos);
@@ -38,6 +38,7 @@ public:
   bool get_point(int pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
   bool query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
+  bool knn(const double* x, int k, double radius_max, std::vector<PointLAS>& res, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
 
   // Spatial queries
   void set_inside(Shape* shape);

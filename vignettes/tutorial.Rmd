@@ -638,6 +638,7 @@ The topic is covered in a [dedicated article](multithreading.html)
 - `add_rgb()`
 - `classify_isolated_voxel()`
 - `delete_points()`
+- `geometry_features()`
 - `load_raster()`
 - `pit_fill()`
 - `write_vpc()`

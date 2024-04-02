@@ -63,7 +63,7 @@ struct PointLAS : public PointXYZ
   unsigned short NIR;
 };
 
-enum ShapeType { UNKNOWN, RECTANGLE, CIRCLE, TRIANGLE };
+enum ShapeType { UNKNOWN, RECTANGLE, CIRCLE, TRIANGLE, SPHERE};
 
 struct Shape
 {
@@ -75,6 +75,15 @@ struct Shape
   virtual bool contains(double x, double y) const = 0;
   virtual PointXYZ centroid() const = 0;
   virtual ShapeType type() const = 0;
+};
+
+struct Shape3D : Shape
+{
+  virtual ~Shape3D() = 0;
+  virtual double zmin() const = 0;
+  virtual double zmax() const = 0;
+  bool contains(double x, double y) const override { return false; }
+  virtual bool contains(double x, double y, double z) const = 0;
 };
 
 struct Rectangle : public Shape
@@ -140,6 +149,27 @@ private:
   int orientation() const;
 
   enum orientation {COLINEAR, CLOCKWISE, COUNTERCLOCKWISE};
+};
+
+class Sphere : public Shape3D
+{
+public:
+  PointXYZ center;
+  double radius;
+
+  Sphere() { radius = 0; }
+  Sphere(double x, double y, double z, double r) { center.x = x; center.y = y; center.z = z; radius = r; }
+  Sphere(const PointXYZ& center, double radius) { this->center = center; this->radius = radius; };
+  ~Sphere() { }
+  bool contains(double x, double y, double z) const override { return ((center.x - x)*(center.x - x) + (center.y - y)*(center.y - y) + (center.z - z)*(center.z - z)) <= (radius * radius); };
+  inline double xmin() const override { return center.x - radius; }
+  inline double xmax() const override { return center.x + radius; }
+  inline double ymin() const override { return center.y - radius; }
+  inline double ymax() const override { return center.y + radius; }
+  inline double zmin() const override { return center.z - radius; }
+  inline double zmax() const override { return center.z + radius; }
+  PointXYZ centroid() const override { return center; }
+  ShapeType type() const override { return ShapeType::SPHERE; };
 };
 
 struct Edge

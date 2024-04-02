@@ -15,6 +15,7 @@
 #include "readlas.h"
 #include "regiongrowing.h"
 #include "summary.h"
+#include "svd.h"
 #include "triangulate.h"
 #include "transformwith.h"
 #include "writelas.h"
@@ -343,6 +344,14 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     {
       double res = get_element_as_double(stage, "res");
       auto v = std::make_unique<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res);
+      pipeline.push_back(std::move(v));
+    }
+    else if (name  == "svd")
+    {
+      int k = get_element_as_int(stage, "k");
+      double r = get_element_as_double(stage, "r");
+      std::string features = get_element_as_string(stage, "features");
+      auto v = std::make_unique<LASRsvd>(k, r, features);
       pipeline.push_back(std::move(v));
     }
     else if (name  == "region_growing")

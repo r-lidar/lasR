@@ -198,6 +198,44 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
   set_lasr_class(ans)
 }
 
+# ===== G =====
+
+#' Compute pointwise geometry features
+#'
+#' Compute pointwise geometry features based on k-nearest neighbors. Each feature is added into an
+#' extrabyte attribute. The names of the extrabytes attributes (if recorded) are `coeff00`, `coeff01`,
+#' `coeff02` and so on, `lambda1`, `lambda2`, `lambda3`, `anisotropy`, `planarity`, `sphericity`, `linearity`,
+#' `omnivariance`, `curvature`, `eigensum`, `angle`, `normalX`, `normalY`, `normalZ`. There is a total
+#' of 23 attributes that can be added. All the features are recorded with single precision floating points.
+#' It is strongly discouraged to use them all. This stage modifies the point cloud in the pipeline
+#' but does not produce any output.
+#'
+#' @param k Integer. Number of nearest neighbors (k-nearest neighbors).
+#' @param r Numeric. Radius limit to search for the k-nearest neighbors.
+#' @param features String. Geometric feature to export. Each feature is added into an extrabyte
+#' attribute. Use 'C' for the 9 principal component coefficients, 'E' for the 3 eigenvalues of the
+#' covariance matrix, 'a' for anisotropy, 'p' for planarity, 's' for sphericity, 'l' for linearity,
+#' 'o' for omnivariance, 'c' for curvature, 'e' for the sum of eigenvalues, 'i' for the angle
+#' (inclination in degrees relative to the azimuth), and 'n' for the 3 components of the normal vector.
+#' Notice that the uppercase labeled components allow computing all the lowercase labeled components.
+#' Default is "". In this case, the singular value decomposition is computed but serves no purpose.
+#' @export
+
+#' @references Hackel, T., Wegner, J. D., & Schindler, K. (2016). Contour detection in unstructured 3D
+#' point clouds. In Proceedings of the IEEE conference on computer vision and pattern recognition (pp. 1610-1618).
+#' @md
+#' @examples
+#' f <- system.file("extdata", "Example.las", package = "lasR")
+#' pipeline <- geometry_features(8, features = "pi") + write_las()
+#' ans <- exec(pipeline, on = f)
+geometry_features = function(k, r = NULL, features = "")
+{
+  if (is.null(r)) r <- 0
+  ans <- list(algoname = "svd", k = k, r = r, features = features)
+  set_lasr_class(ans)
+}
+
+
 # ===== D =====
 
 #' Filter and delete points

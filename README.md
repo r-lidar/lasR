@@ -59,7 +59,7 @@ More details in the corresponding [vignette](https://r-lidar.github.io/lasR/arti
   - © 2007-2021 Martin Isenburg - <http://rapidlasso.com>
   - Provided under LGPL license and modified to be R-compliant by
     Jean-Romain Roussel.
-- For `chm_prep`
+- For `chm_prep`:
   - © 2008-2023 Benoît St-Onge - [Geophoton-inc/chm_prep](https://github.com/Geophoton-inc/chm_prep)
   - Provided under GPL-3 license.
 - For `json` parser:
@@ -68,3 +68,8 @@ More details in the corresponding [vignette](https://r-lidar.github.io/lasR/arti
 - For `delaunator`:
   - © 2018 Volodymyr Bilonenko. [delfrrr/delaunator-cpp](https://github.com/delfrrr/delaunator-cpp)
   - Provided under MIT license
+- For `Armadillo`:
+  - © 2008-2024 Conrad Sanderson (https://conradsanderson.id.au)
+  - © 2008-2016 National ICT Australia (NICTA)
+  - © 2017-2024 Data61 / CSIRO
+  - Provided under Apache license

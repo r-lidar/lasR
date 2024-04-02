@@ -8,6 +8,8 @@
 #include "lasfilter.hpp"
 #include "lastransform.hpp"
 
+#include <algorithm>
+
 LAS::LAS(LASheader* header)
 {
   this->header = header;
@@ -329,6 +331,106 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
   }
 
   return addr.size() > 0;
+}
+
+bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>& res,  LASfilter* const lasfilter, LAStransform* const lastransform) const
+{
+  double x = xyz[0];
+  double y = xyz[1];
+  double z = xyz[2];
+
+  LASpoint p;
+  p.init(point.quantizer, point.num_items, point.items, point.attributer);
+
+  double area = (header->max_x-header->min_x)*(header->max_y-header->min_y);
+  double density = npoints / area;
+  double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
+
+  int n = 0;
+  double radius_squared = radius * radius;
+  std::vector<Interval> intervals;
+  if (radius < radius_max)
+  {
+    // While we do not have k points or we did not reached the max radius search we increment the radius
+    while (n < k && n < npoints && radius <= radius_max)
+    {
+      intervals.clear();
+      index->query(x-radius, y-radius, x+radius, y+radius, intervals);
+
+      // In lasR we quey interval no points so we need to count the number of point in the interval
+      n = 0; for (const auto& interval : intervals) n += interval.end - interval.start + 1;
+
+      // If we have more than k points we may not have the knn but because of the filter and withhelded points
+      // we need to fetch the points to actually count them
+      if (n >= k)
+      {
+        n = 0;
+        Sphere s(x,y,z, radius);
+        for (const auto& interval : intervals)
+        {
+          for (int i = interval.start ; i <= interval.end ; i++)
+          {
+            p.copy_from(buffer + i * p.total_point_size);
+            if (point.get_withheld_flag() != 0) continue;
+            if (lasfilter && lasfilter->filter(&p)) continue;
+            if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
+            n++;
+          }
+        }
+      }
+
+      // After fetching the point
+      if (n < k)
+      {
+        radius *= 1.5;
+        radius_squared = radius* radius;
+      }
+    }
+  }
+
+  // We incremented the radius until we get k points. If the radius is bigger than the max radius we for radius = max radius
+  // and we may not have k points.
+  if (radius >= radius_max)
+  {
+    radius = radius_max;
+    radius_squared = radius*radius;
+  }
+
+  // We perform the query for real
+  intervals.clear();
+  index->query(x-radius, y-radius, x+radius, y+radius, intervals);
+
+  res.clear();
+  Sphere s(x,y,z, radius);
+  for (const auto& interval : intervals)
+  {
+    for (int i = interval.start ; i <= interval.end ; i++)
+    {
+      p.copy_from(buffer + i * p.total_point_size);
+
+      if (lasfilter && lasfilter->filter(&p)) continue;
+      if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
+      if (point.get_withheld_flag() != 0) continue;
+      if (lastransform) lastransform->transform(&p);
+
+      PointLAS pl(&p);
+      pl.FID = i;
+      res.push_back(pl);
+    }
+  }
+
+  // We sort the query by distance to (x,y)
+  std::sort(res.begin(), res.end(), [x,y,z](const PointXYZ& a, const PointXYZ& b)
+  {
+    double distA = (a.x - x)*(a.x - x) + (a.y - y)*(a.y - y) + (a.z - z)*(a.z - z);
+    double distB = (b.x - x)*(b.x - x) + (b.y - y)*(b.y - y) + (b.z - z)*(b.z - z);
+    return distA < distB;
+  });
+
+  // We keep the k first results into the result
+  if (k < res.size()) res.resize(k);
+
+  return true;
 }
 
 // Thread safe
