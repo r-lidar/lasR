@@ -114,8 +114,8 @@ bool LAS::add_point(const LASpoint& p)
 {
   if (buffer == 0)
   {
-    capacity = 100000;
-    buffer = (unsigned char*)malloc(capacity * point.total_point_size);
+    capacity = 100000 * point.total_point_size;
+    buffer = (unsigned char*)malloc(capacity);
     if (buffer == 0)
     {
       eprint("Memory allocation failed\n"); // # nocov
@@ -129,12 +129,12 @@ bool LAS::add_point(const LASpoint& p)
     return false;                                              // # nocov
   }
 
-  if (npoints == capacity)
+  if (npoints*point.total_point_size == capacity)
   {
-    uint64_t capacity_max = MAX(header->number_of_point_records, header->extended_number_of_point_records);
+    uint64_t capacity_max = MAX(header->number_of_point_records, header->extended_number_of_point_records)*point.total_point_size;
 
     // This may happens if the header is not properly populated
-    if (npoints >= capacity_max)
+    if (npoints*point.total_point_size >= capacity_max)
       capacity_max = capacity*2; // # nocov
 
     if (capacity_max < (uint64_t)capacity*2)
@@ -142,7 +142,7 @@ bool LAS::add_point(const LASpoint& p)
     else
       capacity *= 2;
 
-    buffer = (unsigned char*)realloc((void*)buffer, capacity * point.total_point_size);
+    buffer = (unsigned char*)realloc((void*)buffer, capacity);
 
     if (buffer == 0)
     {
@@ -514,9 +514,10 @@ bool LAS::update_point_and_buffer()
   LASpoint new_point;
   new_point.init(header, header->point_data_format, header->point_data_record_length, header);
 
-  if (capacity * point.total_point_size < npoints * new_point.total_point_size)
+  if (npoints * new_point.total_point_size > capacity)
   {
-    buffer = (unsigned char*)realloc((void*)buffer, npoints * new_point.total_point_size);
+    capacity = npoints * new_point.total_point_size;
+    buffer = (unsigned char*)realloc((void*)buffer, capacity);
   }
 
   if (buffer == 0)
