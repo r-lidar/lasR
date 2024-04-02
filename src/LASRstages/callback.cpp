@@ -14,7 +14,7 @@ LASRcallback::LASRcallback(double xmin, double ymin, double xmax, double ymax, s
   this->ans = R_NilValue;
 
   // Parse select = "*"
-  std::string all = "xyzitrndecskwoaupRGBNCb0123456789";
+  std::string all = "xyzitrndecskwoaupRGBNCbE";
   size_t pos = select.find('*');
   if (pos != std::string::npos) select = all;
 
@@ -89,6 +89,15 @@ bool LASRcallback::process(LAS*& las)
         if (las->is_attribute_loadable(index)) names.push_back(100 + index);
         break;
       }
+      case 'E':
+      {
+        for (int index = 0 ; index < las->header->number_attributes ; index++)
+        {
+          if (las->is_attribute_loadable(index)) names.push_back(100 + index);
+        }
+        break;
+      }
+
       default: warning("Flag '%c' does not correspond to an existing attribute", c);
     }
   }
