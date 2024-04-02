@@ -1,5 +1,5 @@
 ---
-title: "2. Tutorial"
+title: "Tutorial"
 author: "Jean-Romain Roussel"
 output:
   html_document:
@@ -288,6 +288,46 @@ ans = exec(merge, on = f)
 ans
 ```
 
+## Local maximum
+
+This stage works either on the point cloud or a raster. In the following pipeline the first stage builds a CHM, the second stage finds the local maxima in the point cloud and the second stages finds the local maxima in the chm. `lm1` and `lm2` are expected to produce relatively close results but not strictly identical.
+
+```r
+chm = rasterize(1, "max")
+lm1 = local_maximum(3)
+lm2 = local_maximum_raster(chm, 3)
+pipeline = chm + lm1 + lm2
+```
+
+## Tree Segmentation
+
+This section presents a complex pipeline for tree segmentation using `local_maximum_raster()` to identify tree tops on a CHM. It uses `region_growing()` to segment the trees using the seeds produced by `local_maximum_raster()`. The Canopy Height Model (CHM) is triangulation-based using `triangulation()` and `rasterize()` in the first returns. The CHM is post-processed with `pit_fill()`, an algorithm designed to enhance the CHM by filling pits and NAs. The reader may have noticed that the seeds are produced with the same raster than the one used in `region_growing()`. This is checked internally to ensure the seeds are matching the raster used for segmenting the trees. 
+
+In this tutorial, the pipeline is tested on one file to render the page faster. However, this pipeline can be applied to any number of files and will produce a continuous output, managing the buffer between files. Every intermediate output can be exported, and in this tutorial, we export everything to display all the outputs.
+
+```{r, echo = FALSE}
+f <- system.file("extdata", "MixedConifer.las", package="lasR")
+```
+
+```{r its}
+del = triangulate(filter = keep_first())
+chm = rasterize(0.5, del)
+chm2 = pit_fill(chm)
+seed = local_maximum_raster(chm2, 3)
+tree = region_growing(chm2, seed)
+pipeline = del + chm + chm2 +  seed + tree
+ans = exec(pipeline, on = f)
+```
+
+```{r, fig.show="hold", fig.width=4}
+col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(25)
+col2 = grDevices::colorRampPalette(c("purple", "blue", "cyan2", "yellow", "red", "green"))(50)
+terra::plot(ans$rasterize, col = col, mar = c(1, 1, 1, 3))
+terra::plot(ans$pit_fill, col = col, mar = c(1, 1, 1, 3))
+terra::plot(ans$region_growing, col = col2[sample.int(50, 277, TRUE)], mar = c(1, 1, 1, 3))
+plot(ans$local_maximum$geom, add = T, pch = 19, cex = 0.5)
+```
+
 ## Callback
 
 The `callback` stage holds significant importance as the second and last entry point to inject R code into the pipeline, following `rasterize()`. For those familiar with the `lidR` package, the initial step often involves reading data with `lidR::readLAS()` to expose the point cloud as a `data.frame` object in R. In contrast, `lasR` loads the point cloud optimally in C++ without exposing it directly to R. However, with `callback`, it becomes possible to expose the point cloud as a `data.frame` for executing specific R functions.
@@ -374,46 +414,6 @@ exec(pipeline, on = f)
 <blockquote style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; font-size: 14px; border-radius: 5px;">
 `callback()` exposes the point cloud as a `data.frame`. This is the only way to expose the point clouds to users in a manageable way. One of the reasons why `lasR` is more memory-efficient and faster than `lidR` is that it **does not** expose the point cloud as a `data.frame`. Thus, the pipelines using `callback()` are not significantly different from `lidR`. The advantage of using `lasR` here is the ability to pipe different stages.
 </blockquote>
-
-## Local maximum
-
-This stage works either on the point cloud or a raster. In the following pipeline the first stage builds a CHM, the second stage finds the local maxima in the point cloud and the second stages finds the local maxima in the chm. `lm1` and `lm2` are expected to produce relatively close results but not strictly identical.
-
-```r
-chm = rasterize(1, "max")
-lm1 = local_maximum(3)
-lm2 = local_maximum_raster(chm, 3)
-pipeline = chm + lm1 + lm2
-```
-
-## Tree Segmentation
-
-This section presents a complex pipeline for tree segmentation using `local_maximum_raster()` to identify tree tops on a CHM. It uses `region_growing()` to segment the trees using the seeds produced by `local_maximum_raster()`. The Canopy Height Model (CHM) is triangulation-based using `triangulation()` and `rasterize()` in the first returns. The CHM is post-processed with `pit_fill()`, an algorithm designed to enhance the CHM by filling pits and NAs. The reader may have noticed that the seeds are produced with the same raster than the one used in `region_growing()`. This is checked internally to ensure the seeds are matching the raster used for segmenting the trees. 
-
-In this tutorial, the pipeline is tested on one file to render the page faster. However, this pipeline can be applied to any number of files and will produce a continuous output, managing the buffer between files. Every intermediate output can be exported, and in this tutorial, we export everything to display all the outputs.
-
-```{r, echo = FALSE}
-f <- system.file("extdata", "MixedConifer.las", package="lasR")
-```
-
-```{r its}
-del = triangulate(filter = keep_first())
-chm = rasterize(0.5, del)
-chm2 = pit_fill(chm)
-seed = local_maximum_raster(chm2, 3)
-tree = region_growing(chm2, seed)
-pipeline = del + chm + chm2 +  seed + tree
-ans = exec(pipeline, on = f)
-```
-
-```{r, fig.show="hold", fig.width=4}
-col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(25)
-col2 = grDevices::colorRampPalette(c("purple", "blue", "cyan2", "yellow", "red", "green"))(50)
-terra::plot(ans$rasterize, col = col, mar = c(1, 1, 1, 3))
-terra::plot(ans$pit_fill, col = col, mar = c(1, 1, 1, 3))
-terra::plot(ans$region_growing, col = col2[sample.int(50, 277, TRUE)], mar = c(1, 1, 1, 3))
-plot(ans$local_maximum$geom, add = T, pch = 19, cex = 0.5)
-```
 
 ## Buffer
 
@@ -629,3 +629,15 @@ In the case of a `LAScatalog`, `exec()` respects the processing options of the `
 ## Parallel processing
 
 The topic is covered in a [dedicated article](multithreading.html)
+
+## Other stages
+
+`lasR` has several other stages not mentioned in this tutorial. Among others:
+
+- `add_extrabytes()`
+- `add_rgb()`
+- `classify_isolated_voxel()`
+- `delete_points()`
+- `load_raster()`
+- `pit_fill()`
+- `write_vpc()`

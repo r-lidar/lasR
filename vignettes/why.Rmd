@@ -1,5 +1,5 @@
 ---
-title: "1. Why lasR?"
+title: "Why lasR?"
 author: "Jean-Romain Roussel"
 output:
   html_document:
@@ -27,7 +27,7 @@ suppressPackageStartupMessages(library(lasR))
 
 ## Rationnale for `lasR` vs. `lidR`
 
-Do we need a new package? The short answer lies in the following graph. The x-axis represents the time to perform three different rasterizations (a CHM, a DTM, and a density map), and the y-axis represents the amount of RAM memory used for `lidR` and `lasR` (more details in the [benchmark](lasR4.html) vignette). `lasR` is intended to be much more efficient than `lidR` both in terms of memory usage and computation times.
+Do we need a new package? The short answer lies in the following graph. The x-axis represents the time to perform three different rasterizations (a CHM, a DTM, and a density map), and the y-axis represents the amount of RAM memory used for `lidR` and `lasR` (more details in the [benchmark](benchmarks.html) vignette). `lasR` is intended to be much more efficient than `lidR` both in terms of memory usage and computation times.
 
 ```{r, fig.width=6, fig.height=4, warning=F, echo=-1, echo=FALSE, fig.align = 'center'}
 col1 = rgb(0, 0.5, 1, alpha = 0.5)
@@ -65,7 +65,7 @@ lines(x, y, col = "red", lwd = 2)
 legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
 ```
 
-The second issue is the absence of a powerful pipeline engine in `lidR`. Performing a task as simple as extracting and deriving metrics for multiple inventory plots from a non-normalized collection of files is not that easy in `lidR`. It is straightforward if the point cloud is normalized, but if not, users must write a complex custom script. With the introduction of real pipelines, `lasR` enables users to do more complex tasks in an easier way (see [the tutorial](lasR2.html) vignette as well as [the pipeline](lasR3.html) vignette).
+The second issue is the absence of a powerful pipeline engine in `lidR`. Performing a task as simple as extracting and deriving metrics for multiple inventory plots from a non-normalized collection of files is not that easy in `lidR`. It is straightforward if the point cloud is normalized, but if not, users must write a complex custom script. With the introduction of real pipelines, `lasR` enables users to do more complex tasks in an easier way (see [the tutorial](tutorial.html) vignette as well as [the pipeline](pipeline.html) vignette).
 
 Last but not least, I have almost a decade of additional experience with R, C++, point cloud processing, and a lot of feedback compared to when I started the creation of `lidR`. I was simply not technically capable of writing `lasR` ten years ago!
 
@@ -85,7 +85,7 @@ Unlike `lidR`, `lasR` does not load lidar data into a `data.frame`. It is design
 
 ### Code
 
-`lasR` is written 100% in C++ and contains no R code. It utilizes the source code of `lidR` with significant improvements. The major improvements observed in the [benchmark](lasR4.html) are not so much in the source code but rather in the organization of the code, i.e., no longer using `data.frame`, memory management in C++ rather than R, no processing at the R level, pipelines, and so on.
+`lasR` is written 100% in C++ and contains no R code. It utilizes the source code of `lidR` with significant improvements. The major improvements observed in the [benchmark](benchmarks.html) are not so much in the source code but rather in the organization of the code, i.e., no longer using `data.frame`, memory management in C++ rather than R, no processing at the R level, pipelines, and so on.
 
 ## Should I use `lidR` or `lasR`?
 
@@ -107,7 +107,7 @@ I want to segment the trees, explore different methods, and test different param
 
 I want to extract circular ground inventories and compute metrics for each plot. 
 
-&rarr; If the dataset is already normalized, you can use either `lasR` or `lidR`; this is pretty much equivalent. `lidR` will be easier to use; `lasR` will be a little bit more efficient but more difficult to use (yet the [pipeline vignette](lasR3.html) contains a copy-pastable code for that). If your dataset is not normalized, `lasR` will be much simpler in that case, thanks to the pipeline processor that allows adding a normalization stage before computing the metrics.
+&rarr; If the dataset is already normalized, you can use either `lasR` or `lidR`; this is pretty much equivalent. `lidR` will be easier to use; `lasR` will be a little bit more efficient but more difficult to use (yet the [pipeline vignette](pipeline.html) contains a copy-pastable code for that). If your dataset is not normalized, `lasR` will be much simpler in that case, thanks to the pipeline processor that allows adding a normalization stage before computing the metrics.
 
 ### Example 4
 
