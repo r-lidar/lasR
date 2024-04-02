@@ -30,7 +30,7 @@
     
     <a class="navbar-brand me-2" href="index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,12 +45,17 @@
 <li class="nav-item dropdown">
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <h6 class="dropdown-header" data-toc-skip>Presentation</h6>
+    <a class="dropdown-item" href="articles/why.html">Why lasR?</a>
+    <a class="dropdown-item" href="articles/benchmarks.html">Benchmarks of lasR vs. lidR</a>
+    <div class="dropdown-divider"></div>
+    <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
+    <a class="dropdown-item" href="articles/tutorial.html">Tutorial</a>
+    <a class="dropdown-item" href="articles/multithreading.html">Parallel processing</a>
     <a class="dropdown-item" href="articles/baba.html">Buffered Area Based Approach</a>
-    <a class="dropdown-item" href="articles/multithreading.html">Multi-threading in the lasR package</a>
-    <a class="dropdown-item" href="articles/lasR1.html">1. Why lasR?</a>
-    <a class="dropdown-item" href="articles/lasR2.html">2. Tutorial</a>
-    <a class="dropdown-item" href="articles/lasR3.html">3. Pipelines</a>
-    <a class="dropdown-item" href="articles/lasR4.html">4. Benchmarks of lasR vs. lidR</a>
+    <div class="dropdown-divider"></div>
+    <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
+    <a class="dropdown-item" href="articles/pipeline.html">Pipelines</a>
   </div>
 </li>
 <li class="nav-item">
@@ -81,7 +86,7 @@
 <p><img src="https://img.shields.io/badge/Licence-GPL--3-blue.svg" alt="license"><img src="https://img.shields.io/badge/Lifecycle-Maturing-339999" alt="Lifecycle:Maturing"><a href="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/r-lidar/lasR?branch=main" class="external-link"><img src="https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></p>
 <p>R Package for Fast Airborne LiDAR Data Processing</p>
 <p>The <code>lasR</code> package (pronounce laser) <strong>does not</strong> intent to supersede the <code>lidR</code> package, but is designed to be much more efficient than <code>lidR</code> for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages. <code>lidR</code> intends to be a tool box to make data exploration and innovation easy. <code>lasR</code> on another hand focuses on production, being optimized for memory and speed and makes no trade off with other aspects of the development.</p>
-<p><span class="emoji" data-emoji="book">📖</span> Read <a href="https://r-lidar.github.io/lasR/articles/lasR2.html" class="external-link">the tutorial</a> to start with <code>lasR</code></p>
+<p><span class="emoji" data-emoji="book">📖</span> Read <a href="https://r-lidar.github.io/lasR/articles/tutorial.html" class="external-link">the tutorial</a> to start with <code>lasR</code></p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -97,7 +102,7 @@
 <div class="section level2">
 <h2 id="benchmark">Benchmark<a class="anchor" aria-label="anchor" href="#benchmark"></a>
 </h2>
-<p>The following benchmark compares how much time and RAM memory it takes for <code>lasR</code> and <code>lidR</code> to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the <a href="https://r-lidar.github.io/lasR/articles/lasR4.html" class="external-link">benchmark</a> vignette.</p>
+<p>The following benchmark compares how much time and RAM memory it takes for <code>lasR</code> and <code>lidR</code> to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html" class="external-link">benchmark</a> vignette.</p>
 <p><img src="reference/figures/readme_benchmark.png" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">

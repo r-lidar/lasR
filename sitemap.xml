@@ -10,22 +10,22 @@
     <loc>/articles/baba.html</loc>
   </url>
   <url>
+    <loc>/articles/benchmarks.html</loc>
+  </url>
+  <url>
     <loc>/articles/index.html</loc>
   </url>
   <url>
-    <loc>/articles/lasR1.html</loc>
-  </url>
-  <url>
-    <loc>/articles/lasR2.html</loc>
-  </url>
-  <url>
-    <loc>/articles/lasR3.html</loc>
-  </url>
-  <url>
-    <loc>/articles/lasR4.html</loc>
-  </url>
-  <url>
     <loc>/articles/multithreading.html</loc>
+  </url>
+  <url>
+    <loc>/articles/pipeline.html</loc>
+  </url>
+  <url>
+    <loc>/articles/tutorial.html</loc>
+  </url>
+  <url>
+    <loc>/articles/why.html</loc>
   </url>
   <url>
     <loc>/authors.html</loc>
