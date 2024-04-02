@@ -2,6 +2,7 @@
 
 - Fix: `add_attribute()` was incorrectly reallocating the memory causing potential crash especially when adding several attributes.
 - Fix: `reader_las()` crashing if the header of the LAS file did not record the correct number of point.
+- Fix: naming of the queries
 
 # las 0.4.1
 
