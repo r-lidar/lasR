@@ -6,3 +6,9 @@ read_las = function(f, expose = "*")
   call = callback(load, expose, no_las_update = TRUE)
   return (exec(call, f))
 }
+
+test_that("Has openmp support",
+{
+  skip_on_os("mac")
+  expect_true(has_omp_support())
+})
