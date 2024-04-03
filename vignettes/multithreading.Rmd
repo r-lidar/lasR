@@ -8,6 +8,10 @@ output:
       collapsed: false
       smooth_scroll: false
     toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{5. Parallel processing}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 
