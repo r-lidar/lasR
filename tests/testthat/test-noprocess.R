@@ -1,4 +1,4 @@
-test_that("it is possible to flag some files for not being process",
+test_that("it is possible to flag some files for not being processed",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
   noprocess = c(FALSE, FALSE, TRUE, FALSE)
@@ -16,7 +16,7 @@ test_that("it is possible to flag some files for not being process",
   expect_equal(dim(ans), c(3L,1L))
 })
 
-test_that("the file not process is used as buffer",
+test_that("the file not processed is used as buffer",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
   f = list.files(f, full.names = TRUE, pattern = "\\.laz")[1:2]

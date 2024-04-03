@@ -1,3 +1,7 @@
+# lasR 0.4.3
+
+- Fix: #22 segfault with partial processing
+
 # lasR 0.4.2
 
 - Fix: `add_attribute()` was incorrectly reallocating the memory causing potential crash especially when adding several attributes.

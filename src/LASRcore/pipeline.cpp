@@ -6,6 +6,8 @@
 #include "macros.h"
 #include "openmp.h"
 
+#include <algorithm>
+
 Pipeline::Pipeline()
 {
   ncpu = 1;
@@ -391,6 +393,17 @@ double Pipeline::need_buffer()
 
 void Pipeline::sort()
 {
+  // The vector 'order' contain the chunk IDs in the order they were computed. In sequential processing
+  // this order is trivially 1 2 3 4 5 ... but in parallel the order is unpredictable like 1 5 3 2 4.
+  // sorting reorder the results such as parallel processing is order preserving. BUT !! Some chunk may
+  // be skipped if some file are flagged as 'noprocess' (buffer) only. In this case the order is
+  // 1 5 2 4 with the last index being 5 but only for 4 output. This segfault see #22. Consequently we
+  // recompute the order ensuring to have valid indexes before to sort
+  std::vector<std::pair<int, int>> index;
+  for (int i = 0; i < order.size(); i++) index.push_back(std::make_pair(order[i], i));
+  std::sort(index.begin(), index.end());
+  for (int i = 0; i < order.size(); i++) order[i] = index[i].second;
+
   for (auto&& stage : pipeline)
   {
     stage->sort(order);
