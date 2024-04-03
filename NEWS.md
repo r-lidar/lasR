@@ -1,6 +1,7 @@
 # lasR 0.4.3
 
 - Fix: #22 segfault with partial processing
+- Fix: memory access to wkt string non nul-terminated
 
 # lasR 0.4.2
 
