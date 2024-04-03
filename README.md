@@ -13,18 +13,18 @@ The `lasR` package (pronounce laser) **does not** intent to supersede the `lidR`
 
 ## Installation
 
-There is currently no plan for releasing `lasR` on CRAN. You must compile and install the package from Github. On Windows you must install [Rtools](https://cran.r-project.org/bin/windows/Rtools/) first to be able to build the package. Then, use the package `remotes` to install `lasR`:
+There is currently no plan for releasing `lasR` on CRAN. `lasR` is hosted on `r-universe` instead:
 
-``` r
-remotes::install_github("r-lidar/lasR")
+```r
+install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')
 ```
 
-Users can't rely on the CRAN versioning system and RStudio update button to get the latest version of `lasR`. When loading `lasR` with `library(lasR)`, an internal routine checks on GitHub for the latest version and prints a message if a new version is available. Updates are more frequent this way.
+Users can't rely on the CRAN versioning system and RStudio update button to get the latest version of `lasR`. When loading `lasR` with `library(lasR)`, an internal routine checks for the latest version and prints a message if a new version is available. Updates are more frequent this way.
 
 ```r
 library(lasR)
 #> lasR 0.1.3 is now available. You are using 0.1.1
-#> remotes::install_github("r-lidar/lasR")
+#> install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')
 ```
 
 ## Benchmark
