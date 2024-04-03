@@ -560,7 +560,7 @@ void LAS::set_index(float res)
 bool LAS::add_rgb()
 {
   int pdf = header->point_data_format;
-  int target;
+  int target = 0;
 
   if (pdf == 2 || pdf == 3 || pdf == 5 || pdf == 7 || pdf == 8 || pdf == 10)
     return true;
@@ -570,7 +570,11 @@ bool LAS::add_rgb()
   else if (pdf == 4) target = 5;
   else if (pdf == 6) target = 7;
   else if (pdf == 9) target = 10;
-
+  else
+  {
+    last_error = "Internal error: unsupported pdf"; // # nocov
+    return false; // # nocov
+  }
   header->point_data_format = target;
   header->point_data_record_length += 3*2; // 3 x 16 bits = 3 x 2 bytes
 
