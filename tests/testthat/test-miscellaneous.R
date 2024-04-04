@@ -18,4 +18,5 @@ test_that("temp files",
 test_that(".onLoad",
 {
   expect_error(lasR:::.onLoad(), NA)
+  set_parallel_strategy(concurrent_files(2))
 })
