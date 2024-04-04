@@ -22,7 +22,7 @@ public:
   LAS(LASheader* header);
   LAS(const Raster& raster);
   ~LAS();
-  bool add_attribute( int data_type, const std::string& name, const std::string& description, double scale = 1, double offset = 0);
+  bool add_attribute(int data_type, const std::string& name, const std::string& description, double scale = 1, double offset = 0, bool mem_realloc = true);
   bool add_point(const LASpoint& p);
   bool add_rgb();
   bool seek(int pos);
@@ -32,8 +32,9 @@ public:
   void remove_point();
   bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
+  bool realloc_point_and_buffer();
 
-  // Thread safe
+  // Thread safe queries
   void get_xyz(int pos, double* xyz) const;
   bool get_point(int pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
   bool query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
@@ -55,7 +56,6 @@ public:
 private:
   void clean_index();
   void clean_query();
-  bool update_point_and_buffer();
 
 public:
   LASpoint point;

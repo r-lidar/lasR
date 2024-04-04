@@ -460,7 +460,7 @@ void LAS::set_intervals_to_read(const std::vector<Interval>& intervals)
   intervals_to_read = intervals;
 }
 
-bool LAS::add_attribute(int data_type, const std::string& name, const std::string& description, double scale, double offset)
+bool LAS::add_attribute(int data_type, const std::string& name, const std::string& description, double scale, double offset, bool mem_realloc)
 {
   data_type--;
   bool has_scale = scale != 1;
@@ -539,7 +539,10 @@ bool LAS::add_attribute(int data_type, const std::string& name, const std::strin
   header->update_extra_bytes_vlr();
   header->point_data_record_length += attribute.get_size();
 
-  return update_point_and_buffer();
+  if (mem_realloc)
+    return realloc_point_and_buffer();
+  else
+    return true;
 }
 
 /*void LAS::set_index(bool index)
@@ -581,7 +584,7 @@ bool LAS::add_rgb()
   if (target == 10)
     header->point_data_record_length += 2; // 2 bytes for NIR
 
-  return update_point_and_buffer();
+  return realloc_point_and_buffer();
 }
 
 void LAS::clean_index()
@@ -615,7 +618,7 @@ bool LAS::is_attribute_loadable(int index)
   return true;
 }
 
-bool LAS::update_point_and_buffer()
+bool LAS::realloc_point_and_buffer()
 {
   LASpoint new_point;
   new_point.init(header, header->point_data_format, header->point_data_record_length, header);
