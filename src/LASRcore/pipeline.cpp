@@ -7,6 +7,7 @@
 #include "openmp.h"
 
 #include <algorithm>
+#include <unordered_map>
 
 Pipeline::Pipeline()
 {
@@ -399,15 +400,16 @@ void Pipeline::sort()
   // be skipped if some file are flagged as 'noprocess' (buffer) only. In this case the order is
   // 1 5 2 4 with the last index being 5 but only for 4 output. This segfault see #22. Consequently we
   // recompute the order ensuring to have valid indexes before to sort
-  std::vector<std::pair<int, int>> index;
-  for (int i = 0; i < order.size(); i++) index.push_back(std::make_pair(order[i], i));
-  std::sort(index.begin(), index.end());
-  for (int i = 0; i < order.size(); i++) order[i] = index[i].second;
+  // Create a mapping of original numbers to new numbers
+  int new_index = 0;
+  std::unordered_map<int, int> mapping;
+  std::vector<int> sorted_order = order;   // Sort the vector temporarily to get a consistent order for missing numbers
+  std::sort(sorted_order.begin(), sorted_order.end());
+  for (int num : sorted_order) { if (mapping.find(num) == mapping.end()) { mapping[num] = new_index++; }} // Assign new indices to existing numbers
+  for (int& num : order) num = mapping[num]; // Replace elements in the original vector with new indices
 
-  for (auto&& stage : pipeline)
-  {
-    stage->sort(order);
-  }
+  // Sort the data in the stage
+  for (auto&& stage : pipeline) stage->sort(order);
 }
 
 void Pipeline::clear(bool last)
