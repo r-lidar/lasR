@@ -465,12 +465,12 @@ bool LAS::add_attribute(int data_type, const std::string& name, const std::strin
   data_type--;
   bool has_scale = scale != 1;
   bool has_offset = offset != 0;
-  bool has_no_data = false;
-  bool has_min = false;
-  bool has_max = false;
-  double min = 0;
-  double max = 0;
-  double no_data = -99999.0;
+  //bool has_no_data = false;
+  //bool has_min = false;
+  //bool has_max = false;
+  //double min = 0;
+  //double max = 0;
+  //double no_data = -99999.0;
 
   LASattribute attribute(data_type, name.c_str(), description.c_str());
 
