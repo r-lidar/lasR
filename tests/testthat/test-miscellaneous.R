@@ -15,3 +15,7 @@ test_that("temp files",
   expect_error(templaz(), NA)
 })
 
+test_that(".onLoad",
+{
+  expect_error(lasR:::.onLoad(), NA)
+})

@@ -96,12 +96,11 @@ get_latest_version = function()
 
   ind = which(ans[,1] == "lasR")
 
-  if (length(ind) == 0)
-    return(NULL) # nocov
+  if (length(ind) == 0) return(NULL)
 
-  version <- ans[ind, 5]
-  version <- package_version(version)
-  return(version)
+  version <- ans[ind, 5] # nocov
+  version <- package_version(version) # nocov
+  return(version) # nocov
 }
 
 is_dev_version = function(version)

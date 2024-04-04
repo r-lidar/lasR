@@ -74,12 +74,13 @@ test_that("aggregate names each band",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  fun = function(x) { list(avg = mean(x), max = max(x)) }
+  fun = function(x,y) { list(avg = mean(x), max = max(x), R = mean(y)) }
 
-  agg = lasR:::aggregate(2, fun(Intensity))
-  ans = exec(agg, f)
+  agg = lasR:::aggregate(2, fun(Intensity, R))
+  pipeline = add_rgb() + agg
+  ans = exec(pipeline, f)
 
-  expect_true(all(names(ans) == c("avg", "max")))
+  expect_true(all(names(ans) == c("avg", "max", "R")))
 })
 
 
