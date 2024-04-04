@@ -9,7 +9,7 @@
 #include <vector>
 #include <iostream>
 
-#include "armadillo/armadillo.h"
+#include "armadillo/armadillo"
 
 #define PUREKNN 0
 #define KNNRADIUS 1

@@ -4,7 +4,7 @@ TARGET = lib$(subst gcc,,$(COMPILED_BY))$(R_ARCH)
 
 PKG_CPPFLAGS =\
 	-I$(RWINLIB)/include \
--I./ -I./LASRcore/ -I./LASRstages/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ -I./vendor/armadillo/ \
+-I./ -I./LASRcore/ -I./LASRstages/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ \
 	-DHAVE_PROJ_H \
 	-DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R
 
