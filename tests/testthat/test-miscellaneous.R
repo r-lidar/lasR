@@ -15,3 +15,8 @@ test_that("temp files",
   expect_error(templaz(), NA)
 })
 
+test_that(".onLoad",
+{
+  expect_error(lasR:::.onLoad(), NA)
+  set_parallel_strategy(concurrent_files(2))
+})

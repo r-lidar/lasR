@@ -164,6 +164,10 @@ test_that("callback fails nicely",
   write = write_las()
   pipeline = read + call + write
   expect_error(processor(pipeline), "error in test_stop")
+
+  call = callback(unname, expose = "xyzi")
+  pipeline = read + call
+  expect_error(processor(pipeline), "the data.frame has no names")
 })
 
 test_that("callback works with many args",

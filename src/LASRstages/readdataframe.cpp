@@ -95,9 +95,9 @@ bool LASRdataframereader::process(LASheader*& header)
     else if (sname == "ScanAngle") col_names[i] = attributes::SA;
     else if (sname == "UserData") col_names[i] = attributes::UD;
     else if (sname == "PointSourceID") col_names[i] = attributes::PSID;
-    else if (sname == "Red") { col_names[i] = attributes::R; has_rgb = true; }
-    else if (sname == "Blue") { col_names[i] = attributes::G; has_rgb = true; }
-    else if (sname == "Green") { col_names[i] = attributes::B; has_rgb = true; }
+    else if (sname == "R") { col_names[i] = attributes::R; has_rgb = true; }
+    else if (sname == "G") { col_names[i] = attributes::G; has_rgb = true; }
+    else if (sname == "B") { col_names[i] = attributes::B; has_rgb = true; }
     else if (sname == "NIR") { col_names[i] = attributes::NIR; has_nir = true; }
     else if (sname == "Channel") { col_names[i] = attributes::CHAN; is_extended = true; }
     else if (sname == "Buffer") col_names[i] = attributes::BUFF;
