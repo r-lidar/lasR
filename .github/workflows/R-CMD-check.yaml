@@ -20,13 +20,15 @@ jobs:
       fail-fast: false
       matrix:
         config:
+          #- {os: macos-latest,   r: 'oldrel'} # does not have full c++17 support
           - {os: macos-latest,   r: 'release'}
-          - {os: macos-latest,   r: 'oldrel'}
+          #- {os: macos-latest,   r: 'devel'}  # does not install units which is a dependency
+          #- {os: windows-latest, r: 'oldrel'} # does not have gdal??
           - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
+          - {os: windows-latest, r: 'devel'}
           - {os: ubuntu-latest,   r: 'oldrel'}
-
+          - {os: ubuntu-latest,   r: 'release'}
+          - {os: ubuntu-latest,   r: 'devel'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

@@ -57,9 +57,9 @@ check_update = function()
   if (new_version)
   {
     if (dev_version)
-      msg = paste("lasR", last, "is now available. You are using", curr, "(unstable) \nremotes::install_github(\"r-lidar/lasR\")")
+      msg = paste("lasR", last, "is now available. You are using", curr, "(unstable) \ninstall.packages('lasR', repos = 'https://r-lidar.r-universe.dev')")
     else
-      msg = paste("lasR", last, "is now available. You are using", curr, "\nremotes::install_github(\"r-lidar/lasR\")")
+      msg = paste("lasR", last, "is now available. You are using", curr, "\ninstall.packages('lasR', repos = 'https://r-lidar.r-universe.dev')")
   }
   else if (dev_version)
   {
@@ -74,31 +74,32 @@ check_update = function()
 
 get_latest_version = function()
 {
-  f <- paste0(tempdir(), "/LASRDESCRIPTION")
-
   nullcon = NULL
 
   ans <- tryCatch(
   {
     nullcon <- file(nullfile(), open = "wb")
     sink(nullcon, type = "message")
-    suppressWarnings(utils::download.file("https://raw.githubusercontent.com/r-lidar/lasR/main/DESCRIPTION", f, quiet = TRUE))
+    res <- utils::old.packages(repos = "https://r-lidar.r-universe.dev")
     sink(type = "message")
     close(nullcon)
-    TRUE
+    res
   },
   error = function(e)
   {
     sink(NULL, type = "message") # nocov
     close(nullcon) # nocov
-    return(FALSE) # nocov
+    return(NULL) # nocov
   })
 
-  if (isFALSE(ans))
+  if (is.null(ans)) return(NULL) # nocov
+
+  ind = which(ans[,1] == "lasR")
+
+  if (length(ind) == 0)
     return(NULL) # nocov
 
-  m <- read.dcf(f)
-  version <- m[4]
+  version <- ans[ind, 5]
   version <- package_version(version)
   return(version)
 }

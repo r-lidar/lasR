@@ -3,7 +3,12 @@
 - New: stage `geometry_features()` to compute pointwise geometry features based on k-nearest neighbors.
 - New: stage `callback()` can load more than 10 extrabyte attributes. Using the flag `E` all the extrabytes are loaded.
 
-## lasR 0.4.2
+# lasR 0.4.3
+
+- Fix: #22 segfault with partial processing
+- Fix: memory access to wkt string non nul-terminated
+
+# lasR 0.4.2
 
 - Fix: `add_attribute()` was incorrectly reallocating the memory causing potential crash especially when adding several attributes.
 - Fix: `reader_las()` crashing if the header of the LAS file did not record the correct number of point.
