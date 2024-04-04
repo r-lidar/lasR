@@ -645,7 +645,7 @@ bool LAS::update_point_and_buffer()
   return true;
 }
 
-LAStransform* LAS::make_z_transformer(const std::string& use_attribute)
+LAStransform* LAS::make_z_transformer(const std::string& use_attribute) const
 {
   if (use_attribute == "Intensity")
   {
@@ -664,5 +664,77 @@ LAStransform* LAS::make_z_transformer(const std::string& use_attribute)
     LAStransform* lastransform = new LAStransform();
     lastransform->parse(buffer);
     return lastransform;
+  }
+}
+
+int LAS::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)
+{
+  std::vector<int> formats = {0,1,2,3,6,7,8};
+
+  if (has_nir) // format 8 or 10
+    return 8;
+
+  if (has_gps) // format 1,3:10
+  {
+    auto end = std::remove(formats.begin(), formats.end(), 0);
+    formats.erase(end, formats.end());
+    end = std::remove(formats.begin(), formats.end(), 2);
+    formats.erase(end, formats.end());
+  }
+
+  if (has_rgb)  // format 3, 5, 7, 8
+  {
+    auto end = std::remove(formats.begin(), formats.end(), 0);
+    formats.erase(end, formats.end());
+    end = std::remove(formats.begin(), formats.end(), 1);
+    formats.erase(end, formats.end());
+    end = std::remove(formats.begin(), formats.end(), 6);
+    formats.erase(end, formats.end());
+  }
+
+  return formats[0];
+}
+
+int LAS::get_header_size(int minor_version)
+{
+  int header_size = 0;
+
+  switch (minor_version)
+  {
+  case 0:
+  case 1:
+  case 2:
+    header_size = 227;
+    break;
+  case 3:
+    header_size = 235;
+    break;
+  case 4:
+    header_size = 375;
+    break;
+  default:
+    header_size = -1;
+  break;
+  }
+
+  return header_size;
+}
+
+int LAS::get_point_data_record_length(int point_data_format, int num_extrabytes)
+{
+  switch (point_data_format)
+  {
+  case 0: return 20 + num_extrabytes; break;
+  case 1: return 28 + num_extrabytes; break;
+  case 2: return 26 + num_extrabytes; break;
+  case 3: return 34 + num_extrabytes; break;
+  case 4: return 57 + num_extrabytes; break;
+  case 5: return 63 + num_extrabytes; break;
+  case 6: return 30 + num_extrabytes; break;
+  case 7: return 36 + num_extrabytes; break;
+  case 8: return 38 + num_extrabytes; break;
+  case 9: return 59 + num_extrabytes; break;
+  case 10: return 67 + num_extrabytes; break;
+  default: return 0; break;
   }
 }

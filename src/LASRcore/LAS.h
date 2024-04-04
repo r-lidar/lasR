@@ -47,7 +47,10 @@ public:
   void set_intervals_to_read(const std::vector<Interval>& intervals);
 
   // Tools
-  LAStransform* make_z_transformer(const std::string& use_attribute);
+  LAStransform* make_z_transformer(const std::string& use_attribute) const;
+  static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
+  static int get_header_size(int minor_version);
+  static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir);
 
 private:
   void clean_index();
