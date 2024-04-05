@@ -1,7 +1,7 @@
 test_that("geometry_features works",
 {
   f <- system.file("extdata", "Example.las", package = "lasR")
-  pipeline <- geometry_features(8, features = "*") + write_las()
+  pipeline <- geometry_features(k = 8, features = "*") + write_las()
   ans <- exec(pipeline, on = f)
   las = read_las(ans)
 

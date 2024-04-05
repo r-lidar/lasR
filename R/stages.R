@@ -202,16 +202,18 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 
 #' Compute pointwise geometry features
 #'
-#' Compute pointwise geometry features based on k-nearest neighbors. Each feature is added into an
+#' Compute pointwise geometry features based on local neighborhood. Each feature is added into an
 #' extrabyte attribute. The names of the extrabytes attributes (if recorded) are `coeff00`, `coeff01`,
 #' `coeff02` and so on, `lambda1`, `lambda2`, `lambda3`, `anisotropy`, `planarity`, `sphericity`, `linearity`,
 #' `omnivariance`, `curvature`, `eigensum`, `angle`, `normalX`, `normalY`, `normalZ`. There is a total
-#' of 23 attributes that can be added. All the features are recorded with single precision floating points.
-#' It is strongly discouraged to use them all. This stage modifies the point cloud in the pipeline
-#' but does not produce any output.
+#' of 23 attributes that can be added. It is strongly discouraged to use them all. All the features
+#' are recorded with single precision floating points yet computing them all will triple the size of
+#' the point cloud. This stage modifies the point cloud in the pipeline but does not produce any output.
 #'
-#' @param k Integer. Number of nearest neighbors (k-nearest neighbors).
-#' @param r Numeric. Radius limit to search for the k-nearest neighbors.
+#' @param k,r integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
+#' sphere. If k is given and r is missing, computes with the knn, if r is given and k is missing
+#' computes with a sphere neighborhood, if k and r are given computes with the knn and a limit on the
+#' search distance.
 #' @param features String. Geometric feature to export. Each feature is added into an extrabyte
 #' attribute. Use 'C' for the 9 principal component coefficients, 'E' for the 3 eigenvalues of the
 #' covariance matrix, 'a' for anisotropy, 'p' for planarity, 's' for sphericity, 'l' for linearity,
@@ -228,9 +230,13 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #' f <- system.file("extdata", "Example.las", package = "lasR")
 #' pipeline <- geometry_features(8, features = "pi") + write_las()
 #' ans <- exec(pipeline, on = f)
-geometry_features = function(k, r = NULL, features = "")
+geometry_features = function(k, r, features = "")
 {
-  if (is.null(r)) r <- 0
+  if (missing(k) && missing(r))  stop("'k' and 'r' are missing", call. = FALSE)
+  if (!missing(r) && !missing(k)) { } # knn + radius
+  if (!missing(k) && missing(r))  { r <- 0 }   # knn
+  if (!missing(r) && missing(k)) { k <- 0 }   # radius
+
   ans <- list(algoname = "svd", k = k, r = r, features = features)
   set_lasr_class(ans)
 }

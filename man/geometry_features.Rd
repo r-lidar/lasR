@@ -4,12 +4,13 @@
 \alias{geometry_features}
 \title{Compute pointwise geometry features}
 \usage{
-geometry_features(k, r = NULL, features = "")
+geometry_features(k, r, features = "")
 }
 \arguments{
-\item{k}{Integer. Number of nearest neighbors (k-nearest neighbors).}
-
-\item{r}{Numeric. Radius limit to search for the k-nearest neighbors.}
+\item{k, r}{integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
+sphere. If k is given and r is missing, computes with the knn, if r is given and k is missing
+computes with a sphere neighborhood, if k and r are given computes with the knn and a limit on the
+search distance.}
 
 \item{features}{String. Geometric feature to export. Each feature is added into an extrabyte
 attribute. Use 'C' for the 9 principal component coefficients, 'E' for the 3 eigenvalues of the
@@ -20,13 +21,13 @@ Notice that the uppercase labeled components allow computing all the lowercase l
 Default is "". In this case, the singular value decomposition is computed but serves no purpose.}
 }
 \description{
-Compute pointwise geometry features based on k-nearest neighbors. Each feature is added into an
+Compute pointwise geometry features based on local neighborhood. Each feature is added into an
 extrabyte attribute. The names of the extrabytes attributes (if recorded) are \code{coeff00}, \code{coeff01},
 \code{coeff02} and so on, \code{lambda1}, \code{lambda2}, \code{lambda3}, \code{anisotropy}, \code{planarity}, \code{sphericity}, \code{linearity},
 \code{omnivariance}, \code{curvature}, \code{eigensum}, \code{angle}, \code{normalX}, \code{normalY}, \code{normalZ}. There is a total
-of 23 attributes that can be added. All the features are recorded with single precision floating points.
-It is strongly discouraged to use them all. This stage modifies the point cloud in the pipeline
-but does not produce any output.
+of 23 attributes that can be added. It is strongly discouraged to use them all. All the features
+are recorded with single precision floating points yet computing them all will triple the size of
+the point cloud. This stage modifies the point cloud in the pipeline but does not produce any output.
 }
 \examples{
 f <- system.file("extdata", "Example.las", package = "lasR")
