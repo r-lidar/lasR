@@ -25,8 +25,10 @@ LASRsvd::LASRsvd(int k, double r, std::string features)
 
   if (k == 0 && r > 0) mode = PURERADIUS;
   else if (k > 0 && r == 0) mode = PUREKNN;
-  else if (k > 0 && r > 0) mode = PURERADIUS;
+  else if (k > 0 && r > 0) mode = KNNRADIUS;
   else throw "Internal error: invalid argument k or r"; // # nocov
+
+  if (mode == PUREKNN) r = F64_MAX;
 
   // Parse feature = "*"
   std::string all = "CEapslocein";
@@ -66,12 +68,6 @@ LASRsvd::LASRsvd(int k, double r, std::string features)
 
 bool LASRsvd::process(LAS*& las)
 {
-  double radius;
-  if (mode == PUREKNN) radius = F64_MAX;
-  else if (mode == PURERADIUS) { last_error = "Internal error: radius search is not supported yet"; return false; } // # nocov
-  else if (mode == KNNRADIUS) radius = r;
-  else { last_error = "Internal error: invalid search mode"; return false; } // # nocov
-
   int nattr_before_geometry = las->header->get_attributes_size();
 
   if (ft_C)
@@ -121,12 +117,21 @@ bool LASRsvd::process(LAS*& las)
   bool main_thread = omp_get_thread_num() == 0;
 
   #pragma omp parallel for num_threads(ncpu)
-  for (unsigned int i = 0 ; i < las->npoints ; i++)
+  for (int i = 0 ; i < las->npoints ; i++)
   {
     std::vector<PointLAS> pts;
     double xyz[3];
     las->get_xyz(i, xyz);
-    las->knn(xyz, k, radius, pts, &lasfilter);
+
+    if (mode == PURERADIUS)
+    {
+        Sphere s(xyz[0], xyz[1], xyz[2], r);
+        las->query(&s, pts, &lasfilter);
+    }
+    else
+    {
+        las->knn(xyz, k, r, pts, &lasfilter);
+    }
 
     arma::mat A(pts.size(), 3);
     arma::mat coeff;  // Principle component matrix
