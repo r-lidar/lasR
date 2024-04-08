@@ -1,7 +1,11 @@
+# lasR 0.4.4
+
+- Fix: bug with `set_parallel_strategy(nested(ncores = 4, ncores2 = 4))`
+
 # lasR 0.4.3
 
 - Fix: #22 segfault with partial processing
-- Fix: memory access to wkt string non nul-terminated
+- Fix: memory access to wkt string non null-terminated
 
 # lasR 0.4.2
 
