@@ -109,7 +109,9 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
 #' point cloud. Its first input must be the point cloud. If the function returns anything other than
 #' a `data.frame` with the same number of points, the output is stored and returned at the end. However,
 #' if the output is a `data.frame` with the same number of points, it updates the point cloud. This
-#' function can, therefore, be used to modify the point cloud using a user-defined function.
+#' function can, therefore, be used to modify the point cloud using a user-defined function. The function
+#' is versatile but complex. A more comprehensive set of examples can be found in the
+#' [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html#callback).
 #'
 #' In `lasR`, the point cloud is not exposed to R in a `data.frame` like in lidR. It is stored internally
 #' in a C++ structure and cannot be seen or modified directly by users using R code. The `callback` function
@@ -125,7 +127,8 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
 #' Also numbers from 1 to 9 for the extra bytes data numbers 1 to 9. 0 enables all extra bytes to be
 #' loaded, and '*' is the wildcard that enables everything to be loaded from the LAS file.
 #'
-#' @param fun numeric. The resolution of the raster.
+#' @param fun function. A user-defined function that takes as first argument a `data.frame` with the exposed
+#' point cloud attributes (see examples).
 #' @param expose character. Expose only attributes of interest to save memory (see details).
 #' @param drop_buffer bool. If false, does not expose the point from the buffer.
 #' @param no_las_update bool. If the user-defined function returns a data.frame, this is supposed to
@@ -157,7 +160,7 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
 #' }
 #'
 #' read <- reader_las()
-#' call <- callback(convert_intensity_in_range, expose = "xyzi", min = 0, max = 255)
+#' call <- callback(convert_intensity_in_range, expose = "i", min = 0, max = 255)
 #' write <- write_las()
 #' pipeline <- read + call + write
 #' ans <- exec(pipeline, on = f)

@@ -7,7 +7,8 @@
 callback(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update = FALSE)
 }
 \arguments{
-\item{fun}{numeric. The resolution of the raster.}
+\item{fun}{function. A user-defined function that takes as first argument a \code{data.frame} with the exposed
+point cloud attributes (see examples).}
 
 \item{expose}{character. Expose only attributes of interest to save memory (see details).}
 
@@ -23,7 +24,9 @@ Call a user-defined function on the point cloud. The function receives a \code{d
 point cloud. Its first input must be the point cloud. If the function returns anything other than
 a \code{data.frame} with the same number of points, the output is stored and returned at the end. However,
 if the output is a \code{data.frame} with the same number of points, it updates the point cloud. This
-function can, therefore, be used to modify the point cloud using a user-defined function.
+function can, therefore, be used to modify the point cloud using a user-defined function. The function
+is versatile but complex. A more comprehensive set of examples can be found in the
+\href{https://r-lidar.github.io/lasR/articles/tutorial.html#callback}{online tutorial}.
 }
 \details{
 In \code{lasR}, the point cloud is not exposed to R in a \code{data.frame} like in lidR. It is stored internally
@@ -65,7 +68,7 @@ convert_intensity_in_range <- function(data, min, max)
 }
 
 read <- reader_las()
-call <- callback(convert_intensity_in_range, expose = "xyzi", min = 0, max = 255)
+call <- callback(convert_intensity_in_range, expose = "i", min = 0, max = 255)
 write <- write_las()
 pipeline <- read + call + write
 ans <- exec(pipeline, on = f)
