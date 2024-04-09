@@ -270,7 +270,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     output << "     ]," << std::endl;
     output << "    \"id\": " << autoquote(file.stem().string()) << "," << std::endl;
     output << "    \"properties\": {" << std::endl;
-    output << "      \"datatime\": " << "\"0-01-01T00:00:00Z\""<< "," << std::endl;
+    output << "      \"datetime\": " << "\"0-01-01T00:00:00Z\""<< "," << std::endl;
     output << "      \"pc:count\": " << n << "," << std::endl;
     output << "      \"pc:encoding\": " << "\"?\""<< "," << std::endl;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;

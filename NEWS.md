@@ -1,6 +1,7 @@
 # lasR 0.4.4
 
 - Fix: bug with `set_parallel_strategy(nested(ncores = 4, ncores2 = 4))`
+- Fix: attribute `datatime` is `datetime` in VPC files.
 
 # lasR 0.4.3
 
