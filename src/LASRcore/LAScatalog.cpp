@@ -261,6 +261,8 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     uint64_t n = npoints[i];
     bool index = indexed[i];
 
+    print("%s\n", wkt.c_str());
+
     output << "  {" << std::endl;
     output << "    \"type\": \"Feature\"," << std::endl;
     output << "    \"stac_version\": \"1.0.0\"," << std::endl;
@@ -337,7 +339,8 @@ void LAScatalog::add_crs(const LASheader* header)
       if (header->vlrs[j].record_id == 2112)
       {
         char* data = (char*)header->vlrs[j].data;
-        std::string wkt(data, data + header->vlrs[j].record_length_after_header);
+        int len = strnlen(data, header->vlrs[j].record_length_after_header);
+        std::string wkt(data, len);
         add_wkt(wkt);
         break;
       }

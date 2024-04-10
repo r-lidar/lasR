@@ -4,6 +4,7 @@
 - Fix: attribute `datatime` is `datetime` in VPC files.
 - Fix: #25 triangulation with 0 point crashed. 0 point is possible with a filter.
 - Fix: #24 `write_vpc()` writes the correct number of points for LAS 1.4 files
+- Fix: read of wkt strings in LAS files with a size inferior to what was declared in the header (null-terminated before `record_length_after_header`).
 
 # lasR 0.4.3
 
