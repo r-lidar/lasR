@@ -66,6 +66,8 @@
 </li>
 <li>Fix: attribute <code>datatime</code> is <code>datetime</code> in VPC files.</li>
 <li>Fix: <a href="https://github.com/r-lidar/lasR/issues/25" class="external-link">#25</a> triangulation with 0 point crashed. 0 point is possible with a filter.</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/24" class="external-link">#24</a> <code><a href="../reference/write_vpc.html">write_vpc()</a></code> writes the correct number of points for LAS 1.4 files</li>
+<li>Fix: read of wkt strings in LAS files with a size inferior to what was declared in the header (null-terminated before <code>record_length_after_header</code>).</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.3" id="lasr-043">lasR 0.4.3<a class="anchor" aria-label="anchor" href="#lasr-043"></a></h2>
