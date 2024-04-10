@@ -16,8 +16,8 @@ Normalize the point cloud using \link{triangulate} and \link{transform_with}
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-pipeline <- reader(f) + normalize() + write_las()
-
+pipeline <- reader_las() + normalize() + write_las()
+exec(pipeline, on = f)
 }
 \seealso{
 \link{triangulate}
