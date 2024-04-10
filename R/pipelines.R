@@ -8,8 +8,8 @@
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader(f) + normalize() + write_las()
-#'
+#' pipeline <- reader_las() + normalize() + write_las()
+#' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
 #' \link{transform_with}
@@ -47,8 +47,8 @@ normalize = function(extrabytes = FALSE)
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader(f) + dtm()
-#'
+#' pipeline <- reader_las() + dtm()
+#' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
 #' \link{rasterize}
@@ -74,8 +74,8 @@ dtm = function(res = 1, add_class = NULL, ofile = tempfile(fileext = ".tif"))
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader(f) + chm()
-#'
+#' pipeline <- reader_las() + chm()
+#' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
 #' \link{rasterize}

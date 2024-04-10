@@ -3,10 +3,18 @@
 - New: stage `geometry_features()` to compute pointwise geometry features based on k-nearest neighbors.
 - New: stage `callback()` can load more than 10 extrabyte attributes. Using the flag `E` all the extrabytes are loaded.
 
+# lasR 0.4.4
+
+- Fix: bug with `set_parallel_strategy(nested(ncores = 4, ncores2 = 4))`
+- Fix: attribute `datatime` is `datetime` in VPC files.
+- Fix: #25 triangulation with 0 point crashed. 0 point is possible with a filter.
+- Fix: #24 `write_vpc()` writes the correct number of points for LAS 1.4 files
+- Fix: read of wkt strings in LAS files with a size inferior to what was declared in the header (null-terminated before `record_length_after_header`).
+
 # lasR 0.4.3
 
 - Fix: #22 segfault with partial processing
-- Fix: memory access to wkt string non nul-terminated
+- Fix: memory access to wkt string non null-terminated
 
 # lasR 0.4.2
 

@@ -38,3 +38,11 @@ test_that("triangulate works with intensity",
 
   expect_equal(range(u$rasterize[], na.rm = T), c(165.72, 2368.14), tolerance = 0.01)
 })
+
+
+test_that("triangulate fails with 0 points (#25)",
+{
+  f <- system.file("extdata", "las14_pdrf6.laz", package="lasR")
+  pipeline <- reader_las() + dtm()
+  expect_error(suppressWarnings(exec(pipeline, on = f)), "impossible to construct a Delaunay triangulation with 0 points")
+})
