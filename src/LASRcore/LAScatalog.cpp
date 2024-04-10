@@ -359,7 +359,7 @@ bool LAScatalog::add_file(const std::string& file, bool noprocess)
   files.push_back(file);
   add_crs(&lasreader->header);
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
-  npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.number_of_extended_variable_length_records));
+  npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
 
   lasreader->close();
   delete lasreader;

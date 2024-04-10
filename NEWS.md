@@ -3,6 +3,7 @@
 - Fix: bug with `set_parallel_strategy(nested(ncores = 4, ncores2 = 4))`
 - Fix: attribute `datatime` is `datetime` in VPC files.
 - Fix: #25 triangulation with 0 point crashed. 0 point is possible with a filter.
+- Fix: #24 `write_vpc()` writes the correct number of points for LAS 1.4 files
 
 # lasR 0.4.3
 
