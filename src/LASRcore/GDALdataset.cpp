@@ -164,7 +164,16 @@ bool GDALdataset::create_file()
     // # nocov end
   }
 
-  dataset.reset(driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, nullptr), GDALClose);
+  // Default compress option for GTiff driver
+  char** papszOptions = NULL;
+  if (strcmp(driver->GetDescription(), "GTiff") == 0)
+  {
+    papszOptions = CSLSetNameValue(papszOptions, "COMPRESS", "DEFLATE");
+    papszOptions = CSLSetNameValue(papszOptions, "PREDICTOR", "2");
+    papszOptions = CSLSetNameValue(papszOptions, "TILED", "YES");
+  }
+
+  dataset.reset(driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, papszOptions), GDALClose);
 
   if (!dataset)
   {

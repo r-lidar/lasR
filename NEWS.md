@@ -2,6 +2,7 @@
 
 - New: stage `geometry_features()` to compute pointwise geometry features based on k-nearest neighbors.
 - New: stage `callback()` can load more than 10 extrabyte attributes. Using the flag `E` all the extrabytes are loaded.
+- New: raster in `GeoTiff` format are now created with `COMPRESS=DEFLATE`, `PREDICTOR=2`,`TILED=YES` effectively reducing the size of the rasters
 
 # lasR 0.4.4
 
