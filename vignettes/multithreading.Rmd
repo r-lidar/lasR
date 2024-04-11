@@ -74,7 +74,7 @@ The LAS/LAZ files are processed in parallel. The point cloud from several files 
 set_parallel_strategy(nested(4, 2))
 ```
 
-The LAS/LAZ files are processed in parallel. The point cloud from several files passes through several cloned pipelines while the other files are waiting. Inside the pipeline, some stages are also parallelized and are processing the points in different threads.
+The LAS/LAZ files are processed in parallel. The point cloud from several files passes through several cloned pipelines while the other files are waiting. Inside the pipeline, some stages are also parallelized and are processing the points in different threads. Nested is reserved for experts only.
 
 
 ![](nested.png){width=600px}
