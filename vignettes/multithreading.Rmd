@@ -51,7 +51,7 @@ The sequential strategy is **not** the default strategy. However, it is easier t
 ## Concurrent points strategy
 
 ```r
-set_parallel_strategy(conccurent_points(4))
+set_parallel_strategy(concurrent_points(4))
 ```
 
 Concurrent points is the default strategy. The LAS/LAZ files are processed sequentially. The point cloud from one file passes through the pipeline while the other files are waiting. Inside the pipeline, some stages are parallelized and are processing the points in different threads. Each core processes a subset of the point cloud. The stages that are parallelized are consequently faster, but in practice, not a lot of stages can easily be parallelized this way.
@@ -61,7 +61,7 @@ Concurrent points is the default strategy. The LAS/LAZ files are processed seque
 ## Concurrent files strategy
 
 ```r
-set_parallel_strategy(conccurent_files(4))
+set_parallel_strategy(concurrent_files(4))
 ```
 
 The LAS/LAZ files are processed in parallel. The point cloud from several files passes through several cloned pipelines while the other files are waiting. Inside the pipeline, the stages are not parallelized. This puts a lot of pressure on the disk because many LAS/LAZ files are read simultaneously, but also each stage can write some raster/vector/LAS files simultaneously. Additionally, it uses a lot of memory since many LAS files are loaded in memory simultaneously. With modern and fast SSD disks and a significant amount of RAM, this is the fastest option. Of course, users **should not** use all their cores; otherwise, they may run out of memory. See also the [benchmarks](benchmarks.html) vignette.
@@ -74,7 +74,7 @@ The LAS/LAZ files are processed in parallel. The point cloud from several files 
 set_parallel_strategy(nested(4, 2))
 ```
 
-The LAS/LAZ files are processed in parallel. The point cloud from several files passes through several cloned pipelines while the other files are waiting. Inside the pipeline, some stages are also parallelized and are processing the points in different threads.
+The LAS/LAZ files are processed in parallel. The point cloud from several files passes through several cloned pipelines while the other files are waiting. Inside the pipeline, some stages are also parallelized and are processing the points in different threads. Nested is reserved for experts only.
 
 
 ![](nested.png){width=600px}
