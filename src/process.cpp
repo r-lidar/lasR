@@ -154,6 +154,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
           // We cannot exit a parallel loop easily. Instead we can rather run the loop until the end
           // skipping the processing
           if (failure) continue;
+          if (progress.interrupted()) continue;
 
           // We query the chunk i (thread safe)
           Chunk chunk;
@@ -228,14 +229,14 @@ SEXP process(SEXP sexppipeline, SEXP args)
 
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
-    R_CStackLimit=original_CStackLimit;
+    R_CStackLimit = original_CStackLimit;
+
+    progress.done(true);
 
     if (failure)
     {
       throw last_error;
     }
-
-    progress.done(true);
 
     pipeline.sort();
 
@@ -243,7 +244,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   }
   catch (std::string e)
   {
-    R_CStackLimit=original_CStackLimit;
+    R_CStackLimit = original_CStackLimit;
 
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 
@@ -271,7 +272,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   catch(...)
   {
     // # nocov start
-    R_CStackLimit=original_CStackLimit;
+    R_CStackLimit = original_CStackLimit;
 
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 

@@ -28,6 +28,11 @@ bool LASRnoiseivf::process(LAS*& las)
   // Stores for a given voxel the number of point in its 27 voxels neighbourhood
   std::unordered_map<int, int> dynamic_registry;
 
+
+  progress->reset();
+  progress->set_total(las->npoints*2);
+  progress->set_prefix("Isolated voxels");
+
   while(las->read_point())
   {
     int nx = std::floor((las->point.get_x() - xmin) / res);
@@ -50,6 +55,9 @@ bool LASRnoiseivf::process(LAS*& las)
         }
       }
     }
+
+    progress->update(las->current_point);
+    if (progress->interrupted()) break;
   }
 
   // Loop again through each point.
@@ -65,6 +73,9 @@ bool LASRnoiseivf::process(LAS*& las)
       las->point.set_classification(classification);
       las->update_point();
     }
+
+    progress->update(las->current_point + las->npoints);
+    if (progress->interrupted()) break;
   }
 
   return true;

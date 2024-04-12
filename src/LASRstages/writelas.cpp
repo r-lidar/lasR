@@ -94,6 +94,7 @@ bool LASRlaswriter::process(LAS*& las)
 
     (*progress)++;
     progress->show();
+    if (progress->interrupted()) break;
   }
 
   progress->done();

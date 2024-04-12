@@ -115,6 +115,8 @@ bool LASRregiongrowing::process(LAS*& las)
 
   do
   {
+    if (progress->interrupted()) break;
+
     grown = false;
 
     for (auto& pair : regions)        // Loops across all regions
@@ -155,7 +157,8 @@ bool LASRregiongrowing::process(LAS*& las)
 
       progress->show();
     }
-  } while (grown);
+  }
+  while (grown);
 
   progress->done();
 

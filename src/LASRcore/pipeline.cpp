@@ -105,8 +105,19 @@ bool Pipeline::run_streamed()
   bool success;
   bool last_point = false;
 
+  // To handle user interruption
+  Progress prg;
+  prg.set_total(INT64_MAX);
+
   while(!last_point)
   {
+    prg++;
+    if (prg.interrupted())
+    {
+      last_error = "Execution interrupted. Output files have been created on disk with partial results and were not cleaned.";
+      return false;
+    }
+
     for (auto&& stage : pipeline)
     {
       // Some stage process the header. The first stage being a reader, the LASheader, which is
@@ -126,7 +137,7 @@ bool Pipeline::run_streamed()
       uint64_t npoints = 0;
       npoints += header->number_of_point_records;
       npoints += header->extended_number_of_point_records;
-      if (npoints == 0) return true;
+      if (npoints == 0) break;
 
       // Some stages need the header to get initialized (write_las is the only one)
       stage->set_header(header);
@@ -176,6 +187,12 @@ bool Pipeline::run_loaded()
 
   for (auto&& stage : pipeline)
   {
+    if (Progress::interrupted())
+    {
+      last_error = "Execution interrupted. Output files have been created on disk with partial results and were not cleaned.";
+      return false;
+    }
+
     if (verbose) print("Stage: %s\n", stage->get_name().c_str());
 
     // Some stages need no input, they are connected to another stage

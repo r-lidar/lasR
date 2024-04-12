@@ -123,6 +123,8 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < d->triangles.size() ; i+=3)
   {
+    if (progress->interrupted()) continue;
+
     int id;
     PointLAS A,B,C;
 
@@ -189,9 +191,9 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
     }
   }
 
-  progress->done();
-
   if (lastransform) delete lastransform;
+
+  progress->done();
 
   if (verbose)
   {
@@ -224,6 +226,8 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < d->triangles.size() ; i+=3)
   {
+    if (progress->interrupted()) continue;
+
     int id;
     double xyz[3];
 
@@ -334,6 +338,7 @@ bool LASRtriangulate::write()
 
     (*progress)++;
     progress->show();
+    if (progress->interrupted()) break;
   }
 
   progress->done();

@@ -119,6 +119,8 @@ bool LASRsvd::process(LAS*& las)
   #pragma omp parallel for num_threads(ncpu)
   for (int i = 0 ; i < las->npoints ; i++)
   {
+    if (progress->interrupted()) continue;
+
     std::vector<PointLAS> pts;
     double xyz[3];
     las->get_xyz(i, xyz);

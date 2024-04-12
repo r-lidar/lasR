@@ -93,6 +93,7 @@ bool LASRlocalmaximum::process(LAS*& las)
     }
   }
 
+  progress->reset();
   progress->set_total(las->npoints);
   progress->set_prefix("Local maximum");
 
@@ -110,6 +111,8 @@ bool LASRlocalmaximum::process(LAS*& las)
   #pragma omp parallel for num_threads(ncpu)
   for (auto i = 0 ; i < las->npoints ; ++i)
   {
+    if (progress->interrupted()) continue;
+
     PointLAS pp;
 
     if (main_thread)
@@ -166,9 +169,9 @@ bool LASRlocalmaximum::process(LAS*& las)
     }
   }
 
-  progress->done();
-
   if (lastransform) delete lastransform;
+
+  progress->done();
 
   if (verbose)
   {

@@ -2,6 +2,7 @@
 
 - New: stage `geometry_features()` to compute pointwise geometry features based on k-nearest neighbors.
 - New: stage `callback()` can load more than 10 extrabyte attributes. Using the flag `E` all the extrabytes are loaded.
+- New: `exec()` and the stages now checks for interruption events to exit the program on user request. Not all the stages can catch a user interruption event so there might be a delay between the event and the actual interruption but overall the pipeline should stop before the end of the processing.
 
 # lasR 0.4.3
 
