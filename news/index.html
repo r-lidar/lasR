@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.5</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,25 +61,28 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.5" id="lasr-045">lasR 0.4.5<a class="anchor" aria-label="anchor" href="#lasr-045"></a></h2>
+<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/29" class="external-link">#29</a> using a filter in <code><a href="../reference/rasterize.html">rasterize()</a></code> produced corrupted output.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.4" id="lasr-044">lasR 0.4.4<a class="anchor" aria-label="anchor" href="#lasr-044"></a></h2>
-<ul><li>Fix: bug with <code>set_parallel_strategy(nested(ncores = 4, ncores2 = 4))</code>
-</li>
+<ul><li>Fix: bug with <code>set_parallel_strategy(nested(ncores = 4, ncores2 = 4))</code>.</li>
 <li>Fix: attribute <code>datatime</code> is <code>datetime</code> in VPC files.</li>
-<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/25" class="external-link">#25</a> triangulation with 0 point crashed. 0 point is possible with a filter.</li>
-<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/24" class="external-link">#24</a> <code><a href="../reference/write_vpc.html">write_vpc()</a></code> writes the correct number of points for LAS 1.4 files</li>
-<li>Fix: read of wkt strings in LAS files with a size inferior to what was declared in the header (null-terminated before <code>record_length_after_header</code>).</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/25" class="external-link">#25</a> triangulation with 0 points crashed. 0 points are possible with a filter.</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/24" class="external-link">#24</a> <code><a href="../reference/write_vpc.html">write_vpc()</a></code> writes the correct number of points for LAS 1.4 files.</li>
+<li>Fix: read of WKT strings in LAS files with a size inferior to what was declared in the header (null-terminated before <code>record_length_after_header</code>).</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.3" id="lasr-043">lasR 0.4.3<a class="anchor" aria-label="anchor" href="#lasr-043"></a></h2>
-<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/22" class="external-link">#22</a> segfault with partial processing</li>
-<li>Fix: memory access to wkt string non null-terminated</li>
+<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/22" class="external-link">#22</a> segfault with partial processing.</li>
+<li>Fix: memory access to WKT strings non-null-terminated.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.2" id="lasr-042">lasR 0.4.2<a class="anchor" aria-label="anchor" href="#lasr-042"></a></h2>
-<ul><li>Fix: <code><a href="https://rdrr.io/pkg/lidR/man/add_attribute.html" class="external-link">add_attribute()</a></code> was incorrectly reallocating the memory causing potential crash especially when adding several attributes.</li>
-<li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> crashing if the header of the LAS file did not record the correct number of point.</li>
-<li>Fix: naming of the queries</li>
-<li>Doc: reorganize the urls and navbar of the website</li>
+<ul><li>Fix: <code><a href="https://rdrr.io/pkg/lidR/man/add_attribute.html" class="external-link">add_attribute()</a></code> was incorrectly reallocating memory causing potential crashes, especially when adding several attributes.</li>
+<li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> crashing if the header of the LAS file did not record the correct number of points.</li>
+<li>Fix: naming of the queries.</li>
+<li>Documentation: reorganized the URLs and navbar of the website.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.6" id="lasr-036">lasR 0.3.6<a class="anchor" aria-label="anchor" href="#lasr-036"></a></h2>
@@ -171,7 +174,7 @@
 <ul><li>Doc: Corrected the documentation for the argument <code>ncores</code> in <code><a href="../reference/deprecated.html">processor()</a></code>, which incorrectly mentioned that it was not supported.</li>
 <li>New: Added new functions <code><a href="../reference/multithreading.html">ncores()</a></code> and <code><a href="../reference/multithreading.html">half_cores()</a></code>.</li>
 <li>Fix: Corrected the reader progress bar display when reading a las file with a filter and a buffer.</li>
-<li>Fix: Fixed the overall progress bar, which was delayed by one file and was showing incorrect progress.</li>
+<li>Fix: Fix the overall progress bar, which was delayed by one file and was showing incorrect progress.</li>
 </ul></div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>
