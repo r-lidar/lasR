@@ -1395,7 +1395,7 @@ BOOL LASreaderLAS::open(ByteStreamIn* stream, BOOL peek_only, U32 decompress_sel
         if ((strcmp(user_id, "LAStools") == 0) && (record_id == 30))
         {
           stream->seek(offset + 60);
-          /*index = new LASindex();
+          index = new LASindex();
           if (index)
           {
             if (!index->read(stream))
@@ -1403,7 +1403,7 @@ BOOL LASreaderLAS::open(ByteStreamIn* stream, BOOL peek_only, U32 decompress_sel
               delete index;
               index = 0;
             }
-          }*/
+          }
           break;
         }
         else
