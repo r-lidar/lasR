@@ -1516,8 +1516,8 @@ BOOL LASreaderMerged::open_next_file()
         return FALSE;
       }
 
-      lasreaderlas->set_index(0);
-      lasreaderlas->set_copcindex(0);
+      //lasreaderlas->set_index(0);
+      //lasreaderlas->set_copcindex(0);
 
       LASindex *index = new LASindex;
       if (index->read(file_names[file_name_current]))
