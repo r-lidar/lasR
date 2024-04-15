@@ -1,3 +1,7 @@
+# lasR 0.4.6
+
+- Temporary fix: `lax` included into `laz` file are not working. The default behavior of `lasR` was to include the index into the `laz` file. The index was then read but not used which is equivalent to NOT indexing the files. Consequently the reader no longer tries to read included index and write `.lax` files.
+
 # lasR 0.4.5
 
 - Fix: #29 using a filter in `rasterize()` produced corrupted output.
