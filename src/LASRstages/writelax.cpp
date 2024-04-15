@@ -82,10 +82,7 @@ bool LASRlaxwriter::set_chunk(const Chunk& chunk)
       int maximum_intervals = -20;
       lasindex.complete(minimum_points, maximum_intervals, false);
 
-      if (!lasindex.append(lasreadopener.get_file_name()))
-      {
-        lasindex.write(lasreadopener.get_file_name());
-      }
+      lasindex.write(lasreadopener.get_file_name());
 
       progress->done();
     }

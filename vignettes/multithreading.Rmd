@@ -29,10 +29,6 @@ col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(25)
 
 The multi-threading in `lasR` is pretty similar to `lidR`, except it does not use the package `future`. Everything is natively coded in C++ with `OpenMP`.
 
-<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px; font-size: 14px; border-radius: 5px;">
-In the figures below, the pipelines are represented in an idealized and simplified manner, with, for example, all stages taking the same amount of time and all the cores running in parallel without any overhead.  While this simplification helps understanding, it does not capture the entire actual complexity.
-</blockquote>
-
 <blockquote style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 5px;">
 `lasR` uses `OpenMP` which means that the package supports parallelism on Linux and Windows but not on macOS where Apple has explicitly disabled `OpenMP` support in compilers that they ship in `Xcode`. Interested readers can read the following links: [OpenMP on macOS](https://mac.r-project.org/openmp/); [OpenBLAS and OpenMP on macOS](https://www.btskinner.io/code/install-r-with-openblas-and-openmp-on-macos-mojave/) ; [Enable OpenMP for macOS](https://github.com/Rdatatable/data.table/wiki/Installation#Enable-openmp-for-macos)
 </blockquote>
@@ -100,3 +96,9 @@ It is worth mentioning that the `lidR` package does not face this problem becaus
 With multiple files, the overhead of blocking the pipeline for stages that use R is likely less significant because once the pipelines are out of sync, the blocking stages no longer occur simultaneously and thus cease to be blocking, as illustrated in the figure below with 8 files and 4 cores
 
 ![](concurent_points_with_R_8.png)
+
+## Real timeline
+
+In the figures above, the pipelines are represented in an idealized and simplified manner. For example, all stages are depicted as taking the same amount of time, and all the cores are shown running in parallel without any overhead. While this simplification aids understanding, it does not capture the full complexity of the actual process. The actual timeline of a real pipeline processing of 9 files is shown in the figure below. In this figure, the purple blocks for "rasterize" are calling the R API and are expected to be blocking, as explained above. In practice, however, they are never synchronized and do not limit the computation speed.
+
+![](timeline.png)
