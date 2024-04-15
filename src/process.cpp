@@ -238,6 +238,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
     progress.done(true);
 
     pipeline.sort();
+    //pipeline.show_profiling();
 
     return pipeline.to_R();
   }

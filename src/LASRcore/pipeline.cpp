@@ -62,6 +62,8 @@ Pipeline::Pipeline(const Pipeline& other)
       (*it2)->update_connection(it1->get());
     }
   }
+
+  t0 = std::chrono::high_resolution_clock::now();
 }
 
 Pipeline::~Pipeline()
@@ -176,6 +178,10 @@ bool Pipeline::run_loaded()
 
   for (auto&& stage : pipeline)
   {
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto start_duration = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - t0);
+    float start_second = (float)start_duration.count()/1000.0f;
+
     if (verbose) print("Stage: %s\n", stage->get_name().c_str());
 
     // Some stages need no input, they are connected to another stage
@@ -229,6 +235,13 @@ bool Pipeline::run_loaded()
       last_error = "in '" + stage->get_name() + "' while writing the output: " + last_error;
       return false;
     }
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto end_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - t0);
+    float end_second = (float)end_duration.count()/1000.0f;
+
+    Profile pr(stage->get_name(), start_second, end_second, omp_get_thread_num());
+    profiles.push_back(pr);
   }
 
   return true;
@@ -237,6 +250,7 @@ bool Pipeline::run_loaded()
 void Pipeline::merge(const Pipeline& other)
 {
   order.insert(order.end(), other.order.begin(), other.order.end());
+  profiles.insert(profiles.end(), other.profiles.begin(), other.profiles.end());
 
   auto it1 = this->pipeline.begin();
   auto it2 = other.pipeline.begin();
@@ -410,6 +424,15 @@ void Pipeline::sort()
 
   // Sort the data in the stage
   for (auto&& stage : pipeline) stage->sort(order);
+}
+
+void Pipeline::show_profiling()
+{
+  print("name, start, end, thread\n");
+  for (const auto& profile : profiles)
+  {
+    print("%s, %.2f, %.2f, %d\n", profile.name.c_str(), profile.start, profile.end, profile.thread);
+  }
 }
 
 void Pipeline::clear(bool last)

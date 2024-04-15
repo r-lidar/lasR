@@ -12,6 +12,7 @@
 #include "Stage.h"
 
 // STL
+#include <chrono>
 #include <memory>
 #include <list>
 
@@ -19,6 +20,15 @@ class LAS;
 class LASpoint;
 class LASheader;
 class Progress;
+
+struct Profile
+{
+  Profile(std::string name, float start, float end, int thread) : name(name), start(start), end(end), thread(thread) {};
+  std::string name;
+  float start;
+  float end;
+  int thread;
+};
 
 class Pipeline
 {
@@ -43,7 +53,7 @@ class Pipeline
     void set_ncpu(int ncpu);
     void set_verbose(bool verbose);
     void sort();
-    //void show();
+    void show_profiling();
     void set_progress(Progress* progress);
     LAScatalog* get_catalog() const { return catalog.get(); };
 
@@ -72,6 +82,9 @@ private:
     std::shared_ptr<LAScatalog> catalog;  // owned by this and shared in cloned pipelines
 
     std::list<std::unique_ptr<Stage>> pipeline;
+
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> t0;
+    std::vector<Profile> profiles; // To profile the code
 };
 
 #endif
