@@ -1510,14 +1510,14 @@ BOOL LASreaderMerged::open_next_file()
     // open the lasreader with the next file name
     if (lasreaderlas)
     {
+      lasreaderlas->set_index(0);
+      lasreaderlas->set_copcindex(0);
+
       if (!lasreaderlas->open(file_names[file_name_current], io_ibuffer_size))
       {
         eprint( "ERROR: could not open lasreaderlas for file '%s'\n", file_names[file_name_current]);
         return FALSE;
       }
-
-      //lasreaderlas->set_index(0);
-      //lasreaderlas->set_copcindex(0);
 
       LASindex *index = new LASindex;
       if (index->read(file_names[file_name_current]))
