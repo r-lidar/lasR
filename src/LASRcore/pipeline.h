@@ -53,7 +53,7 @@ class Pipeline
     void set_ncpu(int ncpu);
     void set_verbose(bool verbose);
     void sort();
-    void show_profiling();
+    void show_profiling(const std::string& path);
     void set_progress(Progress* progress);
     LAScatalog* get_catalog() const { return catalog.get(); };
 

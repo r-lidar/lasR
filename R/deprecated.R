@@ -54,6 +54,7 @@ processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
               ncores = ncores,
               verbose = verbose,
               strategy = strategy,
+              profiling = "",
               chunk = 0)
 
   ans <- .Call(`C_process`, pipeline, args)

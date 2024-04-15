@@ -426,13 +426,14 @@ void Pipeline::sort()
   for (auto&& stage : pipeline) stage->sort(order);
 }
 
-void Pipeline::show_profiling()
+void Pipeline::show_profiling(const std::string& path)
 {
-  print("name, start, end, thread\n");
-  for (const auto& profile : profiles)
-  {
-    print("%s, %.2f, %.2f, %d\n", profile.name.c_str(), profile.start, profile.end, profile.thread);
-  }
+  if (path.empty()) return;
+  FILE* fp = fopen(path.c_str(), "w");
+  if (fp == NULL) return;
+  fprintf(fp, "name, start, end, thread\n");
+  for (const auto& profile : profiles) fprintf(fp, "%s, %.2f, %.2f, %d\n", profile.name.c_str(), profile.start, profile.end, profile.thread);
+  fclose(fp);
 }
 
 void Pipeline::clear(bool last)

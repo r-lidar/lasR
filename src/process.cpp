@@ -41,6 +41,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   bool progrss = get_element_as_bool(args, "progress");
   bool verbose = get_element_as_bool(args, "verbose");
   double chunk_size = get_element_as_double(args, "chunk");
+  std::string fprofiling = get_element_as_string(args, "profiling");
 
   // Check some multithreading stuff
   if (ncpu > available_threads())
@@ -238,7 +239,8 @@ SEXP process(SEXP sexppipeline, SEXP args)
     progress.done(true);
 
     pipeline.sort();
-    //pipeline.show_profiling();
+
+    pipeline.show_profiling(fprofiling);
 
     return pipeline.to_R();
   }
