@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.6</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,6 +60,10 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.6" id="lasr-046">lasR 0.4.6<a class="anchor" aria-label="anchor" href="#lasr-046"></a></h2>
+<ul><li>Temporary fix: <code>lax</code> included into <code>laz</code> file are not working. The default behavior of <code>lasR</code> was to include the index into the <code>laz</code> file. The index was then read but not used which is equivalent to NOT indexing the files. Consequently the reader no longer tries to read included index and write <code>.lax</code> files.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.5" id="lasr-045">lasR 0.4.5<a class="anchor" aria-label="anchor" href="#lasr-045"></a></h2>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/29" class="external-link">#29</a> using a filter in <code><a href="../reference/rasterize.html">rasterize()</a></code> produced corrupted output.</li>
