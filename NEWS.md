@@ -1,6 +1,7 @@
 # lasR 0.4.6
 
 - Fix: `lax` included into `laz` file were not working.
+- Fix: #30 can read files bigger than 2.14 GB
 
 # lasR 0.4.5
 
