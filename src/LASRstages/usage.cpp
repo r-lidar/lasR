@@ -59,5 +59,5 @@ SEXP is_indexed(SEXP sexpfile)
   lasreader->close();
   delete lasreader;
 
-  return ScalarLogical(indexed);
+  return Rf_ScalarLogical(indexed);
 }
