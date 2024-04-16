@@ -101,6 +101,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
       // https://stats.blogoverflow.com/2011/08/using-openmp-ized-c-code-with-r/
       // https://stat.ethz.ch/pipermail/r-devel/2007-June/046207.html
       R_CStackLimit=(uintptr_t)-1;
+      warning("Processing multiple files simulatneously with stages that imply injected R code is discouraged\n");
     }
 
     pipeline.set_verbose(verbose);
