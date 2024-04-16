@@ -267,6 +267,10 @@ bool Pipeline::set_chunk(const Chunk& chunk)
 {
   order.push_back(chunk.id);
 
+  auto start_time = std::chrono::high_resolution_clock::now();
+  auto start_duration = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - t0);
+  float start_second = (float)start_duration.count()/1000.0f;
+
   for (auto&& stage : pipeline)
   {
     if (!stage->set_chunk(chunk))
@@ -276,6 +280,16 @@ bool Pipeline::set_chunk(const Chunk& chunk)
     }
 
     stage->set_input_file_name(chunk.name);
+  }
+
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto end_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - t0);
+  float end_second = (float)end_duration.count()/1000.0f;
+
+  if (buffer > 0)
+  {
+    Profile pr("Buffering", start_second, end_second, omp_get_thread_num());
+    profiles.push_back(pr);
   }
 
   return true;
