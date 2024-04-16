@@ -154,8 +154,6 @@ bool LASRaggregate::process(LAS*& las)
 
   for (const auto& pair : map)
   {
-    if (progress->interrupted()) break;
-
     int group = pair.first;
     las->set_intervals_to_read(pair.second);
 
@@ -341,10 +339,7 @@ bool LASRaggregate::process(LAS*& las)
 
     (*progress)++;
     progress->show();
-    if (progress->interrupted()) break;
   }
-
-  progress->done();
 
   // Restore the true length otherwise memory leak (??)
   for (int i = 0; i < Rf_length(list); i++)
