@@ -89,11 +89,11 @@ R is **NOT** multi-threaded, and thus calling these stages in parallel is not th
 
 ![](concurent_points_with_R.png){width=600px}
 
-Of course, as depicted in the diagram above, this incurs a computational time cost. Therefore, users are discouraged from using these stages if alternatives are available. For example, `rasterize()` offers numerous native metrics coded in C++, making custom metrics coded in R unnecessary.
+Of course, as depicted in the diagram above, this incurs a computational time cost. If the blocking stages take a lot of time compared to the other stages it could even defeat the interest of the multi-files parallelization. Therefore, users are discouraged from using these stages if alternatives are available. For example, `rasterize()` offers numerous native metrics coded in C++, making custom metrics coded in R unnecessary.
 
-It is worth mentioning that the `lidR` package does not face this problem because each core runs a different and independent R session, thanks to the `future` package. While this approach has the advantage of being non blocking, it also comes with several inconveniences. In contrast, `lasR` utilizes only one R session to process multiple files in parallel. One consequences is that `lasR` will run `rasterize()` with custom metrics in parallel much slower than `lidR`.
+It is worth mentioning that the `lidR` package does not face this problem because each core runs a different and independent R session, thanks to the `future` package. While this approach has the advantage of being non blocking, it also comes with several inconveniences. In contrast, `lasR` utilizes only one R session to process multiple files in parallel. One consequences is that `lasR` will run `rasterize()` with custom metrics or `callback()` in parallel much slower than `lidR`.
 
-With multiple files and complex pipeline, the overhead of blocking the pipeline for stages that use R is likely less significant because once the pipelines are out of sync, the blocking stages no longer occur simultaneously and thus cease to be blocking, as illustrated in the figure below with 8 files and 4 cores.
+With multiple files and complex pipeline, the overhead of blocking the pipeline for stages that use R *might* be less significant because once the pipelines are out of sync, the blocking stages *may* no longer occur simultaneously and thus cease to be blocking, as illustrated in the figure below with 8 files and 4 cores. This happens only if the blocking stages are quick behind the other stages.
 
 ![](concurent_points_with_R_8.png)
 
