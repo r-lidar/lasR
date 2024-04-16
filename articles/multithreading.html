@@ -180,7 +180,9 @@ below), the stages that use R are blocking the other stages that are
 waiting (see figure below).</p>
 <p><img src="concurent_points_with_R.png" width="600"></p>
 <p>Of course, as depicted in the diagram above, this incurs a
-computational time cost. Therefore, users are discouraged from using
+computational time cost. If the blocking stages take a lot of time
+compared to the other stages it could even defeat the interest of the
+multi-files parallelization. Therefore, users are discouraged from using
 these stages if alternatives are available. For example,
 <code><a href="../reference/rasterize.html">rasterize()</a></code> offers numerous native metrics coded in C++,
 making custom metrics coded in R unnecessary.</p>
@@ -191,12 +193,15 @@ has the advantage of being non blocking, it also comes with several
 inconveniences. In contrast, <code>lasR</code> utilizes only one R
 session to process multiple files in parallel. One consequences is that
 <code>lasR</code> will run <code><a href="../reference/rasterize.html">rasterize()</a></code> with custom metrics
-in parallel much slower than <code>lidR</code>.</p>
+or <code><a href="../reference/callback.html">callback()</a></code> in parallel much slower than
+<code>lidR</code>.</p>
 <p>With multiple files and complex pipeline, the overhead of blocking
-the pipeline for stages that use R is likely less significant because
-once the pipelines are out of sync, the blocking stages no longer occur
-simultaneously and thus cease to be blocking, as illustrated in the
-figure below with 8 files and 4 cores.</p>
+the pipeline for stages that use R <em>might</em> be less significant
+because once the pipelines are out of sync, the blocking stages
+<em>may</em> no longer occur simultaneously and thus cease to be
+blocking, as illustrated in the figure below with 8 files and 4 cores.
+This happens only if the blocking stages are quick behind the other
+stages.</p>
 <p><img src="concurent_points_with_R_8.png"></p>
 </div>
 <div class="section level2">
