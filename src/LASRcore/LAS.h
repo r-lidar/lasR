@@ -61,7 +61,7 @@ public:
 
 private:
   unsigned char* buffer;
-  int capacity; // capacity of the buffer in bytes
+  size_t capacity; // capacity of the buffer in bytes
   int next_point;
 
   bool own_header; // The pointer to the LASheader is owned by LASlib (LASreader) but could, in some cases, be owned by the class
