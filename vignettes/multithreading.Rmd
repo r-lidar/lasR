@@ -99,6 +99,6 @@ With multiple files, the overhead of blocking the pipeline for stages that use R
 
 ## Real timeline
 
-In the figures above, the pipelines are represented in an idealized and simplified manner. For example, all stages are depicted as taking the same amount of time, and all the cores are shown running in parallel without any overhead. While this simplification aids understanding, it does not capture the full complexity of the actual process. The actual timeline of a real pipeline processing of 9 files is shown in the figure below. In this figure, the purple blocks for "rasterize" are calling the R API and are expected to be blocking, as explained above. In practice, however, they are never synchronized and do not limit the computation speed.
+In the figures above, the pipelines are represented in an idealized and simplified manner. For example, all stages are depicted as taking the same amount of time, and all the cores are shown running in parallel without any overhead. While this simplification aids understanding, it does not capture the full complexity of the actual process. The actual timeline of a real pipeline processing of 9 files is shown in the figure below.
 
 ![](timeline.png)
