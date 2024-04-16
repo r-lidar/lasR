@@ -83,7 +83,7 @@ private:
 
     std::list<std::unique_ptr<Stage>> pipeline;
 
-    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> t0;
+    std::chrono::time_point<std::chrono::high_resolution_clock> t0;
     std::vector<Profile> profiles; // To profile the code
 };
 
