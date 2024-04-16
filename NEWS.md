@@ -3,23 +3,40 @@
 - New: stage `geometry_features()` to compute pointwise geometry features based on k-nearest neighbors.
 - New: stage `callback()` can load more than 10 extrabyte attributes. Using the flag `E` all the extrabytes are loaded.
 - New: `exec()` and the stages now checks for interruption events to exit the program on user request. Not all the stages can catch a user interruption event so there might be a delay between the event and the actual interruption but overall the pipeline should stop before the end of the processing.
+- New: raster in `GeoTiff` format are now created with `COMPRESS=DEFLATE`, `PREDICTOR=2`,`TILED=YES` effectively reducing the size of the rasters
+
+# lasR 0.4.6
+
+- Fix: `lax` included into `laz` file were not working.
+
+# lasR 0.4.5
+
+- Fix: #29 using a filter in `rasterize()` produced corrupted output.
+
+# lasR 0.4.4
+
+- Fix: bug with `set_parallel_strategy(nested(ncores = 4, ncores2 = 4))`.
+- Fix: attribute `datatime` is `datetime` in VPC files.
+- Fix: #25 triangulation with 0 points crashed. 0 points are possible with a filter.
+- Fix: #24 `write_vpc()` writes the correct number of points for LAS 1.4 files.
+- Fix: read of WKT strings in LAS files with a size inferior to what was declared in the header (null-terminated before `record_length_after_header`).
 
 # lasR 0.4.3
 
-- Fix: #22 segfault with partial processing
-- Fix: memory access to wkt string non nul-terminated
+- Fix: #22 segfault with partial processing.
+- Fix: memory access to WKT strings non-null-terminated.
 
 # lasR 0.4.2
 
-- Fix: `add_attribute()` was incorrectly reallocating the memory causing potential crash especially when adding several attributes.
-- Fix: `reader_las()` crashing if the header of the LAS file did not record the correct number of point.
-- Fix: naming of the queries
-- Doc: reorganize the urls and navbar of the website
+- Fix: `add_attribute()` was incorrectly reallocating memory causing potential crashes, especially when adding several attributes.
+- Fix: `reader_las()` crashing if the header of the LAS file did not record the correct number of points.
+- Fix: naming of the queries.
+- Documentation: reorganized the URLs and navbar of the website.
 
 ## las 0.4.1
 
-- Fix: #20 segfault with `local_maximum_raster`
-- Fix: segfault when reading las files with a header that incorrectly report the number of points.
+- Fix: #20 segfault with `local_maximum_raster`.
+- Fix: segfault when reading LAS files with a header that incorrectly reports the number of points.
 
 # lasR 0.4.0
 
@@ -111,8 +128,12 @@
 - Doc: Corrected the documentation for the argument `ncores` in `processor()`, which incorrectly mentioned that it was not supported.
 - New: Added new functions `ncores()` and `half_cores()`.
 - Fix: Corrected the reader progress bar display when reading a las file with a filter and a buffer.
+<<<<<<< HEAD
 - Fix: Fixed the overall progress bar, which was delayed by one file and was showing incorrect progress.
 
 # lasR 0.1.0 (2024-02-01)
 
 - Open to public
+=======
+- Fix: Fix the overall progress bar, which was delayed by one file and was showing incorrect progress.
+>>>>>>> main

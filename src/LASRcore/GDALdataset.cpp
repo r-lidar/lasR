@@ -164,7 +164,18 @@ bool GDALdataset::create_file()
     // # nocov end
   }
 
-  dataset.reset(driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, nullptr), GDALClose);
+  // Writing options (compression and co)
+  char** papszOptions = NULL;
+  if (strcmp(driver->GetDescription(), "GTiff") == 0)
+  {
+    papszOptions = CSLSetNameValue(papszOptions, "COMPRESS", "ZSTD");
+    papszOptions = CSLSetNameValue(papszOptions, "PREDICTOR", "3");
+    papszOptions = CSLSetNameValue(papszOptions, "ZSTD_LEVEL", "9");
+    papszOptions = CSLSetNameValue(papszOptions, "TILED", "YES");
+    papszOptions = CSLSetNameValue(papszOptions, "BIGTIFF", "IF_SAFER");
+  }
+
+  dataset.reset(driver->Create(file.c_str(), nXsize, nYsize, nBands, eType, papszOptions), GDALClose);
 
   if (!dataset)
   {

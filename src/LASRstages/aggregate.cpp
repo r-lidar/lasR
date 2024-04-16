@@ -27,8 +27,6 @@ bool LASRaggregate::process(LAS*& las)
   std::vector<int> cells;
   while (las->read_point(true)) // Need to include withheld points to do not mess grouper indexes
   {
-    if (lasfilter.filter(&las->point)) continue; // TODO: check why and if we need that one
-
     double x = las->point.get_x();
     double y = las->point.get_y();
 

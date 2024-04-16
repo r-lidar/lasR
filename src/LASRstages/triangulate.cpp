@@ -66,6 +66,12 @@ bool LASRtriangulate::process(LAS*& las)
     }
   }
 
+  if (coords.size() < 3)
+  {
+    last_error = "impossible to construct a Delaunay triangulation with " + std::to_string(coords.size()) + " points";
+    return false;
+  }
+
   this->las = las;
   d = new delaunator::Delaunator(coords);
 

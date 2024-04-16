@@ -180,6 +180,7 @@ parse_options = function(on, with, ...)
   noprocess <- NULL
   verbose <- FALSE
   noread <- FALSE
+  profiling <- ""
 
   # Explicit options
   if (!is.null(dots$buffer)) buffer <- dots$buffer
@@ -189,6 +190,8 @@ parse_options = function(on, with, ...)
   if (!is.null(dots$noprocess)) noprocess <- dots$noprocess
   if (!is.null(dots$verbose)) verbose <- dots$verbose
   if (!is.null(dots$noread)) noread <- dots$noread
+  if (!is.null(dots$profiling)) profiling <- dots$profiling
+
 
   # 'with' list has precedence
   if (!is.null(with$buffer)) buffer <- with$buffer
@@ -198,6 +201,7 @@ parse_options = function(on, with, ...)
   if (!is.null(with$noprocess)) noprocess <- with$noprocess
   if (!is.null(with$verbose)) verbose <- with$verbose
   if (!is.null(with$noread)) noread <- with$noread
+  if (!is.null(with$profiling)) profiling <- with$profiling
 
   if (!missing(on))
   {
@@ -252,7 +256,8 @@ parse_options = function(on, with, ...)
              noprocess = noprocess,
              chunk = chunk,
              noread = noread,
-             verbose = verbose)
+             verbose = verbose,
+             profiling = profiling)
 
   return(ret)
 }

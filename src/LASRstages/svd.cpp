@@ -28,7 +28,7 @@ LASRsvd::LASRsvd(int k, double r, std::string features)
   else if (k > 0 && r > 0) mode = KNNRADIUS;
   else throw "Internal error: invalid argument k or r"; // # nocov
 
-  if (mode == PUREKNN) r = F64_MAX;
+  if (mode == PUREKNN) this->r = F64_MAX;
 
   // Parse feature = "*"
   std::string all = "CEapslocein";

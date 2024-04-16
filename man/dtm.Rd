@@ -22,8 +22,8 @@ Create a Digital Terrain Model using \link{triangulate} and \link{rasterize}.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-pipeline <- reader(f) + dtm()
-
+pipeline <- reader_las() + dtm()
+exec(pipeline, on = f)
 }
 \seealso{
 \link{triangulate}

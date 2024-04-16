@@ -261,6 +261,8 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     uint64_t n = npoints[i];
     bool index = indexed[i];
 
+    print("%s\n", wkt.c_str());
+
     output << "  {" << std::endl;
     output << "    \"type\": \"Feature\"," << std::endl;
     output << "    \"stac_version\": \"1.0.0\"," << std::endl;
@@ -270,9 +272,8 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     output << "     ]," << std::endl;
     output << "    \"id\": " << autoquote(file.stem().string()) << "," << std::endl;
     output << "    \"properties\": {" << std::endl;
-    output << "      \"datatime\": " << "\"0-01-01T00:00:00Z\""<< "," << std::endl;
-    output << "      \"pc:count\": " << n << "," << std::endl;
-    output << "      \"pc:encoding\": " << "\"?\""<< "," << std::endl;
+    output << "      \"datetime\": " << "\"0-01-01T00:00:00Z\""<< "," << std::endl;
+    output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
     if (!wkt.empty()) output << "      \"proj:wtk2\": " << wkt << "," << std::endl;
@@ -338,7 +339,8 @@ void LAScatalog::add_crs(const LASheader* header)
       if (header->vlrs[j].record_id == 2112)
       {
         char* data = (char*)header->vlrs[j].data;
-        std::string wkt(data, data + header->vlrs[j].record_length_after_header);
+        int len = strnlen(data, header->vlrs[j].record_length_after_header);
+        std::string wkt(data, len);
         add_wkt(wkt);
         break;
       }
@@ -360,7 +362,7 @@ bool LAScatalog::add_file(const std::string& file, bool noprocess)
   files.push_back(file);
   add_crs(&lasreader->header);
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
-  npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.number_of_extended_variable_length_records));
+  npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
 
   lasreader->close();
   delete lasreader;

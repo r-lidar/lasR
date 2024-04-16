@@ -25,3 +25,21 @@ test_that("Usage works", {
   print(keep_first())
   sink(NULL)
 })
+
+
+test_that("rasterize works with a filter (#29)",
+{
+  f <- system.file("extdata", "Topography.las", package="lasR")
+
+  imean1 <- rasterize(4, "imean", filter = drop_ground())
+  imean2 <- rasterize(4, list(imean = mean(Intensity)), filter = drop_ground())
+  pipeline = imean1+imean2
+  ans = exec(pipeline, on = f)
+
+  #terra::plot(ans$rasterize)
+  #terra::plot(ans$aggregate)
+
+  expect_equal(mean(ans$rasterize[], na.rm = T), 872.9656, tolerance = 1e-6)
+  expect_equal(sum(is.na(ans$rasterize[])), 612)
+  expect_equal(ans$rasterize[], ans$aggregate[])
+})
