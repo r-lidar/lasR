@@ -394,9 +394,9 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
 
 # ===== N ====
 
-nothing = function(read = FALSE, stream = FALSE)
+nothing = function(read = FALSE, stream = FALSE, loop = FALSE)
 {
-  ans <- list(algoname = "nothing", read = read, stream = stream)
+  ans <- list(algoname = "nothing", read = read, stream = stream, loop = loop)
   set_lasr_class(ans)
 }
 

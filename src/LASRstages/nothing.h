@@ -6,12 +6,9 @@
 class LASRnothing : public Stage
 {
 public:
-  LASRnothing(bool read, bool stream)
-  {
-    read_points = read | stream;
-    streamable  = read_points & stream;
-  }
+  LASRnothing(bool read, bool stream, bool loop);
   std::string get_name() const override { return "nothing"; };
+  bool process(LAS*& las) override;
   bool is_streamable() const override { return streamable; };
   bool need_points() const override { return read_points; };
 
@@ -21,5 +18,6 @@ public:
   private:
     bool streamable;
     bool read_points;
+    bool loop;
 };
 #endif

@@ -427,7 +427,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     {
       bool read = get_element_as_bool(stage, "read");
       bool stream = get_element_as_bool(stage, "stream");
-      auto v = std::make_unique<LASRnothing>(read, stream);
+      bool loop = get_element_as_bool(stage, "loop");
+      auto v = std::make_unique<LASRnothing>(read, stream, loop);
       pipeline.push_back(std::move(v));
     }
     #ifdef USING_R
