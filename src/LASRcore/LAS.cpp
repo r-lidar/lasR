@@ -117,23 +117,30 @@ bool LAS::add_point(const LASpoint& p)
   if (buffer == 0)
   {
     capacity = 100000 * point.total_point_size;
+
     buffer = (unsigned char*)malloc(capacity);
     if (buffer == 0)
     {
-      eprint("Memory allocation failed\n"); // # nocov
-      return false;                         // # nocov
+      // # nocov start
+      if (errno == ENOMEM)
+        last_error = "Memory allocation failed: Insufficient memory";
+      else
+        last_error = "Memory allocation failed: Unknown error";
+
+      return false;
+      // # nocov end
     }
   }
 
   if (npoints == I32_MAX)
   {
-    eprint("LASR cannot stores more than %d points", I32_MAX); // # nocov
-    return false;                                              // # nocov
+    last_error = "LASR cannot stores more than 4294967295 points"; // # nocov
+    return false;                                                  // # nocov
   }
 
   if (npoints*point.total_point_size == capacity)
   {
-    uint64_t capacity_max = MAX(header->number_of_point_records, header->extended_number_of_point_records)*point.total_point_size;
+    size_t capacity_max = MAX(header->number_of_point_records, header->extended_number_of_point_records)*point.total_point_size;
 
     // This may happens if the header is not properly populated
     if (npoints*point.total_point_size >= capacity_max)
@@ -144,12 +151,22 @@ bool LAS::add_point(const LASpoint& p)
     else
       capacity *= 2;
 
-    buffer = (unsigned char*)realloc((void*)buffer, capacity);
+    unsigned char* tmp = (unsigned char*)realloc((void*)buffer, capacity);
 
-    if (buffer == 0)
+    if (tmp == NULL)
     {
-      eprint("Memory reallocation failled\n"); // # nocov
-      return false;                            // # nocov
+      // # nocov start
+      if (errno == ENOMEM)
+        last_error = "Memory reallocation failed: Insufficient memory";
+      else
+        last_error = "Memory reallocation failed: Unknown error";
+
+      return false;
+      // # nocov end
+    }
+    else
+    {
+      buffer = tmp;
     }
   }
 

@@ -115,8 +115,7 @@ bool LASRlasreader::process(LAS*& las)
   while (lasreader->read_point())
   {
     if (progress->interrupted()) break;
-
-    las->add_point(lasreader->point);
+    if (!las->add_point(lasreader->point)) return false;
     progress->update(lasreader->p_count);
     progress->show();
   }
