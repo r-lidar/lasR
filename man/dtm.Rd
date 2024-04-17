@@ -4,7 +4,7 @@
 \alias{dtm}
 \title{Digital Terrain Model}
 \usage{
-dtm(res = 1, add_class = NULL, ofile = tempfile(fileext = ".tif"))
+dtm(res = 1, add_class = NULL, ofile = temptif())
 }
 \arguments{
 \item{res}{numeric. The resolution of the raster.}
