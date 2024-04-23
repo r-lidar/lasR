@@ -14,8 +14,8 @@ public:
   LASRlaswriter(double xmin, double ymin, double xmax, double ymax, bool keep_buffer);
   ~LASRlaswriter();
   void set_header(LASheader*& header) override;
-  void set_input_file_name(const std::string& file) override;
-  void set_output_file(const std::string& file) override;
+  bool set_input_file_name(const std::string& file) override;
+  bool set_output_file(const std::string& file) override;
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   bool is_streamable() const override { return true; };

@@ -35,6 +35,7 @@ Vector::Vector(const Vector& vector, const Chunk& chunk) : GDALdataset()
 
   nattr = vector.nattr;
   eGType = vector.eGType;
+  dType = vector.dType;
   oSRS = vector.oSRS;
   writetype = vector.writetype;
 }

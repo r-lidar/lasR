@@ -190,33 +190,31 @@ bool StageRaster::set_chunk(const Chunk& chunk)
   return true;
 }
 
-void StageRaster::set_input_file_name(const std::string& file)
+bool StageRaster::set_input_file_name(const std::string& file)
 {
-  if (template_filename.empty()) return;
+  if (template_filename.empty()) return true;
 
   ofile = template_filename;
 
   ifile = file;
   size_t pos = ofile.find('*');
-
   if (pos != std::string::npos)
   {
     ofile.replace(pos, 1, ifile);
     raster.set_file(ofile);
-    if (!raster.create_file())
-    {
-      throw last_error;
-    }
+    if (!raster.create_file()) return false;
     written.push_back(ofile);
   }
+
+  return true;
 }
 
 // Called in the parser before any process. It assigns the name of the raster file in
 // which the data will be written. The string may contain a wildcard in this case
 // the string is a template and a new raster file is created for each chunk
-void StageRaster::set_output_file(const std::string& file)
+bool StageRaster::set_output_file(const std::string& file)
 {
-  if (file.empty()) return;
+  if (file.empty()) return true;
 
   template_filename = file;
   size_t pos = file.find('*');
@@ -224,12 +222,11 @@ void StageRaster::set_output_file(const std::string& file)
   {
     merged = true;
     raster.set_file(file);
-    if (!raster.create_file())
-    {
-      throw last_error;
-    }
+    if (!raster.create_file()) return false;
     written.push_back(file);
   }
+
+  return true;
 }
 
 bool StageRaster::set_crs(int epsg)
@@ -292,9 +289,9 @@ bool StageVector::set_chunk(const Chunk& chunk)
   return true;
 }
 
-void StageVector::set_input_file_name(const std::string& file)
+bool StageVector::set_input_file_name(const std::string& file)
 {
-  if (template_filename.empty()) return;
+  if (template_filename.empty()) return true;
 
   ofile = template_filename;
   ifile = file;
@@ -304,17 +301,16 @@ void StageVector::set_input_file_name(const std::string& file)
   {
     ofile.replace(pos, 1, ifile);
     vector.set_file(ofile);
-    if (!vector.create_file())
-    {
-      throw last_error;
-    }
+    if (!vector.create_file()) return false;
     written.push_back(ofile);
   }
+
+  return true;
 }
 
-void StageVector::set_output_file(const std::string& file)
+bool StageVector::set_output_file(const std::string& file)
 {
-  if (file.empty()) return;
+  if (file.empty()) return true;
 
   template_filename = file;
   size_t pos = file.find('*');
@@ -322,12 +318,11 @@ void StageVector::set_output_file(const std::string& file)
   {
     merged = true;
     vector.set_file(file);
-    if (!vector.create_file())
-    {
-      throw last_error;
-    }
+    if (!vector.create_file()) return false;
     written.push_back(file);
   }
+
+  return true;
 }
 
 bool StageVector::set_crs(int epsg)

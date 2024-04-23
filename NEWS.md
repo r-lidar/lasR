@@ -1,3 +1,7 @@
+# lasR 0.4.7
+
+- Fix: #32 writing a vector file with a path containing a wildcard crashed the program.
+
 # lasR 0.4.6
 
 - Fix: `lax` included into `laz` file were not working.

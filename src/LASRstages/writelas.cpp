@@ -26,7 +26,7 @@ LASRlaswriter::~LASRlaswriter()
   }
 }
 
-void LASRlaswriter::set_input_file_name(const std::string& file)
+bool LASRlaswriter::set_input_file_name(const std::string& file)
 {
   ofile = template_filename;
   ifile = file;
@@ -36,16 +36,21 @@ void LASRlaswriter::set_input_file_name(const std::string& file)
   {
     ofile.replace(pos, 1, ifile);
   }
+
+  return true;
 }
 
-void LASRlaswriter::set_output_file(const std::string& file)
+bool LASRlaswriter::set_output_file(const std::string& file)
 {
   template_filename = file;
   size_t pos = file.find('*');
+
   if (pos == std::string::npos)
   {
     merged = true;
   }
+
+  return true;
 }
 
 bool LASRlaswriter::process(LASpoint*& p)

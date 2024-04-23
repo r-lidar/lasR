@@ -495,8 +495,10 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       std::string filter = get_element_as_string(stage, "filter");
       std::string output = get_element_as_string(stage, "output");
 
-      (*it)->set_filter(filter);
-      (*it)->set_output_file(output);
+      const auto p = it->get();
+
+      p->set_filter(filter);
+      if (!p->set_output_file(output)) return false;
       it++;
     }
 
