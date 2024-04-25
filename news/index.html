@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.8</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,6 +61,11 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.8" id="lasr-048">lasR 0.4.8<a class="anchor" aria-label="anchor" href="#lasr-048"></a></h2>
+<ul><li>Enhance: <a href="https://github.com/r-lidar/lasR/issues/33" class="external-link">#33</a> <code><a href="../reference/local_maximum.html">local_maximum()</a></code> gained a <code>record_attributes</code> argument to chose if the attribute of the points are recorded in the vector file.</li>
+<li>Enhance: <a href="https://github.com/r-lidar/lasR/issues/33" class="external-link">#33</a> <code><a href="../reference/local_maximum.html">local_maximum_raster()</a></code> no longer record zeroed LAS point attributes</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.7" id="lasr-047">lasR 0.4.7<a class="anchor" aria-label="anchor" href="#lasr-047"></a></h2>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/32" class="external-link">#32</a> writing a vector file with a path containing a wildcard crashed the program.</li>
 </ul></div>
@@ -88,7 +93,7 @@
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.2" id="lasr-042">lasR 0.4.2<a class="anchor" aria-label="anchor" href="#lasr-042"></a></h2>
-<ul><li>Fix: <code><a href="https://rdrr.io/pkg/lidR/man/add_attribute.html" class="external-link">add_attribute()</a></code> was incorrectly reallocating memory causing potential crashes, especially when adding several attributes.</li>
+<ul><li>Fix: <code>add_attribute()</code> was incorrectly reallocating memory causing potential crashes, especially when adding several attributes.</li>
 <li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> crashing if the header of the LAS file did not record the correct number of points.</li>
 <li>Fix: naming of the queries.</li>
 <li>Documentation: reorganized the URLs and navbar of the website.</li>
@@ -128,7 +133,7 @@
 <p>Change: <code><a href="../reference/deprecated.html">processor()</a></code> and <code><a href="../reference/deprecated.html">reader()</a></code> are deprecated and are replaced by <code><a href="../reference/exec.html">exec()</a></code> and <code><a href="../reference/reader_las.html">reader_las()</a></code>. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the <code>LAScatalog</code> processing options and this was not possible with the previous syntax.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">lidR</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lidR/man/readLAScatalog.html" class="external-link">readLAScatalog</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">lidR</span><span class="fu">::</span><span class="fu">readLAScatalog</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </li>

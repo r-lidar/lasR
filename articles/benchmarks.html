@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.8</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -144,7 +144,7 @@ natively supported.
 </h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># lidR</span></span>
-<span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/multicore.html" class="external-link">multicore</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">future</span><span class="fu">::</span><span class="fu">plan</span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu">multicore</span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">chm</span> <span class="op">=</span> <span class="fu">rasterize_canopy</span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu">p2r</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span></span>
@@ -167,7 +167,7 @@ natively supported.
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># lidR</span></span>
-<span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/multicore.html" class="external-link">multicore</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">future</span><span class="fu">::</span><span class="fu">plan</span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu">multicore</span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">dtm</span> <span class="op">=</span> <span class="fu">rasterize_terrain</span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu">tin</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># lasR</span></span>
@@ -200,7 +200,7 @@ in more efficient memory management.</p>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># lidR</span></span>
-<span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/multicore.html" class="external-link">multicore</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">future</span><span class="fu">::</span><span class="fu">plan</span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu">multicore</span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">custom_function</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">z</span>,<span class="va">i</span><span class="op">)</span> <span class="op">{</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>avgz <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span>, avgi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">i</span><span class="op">)</span><span class="op">)</span> <span class="op">}</span></span>
 <span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">readLAScatalog</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
 <span><span class="va">chm</span> <span class="op">=</span> <span class="fu">rasterize_canopy</span><span class="op">(</span><span class="va">ctg</span>, <span class="fl">1</span>, <span class="fu">p2r</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -230,7 +230,7 @@ in more efficient memory management.</p>
 </h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># lidR</span></span>
-<span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/multicore.html" class="external-link">multicore</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">future</span><span class="fu">::</span><span class="fu">plan</span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu">multicore</span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">opt_output_files</span><span class="op">(</span><span class="va">ctg</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*_norm"</span><span class="op">)</span></span>
 <span><span class="va">norm</span> <span class="op">=</span> <span class="fu">normalize_height</span><span class="op">(</span><span class="va">ctg</span>, <span class="fu">tin</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -253,7 +253,7 @@ in more efficient memory management.</p>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># lidR</span></span>
-<span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/multicore.html" class="external-link">multicore</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">future</span><span class="fu">::</span><span class="fu">plan</span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="fu">multicore</span><span class="op">(</span><span class="va">...</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">tree</span> <span class="op">=</span> <span class="fu">locate_trees</span><span class="op">(</span><span class="va">ctg</span>, <span class="fu">lmf</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># lasR</span></span>
