@@ -7,13 +7,6 @@ read_las = function(f, expose = "*")
   return (exec(call, f))
 }
 
-read_crs = function(files)
-{
-  pipeline = reader_las() + hulls()
-  ans = exec(pipeline, on = files)
-  return(sf::st_crs(ans))
-}
-
 test_that("Has openmp support",
 {
   skip_on_os("mac")

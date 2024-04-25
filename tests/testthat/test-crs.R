@@ -1,3 +1,5 @@
+read_crs = function(f) { exec(summarise(), on = f)$crs }
+
 test_that("Object are assigned a CRS",
 {
   f <- system.file("extdata", "Topography.las", package="lasR")
@@ -20,7 +22,7 @@ test_that("set_crs works with epsg",
 
   expect_match(terra::crs(ans[[1]]), "NAD83\\(CSRS\\) / MTM zone 7")
   expect_match(sf::st_crs(ans[[2]])$input, "Hanoi 1972 / Gauss-Kruger zone 18")
-  expect_match(las_crs$input, "Montserrat 1958 / British West Indies Grid")
+  expect_match(las_crs, "Montserrat 1958 / British West Indies Grid")
 })
 
 test_that("set_crs works with wkt",
@@ -37,7 +39,7 @@ test_that("set_crs works with wkt",
 
   expect_match(terra::crs(ans[[1]]), "NAD83\\(CSRS\\) / MTM zone 7")
   expect_match(sf::st_crs(ans[[2]])$input, "Hanoi 1972 / Gauss-Kruger zone 18")
-  expect_match(las_crs$input, "Montserrat 1958 / British West Indies Grid")
+  expect_match(las_crs, "Montserrat 1958 / British West Indies Grid")
 })
 
 test_that("set_crs fails with invalid epsg",

@@ -5,6 +5,7 @@
 - New: stage `assign_crs()` to assign a coordinate reference system at some point of the pipeline.
 - New: `exec()` and the stages now checks for interruption events to exit the program on user request. Not all the stages can catch a user interruption event so there might be a delay between the event and the actual interruption but overall the pipeline should stop before the end of the processing.
 - New: raster in `GeoTiff` format are now created with `COMPRESS=DEFLATE`, `PREDICTOR=2`,`TILED=YES` effectively reducing the size of the rasters
+- New: `summarize()` return includes the CRS.
 
 # lasR 0.4.8
 

@@ -27,8 +27,6 @@ bool LASRsummary::process(LASpoint*& p)
   if (lasfilter.filter(p)) return true;
   if (p->inside_buffer(xmin, ymin, xmax, ymax, circular)) return true; // avoid counting buffer points
 
-  #pragma omp critical
-  {
   npoints++;
   npoints_per_return[p->get_return_number()]++;
   npoints_per_class[p->get_classification()]++;
@@ -42,7 +40,6 @@ bool LASRsummary::process(LASpoint*& p)
   int i = (int) std::round(p->get_intensity() / iwbin) * iwbin;
   (zhistogram.find(z) == zhistogram.end()) ?  zhistogram[z] = 1 : zhistogram[z]++;
   (ihistogram.find(i) == ihistogram.end()) ?  ihistogram[i] = 1 : ihistogram[i]++;
-  }
 
   return true;
 }
@@ -89,7 +86,7 @@ void LASRsummary::merge_maps(std::map<int, uint64_t>& map1, const std::map<int, 
 
 SEXP LASRsummary::to_R()
 {
-  int n = 8;
+  int n = 10;
 
   // Create a list
   SEXP list = PROTECT(Rf_allocVector(VECSXP, n)); nsexpprotected++;
@@ -104,6 +101,8 @@ SEXP LASRsummary::to_R()
   SET_STRING_ELT(names, 5, Rf_mkChar("npoints_per_class"));
   SET_STRING_ELT(names, 6, Rf_mkChar("z_histogram"));
   SET_STRING_ELT(names, 7, Rf_mkChar("i_histogram"));
+  SET_STRING_ELT(names, 8, Rf_mkChar("crs"));
+  SET_STRING_ELT(names, 9, Rf_mkChar("epsg"));
   Rf_setAttrib(list, R_NamesSymbol, names);
 
   // BASIC STATS
@@ -195,6 +194,12 @@ SEXP LASRsummary::to_R()
   }
   Rf_setAttrib(R_ihistogram, R_NamesSymbol, R_ihistogram_names);
 
+  std::string wkt = crs.get_wkt();
+  SEXP R_wkt = PROTECT(Rf_allocVector(STRSXP, 1)); nsexpprotected++;
+  SET_STRING_ELT(R_wkt, 0, Rf_mkCharLen(wkt.c_str(), wkt.length()));
+
+  SEXP R_epsg = PROTECT(Rf_ScalarInteger(crs.get_epsg())); nsexpprotected++;
+
   // Assign the elements to the list
   SET_VECTOR_ELT(list, 0, R_npoints);
   SET_VECTOR_ELT(list, 1, R_nsingle);
@@ -204,6 +209,8 @@ SEXP LASRsummary::to_R()
   SET_VECTOR_ELT(list, 5, R_npoints_per_class);
   SET_VECTOR_ELT(list, 6, R_zhistogram);
   SET_VECTOR_ELT(list, 7, R_ihistogram);
+  SET_VECTOR_ELT(list, 8, R_wkt);
+  SET_VECTOR_ELT(list, 9, R_epsg);
 
   return list;
 }
