@@ -728,8 +728,8 @@ set_crs = function(x)
 {
   epsg = 0
   wkt = ""
-  if (is.numeric(x)) epsg = x
-  if (is.character(x)) wkt = x
+  if (is.numeric(x)) { epsg = x }
+  if (is.character(x)) { wkt = x }
   ans <- list(algoname = "set_crs", epsg = epsg, wkt = wkt)
   set_lasr_class(ans)
 }

@@ -30,7 +30,7 @@ test_that("set_crs works with wkt",
   wkt1 = sf::st_crs(2044)$wkt
   wkt2 = sf::st_crs(2004)$wkt
 
-  pipeline <- reader_las(filter = "-keep_random_fraction 0.1") + rasterize(20, "count") + set_crs(wkt = wkt1) + local_maximum(5)  + set_crs(wkt = wkt2) + write_las()
+  pipeline <- reader_las(filter = "-keep_random_fraction 0.1") + rasterize(20, "count") + set_crs(wkt1) + local_maximum(5)  + set_crs(wkt2) + write_las()
   ans = exec(pipeline, on = f)
 
   las_crs = read_crs(ans$write_las)
@@ -52,7 +52,7 @@ test_that("set_crs fails with invalid wkt",
 {
   f <- system.file("extdata", "Example.las", package="lasR")
 
-  pipeline <- set_crs(wkt = "BLA") + rasterize(20, "count") + write_las()
+  pipeline <- set_crs("BLA") + rasterize(20, "count") + write_las()
   expect_error(exec(pipeline, on = f), "WKT string")
 })
 

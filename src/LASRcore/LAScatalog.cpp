@@ -10,6 +10,7 @@
 
 // STL
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <algorithm>
 #include <filesystem>
