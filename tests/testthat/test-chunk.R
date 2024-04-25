@@ -6,7 +6,7 @@ test_that("processing by chunks works",
   ans2 = exec(p, on = f, chunk = 0)
 
   expect_equal(ans1$rasterize[], ans2$rasterize[])
-  expect_equal(dim(ans1$local_maximum), c(297, 6))
+  expect_equal(dim(ans1$local_maximum), c(297, 1))
   expect_equal(nrow(ans1$local_maximum), nrow(ans2$local_maximum))
   expect_equal(basename(ans1$write_las), paste0("MixedConifer_", 0:3, ".las"))
 
