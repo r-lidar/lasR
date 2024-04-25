@@ -40,51 +40,6 @@ Vector::Vector(const Vector& vector, const Chunk& chunk) : GDALdataset()
   writetype = vector.writetype;
 }
 
-/*bool Vector::write_point(double x, double y, double z)
-{
-  if (!dataset)
-  {
-    if (!create_file())
-    {
-      return false;
-    }
-  }
-
-  if (eGType != wkbPoint25D)
-  {
-    last_error = "ERROR: The file is not of type POINT";
-    return false;
-  }
-
-  // Write only points inside the bounding box
-  if (x < extent[0] || x > extent[2] || y < extent[1] || y > extent[3])
-  {
-    return true;
-  }
-
-  OGRFeature* feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
-  OGRPoint point;
-  point.setX(x);
-  point.setY(y);
-  point.setZ(z);
-  feature->SetGeometry(&point);
-
-  if (layer->CreateFeature(feature) != OGRERR_NONE)
-  {
-    last_error = "ERROR: Failed to create feature.";
-    OGRFeature::DestroyFeature(feature);
-    return false;
-  }
-
-  OGRFeature::DestroyFeature(feature);
-  return true;
-}
-
-bool Vector::write_point(const PointXYZ& p)
-{
-  return write_point(p.x, p.y, p.z);
-}*/
-
 bool Vector::create_file()
 {
   if (!GDALdataset::create_file())
@@ -151,13 +106,16 @@ bool Vector::write(const PointLAS& p)
   point.setY(p.y);
   point.setZ(p.z);
   feature->SetGeometry(&point);
-
-  feature->SetField("Intensity", p.intensity);
-  feature->SetField("gpstime", p.gps_time);
-  feature->SetField("ReturnNumber", p.return_number);
-  feature->SetField("Classification", p.classification);
-  feature->SetField("ScanAngle", p.scan_angle);
   feature->SetFID(p.FID);
+
+  if (writetype == POINTLAS)
+  {
+    feature->SetField("Intensity", p.intensity);
+    feature->SetField("gpstime", p.gps_time);
+    feature->SetField("ReturnNumber", p.return_number);
+    feature->SetField("Classification", p.classification);
+    feature->SetField("ScanAngle", p.scan_angle);
+  }
 
   if (layer->CreateFeature(feature) != OGRERR_NONE)
   {

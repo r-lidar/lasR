@@ -97,7 +97,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
         xmax = catalog->get_xmax();
         ymax = catalog->get_ymax();
 
-        // Special treatment of the reader to find the potential queries in the catalogue
+        // Special treatment of the reader to find the potential queries in the catalog
         // TODO: xcenter, ycenter, radius, xmin, ymin and ... have the same size it is checked at R level but should be tested here.
         if (contains_element(stage, "xcenter"))
         {
@@ -231,7 +231,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       if (!contains_element(stage, "connect"))
       {
         std::string use_attribute = get_element_as_string(stage, "use_attribute");
-        auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, use_attribute);
+        bool record_attributes = get_element_as_bool(stage, "record_attributes");
+        auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, use_attribute, record_attributes);
         pipeline.push_back(std::move(v));
       }
       else

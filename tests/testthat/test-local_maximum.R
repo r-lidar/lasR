@@ -2,10 +2,16 @@ test_that("local maximum works",
 {
   f <- system.file("extdata", "MixedConifer.las", package="lasR")
   read = reader(f)
-  lmf = local_maximum(3)
+  lmf = local_maximum(3, record_attributes = T)
   ans = processor(read + lmf)
 
   expect_equal(dim(ans), c(297, 6))
+
+  read = reader(f)
+  lmf = local_maximum(3)
+  ans = processor(read + lmf)
+
+  expect_equal(dim(ans), c(297, 1))
 })
 
 test_that("local maximum works with multiple files",
@@ -15,7 +21,7 @@ test_that("local maximum works with multiple files",
   f = f[1:2]
 
   read = reader(f)
-  lmf = local_maximum(5, min_height = 330)
+  lmf = local_maximum(5, min_height = 330, record_attributes = T)
   ans = processor(read + lmf)
 
   expect_equal(dim(ans), c(2235, 6))
@@ -26,7 +32,7 @@ test_that("local maximum works with extra bytes",
   f <- system.file("extdata", "extra_byte.las", package="lasR")
 
   read = reader(f)
-  lmf = local_maximum(3, use_attribute = "Pulse width")
+  lmf = local_maximum(3, use_attribute = "Pulse width", record_attributes = T)
   ans = suppressWarnings(processor(read + lmf))
 
   z = sf::st_coordinates(ans)[,3]
@@ -55,8 +61,8 @@ test_that("local maximum works with a raster",
 
   ans = exec(chm  + lmf1 + pit + lmf2, on = f)
 
-  expect_equal(dim(ans[[2]]), c(262L, 6L))
-  expect_equal(dim(ans[[4]]), c(222L, 6L))
+  expect_equal(dim(ans[[2]]), c(262L, 1L))
+  expect_equal(dim(ans[[4]]), c(222L, 1L))
 })
 
 test_that("growing region works with a raster with multiple files",

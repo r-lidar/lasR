@@ -1,3 +1,8 @@
+# lasR 0.4.8
+
+- Enhance: #33 `local_maximum()` gained a `record_attributes` argument to chose if the attribute of the points are recorded in the vector file.
+- Enhance: #33 `local_maximum_raster()` no longer record zeroed LAS point attributes
+
 # lasR 0.4.7
 
 - Fix: #32 writing a vector file with a path containing a wildcard crashed the program.

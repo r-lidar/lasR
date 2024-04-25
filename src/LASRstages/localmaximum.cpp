@@ -24,10 +24,9 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
-  vector.set_fields_for(Vector::writable::POINTLAS);
 }
 
-LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_attribute)
+LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_attribute, bool record_attributes)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -46,7 +45,9 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
-  vector.set_fields_for(Vector::writable::POINTLAS);
+
+  if (record_attributes)
+    vector.set_fields_for(Vector::writable::POINTLAS);
 }
 
 bool LASRlocalmaximum::process()
@@ -190,7 +191,7 @@ bool LASRlocalmaximum::write()
   progress->set_total(lm.size());
   progress->set_prefix("Write local maxima on disk");
 
-  if (lm.size() == 0) print("0 point to write\n");
+  if (lm.size() == 0) return true;
 
   for (const auto& p : lm)
   {
@@ -204,9 +205,14 @@ bool LASRlocalmaximum::write()
     {
       // /!\ TODO: not thread safe
       if (last_error_code != GDALdataset::DUPFID)
+      {
         return false;
+      }
       else
+      {
         dupfid++;
+        last_error_code = 0;
+      }
     }
 
     (*progress)++;

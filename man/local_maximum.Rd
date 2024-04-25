@@ -10,7 +10,8 @@ local_maximum(
   min_height = 2,
   filter = "",
   ofile = tempgpkg(),
-  use_attribute = "Z"
+  use_attribute = "Z",
+  record_attributes = FALSE
 )
 
 local_maximum_raster(
@@ -42,6 +43,10 @@ intermediate stage.}
 \item{use_attribute}{character. By default the local maximum is performed on the coordinate Z. Can also be
 the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity' but there is
 probably no use case for that one.}
+
+\item{record_attributes}{The coordinates XYZ of points corresponding to the local maxima are recorded.
+It is also possible to record the attributes of theses points such as the intensity, return number, scan
+angle and so on.}
 
 \item{raster}{LASRalgorithm. A stage that produces a raster.}
 }
