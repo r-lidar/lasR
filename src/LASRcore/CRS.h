@@ -3,7 +3,7 @@
 
 #include "error.h"
 #include <string>
-#include <gdal/gdal_priv.h>
+#include <gdal_priv.h>
 
 class CRS
 {
