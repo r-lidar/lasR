@@ -2,6 +2,7 @@
 #define R2CPP_H
 
 #ifdef USING_R
+#define R_NO_REMAP 1
 #include <R.h>
 #include <Rinternals.h>
 #include <vector>
