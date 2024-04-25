@@ -329,20 +329,6 @@ void Pipeline::set_ncpu(int ncpu)
   for (auto&& stage : pipeline) stage->set_ncpu(ncpu);
 }
 
-bool Pipeline::set_crs(int epsg)
-{
-  if (epsg == 0) return false;
-  for (auto&& stage : pipeline) stage->set_crs(epsg);
-  return true;
-}
-
-bool Pipeline::set_crs(std::string wkt)
-{
-  if (wkt.empty()) return false;
-  for (auto&& stage : pipeline) stage->set_crs(wkt);
-  return true;
-}
-
 void Pipeline::set_verbose(bool verbose)
 {
   this->verbose = verbose;

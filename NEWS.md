@@ -1,7 +1,8 @@
 # lasR 0.5.0
 
-- New: stage `geometry_features()` to compute pointwise geometry features based on k-nearest neighbors.
+- New: stage `geometry_features()` to compute point wise geometry features based on k-nearest neighbors.
 - New: stage `callback()` can load more than 10 extrabyte attributes. Using the flag `E` all the extrabytes are loaded.
+- New: stage `assign_crs()` to assign a coordinate reference system at some point of the pipeline.
 - New: `exec()` and the stages now checks for interruption events to exit the program on user request. Not all the stages can catch a user interruption event so there might be a delay between the event and the actual interruption but overall the pipeline should stop before the end of the processing.
 - New: raster in `GeoTiff` format are now created with `COMPRESS=DEFLATE`, `PREDICTOR=2`,`TILED=YES` effectively reducing the size of the rasters
 

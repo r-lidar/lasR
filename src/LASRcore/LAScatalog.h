@@ -2,6 +2,7 @@
 #define LASCATALOG_H
 
 #include "error.h"
+#include "CRS.h"
 
 #include "Chunk.h"
 #include "Shape.h"
@@ -29,10 +30,6 @@ public:
   void add_query(double xcenter, double ycenter, double radius);
   bool set_noprocess(const std::vector<bool>& b);
   bool set_chunk_size(double size);
-  void set_wkt(const std::string& wkt) { this->wkt = wkt; };
-  std::string get_wkt() const { return wkt; };
-  void set_epsg(int epsg) { this->epsg = epsg; };
-  int get_epsg() const { return epsg; };
   bool get_chunk(int index, Chunk& chunk) const;
   int get_number_chunks() const;
   int get_number_files() const;
@@ -42,6 +39,8 @@ public:
   double get_ymin() const { return ymin; };
   double get_xmax() const { return xmax; };
   double get_ymax() const { return ymax; };
+  void set_crs(const CRS& crs) { this->crs = crs; };
+  CRS get_crs() const { return crs; };
   bool check_spatial_index();
   void build_index();
   void clear();
@@ -79,8 +78,7 @@ private:
   std::set<int> epsg_set;
 
   // CRS retained of the overall collection
-  int epsg;
-  std::string wkt;
+  CRS crs;
 
   // reader mode to support R data.frame
   bool use_dataframe;

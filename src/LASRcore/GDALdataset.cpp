@@ -291,44 +291,11 @@ bool GDALdataset::set_band_name(std::string name, int band)
   return true;
 }
 
-bool GDALdataset::set_crs(int epsg)
+bool GDALdataset::set_crs(const CRS& crs)
 {
-  if (oSRS.importFromEPSG(epsg) != OGRERR_NONE)
-  {
-    // # nocov start
-    char buffer[512];
-    snprintf(buffer, sizeof(buffer), "error %d while creating GDAL dataset. %s", CPLGetLastErrorNo(),  CPLGetLastErrorMsg());
-    last_error = std::string(buffer);
-    return false;
-    // # nocov end
-  }
-
+  oSRS = crs.get_crs();
   return true;
 }
-
-bool GDALdataset::set_crs(std::string wkt)
-{
-  if (oSRS.importFromWkt(wkt.c_str()) != OGRERR_NONE)
-  {
-    // # nocov start
-    char buffer[512];
-    snprintf(buffer, sizeof(buffer), "error %d while creating GDAL dataset. %s", CPLGetLastErrorNo(),  CPLGetLastErrorMsg());
-    last_error = std::string(buffer);
-    return false;
-    // # nocov end
-  }
-
-  return true;
-}
-
-/*void GDALdataset::close()
-{
-  if (dataset)
-  {
-    GDALClose(dataset);
-    dataset = nullptr;
-  }
-}*/
 
 bool GDALdataset::check_dataset_is_not_initialized()
 {

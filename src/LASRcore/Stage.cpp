@@ -32,6 +32,7 @@ Stage::Stage(const Stage& other)
   uid = other.uid;
   progress = other.progress;
   connections = other.connections;
+  crs = other.crs;
 
   // Special treatment for LASfilter which is why we need a copy constructor
   // LASfilter is full of pointer, pointer on pointers without copy constructor.
@@ -232,14 +233,10 @@ void StageRaster::set_output_file(const std::string& file)
   }
 }
 
-bool StageRaster::set_crs(int epsg)
+void StageRaster::set_crs(const CRS& crs)
 {
-  return raster.set_crs(epsg);
-}
-
-bool StageRaster::set_crs(const std::string& wkt)
-{
-  return raster.set_crs(wkt);
+  Stage::set_crs(crs);
+  raster.set_crs(crs);
 }
 
 bool StageRaster::write()
@@ -330,14 +327,10 @@ void StageVector::set_output_file(const std::string& file)
   }
 }
 
-bool StageVector::set_crs(int epsg)
+void StageVector::set_crs(const CRS& crs)
 {
-  return vector.set_crs(epsg);
-}
-
-bool StageVector::set_crs(const std::string& wkt)
-{
-  return vector.set_crs(wkt);
+  Stage::set_crs(crs);
+  vector.set_crs(crs);
 }
 
 /*void StageVector::clear(bool last)

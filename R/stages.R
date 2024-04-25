@@ -707,6 +707,33 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
 
 # ==== S =====
 
+#' Set the CRS of the pipeline
+#'
+#' Assign a CRS in the pipeline. This stage **does not** reproject the data. It assigns a CRS. This
+#' stage affects subsequent stages of the pipeline and thus should appear close to \link{reader_las}
+#' to assign the correct CRS to all stages.
+#'
+#' @param x integer or string. EPSG code or WKT string understood by GDAL
+#' @export
+#' @md
+#' @examples
+#' # expected usage
+#' hmax = rasterize(10, "max")
+#' pipeline = reader_las() + set_crs(2949) + hmax
+#'
+#' # fancy usages are working as expected. The .tif file is written with a CRS, the .gpkg file with
+#' # another CRS and the .las file with yet another CRS.
+#' pipeline = set_crs(2044) + hmax + set_crs(2004) + local_maximum(5) + set_crs(2949) + write_las()
+set_crs = function(x)
+{
+  epsg = 0
+  wkt = ""
+  if (is.numeric(x)) epsg = x
+  if (is.character(x)) wkt = x
+  ans <- list(algoname = "set_crs", epsg = epsg, wkt = wkt)
+  set_lasr_class(ans)
+}
+
 #' Sample the point cloud keeping one random point per units
 #'
 #' Sample the point cloud, keeping one random point per pixel or per voxel. This stage modifies

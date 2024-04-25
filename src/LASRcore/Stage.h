@@ -25,6 +25,7 @@
 #include "Vector.h"
 #include "Progress.h"
 #include "Rcompatibility.h"
+#include "CRS.h"
 #include "error.h"
 
 class Stage
@@ -41,8 +42,7 @@ public:
   virtual bool write() { return true; };
   virtual void clear(bool last = false) { return; };
   virtual bool set_chunk(const Chunk& chunk);
-  virtual bool set_crs(int epsg) { return false; };
-  virtual bool set_crs(const std::string& wkt) { return false; };
+  virtual void set_crs(const CRS& crs) { this->crs = crs; };
   virtual void set_output_file(const std::string& file) { ofile = file; };
   virtual void set_input_file_name(const std::string& file) { return; };
   virtual void set_header(LASheader*& header) { return; };
@@ -63,6 +63,7 @@ public:
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
   std::string get_uid() const { return uid; };
   const std::map<std::string, Stage*>& get_connection() { return connections; };
+  CRS get_crs() const { return crs; };
 
   // The default method consists in returning the string 'ofile'.
   #ifdef USING_R
@@ -92,6 +93,7 @@ protected:
   double ymax;
   bool circular;
   bool verbose;
+  CRS crs;
   std::string ifile;
   std::string ofile;
   std::string uid;
@@ -132,8 +134,7 @@ public:
   bool set_chunk(const Chunk& chunk) override;
   void set_input_file_name(const std::string& file) override;
   void set_output_file(const std::string& file) override;
-  bool set_crs(int epsg) override;
-  bool set_crs(const std::string& wkt) override;
+  void set_crs(const CRS& crs) override;
   bool write() override;
   //void clear(bool last) override;
   const Raster& get_raster() { return raster; };
@@ -151,8 +152,7 @@ public:
   bool set_chunk(const Chunk& chunk) override;
   void set_input_file_name(const std::string& file) override;
   void set_output_file(const std::string& file) override;
-  bool set_crs(int epsg) override;
-  bool set_crs(const std::string& wkt) override;
+  void set_crs(const CRS& crs) override;
   //void clear(bool last) override;
   Vector& get_vector() { return vector; };
 

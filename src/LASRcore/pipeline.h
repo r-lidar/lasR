@@ -48,8 +48,6 @@ class Pipeline
     double need_buffer();
     bool need_points() const;
     bool set_chunk(const Chunk& chunk);
-    bool set_crs(int epsg);
-    bool set_crs(std::string wkt);
     void set_ncpu(int ncpu);
     void set_verbose(bool verbose);
     void sort();

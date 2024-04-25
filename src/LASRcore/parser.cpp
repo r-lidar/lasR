@@ -14,6 +14,7 @@
 #include "sampling.h"
 #include "readlas.h"
 #include "regiongrowing.h"
+#include "setcrs.h"
 #include "summary.h"
 #include "svd.h"
 #include "triangulate.h"
@@ -160,7 +161,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       {
         catalog = std::make_shared<LAScatalog>();
         catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
-        catalog->set_wkt(wkt);
+        catalog->set_crs(CRS(wkt));
 
         // Special treatment of the reader to find the potential queries in the catalog
         if (contains_element(stage, "xcenter"))
@@ -346,6 +347,21 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       auto v = std::make_unique<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res);
       pipeline.push_back(std::move(v));
     }
+    else if (name  == "set_crs")
+    {
+      int epsg = get_element_as_int(stage, "epsg");
+      std::string wkt = get_element_as_string(stage, "wkt");
+      if (epsg > 0)
+      {
+        auto v = std::make_unique<LASRsetcrs>(epsg);
+        pipeline.push_back(std::move(v));
+      }
+      else
+      {
+        auto v = std::make_unique<LASRsetcrs>(wkt);
+        pipeline.push_back(std::move(v));
+      }
+    }
     else if (name  == "svd")
     {
       int k = get_element_as_int(stage, "k");
@@ -488,22 +504,25 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     // We parse the pipeline so we know if we need a buffer
     catalog->set_buffer(need_buffer());
 
-    // The catalog is build, we know the CRS of the collection
-    set_crs(catalog->get_epsg());
-    set_crs(catalog->get_wkt());
-
     // The catalog is build we have the bbox of all the LAS file. We can build a spatial index
     catalog->build_index();
 
-    // We iterate over all the stage again to assign the filter and the output file.
+
+    // We iterate over all the stage again to assign the filter, the crs and the output file.
     // This is done here because set_output_file() does create a file on disk and we want
     // it to happen only if we plan to actually process something
+    CRS current_crs = catalog->get_crs();
     auto it = pipeline.begin();
     for (auto i = 0; i < num_stages; ++i)
     {
       SEXP stage = VECTOR_ELT(sexpargs, i);
       std::string filter = get_element_as_string(stage, "filter");
       std::string output = get_element_as_string(stage, "output");
+
+      // We set the CRS from the CRS of the catalog but then we get back the CRS. IF we have a
+      // the set_crs stage this update the CRS assign to the next stages
+      (*it)->set_crs(current_crs);
+      current_crs = (*it)->get_crs();
 
       (*it)->set_filter(filter);
       (*it)->set_output_file(output);

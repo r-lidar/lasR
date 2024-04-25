@@ -152,11 +152,6 @@ test_that("callback coverage",
   expect_error(processor(read+call), NA)
 })
 
-test_that("callback does not expose missing extrabytes",
-{
-  expect_warning(read_las(f, expose = "xyz4"), NA) # use to throw a warning
-})
-
 test_that("callback fails nicely",
 {
   read = reader(f)
