@@ -16,8 +16,10 @@ to assign the correct CRS to all stages.
 }
 \examples{
 # expected usage
-pipleine = reader_las() + set_crs(2949) + rasterize(10, "max")
+hmax = rasterize(10, "max")
+pipeline = reader_las() + set_crs(2949) + hmax
 
-# fancy usages are working as expected
-pipleine = reader_las() + set_crs(1044) + rasterize(10, "max") + set_crs(1044) + rasterize(10, "max")
+# fancy usages are working as expected. The .tif file is written with a CRS, the .gpkg file with
+# another CRS and the .las file with yet another CRS.
+pipeline = set_crs(2044) + hmax + set_crs(2004) + local_maximum(5) + set_crs(2949) + write_las()
 }
