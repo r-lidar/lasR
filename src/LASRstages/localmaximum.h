@@ -13,7 +13,7 @@ class LASRlocalmaximum : public StageVector
 {
 public:
   LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, Stage* algorithm);
-  LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_sttribute);
+  LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_sttribute, bool record_attributes = true);
   bool process() override;
   bool process(LAS*& las) override;
   bool write() override;

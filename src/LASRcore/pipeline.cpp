@@ -292,11 +292,15 @@ bool Pipeline::set_chunk(const Chunk& chunk)
   {
     if (!stage->set_chunk(chunk))
     {
-      last_error = "in " + stage->get_name() + " while initalizing: " + last_error; // # nocov
+      last_error = "in " + stage->get_name() + " while initalizing chunk: " + last_error; // # nocov
       return false; // # nocov
     }
 
-    stage->set_input_file_name(chunk.name);
+    if(!stage->set_input_file_name(chunk.name))
+    {
+      last_error = "in " + stage->get_name() + " while initalizing file: " + last_error; // # nocov
+      return false; // # nocov
+    }
   }
 
   auto end_time = std::chrono::high_resolution_clock::now();

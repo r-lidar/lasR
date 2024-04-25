@@ -6,6 +6,15 @@
 - New: `exec()` and the stages now checks for interruption events to exit the program on user request. Not all the stages can catch a user interruption event so there might be a delay between the event and the actual interruption but overall the pipeline should stop before the end of the processing.
 - New: raster in `GeoTiff` format are now created with `COMPRESS=DEFLATE`, `PREDICTOR=2`,`TILED=YES` effectively reducing the size of the rasters
 
+# lasR 0.4.8
+
+- Enhance: #33 `local_maximum()` gained a `record_attributes` argument to chose if the attribute of the points are recorded in the vector file.
+- Enhance: #33 `local_maximum_raster()` no longer record zeroed LAS point attributes
+
+# lasR 0.4.7
+
+- Fix: #32 writing a vector file with a path containing a wildcard crashed the program.
+
 # lasR 0.4.6
 
 - Fix: `lax` included into `laz` file were not working.

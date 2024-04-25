@@ -14,8 +14,6 @@ public:
   Vector(double xmin, double ymin, double xmax, double ymax, int nattr = 1);
   Vector(const Vector& vector, const Chunk& chunk);
   bool create_file();
-  //bool write_point(double x, double y, double z);
-  //bool write_point(const PointXYZ& p);
   bool write(const PointLAS& p);
   bool write(const std::vector<TriangleXYZ>& triangles);
   bool write(const std::vector<PolygonXY>& poly);

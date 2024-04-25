@@ -355,6 +355,9 @@ load_raster = function(file, band = 1L)
 #' the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity' but there is
 #' probably no use case for that one.
 #' @param raster LASRalgorithm. A stage that produces a raster.
+#' @param record_attributes The coordinates XYZ of points corresponding to the local maxima are recorded.
+#' It is also possible to record the attributes of theses points such as the intensity, return number, scan
+#' angle and so on.
 #'
 #' @template param-filter
 #' @template param-ofile
@@ -373,9 +376,9 @@ load_raster = function(file, band = 1L)
 #' # plot(ans$local_maximum, add = T, pch = 19)
 #' @export
 #' @md
-local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z")
+local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z", record_attributes = FALSE)
 {
-  ans <- list(algoname = "local_maximum", ws = ws, min_height = min_height, filter = filter, output = ofile, use_attribute = use_attribute)
+  ans <- list(algoname = "local_maximum", ws = ws, min_height = min_height, filter = filter, output = ofile, use_attribute = use_attribute, record_attributes = record_attributes)
   set_lasr_class(ans, vector = TRUE)
 }
 

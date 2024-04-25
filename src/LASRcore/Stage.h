@@ -43,8 +43,8 @@ public:
   virtual void clear(bool last = false) { return; };
   virtual bool set_chunk(const Chunk& chunk);
   virtual void set_crs(const CRS& crs) { this->crs = crs; };
-  virtual void set_output_file(const std::string& file) { ofile = file; };
-  virtual void set_input_file_name(const std::string& file) { return; };
+  virtual bool set_output_file(const std::string& file) { ofile = file; return true; };
+  virtual bool set_input_file_name(const std::string& file) { return true; };
   virtual void set_header(LASheader*& header) { return; };
   virtual bool is_streamable() const { return false; };
   virtual bool is_parallelizable() const { return true; }; // concurrent-files
@@ -132,9 +132,9 @@ public:
   StageRaster(const StageRaster& other);
   ~StageRaster() override;
   bool set_chunk(const Chunk& chunk) override;
-  void set_input_file_name(const std::string& file) override;
-  void set_output_file(const std::string& file) override;
   void set_crs(const CRS& crs) override;
+  bool set_input_file_name(const std::string& file) override;
+  bool set_output_file(const std::string& file) override;
   bool write() override;
   //void clear(bool last) override;
   const Raster& get_raster() { return raster; };
@@ -150,9 +150,9 @@ public:
   StageVector(const StageVector& other);
   ~StageVector() override;
   bool set_chunk(const Chunk& chunk) override;
-  void set_input_file_name(const std::string& file) override;
-  void set_output_file(const std::string& file) override;
   void set_crs(const CRS& crs) override;
+  bool set_input_file_name(const std::string& file) override;
+  bool set_output_file(const std::string& file) override;
   //void clear(bool last) override;
   Vector& get_vector() { return vector; };
 
