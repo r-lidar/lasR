@@ -35,7 +35,7 @@ exec = function(pipeline, on, with = NULL, ...)
 {
   with = parse_options(on, with, ...)
 
-  if (pipeline[[1]]$algoname != "reader_las")
+  if (is_reader_missing(pipeline))
   {
     pipeline = reader_las() + pipeline
   }
@@ -73,11 +73,12 @@ exec = function(pipeline, on, with = NULL, ...)
     if (is.null(acc)) acc = c(0, 0, 0)
     if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
 
-    pipeline[[1]]$algoname = "reader_dataframe"
-    pipeline[[1]]$dataframe = on
-    pipeline[[1]]$accuracy = acc
-    pipeline[[1]]$buffer = with$buffer
-    pipeline[[1]]$crs = crs
+    ind = get_reader_index(pipeline)
+    pipeline[[ind]]$algoname = "reader_dataframe"
+    pipeline[[ind]]$dataframe = on
+    pipeline[[ind]]$accuracy = acc
+    pipeline[[ind]]$buffer = with$buffer
+    pipeline[[ind]]$crs = crs
 
     valid = TRUE
   }
@@ -89,9 +90,10 @@ exec = function(pipeline, on, with = NULL, ...)
 
   if (is.character(on))
   {
-    pipeline[[1]]$files <- on
-    pipeline[[1]]$buffer <- with$buffer
-    pipeline[[1]]$noprocess <- with$noprocess
+    ind = get_reader_index(pipeline)
+    pipeline[[ind]]$files <- on
+    pipeline[[ind]]$buffer <- with$buffer
+    pipeline[[ind]]$noprocess <- with$noprocess
 
     if (!is.null(with$noprocess))
     {
@@ -121,6 +123,35 @@ exec = function(pipeline, on, with = NULL, ...)
   else
     return(ans)
 }
+
+is_reader_missing = function(pipeline)
+{
+  for (stage in pipeline)
+  {
+    if (stage$algoname == "reader_las")
+    {
+      return(FALSE)
+    }
+  }
+  return(TRUE)
+}
+
+get_reader_index = function(pipeline)
+{
+  i = 1
+  for (stage in pipeline)
+  {
+    if (stage$algoname == "reader_las")
+    {
+      return(i)
+    }
+
+    i = i+1
+  }
+
+  return(i)
+}
+
 
 read_as_common_r_object = function(ans)
 {

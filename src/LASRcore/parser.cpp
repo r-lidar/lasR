@@ -4,6 +4,7 @@
 #include "addattribute.h"
 #include "addrgb.h"
 #include "boundaries.h"
+#include "breakif.h"
 #include "filter.h"
 #include "loadraster.h"
 #include "localmaximum.h"
@@ -43,6 +44,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
   double xmax = 0;
   double ymax = 0;
 
+  bool reader = false;
+
   parsed = false;
   pipeline.clear();
 
@@ -54,11 +57,13 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
     if (name == "reader_las")
     {
-      if (i != 0)
+      /*if (i != 0)
       {
         last_error = "The reader must alway be the first stage of the pipeline.";
         return false;
-      }
+      }*/
+
+      reader = true;
 
       // Create a reader stage
       auto v = std::make_unique<LASRlasreader>();
@@ -122,11 +127,13 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     #ifdef USING_R
     else if (name == "reader_dataframe")
     {
-      if (i != 0)
+      reader = true;
+
+      /*if (i != 0)
       {
         last_error = "The reader must alway be the first stage of the pipeline.";
         return false;
-      }
+      }*/
 
       // This is the buffer provided by the user. The actual buffer may be larger
       // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
@@ -440,6 +447,24 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       auto v = std::make_unique<LASRaddrgb>();
       pipeline.push_back(std::move(v));
     }
+    else if (name == "stop_if")
+    {
+      std::string condition = get_element_as_string(stage, "condition");
+      if (condition == "outside_bbox")
+      {
+        double minx = get_element_as_double(stage, "xmin");
+        double miny = get_element_as_double(stage, "ymin");
+        double maxx = get_element_as_double(stage, "xmax");
+        double maxy = get_element_as_double(stage, "ymax");
+        auto v = std::make_unique<LASRbreakoutsidebbox>(minx, miny, maxx, maxy);
+        pipeline.push_back(std::move(v));
+      }
+      else
+      {
+        last_error = "Invalid condition in break_if";
+        return false;
+      }
+    }
     else if (name == "nothing")
     {
       bool read = get_element_as_bool(stage, "read");
@@ -478,9 +503,20 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
 
     auto& it = pipeline.back();
     it->set_uid(uid);
+    if (it->need_points() && !reader)
+    {
+      last_error = "The stage " + it->get_name() + " processes the point cloud but is not preceded by a reader stage";
+      return false;
+    }
   }
 
   parsed = true;
+
+  if (!reader)
+  {
+    last_error = "The pipeline must have a readers stage";
+    return false;
+  }
 
   for (auto&& stage : pipeline)
   {
@@ -496,13 +532,13 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
   if (build_catalog)
   {
     // Check that the first stage is a reader
-    if (pipeline.front()->get_name().substr(0, 6) != "reader")
+    /*if (pipeline.front()->get_name().substr(0, 6) != "reader")
     {
       last_error = "The pipeline must start with a readers";
       return false;
-    }
+    }*/
 
-    // We parse the pipeline so we know if we need a buffer
+    // We parsed the pipeline so we know if we need a buffer
     catalog->set_buffer(need_buffer());
 
     // The catalog is build we have the bbox of all the LAS file. We can build a spatial index

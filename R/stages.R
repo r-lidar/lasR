@@ -767,6 +767,13 @@ sampling_pixel = function(res = 2, filter = "")
   set_lasr_class(ans)
 }
 
+#' @export
+stop_if_outside = function(xmin, ymin, xmax, ymax)
+{
+  ans <- list(algoname = "stop_if", condition = "outside_bbox", xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax)
+  set_lasr_class(ans)
+}
+
 #' Summary
 #'
 #' Summarize the dataset by counting the number of points, first returns, classes. It also produces
