@@ -10,6 +10,8 @@
 
 // STL
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include <filesystem>
 
@@ -245,6 +247,9 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
 
   // Mmmm.... boost property_tree is not able to write numbers... will do everything by hand
   auto autoquote = [](const std::string& str) { return '"' + str + '"'; };
+  std::ostringstream oss;
+  oss << std::quoted(wkt);
+  std::string escaped_wkt = oss.str();
 
 
   output << "{" << std::endl;
@@ -276,7 +281,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
-    if (!wkt.empty()) output << "      \"proj:wtk2\": " << wkt << "," << std::endl;
+    if (!wkt.empty()) output << "      \"proj:wtk2\": " << escaped_wkt << "," << std::endl;
     else if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
     output << "      \"index:indexed\": " << ((index) ? "true" : "false") << std::endl;
     output << "    }," << std::endl;
