@@ -26,7 +26,7 @@ Progress::Progress()
   sub = 0;
   interrupt_counter = 0;
   user_interrupt_event = false;
-  check_interrupt_enabled = true;
+  check_interrupt_enabled = false;
 };
 
 // Called only once in the processor function.
@@ -133,7 +133,7 @@ void Progress::reset()
     this->current = 0;
     this->ntotal = 0;
     this->interrupt_counter = 0;
-    this->check_interrupt_enabled = true;
+    this->check_interrupt_enabled = false;
   }
 }
 
