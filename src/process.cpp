@@ -41,6 +41,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   bool progrss = get_element_as_bool(args, "progress");
   bool verbose = get_element_as_bool(args, "verbose");
   double chunk_size = get_element_as_double(args, "chunk");
+  std::string fprofiling = get_element_as_string(args, "profiling");
 
   // Check some multithreading stuff
   if (ncpu > available_threads())
@@ -100,6 +101,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
       // https://stats.blogoverflow.com/2011/08/using-openmp-ized-c-code-with-r/
       // https://stat.ethz.ch/pipermail/r-devel/2007-June/046207.html
       R_CStackLimit=(uintptr_t)-1;
+      warning("Processing multiple files simulatneously with stages that imply injected R code is discouraged\n");
     }
 
     pipeline.set_verbose(verbose);
@@ -154,6 +156,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
           // We cannot exit a parallel loop easily. Instead we can rather run the loop until the end
           // skipping the processing
           if (failure) continue;
+          if (progress.interrupted()) continue;
 
           // We query the chunk i (thread safe)
           Chunk chunk;
@@ -228,22 +231,24 @@ SEXP process(SEXP sexppipeline, SEXP args)
 
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
-    R_CStackLimit=original_CStackLimit;
+    R_CStackLimit = original_CStackLimit;
+
+    progress.done(true);
 
     if (failure)
     {
       throw last_error;
     }
 
-    progress.done(true);
-
     pipeline.sort();
+
+    pipeline.show_profiling(fprofiling);
 
     return pipeline.to_R();
   }
   catch (std::string e)
   {
-    R_CStackLimit=original_CStackLimit;
+    R_CStackLimit = original_CStackLimit;
 
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 
@@ -271,7 +276,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   catch(...)
   {
     // # nocov start
-    R_CStackLimit=original_CStackLimit;
+    R_CStackLimit = original_CStackLimit;
 
     SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
 

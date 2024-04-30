@@ -95,10 +95,8 @@ void PointLAS::copy(const LASpoint* const p)
  * SHAPE
  * ====================*/
 
-Shape::~Shape()
-{
-
-}
+Shape::~Shape() {}
+Shape3D::~Shape3D() {}
 
 /* ====================
  * TRIANGLE

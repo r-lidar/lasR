@@ -53,7 +53,7 @@ normalize = function(extrabytes = FALSE)
 #' \link{triangulate}
 #' \link{rasterize}
 #' @export
-dtm = function(res = 1, add_class = NULL, ofile = tempfile(fileext = ".tif"))
+dtm = function(res = 1, add_class = NULL, ofile = temptif())
 {
   filter = keep_ground()
   if (!is.null(add_class)) filter <- filter + keep_class(add_class)

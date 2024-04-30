@@ -41,13 +41,13 @@ test_that("exec works with old pipeline",
 {
   f <- system.file("extdata", "Megaplot.las", package="lasR")
 
-  r = reader(f, filter = drop_z_below(2))
+  r = reader(f, filter = drop_z_below(2)) |> suppressWarnings()
   tri = triangulate(25)
   h = hulls(tri)
   pipeline = r  + tri + h
 
-  ans1 = exec(pipeline)
-  ans2 = exec(pipeline, on = f)
+  ans1 = exec(pipeline) |> suppressWarnings()
+  ans2 = exec(pipeline, on = f) |> suppressWarnings()
 
   expect_s3_class(ans1, "sf")
   expect_equal(nrow(ans1$geom[[1]][[1]]), 85L)

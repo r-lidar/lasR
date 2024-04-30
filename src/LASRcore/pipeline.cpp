@@ -62,6 +62,8 @@ Pipeline::Pipeline(const Pipeline& other)
       (*it2)->update_connection(it1->get());
     }
   }
+
+  t0 = std::chrono::high_resolution_clock::now();
 }
 
 Pipeline::~Pipeline()
@@ -105,8 +107,19 @@ bool Pipeline::run_streamed()
   bool success;
   bool last_point = false;
 
+  // To handle user interruption
+  Progress prg;
+  prg.set_total(INT64_MAX);
+
   while(!last_point)
   {
+    prg++;
+    if (prg.interrupted())
+    {
+      last_error = "Execution interrupted. Output files have been created on disk with partial results and were not cleaned.";
+      return false;
+    }
+
     for (auto&& stage : pipeline)
     {
       // Some stage process the header. The first stage being a reader, the LASheader, which is
@@ -126,7 +139,7 @@ bool Pipeline::run_streamed()
       uint64_t npoints = 0;
       npoints += header->number_of_point_records;
       npoints += header->extended_number_of_point_records;
-      if (npoints == 0) return true;
+      if (npoints == 0) break;
 
       // Some stages need the header to get initialized (write_las is the only one)
       stage->set_header(header);
@@ -176,6 +189,16 @@ bool Pipeline::run_loaded()
 
   for (auto&& stage : pipeline)
   {
+    if (Progress::interrupted())
+    {
+      last_error = "Execution interrupted. Output files have been created on disk with partial results and were not cleaned.";
+      return false;
+    }
+
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto start_duration = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - t0);
+    float start_second = (float)start_duration.count()/1000.0f;
+
     if (verbose) print("Stage: %s\n", stage->get_name().c_str());
 
     // Some stages need no input, they are connected to another stage
@@ -229,6 +252,13 @@ bool Pipeline::run_loaded()
       last_error = "in '" + stage->get_name() + "' while writing the output: " + last_error;
       return false;
     }
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto end_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - t0);
+    float end_second = (float)end_duration.count()/1000.0f;
+
+    Profile pr(stage->get_name(), start_second, end_second, omp_get_thread_num());
+    profiles.push_back(pr);
   }
 
   return true;
@@ -237,6 +267,7 @@ bool Pipeline::run_loaded()
 void Pipeline::merge(const Pipeline& other)
 {
   order.insert(order.end(), other.order.begin(), other.order.end());
+  profiles.insert(profiles.end(), other.profiles.begin(), other.profiles.end());
 
   auto it1 = this->pipeline.begin();
   auto it2 = other.pipeline.begin();
@@ -253,6 +284,10 @@ bool Pipeline::set_chunk(const Chunk& chunk)
 {
   order.push_back(chunk.id);
 
+  auto start_time = std::chrono::high_resolution_clock::now();
+  auto start_duration = std::chrono::duration_cast<std::chrono::milliseconds>(start_time - t0);
+  float start_second = (float)start_duration.count()/1000.0f;
+
   for (auto&& stage : pipeline)
   {
     if (!stage->set_chunk(chunk))
@@ -266,6 +301,16 @@ bool Pipeline::set_chunk(const Chunk& chunk)
       last_error = "in " + stage->get_name() + " while initalizing file: " + last_error; // # nocov
       return false; // # nocov
     }
+  }
+
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto end_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - t0);
+  float end_second = (float)end_duration.count()/1000.0f;
+
+  if (buffer > 0)
+  {
+    Profile pr("Buffering", start_second, end_second, omp_get_thread_num());
+    profiles.push_back(pr);
   }
 
   return true;
@@ -286,20 +331,6 @@ void Pipeline::set_ncpu(int ncpu)
 
   this->ncpu = ncpu;
   for (auto&& stage : pipeline) stage->set_ncpu(ncpu);
-}
-
-bool Pipeline::set_crs(int epsg)
-{
-  if (epsg == 0) return false;
-  for (auto&& stage : pipeline) stage->set_crs(epsg);
-  return true;
-}
-
-bool Pipeline::set_crs(std::string wkt)
-{
-  if (wkt.empty()) return false;
-  for (auto&& stage : pipeline) stage->set_crs(wkt);
-  return true;
 }
 
 void Pipeline::set_verbose(bool verbose)
@@ -414,6 +445,16 @@ void Pipeline::sort()
 
   // Sort the data in the stage
   for (auto&& stage : pipeline) stage->sort(order);
+}
+
+void Pipeline::show_profiling(const std::string& path)
+{
+  if (path.empty()) return;
+  FILE* fp = fopen(path.c_str(), "w");
+  if (fp == NULL) return;
+  fprintf(fp, "name, start, end, thread\n");
+  for (const auto& profile : profiles) fprintf(fp, "%s, %.2f, %.2f, %d\n", profile.name.c_str(), profile.start, profile.end, profile.thread);
+  fclose(fp);
 }
 
 void Pipeline::clear(bool last)

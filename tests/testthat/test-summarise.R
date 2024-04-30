@@ -2,10 +2,10 @@ test_that("summary works with 1 file",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  read = reader(f)
+  read = reader_las()
   summ = summarise()
   pipeline = read + summ
-  u = processor(pipeline)
+  u = exec(pipeline, on = f)
 
   expect_type(u, "list")
   expect_equal(u$npoints, 30)
@@ -18,10 +18,10 @@ test_that("summary works with 4 files",
   f = paste0(system.file(package="lasR"), "/extdata/bcts")
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
 
-  read = reader(f)
+  read = reader_las()
   summ = summarise()
   pipeline = read + summ
-  u = processor(pipeline)
+  u = exec(pipeline, on = f)
 
   expect_type(u, "list")
   expect_equal(u$npoints, 2834350)
@@ -34,10 +34,10 @@ test_that("summary works one non streaming mode with buffer",
   f = paste0(system.file(package="lasR"), "/extdata/bcts")
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
 
-  read = reader(f, buffer = 50)
+  read = reader_las()
   summ = summarise()
   pipeline = read + summ
-  u = processor(pipeline)
+  u = exec(pipeline, on = f, buffer = 50)
 
   expect_type(u, "list")
   expect_equal(u$npoints, 2834350)

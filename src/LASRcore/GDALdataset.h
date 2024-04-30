@@ -2,6 +2,7 @@
 #define GDALDASET_H
 
 #include "error.h"
+#include "CRS.h"
 
 #include <memory>
 
@@ -22,8 +23,7 @@ public:
   bool set_geometry_type(OGRwkbGeometryType geometry_type);
   bool set_nbands(int nbands);
   bool set_band_name(std::string name, int band);
-  bool set_crs(int epsg);
-  bool set_crs(std::string wkt);
+  bool set_crs(const CRS& crs);
   bool is_raster() const { return dType == GDALDatasetType::RASTER; }
   bool is_vector() const { return dType == GDALDatasetType::VECTOR; }
 

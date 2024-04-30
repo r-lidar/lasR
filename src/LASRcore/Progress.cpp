@@ -9,7 +9,10 @@
 
 #ifdef USING_R
 #include <R.h> // for R_FlushConsole
+#include <Rinternals.h> // for R_ToplevelExec
 #endif
+
+bool Progress::user_interrupt_event = false;
 
 // Called only once in the processor function
 Progress::Progress()
@@ -21,9 +24,12 @@ Progress::Progress()
   display = false;
   prev = -1.0f;
   sub = 0;
+  interrupt_counter = 0;
+  user_interrupt_event = false;
+  check_interrupt_enabled = false;
 };
 
-// Called only once in the processor function
+// Called only once in the processor function.
 Progress::~Progress()
 {
   if (sub) delete sub;
@@ -31,10 +37,11 @@ Progress::~Progress()
 
 // Operator ++ is called only within stages. The main progress bar is using update() and MUST NOT
 // call ++. It is thread safe: only the thread 0 can call the operator ++
+// Each call to ++ checks if there is a interrupt event pending so there is no need to explicitly call
+// Progress::check_interrupt() this is automatically done in thread 0 when using the progress bar.
 Progress& Progress::operator++(int)
 {
-  if (omp_get_thread_num() != 0)
-    return *this;
+  if (omp_get_thread_num() != 0) return *this;
 
   if (sub != nullptr)
   {
@@ -44,6 +51,8 @@ Progress& Progress::operator++(int)
   {
     this->current++;
     this->compute_percentage();
+
+    check_interrupt();
   }
 
   return *this;
@@ -74,6 +83,8 @@ void Progress::set_prefix(std::string prefix)
 // Can be called either by the main progress or sub progress. Like other functions by default it
 // applies to the sub progress. If we are trying to update the main progress we can do it for each thread in
 // a critical region. If we are trying to update in a stage we can do it only in thread 0
+// Each call to updated() checks if there is a interrupt event pending so there is no need to explicitly call
+// Progress::check_interrupt() this is automatically done in thread 0 when using the progress bar.
 void Progress::update(uint64_t current, bool main)
 {
   if (main)
@@ -84,6 +95,8 @@ void Progress::update(uint64_t current, bool main)
       this->compute_percentage();
     }
 
+    check_interrupt(true);
+
     return;
   }
 
@@ -91,11 +104,15 @@ void Progress::update(uint64_t current, bool main)
     return;
 
   if (sub != nullptr)
+  {
     sub->update(current);
+  }
   else
   {
     this->current = current;
     this->compute_percentage();
+
+    check_interrupt();
   }
 };
 
@@ -115,6 +132,8 @@ void Progress::reset()
     this->prev = -1.0f;
     this->current = 0;
     this->ntotal = 0;
+    this->interrupt_counter = 0;
+    this->check_interrupt_enabled = false;
   }
 }
 
@@ -142,8 +161,7 @@ void Progress::set_total(uint64_t nmax)
 // outside open mp region
 void Progress::done(bool main)
 {
-  if (omp_get_thread_num() != 0)
-    return;
+  if (omp_get_thread_num() != 0) return;
 
   if (sub)
   {
@@ -179,8 +197,7 @@ void Progress::done(bool main)
 // # nocov start
 void Progress::show(bool flush)
 {
-  if (omp_get_thread_num() != 0)
-    return;
+  if (omp_get_thread_num() != 0) return;
 
   if (display && must_show())
   {
@@ -200,7 +217,11 @@ void Progress::show(bool flush)
     {
       print(" | ");
       sub->show(false);
-      print(" (%d threads)",  omp_get_num_threads());
+
+      if (user_interrupt_event)
+        print(" (Interrupt signal detected: stopping asap)");
+      else
+        print(" (%d threads)",  omp_get_num_threads());
     }
 
     if (flush)
@@ -228,4 +249,50 @@ void Progress::compute_percentage()
   if (sub) sub->compute_percentage();
   this->percentage = (float)((double)this->current / (double)this->ntotal);
   if (this->percentage > 1.0f) this->percentage = 1.0f;
+}
+
+bool Progress::check_interrupt(bool force)
+{
+  // Do no check interrupt if an event has already been caught
+  if (!check_interrupt_enabled || user_interrupt_event)
+    return false;
+
+  // Only thread 0 can check to prevent data R
+  if (omp_get_thread_num() != 0)
+    return false; // # nocov
+
+  // Check every 1024 iterations
+  interrupt_counter++;
+  if (interrupt_counter % 1024 == 0 || force)
+  {
+    if (checkUserInterrupt())
+    {
+      user_interrupt_event = true;
+      show();
+    }
+  }
+
+  return user_interrupt_event;
+}
+
+void Progress::checkInterruptFn(void* /*dummy*/)
+{
+  R_CheckUserInterrupt();
+}
+
+// Check for interrupts and throw the sentinel exception if one is pending
+bool Progress::checkUserInterrupt()
+{
+  if (R_ToplevelExec(checkInterruptFn, NULL) == FALSE)
+    return true;
+  else
+    return false;
+}
+
+void Progress::disable_check_interrupt()
+{
+  if (sub)
+    sub->check_interrupt_enabled = false;
+  else
+    check_interrupt_enabled = false;
 }

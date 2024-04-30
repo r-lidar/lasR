@@ -154,6 +154,8 @@ bool LASRrasterize::process(LAS*& las)
   #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
   for (size_t i = 0; i < n; ++i)
   {
+    if (progress->interrupted()) continue;
+
     std::vector<PointLAS> pts;
     int cell = keys[i];
     las->query(*intervals[i], pts, &lasfilter);

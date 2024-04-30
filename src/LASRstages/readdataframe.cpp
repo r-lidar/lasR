@@ -136,11 +136,11 @@ bool LASRdataframereader::process(LASheader*& header)
   lasheader.file_source_ID       = 0;
   lasheader.version_major        = 1;
   lasheader.version_minor        = version_minor;
-  lasheader.header_size          = get_header_size(version_minor);
-  lasheader.offset_to_point_data = get_header_size(version_minor);
+  lasheader.header_size          = LAS::get_header_size(version_minor);
+  lasheader.offset_to_point_data = LAS::get_header_size(version_minor);
   lasheader.file_creation_year   = 0;
   lasheader.file_creation_day    = 0;
-  lasheader.point_data_format    = guess_point_data_format();
+  lasheader.point_data_format    = LAS::guess_point_data_format(has_gps, has_rgb, has_nir);
   lasheader.x_scale_factor       = scale[0];
   lasheader.y_scale_factor       = scale[1];
   lasheader.z_scale_factor       = scale[2];
@@ -152,7 +152,7 @@ bool LASRdataframereader::process(LASheader*& header)
   lasheader.min_y                = ymin;
   lasheader.max_x                = xmax;
   lasheader.max_y                = ymax;
-  lasheader.point_data_record_length = get_point_data_record_length(lasheader.point_data_format);
+  lasheader.point_data_record_length = LAS::get_point_data_record_length(lasheader.point_data_format, num_extrabytes);
 
   // Add extrabytes
   for (int i = 0; i <  Rf_length(dataframe); i++)
@@ -315,78 +315,6 @@ bool LASRdataframereader::process(LAS*& las)
     las->add_point(*p);
   }
   return true;
-}
-
-int LASRdataframereader::get_point_data_record_length(int point_data_format) const
-{
-  switch (point_data_format)
-  {
-    case 0: return 20 + num_extrabytes; break;
-    case 1: return 28 + num_extrabytes; break;
-    case 2: return 26 + num_extrabytes; break;
-    case 3: return 34 + num_extrabytes; break;
-    case 4: return 57 + num_extrabytes; break;
-    case 5: return 63 + num_extrabytes; break;
-    case 6: return 30 + num_extrabytes; break;
-    case 7: return 36 + num_extrabytes; break;
-    case 8: return 38 + num_extrabytes; break;
-    case 9: return 59 + num_extrabytes; break;
-    case 10: return 67 + num_extrabytes; break;
-    default: return 0; break;
-  }
-}
-
-int LASRdataframereader::guess_point_data_format() const
-{
-  std::vector<int> formats = {0,1,2,3,6,7,8};
-
-  if (has_nir) // format 8 or 10
-    return 8;
-
-  if (has_gps) // format 1,3:10
-  {
-    auto end = std::remove(formats.begin(), formats.end(), 0);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 2);
-    formats.erase(end, formats.end());
-  }
-
-  if (has_rgb)  // format 3, 5, 7, 8
-  {
-    auto end = std::remove(formats.begin(), formats.end(), 0);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 1);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 6);
-    formats.erase(end, formats.end());
-  }
-
-  return formats[0];
-}
-
-int LASRdataframereader::get_header_size(int minor_version) const
-{
-  int header_size = 0;
-
-  switch (minor_version)
-  {
-    case 0:
-    case 1:
-    case 2:
-      header_size = 227;
-      break;
-    case 3:
-      header_size = 235;
-      break;
-    case 4:
-      header_size = 375;
-      break;
-    default:
-      header_size = -1;
-    break;
-  }
-
-  return header_size;
 }
 
 double LASRdataframereader::guess_accuracy(SEXP x) const

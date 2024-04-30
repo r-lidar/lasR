@@ -3,7 +3,7 @@ test_that("prints works with complex pipeline",
   count = function(data) { length(data$X) }
   f = paste0(system.file(package="lasR"), "/extdata/bcts/")
   f = list.files(f, full.names = T)
-  read = reader(f)
+  read = reader_las()
   del = triangulate(filter = keep_ground())
   met = rasterize(1, mean(Z))
   npts = callback(count, expose = "x")

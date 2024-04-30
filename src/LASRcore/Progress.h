@@ -20,13 +20,20 @@ public:
   void set_total(uint64_t nmax);
   void done(bool main = false);
   void show(bool flush = true);
+  bool check_interrupt(bool force = false);
+  static bool interrupted() { return user_interrupt_event; };
+  void disable_check_interrupt();
 
 private:
   bool must_show();
   void compute_percentage();
 
-private:
-  bool display;
+  // Handle user interrupt event
+  static void checkInterruptFn(void*);
+  static bool checkUserInterrupt();
+  bool check_interrupt_enabled;
+  unsigned int interrupt_counter;
+  static bool user_interrupt_event;
 
   // main
   float percentage;
@@ -37,6 +44,8 @@ private:
 
   // sub process
   Progress* sub;
+
+  bool display;
 };
 
 #endif

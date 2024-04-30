@@ -1,3 +1,11 @@
+# lasR 0.5.0
+
+- New: stage `geometry_features()` to compute point wise geometry features based on k-nearest neighbors.
+- New: stage `callback()` can load more than 10 extrabyte attributes. Using the flag `E` all the extrabytes are loaded.
+- New: stage `assign_crs()` to assign a coordinate reference system at some point of the pipeline.
+- New: raster in `GeoTiff` format are now created with `COMPRESS=DEFLATE`, `PREDICTOR=2`,`TILED=YES` effectively reducing the size of the rasters
+- New: `summarize()` output includes the CRS.
+
 # lasR 0.4.8
 
 - Enhance: #33 `local_maximum()` gained a `record_attributes` argument to chose if the attribute of the points are recorded in the vector file.
@@ -36,12 +44,12 @@
 - Fix: naming of the queries.
 - Documentation: reorganized the URLs and navbar of the website.
 
-# las 0.4.1
+## las 0.4.1
 
 - Fix: #20 segfault with `local_maximum_raster`.
 - Fix: segfault when reading LAS files with a header that incorrectly reports the number of points.
 
-# las 0.4.0
+# lasR 0.4.0
 
 - New: parallelism on multiple files. See `?multithreading`
 - New: stage `local_maximum_raster` to compute local maximum on a raster
@@ -52,31 +60,31 @@
 - Doc: new article on the website about parallelism for an illustrated version of `?multithreading`
 - Doc: improve documentation about processing options in `?exec` and `?set_exec_options`
 
-# lasR 0.3.6
+## lasR 0.3.6
 
 - Fix: #18 strongly improving arithmetic accuracy in `point_in_triangle`.
 
-# lasR 0.3.5
+## lasR 0.3.5
 
 - Fix: #17 `transform_with` can be used with `pit_fill`
 
-# lasR 0.3.4
+## lasR 0.3.4
 
 - Fix: #15 `pit_fill` producing corrupted output
 - Fix: `pit_fill` was not respecting the parameters given by the user
 - Fix: `pit_fill` in combination with `rasterize("max")` was not working properly
 
-# lasR 0.3.3
+## lasR 0.3.3
 
 - Fix: #12 write lax with buffered chunk
 - Fix: #13 processing by chunk was not buffered
 
-# lasR 0.3.2
+## lasR 0.3.2
 
 - Fix: CRS are working on Windows
 - Fix: `library(lasR)` transparently checks for latest version on Windows.
 
-# lasR 0.3.1
+## lasR 0.3.1
 
 - Fix: bugs when making a spatial query on multiple files with multiple spatial indexing systems (e.g. lax+nothing, lax+copc)
 
@@ -107,7 +115,7 @@
 - New: triangulation is 4x faster and uses half the memory.
 - Fix: `summarize()`, `rasterize()` and `write_las()` no longer process withheld points in streaming mode.
 
-# lasR 0.2.1 (2024-03-05)
+## lasR 0.2.1 (2024-03-05)
 
 - Fix: `callback()` properly handles errors from the injected function
 - New: handy functions `tempxyz()` to generate temp files with extension `.xyz`.
@@ -121,14 +129,22 @@
 - New: the internal engine gains the ability to skip the processing of some files of the collection and use these files only to load a buffer. This feature works with a `LAScatalog` from `lidR` respecting the `processed` attribute used in `lidR`
 - Fix: loading the package being offline created a bug were R no longer handles errors.
 
-# lasR 0.1.2 (2024-02-10)
+## lasR 0.1.2 (2024-02-10)
 
 - New: progress bar when reading the header of the files (`LAScatalog`) can be enabled with `progress = TRUE`
 - Fix: progress bar starts to appear earlier i.e. from 0%. For some pipeline it affects the feeling of progress.
 
-# lasR 0.1.1 (2024-02-08)
+## lasR 0.1.1 (2024-02-08)
 
 - Doc: Corrected the documentation for the argument `ncores` in `processor()`, which incorrectly mentioned that it was not supported.
 - New: Added new functions `ncores()` and `half_cores()`.
 - Fix: Corrected the reader progress bar display when reading a las file with a filter and a buffer.
+<<<<<<< HEAD
+- Fix: Fixed the overall progress bar, which was delayed by one file and was showing incorrect progress.
+
+# lasR 0.1.0 (2024-02-01)
+
+- Open to public
+=======
 - Fix: Fix the overall progress bar, which was delayed by one file and was showing incorrect progress.
+>>>>>>> main

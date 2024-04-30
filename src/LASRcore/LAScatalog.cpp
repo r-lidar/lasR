@@ -10,6 +10,8 @@
 
 // STL
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include <filesystem>
 
@@ -82,8 +84,8 @@ bool LAScatalog::read(const std::vector<std::string>& files, bool progress)
 
   if (epsg_set.size() > 1) warning("mix epsg found. First one retained\n");
   if (wkt_set.size() > 1) warning("mix wkt crs found. First one retained.\n");
-  if (epsg_set.size() > 0) { wkt = ""; epsg = *epsg_set.begin(); }
-  if (wkt_set.size() > 0) { wkt = *wkt_set.begin(); epsg = 0; }
+  if (epsg_set.size() > 0) crs = CRS(*epsg_set.begin());
+  if (wkt_set.size() > 0) crs = CRS(*wkt_set.begin());
 
   return true;
 }
@@ -243,9 +245,14 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     return false; // # nocov
   }
 
+  std::string wkt = crs.get_wkt();
+  std::ostringstream oss;
+  oss << std::quoted(wkt);
+  wkt = oss.str();
+  int epsg = crs.get_epsg();
+
   // Mmmm.... boost property_tree is not able to write numbers... will do everything by hand
   auto autoquote = [](const std::string& str) { return '"' + str + '"'; };
-
 
   output << "{" << std::endl;
   output << "  \"type\": \"FeatureCollection\"," << std::endl;
@@ -261,7 +268,25 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     uint64_t n = npoints[i];
     bool index = indexed[i];
 
-    print("%s\n", wkt.c_str());
+    Rectangle bbwgs84 = bbox;
+    OGRSpatialReference oTargetSRS;
+    OGRSpatialReference oSourceSRS;
+    oTargetSRS.importFromEPSG(4979);
+    oSourceSRS = crs.get_crs();
+    OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
+    double z = 0;
+    if (!poTransform->Transform(1, &bbwgs84.minx, &bbwgs84.miny, &z) ||
+        !poTransform->Transform(1, &bbwgs84.maxx, &bbwgs84.maxy, &z))
+    {
+      last_error = "Transformation of the bounding in WGS 84 failed!";
+      return false;
+   }
+
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.miny, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx,  bbwgs84.maxy, bbwgs84.maxx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny, bbwgs84.minx);
+    std::string geometry(buffer);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", bbwgs84.miny, bbwgs84.minx, bbwgs84.maxy, bbwgs84.maxx);
+    std::string sbbox(buffer);
 
     output << "  {" << std::endl;
     output << "    \"type\": \"Feature\"," << std::endl;
@@ -271,13 +296,20 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     output << "      \"https://stac-extensions.github.io/projection/v1.1.0/schema.json\"" << std::endl;
     output << "     ]," << std::endl;
     output << "    \"id\": " << autoquote(file.stem().string()) << "," << std::endl;
+    output << "    \"geometry\": {" << std::endl;
+    output << "      \"coordinates\": [" << std::endl;
+    output << "        " << geometry << std::endl;
+    output << "      ]," << std::endl;
+    output << "      \"type\": \"Polygon\"" << std::endl;
+    output << "    }," << std::endl;
+    output << "    \"bbox\": " << sbbox << "," << std::endl;
     output << "    \"properties\": {" << std::endl;
     output << "      \"datetime\": " << "\"0-01-01T00:00:00Z\""<< "," << std::endl;
     output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
     if (!wkt.empty()) output << "      \"proj:wtk2\": " << wkt << "," << std::endl;
-    else if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
+    if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
     output << "      \"index:indexed\": " << ((index) ? "true" : "false") << std::endl;
     output << "    }," << std::endl;
     output << "    \"links\": []," << std::endl;
@@ -675,8 +707,8 @@ void LAScatalog::clear()
   // CRS
   wkt_set.clear();
   epsg_set.clear();
-  epsg = 0;
-  wkt.clear();
+//epsg = 0;
+//wkt.clear();
 
   use_dataframe = true;
 
