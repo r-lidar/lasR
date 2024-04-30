@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,6 +61,14 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.0" id="lasr-050">lasR 0.5.0<a class="anchor" aria-label="anchor" href="#lasr-050"></a></h2>
+<ul><li>New: stage <code><a href="../reference/geometry_features.html">geometry_features()</a></code> to compute point wise geometry features based on k-nearest neighbors.</li>
+<li>New: stage <code><a href="../reference/callback.html">callback()</a></code> can load more than 10 extrabyte attributes. Using the flag <code>E</code> all the extrabytes are loaded.</li>
+<li>New: stage <code>assign_crs()</code> to assign a coordinate reference system at some point of the pipeline.</li>
+<li>New: raster in <code>GeoTiff</code> format are now created with <code>COMPRESS=DEFLATE</code>, <code>PREDICTOR=2</code>,<code>TILED=YES</code> effectively reducing the size of the rasters</li>
+<li>New: <code>summarize()</code> output includes the CRS.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.8" id="lasr-048">lasR 0.4.8<a class="anchor" aria-label="anchor" href="#lasr-048"></a></h2>
 <ul><li>Enhance: <a href="https://github.com/r-lidar/lasR/issues/33" class="external-link">#33</a> <code><a href="../reference/local_maximum.html">local_maximum()</a></code> gained a <code>record_attributes</code> argument to chose if the attribute of the points are recorded in the vector file.</li>
 <li>Enhance: <a href="https://github.com/r-lidar/lasR/issues/33" class="external-link">#33</a> <code><a href="../reference/local_maximum.html">local_maximum_raster()</a></code> no longer record zeroed LAS point attributes</li>
@@ -97,36 +105,56 @@
 <li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> crashing if the header of the LAS file did not record the correct number of points.</li>
 <li>Fix: naming of the queries.</li>
 <li>Documentation: reorganized the URLs and navbar of the website.</li>
+</ul><div class="section level3">
+<h3 id="las-0-4-2">las 0.4.1<a class="anchor" aria-label="anchor" href="#las-0-4-2"></a></h3>
+<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/20" class="external-link">#20</a> segfault with <code>local_maximum_raster</code>.</li>
+<li>Fix: segfault when reading LAS files with a header that incorrectly reports the number of points.</li>
 </ul></div>
+</div>
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.6" id="lasr-036">lasR 0.3.6<a class="anchor" aria-label="anchor" href="#lasr-036"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.4.0" id="lasr-040">lasR 0.4.0<a class="anchor" aria-label="anchor" href="#lasr-040"></a></h2>
+<ul><li>New: parallelism on multiple files. See <code><a href="../reference/multithreading.html">?multithreading</a></code>
+</li>
+<li>New: stage <code>local_maximum_raster</code> to compute local maximum on a raster</li>
+<li>New: argument <code>with</code> in <code>exec</code> to pass processing options that should be preferred over direct naming.</li>
+<li>New: function <code><a href="../reference/set_exec_options.html">set_exec_options()</a></code> to assign global processing options and override arguments potentially hardcoded in <code><a href="../reference/exec.html">exec()</a></code>
+</li>
+<li>New: stage <code>load_raster</code> to read a raster instead of producing it on the fly from the point cloud.</li>
+<li>New: stage <code>add_rgb</code> to modify the point data format</li>
+<li>Doc: new article on the website about parallelism for an illustrated version of <code><a href="../reference/multithreading.html">?multithreading</a></code>
+</li>
+<li>Doc: improve documentation about processing options in <code><a href="../reference/exec.html">?exec</a></code> and <code><a href="../reference/set_exec_options.html">?set_exec_options</a></code>
+</li>
+</ul><div class="section level3">
+<h3 id="lasr-0-4-0">lasR 0.3.6<a class="anchor" aria-label="anchor" href="#lasr-0-4-0"></a></h3>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/18" class="external-link">#18</a> strongly improving arithmetic accuracy in <code>point_in_triangle</code>.</li>
 </ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.5" id="lasr-035">lasR 0.3.5<a class="anchor" aria-label="anchor" href="#lasr-035"></a></h2>
+<div class="section level3">
+<h3 id="lasr-0-4-0-1">lasR 0.3.5<a class="anchor" aria-label="anchor" href="#lasr-0-4-0-1"></a></h3>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/17" class="external-link">#17</a> <code>transform_with</code> can be used with <code>pit_fill</code>
 </li>
 </ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.4" id="lasr-034">lasR 0.3.4<a class="anchor" aria-label="anchor" href="#lasr-034"></a></h2>
+<div class="section level3">
+<h3 id="lasr-0-4-0-2">lasR 0.3.4<a class="anchor" aria-label="anchor" href="#lasr-0-4-0-2"></a></h3>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/15" class="external-link">#15</a> <code>pit_fill</code> producing corrupted output</li>
 <li>Fix: <code>pit_fill</code> was not respecting the parameters given by the user</li>
 <li>Fix: <code>pit_fill</code> in combination with <code>rasterize("max")</code> was not working properly</li>
 </ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.3" id="lasr-033">lasR 0.3.3<a class="anchor" aria-label="anchor" href="#lasr-033"></a></h2>
+<div class="section level3">
+<h3 id="lasr-0-4-0-3">lasR 0.3.3<a class="anchor" aria-label="anchor" href="#lasr-0-4-0-3"></a></h3>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/12" class="external-link">#12</a> write lax with buffered chunk</li>
 <li>Fix: <a href="https://github.com/r-lidar/lasR/issues/13" class="external-link">#13</a> processing by chunk was not buffered</li>
 </ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.2" id="lasr-032">lasR 0.3.2<a class="anchor" aria-label="anchor" href="#lasr-032"></a></h2>
+<div class="section level3">
+<h3 id="lasr-0-4-0-4">lasR 0.3.2<a class="anchor" aria-label="anchor" href="#lasr-0-4-0-4"></a></h3>
 <ul><li>Fix: CRS are working on Windows</li>
 <li>Fix: <code><a href="https://github.com/r-lidar/lasR" class="external-link">library(lasR)</a></code> transparently checks for latest version on Windows.</li>
 </ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.1" id="lasr-031">lasR 0.3.1<a class="anchor" aria-label="anchor" href="#lasr-031"></a></h2>
+<div class="section level3">
+<h3 id="lasr-0-4-0-5">lasR 0.3.1<a class="anchor" aria-label="anchor" href="#lasr-0-4-0-5"></a></h3>
 <ul><li>Fix: bugs when making a spatial query on multiple files with multiple spatial indexing systems (e.g. lax+nothing, lax+copc)</li>
 </ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="lasr-030">lasR 0.3.0<a class="anchor" aria-label="anchor" href="#lasr-030"></a></h2>
 <ul><li>
@@ -161,14 +189,14 @@
 </li>
 <li><p>New: triangulation is 4x faster and uses half the memory.</p></li>
 <li><p>Fix: <code>summarize()</code>, <code><a href="../reference/rasterize.html">rasterize()</a></code> and <code><a href="../reference/write_las.html">write_las()</a></code> no longer process withheld points in streaming mode.</p></li>
-</ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.1" id="lasr-021-2024-03-05">lasR 0.2.1 (2024-03-05)<a class="anchor" aria-label="anchor" href="#lasr-021-2024-03-05"></a></h2>
+</ul><div class="section level3">
+<h3 id="lasr-0-3-0">lasR 0.2.1 (2024-03-05)<a class="anchor" aria-label="anchor" href="#lasr-0-3-0"></a></h3>
 <ul><li>Fix: <code><a href="../reference/callback.html">callback()</a></code> properly handles errors from the injected function</li>
 <li>New: handy functions <code>tempxyz()</code> to generate temp files with extension <code>.xyz</code>.</li>
 <li>New: <code><a href="../reference/rasterize.html">rasterize()</a></code> is now parallelized with internal metrics including for buffered area based approach</li>
 <li>New: <code><a href="../reference/rasterize.html">rasterize()</a></code> gained a progress bar with internal metrics.</li>
 </ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="lasr-020-2024-03-01">lasR 0.2.0 (2024-03-01)<a class="anchor" aria-label="anchor" href="#lasr-020-2024-03-01"></a></h2>
 <ul><li>New: <code><a href="../reference/rasterize.html">rasterize()</a></code> gains the ability to perform a multi-resolution or buffered rasterization. See documentation.</li>
@@ -176,19 +204,24 @@
 <li>New: the internal engine gains the ability to skip the processing of some files of the collection and use these files only to load a buffer. This feature works with a <code>LAScatalog</code> from <code>lidR</code> respecting the <code>processed</code> attribute used in <code>lidR</code>
 </li>
 <li>Fix: loading the package being offline created a bug were R no longer handles errors.</li>
-</ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.2" id="lasr-012-2024-02-10">lasR 0.1.2 (2024-02-10)<a class="anchor" aria-label="anchor" href="#lasr-012-2024-02-10"></a></h2>
+</ul><div class="section level3">
+<h3 id="lasr-0-2-0">lasR 0.1.2 (2024-02-10)<a class="anchor" aria-label="anchor" href="#lasr-0-2-0"></a></h3>
 <ul><li>New: progress bar when reading the header of the files (<code>LAScatalog</code>) can be enabled with <code>progress = TRUE</code>
 </li>
 <li>Fix: progress bar starts to appear earlier i.e. from 0%. For some pipeline it affects the feeling of progress.</li>
 </ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.1" id="lasr-011-2024-02-08">lasR 0.1.1 (2024-02-08)<a class="anchor" aria-label="anchor" href="#lasr-011-2024-02-08"></a></h2>
+<div class="section level3">
+<h3 id="lasr-0-2-0-1">lasR 0.1.1 (2024-02-08)<a class="anchor" aria-label="anchor" href="#lasr-0-2-0-1"></a></h3>
 <ul><li>Doc: Corrected the documentation for the argument <code>ncores</code> in <code><a href="../reference/deprecated.html">processor()</a></code>, which incorrectly mentioned that it was not supported.</li>
 <li>New: Added new functions <code><a href="../reference/multithreading.html">ncores()</a></code> and <code><a href="../reference/multithreading.html">half_cores()</a></code>.</li>
-<li>Fix: Corrected the reader progress bar display when reading a las file with a filter and a buffer.</li>
-<li>Fix: Fix the overall progress bar, which was delayed by one file and was showing incorrect progress.</li>
+<li>Fix: Corrected the reader progress bar display when reading a las file with a filter and a buffer. &lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</li>
+<li>Fix: Fixed the overall progress bar, which was delayed by one file and was showing incorrect progress.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.0" id="lasr-010-2024-02-01">lasR 0.1.0 (2024-02-01)<a class="anchor" aria-label="anchor" href="#lasr-010-2024-02-01"></a></h2>
+<ul><li><h2 id="open-to-public" class="pkg-version" data-toc-text="0.1.0">Open to public</h2></li>
+<li>Fix: Fix the overall progress bar, which was delayed by one file and was showing incorrect progress. &gt;&gt;&gt;&gt;&gt;&gt;&gt; main</li>
 </ul></div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>

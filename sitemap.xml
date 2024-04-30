@@ -67,6 +67,9 @@
     <loc>/reference/filters.html</loc>
   </url>
   <url>
+    <loc>/reference/geometry_features.html</loc>
+  </url>
+  <url>
     <loc>/reference/hulls.html</loc>
   </url>
   <url>
@@ -101,6 +104,9 @@
   </url>
   <url>
     <loc>/reference/sampling.html</loc>
+  </url>
+  <url>
+    <loc>/reference/set_crs.html</loc>
   </url>
   <url>
     <loc>/reference/set_exec_options.html</loc>
