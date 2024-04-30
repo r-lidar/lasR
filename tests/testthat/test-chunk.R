@@ -1,7 +1,7 @@
 test_that("processing by chunks works",
 {
   f <- system.file("extdata", "MixedConifer.las", package="lasR")
-  p = reader(f) + rasterize(20, "zmean") + local_maximum(3) + write_las()
+  p = reader_las() + rasterize(20, "zmean") + local_maximum(3) + write_las()
   ans1 = exec(p, on = f, chunk = 100)
   ans2 = exec(p, on = f, chunk = 0)
 

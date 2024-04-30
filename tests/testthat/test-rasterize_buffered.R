@@ -2,11 +2,10 @@ test_that("Rasterize works with a moving window",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
 
-  read = reader(f)
   reg = rasterize(4, "count")
   win = rasterize(c(1,4), "count")
-  pipeline = read + reg + win
-  u = processor(pipeline)
+  pipeline = reg + win
+  u = exec(pipeline, on = f)
 
   #terra::plot(u[[1]])
   #terra::plot(u[[2]])
@@ -25,11 +24,10 @@ test_that("Rasterize works with a moving window",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
 
-  read = reader(f)
   reg = rasterize(4, length(Z))
   win = rasterize(c(1,4), length(Z))
-  pipeline = read + reg + win
-  u = processor(pipeline)
+  pipeline = reg + win
+  u = exec(pipeline, on = f)
 
   #terra::plot(u[[1]])
   #terra::plot(u[[2]])
@@ -50,11 +48,11 @@ test_that("Rasterize works with a moving window and multiple files",
   f = list.files(f, full.names = TRUE, pattern = "\\.laz")
   f = f[1:2]
 
-  read = reader(f, filter = "-keep_every_nth 10")
+  read = reader_las(filter = "-keep_every_nth 10")
   reg = rasterize(20, "zmean")
   win = rasterize(c(10,20), "zmean")
   pipeline = read + reg + win
-  u = processor(pipeline)
+  u = exec(pipeline, on = f)
 
   #terra::plot(u[[1]], col = lidR::height.colors(25))
   #terra::plot(u[[2]], col = lidR::height.colors(25))

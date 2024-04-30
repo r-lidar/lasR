@@ -2,12 +2,12 @@ test_that("buffer tiles",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
 
-  read = reader(f, buffer = 25)
+  read = reader_las()
   write = write_las(paste0(tempdir(), "/*_buffered.las"), keep_buffer = TRUE)
-  ans = processor(read+write)
+  ans = exec(read+write, on = f, buffer = 25)
 
-  cont1 = processor(reader(f) + hulls())
-  cont2 = processor(reader(ans) + hulls())
+  cont1 = exec(reader_las() + hulls(), on = f)
+  cont2 = exec(reader_las() + hulls(), on = ans)
 
   expect_equal(dim(cont1), c(4L,1L))
 
@@ -24,8 +24,8 @@ test_that("normalize & dtm",
 {
   f <- system.file("extdata", "Topography.las", package="lasR")
 
-  pipeline = reader(f) + dtm() + normalize() + summarise() + chm(2)
-  suppressWarnings(ans <- processor(pipeline))
+  pipeline = reader_las() + dtm() + normalize() + summarise() + chm(2)
+  suppressWarnings(ans <- exec(pipeline, on = f))
 
   expect_length(ans, 3L)
   expect_s4_class(ans[[1]], "SpatRaster")
@@ -35,8 +35,8 @@ test_that("normalize & dtm",
 
   expect_equal(mean(x*w/sum(w)), 0.287, tolerance = 0.01)
 
-  pipeline = reader(f) + dtm(add_class = 9) + normalize(TRUE) + summarise() + chm(1, TRUE)
-  suppressWarnings(ans <- processor(pipeline))
+  pipeline = reader_las() + dtm(add_class = 9) + normalize(TRUE) + summarise() + chm(1, TRUE)
+  suppressWarnings(ans <- exec(pipeline, on = f))
 
   expect_length(ans, 3L)
   expect_s4_class(ans[[1]], "SpatRaster")
@@ -66,13 +66,6 @@ test_that("pipleline info works",
   expect_equal(info$buffer, 0)
   expect_equal(info$read_points, FALSE)
 
-  pipeline = reader(f, buffer = 20) + hulls()
-  info = lasR:::get_pipeline_info(pipeline)
-
-  expect_equal(info$streamable, TRUE)
-  expect_equal(info$buffer, 20)
-  expect_equal(info$read_points, FALSE)
-
   pipeline = rasterize(10)
   info = lasR:::get_pipeline_info(pipeline)
 
@@ -88,6 +81,5 @@ test_that("processor fails without reader",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
 
-  expect_error(processor(hulls()),  "The pipeline must start with a readers")
-  expect_error(processor(hulls() + reader(f)),  "The reader must alway be the first stage of the pipeline")
+  expect_error(exec(hulls() + reader_las(), on = f),  "The reader must alway be the first stage of the pipeline")
 })

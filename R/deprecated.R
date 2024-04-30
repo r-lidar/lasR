@@ -26,6 +26,8 @@ NULL
 #' @export
 processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
 {
+  warning("processor() is deprecated(). Use exec().")
+
   dots <- list(...)
   verbose <- if (is.null(dots$verbose)) FALSE else TRUE
   noread <- if (is.null(dots$noread)) FALSE else TRUE
@@ -79,6 +81,8 @@ processor = function(pipeline, ncores = half_cores(), progress = FALSE, ...)
 #' @export
 reader = function(x, filter = "", buffer = 0, ...)
 {
+  warning("reader() is deprecated(). Use reader_las().")
+
   p <- list(...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)

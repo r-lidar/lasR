@@ -2,10 +2,8 @@ test_that("rasterize streamed works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
 
-  read = reader(f, filter = "")
   met = rasterize(5, c("min", "max", "count"))
-  pipeline = read + met
-  u = processor(pipeline)
+  u = exec(met, on = f)
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(names(u), c("min", "max", "count"))
@@ -19,10 +17,8 @@ test_that("rasterize non streamed works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
 
-  read = reader(f, filter = "")
   met = rasterize(5, c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
-  pipeline = read + met
-  u = processor(pipeline)
+  u = exec(met, on = f)
 
   #terra::plot(u, col = lidR::height.colors(25))
 
@@ -44,32 +40,29 @@ test_that("rasterize fails",
 
   expect_error(rasterize(1, "zp101"), "Non supported operators")
 
-  read = reader(f, filter = "")
   met = rasterize(5, c("count"))
   met[[1]]$method = "zp101"
-  expect_error(processor(read+met), "Percentile out of range")
+  expect_error(exec(met, on = f), "Percentile out of range")
 
   met[[1]]$method = "ip101"
-  expect_error(processor(read+met), "Percentile out of range")
+  expect_error(exec(met, on = f), "Percentile out of range")
 
   met[[1]]$method = "plop"
-  expect_error(processor(read+met), "metric plop not recognized")
+  expect_error(exec(met, on = f), "metric plop not recognized")
 
   met[[1]]$method = "zup"
-  expect_error(processor(read+met), "metric zup not recognized")
+  expect_error(exec(met, on = f), "metric zup not recognized")
 
   met[[1]]$method = "iup"
-  expect_error(processor(read+met), "metric iup not recognized")
+  expect_error(exec(met, on = f), "metric iup not recognized")
 })
 
 test_that("rasterize expression works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
 
-  read = reader(f, filter = "")
   met = rasterize(5, mean(Intensity))
-  pipeline = read + met
-  u = processor(pipeline)
+  u = exec(met, on = f)
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(58, 58, 1))
@@ -81,10 +74,10 @@ test_that("rasterize expression works multiband",
   f = system.file("extdata", "Topography.las", package="lasR")
 
   myMetric = function(z) { return(list(a = mean(z), b = max(z))) }
-  read = reader(f, filter = keep_first())
+  read = reader_las(filter = keep_first())
   met = rasterize(5, myMetric(Z))
   pipeline = read + met
-  u = processor(pipeline)
+  u = exec(pipeline, on = f)
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(58, 58, 2))
@@ -95,10 +88,8 @@ test_that("rasterize expression works with extrabytes",
 {
   f = system.file("extdata", "extra_byte.las", package="lasR")
 
-  read = reader(f, filter = "")
   met = rasterize(5, mean(Amplitude))
-  pipeline = read + met
-  u = suppressWarnings(processor(pipeline))
+  u = suppressWarnings(exec(met, on = f))
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(2, 5, 1))
@@ -111,10 +102,8 @@ test_that("rasterize captures the expression",
   f = system.file("extdata", "Example.las", package="lasR")
 
   fun = function(x) {return(mean(x))}
-  read = reader(f, filter = "")
   met = rasterize(5, fun(Intensity))
-  pipeline = read + met
-  expect_error(processor(pipeline), NA)
+  expect_error(exec(met, on = f), NA)
 })
 
 test_that("rasterize captures the expression and handles error",
@@ -122,16 +111,12 @@ test_that("rasterize captures the expression and handles error",
   f = system.file("extdata", "Example.las", package="lasR")
 
   fun = function(x) {return(list(a = mean(x), b = c(0,0)))}
-  read = reader(f, filter = "")
   met = rasterize(5, fun(Intensity))
-  pipeline = read + met
-  expect_error(processor(pipeline), "must only return a vector of numbers or a list of atomic numbers")
+  expect_error(exec(met, on = f), "must only return a vector of numbers or a list of atomic numbers")
 
   fun = function(x) {return(list(list(a = mean(x))))}
-  read = reader(f, filter = "")
   met = rasterize(5, fun(Intensity))
-  pipeline = read + met
-  expect_error(processor(pipeline), "user expression must only return numbers")
+  expect_error(exec(met, on = f), "user expression must only return numbers")
  })
 
 
@@ -139,11 +124,11 @@ test_that("rasterize triangulation works with 1 file",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
 
-  read = reader(f, filter = "-keep_class 2")
+  read = reader_las(filter = "-keep_class 2")
   tri = triangulate(15)
   dtm = rasterize(5, tri)
   pipeline = read + tri + dtm
-  u = processor(pipeline)
+  u = exec(pipeline, on = f)
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(58, 58, 1))
@@ -158,11 +143,11 @@ test_that("rasterize triangulation works with 4 files",
   f = paste0(system.file(package="lasR"), "/extdata/bcts/")
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
 
-  read = reader(f, filter = "-keep_class 2")
+  read = reader_las(filter = "-keep_class 2")
   tri = triangulate(15)
   dtm = rasterize(5, tri)
   pipeline = read + tri + dtm
-  u = processor(pipeline)
+  u = exec(pipeline, on = f)
 
   dtm = u
   expect_s4_class(dtm, "SpatRaster")
@@ -187,11 +172,11 @@ test_that("rasterize splits the raster on demand",
   y = c(629200, 629300)
   r = 20
 
-  pipeline1 = reader(f, xc = x, yc = y, r = r) + rasterize(2, "max", ofile = ofile1)
-  pipeline2 = reader(f, xc = x, yc = y, r = r) + rasterize(2, "max", ofile = ofile2)
+  pipeline1 = reader_las(xc = x, yc = y, r = r) + rasterize(2, "max", ofile = ofile1)
+  pipeline2 = reader_las(xc = x, yc = y, r = r) + rasterize(2, "max", ofile = ofile2)
 
-  ans1 = processor(pipeline1)
-  ans2 = processor(pipeline2)
+  ans1 = exec(pipeline1, on = f)
+  ans2 = exec(pipeline2, on = f)
 
   expect_equal(length(ans1), 2L)
   expect_s4_class(ans2, "SpatRaster")
