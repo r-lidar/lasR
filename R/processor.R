@@ -40,16 +40,6 @@ exec = function(pipeline, on, with = NULL, ...)
     pipeline = reader_las() + pipeline
   }
 
-  # use processor() so exec is backward compatible with previous pipeline format
-  if (missing(on))
-  {
-    reader = pipeline[[1]]
-    if (!is.null(reader$files) || !is.null(reader$dataframe))
-    {
-      return(processor(pipeline, ncores = with$ncores, progress = with$progress, ...))
-    }
-  }
-
   valid = FALSE
 
   if (methods::is(on, "LAS") || is.data.frame(on))

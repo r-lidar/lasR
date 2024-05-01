@@ -1,3 +1,7 @@
+# lasR 0.6.0
+
+- Change: old `processor()` and `reader()` function were removed
+
 # lasR 0.5.0
 
 - New: stage `geometry_features()` to compute point wise geometry features based on k-nearest neighbors.
