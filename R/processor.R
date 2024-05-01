@@ -40,15 +40,7 @@ exec = function(pipeline, on, with = NULL, ...)
     pipeline = reader_las() + pipeline
   }
 
-  # use processor() so exec is backward compatible with previous pipeline format
-  if (missing(on))
-  {
-    reader = pipeline[[1]]
-    if (!is.null(reader$files) || !is.null(reader$dataframe))
-    {
-      return(processor(pipeline, ncores = with$ncores, progress = with$progress, ...))
-    }
-  }
+  pipeline = build_catalog(on, with) + pipeline
 
   valid = FALSE
 
@@ -73,11 +65,14 @@ exec = function(pipeline, on, with = NULL, ...)
     if (is.null(acc)) acc = c(0, 0, 0)
     if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
 
+    pipeline[[1]]$dataframe = on
+    pipeline[[1]]$crs = crs
+    pipeline[[1]]$files = NULL
+
     ind = get_reader_index(pipeline)
     pipeline[[ind]]$algoname = "reader_dataframe"
     pipeline[[ind]]$dataframe = on
     pipeline[[ind]]$accuracy = acc
-    pipeline[[ind]]$buffer = with$buffer
     pipeline[[ind]]$crs = crs
 
     valid = TRUE
@@ -90,10 +85,7 @@ exec = function(pipeline, on, with = NULL, ...)
 
   if (is.character(on))
   {
-    ind = get_reader_index(pipeline)
-    pipeline[[ind]]$files <- on
-    pipeline[[ind]]$buffer <- with$buffer
-    pipeline[[ind]]$noprocess <- with$noprocess
+    pipeline[[1]]$files = on
 
     if (!is.null(with$noprocess))
     {

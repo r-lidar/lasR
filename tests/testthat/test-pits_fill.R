@@ -23,11 +23,11 @@ test_that("pits filling works with multiple files",
   f = list.files(f, full.names = TRUE, pattern = "\\.laz")
   f = f[1:2]
 
-  reader <- reader(f, filter = keep_first())
+  reader <- reader_las(filter = keep_first())
   tri <- triangulate()
   chm <- rasterize(0.25, tri)
   pit <- pit_fill(chm)
-  u <- processor(reader + tri + chm + pit)
+  u <- exec(reader + tri + chm + pit, on = f)
   chm <- u[[1]]
   sto <- u[[2]]
 

@@ -2,11 +2,11 @@ test_that("growing region works",
 {
   f = system.file("extdata", "MixedConifer.las", package="lasR")
 
-  reader = reader(f, filter = "-keep_first")
+  reader = reader_las(filter = "-keep_first")
   chm = rasterize(1, "max")
   lmx = local_maximum(5)
   tree = region_growing(chm, lmx, max_cr = 10)
-  u = processor(reader + chm + lmx + tree)
+  u = exec(reader + chm + lmx + tree, on = f)
 
   ttops = u[[2]]
   trees = u[[3]]
@@ -22,12 +22,12 @@ test_that("growing region works with multiple files",
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
   f = f[1:2]
 
-  reader = reader(f, filter = keep_first())
+  reader = reader_las(filter = keep_first())
   chm = rasterize(1, "max")
   lmx = local_maximum(5, min_height = 330)
   tree = region_growing(chm, lmx, max_cr = 10)
 
-  u  = processor(reader + chm + lmx + tree)
+  u  = exec(reader + chm + lmx + tree, on = f)
 
   #terra::plot(u$rasterize, col = lidR::height.colors(25))
   #plot(u$local_maximum$geom, add = TRUE, cex = 0.1, pch = 19)

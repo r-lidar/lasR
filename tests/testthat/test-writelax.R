@@ -15,8 +15,8 @@ test_that("write lax works on-the-fly",
   expect_equal(indexed, c(F,F,F,F))
 
   # between two tiles with a buffer
-  pipeline = reader_circles(f, 885150, 629400, 10, buffer = 5L) + lasR:::nothing()
-  ans = processor(pipeline)
+  pipeline = reader_las_circles(885150, 629400, 10, buffer = 5L) + lasR:::nothing()
+  ans = exec(pipeline, on = f)
 
   indexed = lasR:::is_indexed(f)
   expect_equal(indexed, c(T,T,F,F))
@@ -25,8 +25,8 @@ test_that("write lax works on-the-fly",
   expect_length(lax, 0L)
 
   # between two tiles no buffer
-  pipeline = reader_circles(f, 885150, 630100, 10) + lasR:::nothing()
-  ans = processor(pipeline)
+  pipeline = reader_las_circles(885150, 630100, 10) + lasR:::nothing()
+  ans = exec(pipeline, on = f)
 
   indexed = lasR:::is_indexed(f)
   expect_equal(indexed, c(T,T,F,T))

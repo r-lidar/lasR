@@ -1,11 +1,3 @@
-read_las = function(f, expose = "xyzi")
-{
-  load = function(data) { return(data) }
-  read = reader(f)
-  call = callback(load, expose, no_las_update = TRUE)
-  return (processor(read+call))
-}
-
 convert_intensity_in_range = function(data, min, max)
 {
   i = data$Intensity
@@ -28,7 +20,7 @@ f = system.file("extdata", "Example.las", package="lasR")
 
 test_that("callback creates and exposes data.frame with bbox",
 {
-  las = read_las(f)
+  las = read_las(f, expose = "xyzi")
 
   expect_s3_class(las, "data.frame")
   expect_equal(dim(las), c(30L,4L))
@@ -37,11 +29,11 @@ test_that("callback creates and exposes data.frame with bbox",
 
 test_that("callback edits and deletes the points",
 {
-  read = reader(f)
+  read = reader_las()
   call = callback(convert_intensity_in_range, expose = "xyzi", min = 0, max = 255)
   write = write_las()
   pipeline = read + call + write
-  ans = processor(pipeline)
+  ans = exec(pipeline, on = f)
 
   las = read_las(ans)
 
@@ -53,19 +45,19 @@ test_that("callback edits and deletes the points",
 test_that("callback cannot add an attribute not compatble with the format.",
 {
   fun = function(data) { data$R = 0L ; data }
-  read = reader(f)
+  read = reader_las()
   call = callback(fun, expose = "xyzi")
   pipeline = read + call
-  expect_error(processor(pipeline), "non supported column 'R'")
+  expect_error(exec(pipeline, on = f), "non supported column 'R'")
 })
 
 test_that("callback fails if an attribute is of incorrect type.",
 {
   fun = function(data) { data$Classification = 0 ; data }
-  read = reader(f)
+  read = reader_las()
   call = callback(fun, expose = "xyzi")
   pipeline = read + call
-  expect_error(processor(pipeline), "Classification is expected to be integer")
+  expect_error(exec(pipeline, on = f), "Classification is expected to be integer")
 })
 
 test_that("callback without ouput and multiple file",
@@ -74,10 +66,10 @@ test_that("callback without ouput and multiple file",
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
   f = f[1:2]
 
-  read = reader(f, filter = "-keep_every_nth 100", buffer = 50)
+  read = reader_las(filter = "-keep_every_nth 100")
   call = callback(function(data) { data }, expose = "xyzi", no_las_update = TRUE)
   pipeline = read + call
-  ans = processor(pipeline)
+  ans = exec(pipeline, on = f, buffer = 50)
 
   expect_type(ans, "list")
   expect_length(ans, 2)
@@ -92,9 +84,9 @@ test_that("callback without ouput and multiple file",
 test_that("callback can return any object",
 {
   meanz = function(data){ return(mean(data$Z)) }
-  read = reader(f)
+  read = reader_las()
   call = callback(meanz, expose = "xyz")
-  ans = processor(read+call)
+  ans = exec(read+call, on = f)
 
   expect_equal(ans, 975.9, tolerance = 0.01)
 })
@@ -110,10 +102,10 @@ test_that("callback works if all the points are not exposed",
   x = 684850
   y = 5017900
   r = 10
-  read = reader(f, xc = x, yc = y, r = r, buffer = 10)
+  read = reader_las_circles(xc = x, yc = y, r = r)
   pipeline = read + call1 + call2
 
-  ans = processor(pipeline)
+  ans = exec(pipeline, on = f, buffer = 10)
   las1 = ans[[1]]
   las2 = ans[[2]]
 
@@ -146,32 +138,32 @@ test_that("callback coverage",
 {
   # shuffle the data
   fun = function(data) { data[sample(1:nrow(data)), ] }
-  read = reader(f)
+  read = reader_las()
   call = callback(fun, expose = "*")
 
-  expect_error(processor(read+call), NA)
+  expect_error(exec(read+call, on = f), NA)
 })
 
 test_that("callback fails nicely",
 {
-  read = reader(f)
+  read = reader_las()
   call = callback(test_stop, expose = "xyzi")
   write = write_las()
   pipeline = read + call + write
-  expect_error(processor(pipeline), "error in test_stop")
+  expect_error(exec(pipeline, on = f), "error in test_stop")
 
   call = callback(unname, expose = "xyzi")
   pipeline = read + call
-  expect_error(processor(pipeline), "the data.frame has no names")
+  expect_error(exec(pipeline, on = f), "the data.frame has no names")
 })
 
 test_that("callback works with many args",
 {
   fun = function(data,a,b,c,d,e,f) { return(a+b+c+d+e+f) }
-  read = reader(f)
+  read = reader_las()
   call = callback(fun = fun, expose = "xyzi", a = 0, b = 1, c = 2, d = 3, e = 4, f = 5)
   pipeline = read + call
-  ans = processor(pipeline)
+  ans = exec(pipeline, on = f)
   expect_equal(ans, 15)
 })
 

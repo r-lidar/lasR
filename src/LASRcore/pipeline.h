@@ -36,7 +36,7 @@ class Pipeline
     Pipeline();
     Pipeline(const Pipeline& other);
     ~Pipeline();
-    bool parse(const SEXP sexpargs, bool build_catalog = true, bool progress = false); // implemented in parser.cpp
+    bool parse(const SEXP sexpargs, bool progress = false); // implemented in parser.cpp
     bool pre_run();
     bool run();
     void merge(const Pipeline& other);

@@ -21,7 +21,7 @@ test_that("lasR supports a LAS from lidR",
   expect_equal(nrow(ans1$geom[[1]][[1]]), nrow(ans2$geom[[1]][[1]]))
 
   pipeline3 = r2  + tri + h + reader_las()
-  expect_error(exec(pipeline3, on = LASfile), "The reader must alway be the first stage of the pipeline.")
+  expect_error(exec(pipeline3, on = LASfile), "The pipeline can only have a single reader stage")
 })
 
 test_that("lasR supports a LAScatalog from lidR",
@@ -35,21 +35,4 @@ test_that("lasR supports a LAScatalog from lidR",
   pipeline = hulls()
 
   expect_error(exec(pipeline, on = las), NA)
-})
-
-test_that("exec works with old pipeline",
-{
-  f <- system.file("extdata", "Megaplot.las", package="lasR")
-
-  r = reader(f, filter = drop_z_below(2))
-  tri = triangulate(25)
-  h = hulls(tri)
-  pipeline = r  + tri + h
-
-  ans1 = exec(pipeline)
-  ans2 = exec(pipeline, on = f)
-
-  expect_s3_class(ans1, "sf")
-  expect_equal(nrow(ans1$geom[[1]][[1]]), 85L)
-  expect_equal(nrow(ans2$geom[[1]][[1]]), 85L)
 })

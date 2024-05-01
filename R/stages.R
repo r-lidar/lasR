@@ -100,6 +100,14 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
   set_lasr_class(ans, raster = TRUE)
 }
 
+# ===== B =====
+
+build_catalog = function(files, with)
+{
+  ans <- list(algoname = "build_catalog",  files = files, buffer = with$buffer, noprocess = with$noprocess)
+  set_lasr_class(ans)
+}
+
 # ===== C =====
 
 

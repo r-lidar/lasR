@@ -10,6 +10,8 @@ public:
   std::string get_name() const override { return "stop_if"; };
   bool set_chunk(const Chunk& chunk) override;
   bool break_pipeline() override { return state; };
+  bool need_points() const override { return false; };
+  bool is_streamable() const override { return true; };
   void clear(bool) override { state = false; };
 
   // multi-threading

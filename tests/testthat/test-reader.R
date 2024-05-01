@@ -2,39 +2,39 @@ f = system.file("extdata", "Example.las", package="lasR")
 
 test_that("reader works with single file",
 {
-  pipeline = reader(f)
+  pipeline = reader_las()
 
-  expect_error({u = processor(pipeline)}, NA)
+  expect_error({u = exec(pipeline, on = f)}, NA)
   expect_length(u, 0)
 })
 
 test_that("reader works with multiple files",
 {
-  pipeline = reader(c(f, f))
+  pipeline = reader_las()
 
-  expect_error({u = processor(pipeline)}, NA)
+  expect_error({u = exec(pipeline, on = c(f,f))}, NA)
   expect_length(u, 0)
 })
 
 test_that("reader fails if file does not exist",
 {
-  expect_warning(p <- reader("missing.las"))
-  expect_error(processor(p), "File not found")
+  p = reader_las()
+  expect_error(exec(p, on = "missin.las"), "File not found")
 
   f = system.file("extdata", "bcts/bcts.gpkg", package="lasR")
-  expect_error(processor(reader(f)), "Unknown file type")
+  expect_error(exec(p, on = f), "Unknown file type")
 
   f = system.file("extdata", "bcts/bcts.vpc", package="lasR")
   g = system.file("extdata", "Megaplot.las", package="lasR")
   f = c(f, g)
-  expect_error(processor(reader(f)), "Virtual point cloud file detected mixed with other content")
+  expect_error(exec(reader_las(), on = f), "Virtual point cloud file detected mixed with other content")
 })
 
 test_that("reader can read a folder",
 {
   f = system.file("extdata", "bcts/", package="lasR")
-  p <- reader(f) + hulls()
-  ans = processor(p)
+  p <- reader_las() + hulls()
+  ans = exec(p, on = f)
   expect_equal(dim(ans), c(4L,1L))
 })
 
@@ -43,38 +43,38 @@ test_that("reader_dataframe works",
   f = system.file("extdata", "Example.rds", package="lasR")
   las = readRDS(f)
 
-  pipeline = reader(las)
+  pipeline = reader_las()
 
-  expect_error(processor(pipeline), NA)
+  expect_error(exec(pipeline, on = las), NA)
 
   pipeline2 = pipeline + hulls()
 
-  ans = processor(pipeline2)
+  ans = exec(pipeline2, on = las)
 
   expect_s3_class(ans, "sf")
   expect_equal(nrow(ans), 1L)
 
   pipeline3 = pipeline + rasterize(0.5)
 
-  ans = processor(pipeline3)
+  ans = exec(pipeline3, on = las)
 
   expect_s4_class(ans, "SpatRaster")
   expect_equal(dim(ans), c(3L,26L,1L))
 
   pipeline4 = pipeline + local_maximum(3)
 
-  ans = processor(pipeline4)
+  ans = exec(pipeline4, on = las)
 
   expect_s3_class(ans, "sf")
   expect_equal(nrow(ans), 3L)
 
-  pipeline5 = reader(las, xmin = 339008, ymin = 0, xmax = 339011, ymax = 1e8) + summarise()
-  ans = processor(pipeline5)
+  pipeline5 = reader_las(xmin = 339008, ymin = 0, xmax = 339011, ymax = 1e8) + summarise()
+  ans = exec(pipeline5, on = las)
 
   expect_equal(ans$npoints, 17L)
 
-  pipeline6 = reader(las, xc = 339008, yc = 5248000, r = 2) + summarise()
-  ans = processor(pipeline6)
+  pipeline6 = reader_las(xc = 339008, yc = 5248000, r = 2) + summarise()
+  ans = exec(pipeline6, on = las)
 
   expect_equal(ans$npoints, 15L)
 })
@@ -82,9 +82,9 @@ test_that("reader_dataframe works",
 read_las = function(files, select = "*", filter = "")
 {
   load = function(data) { return(data) }
-  read = reader(files, filter = filter)
+  read = reader_las(filter = filter)
   call = callback(load, expose = select, no_las_update = TRUE)
-  return(processor(read+call))
+  return(exec(read+call, on = files))
 }
 
 test_that("reader_dataframe works with extrabytes",
@@ -93,10 +93,10 @@ test_that("reader_dataframe works with extrabytes",
   las = readRDS(f)
   las$foo = 1L
   las$bar = 2.5
-  read = reader(las)
+  read = reader_las()
   write = write_las()
 
-  expect_error(ans <- processor(read+write), NA)
+  expect_error(ans <- exec(read+write, on = las), NA)
   expect_equal(basename(ans), "data.frame.las")
   las = read_las(ans)
   expect_true(all(c("foo", "bar") %in% names(las)))
@@ -113,10 +113,10 @@ test_that("reader_dataframe works with RGB",
   las$R = 10L
   las$G = 20L
   las$B = 30L
-  read = reader(las)
+  read = reader_las()
   write = write_las()
 
-  expect_error(ans <- processor(read+write), NA)
+  expect_error(ans <- exec(read+write, on = las), NA)
   expect_equal(basename(ans), "data.frame.las")
   expect_true(file.exists(ans))
 
@@ -136,10 +136,10 @@ test_that("reader_dataframe works with NIR",
   f = system.file("extdata", "Example.rds", package="lasR")
   las = readRDS(f)
   las$NIR = 10L
-  read = reader(las)
+  read = reader_las()
   write = write_las()
 
-  expect_error(ans <- processor(read+write), NA)
+  expect_error(ans <- exec(read+write, on = las), NA)
   expect_equal(basename(ans), "data.frame.las")
   expect_true(file.exists(ans))
 
@@ -158,9 +158,9 @@ test_that("reader_dataframe propagates the CRS",
   f = system.file("extdata", "Example.rds", package="lasR")
   las = readRDS(f)
   attr(las, "crs") = wkt
-  read = reader(las)
+  read = reader_las()
   rast = rasterize(2)
-  u = processor(read+rast)
+  u = exec(read+rast, on = las)
 
   expect_equal(terra::crs(u), wkt)
 })

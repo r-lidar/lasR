@@ -66,7 +66,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   {
     Pipeline pipeline;
 
-    if (!pipeline.parse(sexppipeline, true, progrss))
+    if (!pipeline.parse(sexppipeline, progrss))
     {
       throw last_error;
     }
@@ -312,7 +312,7 @@ SEXP get_pipeline_info(SEXP sexppipeline)
   try
   {
     Pipeline pipeline;
-    if (!pipeline.parse(sexppipeline, false))
+    if (!pipeline.parse(sexppipeline))
     {
       throw last_error;
     }

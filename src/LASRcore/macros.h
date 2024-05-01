@@ -15,4 +15,6 @@
 #define MIN3(a,b,c) (((a)>(b)) ? (((b)>(c)) ? (c) : (b)) : (((a)>(c)) ? (c) : (a)));
 #endif
 
+#define ASSERT_VALID_POINTER(x) if (!is_valid_pointer(x)) return false;
+
 #endif

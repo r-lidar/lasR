@@ -268,6 +268,26 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     uint64_t n = npoints[i];
     bool index = indexed[i];
 
+    Rectangle bbwgs84 = bbox;
+    OGRSpatialReference oTargetSRS;
+    OGRSpatialReference oSourceSRS;
+    oTargetSRS.importFromEPSG(4979);
+    oSourceSRS = crs.get_crs();
+    OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
+    double z = 0;
+    if (!poTransform->Transform(1, &bbwgs84.minx, &bbwgs84.miny, &z) ||
+        !poTransform->Transform(1, &bbwgs84.maxx, &bbwgs84.maxy, &z))
+    {
+      last_error = "Transformation of the bounding in WGS 84 failed!";
+      return false;
+   }
+
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.miny, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx,  bbwgs84.maxy, bbwgs84.maxx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny, bbwgs84.minx);
+    std::string geometry(buffer);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", bbwgs84.miny, bbwgs84.minx, bbwgs84.maxy, bbwgs84.maxx);
+    std::string sbbox(buffer);
+
     output << "  {" << std::endl;
     output << "    \"type\": \"Feature\"," << std::endl;
     output << "    \"stac_version\": \"1.0.0\"," << std::endl;
@@ -276,6 +296,13 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     output << "      \"https://stac-extensions.github.io/projection/v1.1.0/schema.json\"" << std::endl;
     output << "     ]," << std::endl;
     output << "    \"id\": " << autoquote(file.stem().string()) << "," << std::endl;
+    output << "    \"geometry\": {" << std::endl;
+    output << "      \"coordinates\": [" << std::endl;
+    output << "        " << geometry << std::endl;
+    output << "      ]," << std::endl;
+    output << "      \"type\": \"Polygon\"" << std::endl;
+    output << "    }," << std::endl;
+    output << "    \"bbox\": " << sbbox << "," << std::endl;
     output << "    \"properties\": {" << std::endl;
     output << "      \"datetime\": " << "\"0-01-01T00:00:00Z\""<< "," << std::endl;
     output << "      \"pc:count\": " << n << "," << std::endl;;

@@ -21,6 +21,8 @@ LASRboundaries::LASRboundaries(double xmin, double ymin, double xmax, double yma
 
 bool LASRboundaries::process(LASheader*& header)
 {
+  ASSERT_VALID_POINTER(header);
+
   if (!connections.empty()) return true;
 
   double xmin, ymin, xmax, ymax;
@@ -52,6 +54,8 @@ bool LASRboundaries::process(LASheader*& header)
 
 bool LASRboundaries::process(LAS*& las)
 {
+  ASSERT_VALID_POINTER(las);
+
   if (connections.empty())  return true;
 
   // 'connections' contains a single stage that is supposed to be a triangulation stage.

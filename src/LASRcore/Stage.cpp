@@ -95,6 +95,17 @@ void Stage::update_connection(Stage* stage)
   if (it != connections.end()) it->second = stage;
 }
 
+bool Stage::is_valid_pointer(void* p)
+{
+  if (p == nullptr)
+  {
+    last_error = "invalid memory allocation. A 'reader' stage is missing or is at an incorrect position in the pipeline";
+    return false;
+  }
+
+  return true;
+}
+
 /* ==============
  *  WRITER
  *  ============= */
