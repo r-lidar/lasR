@@ -2,7 +2,7 @@
 
 - New: stage `geometry_features()` to compute point wise geometry features based on k-nearest neighbors.
 - New: stage `callback()` can load more than 10 extrabyte attributes. Using the flag `E` all the extrabytes are loaded.
-- New: stage `assign_crs()` to assign a coordinate reference system at some point of the pipeline.
+- New: stage `set_crs()` to assign a coordinate reference system at some point of the pipeline.
 - New: raster in `GeoTiff` format are now created with `COMPRESS=DEFLATE`, `PREDICTOR=2`,`TILED=YES` effectively reducing the size of the rasters
 - New: `summarize()` output includes the CRS.
 
