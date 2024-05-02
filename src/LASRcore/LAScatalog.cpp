@@ -228,6 +228,12 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     return false; // # nocov
   }
 
+  if (!crs.is_valid())
+  {
+    last_error = "Invalid CRS. Cannot write a VPC file";
+    return false;
+  }
+
   std::filesystem::path output_path = vpcfile;
 
   if (output_path.extension() != ".vpc")
@@ -246,6 +252,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
   }
 
   std::string wkt = crs.get_wkt();
+
   std::ostringstream oss;
   oss << std::quoted(wkt);
   wkt = oss.str();
