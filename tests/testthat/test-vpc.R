@@ -48,6 +48,10 @@ test_that("vpc writer fails without CRS",
 {
   f = system.file("extdata", "nocrs.las", package="lasR")
   o = tempfile(fileext = ".vpc")
+
   pipeline = reader_las() + write_vpc(o)
   expect_error(exec(pipeline, on = f), "Invalid CRS. Cannot write a VPC file")
+
+  pipeline = reader_las() + set_crs(32617) + write_vpc(o)
+  expect_error(exec(pipeline, on = f), NA)
 })

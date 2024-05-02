@@ -1,3 +1,8 @@
+## lasR 0.5.1
+
+- Fix: `write_vpc()` does not crash with files without CRS
+- Fix: `write_vpc()` write the CRS set upstream by `set_crs()`
+
 # lasR 0.5.0
 
 - New: stage `geometry_features()` to compute point wise geometry features based on k-nearest neighbors.
@@ -6,25 +11,25 @@
 - New: raster in `GeoTiff` format are now created with `COMPRESS=DEFLATE`, `PREDICTOR=2`,`TILED=YES` effectively reducing the size of the rasters
 - New: `summarize()` output includes the CRS.
 
-# lasR 0.4.8
+## lasR 0.4.8
 
 - Enhance: #33 `local_maximum()` gained a `record_attributes` argument to chose if the attribute of the points are recorded in the vector file.
 - Enhance: #33 `local_maximum_raster()` no longer record zeroed LAS point attributes
 
-# lasR 0.4.7
+## lasR 0.4.7
 
 - Fix: #32 writing a vector file with a path containing a wildcard crashed the program.
 
-# lasR 0.4.6
+## lasR 0.4.6
 
 - Fix: `lax` included into `laz` file were not working.
 - Fix: #30 can read files bigger than 2.14 GB
 
-# lasR 0.4.5
+## lasR 0.4.5
 
 - Fix: #29 using a filter in `rasterize()` produced corrupted output.
 
-# lasR 0.4.4
+## lasR 0.4.4
 
 - Fix: bug with `set_parallel_strategy(nested(ncores = 4, ncores2 = 4))`.
 - Fix: attribute `datatime` is `datetime` in VPC files.
@@ -32,12 +37,12 @@
 - Fix: #24 `write_vpc()` writes the correct number of points for LAS 1.4 files.
 - Fix: read of WKT strings in LAS files with a size inferior to what was declared in the header (null-terminated before `record_length_after_header`).
 
-# lasR 0.4.3
+## lasR 0.4.3
 
 - Fix: #22 segfault with partial processing.
 - Fix: memory access to WKT strings non-null-terminated.
 
-# lasR 0.4.2
+## lasR 0.4.2
 
 - Fix: `add_attribute()` was incorrectly reallocating memory causing potential crashes, especially when adding several attributes.
 - Fix: `reader_las()` crashing if the header of the LAS file did not record the correct number of points.

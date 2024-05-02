@@ -2,5 +2,5 @@
 
 bool LASRvpcwriter::process(LAScatalog*& catalog)
 {
-  return catalog->write_vpc(ofile);
+  return catalog->write_vpc(ofile, crs);
 }

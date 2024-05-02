@@ -220,7 +220,7 @@ bool LAScatalog::read_vpc(const std::string& filename)
   return true;
 }
 
-bool LAScatalog::write_vpc(const std::string& vpcfile)
+bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs)
 {
   if (use_dataframe)
   {
