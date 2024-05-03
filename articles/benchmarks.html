@@ -99,33 +99,20 @@ task. The benchmarks are re-run for every version of <code>lidR</code>
 and <code>lasR</code>.</p>
 <ul>
 <li>
-<strong>Number of files:</strong> 4 (spatially indexed with
+<strong>Number of files:</strong> 9 (spatially indexed with
 <code>.lax</code> files)</li>
 <li>
-<strong>Number of points:</strong> 119 million (30 million per
+<strong>Number of points:</strong> 204 million (22 million per
 file)</li>
 <li>
-<strong>Coverage:</strong> 10.3 km² (2.5 km² per file)</li>
+<strong>Coverage:</strong> 20 km² (2.1 km² per file)</li>
 <li>
-<strong>Density:</strong> 12 points/m²</li>
+<strong>Density:</strong> 10 points/m²</li>
 <li>
 <strong>OS:</strong> Linux</li>
 <li>
-<strong>CPU:</strong>
-<ul>
-<li>Intel Core i7-5600U CPU (5th generation Intel Core)</li>
-<li>Intel Core i7-1355U (13th generation Intel Core)</li>
-</ul>
-</li>
-<li>
-<strong>Date:</strong> update 2024-03-01</li>
-<li>
-<strong>Version:</strong>
-<ul>
-<li>lidR 4.1.1</li>
-<li>lasR 0.4.0</li>
-</ul>
-</li>
+<strong>CPU:</strong> Intel Core i7-1355U (13th generation Intel
+Core)</li>
 </ul>
 <blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 In the following the term <code>1 core</code> refers to the processing
@@ -180,11 +167,10 @@ natively supported.
 <h3 id="result-1">Result<a class="anchor" aria-label="anchor" href="#result-1"></a>
 </h3>
 <p><img src="benchmarks_files/figure-html/unnamed-chunk-3-1.png" width="384"><img src="benchmarks_files/figure-html/unnamed-chunk-3-2.png" width="384"></p>
-<p>The same digital terrain pipeline but using
-<code>exec(pipeline, ..., chunk = 1000)</code> for <code>lasR</code> and
-<code>opt_chunk_size(ctg) = 1000</code> for <code>lidR</code> to reduce
-the memory usage.</p>
-<p><img src="benchmarks_files/figure-html/unnamed-chunk-4-1.png" width="384"><img src="benchmarks_files/figure-html/unnamed-chunk-4-2.png" width="384"></p>
+<!-- The same digital terrain pipeline but using `exec(pipeline, ..., chunk = 1000)` for `lasR` and `opt_chunk_size(ctg) = 1000` for `lidR` to reduce the memory usage.
+
+<img src="benchmarks_files/figure-html/unnamed-chunk-4-1.png" width="384" /><img src="benchmarks_files/figure-html/unnamed-chunk-4-2.png" width="384" />
+-->
 </div>
 </div>
 <div class="section level2">
@@ -277,10 +263,9 @@ trees are then used as seeds for a region-growing algorithm that
 segments the trees. The <code>lasR</code> pipeline can handle hundreds
 of laser tiles, while <code>lidR</code> may struggle to apply the same
 pipeline, especially during tree segmentation.</p>
-</div>
-<div class="section level2">
-<h2 id="code-5">Code<a class="anchor" aria-label="anchor" href="#code-5"></a>
-</h2>
+<div class="section level3">
+<h3 id="code-5">Code<a class="anchor" aria-label="anchor" href="#code-5"></a>
+</h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">del</span> <span class="op">=</span> <span class="fu"><a href="../reference/triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">norm</span> <span class="op">=</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">del</span><span class="op">)</span></span>
@@ -292,10 +277,11 @@ pipeline, especially during tree segmentation.</p>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write</span> <span class="op">+</span> <span class="va">dtm</span> <span class="op">+</span> <span class="va">chm</span> <span class="op">+</span>  <span class="va">seed</span> <span class="op">+</span> <span class="va">tree</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span>, progress <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="result-5">Result<a class="anchor" aria-label="anchor" href="#result-5"></a>
-</h2>
+<div class="section level3">
+<h3 id="result-5">Result<a class="anchor" aria-label="anchor" href="#result-5"></a>
+</h3>
 <p><img src="benchmarks_files/figure-html/unnamed-chunk-8-1.png" width="384"><img src="benchmarks_files/figure-html/unnamed-chunk-8-2.png" width="384"></p>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
