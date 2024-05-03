@@ -26,18 +26,12 @@ all = FALSE
 
 This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The x-axis represents the time spent on the task, while the y-axis represents the memory used for the task. The benchmarks are re-run for every version of `lidR` and `lasR`.
 
-- **Number of files:** 4 (spatially indexed with `.lax` files)
-- **Number of points:** 119 million (30 million per file)
-- **Coverage:** 10.3 km² (2.5 km² per file)
-- **Density:** 12 points/m²
+- **Number of files:** 9 (spatially indexed with `.lax` files)
+- **Number of points:** 204 million (22 million per file)
+- **Coverage:** 20 km² (2.1 km² per file)
+- **Density:** 10 points/m²
 - **OS:** Linux
-- **CPU:** 
-  - Intel Core i7-5600U CPU (5th generation Intel Core) 
-  - Intel Core i7-1355U (13th generation Intel Core) 
-- **Date:** update 2024-03-01
-- **Version:** 
-  - lidR 4.1.1
-  - lasR 0.4.0
+- **CPU:** Intel Core i7-1355U (13th generation Intel Core) 
   
 <blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 In the following the term `1 core` refers to the processing of one LAS/LAZ file at a time sequentially. But some algorithm such as the local maximum filter are internally parallelized using half of the available cores.  The term `4 cores` refers to the fact that 4 files are processed simultaneously. In `lidR` this is done using the package `future`. In `lasR` this is natively supported.
@@ -195,7 +189,7 @@ m_lidr = read_benchmarks("lidR", 2)
 plot_benchmark(m_lidr, m_lasr)
 ```
 
-The same digital terrain pipeline but using `exec(pipeline, ..., chunk = 1000)` for `lasR` and `opt_chunk_size(ctg) = 1000` for `lidR` to reduce the memory usage.
+<!-- The same digital terrain pipeline but using `exec(pipeline, ..., chunk = 1000)` for `lasR` and `opt_chunk_size(ctg) = 1000` for `lidR` to reduce the memory usage.
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 lasr = read_benchmarks("lasR", 2)
@@ -219,6 +213,7 @@ m_lasr = read_benchmarks("lasR", 7)
 m_lidr = read_benchmarks("lidR", 7)
 plot_benchmark(m_lidr, m_lasr, tmax, mmax)
 ```
+-->
 
 ## Multiple raster
 
@@ -306,7 +301,7 @@ plot_benchmark(m_lidr, m_lasr)
 
 In this complex pipeline, the point cloud is normalized and written to new files. A Digital Terrain Model (DTM) is produced, a Canopy Height Model (CHM) is built, and individual trees are detected. These detected trees are then used as seeds for a region-growing algorithm that segments the trees. The `lasR` pipeline can handle hundreds of laser tiles, while `lidR` may struggle to apply the same pipeline, especially during tree segmentation.
 
-## Code
+### Code
 
 ```r
 del = triangulate(filter = keep_ground())
@@ -320,7 +315,7 @@ pipeline = read + del + norm + write + dtm + chm +  seed + tree
 ans = exec(pipeline, on = ctg, progress = TRUE)
 ```
 
-## Result
+### Result
 
 ```{r, warning=F, echo=-1, echo=FALSE, fig.show="hold", fig.width=4}
 m_lasr = read_benchmarks("lasR", 4)

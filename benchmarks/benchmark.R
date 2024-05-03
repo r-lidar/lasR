@@ -33,10 +33,16 @@ if (!multifile)
     future::plan(future::multicore(workers = 4))
 }
 
-f = c("/home/jr/Documents/Ulaval/ALS data/BCTS//092L072244_BCTS_2.laz",
-      "/home/jr/Documents/Ulaval/ALS data/BCTS//092L072422_BCTS_2.laz",
-      "/home/jr/Documents/Ulaval/ALS data/BCTS//092L073133_BCTS_2.laz",
-      "/home/jr/Documents/Ulaval/ALS data/BCTS//092L073311_BCTS_2.laz")
+f = c("/home/jr/Documents/Ulaval/ALS data/BCTS/092L072242_BCTS_2.laz",
+  "/home/jr/Documents/Ulaval/ALS data/BCTS/092L072244_BCTS_2.laz",
+  "/home/jr/Documents/Ulaval/ALS data/BCTS/092L072422_BCTS_2.laz",
+  "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073131_BCTS_2.laz",
+  "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073132_BCTS_2.laz",
+  "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073133_BCTS_2.laz",
+  "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073134_BCTS_2.laz",
+  "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073311_BCTS_2.laz",
+  "/home/jr/Documents/Ulaval/ALS data/BCTS/092L073312_BCTS_2.laz"
+)
 
 #f = system.file("extdata", "bcts/", package = "lasR")
 
@@ -157,21 +163,21 @@ if (test == 6)
   }
 }
 
-if (test == 7)
-{
-  if (lasR)
-  {
-    tri = triangulate()
-    pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
-    ans = exec(pipeline, f, progress = TRUE, noread = TRUE, chunk = 1000)
-  }
-  else
-  {
-    ctg = readLAScatalog(f)
-    opt_chunk_size(ctg) = 1000
-    dtm = rasterize_terrain(ctg, 1, tin())
-  }
-}
+# if (test == 7)
+# {
+#   if (lasR)
+#   {
+#     tri = triangulate()
+#     pipeline = reader_las(filter = keep_ground()) + tri + rasterize(1, tri)
+#     ans = exec(pipeline, f, progress = TRUE, noread = TRUE, chunk = 1000)
+#   }
+#   else
+#   {
+#     ctg = readLAScatalog(f)
+#     opt_chunk_size(ctg) = 1000
+#     dtm = rasterize_terrain(ctg, 1, tin())
+#   }
+# }
 
 tf = Sys.time()
 tf-ti
