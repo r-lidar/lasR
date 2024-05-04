@@ -223,7 +223,7 @@ bool LASRlocalmaximum::write()
   }
 
   if (dupfid)
-    print("%d points skipped: trying to insert points with and FID that is already in the database. This may be due to overlapping tiles.\n", dupfid);
+    print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
 
   return true;
 }
