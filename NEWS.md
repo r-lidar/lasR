@@ -1,6 +1,8 @@
 # lasR dev
 
-- `write_vpc()` gained an argument `absolute_path` (#42)
+- New: `write_vpc()` gained an argument `absolute_path` (#42)
+- Fix: `write_vpc()` orders the coordinates properly (#42)
+
 
 # lasR 0.5.1
 

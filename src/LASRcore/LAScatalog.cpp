@@ -283,6 +283,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     OGRSpatialReference oTargetSRS;
     OGRSpatialReference oSourceSRS;
     oTargetSRS.importFromEPSG(4979);
+    oTargetSRS.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
     oSourceSRS = crs.get_crs();
     OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
     double z = 0;
@@ -294,9 +295,9 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
    }
 
     char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.miny, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx,  bbwgs84.maxy, bbwgs84.maxx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny, bbwgs84.minx);
+    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny,  bbwgs84.maxx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.miny);
     std::string geometry(buffer);
-    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", bbwgs84.miny, bbwgs84.minx, bbwgs84.maxy, bbwgs84.maxx);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.maxy);
     std::string sbbox(buffer);
 
     output << "  {" << std::endl;

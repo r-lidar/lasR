@@ -26,12 +26,10 @@ test_that("vpc writer works",
 
   expect_true(file.exists(ans))
 
-  pipeline = reader_las() + hulls()
-  ans = exec(pipeline, on = ans)
-
+  ans = sf::st_read(ans, quiet = TRUE)
   expect_s3_class(ans, "sf")
-  expect_equal(dim(ans), c(4L,1L))
-  expect_equal(length(ans$geom[[1]]), 1L)
+  expect_equal(dim(ans), c(4L,9L))
+  expect_equal(as.numeric(sf::st_bbox(ans)), c(-127.627764657, 50.665469135, -127.624996787, 50.675051675))
 })
 
 file.remove(f)
