@@ -205,6 +205,9 @@ void LAS::get_xyz(int pos, double* xyz) const
 
 bool LAS::read_point(bool include_withhelded)
 {
+
+  if (npoints == 0) return false; // Fix #40
+
   // Query the ids of the points if we did not start reading yet
   if (!read_started)
   {
