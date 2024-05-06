@@ -70,13 +70,17 @@ cloud files in virtual point cloud (VPC)</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">write_vpc</span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">write_vpc</span><span class="op">(</span><span class="va">ofile</span>, absolute_path <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>ofile</dt>
 <dd><p>character. The file path with extension .vpc where to write the virtual point cloud file</p></dd>
+
+
+<dt>absolute_path</dt>
+<dd><p>boolean. The absolute path to the files is stored in the tile index file.</p></dd>
 
 </dl></div>
     <div class="section level2">
