@@ -268,7 +268,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
   for (int i = 0 ; i < get_number_files() ; i++)
   {
     std::filesystem::path file = files[i];
-    std::string relative_path = files[i];
+    std::string relative_path = file.string();
     if (!absolute_path)
     {
       relative_path = "./" + std::filesystem::relative(file, output_path).string();
