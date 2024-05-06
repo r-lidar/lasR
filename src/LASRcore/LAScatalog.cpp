@@ -220,7 +220,7 @@ bool LAScatalog::read_vpc(const std::string& filename)
   return true;
 }
 
-bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs)
+bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolute_path)
 {
   if (use_dataframe)
   {
@@ -268,8 +268,12 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs)
   for (int i = 0 ; i < get_number_files() ; i++)
   {
     std::filesystem::path file = files[i];
-    std::string relative_path = "./" + std::filesystem::relative(file, output_path).string();
-    std::replace(relative_path.begin(), relative_path.end(), '\\', '/'); // avoid problem of backslash on windows
+    std::string relative_path = files[i];
+    if (!absolute_path)
+    {
+      relative_path = "./" + std::filesystem::relative(file, output_path).string();
+      std::replace(relative_path.begin(), relative_path.end(), '\\', '/'); // avoid problem of backslash on windows
+    }
 
     Rectangle& bbox = bboxes[i];
     uint64_t n = npoints[i];

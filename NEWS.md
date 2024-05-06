@@ -1,3 +1,7 @@
+# lasR dev
+
+- `write_vpc()` gained an argument `absolute_path` (#42)
+
 # lasR 0.5.1
 
 - Fix: `write_vpc()` does not crash with files without CRS

@@ -283,7 +283,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
     }
     else if (name == "write_vpc")
     {
-      auto v = std::make_unique<LASRvpcwriter>();
+      bool absolute_path = get_element_as_bool(stage, "absolute");
+      auto v = std::make_unique<LASRvpcwriter>(absolute_path);
       pipeline.push_back(std::move(v));
     }
     else if (name == "transform_with")

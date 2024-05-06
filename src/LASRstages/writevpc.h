@@ -6,6 +6,7 @@
 class LASRvpcwriter: public Stage
 {
 public:
+  LASRvpcwriter(bool absolute_path = false);
   bool process(LAScatalog*& p) override;
   std::string get_name() const override { return "write_vpc"; }
   bool need_points() const override { return false; }
@@ -16,6 +17,8 @@ public:
   // the point cloud.
   bool is_parallelizable() const override { return true; };
   LASRvpcwriter* clone() const override { return new LASRvpcwriter(*this); };
+
+  bool absolute_path;
 };
 
 #endif

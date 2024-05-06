@@ -892,6 +892,7 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' cloud files in virtual point cloud (VPC)
 #'
 #' @param ofile character. The file path with extension .vpc where to write the virtual point cloud file
+#' @param absolute_path boolean. The absolute path to the files is stored in the tile index file.
 #' @references
 #' \url{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/}\cr
 #' \url{https://github.com/PDAL/wrench/blob/main/vpc-spec.md}
@@ -901,9 +902,9 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' exec(pipeline, on = "folder")
 #' }
 #' @export
-write_vpc = function(ofile)
+write_vpc = function(ofile, absolute_path = FALSE)
 {
-  ans <- list(algoname = "write_vpc", output = ofile)
+  ans <- list(algoname = "write_vpc", output = ofile, absolute = absolute_path)
   set_lasr_class(ans)
 }
 
