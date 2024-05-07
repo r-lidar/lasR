@@ -19,5 +19,7 @@ bool LASRfilter::process(LAS*& las)
       las->update_point();
   }
 
+  las->update_header();
+
   return true;
 }

@@ -7,6 +7,7 @@
 #include "lasdefinitions.hpp"
 #include "lasfilter.hpp"
 #include "lastransform.hpp"
+#include "lasutility.hpp"
 
 #include <algorithm>
 
@@ -284,6 +285,13 @@ void LAS::remove_point()
 {
   point.set_withheld_flag(1);
   update_point();
+}
+
+void LAS::update_header()
+{
+  LASinventory inventory;
+  while (read_point()) inventory.add(&point);
+  inventory.update_header(header);
 }
 
 // Thread safe

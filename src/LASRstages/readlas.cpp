@@ -1,7 +1,6 @@
 #include "readlas.h"
 
 #include "lasreader.hpp"
-#include "lasutility.hpp"
 
 LASRlasreader::LASRlasreader()
 {
@@ -114,18 +113,16 @@ bool LASRlasreader::process(LAS*& las)
   progress->set_total(lasreader->npoints);
   progress->set_prefix("read_las");
 
-  LASinventory inventory;
-
   while (lasreader->read_point())
   {
     if (progress->interrupted()) break;
     if (!las->add_point(lasreader->point)) return false;
-    inventory.add(&lasreader->point);
     progress->update(lasreader->p_count);
     progress->show();
   }
 
-  inventory.update_header(lasheader);
+  las->update_header();
+
   progress->done();
 
   return true;
