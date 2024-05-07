@@ -271,8 +271,12 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     std::string relative_path = file.string();
     if (!absolute_path)
     {
-      relative_path = "./" + std::filesystem::relative(file, output_path).string();
-      std::replace(relative_path.begin(), relative_path.end(), '\\', '/'); // avoid problem of backslash on windows
+      std::string relative = std::filesystem::relative(file, output_path).string();
+      if (!relative.empty())
+      {
+        relative_path = "./" + relative;
+        std::replace(relative_path.begin(), relative_path.end(), '\\', '/'); // avoid problem of backslash on windows
+      }
     }
 
     Rectangle& bbox = bboxes[i];
