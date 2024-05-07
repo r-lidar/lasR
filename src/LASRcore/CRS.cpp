@@ -3,23 +3,28 @@
 
 CRS::CRS()
 {
+  valid = false;
   epsg = 0;
 }
 
 CRS::CRS(int code, bool err)
 {
+  valid = false;
   epsg = code;
   if (epsg == 0) return;
 
   CPLPushErrorHandler(CPLQuietErrorHandler);
 
-  if (oSRS.importFromEPSG(epsg) != OGRERR_NONE && err)
+  if (oSRS.importFromEPSG(epsg) != OGRERR_NONE)
   {
     char buffer[512];
     snprintf(buffer, sizeof(buffer), "EPSG:%d %s\n", epsg, CPLGetLastErrorMsg());
     last_error = std::string(buffer);
-    throw last_error;
+    if (err) throw last_error;
+    return;
   }
+
+  valid = true;
 
   // Get wkt
   char *pszNewWKT;
@@ -36,19 +41,23 @@ CRS::CRS(int code, bool err)
 
 CRS::CRS(const std::string& str, bool err)
 {
+  valid = false;
   epsg = 0;
   wkt = str;
   if (wkt.empty()) return;
 
   CPLPushErrorHandler(CPLQuietErrorHandler);
 
-  if (oSRS.importFromWkt(wkt.c_str()) != OGRERR_NONE && err)
+  if (oSRS.importFromWkt(wkt.c_str()) != OGRERR_NONE)
   {
     char buffer[512];
     snprintf(buffer, sizeof(buffer), "WKT string: %s", CPLGetLastErrorMsg());
     last_error = std::string(buffer);
-    throw last_error;
+    if (err) throw last_error;
+    return;
   }
+
+  valid = true;
 
   const char* authority_code = oSRS.GetAuthorityCode(NULL);
   if (authority_code != NULL)
@@ -64,12 +73,6 @@ OGRSpatialReference CRS::get_crs() const
   return oSRS;
 }
 
-int CRS::get_epsg() const
-{
-  return epsg;
-}
-
-std::string CRS::get_wkt() const
-{
-  return wkt;
-}
+int CRS::get_epsg() const { return epsg; }
+std::string CRS::get_wkt() const { return wkt; }
+bool CRS::is_valid() const { return valid; }

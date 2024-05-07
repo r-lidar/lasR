@@ -220,12 +220,18 @@ bool LAScatalog::read_vpc(const std::string& filename)
   return true;
 }
 
-bool LAScatalog::write_vpc(const std::string& vpcfile)
+bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolute_path)
 {
   if (use_dataframe)
   {
     last_error = "Cannot write a virtual point cloud file with a data.frame"; // # nocov
     return false; // # nocov
+  }
+
+  if (!crs.is_valid())
+  {
+    last_error = "Invalid CRS. Cannot write a VPC file";
+    return false;
   }
 
   std::filesystem::path output_path = vpcfile;
@@ -246,6 +252,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
   }
 
   std::string wkt = crs.get_wkt();
+
   std::ostringstream oss;
   oss << std::quoted(wkt);
   wkt = oss.str();
@@ -261,8 +268,16 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
   for (int i = 0 ; i < get_number_files() ; i++)
   {
     std::filesystem::path file = files[i];
-    std::string relative_path = "./" + std::filesystem::relative(file, output_path).string();
-    std::replace(relative_path.begin(), relative_path.end(), '\\', '/'); // avoid problem of backslash on windows
+    std::string relative_path = file.string();
+    if (!absolute_path)
+    {
+      std::string relative = std::filesystem::relative(file, output_path).string();
+      if (!relative.empty())
+      {
+        relative_path = "./" + relative;
+        std::replace(relative_path.begin(), relative_path.end(), '\\', '/'); // avoid problem of backslash on windows
+      }
+    }
 
     Rectangle& bbox = bboxes[i];
     uint64_t n = npoints[i];
@@ -272,6 +287,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
     OGRSpatialReference oTargetSRS;
     OGRSpatialReference oSourceSRS;
     oTargetSRS.importFromEPSG(4979);
+    oTargetSRS.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
     oSourceSRS = crs.get_crs();
     OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
     double z = 0;
@@ -283,9 +299,9 @@ bool LAScatalog::write_vpc(const std::string& vpcfile)
    }
 
     char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.miny, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx,  bbwgs84.maxy, bbwgs84.maxx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny, bbwgs84.minx);
+    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny,  bbwgs84.maxx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.miny);
     std::string geometry(buffer);
-    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", bbwgs84.miny, bbwgs84.minx, bbwgs84.maxy, bbwgs84.maxx);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.maxy);
     std::string sbbox(buffer);
 
     output << "  {" << std::endl;

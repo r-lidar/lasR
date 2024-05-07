@@ -69,7 +69,7 @@ A pipeline created from the R interface does nothing initially. After building t
 
 ## Reader
 
-The `reader_las()` stage MUST be the first stage of any pipeline (blue in the figure above). It takes as input the list of files to process. When creating a pipeline with only this stage, the header of the files are read, but no computation is actually applied. The points are not even read because there is no other stage in the pipeline that require to read the points. No result is returned.
+The `reader_las()` stage MUST be the first stage of any pipeline (blue in the figure above). This stage reads the point cloud if necessary. When creating a pipeline with only this stage, the header of the files are read, but no computation is actually applied. The points are thus not even read because there is no other stage in the pipeline that require to read the points. No result is returned.
 
 ```{r, echo = F}
 f = paste0(system.file(package="lasR"), "/extdata/bcts")

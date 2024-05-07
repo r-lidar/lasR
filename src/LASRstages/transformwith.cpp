@@ -116,6 +116,8 @@ bool LASRtransformwith::process(LAS*& las)
     las->update_point();
   }
 
+  las->update_header();
+
   //if (deleted) warning("%u points outside delaunay triangulation were discarded\n", deleted);
 
   return true;

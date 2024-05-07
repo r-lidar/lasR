@@ -9,8 +9,6 @@
 
 #include "delaunator/delaunator.hpp"
 
-#include <chrono>
-
 LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double ymax, double trim, std::string use_attribute)
 {
   this->xmin = xmin;
@@ -30,8 +28,6 @@ LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double y
 
 bool LASRtriangulate::process(LAS*& las)
 {
-  auto start_time = std::chrono::high_resolution_clock::now();
-
   LAStransform* lastransform = nullptr;
   if (use_attribute != "Z")
   {
@@ -68,8 +64,8 @@ bool LASRtriangulate::process(LAS*& las)
 
   if (coords.size() < 3)
   {
-    last_error = "impossible to construct a Delaunay triangulation with " + std::to_string(coords.size()) + " points";
-    return false;
+    //last_error = "impossible to construct a Delaunay triangulation with " + std::to_string(coords.size()) + " points";
+    return true;
   }
 
   this->las = las;
@@ -77,22 +73,16 @@ bool LASRtriangulate::process(LAS*& las)
 
   progress->done();
 
-  if (verbose)
-  {
-    // # nocov start
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    float second = (float)duration.count()/1000.0f;
-    print("  Construction of triangulation took %.2f sec for %lu triangles\n", second, d->triangles.size()/3);
-    // # nocov end
-  }
-
   return true;
 }
 
 bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster)
 {
-  if (las == 0) return false;
+  int n = (raster == nullptr) ? las->npoints : raster->get_ncells();
+  res.resize(n);
+  std::fill(res.begin(), res.end(), NA_F64);
+
+  if (res.size() == 0) return true; // Fix #40
 
   LAStransform* lastransform = nullptr;
   if (use_attribute != "Z")
@@ -107,19 +97,16 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
     }
   }
 
+  if (d == nullptr)
+  {
+    last_error = "internal error: nullptr to Delaunator"; // # nocov
+    return false; // # nocov
+  }
+
   progress->reset();
   progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Interpolation");
   progress->show();
-
-  auto start_time = std::chrono::high_resolution_clock::now();
-
-  if (raster == 0)
-    res.resize(las->npoints);
-  else
-    res.resize(raster->get_ncells());
-
-  std::fill(res.begin(), res.end(), NA_F64);
 
   // The next for loop is at the level a nested parallel region. Printing the progress bar
   // is not thread safe. We first check that we are in outer thread 0
@@ -201,24 +188,16 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
 
   progress->done();
 
-  if (verbose)
-  {
-    // # nocov start
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    float second = (float)duration.count()/1000.0f;
-    print("  Interpolation of Delaunay triangulation took %.2g sec\n", second);
-    // # nocov end
-  }
-
   return true;
 }
 
 bool LASRtriangulate::contour(std::vector<Edge>& e) const
 {
-  std::unordered_set<Edge> edges;
+  // d is nullptr if the triangulation was not computed because we do not have enough points.
+  // In this case 'contour' should not fail
+  if (d == nullptr) return true; // # nocov
 
-  auto start_time = std::chrono::high_resolution_clock::now();
+  std::unordered_set<Edge> edges;
 
   progress->reset();
   progress->set_prefix("Delaunay contours");
@@ -280,16 +259,6 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
   }
 
   for (const auto& elmt : edges) e.push_back(elmt);
-
-  if (verbose)
-  {
-    // # nocov start
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    float second = (float)duration.count()/1000.0f;
-    print("  Delaunay contour took %.2f sec\n", second);
-    // # nocov end
-  }
 
   return true;
 }

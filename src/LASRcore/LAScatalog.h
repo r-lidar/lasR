@@ -24,7 +24,7 @@ public:
   LAScatalog();
   ~LAScatalog();
   bool read(const std::vector<std::string>& files, bool progress = false);
-  bool write_vpc(const std::string& file);
+  bool write_vpc(const std::string& file, const CRS& crs, bool absolute_path);
   void set_buffer(double buffer) { this->buffer = buffer; };
   void add_query(double xmin, double ymin, double xmax, double ymax);
   void add_query(double xcenter, double ycenter, double radius);

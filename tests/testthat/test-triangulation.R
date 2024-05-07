@@ -40,9 +40,9 @@ test_that("triangulate works with intensity",
 })
 
 
-test_that("triangulate fails with 0 points (#25)",
-{
-  f <- system.file("extdata", "las14_pdrf6.laz", package="lasR")
-  pipeline <- reader_las() + dtm()
-  expect_error(suppressWarnings(exec(pipeline, on = f)), "impossible to construct a Delaunay triangulation with 0 points")
-})
+#test_that("triangulate fails with 0 points (#25)",
+#{
+#  f <- system.file("extdata", "las14_pdrf6.laz", package="lasR")
+#  pipeline <- reader_las() + dtm()
+#  expect_error(suppressWarnings(exec(pipeline, on = f)), "impossible to construct a Delaunay triangulation with 0 points")
+#})

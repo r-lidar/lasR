@@ -492,6 +492,8 @@ bool LASRcallback::process(LAS*& las)
 
   } // end omp critical
 
+  las->update_header();
+
   return error == 0;
 }
 

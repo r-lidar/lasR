@@ -242,7 +242,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
 
     pipeline.sort();
 
-    pipeline.show_profiling(fprofiling);
+    pipeline.profiler.write(fprofiling);
 
     return pipeline.to_R();
   }

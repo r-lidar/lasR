@@ -1,4 +1,5 @@
 #include "readlas.h"
+
 #include "lasreader.hpp"
 
 LASRlasreader::LASRlasreader()
@@ -119,6 +120,8 @@ bool LASRlasreader::process(LAS*& las)
     progress->update(lasreader->p_count);
     progress->show();
   }
+
+  las->update_header();
 
   progress->done();
 

@@ -4,10 +4,12 @@
 \alias{write_vpc}
 \title{Write a Virtual Point Cloud}
 \usage{
-write_vpc(ofile)
+write_vpc(ofile, absolute_path = FALSE)
 }
 \arguments{
 \item{ofile}{character. The file path with extension .vpc where to write the virtual point cloud file}
+
+\item{absolute_path}{boolean. The absolute path to the files is stored in the tile index file.}
 }
 \description{
 Borrowing the concept of virtual rasters from GDAL, the VPC file format references other point

@@ -62,6 +62,8 @@ bool LASRsamplingvoxels::process(LAS*& las)
     if (progress->interrupted()) break;
   }
 
+  las->update_header();
+
   return true;
 }
 
@@ -108,6 +110,8 @@ bool LASRsamplingpixels::process(LAS*& las)
     progress->show();
     if (progress->interrupted()) break;
   }
+
+  las->update_header();
 
   return true;
 }

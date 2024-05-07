@@ -30,6 +30,7 @@ public:
   void set_file(const std::string& file) { this->file = file; };
   void update_point();
   void remove_point();
+  void update_header();
   bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
   bool realloc_point_and_buffer();
