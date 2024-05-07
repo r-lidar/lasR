@@ -626,6 +626,39 @@ ans = exec(pipeline, on = las)
 
 In the case of a `LAScatalog`, `exec()` respects the processing options of the `LAScatalog` including the chunk size, chunk buffer, progress bar display and partial processing. In the general case, the same options can be supplied as arguments of the `exec()` functions.
 
+## Stop pipeline if
+
+A pipeline can be a long succession of stages and it may happens that we do not want to apply the entire pipeline on every files. In this case the `stop_if` stages allows to conditionally stop the pipeline anywhere. Let assume we have a dataset with 100 files and pipeline that reads, computes the hulls, computes the DTM
+
+```r
+read = reader_las()
+hll = hulls()
+tri = triangulate(filter = keep_ground())
+dtm = rasterize(1, tri)
+pipeline = read + hll + tri + dtm
+```
+
+It is possible to computes the hulls on the 100 files but the DTM only in a reduced regions of interest defined by the user with `stop_if_outside()`
+
+```r
+stopif <- stop_if_outside(880000, 620000, 885000, 630000)
+pipeline <- read + hll + stopif + tri + dtm
+```
+
+`stop_if` is (currently) the only stage than can be put before `reader_las()`. In this case the reading stage is skipped, effectively applying the pipeline on a subset of the files than encompasse the bounding boxe defined by the user.
+
+```r
+pipeline <- stopif + read + hll + tri + dtm
+```
+
+Notice that the pipeline below, produces the same output than the pipeline above but takes longer to compute because the files that are not processed are read anyway. It is thus preferable to put `stop_if()` before `reader_las()`in this specific case.
+
+```r
+pipeline <- read + stopif + hll + tri + dtm
+```
+
+Currently there is only one `stop_if` stage that conditionally stops the pipeline based on bounding box condition but if will be easy to add more options later on demand.
+
 ## Parallel processing
 
 The topic is covered in a [dedicated article](multithreading.html)
