@@ -1,7 +1,8 @@
 # lasR dev
 
 - New: `write_vpc()` gained an argument `absolute_path` (#42)
-- Fix: `write_vpc()` orders the coordinates properly (#42)
+- Fix: `write_vpc()` orders the long/lat coordinates properly on Linux (#42)
+- Fix: `write_vpc()` writes the absolute path of the relative path does not exist on Windows (#42)
 
 
 # lasR 0.5.1
