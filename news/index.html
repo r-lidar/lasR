@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,6 +60,16 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.2" id="lasr-052">lasR 0.5.2<a class="anchor" aria-label="anchor" href="#lasr-052"></a></h2>
+<ul><li>New: <a href="https://github.com/r-lidar/lasR/issues/42" class="external-link">#42</a> <code><a href="../reference/write_vpc.html">write_vpc()</a></code> gained an argument <code>absolute_path</code>
+</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/42" class="external-link">#42</a> <code><a href="../reference/write_vpc.html">write_vpc()</a></code> orders the long/lat coordinates properly on Linux</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/42" class="external-link">#42</a> <code><a href="../reference/write_vpc.html">write_vpc()</a></code> writes the absolute path of the relative path does not exist on Windows</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/40" class="external-link">#40</a> <code><a href="../reference/triangulate.html">triangulate()</a></code> with 0 point chunk.</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/43" class="external-link">#43</a>: <code>geometry_feature</code> works if the file already contains some extrabytes attributes</li>
+<li>Enhance: 0 point point-clouds are no longer stopping the computation. If a stage such as <code><a href="../reference/delete_points.html">delete_points()</a></code> removes all the points, the pipeline is stopped for the current chunk/file but the computation keep going for others. This was not the case for all stages and some stages could either crash or stop the computation.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.1" id="lasr-051">lasR 0.5.1<a class="anchor" aria-label="anchor" href="#lasr-051"></a></h2>
 <ul><li>Fix: <code><a href="../reference/write_vpc.html">write_vpc()</a></code> does not crash with files without CRS</li>
