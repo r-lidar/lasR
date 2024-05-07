@@ -1,9 +1,10 @@
-# lasR dev
+# lasR 0.5.2
 
 - New: #42 `write_vpc()` gained an argument `absolute_path`
 - Fix: #42 `write_vpc()` orders the long/lat coordinates properly on Linux
 - Fix: #42 `write_vpc()` writes the absolute path of the relative path does not exist on Windows
 - Fix: #40 `triangulate()` with 0 point chunk. 
+- Fix: #43: `geometry_feature` works if the file already contains some extrabytes attributes
 - Enhance: 0 point point-clouds are no longer stopping the computation. If a stage such as `delete_points()` removes all the points, the pipeline is stopped for the current chunk/file but the computation keep going for others. This was not the case for all stages and some stages could either crash or stop the computation.
 
 # lasR 0.5.1

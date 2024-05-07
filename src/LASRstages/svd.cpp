@@ -68,7 +68,7 @@ LASRsvd::LASRsvd(int k, double r, std::string features)
 
 bool LASRsvd::process(LAS*& las)
 {
-  int nattr_before_geometry = las->header->get_attributes_size();
+  int nattr_before_geometry = las->header->number_attributes;
 
   if (ft_C)
   {
@@ -219,8 +219,8 @@ bool LASRsvd::process(LAS*& las)
 
       if (main_thread)
       {
-          (*progress)++;
-          progress->show();
+        (*progress)++;
+        progress->show();
       }
     }
   }
