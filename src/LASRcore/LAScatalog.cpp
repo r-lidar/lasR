@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <filesystem>
+#include <ctime>
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
@@ -282,6 +283,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     Rectangle& bbox = bboxes[i];
     uint64_t n = npoints[i];
     bool index = indexed[i];
+    std::string date = dates[i];
 
     Rectangle bbwgs84 = bbox;
     OGRSpatialReference oTargetSRS;
@@ -296,7 +298,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     {
       last_error = "Transformation of the bounding in WGS 84 failed!";
       return false;
-   }
+    }
 
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny,  bbwgs84.maxx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.miny);
@@ -320,7 +322,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     output << "    }," << std::endl;
     output << "    \"bbox\": " << sbbox << "," << std::endl;
     output << "    \"properties\": {" << std::endl;
-    output << "      \"datetime\": " << "\"0-01-01T00:00:00Z\""<< "," << std::endl;
+    output << "      \"datetime\": " << autoquote(date) << "," << std::endl;
     output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
@@ -411,6 +413,27 @@ bool LAScatalog::add_file(const std::string& file, bool noprocess)
   add_crs(&lasreader->header);
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
   npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
+
+  int year = lasreader->header.file_creation_year;
+  int doy = lasreader->header.file_creation_day;
+  if (year > 0)
+  {
+    if (doy == 0) doy = 1;
+    std::tm timeinfo = {};
+    timeinfo.tm_year = year - 1900;
+    timeinfo.tm_mday = doy;
+    std::mktime(&timeinfo);
+    char buffer[26];
+    strftime(buffer, 26, "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+    std::string date(buffer);
+    dates.push_back(date);
+    print("Y %d, D %d\n", year, doy);
+    print("%s\n", date.c_str());
+  }
+  else
+  {
+    dates.push_back("0-01-01T00:00:00Z");
+  }
 
   lasreader->close();
   delete lasreader;
@@ -723,8 +746,8 @@ void LAScatalog::clear()
   // CRS
   wkt_set.clear();
   epsg_set.clear();
-//epsg = 0;
-//wkt.clear();
+  //epsg = 0;
+  //wkt.clear();
 
   use_dataframe = true;
 
@@ -786,6 +809,5 @@ LAScatalog::~LAScatalog()
   if (laskdtree) delete laskdtree;
   for (auto p : queries) delete p;
 }
-
 
 

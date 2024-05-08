@@ -1,3 +1,7 @@
+# lasR ?.?.?
+
+- Enhance: #44 `write_vpc` write the `datetime`
+
 # lasR 0.5.2
 
 - New: #42 `write_vpc()` gained an argument `absolute_path`
