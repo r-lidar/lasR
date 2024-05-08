@@ -283,7 +283,25 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     Rectangle& bbox = bboxes[i];
     uint64_t n = npoints[i];
     bool index = indexed[i];
-    std::string date = dates[i];
+
+    std::string date;
+    int year = dates[i].first;
+    int doy = dates[i].second;
+    if (year > 0)
+    {
+      if (doy == 0) doy = 1;
+      std::tm timeinfo = {};
+      timeinfo.tm_year = year - 1900;
+      timeinfo.tm_mday = doy;
+      std::mktime(&timeinfo);
+      char buffer[26];
+      strftime(buffer, 26, "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+      date = std::string(buffer);
+    }
+    else
+    {
+      date = "0-01-01T00:00:00Z";
+    }
 
     Rectangle bbwgs84 = bbox;
     OGRSpatialReference oTargetSRS;
@@ -413,27 +431,7 @@ bool LAScatalog::add_file(const std::string& file, bool noprocess)
   add_crs(&lasreader->header);
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
   npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
-
-  int year = lasreader->header.file_creation_year;
-  int doy = lasreader->header.file_creation_day;
-  if (year > 0)
-  {
-    if (doy == 0) doy = 1;
-    std::tm timeinfo = {};
-    timeinfo.tm_year = year - 1900;
-    timeinfo.tm_mday = doy;
-    std::mktime(&timeinfo);
-    char buffer[26];
-    strftime(buffer, 26, "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
-    std::string date(buffer);
-    dates.push_back(date);
-    print("Y %d, D %d\n", year, doy);
-    print("%s\n", date.c_str());
-  }
-  else
-  {
-    dates.push_back("0-01-01T00:00:00Z");
-  }
+  dates.push_back({lasreader->header.file_creation_year, lasreader->header.file_creation_day});
 
   lasreader->close();
   delete lasreader;
