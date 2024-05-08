@@ -141,6 +141,8 @@ airborne laser scanning and hyperspectral data. Methods Ecol Evol, 7: 1236–124
 <span class="r-in"><span><span class="va">lmx</span> <span class="op">&lt;-</span> <span class="fu"><a href="local_maximum.html">local_maximum_raster</a></span><span class="op">(</span><span class="va">chm</span>, <span class="fl">5</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu">region_growing</span><span class="op">(</span><span class="va">chm</span>, <span class="va">lmx</span>, max_cr <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">u</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">reader</span> <span class="op">+</span> <span class="va">chm</span> <span class="op">+</span> <span class="va">lmx</span> <span class="op">+</span> <span class="va">tree</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Y 2017, D 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2017-01-01T00:00:00Z</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># terra::plot(u$rasterize)</span></span></span>
 <span class="r-in"><span><span class="co"># plot(u$local_maximum, add = T, pch = 19, cex = 0.5)</span></span></span>

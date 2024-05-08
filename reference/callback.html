@@ -145,6 +145,8 @@ loaded.  '*' is the wildcard that enables everything to be exposed from the LAS 
 <span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span> <span class="op">(</span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">call</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span><span class="va">las</span> <span class="op">&lt;-</span> <span class="fu">read_las</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Y 2018, D 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2018-01-01T00:00:00Z</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">las</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          X       Y        Z Intensity</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 273357.1 5274360 806.5340      1340</span>
@@ -169,8 +171,12 @@ loaded.  '*' is the wildcard that enables everything to be exposed from the LAS 
 <span class="r-in"><span><span class="va">write</span> <span class="op">&lt;-</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">call</span> <span class="op">+</span> <span class="va">write</span></span></span>
 <span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Y 2018, D 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2018-01-01T00:00:00Z</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">las</span> <span class="op">&lt;-</span> <span class="fu">read_las</span><span class="op">(</span><span class="va">ans</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Y 2018, D 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2018-01-01T00:00:00Z</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">las</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          X       Y        Z Intensity</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 273357.1 5274360 806.5340       137</span>
