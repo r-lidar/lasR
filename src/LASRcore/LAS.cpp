@@ -360,6 +360,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
   return addr.size() > 0;
 }
 
+// Thread safe
 bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>& res,  LASfilter* const lasfilter, LAStransform* const lastransform) const
 {
   double x = xyz[0];
@@ -384,10 +385,10 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
       intervals.clear();
       index->query(x-radius, y-radius, x+radius, y+radius, intervals);
 
-      // In lasR we quey interval no points so we need to count the number of point in the interval
+      // In lasR we query intervals not points so we need to count the number of points in the interval
       n = 0; for (const auto& interval : intervals) n += interval.end - interval.start + 1;
 
-      // If we have more than k points we may not have the knn but because of the filter and withhelded points
+      // If we have more than k points we may not have the knn because of the filter and withhelded points
       // we need to fetch the points to actually count them
       if (n >= k)
       {
@@ -415,7 +416,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
     }
   }
 
-  // We incremented the radius until we get k points. If the radius is bigger than the max radius we for radius = max radius
+  // We incremented the radius until we get k points. If the radius is bigger than the max radius we use radius = max radius
   // and we may not have k points.
   if (radius >= radius_max)
   {

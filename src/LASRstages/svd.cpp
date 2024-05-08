@@ -151,9 +151,9 @@ bool LASRsvd::process(LAS*& las)
     arma::princomp(coeff, score, latent, A);
 
     double eigen_sum = (latent[0]+latent[1]+latent[2]);
-    double eigen_largest = latent[0]; ///eigen_sum; ??
-    double eigen_medium = latent[1]; //eigen_sum; ??
-    double eigen_smallest = latent[2]; //eigen_sum; ??
+    double eigen_largest = latent[0]; // /eigen_sum; ??
+    double eigen_medium = latent[1]; // /eigen_sum; ??
+    double eigen_smallest = latent[2]; // /eigen_sum; ??
     double coeff00 = coeff(0,0);
     double coeff01 = coeff(0,1);
     double coeff02 = coeff(0,2);
