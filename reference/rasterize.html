@@ -151,31 +151,29 @@ in this case.</p>
 <span class="r-in"><span><span class="va">chm</span>  <span class="op">&lt;-</span> <span class="fu">rasterize</span><span class="op">(</span><span class="fl">2</span>, <span class="st">"max"</span><span class="op">)</span> <span class="co"># input is a character vector</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">tri</span> <span class="op">+</span> <span class="va">dtm</span> <span class="op">+</span> <span class="va">avgi</span> <span class="op">+</span> <span class="va">chm</span></span></span>
 <span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Y 2018, D 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2018-01-01T00:00:00Z</span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 286, 286, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 1, 1  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1f816825ba6.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1f816825ba6 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1fcb3a0cc23a.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1fcb3a0cc23a </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 30, 30, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 10, 10  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273350, 273650, 5274350, 5274650  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1f8111dc47ad.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1f8111dc47ad </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1fcb33adfd2f.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1fcb33adfd2f </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 144, 144, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 2, 2  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273356, 273644, 5274356, 5274644  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1f81b02f83f.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1fcb35d0e774.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> name        : max </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Demonstration of buffered rasterization</span></span></span>
@@ -194,8 +192,6 @@ in this case.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">read</span> <span class="op">+</span> <span class="va">c0</span> <span class="op">+</span> <span class="va">c1</span> <span class="op">+</span> <span class="va">c2</span></span></span>
 <span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Y 2018, D 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2018-01-01T00:00:00Z</span>
 <span class="r-in"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">/</span><span class="fl">25</span><span class="op">)</span>  <span class="co"># divide by 25 to get the density</span></span></span>
 <span class="r-plt img"><img src="rasterize-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">/</span><span class="fl">4</span><span class="op">)</span>   <span class="co"># divide by 4 to get the density</span></span></span>
