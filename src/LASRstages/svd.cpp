@@ -121,17 +121,18 @@ bool LASRsvd::process(LAS*& las)
   {
     if (progress->interrupted()) continue;
 
-    std::vector<PointLAS> pts;
-    double xyz[3];
-    las->get_xyz(i, xyz);
+    PointLAS p;
+    if (!las->get_point(i, p)) continue;
 
+    std::vector<PointLAS> pts;
     if (mode == PURERADIUS)
     {
-        Sphere s(xyz[0], xyz[1], xyz[2], r);
+        Sphere s(p.x, p.y, p.z, r);
         las->query(&s, pts, &lasfilter);
     }
     else
     {
+        double xyz[3] = {p.x, p.y, p.z};
         las->knn(xyz, k, r, pts, &lasfilter);
     }
 

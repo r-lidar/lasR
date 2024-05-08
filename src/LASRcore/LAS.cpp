@@ -206,7 +206,6 @@ void LAS::get_xyz(int pos, double* xyz) const
 
 bool LAS::read_point(bool include_withhelded)
 {
-
   if (npoints == 0) return false; // Fix #40
 
   // Query the ids of the points if we did not start reading yet
@@ -371,7 +370,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
   p.init(point.quantizer, point.num_items, point.items, point.attributer);
 
   double area = (header->max_x-header->min_x)*(header->max_y-header->min_y);
-  double density = npoints / area;
+  double density = header->number_of_point_records / area;
   double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
 
   int n = 0;

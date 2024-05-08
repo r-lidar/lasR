@@ -1,5 +1,6 @@
-# lasR ?.?.?
+# lasR 0.5.3
 
+- Fix: #45 computation time of `geometry_features` after `delete_points()`
 - Enhance: #44 `write_vpc` write the `datetime`
 
 # lasR 0.5.2
