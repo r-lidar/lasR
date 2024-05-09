@@ -130,7 +130,7 @@ bool LAS::add_point(const LASpoint& p)
   size_t required_capacity = npoints*point.total_point_size;
   if (required_capacity == capacity)
   {
-    size_t capacity_max = MAX(header->number_of_point_records, header->extended_number_of_point_records)*point.total_point_size;
+    size_t capacity_max = get_true_number_of_points()*point.total_point_size;
 
     // This may happens if the header is not properly populated
     if (required_capacity >= capacity_max)
@@ -377,7 +377,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
   p.init(point.quantizer, point.num_items, point.items, point.attributer);
 
   double area = (header->max_x-header->min_x)*(header->max_y-header->min_y);
-  double density = header->number_of_point_records / area;
+  double density = get_true_number_of_points() / area;
   double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
 
   int n = 0;
@@ -821,3 +821,10 @@ int LAS::get_point_data_record_length(int point_data_format, int num_extrabytes)
   default: return 0; break;
   }
 }
+
+int LAS::get_true_number_of_points() const
+{
+  int n = (int)MAX(header->number_of_point_records, header->extended_number_of_point_records);
+  return n;
+}
+
