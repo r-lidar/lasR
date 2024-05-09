@@ -34,6 +34,7 @@ public:
   bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
   bool realloc_point_and_buffer();
+  bool delete_withheld();
 
   // Thread safe queries
   void get_xyz(int pos, double* xyz) const;
@@ -57,6 +58,7 @@ public:
 private:
   void clean_index();
   void clean_query();
+  bool realloc_buffer(size_t capacity);
 
 public:
   LASpoint point;

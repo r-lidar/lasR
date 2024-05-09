@@ -1,7 +1,9 @@
 # lasR 0.5.3
 
 - Fix: #45 computation time of `geometry_features` after `delete_points()`
+- Fix: `local_maximum()` was processing deleted points.
 - Enhance: #44 `write_vpc` write the `datetime`
+- Enhance: `delete_points` can now physically remove the deleted points if the number of points deleted is important. Before they were flagged but kept in memory. It can also free available memory.
 
 # lasR 0.5.2
 

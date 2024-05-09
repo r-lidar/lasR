@@ -83,3 +83,10 @@ test_that("processor fails without reader",
 
   expect_error(exec(hulls() + reader_las(), on = f),  "The reader must alway be the first stage of the pipeline")
 })
+
+test_that("delete point memory reallocation works",
+{
+  f <- system.file("extdata", "MixedConifer.las", package="lasR")
+  pipeline = delete_points(filter = keep_ground()) + geometry_features(k = 15 , features = "lps") + write_las()
+  expect_error(exec(pipeline, on = f), NA)
+})

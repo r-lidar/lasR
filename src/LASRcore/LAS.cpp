@@ -152,23 +152,7 @@ bool LAS::add_point(const LASpoint& p)
     else
       capacity *= 2;
 
-    unsigned char* tmp = (unsigned char*)realloc((void*)buffer, capacity);
-
-    if (tmp == NULL)
-    {
-      // # nocov start
-      if (errno == ENOMEM)
-        last_error = "Memory reallocation failed: Insufficient memory";
-      else
-        last_error = "Memory reallocation failed: Unknown error";
-
-      return false;
-      // # nocov end
-    }
-    else
-    {
-      buffer = tmp;
-    }
+    if (!realloc_buffer(capacity)) return false;
   }
 
   point = p; // Point format conversion
@@ -286,6 +270,36 @@ void LAS::remove_point()
   update_point();
 }
 
+bool LAS::delete_withheld()
+{
+  clean_index();
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+
+  int j = 0;
+  for (int i = 0 ; i < npoints ; i++)
+  {
+    seek(i);
+    if (point.get_withheld_flag() == 0)
+    {
+      point.copy_to(buffer + j * point.total_point_size);
+      index->insert(point.get_x(), point.get_y());
+      j++;
+    }
+  }
+
+  double ratio = (double)j/(double)npoints;
+  npoints = j;
+
+  if (ratio < 0.5)
+  {
+    capacity = npoints*point.total_point_size;
+    unsigned char* tmp = (unsigned char*)realloc((void*)buffer, capacity);
+    if (!realloc_buffer(capacity)) return false;
+  }
+
+  return true;
+}
+
 void LAS::update_header()
 {
   LASinventory inventory;
@@ -314,7 +328,7 @@ bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter
 
       if (lasfilter && lasfilter->filter(&p)) continue;
 
-      if (point.get_withheld_flag() == 0 && shape->contains(p.get_x(), p.get_y()))
+      if (p.get_withheld_flag() == 0 && shape->contains(p.get_x(), p.get_y()))
       {
         if (lastransform) lastransform->transform(&p);
 
@@ -618,7 +632,11 @@ bool LAS::add_rgb()
 void LAS::clean_index()
 {
   clean_query();
-  if (index) delete index;
+  if (index)
+  {
+    delete index;
+    index = nullptr;
+  }
 }
 
 void LAS::clean_query()
@@ -646,6 +664,29 @@ bool LAS::is_attribute_loadable(int index)
   return true;
 }
 
+bool LAS::realloc_buffer(size_t capacity)
+{
+  unsigned char* tmp = (unsigned char*)realloc((void*)buffer, capacity);
+
+  if (tmp == NULL)
+  {
+    // # nocov start
+    free(buffer);
+    buffer = 0;
+
+    if (errno == ENOMEM)
+      last_error = "Memory reallocation failed: Insufficient memory";
+    else
+      last_error = "Memory reallocation failed: Unknown error";
+
+    return false;
+    // # nocov end
+  }
+
+  buffer = tmp;
+  return true;
+}
+
 bool LAS::realloc_point_and_buffer()
 {
   LASpoint new_point;
@@ -654,13 +695,7 @@ bool LAS::realloc_point_and_buffer()
   if (npoints * new_point.total_point_size > capacity)
   {
     capacity = npoints * new_point.total_point_size;
-    buffer = (unsigned char*)realloc((void*)buffer, capacity);
-  }
-
-  if (buffer == 0)
-  {
-    last_error = "LAS::update_point_and_buffer(): memory allocation failed"; // # nocov
-    return false; // # nocov
+    if (!realloc_buffer(capacity)) return false;
   }
 
   for (int i = npoints-1 ; i >= 0 ; --i)
