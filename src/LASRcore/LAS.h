@@ -58,7 +58,8 @@ public:
 private:
   void clean_index();
   void clean_query();
-  bool realloc_buffer(size_t capacity);
+  bool alloc_buffer();
+  bool realloc_buffer();
 
 public:
   LASpoint point;
