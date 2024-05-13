@@ -1,3 +1,7 @@
+# lasR ?.?.?
+
+- Fix: #48 segfault with `delete_points()` when 0 points left.
+
 # lasR 0.5.3
 
 - Fix: #45 computation time of `geometry_features` after `delete_points()`

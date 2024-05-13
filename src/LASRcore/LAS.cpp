@@ -199,7 +199,6 @@ bool LAS::read_point(bool include_withhelded)
       // Nothing to do.
     }
 
-
     if (intervals_to_read.size() == 0)
       return false;
 
@@ -255,7 +254,6 @@ void LAS::update_point()
 {
   point.copy_to(buffer + current_point * point.total_point_size);
 }
-
 
 void LAS::remove_point()
 {
@@ -682,6 +680,13 @@ bool LAS::alloc_buffer()
 
 bool LAS::realloc_buffer()
 {
+  if (capacity == 0)
+  {
+    free(buffer);
+    buffer = 0;
+    return true;
+  }
+
   unsigned char* tmp = (unsigned char*)realloc((void*)buffer, capacity);
 
   if (tmp == NULL)
