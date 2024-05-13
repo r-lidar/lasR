@@ -931,7 +931,8 @@ set_lasr_class = function(x, raster = FALSE, vector = FALSE)
   if (vector) cl <- c(cl, "LASRvector")
 
   class(x) <- cl
-  x = list(x)
+  x <- list(x)
+  names(x) <- x[[1]][["algoname"]]
   class(x) <- "LASRpipeline"
   return(x)
 }

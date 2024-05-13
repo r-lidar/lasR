@@ -1,6 +1,7 @@
 # lasR ?.?.?
 
 - Fix: #48 segfault with `delete_points()` when 0 points left.
+- Enhance: #47 pipelines are named `list`.
 
 # lasR 0.5.3
 
