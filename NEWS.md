@@ -2,6 +2,7 @@
 
 - Fix: #48 segfault with `delete_points()` when 0 points left.
 - Enhance: #47 pipelines are named `list`.
+- Enhance: #47 the output `list` returned by `exec` is named and duplicated names are made unique with `make.names()`
 
 # lasR 0.5.3
 
