@@ -208,10 +208,11 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #' Compute pointwise geometry features based on local neighborhood. Each feature is added into an
 #' extrabyte attribute. The names of the extrabytes attributes (if recorded) are `coeff00`, `coeff01`,
 #' `coeff02` and so on, `lambda1`, `lambda2`, `lambda3`, `anisotropy`, `planarity`, `sphericity`, `linearity`,
-#' `omnivariance`, `curvature`, `eigensum`, `angle`, `normalX`, `normalY`, `normalZ`. There is a total
-#' of 23 attributes that can be added. It is strongly discouraged to use them all. All the features
-#' are recorded with single precision floating points yet computing them all will triple the size of
-#' the point cloud. This stage modifies the point cloud in the pipeline but does not produce any output.
+#' `omnivariance`, `curvature`, `eigensum`, `angle`, `normalX`, `normalY`, `normalZ` (recorded in this order).
+#' There is a total of 23 attributes that can be added. It is strongly discouraged to use them all.
+#' All the features are recorded with single precision floating points yet computing them all will triple
+#' the size of the point cloud. This stage modifies the point cloud in the pipeline but does not produce
+#' any output.
 #'
 #' @param k,r integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
 #' sphere. If k is given and r is missing, computes with the knn, if r is given and k is missing
@@ -224,6 +225,7 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #' (inclination in degrees relative to the azimuth), and 'n' for the 3 components of the normal vector.
 #' Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 #' Default is "". In this case, the singular value decomposition is computed but serves no purpose.
+#' The order of the flags does not matter and the features are recorded in the order mentioned above.
 #' @export
 
 #' @references Hackel, T., Wegner, J. D., & Schindler, K. (2016). Contour detection in unstructured 3D

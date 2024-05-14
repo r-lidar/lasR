@@ -3,6 +3,7 @@
 - Fix: #48 segfault with `delete_points()` when 0 points left.
 - Enhance: #47 pipelines are named `list`.
 - Enhance: #47 the output `list` returned by `exec` is named and duplicated names are made unique with `make.names()`
+- Doc: added some notes in the documentation of `geometry_features()` to address question in #45
 
 # lasR 0.5.3
 
