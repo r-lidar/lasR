@@ -93,6 +93,7 @@ private:
   std::vector<bool> noprocess;            // the file is not processed and is used only for buffering
   std::vector<Rectangle> bboxes;            // bounding boxes of the files
   std::vector<std::filesystem::path> files; // path to files
+  std::vector<std::pair<unsigned short, unsigned short>> dates;
 
   // queries, partial read
   LASkdtreeRectangles* laskdtree;

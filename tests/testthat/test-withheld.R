@@ -48,9 +48,10 @@ test_that("stages are skipping withhelded points (2) (batch)", {
   dtm = dtm()
   pipeline <- read + filter + local_maximum(5) + dtm + transform_with(dtm[[2]]) + summarise()
 
+  set_parallel_strategy(sequential())
   ans = exec(pipeline, on = f) |> suppressWarnings()
 
   expect_equal(ans$summary$npoints, 25215L)
-  expect_equal(nrow(ans$local_maximum), 17L)
+  expect_equal(nrow(ans$local_maximum), 1516L)
 })
 

@@ -121,17 +121,18 @@ bool LASRsvd::process(LAS*& las)
   {
     if (progress->interrupted()) continue;
 
-    std::vector<PointLAS> pts;
-    double xyz[3];
-    las->get_xyz(i, xyz);
+    PointLAS p;
+    if (!las->get_point(i, p)) continue;
 
+    std::vector<PointLAS> pts;
     if (mode == PURERADIUS)
     {
-        Sphere s(xyz[0], xyz[1], xyz[2], r);
+        Sphere s(p.x, p.y, p.z, r);
         las->query(&s, pts, &lasfilter);
     }
     else
     {
+        double xyz[3] = {p.x, p.y, p.z};
         las->knn(xyz, k, r, pts, &lasfilter);
     }
 
@@ -150,9 +151,9 @@ bool LASRsvd::process(LAS*& las)
     arma::princomp(coeff, score, latent, A);
 
     double eigen_sum = (latent[0]+latent[1]+latent[2]);
-    double eigen_largest = latent[0]; ///eigen_sum; ??
-    double eigen_medium = latent[1]; //eigen_sum; ??
-    double eigen_smallest = latent[2]; //eigen_sum; ??
+    double eigen_largest = latent[0]; // /eigen_sum; ??
+    double eigen_medium = latent[1]; // /eigen_sum; ??
+    double eigen_smallest = latent[2]; // /eigen_sum; ??
     double coeff00 = coeff(0,0);
     double coeff01 = coeff(0,1);
     double coeff02 = coeff(0,2);

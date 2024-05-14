@@ -16,17 +16,17 @@ LAS::LAS(LASheader* header)
   this->header = header;
   this->own_header = false;
 
-  buffer = 0;
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
-
+  // Point cloud storage
+  buffer = NULL;
   npoints = 0;
   capacity = 0;
+
   current_point = 0;
   next_point = 0;
-
   read_started = false;
 
   // For spatial indexing
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
   current_interval = 0;
   shape = nullptr;
   inside = false;
@@ -44,19 +44,14 @@ LAS::LAS(const Raster& raster)
 {
   own_header = true;
 
-  buffer = 0;
-
+  // Point cloud storage
+  buffer = NULL;
   npoints = 0;
   capacity = 0;
+
   current_point = 0;
   next_point = 0;
-
   read_started = false;
-
-  // For spatial indexing
-  current_interval = 0;
-  shape = nullptr;
-  inside = false;
 
   // Convert the raster to a LAS
   header = new LASheader;
@@ -81,6 +76,10 @@ LAS::LAS(const Raster& raster)
   header->max_y                = raster.get_ymax()-raster.get_yres()/2;
   header->point_data_record_length = 20;
 
+  // For spatial indexing
+  current_interval = 0;
+  shape = nullptr;
+  inside = false;
   index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, raster.get_xres()*4);
 
   point.init(header, header->point_data_format, header->point_data_record_length, header);
@@ -115,22 +114,10 @@ LAS::~LAS()
 
 bool LAS::add_point(const LASpoint& p)
 {
-  if (buffer == 0)
+  if (buffer == NULL)
   {
     capacity = 100000 * point.total_point_size;
-
-    buffer = (unsigned char*)malloc(capacity);
-    if (buffer == 0)
-    {
-      // # nocov start
-      if (errno == ENOMEM)
-        last_error = "Memory allocation failed: Insufficient memory";
-      else
-        last_error = "Memory allocation failed: Unknown error";
-
-      return false;
-      // # nocov end
-    }
+    if (!alloc_buffer()) return false;
   }
 
   if (npoints == I32_MAX)
@@ -139,51 +126,41 @@ bool LAS::add_point(const LASpoint& p)
     return false;                                                  // # nocov
   }
 
-  if (npoints*point.total_point_size == capacity)
+  // Realloc memory and increase buffer size if needed
+  size_t required_capacity = npoints*point.total_point_size;
+  if (required_capacity == capacity)
   {
-    size_t capacity_max = MAX(header->number_of_point_records, header->extended_number_of_point_records)*point.total_point_size;
+    size_t capacity_max = get_true_number_of_points()*point.total_point_size;
 
     // This may happens if the header is not properly populated
-    if (npoints*point.total_point_size >= capacity_max)
+    if (required_capacity >= capacity_max)
       capacity_max = capacity*2; // # nocov
 
-    if (capacity_max < (uint64_t)capacity*2)
+    if (capacity_max < capacity*2)
       capacity = capacity_max;
     else
       capacity *= 2;
 
-    unsigned char* tmp = (unsigned char*)realloc((void*)buffer, capacity);
-
-    if (tmp == NULL)
-    {
-      // # nocov start
-      if (errno == ENOMEM)
-        last_error = "Memory reallocation failed: Insufficient memory";
-      else
-        last_error = "Memory reallocation failed: Unknown error";
-
-      return false;
-      // # nocov end
-    }
-    else
-    {
-      buffer = tmp;
-    }
+    if (!realloc_buffer()) return false;
   }
 
-  point = p; // Point format conversion
+  point = p; // Point format conversion (useful??)
   point.copy_to(buffer + npoints * point.total_point_size);
-
-  if (index) index->insert(point.get_x(), point.get_y());
-
   npoints++;
+
+  index->insert(point.get_x(), point.get_y());
 
   return true;
 }
 
 bool LAS::seek(int pos)
 {
-  if (pos < 0 || pos >= npoints) return false;
+  if (pos < 0 || pos >= npoints)
+  {
+    last_error = "seek out of bounds";
+    return false;
+  }
+
   current_point = pos;
   next_point = pos;
   next_point++;
@@ -191,7 +168,7 @@ bool LAS::seek(int pos)
   return true;
 }
 
-// Thread safe
+// Thread safe and fast
 void LAS::get_xyz(int pos, double* xyz) const
 {
   unsigned char* buf = buffer + pos * point.total_point_size;
@@ -206,7 +183,6 @@ void LAS::get_xyz(int pos, double* xyz) const
 
 bool LAS::read_point(bool include_withhelded)
 {
-
   if (npoints == 0) return false; // Fix #40
 
   // Query the ids of the points if we did not start reading yet
@@ -222,7 +198,6 @@ bool LAS::read_point(bool include_withhelded)
     {
       // Nothing to do.
     }
-
 
     if (intervals_to_read.size() == 0)
       return false;
@@ -280,11 +255,39 @@ void LAS::update_point()
   point.copy_to(buffer + current_point * point.total_point_size);
 }
 
-
 void LAS::remove_point()
 {
   point.set_withheld_flag(1);
   update_point();
+}
+
+bool LAS::delete_withheld()
+{
+  clean_index();
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+
+  int j = 0;
+  for (int i = 0 ; i < npoints ; i++)
+  {
+    seek(i);
+    if (point.get_withheld_flag() == 0)
+    {
+      point.copy_to(buffer + j * point.total_point_size);
+      index->insert(point.get_x(), point.get_y());
+      j++;
+    }
+  }
+
+  double ratio = (double)j/(double)npoints;
+  npoints = j;
+
+  if (ratio < 0.5)
+  {
+    capacity = npoints*point.total_point_size;
+    if (!realloc_buffer()) return false;
+  }
+
+  return true;
 }
 
 void LAS::update_header()
@@ -315,7 +318,7 @@ bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter
 
       if (lasfilter && lasfilter->filter(&p)) continue;
 
-      if (point.get_withheld_flag() == 0 && shape->contains(p.get_x(), p.get_y()))
+      if (p.get_withheld_flag() == 0 && shape->contains(p.get_x(), p.get_y()))
       {
         if (lastransform) lastransform->transform(&p);
 
@@ -347,7 +350,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
 
       if (lasfilter && lasfilter->filter(&p)) continue;
 
-      if (point.get_withheld_flag() == 0)
+      if (p.get_withheld_flag() == 0)
       {
         if (lastransform) lastransform->transform(&p);
 
@@ -361,6 +364,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
   return addr.size() > 0;
 }
 
+// Thread safe
 bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>& res,  LASfilter* const lasfilter, LAStransform* const lastransform) const
 {
   double x = xyz[0];
@@ -371,7 +375,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
   p.init(point.quantizer, point.num_items, point.items, point.attributer);
 
   double area = (header->max_x-header->min_x)*(header->max_y-header->min_y);
-  double density = npoints / area;
+  double density = get_true_number_of_points() / area;
   double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
 
   int n = 0;
@@ -385,10 +389,10 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
       intervals.clear();
       index->query(x-radius, y-radius, x+radius, y+radius, intervals);
 
-      // In lasR we quey interval no points so we need to count the number of point in the interval
+      // In lasR we query intervals not points so we need to count the number of points in the interval
       n = 0; for (const auto& interval : intervals) n += interval.end - interval.start + 1;
 
-      // If we have more than k points we may not have the knn but because of the filter and withhelded points
+      // If we have more than k points we may not have the knn because of the filter and withhelded points
       // we need to fetch the points to actually count them
       if (n >= k)
       {
@@ -399,7 +403,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
           for (int i = interval.start ; i <= interval.end ; i++)
           {
             p.copy_from(buffer + i * p.total_point_size);
-            if (point.get_withheld_flag() != 0) continue;
+            if (p.get_withheld_flag() != 0) continue;
             if (lasfilter && lasfilter->filter(&p)) continue;
             if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
             n++;
@@ -416,7 +420,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
     }
   }
 
-  // We incremented the radius until we get k points. If the radius is bigger than the max radius we for radius = max radius
+  // We incremented the radius until we get k points. If the radius is bigger than the max radius we use radius = max radius
   // and we may not have k points.
   if (radius >= radius_max)
   {
@@ -438,7 +442,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
 
       if (lasfilter && lasfilter->filter(&p)) continue;
       if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
-      if (point.get_withheld_flag() != 0) continue;
+      if (p.get_withheld_flag() != 0) continue;
       if (lastransform) lastransform->transform(&p);
 
       PointLAS pl(&p);
@@ -618,7 +622,11 @@ bool LAS::add_rgb()
 void LAS::clean_index()
 {
   clean_query();
-  if (index) delete index;
+  if (index)
+  {
+    delete index;
+    index = nullptr;
+  }
 }
 
 void LAS::clean_query()
@@ -646,21 +654,70 @@ bool LAS::is_attribute_loadable(int index)
   return true;
 }
 
+bool LAS::alloc_buffer()
+{
+  if (buffer != NULL)
+  {
+    last_error = "buffer already allocated"; // # nocov
+    return false; // # nocov
+  }
+
+  buffer = (unsigned char*)malloc(capacity);
+  if (buffer == NULL)
+  {
+    // # nocov start
+    if (errno == ENOMEM)
+      last_error = "Memory allocation failed: Insufficient memory";
+    else
+      last_error = "Memory allocation failed: Unknown error";
+
+    return false;
+    // # nocov end
+  }
+
+  return true;
+}
+
+bool LAS::realloc_buffer()
+{
+  if (capacity == 0)
+  {
+    free(buffer);
+    buffer = 0;
+    return true;
+  }
+
+  unsigned char* tmp = (unsigned char*)realloc((void*)buffer, capacity);
+
+  if (tmp == NULL)
+  {
+    // # nocov start
+    free(buffer);
+    buffer = 0;
+
+    if (errno == ENOMEM)
+      last_error = "Memory reallocation failed: Insufficient memory";
+    else
+      last_error = "Memory reallocation failed: Unknown error";
+
+    return false;
+    // # nocov end
+  }
+
+  buffer = tmp;
+  return true;
+}
+
 bool LAS::realloc_point_and_buffer()
 {
   LASpoint new_point;
   new_point.init(header, header->point_data_format, header->point_data_record_length, header);
 
-  if (npoints * new_point.total_point_size > capacity)
+  size_t new_capacity = npoints * new_point.total_point_size;
+  if (new_capacity > capacity)
   {
-    capacity = npoints * new_point.total_point_size;
-    buffer = (unsigned char*)realloc((void*)buffer, capacity);
-  }
-
-  if (buffer == 0)
-  {
-    last_error = "LAS::update_point_and_buffer(): memory allocation failed"; // # nocov
-    return false; // # nocov
+    capacity = new_capacity;
+    if (!realloc_buffer()) return false;
   }
 
   for (int i = npoints-1 ; i >= 0 ; --i)
@@ -769,3 +826,10 @@ int LAS::get_point_data_record_length(int point_data_format, int num_extrabytes)
   default: return 0; break;
   }
 }
+
+int LAS::get_true_number_of_points() const
+{
+  int n = (int)MAX(header->number_of_point_records, header->extended_number_of_point_records);
+  return n;
+}
+
