@@ -107,6 +107,7 @@ exec = function(pipeline, on, with = NULL, ...)
 
   if (!with$noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)
+  names(ans) <- make.names(names(ans), unique = TRUE)
 
   if (length(ans) == 0)
     return(NULL)

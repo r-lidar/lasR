@@ -89,6 +89,7 @@ print.LASRpipeline = function(x, ...)
   p <- list(...)
   p <- lapply(p, function(x) { class(x) <- "list" ; x })
   ans <- do.call(c, p)
+  names(ans) <- make.names(names(ans), unique = TRUE)
   class(ans) <- "LASRpipeline"
   return(ans)
 }
