@@ -100,6 +100,14 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
   set_lasr_class(ans, raster = TRUE)
 }
 
+# ===== B =====
+
+build_catalog = function(files, with)
+{
+  ans <- list(algoname = "build_catalog",  files = files, buffer = with$buffer, noprocess = with$noprocess)
+  set_lasr_class(ans)
+}
+
 # ===== C =====
 
 
@@ -764,6 +772,46 @@ sampling_voxel = function(res = 2, filter = "")
 sampling_pixel = function(res = 2, filter = "")
 {
   ans <- list(algoname = "sampling_pixel", res = res, filter = filter)
+  set_lasr_class(ans)
+}
+
+#' Stop the pipeline if a conditionally
+#'
+#' Stop the pipeline conditionally. The stages after a `stop_if` stage are skipped if the condition is
+#' met. This allows to process a subset of the dataset of to skip some stages conditionally. This DOES
+#' NOT stop the computation. In only breaks the pipeline for the current file/chunk currently processed.
+#' (see exemple)
+#'
+#' @param xmin,ymin,xmax,ymax numeric. bounding box
+#'
+#' @examples
+#' # Collection of 4 files
+#' f <- system.file("extdata", "bcts/", package="lasR")
+#'
+#' # This bounding box encompasses only one of the four files
+#' stopif = stop_if_outside(884800, 620000, 885400, 629200)
+#'
+#' read = reader_las()
+#' hll = hulls()
+#' tri = triangulate(filter = keep_ground())
+#' dtm = rasterize(1, tri)
+#'
+#' # reads the 4 files but 'tri' and 'dtm' are computed only for one file because stopif
+#' # allows to escape the pipeline outside the bounding box
+#' pipeline = read + hll + stopif + tri + dtm
+#' ans1 <- exec(pipeline, on = f)
+#' plot(ans1$hulls$geom, axes = T)
+#' terra::plot(ans1$rasterize, add = T)
+#'
+#' # stopif can be applied before read. Only one file will actually be read and processed
+#' pipeline = stopif + read + hll + tri + dtm
+#' ans2 <- exec(pipeline, on = f)
+#' plot(ans2$hulls$geom, axes = T)
+#' terra::plot(ans1$rasterize, add = T, legend = FALSE)
+#' @export
+stop_if_outside = function(xmin, ymin, xmax, ymax)
+{
+  ans <- list(algoname = "stop_if", condition = "outside_bbox", xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax)
   set_lasr_class(ans)
 }
 

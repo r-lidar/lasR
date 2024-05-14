@@ -39,6 +39,7 @@ public:
   virtual bool process(LASpoint*& p) { return true; };
   virtual bool process(LAS*& las) { return true; };
   virtual bool process(LAScatalog*& las) { return true; };
+  virtual bool break_pipeline() { return false; };
   virtual bool write() { return true; };
   virtual void clear(bool last = false) { return; };
   virtual bool set_chunk(const Chunk& chunk);
@@ -64,6 +65,8 @@ public:
   std::string get_uid() const { return uid; };
   const std::map<std::string, Stage*>& get_connection() { return connections; };
   CRS get_crs() const { return crs; };
+
+  bool is_valid_pointer(void*);
 
   // The default method consists in returning the string 'ofile'.
   #ifdef USING_R

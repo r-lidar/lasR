@@ -28,7 +28,7 @@ public:
   Pipeline();
   Pipeline(const Pipeline& other);
   ~Pipeline();
-  bool parse(const SEXP sexpargs, bool build_catalog = true, bool progress = false); // implemented in parser.cpp
+  bool parse(const SEXP sexpargs, bool progress = false); // implemented in parser.cpp
   bool pre_run();
   bool run();
   void merge(const Pipeline& other);
@@ -43,6 +43,7 @@ public:
   void set_ncpu(int ncpu);
   void set_verbose(bool verbose);
   void sort();
+  void show_profiling(const std::string& path);
   void set_progress(Progress* progress);
   LAScatalog* get_catalog() const { return catalog.get(); };
 

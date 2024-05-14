@@ -21,7 +21,7 @@ test_that("lasR supports a LAS from lidR",
   expect_equal(nrow(ans1$geom[[1]][[1]]), nrow(ans2$geom[[1]][[1]]))
 
   pipeline3 = r2  + tri + h + reader_las()
-  expect_error(exec(pipeline3, on = LASfile), "The reader must alway be the first stage of the pipeline.")
+  expect_error(exec(pipeline3, on = LASfile), "The pipeline can only have a single reader stage")
 })
 
 test_that("lasR supports a LAScatalog from lidR",

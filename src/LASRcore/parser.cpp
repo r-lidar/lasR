@@ -4,6 +4,7 @@
 #include "addattribute.h"
 #include "addrgb.h"
 #include "boundaries.h"
+#include "breakif.h"
 #include "filter.h"
 #include "loadraster.h"
 #include "localmaximum.h"
@@ -32,7 +33,7 @@
 
 #include <algorithm>
 
-bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
+bool Pipeline::parse(const SEXP sexpargs, bool progress)
 {
   int num_stages = Rf_length(sexpargs);
 
@@ -43,6 +44,8 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
   double xmax = 0;
   double ymax = 0;
 
+  bool reader = false;
+
   parsed = false;
   pipeline.clear();
 
@@ -50,32 +53,22 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
   {
     SEXP stage = VECTOR_ELT(sexpargs, i);
     std::string name = get_element_as_string(stage, "algoname");
-    std::string uid    = get_element_as_string(stage, "uid");
+    std::string uid = get_element_as_string(stage, "uid");
 
-    if (name == "reader_las")
+    // This stage is a placeholder stage added at the R level to carry the file paths and processing options
+    // it adds no stage in the pipeline
+    if (name == "build_catalog")
     {
-      if (i != 0)
-      {
-        last_error = "The reader must alway be the first stage of the pipeline.";
-        return false;
-      }
-
-      // Create a reader stage
-      auto v = std::make_unique<LASRlasreader>();
-      pipeline.push_back(std::move(v));
-
       // This is the buffer provided by the user. The actual buffer may be larger
       // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
       // stage tells us 50.
       buffer = get_element_as_double(stage, "buffer");
 
-      // The reader stage provides the files we will read. We can build a LAScatalog.
-      // If we do not build a LAScatalog we can parse the pipeline anyway but all stages
-      // will be initialized with an extent of [0,0,0,0] because we do not know the bbox yet.
-      if (build_catalog)
+      // No element 'dataframe'? We are processing some files. Otherwise with have a compatibility layer
+      // with lidR to process LAS objects
+      if (!contains_element(stage, "dataframe"))
       {
         std::vector<std::string> files = get_element_as_vstring(stage, "files");
-
         catalog = std::make_shared<LAScatalog>();
         if (!catalog->read(files, progress))
         {
@@ -98,71 +91,59 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
         ymin = catalog->get_ymin();
         xmax = catalog->get_xmax();
         ymax = catalog->get_ymax();
+      }
+      else
+      {
+        SEXP dataframe = get_element(stage, "dataframe");
+        std::string wkt = get_element_as_string(stage, "crs");
 
-        // Special treatment of the reader to find the potential queries in the catalog
-        // TODO: xcenter, ycenter, radius, xmin, ymin and ... have the same size it is checked at R level but should be tested here.
-        if (contains_element(stage, "xcenter"))
+        // Compute the bounding box. We assume that the data.frame has element named X and Y.
+        // This is not checked at R level. Anyway get_element() will throw an exception
+        SEXP X = get_element(dataframe, "X");
+        SEXP Y = get_element(dataframe, "Y");
+        xmin = F64_MAX;
+        ymin = F64_MAX;
+        xmax = F64_MIN;
+        ymax = F64_MIN;
+        for (int k = 0 ; k < Rf_length(X) ; ++k)
         {
-          std::vector<double> xcenter = get_element_as_vdouble(stage, "xcenter");
-          std::vector<double> ycenter = get_element_as_vdouble(stage, "ycenter");
-          std::vector<double> radius = get_element_as_vdouble(stage, "radius");
-          for (size_t j = 0 ; j <  xcenter.size() ; ++j) catalog->add_query(xcenter[j], ycenter[j], radius[j]);
+          if (REAL(X)[k] < xmin) xmin = REAL(X)[k];
+          if (REAL(Y)[k] < ymin) ymin = REAL(Y)[k];
+          if (REAL(X)[k] > xmax) xmax = REAL(X)[k];
+          if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
         }
 
-        if (contains_element(stage, "xmin"))
-        {
-          std::vector<double> xmin = get_element_as_vdouble(stage, "xmin");
-          std::vector<double> ymin = get_element_as_vdouble(stage, "ymin");
-          std::vector<double> xmax = get_element_as_vdouble(stage, "xmax");
-          std::vector<double> ymax = get_element_as_vdouble(stage, "ymax");
-          for (size_t j = 0 ; j <  xmin.size() ; ++j) catalog->add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
-        }
-      }
-    }
-    #ifdef USING_R
-    else if (name == "reader_dataframe")
-    {
-      if (i != 0)
-      {
-        last_error = "The reader must alway be the first stage of the pipeline.";
-        return false;
-      }
-
-      // This is the buffer provided by the user. The actual buffer may be larger
-      // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
-      // stage tells us 50. But in this case it is useful only for queries since there is no files
-      // and especially no neighbour files
-      buffer = get_element_as_double(stage, "buffer");
-
-      SEXP dataframe = get_element(stage, "dataframe");
-      std::vector<double> accuracy = get_element_as_vdouble(stage, "accuracy");
-      std::string wkt = get_element_as_string(stage, "crs");
-
-      // Compute the bounding box. We assume that the data.frame has element named X and Y.
-      // This is not checked at R level. Anyway get_element() will throw an exception
-      SEXP X = get_element(dataframe, "X");
-      SEXP Y = get_element(dataframe, "Y");
-      xmin = F64_MAX;
-      ymin = F64_MAX;
-      xmax = F64_MIN;
-      ymax = F64_MIN;
-      for (int k = 0 ; k < Rf_length(X) ; ++k)
-      {
-        if (REAL(X)[k] < xmin) xmin = REAL(X)[k];
-        if (REAL(Y)[k] < ymin) ymin = REAL(Y)[k];
-        if (REAL(X)[k] > xmax) xmax = REAL(X)[k];
-        if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
-      }
-
-      auto v = std::make_unique<LASRdataframereader>(xmin, ymin, xmax, ymax, dataframe, accuracy, wkt);
-      pipeline.push_back(std::move(v));
-
-      if (build_catalog)
-      {
         catalog = std::make_shared<LAScatalog>();
         catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
         catalog->set_crs(CRS(wkt));
+      }
+    }
+    else if (name.substr(0,6) == "reader")
+    {
+      if (reader)
+      {
+        last_error = "The pipeline can only have a single reader stage";
+        return false;
+      }
+      reader = true;
 
+      if (name == "reader_las")
+      {
+        auto v = std::make_unique<LASRlasreader>();
+        pipeline.push_back(std::move(v));
+      }
+
+      if (name == "reader_dataframe")
+      {
+        SEXP dataframe = get_element(stage, "dataframe");
+        std::vector<double> accuracy = get_element_as_vdouble(stage, "accuracy");
+        std::string wkt = get_element_as_string(stage, "crs");
+        auto v = std::make_unique<LASRdataframereader>(xmin, ymin, xmax, ymax, dataframe, accuracy, wkt);
+        pipeline.push_back(std::move(v));
+      }
+
+      if (catalog != nullptr)
+      {
         // Special treatment of the reader to find the potential queries in the catalog
         if (contains_element(stage, "xcenter"))
         {
@@ -182,7 +163,6 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
         }
       }
     }
-    #endif
     else if (name == "rasterize")
     {
       double res = get_element_as_double(stage, "res");
@@ -441,6 +421,24 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       auto v = std::make_unique<LASRaddrgb>();
       pipeline.push_back(std::move(v));
     }
+    else if (name == "stop_if")
+    {
+      std::string condition = get_element_as_string(stage, "condition");
+      if (condition == "outside_bbox")
+      {
+        double minx = get_element_as_double(stage, "xmin");
+        double miny = get_element_as_double(stage, "ymin");
+        double maxx = get_element_as_double(stage, "xmax");
+        double maxy = get_element_as_double(stage, "ymax");
+        auto v = std::make_unique<LASRbreakoutsidebbox>(minx, miny, maxx, maxy);
+        pipeline.push_back(std::move(v));
+      }
+      else
+      {
+        last_error = "Invalid condition in break_if";
+        return false;
+      }
+    }
     else if (name == "nothing")
     {
       bool read = get_element_as_bool(stage, "read");
@@ -477,8 +475,21 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
       return false; // # nocov
     }
 
-    auto& it = pipeline.back();
-    it->set_uid(uid);
+    if (pipeline.size() > 0)
+    {
+      auto& it = pipeline.back();
+      it->set_uid(uid);
+
+      // If we intend to actually to process the point cloud we check that a reader stage is present if needed
+      if (catalog != nullptr)
+      {
+        if (it->need_points() && !reader)
+        {
+          last_error = "The stage " + it->get_name() + " processes the point cloud but is not preceded by a reader stage";
+          return false;
+        }
+      }
+    }
   }
 
   parsed = true;
@@ -494,39 +505,38 @@ bool Pipeline::parse(const SEXP sexpargs, bool build_catalog, bool progress)
   // but can't be executed and won't be executed. This happens only in get_pipeline_info()
   // that parses the pipeline in order to know if a buffer is needed or if the pipeline is
   // streamable.
-  if (build_catalog)
+  if (catalog != nullptr)
   {
-    // Check that the first stage is a reader
-    if (pipeline.front()->get_name().substr(0, 6) != "reader")
+    if (!reader)
     {
-      last_error = "The pipeline must start with a readers";
+      last_error = "The pipeline must have a readers stage";
       return false;
     }
 
-    // We parse the pipeline so we know if we need a buffer
-    catalog->set_buffer(need_buffer());
-
-    // The catalog is build we have the bbox of all the LAS file. We can build a spatial index
-    catalog->build_index();
-
+    num_stages--;
+    catalog->set_buffer(need_buffer()); // We parsed the pipeline so we know if we need a buffer
+    catalog->build_index(); // The catalog is built, we have the bbox of all the LAS files. We can build a spatial index
 
     // We iterate over all the stage again to assign the filter, the crs and the output file.
     // This is done here because set_output_file() does create a file on disk and we want
     // it to happen only if we plan to actually process something
     CRS current_crs = catalog->get_crs();
     auto it = pipeline.begin();
-    for (auto i = 0; i < num_stages; ++i)
+    for (auto i = 1; i <= num_stages; ++i)
     {
       SEXP stage = VECTOR_ELT(sexpargs, i);
       std::string filter = get_element_as_string(stage, "filter");
       std::string output = get_element_as_string(stage, "output");
 
-      // We set the CRS from the CRS of the catalog but then we get back the CRS. IF we have a
-      // the set_crs stage this update the CRS assign to the next stages
+      // We set the CRS from the CRS of the catalog but then we get back the CRS. If we have
+      // the 'set_crs' stage this updates the CRS assigned to the next stages
       const auto p = it->get();
       p->set_crs(current_crs);
       current_crs = p->get_crs();
+
       p->set_filter(filter);
+
+      // Create empty files that will be filled later during the processing
       if (!p->set_output_file(output)) return false;
 
       it++;

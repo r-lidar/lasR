@@ -1,6 +1,8 @@
 # lasR 0.6.0
 
-- Change: old `processor()` and `reader()` function were removed
+- New: new stage `stop_if` to escape the pipeline conditionally
+- Doc: new section about `stop_if` in the [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html)
+- Change: old deprecated functions `processor()` and `reader()` were removed.
 
 # lasR 0.5.2
 
