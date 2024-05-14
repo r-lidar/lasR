@@ -29,6 +29,7 @@ public:
 
 private:
   bool use_raster;
+  bool record_attributes;
 
   double ws;
   double min_height;

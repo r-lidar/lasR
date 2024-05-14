@@ -47,28 +47,16 @@ bool Vector::create_file()
     return false;
   }
 
-  if (writetype == POINTLAS)
+  for (const auto& field : fields)
   {
-    OGRFieldDefn intensity("Intensity", OFTInteger);
-    layer->CreateField(&intensity);
-
-    OGRFieldDefn gpstime("gpstime", OFTReal);
-    layer->CreateField(&gpstime);
-
-    OGRFieldDefn returnnumber("ReturnNumber", OFTInteger);
-    layer->CreateField(&returnnumber);
-
-    OGRFieldDefn classification("Classification", OFTInteger);
-    layer->CreateField(&classification);
-
-    OGRFieldDefn scanangle("ScanAngle", OFTReal);
-    layer->CreateField(&scanangle);
+    OGRFieldDefn attr(field.first.c_str(), field.second);
+    layer->CreateField(&attr);
   }
 
   return true;
 }
 
-bool Vector::write(const PointLAS& p)
+bool Vector::write(const PointLAS& p, bool write_attributes)
 {
   if (!dataset)
   {
@@ -108,7 +96,7 @@ bool Vector::write(const PointLAS& p)
   feature->SetGeometry(&point);
   feature->SetFID(p.FID);
 
-  if (writetype == POINTLAS)
+  if (write_attributes)
   {
     feature->SetField("Intensity", p.intensity);
     feature->SetField("gpstime", p.gps_time);
@@ -231,6 +219,11 @@ bool Vector::write(const std::vector<PolygonXY>& poly)
 
   OGRFeature::DestroyFeature(feature);
   return true;
+}
+
+void Vector::add_field(const std::string& name, OGRFieldType type)
+{
+  fields.push_back({name, type});
 }
 
 void Vector::set_chunk(const Chunk& chunk)
