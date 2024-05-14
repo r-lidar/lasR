@@ -14,6 +14,7 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
   this->min_height = min_height;
 
   this->use_raster = true;
+  this->record_attributes = false;
 
   this->use_attribute = "Z";
 
@@ -37,6 +38,7 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
   this->min_height = min_height;
 
   this->use_raster = false;
+  this->record_attributes = record_attributes;
 
   this->use_attribute = use_attribute;
 
@@ -47,7 +49,13 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
   vector.set_geometry_type(wkbPoint25D);
 
   if (record_attributes)
-    vector.set_fields_for(Vector::writable::POINTLAS);
+  {
+    vector.add_field("Intensity", OFTInteger);
+    vector.add_field("gpstime", OFTReal);
+    vector.add_field("ReturnNumber", OFTInteger);
+    vector.add_field("Classification", OFTInteger);
+    vector.add_field("ScanAngle", OFTReal);
+  }
 }
 
 bool LASRlocalmaximum::process()
@@ -201,7 +209,7 @@ bool LASRlocalmaximum::write()
     bool success;
     #pragma omp critical (write_localmax)
     {
-      success = vector.write(p);
+      success = vector.write(p, record_attributes);
     }
 
     if (!success)
