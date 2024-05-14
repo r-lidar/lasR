@@ -2,11 +2,12 @@
 #define NNMETRICS_H
 
 #include "Stage.h"
+#include "Metrics.h"
 
 class LASRnnmetrics : public StageVector
 {
 public:
-  LASRnnmetrics(int k, double r, const std::vector<std::string>& methods, Stage* algorithm);
+  LASRnnmetrics(double xmin, double ymin, double xmax, double ymax, int k, double r, const std::vector<std::string>& methods, Stage* algorithm);
   bool process(LAS*& las) override;
   std::string get_name() const override { return "neighborhood_metrics"; }
   bool is_parallelized() const override { return true; }
@@ -16,6 +17,7 @@ private:
   int mode;
   int k;
   double r;
+  LASRmetrics metrics;
 };
 
 #endif
