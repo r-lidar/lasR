@@ -32,6 +32,8 @@ LASRnnmetrics::LASRnnmetrics(double xmin, double ymin, double xmax, double ymax,
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
+  for (const auto& attr : methods)
+    vector.add_field(attr, OFTReal);
 
   set_connection(algorithm);
 }
@@ -51,7 +53,6 @@ bool LASRnnmetrics::process(LAS*& las)
   // The next for loop is at the level 1 of a nested parallel region. Printing the progress bar
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
-
 
   progress->reset();
   progress->set_total(las->npoints);
@@ -100,6 +101,47 @@ bool LASRnnmetrics::process(LAS*& las)
   }
 
   progress->done();
+
+  return true;
+}
+
+bool LASRlocalmaximum::write()
+{
+  int dupfid= 0;
+  progress->reset();
+  progress->set_total(lm.size());
+  progress->set_prefix("Write local maxima on disk");
+
+  if (lm.size() == 0) return true;
+
+  for (const auto& p : lm)
+  {
+    bool success;
+    #pragma omp critical (write_localmax)
+    {
+      success = vector.write(p, true);
+    }
+
+    if (!success)
+    {
+      // /!\ TODO: not thread safe
+      if (last_error_code != GDALdataset::DUPFID)
+      {
+        return false;
+      }
+      else
+      {
+        dupfid++;
+        last_error_code = 0;
+      }
+    }
+
+    (*progress)++;
+    progress->show();
+  }
+
+  if (dupfid)
+    print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
 
   return true;
 }
