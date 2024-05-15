@@ -306,7 +306,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     Rectangle bbwgs84 = bbox;
     OGRSpatialReference oTargetSRS;
     OGRSpatialReference oSourceSRS;
-    oTargetSRS.importFromEPSG(4979);
+    oTargetSRS.importFromEPSG(4326);
     oTargetSRS.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
     oSourceSRS = crs.get_crs();
     OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
