@@ -5,6 +5,7 @@
 - Enhance: #47 the output `list` returned by `exec` is named and duplicated names are made unique with `make.names()`
 - Doc: added some notes in the documentation of `geometry_features()` to address question in #45
 - Enhance: #49 `set_crs()` no longer forces the pipeline to read the files.
+- Enhance: `exec` normalizes the path so users do not get an error when providing a path with a `~`.
 
 # lasR 0.5.3
 

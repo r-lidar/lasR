@@ -89,7 +89,7 @@ exec = function(pipeline, on, with = NULL, ...)
 
   if (is.character(on))
   {
-    pipeline[[1]]$files <- on
+    pipeline[[1]]$files <- normalizePath(on, mustWork = FALSE)
     pipeline[[1]]$buffer <- with$buffer
     pipeline[[1]]$noprocess <- with$noprocess
 
