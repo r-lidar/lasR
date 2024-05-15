@@ -6,7 +6,6 @@
 - Doc: added some notes in the documentation of `geometry_features()` to address question in #45
 - Enhance: #49 `set_crs()` no longer forces the pipeline to read the files.
 - Enhance: `exec` normalizes the path so users do not get an error when providing a path with a `~`.
-- Fix: #50 `write_vpc()` use `EPSG:4326` instead of `EPSG:4979`
 
 # lasR 0.5.3
 
