@@ -17,21 +17,22 @@ test_that("rasterize non streamed works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
 
-  met = rasterize(5, c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
+  met = rasterize(5, c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "zabove810.5", "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
   u = exec(met, on = f)
 
   #terra::plot(u, col = lidR::height.colors(25))
 
   expect_s4_class(u, "SpatRaster")
-  expect_equal(names(u),  c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
-  expect_equal(dim(u), c(58, 58, 15))
+  expect_equal(names(u),  c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "zabove810.5",  "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
+  expect_equal(dim(u), c(58, 58, 16))
   expect_equal(mean(u[[1]][], na.rm = T), 24.12985, tolerance = 1e-6) # count
   expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 1e-6) # zmax
   expect_equal(mean(u[[3]][], na.rm = T), 804.9969, tolerance = 1e-6) # zmin
-  expect_equal(mean(u[[9]][], na.rm = T), 1380.564, tolerance = 1e-6) # imax
-  expect_equal(mean(u[[12]][], na.rm = T), 942.822, tolerance = 1e-6) # imedian
+  expect_equal(mean(u[[9]][], na.rm = T), 0.323312, tolerance = 1e-6) # zabove
+  expect_equal(mean(u[[10]][], na.rm = T), 1380.564, tolerance = 1e-6) # imax
+  expect_equal(mean(u[[13]][], na.rm = T), 942.822, tolerance = 1e-6) # imedian
   expect_equal(u[[5]][], u[[8]][], ignore_attr = TRUE) # median = percentile 50
-  expect_equal(u[[9]][], u[[15]][], ignore_attr = TRUE) # max = percentile 100
+  expect_equal(u[[10]][], u[[16]][], ignore_attr = TRUE) # imax = i percentile 100
 })
 
 test_that("rasterize fails",
