@@ -303,7 +303,10 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
       date = "0-01-01T00:00:00Z";
     }
 
-    Rectangle bbwgs84 = bbox;
+    PointXY A = {bbox.minx, bbox.miny};
+    PointXY B = {bbox.maxx, bbox.miny};
+    PointXY C = {bbox.maxx, bbox.maxy};
+    PointXY D = {bbox.minx, bbox.maxy};
     OGRSpatialReference oTargetSRS;
     OGRSpatialReference oSourceSRS;
     oTargetSRS.importFromEPSG(4979);
@@ -311,17 +314,19 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     oSourceSRS = crs.get_crs();
     OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
     double z = 0;
-    if (!poTransform->Transform(1, &bbwgs84.minx, &bbwgs84.miny, &z) ||
-        !poTransform->Transform(1, &bbwgs84.maxx, &bbwgs84.maxy, &z))
+    if (!poTransform->Transform(1, &A.x, &A.y, &z) ||
+        !poTransform->Transform(1, &B.x, &B.y, &z) ||
+        !poTransform->Transform(1, &C.x, &C.y, &z) ||
+        !poTransform->Transform(1, &D.x, &D.y, &z))
     {
       last_error = "Transformation of the bounding in WGS 84 failed!";
       return false;
     }
 
     char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny,  bbwgs84.maxx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.miny);
+    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y, A.x, A.y);
     std::string geometry(buffer);
-    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.maxy);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", MIN(A.x, D.x), MIN(A.y, B.y), MAX(B.x, C.y), MAX(C.y, D.y));
     std::string sbbox(buffer);
 
     output << "  {" << std::endl;
