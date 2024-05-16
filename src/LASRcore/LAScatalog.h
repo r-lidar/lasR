@@ -90,10 +90,11 @@ private:
   // information about each file
   std::vector<uint64_t> npoints;            // number of points
   std::vector<bool> indexed;                // the file has a spatial index
-  std::vector<bool> noprocess;            // the file is not processed and is used only for buffering
+  std::vector<bool> noprocess;              // the file is not processed and is used only for buffering
   std::vector<Rectangle> bboxes;            // bounding boxes of the files
   std::vector<std::filesystem::path> files; // path to files
   std::vector<std::pair<unsigned short, unsigned short>> dates;
+  std::vector<std::pair<double, double>> zlim;
 
   // queries, partial read
   LASkdtreeRectangles* laskdtree;

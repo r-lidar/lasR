@@ -283,6 +283,8 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     Rectangle& bbox = bboxes[i];
     uint64_t n = npoints[i];
     bool index = indexed[i];
+    double zmin = zlim[i].first;
+    double zmax = zlim[i].second;
 
     std::string date;
     int year = dates[i].first;
@@ -314,9 +316,9 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     oSourceSRS = crs.get_crs();
     OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
     double z = 0;
-    if (!poTransform->Transform(1, &A.x, &A.y, &z) ||
+    if (!poTransform->Transform(1, &A.x, &A.y, &zmin) ||
         !poTransform->Transform(1, &B.x, &B.y, &z) ||
-        !poTransform->Transform(1, &C.x, &C.y, &z) ||
+        !poTransform->Transform(1, &C.x, &C.y, &zmax) ||
         !poTransform->Transform(1, &D.x, &D.y, &z))
     {
       last_error = "Transformation of the bounding in WGS 84 failed!";
@@ -324,9 +326,9 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     }
 
     char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y, A.x, A.y);
+    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf] ]", A.x, A.y, zmin, B.x, B.y, zmin, C.x, C.y, zmax, D.x, D.y, zmax, A.x, A.y, zmin);
     std::string geometry(buffer);
-    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", MIN(A.x, D.x), MIN(A.y, B.y), MAX(B.x, C.y), MAX(C.y, D.y));
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), zmin, MAX(B.x, C.y), MAX(C.y, D.y), zmax);
     std::string sbbox(buffer);
 
     output << "  {" << std::endl;
@@ -437,6 +439,7 @@ bool LAScatalog::add_file(const std::string& file, bool noprocess)
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
   npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
   dates.push_back({lasreader->header.file_creation_year, lasreader->header.file_creation_day});
+  zlim.push_back({lasreader->header.min_z, lasreader->header.max_z});
 
   lasreader->close();
   delete lasreader;

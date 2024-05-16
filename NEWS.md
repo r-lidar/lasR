@@ -1,3 +1,8 @@
+# lasR 0.5.5
+
+- Fix: #50 `write_vpc()` properly reprojects the bounding boxes in WGS84 
+- Enhance: `write_vpc()` writes `zmin` and `zmax` for each file.
+
 # lasR 0.5.4
 
 - Fix: #48 segfault with `delete_points()` when 0 points left.
@@ -5,7 +10,7 @@
 - Enhance: #47 the output `list` returned by `exec` is named and duplicated names are made unique with `make.names()`
 - Doc: added some notes in the documentation of `geometry_features()` to address question in #45
 - Enhance: #49 `set_crs()` no longer forces the pipeline to read the files.
-- Enhance: `exec` normalizes the path so users do not get an error when providing a path with a `~`.
+- Enhance: `exec()` normalizes the path so users do not get an error when providing a path with a `~`.
 - New: `rasterize()` gained a metric `zaboveX` to compute canopy cover.
 
 # lasR 0.5.3
