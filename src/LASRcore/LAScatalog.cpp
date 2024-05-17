@@ -423,7 +423,7 @@ void LAScatalog::add_crs(const LASheader* header)
   }
 }
 
-bool LAScatalog::add_file(const std::string& file, bool noprocess)
+bool LAScatalog::add_file(std::string file, bool noprocess)
 {
   std::replace(file.begin(), file.end(), '\\', '/' );
 

@@ -56,7 +56,7 @@ public:
 
 private:
   bool read_vpc(const std::string& file);
-  bool add_file(const std::string& file, bool noprocess = false);
+  bool add_file(std::string file, bool noprocess = false);
   void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess = false);
   void add_wkt(const std::string& wkt);
   void add_epsg(int epsg);
