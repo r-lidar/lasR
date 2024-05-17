@@ -425,6 +425,8 @@ void LAScatalog::add_crs(const LASheader* header)
 
 bool LAScatalog::add_file(const std::string& file, bool noprocess)
 {
+  std::replace(file.begin(), file.end(), '\\', '/' );
+
   LASreadOpener lasreadopener;
   lasreadopener.add_file_name(file.c_str());
   LASreader* lasreader = lasreadopener.open();
