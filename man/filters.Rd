@@ -70,7 +70,7 @@ function that returns the corresponding string.
 f <- system.file("extdata", "Topography.las", package="lasR")
 filter_usage()
 gnd = keep_class(c(2,9))
-reader(f, gnd)
+reader_las(gnd)
 triangulate(filter = keep_ground())
 rasterize(1, "max", filter = "-drop_z_below 5")
 }
