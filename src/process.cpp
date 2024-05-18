@@ -130,7 +130,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
     pipeline.set_progress(&progress);
 
     // Pre-run processes the LAScatalog
-    // write_vpc() is the only stage that processed the LAScatalog
+    // write_vpc() and write_lax() are the only stage that can processed the LAScatalog
     if (!pipeline.pre_run())
     {
       throw last_error;
