@@ -29,7 +29,6 @@ ans <- exec(pipeline, on = f)
 
 }
 \seealso{
-\link{reader}
 \link{triangulate}
 \link{write_las}
 }
