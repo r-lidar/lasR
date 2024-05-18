@@ -21,8 +21,8 @@ test_that("write lax works on-the-fly",
   indexed = lasR:::is_indexed(f)
   expect_equal(indexed, c(T,T,F,F))
 
-  lax = list.files(tempdir(), pattern = "(?i)\\.lax$", full.names = TRUE)
-  expect_length(lax, 0L)
+  lax = list.files(tmpdir, pattern = "(?i)\\.lax$", full.names = TRUE)
+  expect_length(lax, 2L)
 
   # between two tiles no buffer
   pipeline = reader_las_circles(885150, 630100, 10) + lasR:::nothing()

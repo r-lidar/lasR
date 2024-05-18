@@ -18,7 +18,7 @@ LASRalgorithm for triangulation (see examples). Can also be a user-defined expre
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processes.
+For a given stage when a filter is applied, only the points that meet the criteria are processed.
 The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
 \link{filters}.}
 
@@ -34,9 +34,11 @@ It produces a derived product in raster format.
 \section{Operators}{
 
 If \code{operators} is a string or a vector of strings, the function employs internally optimized metrics.
-The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", and "zpXX" for the
-Z coordinates. Here, "zpXX" represents the XXth percentile, for instance, "zp95" signifies the 95th
-percentile. Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
+Some metrics have a name + a number such as "zpXX" where "XX" can be substituted by a number.
+The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zpXX" and "zaboveXX"
+for the Z coordinates. Here, "zpX" represents the Xth percentile, for instance, "zp95" signifies the 95th
+percentile. "zaboveX" corresponds to the percentage of points above X (sometime called canopy cover).
+Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
 and others. Additionally, "count" is another available metric.
 \cr\cr
 If \code{operators} is a user-defined expression, the function should return either a vector of numbers

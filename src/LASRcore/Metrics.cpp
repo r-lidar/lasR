@@ -70,10 +70,31 @@ bool LASRmetrics::parse(const std::vector<std::string>& names)
         regular_operators.push_back(&LASRmetrics::zcv);
         param.push_back(0);
       }
+      else if (name.substr(0,6) == "zabove")
+      {
+        std::string h = name.substr(6);
+        float height = string2float(h);
+
+        if (std::isnan(height))
+        {
+          last_error = "Invalid number after 'zabove'";
+          return false;
+        }
+
+        regular_operators.push_back(&LASRmetrics::zabove);
+        param.push_back(height);
+      }
       else if (name[1] == 'p')
       {
         std::string probs = name.substr(2);
-        int number = std::stoi(probs);
+        float number = string2float(probs);
+
+        if (std::isnan(number))
+        {
+          last_error = "Invalid number after 'zp'";
+          return false;
+        }
+
         if (number < 0 || number > 100)
         {
           last_error = "Percentile out of range (0-100)";
@@ -186,6 +207,7 @@ float LASRmetrics::zmedian(float p) const { return (n % 2 == 0) ? (float)((z[n/2
 float LASRmetrics::zsd(float p) const { float m = zmean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(z[j]-m, 2); } return std::sqrt(sd)/n; }
 float LASRmetrics::zcv(float p) const { return zsd(0)/zmean(0); }
 float LASRmetrics::zpx(float p) const { return percentile(z, p); }
+float LASRmetrics::zabove(float p) const { float k = 0; for(size_t j = 0; j < n; ++j) { if (z[j] > p) k++; } return (float)k/(float)n; }
 float LASRmetrics::imax(float p) const { return (float)i[i.size()-1]; }
 float LASRmetrics::imin(float p) const { return (float)i[0]; }
 float LASRmetrics::imean(float p) const { return (float)isum/n; }
@@ -231,6 +253,20 @@ int LASRmetrics::size() const
   return (streamable) ? (int)streaming_operators.size() : (int)regular_operators.size();
 };
 
+float LASRmetrics::string2float(const std::string& s)
+{
+  try
+  {
+    float height = std::stof(s);
+    return height;
+  }
+  catch (std::exception& e)
+  {
+    return std::numeric_limits<float>::quiet_NaN();
+  }
+}
+
+
 LASRmetrics::LASRmetrics()
 {
   reset();
@@ -240,3 +276,4 @@ LASRmetrics::LASRmetrics()
 LASRmetrics::~LASRmetrics()
 {
 }
+

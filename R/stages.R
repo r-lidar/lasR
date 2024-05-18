@@ -467,9 +467,11 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #'
 #' @section Operators:
 #' If `operators` is a string or a vector of strings, the function employs internally optimized metrics.
-#' The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", and "zpXX" for the
-#' Z coordinates. Here, "zpXX" represents the XXth percentile, for instance, "zp95" signifies the 95th
-#' percentile. Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
+#' Some metrics have a name + a number such as "zpXX" where "XX" can be substituted by a number.
+#' The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zpXX" and "zaboveXX"
+#' for the Z coordinates. Here, "zpX" represents the Xth percentile, for instance, "zp95" signifies the 95th
+#' percentile. "zaboveX" corresponds to the percentage of points above X (sometime called canopy cover).
+#' Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
 #' and others. Additionally, "count" is another available metric.
 #' \cr\cr
 #' If `operators` is a user-defined expression, the function should return either a vector of numbers
@@ -568,7 +570,17 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
     valid <- operators %in% supported_operators
     invalid_operator = operators[!valid]
     if (length(invalid_operator) > 0)
-      valid[!valid] = grepl("^(zp|ip)([0-9]|[1-9][0-9]|100)$", invalid_operator)
+    {
+      match = grepl("^(zp|ip)([0-9]|[1-9][0-9]|100)$", invalid_operator)
+      valid[!valid] = match
+      invalid_operator = invalid_operator[!match]
+    }
+    if (length(invalid_operator) > 0)
+    {
+      match = grepl("^(zabove)[0-9]+(\\.[0-9]+)?$", invalid_operator)
+      valid[!valid] = match
+      invalid_operator = invalid_operator[!match]
+    }
 
     if (!all(valid)) stop("Non supported operators")
     ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile)
