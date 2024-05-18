@@ -820,7 +820,7 @@ sampling_pixel = function(res = 2, filter = "")
 #' # stopif can be applied before read. Only one file will actually be read and processed
 #' pipeline = stopif + read + hll + tri + dtm
 #' ans2 <- exec(pipeline, on = f)
-#' plot(ans2$hulls$geom, axes = T)
+#' plot(ans2$hulls$geom, axes = TRUE)
 #' terra::plot(ans1$rasterize, add = T, legend = FALSE)
 #' @export
 stop_if_outside = function(xmin, ymin, xmax, ymax)
