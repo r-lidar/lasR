@@ -45,6 +45,7 @@ bool Pipeline::parse(const SEXP sexpargs, bool progress)
   double ymax = 0;
 
   bool reader = false;
+  bool indexer = false;
 
   parsed = false;
   pipeline.clear();
@@ -258,7 +259,10 @@ bool Pipeline::parse(const SEXP sexpargs, bool progress)
     }
     else if (name == "write_lax")
     {
-      auto v = std::make_unique<LASRlaxwriter>();
+      indexer = true;
+      bool embedded = get_element_as_bool(stage, "embedded");
+      bool overwrite = get_element_as_bool(stage, "overwrite");
+      auto v = std::make_unique<LASRlaxwriter>(embedded, overwrite, false);
       pipeline.push_back(std::move(v));
     }
     else if (name == "write_vpc")
@@ -544,9 +548,9 @@ bool Pipeline::parse(const SEXP sexpargs, bool progress)
 
     // Write lax is the very first algorithm. Even before read_las. It is called
     // only if needed.
-    if (!catalog->check_spatial_index())
+    if (!catalog->check_spatial_index() && !indexer)
     {
-      auto v = std::make_unique<LASRlaxwriter>();
+      auto v = std::make_unique<LASRlaxwriter>(false, false, true);
       pipeline.push_front(std::move(v));
       print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n", catalog->get_number_files()-catalog->get_number_indexed_files());
     }

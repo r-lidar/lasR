@@ -546,6 +546,11 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
   return success;
 }
 
+const std::vector<std::filesystem::path>& LAScatalog::get_files() const
+{
+  return files;
+}
+
 bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
 {
   chunk.clear();

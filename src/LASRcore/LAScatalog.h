@@ -41,6 +41,7 @@ public:
   double get_ymax() const { return ymax; };
   void set_crs(const CRS& crs) { this->crs = crs; };
   CRS get_crs() const { return crs; };
+  const std::vector<std::filesystem::path>& get_files() const;
   bool check_spatial_index();
   void build_index();
   void clear();

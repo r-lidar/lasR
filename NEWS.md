@@ -3,6 +3,7 @@
 - New: new stage `stop_if` to escape the pipeline conditionally
 - Doc: new section about `stop_if` in the [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html)
 - Change: old deprecated functions `processor()` and `reader()` were removed.
+- New: new stage `write_lax`. This stage was automatically added by the engine but can now be explicitly added by users
 
 # lasR ?.?.?
 
