@@ -44,6 +44,7 @@ public:
   const std::vector<std::filesystem::path>& get_files() const;
   bool check_spatial_index();
   void build_index();
+  void set_all_indexed();
   void clear();
 
   #ifdef USING_R

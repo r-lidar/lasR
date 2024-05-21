@@ -749,6 +749,11 @@ int LAScatalog::get_number_indexed_files() const
   return std::count(indexed.begin(), indexed.end(), true);
 }
 
+void LAScatalog::set_all_indexed()
+{
+  std::fill(indexed.begin(), indexed.end(), true);
+}
+
 void LAScatalog::clear()
 {
   xmin = F64_MAX;
@@ -823,5 +828,3 @@ LAScatalog::~LAScatalog()
   if (laskdtree) delete laskdtree;
   for (auto p : queries) delete p;
 }
-
-

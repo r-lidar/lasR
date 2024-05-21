@@ -29,6 +29,8 @@ bool LASRlaxwriter::process(LAScatalog*& ctg)
     if (!write_lax(file)) success = false;
   }
 
+  ctg->set_all_indexed();
+
   return success;
 }
 

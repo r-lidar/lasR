@@ -36,7 +36,7 @@ test_that("write lax works on-the-fly",
   sink(NULL)
 })
 
-test_that("write lax works before anything else (not on-the-fly",
+test_that("write lax works before anything else (not on-the-fly)",
 {
   tmpdir = paste0(tempdir(), "/testlax2")
   if (!dir.exists(tmpdir)) dir.create(tmpdir)
@@ -53,7 +53,8 @@ test_that("write lax works before anything else (not on-the-fly",
   expect_equal(indexed, c(F,F,F,F))
 
   # between two tiles with a buffer
-  pipeline = reader_las_circles(885150, 629400, 10, buffer = 5L) + lasR:::nothing() + write_lax(TRUE)
+  vpc = tempfile(fileext = ".vpc")
+  pipeline = reader_las_circles(885150, 629400, 10, buffer = 5L) + lasR:::nothing() + write_lax(TRUE) + write_vpc(ofile = vpc)
   ans = exec(pipeline, on = f, progress = TRUE)
 
   indexed = lasR:::is_indexed(f)
@@ -61,6 +62,9 @@ test_that("write lax works before anything else (not on-the-fly",
 
   lax = list.files(tmpdir, pattern = "(?i)\\.lax$", full.names = TRUE)
   expect_length(lax, 0L)
+
+  con <- file(vpc, "r", blocking = FALSE)
+  readLines(con)
 
   file.remove(f)
 
