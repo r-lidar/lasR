@@ -193,7 +193,8 @@ bool LAScatalog::read_vpc(const std::string& filename)
         return false; // # nocov
       }
 
-      bool spatial_index = feature["properties"].value("index:indexed", false);
+      bool spatial_index = feature["properties"].value("pc:indexed", false);
+      if (!spatial_index) spatial_index = feature["properties"].value("index:indexed", false); // backward compatibility
 
       files.push_back(file_path);
       add_wkt(wkt);
@@ -350,10 +351,10 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     output << "      \"datetime\": " << autoquote(date) << "," << std::endl;
     output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
+    if (index) output << "      \"pc:indexed\": " << "\"true\"," << std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
     if (!wkt.empty()) output << "      \"proj:wtk2\": " << wkt << "," << std::endl;
     if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
-    output << "      \"index:indexed\": " << ((index) ? "true" : "false") << std::endl;
     output << "    }," << std::endl;
     output << "    \"links\": []," << std::endl;
     output << "    \"assets\": {" << std::endl;
