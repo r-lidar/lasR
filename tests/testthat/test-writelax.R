@@ -63,8 +63,8 @@ test_that("write lax works before anything else (not on-the-fly)",
   lax = list.files(tmpdir, pattern = "(?i)\\.lax$", full.names = TRUE)
   expect_length(lax, 0L)
 
-  con <- file(vpc, "r", blocking = FALSE)
-  readLines(con)
+  ans = sf::st_read(vpc, quiet = TRUE)
+  expect_true(all(ans$pc.indexed == "true"))
 
   file.remove(f)
 
