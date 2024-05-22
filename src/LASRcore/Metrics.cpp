@@ -204,7 +204,7 @@ float LASRmetrics::zmax(float p) const { return (float)z[n-1]; }
 float LASRmetrics::zmin(float p) const { return (float)z[0]; }
 float LASRmetrics::zmean(float p) const { return (float)zsum/n; }
 float LASRmetrics::zmedian(float p) const { return (n % 2 == 0) ? (float)((z[n/2 - 1] + z[n/2])/2) : (float)z[n/2]; }
-float LASRmetrics::zsd(float p) const { float m = zmean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(z[j]-m, 2); } return std::sqrt(sd)/n; }
+float LASRmetrics::zsd(float p) const { float m = zmean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(z[j]-m, 2); } return std::sqrt(sd/(n-1)); }
 float LASRmetrics::zcv(float p) const { return zsd(0)/zmean(0); }
 float LASRmetrics::zpx(float p) const { return percentile(z, p); }
 float LASRmetrics::zabove(float p) const { float k = 0; for(size_t j = 0; j < n; ++j) { if (z[j] > p) k++; } return (float)k/(float)n; }
@@ -212,7 +212,7 @@ float LASRmetrics::imax(float p) const { return (float)i[i.size()-1]; }
 float LASRmetrics::imin(float p) const { return (float)i[0]; }
 float LASRmetrics::imean(float p) const { return (float)isum/n; }
 float LASRmetrics::imedian(float p) const { return (n % 2 == 0) ? (float)((i[n/2 - 1] + i[n/2])/2) : (float)i[n/2]; }
-float LASRmetrics::isd(float p) const { float m = imean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(i[j]-m, 2); } return std::sqrt(sd)/n; }
+float LASRmetrics::isd(float p) const { float m = imean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(i[j]-m, 2); } return std::sqrt(sd/(n-1)); }
 float LASRmetrics::icv(float p) const { return isd(0)/imean(0); }
 float LASRmetrics::ipx(float p) const { return percentile(i, p); }
 float LASRmetrics::count(float p) const { return (float)n; }
