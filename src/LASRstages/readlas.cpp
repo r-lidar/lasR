@@ -54,6 +54,7 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
   lasreadopener->set_buffer_size(chunk.buffer);
   lasreadopener->set_populate_header(true);
   lasreadopener->parse_str(filtercpy);
+  lasreadopener->set_copc_stream_ordered_by_chunk();
 
   free(filtercpy);
 
