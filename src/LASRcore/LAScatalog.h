@@ -25,6 +25,7 @@ public:
   ~LAScatalog();
   bool read(const std::vector<std::string>& files, bool progress = false);
   bool write_vpc(const std::string& file, const CRS& crs, bool absolute_path);
+  bool is_source_vpc() { return use_vpc; };
   void set_buffer(double buffer) { this->buffer = buffer; };
   void add_query(double xmin, double ymin, double xmax, double ymax);
   void add_query(double xcenter, double ycenter, double radius);
@@ -41,8 +42,10 @@ public:
   double get_ymax() const { return ymax; };
   void set_crs(const CRS& crs) { this->crs = crs; };
   CRS get_crs() const { return crs; };
+  const std::vector<std::filesystem::path>& get_files() const;
   bool check_spatial_index();
   void build_index();
+  void set_all_indexed();
   void clear();
 
   #ifdef USING_R
@@ -82,6 +85,7 @@ private:
 
   // reader mode to support R data.frame
   bool use_dataframe;
+  bool use_vpc;
 
   // overall parameter to process
   double buffer;
