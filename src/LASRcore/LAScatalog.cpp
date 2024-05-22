@@ -95,6 +95,7 @@ bool LAScatalog::read_vpc(const std::string& filename)
 {
   clear();
   use_dataframe = false;
+  use_vpc = true;
 
   // Get the parent file to resolve relative path later
   std::filesystem::path parent_folder = std::filesystem::path(filename).parent_path();
@@ -769,6 +770,7 @@ void LAScatalog::clear()
   //wkt.clear();
 
   use_dataframe = true;
+  use_vpc = false;
 
   buffer = 0;
   chunk_size = 0;

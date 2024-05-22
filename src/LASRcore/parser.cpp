@@ -552,7 +552,11 @@ bool Pipeline::parse(const SEXP sexpargs, bool progress)
     {
       auto v = std::make_unique<LASRlaxwriter>(false, false, true);
       pipeline.push_front(std::move(v));
-      print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n", catalog->get_number_files()-catalog->get_number_indexed_files());
+
+      if (catalog->is_source_vpc())
+        print("Impossible to determine if the point cloud is spatially indexed from this VPC file. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly if they are not. This may take some extra time now but will speed up everything later.\n");
+      else
+        print("%d files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.\nFiles will be indexed on-the-fly. This will take some extra time now but will speed up everything later.\n", catalog->get_number_files()-catalog->get_number_indexed_files());
     }
   }
 
