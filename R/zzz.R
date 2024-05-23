@@ -16,9 +16,6 @@
 
 .onLoad <- function(libname, pkgname)
 {
-  if (has_omp_support())
-    set_parallel_strategy(concurrent_points())
-
   set_proj_lib()
 
   # installed <- row.names(installed.packages())

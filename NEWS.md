@@ -1,9 +1,10 @@
 # lasR 0.6.0
 
-- New: new stage `stop_if` to escape the pipeline conditionally
-- Doc: new section about `stop_if` in the [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html)
-- Change: old deprecated functions `processor()` and `reader()` were removed.
-- New: new stage `write_lax`. This stage was automatically added by the engine but can now be explicitly added by users
+- New: Added new stage `stop_if` to conditionally escape the pipeline.
+- Doc: Introduced new section about `stop_if` in the [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
+- Change: Removed old deprecated functions `processor()` and `reader()`.
+- New: Added new stage `write_lax`. This stage was automatically added by the engine but can now be explicitly added by users.
+- Change: The package no longer assigns `set_parallel_strategy(concurrent_points(half_core()))` when loading. Instead, if nothing is provided, this is interpreted as `concurrent_points(half_core())`. Thus, users can now write `exec(pipeline, on = file, ncores = 8)`. The engine will now respect `ncores = 8` because no global settings were assigned. The multi-threading vignette has been updated.
 
 # lasR 0.5.5
 

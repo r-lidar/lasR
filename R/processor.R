@@ -202,7 +202,7 @@ parse_options = function(on, with, ...)
   buffer <- 0
   chunk <- 0
   progress <- FALSE
-  ncores <- if (has_omp_support()) concurrent_files(half_cores()) else sequential()
+  ncores <- if (has_omp_support()) concurrent_points(half_cores()) else sequential()
   noprocess <- NULL
   verbose <- FALSE
   noread <- FALSE
@@ -217,7 +217,6 @@ parse_options = function(on, with, ...)
   if (!is.null(dots$verbose)) verbose <- dots$verbose
   if (!is.null(dots$noread)) noread <- dots$noread
   if (!is.null(dots$profiling)) profiling <- dots$profiling
-
 
   # 'with' list has precedence
   if (!is.null(with$buffer)) buffer <- with$buffer
@@ -240,7 +239,7 @@ parse_options = function(on, with, ...)
       progress <- on@processing_options$progress
       processed <- on$processed
       if (!is.null(processed)) noprocess <- !processed
-      if (on@input_options$filter != "") warning(paste0("This LAScatalog has filter = \"", on@input_options$filter, "\" but this options is not automatically propagated to the 'reader_las()' stage.") , call. = FALSE, immediate. = TRUE)
+      if (on@input_options$filter != "") warning(paste0("This LAScatalog has filter = \"", on@input_options$filter, "\" but this option is not automatically propagated to the 'reader_las()' stage.") , call. = FALSE, immediate. = TRUE)
     }
   }
 
@@ -248,7 +247,7 @@ parse_options = function(on, with, ...)
   ncores <- as.integer(strategy)
   modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
   mode <- attr(strategy, "strategy")
-  if (is.null(mode)) mode = "concurrent-points"
+  if (is.null(mode)) mode = "concurrent-files"
   mode <- match.arg(mode, modes)
   mode <- match(mode, modes)
 
@@ -299,7 +298,7 @@ parse_options = function(on, with, ...)
 #' The first option is by explicitly naming each option. This option is deprecated and used for convenience and
 #' backward compatibility.
 #' \preformatted{
-#' exec(pipeline, on = f, progress = TRUE)
+#' exec(pipeline, on = f, progress = TRUE, ncores = 8)
 #' }
 #' The second option is by passing a `list` to the `with` argument. This option is more explicit
 #' and should be preferred. The `with` argument takes precedence over the explicit arguments.
@@ -310,7 +309,7 @@ parse_options = function(on, with, ...)
 #' some processing options that are respected by the `lasR` package. The options from a `LAScatalog`
 #' take precedence.
 #' \preformatted{
-#' exec(pipeline, on = ctg)
+#' exec(pipeline, on = ctg, ncores = 4)
 #' }
 #' The last option is by setting global processing options. This has global precedence and is mainly intended
 #' to provide a way for users to override options if they do not have access to the `exec()` function.
@@ -320,10 +319,9 @@ parse_options = function(on, with, ...)
 #' set_exec_options(progress = TRUE, ncores = concurrent_files(2))
 #' exec(pipeline, on = f)
 #' }
-#' By default lasR already set a global options for `ncores`. Thus providing `ncores` has no effect unless
-#' you call \link{unset_parallel_strategy} first.
-#' @param ncores An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files`, or
-#' `nested()`. See \link{multithreading}.
+#' @param ncores An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files()`, or
+#' `nested()`. See \link{multithreading}. If `NULL` the default is `concurrent_points(half_cores())`. If
+#' a simple integer is provided it corresponds to `concurrent_files(ncores)`.
 #' @param buffer numeric. Each file is read with a buffer. The default is NULL, which does not mean that
 #' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
 #' pick the greatest value between the internal suggestion and this value.

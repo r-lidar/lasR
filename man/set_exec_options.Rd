@@ -16,8 +16,9 @@ set_exec_options(
 unset_exec_option()
 }
 \arguments{
-\item{ncores}{An object returned by one of \code{sequential()}, \code{concurrent_points()}, \code{concurrent_files}, or
-\code{nested()}. See \link{multithreading}.}
+\item{ncores}{An object returned by one of \code{sequential()}, \code{concurrent_points()}, \code{concurrent_files()}, or
+\code{nested()}. See \link{multithreading}. If \code{NULL} the default is \code{concurrent_points(half_cores())}. If
+a simple integer is provided it corresponds to \code{concurrent_files(ncores)}.}
 
 \item{progress}{boolean. Displays a progress bar.}
 
@@ -41,7 +42,7 @@ There are 4 ways to pass processing options, and it is important to understand t
 The first option is by explicitly naming each option. This option is deprecated and used for convenience and
 backward compatibility.
 \preformatted{
-exec(pipeline, on = f, progress = TRUE)
+exec(pipeline, on = f, progress = TRUE, ncores = 8)
 }
 The second option is by passing a \code{list} to the \code{with} argument. This option is more explicit
 and should be preferred. The \code{with} argument takes precedence over the explicit arguments.
@@ -52,7 +53,7 @@ The third option is by using a \code{LAScatalog} from the \code{lidR} package. A
 some processing options that are respected by the \code{lasR} package. The options from a \code{LAScatalog}
 take precedence.
 \preformatted{
-exec(pipeline, on = ctg)
+exec(pipeline, on = ctg, ncores = 4)
 }
 The last option is by setting global processing options. This has global precedence and is mainly intended
 to provide a way for users to override options if they do not have access to the \code{exec()} function.
@@ -62,8 +63,6 @@ provide any options.
 set_exec_options(progress = TRUE, ncores = concurrent_files(2))
 exec(pipeline, on = f)
 }
-By default lasR already set a global options for \code{ncores}. Thus providing \code{ncores} has no effect unless
-you call \link{unset_parallel_strategy} first.
 }
 \seealso{
 \link{multithreading}
