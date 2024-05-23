@@ -21,6 +21,9 @@ Notice that the uppercase labeled components allow computing all the lowercase l
 Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 The order of the flags does not matter and the features are recorded in the order mentioned above.}
 }
+\value{
+This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+}
 \description{
 Compute pointwise geometry features based on local neighborhood. Each feature is added into an
 extrabyte attribute. The names of the extrabytes attributes (if recorded) are \code{coeff00}, \code{coeff01},

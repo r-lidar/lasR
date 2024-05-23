@@ -13,7 +13,7 @@
 #' @param data_type character. The data type of the extra bytes attribute. Can be "uchar", "char", "ushort",
 #' "short", "uint", "int", "uint64", "int64", "float", "double".
 #' @param scale,offset numeric. The scale and offset of the data. See LAS specification.
-#'
+#' @template return-pointcloud
 #' @export
 #'
 #' @examples
@@ -39,6 +39,8 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #' point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
 #' in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved.
 #'
+#' @template return-pointcloud
+#'
 #' @examples
 #' f <- system.file("extdata", "Example.las", package="lasR")
 #'
@@ -61,6 +63,7 @@ add_rgb = function()
 #' @param call expression. User-defined expression.
 #' @template param-filter
 #' @template param-ofile
+#' @template return-raster
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
@@ -143,6 +146,8 @@ build_catalog = function(files, with)
 #' update the point cloud. Can be disabled.
 #' @param ... parameters of function `fun`
 #'
+#' @template return-pointcloud
+#'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
 #'
@@ -202,6 +207,8 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
 #' @param class integer. The class to assign to the points that match the condition.
 #'
+#' @template return-pointcloud
+#'
 #' @export
 classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 {
@@ -234,6 +241,9 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #' Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 #' Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 #' The order of the flags does not matter and the features are recorded in the order mentioned above.
+#'
+#' @template return-pointcloud
+#'
 #' @export
 
 #' @references Hackel, T., Wegner, J. D., & Schindler, K. (2016). Contour detection in unstructured 3D
@@ -264,6 +274,8 @@ geometry_features = function(k, r, features = "")
 #'
 #' @template param-filter
 #'
+#' @template return-pointcloud
+#'
 #' @examples
 #' f <- system.file("extdata", "Megaplot.las", package="lasR")
 #' read <- reader_las()
@@ -291,6 +303,8 @@ delete_points = function(filter = "")
 #' @param mesh NULL or LASRalgorithm. A `triangulate` stage. If NULL take the bounding box of the
 #' header of each file.
 #' @template param-ofile
+#'
+#' @template return-vector
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
@@ -372,6 +386,8 @@ load_raster = function(file, band = 1L)
 #' @template param-filter
 #' @template param-ofile
 #'
+#' @template return-vector
+#'
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
 #' read <- reader_las()
@@ -429,6 +445,8 @@ nothing = function(read = FALSE, stream = FALSE, loop = FALSE)
 #' @param med_size integer. Size of the median filter kernel (integer value, in pixels).
 #' @param dil_radius integer. Dilation radius (integer value, in pixels).
 #' @template param-ofile
+#'
+#' @template return-raster
 #'
 #' @references
 #' St-Onge, B., 2008. Methods for improving the quality of a true orthomosaic of Vexcel UltraCam
@@ -509,6 +527,8 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' (see example and section 'Operators').
 #' @template param-filter
 #' @template param-ofile
+#'
+#' @template return-raster
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
@@ -702,6 +722,8 @@ reader_las_rectangles = function(xmin, ymin, xmax, ymax, filter = "", ...)
 #' pixels in `lidR`.
 #' @template param-ofile
 #'
+#' @template return-raster
+#'
 #' @references
 #' Dalponte, M. and Coomes, D. A. (2016), Tree-centric mapping of forest carbon density from
 #' airborne laser scanning and hyperspectral data. Methods Ecol Evol, 7: 1236–1245. doi:10.1111/2041-210X.12575.
@@ -766,6 +788,7 @@ set_crs = function(x)
 #'
 #' @param res numeric. voxel resolution
 #' @template param-filter
+#' @template return-pointcloud
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader_las()
@@ -866,6 +889,9 @@ summarise = function(zwbin = 2, iwbin = 25, filter = "")
 #'
 #' @template param-filter
 #' @template param-ofile
+#'
+#' @template return-vector
+#'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader_las()
@@ -892,6 +918,8 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' @param stage LASRpipeline. A stage that produces a triangulation or a raster.
 #' @param operator string. '-' and '+' are supported.
 #' @param store_in_attribute numeric. Use an extra bytes attribute to store the result.
+#'
+#' @template return-pointcloud
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")

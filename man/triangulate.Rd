@@ -25,6 +25,11 @@ intermediate stage.}
 \item{use_attribute}{character. By default the triangulation is performed on the coordinate Z. Can also be
 the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity'.}
 }
+\value{
+This stage produces a vector. The path provided to `ofile` is expected to be `.gpkg` or
+any other format supported by GDAL. Vector stages may produce geometries with Z coordinates.
+Thus, it is discouraged to store them in formats with no 3D support, such as shapefiles.
+}
 \description{
 Delaunay triangulation. Can be used to build a DTM, a CHM, normalize a point cloud, or any other
 application. This stage is typically used as an intermediate process without an output file.

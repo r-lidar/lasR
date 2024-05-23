@@ -19,6 +19,9 @@ point cloud attributes (see examples).}
 \item{no_las_update}{bool. If the user-defined function returns a data.frame, this is supposed to
 update the point cloud. Can be disabled.}
 }
+\value{
+This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+}
 \description{
 Call a user-defined function on the point cloud. The function receives a \code{data.frame} with the
 point cloud. Its first input must be the point cloud. If the function returns anything other than

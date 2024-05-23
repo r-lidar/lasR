@@ -16,6 +16,9 @@ add_extrabytes(data_type, name, description, scale = 1, offset = 0)
 
 \item{scale, offset}{numeric. The scale and offset of the data. See LAS specification.}
 }
+\value{
+This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+}
 \description{
 According to the \href{https://www.asprs.org/a/society/committees/standards/LAS_1_4_r13.pdf}{LAS specifications},
 a LAS file contains a core of defined attributes, such as XYZ coordinates, intensity, return number,

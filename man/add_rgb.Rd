@@ -6,6 +6,9 @@
 \usage{
 add_rgb()
 }
+\value{
+This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+}
 \description{
 Modifies the LAS format to convert into a format with RGB attributes. Values are zeroed: the underlying
 point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later

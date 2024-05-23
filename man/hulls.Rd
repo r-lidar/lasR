@@ -15,6 +15,11 @@ then the stage will not store the result on disk and will return nothing. It wil
 hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 }
+\value{
+This stage produces a vector. The path provided to `ofile` is expected to be `.gpkg` or
+any other format supported by GDAL. Vector stages may produce geometries with Z coordinates.
+Thus, it is discouraged to store them in formats with no 3D support, such as shapefiles.
+}
 \description{
 This stage uses a Delaunay triangulation and computes its contour. The contour of a strict
 Delaunay triangulation is the convex hull, but in lasR, the triangulation has a \code{max_edge} argument.

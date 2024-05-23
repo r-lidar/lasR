@@ -50,6 +50,11 @@ angle and so on.}
 
 \item{raster}{LASRalgorithm. A stage that produces a raster.}
 }
+\value{
+This stage produces a vector. The path provided to `ofile` is expected to be `.gpkg` or
+any other format supported by GDAL. Vector stages may produce geometries with Z coordinates.
+Thus, it is discouraged to store them in formats with no 3D support, such as shapefiles.
+}
 \description{
 The Local Maximum stage identifies points that are locally maximum. The window size is
 fixed and circular. This stage does not modify the point cloud. It produces a derived product

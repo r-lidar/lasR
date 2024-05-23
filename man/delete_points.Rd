@@ -13,6 +13,9 @@ For a given stage when a filter is applied, only the points that meet the criter
 The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
 \link{filters}.}
 }
+\value{
+This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+}
 \description{
 Remove some points from the point cloud. This stage modifies the point cloud in the pipeline
 but does not produce any output.
