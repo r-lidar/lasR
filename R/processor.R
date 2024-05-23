@@ -240,6 +240,7 @@ parse_options = function(on, with, ...)
       progress <- on@processing_options$progress
       processed <- on$processed
       if (!is.null(processed)) noprocess <- !processed
+      if (on@input_options$filter != "") warning(paste0("This LAScatalog has filter = \"", on@input_options$filter, "\" but this options is not automatically propagated to the 'reader_las()' stage.") , call. = FALSE, immediate. = TRUE)
     }
   }
 
