@@ -11,6 +11,8 @@
 - Fix: #50 `write_vpc()` properly reprojects the bounding boxes in WGS84 
 - Enhance: `write_vpc()` writes `zmin` and `zmax` for each file.
 - Fix: #55 `local_maximum()` no longer fails with `ofile = ""`
+- Fix: progress bar of the `reader_las()` for COPC files.
+- Fix: metrics `zsd` and `isd` were incorrect due to wrong parenthesis in the code.
 
 # lasR 0.5.4
 
