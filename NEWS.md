@@ -1,3 +1,8 @@
+# lasR 0.5.6
+
+- Fix: `reader_las()` with COPC files, depth query (`-max_depth`), and buffer. The depth query was not performed at all. The fix is temporary: it breaks the progress bar of `reader_las()` but this is a less serious bug.
+- Fix: `reader_las()` with very large files.
+
 # lasR 0.5.5
 
 - Fix: #50 `write_vpc()` properly reprojects the bounding boxes in WGS84 
