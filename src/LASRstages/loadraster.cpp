@@ -12,5 +12,10 @@ LASRloadraster::LASRloadraster(const std::string& file, int band)
 
 bool LASRloadraster::set_chunk(const Chunk& chunk)
 {
-  return raster.get_chunk(chunk, band);
+  bool success;
+  #pragma omp critical (load_raster)
+  {
+    success = raster.get_chunk(chunk, band);
+  }
+  return  success;
 }

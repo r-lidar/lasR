@@ -2,6 +2,7 @@
 
 - Fix: `reader_las()` with COPC files, depth query (`-max_depth`), and buffer. The depth query was not performed at all. The fix is temporary: it breaks the progress bar of `reader_las()` but this is a less serious bug.
 - Fix: `reader_las()` with very large files.
+- Fix: `load_raster()` is thread-safe
 
 # lasR 0.5.5
 
