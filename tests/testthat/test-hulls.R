@@ -45,3 +45,18 @@ test_that("hulls works with complex shapes",
   plot(ans$hulls)
 })
 
+test_that("hulls works with multiple file and a buffer",
+{
+  f <- system.file("extdata", "bcts/", package="lasR")
+  f = list.files(f, full.names = TRUE, pattern = "\\.laz")
+
+  read = reader_las()
+  bound = lasR::hulls()
+  ans1 = exec(bound, f)
+  ans2 = exec(bound, f, buffer = 10)
+
+  expect_s3_class(ans2, "sf")
+  expect_equal(dim(ans2), c(4L,1L))
+  expect_equal(sum(sf::st_area(ans1)),   sum(sf::st_area(ans2)))
+})
+

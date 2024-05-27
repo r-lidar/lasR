@@ -51,15 +51,16 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
   lasreadopener = new LASreadOpener;
   lasreadopener->set_merged(true);
   lasreadopener->set_stored(false);
-  lasreadopener->set_buffer_size(chunk.buffer);
   lasreadopener->set_populate_header(true);
+  //lasreadopener->set_buffer_size(chunk.buffer);
   lasreadopener->parse_str(filtercpy);
   lasreadopener->set_copc_stream_ordered_by_chunk();
 
   free(filtercpy);
 
+  for (auto& file : chunk.neighbour_files) lasreadopener->add_file_name(file.c_str());
   for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str());
-  for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
+  //for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
 
   if (chunk.shape == ShapeType::RECTANGLE)
     lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
@@ -85,6 +86,17 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
   }
 
   lasheader = &lasreader->header;
+
+  // We did not use LASreaderBuffered so we build a LASvlr_lasoriginal by hand.
+  if (chunk.buffer > 0)
+  {
+    lasheader->set_lasoriginal();
+    memset(lasheader->vlr_lasoriginal, 0, sizeof(LASvlr_lasoriginal));
+    lasheader->vlr_lasoriginal->min_x = chunk.xmin;
+    lasheader->vlr_lasoriginal->min_y = chunk.ymin;
+    lasheader->vlr_lasoriginal->max_x = chunk.xmax;
+    lasheader->vlr_lasoriginal->max_y = chunk.ymax;
+  }
 
   return true;
 }

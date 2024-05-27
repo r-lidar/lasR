@@ -31,5 +31,5 @@ test_that("the file not processed is used as buffer",
 
   expect_equal(ans1, 531662L)
   expect_equal(ans1, ans2)
-  expect_equal(ans3, 682031L)
+  expect_equal(ans3, 682059L)
 })
