@@ -91,7 +91,7 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
   if (chunk.buffer > 0)
   {
     lasheader->set_lasoriginal();
-    memset(lasheader->vlr_lasoriginal, 0, sizeof(LASvlr_lasoriginal));
+    memset((void*)lasheader->vlr_lasoriginal, 0, sizeof(LASvlr_lasoriginal));
     lasheader->vlr_lasoriginal->min_x = chunk.xmin;
     lasheader->vlr_lasoriginal->min_y = chunk.ymin;
     lasheader->vlr_lasoriginal->max_x = chunk.xmax;
