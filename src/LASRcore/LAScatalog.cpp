@@ -351,7 +351,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
-    if (!wkt.empty()) output << "      \"proj:wtk2\": " << wkt << "," << std::endl;
+    if (!wkt.empty()) output << "      \"proj:wkt2\": " << wkt << "," << std::endl;
     if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
     output << "      \"index:indexed\": " << ((index) ? "true" : "false") << std::endl;
     output << "    }," << std::endl;
