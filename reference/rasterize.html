@@ -12,7 +12,7 @@ It produces a derived product in raster format."><!-- mathjax --><script src="ht
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,7 @@ It produces a derived product in raster format.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">rasterize</span><span class="op">(</span><span class="va">res</span>, operators <span class="op">=</span> <span class="st">"max"</span>, filter <span class="op">=</span> <span class="st">""</span>, ofile <span class="op">=</span> <span class="fu"><a href="temporary_files.html">temptif</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">rasterize</span><span class="op">(</span><span class="va">res</span>, operators <span class="op">=</span> <span class="st">"max"</span>, filter <span class="op">=</span> <span class="st">""</span>, ofile <span class="op">=</span> <span class="fu"><a href="temporary_files.html">temptif</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -101,6 +101,13 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 then the stage will not store the result on disk and will return nothing. It will however
 hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.</p></dd>
+
+
+<dt>...</dt>
+<dd><p><code>default_value</code> numeric. When rasterizing with an operator and a filter (e.g. <code>-keep_z_above 2</code>)
+some pixels that are covered by points may no longer contain any point that pass the filter criteria
+and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels without point that
+pass the filter, the later case can be assigned another value such as 0.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -159,23 +166,23 @@ in this case.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 1, 1  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1edc5b55d94a.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1edc5b55d94a </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e4f6b1f4dc7.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1e4f6b1f4dc7 </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 30, 30, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 10, 10  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273350, 273650, 5274350, 5274650  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1edc14267.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1edc14267 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e4f61bece70.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1e4f61bece70 </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 144, 144, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 2, 2  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273356, 273644, 5274356, 5274644  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1edc14bdd1f9.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e4f36f795e7.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> name        : max </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Demonstration of buffered rasterization</span></span></span>

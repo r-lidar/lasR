@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,6 +60,13 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.6" id="lasr-056">lasR 0.5.6<a class="anchor" aria-label="anchor" href="#lasr-056"></a></h2>
+<ul><li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> with COPC files, depth query (<code>-max_depth</code>), and buffer. The depth query was not performed at all. The fix is temporary: it breaks the progress bar of <code><a href="../reference/reader_las.html">reader_las()</a></code> but this is a less serious bug.</li>
+<li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> with very large files.</li>
+<li>Fix: <code><a href="../reference/load_raster.html">load_raster()</a></code> is thread-safe</li>
+<li>New: <code><a href="../reference/rasterize.html">rasterize()</a></code> accepts a new argument <code>default_value</code>. When rasterizing with an operator and a filter (e.g. <code>-keep_z_above 2</code>) some pixels that are covered by points may no longer contain any point that pass the filter criteria and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels but without point that pass the filter, the later case can be assigned another value such as 0.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.5" id="lasr-055">lasR 0.5.5<a class="anchor" aria-label="anchor" href="#lasr-055"></a></h2>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/50" class="external-link">#50</a> <code><a href="../reference/write_vpc.html">write_vpc()</a></code> properly reprojects the bounding boxes in WGS84</li>
