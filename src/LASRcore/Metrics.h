@@ -17,6 +17,8 @@ public:
   int size() const;
   float get_metric(int index);
   float get_metric(int index, float x, float y);
+  float get_default_value() { return default_value; };
+  void set_default_value(float val) { default_value = val; };
   bool is_streamable() const { return streamable; }
 
 private:
@@ -67,6 +69,8 @@ private:
   typedef float (LASRmetrics::*StreamingMetric)(float, float) const;
   std::vector<StreamingMetric> streaming_operators;
   std::vector<RegularMetric> regular_operators;
+
+  float default_value;
 };
 
 #endif
