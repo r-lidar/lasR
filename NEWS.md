@@ -3,7 +3,7 @@
 - Fix: `reader_las()` with COPC files, depth query (`-max_depth`), and buffer. The depth query was not performed at all. The fix is temporary: it breaks the progress bar of `reader_las()` but this is a less serious bug.
 - Fix: `reader_las()` with very large files.
 - Fix: `load_raster()` is thread-safe
-- New: `rasterize()` accept a new argument `default_value`.  When rasterizing with an operator and a filter (e.g. `-keep_z_above 2`) some pixels that are covered by points may no longer contain any point that pass the filter criteria and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels but without point that pass the filter, the later case can be assigned another value such as 0.
+- New: `rasterize()` accepts a new argument `default_value`.  When rasterizing with an operator and a filter (e.g. `-keep_z_above 2`) some pixels that are covered by points may no longer contain any point that pass the filter criteria and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels but without point that pass the filter, the later case can be assigned another value such as 0.
 
 # lasR 0.5.5
 
