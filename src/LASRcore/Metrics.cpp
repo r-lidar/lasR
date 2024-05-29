@@ -232,7 +232,7 @@ float LASRmetrics::get_metric(int index)
     sorted = true;
   }
 
-  if (n == 0) return NA_F32_RASTER;
+  if (n == 0) return default_value;
 
   RegularMetric& f = regular_operators[index];
   return (this->*f)(param[index]);
@@ -271,6 +271,7 @@ LASRmetrics::LASRmetrics()
 {
   reset();
   streamable = false;
+  default_value = NA_F32_RASTER;
 }
 
 LASRmetrics::~LASRmetrics()

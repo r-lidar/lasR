@@ -3,7 +3,7 @@
 #include "Grouper.h"
 #include "openmp.h"
 
-LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods)
+LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods, float default_value)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -14,7 +14,11 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
 
   if (!metrics.parse(methods))
+  {
     throw last_error;
+  }
+
+  metrics.set_default_value(default_value);
 
   for (int j = 0 ; j < metrics.size() ; j++)
     raster.set_band_name(methods[j], j);

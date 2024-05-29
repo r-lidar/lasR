@@ -525,6 +525,10 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' as many others (see section 'Operators'). Can also rasterize a triangulation if the input is a
 #' LASRalgorithm for triangulation (see examples). Can also be a user-defined expression
 #' (see example and section 'Operators').
+#' @param ... `default_value` numeric. When rasterizing with an operator and a filter (e.g. `-keep_z_above 2`)
+#' some pixels that are covered by points may no longer contain any point that pass the filter criteria
+#' and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels without point that
+#' pass the filter, the later case can be assigned another value such as 0.
 #' @template param-filter
 #' @template param-ofile
 #'
@@ -564,9 +568,12 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' terra::plot(res[[3]]/25)  # divide by 25 to get the density
 #' @export
 #' @md
-rasterize = function(res, operators = "max", filter = "", ofile = temptif())
+rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...)
 {
   class <- tryCatch({class(operators)}, error = function(x) return("call"))
+
+  p = list(...)
+  default_value = p$default_value
 
   res_raster  <- res[1]
   res_window <- res[1]
@@ -603,7 +610,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
     }
 
     if (!all(valid)) stop("Non supported operators")
-    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile)
+    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile, default_value = default_value)
   }
   else
   {

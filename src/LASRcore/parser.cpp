@@ -171,8 +171,10 @@ bool Pipeline::parse(const SEXP sexpargs, bool progress)
       if (!contains_element(stage, "connect"))
       {
         double window = get_element_as_double(stage, "window");
+        float default_value = contains_element(stage, "default_value") ? get_element_as_double(stage, "default_value") : NA_F32_RASTER;
         std::vector<std::string> methods = get_element_as_vstring(stage, "method");
-        auto v = std::make_unique<LASRrasterize>(xmin, ymin, xmax, ymax, res, window, methods);
+
+        auto v = std::make_unique<LASRrasterize>(xmin, ymin, xmax, ymax, res, window, methods, default_value);
         pipeline.push_back(std::move(v));
       }
       else

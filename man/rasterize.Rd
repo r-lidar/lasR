@@ -4,7 +4,7 @@
 \alias{rasterize}
 \title{Rasterize a point cloud}
 \usage{
-rasterize(res, operators = "max", filter = "", ofile = temptif())
+rasterize(res, operators = "max", filter = "", ofile = temptif(), ...)
 }
 \arguments{
 \item{res}{numeric. The resolution of the raster. Can be a vector with two resolutions.
@@ -26,6 +26,11 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 then the stage will not store the result on disk and will return nothing. It will however
 hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
+
+\item{...}{\code{default_value} numeric. When rasterizing with an operator and a filter (e.g. \verb{-keep_z_above 2})
+some pixels that are covered by points may no longer contain any point that pass the filter criteria
+and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels without point that
+pass the filter, the later case can be assigned another value such as 0.}
 }
 \value{
 This stage produces a raster. The path provided to `ofile` is expected to be `.tif` or any

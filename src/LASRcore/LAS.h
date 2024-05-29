@@ -60,7 +60,7 @@ private:
   void clean_query();
   bool alloc_buffer();
   bool realloc_buffer();
-  int get_true_number_of_points() const;
+  U64 get_true_number_of_points() const;
 
 public:
   LASpoint point;
