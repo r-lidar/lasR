@@ -450,14 +450,20 @@ bool Pipeline::parse(const SEXP sexpargs, bool progress)
       bool read = get_element_as_bool(stage, "read");
       bool stream = get_element_as_bool(stage, "stream");
       bool loop = get_element_as_bool(stage, "loop");
+
       auto v = std::make_unique<LASRnothing>(read, stream, loop);
       pipeline.push_back(std::move(v));
     }
     #ifdef USING_R
     else if (name == "aggregate")
     {
-      SEXP call = get_element(stage, "call");
-      SEXP env = get_element(stage, "env");
+      std::string address_call_str = get_element_as_string(stage, "call");
+      std::string address_env_str = get_element_as_string(stage, "env");
+      uintptr_t address_call = strtoull(address_call_str.c_str(), NULL, 16);
+      uintptr_t address_env = strtoull(address_env_str.c_str(), NULL, 16);
+      SEXP call = (SEXP)address_call;
+      SEXP env = (SEXP)address_env;
+
       double res = get_element_as_double(stage, "res");
       int nmetrics = get_element_as_int(stage, "nmetrics");
       double win = get_element_as_double(stage, "window");
@@ -469,8 +475,14 @@ bool Pipeline::parse(const SEXP sexpargs, bool progress)
       std::string expose = get_element_as_string(stage, "expose");
       bool modify = !get_element_as_bool(stage, "no_las_update");
       bool drop_buffer = get_element_as_bool(stage, "drop_buffer");
-      SEXP fun = get_element(stage, "fun");
-      SEXP args = get_element(stage, "args");
+
+      std::string address_fun_str = get_element_as_string(stage, "fun");
+      std::string address_args_str = get_element_as_string(stage, "args");
+      uintptr_t address_fun = strtoull(address_fun_str.c_str(), NULL, 16);
+      uintptr_t address_args = strtoull(address_args_str.c_str(), NULL, 16);
+      SEXP fun = (SEXP)address_fun;
+      SEXP args = (SEXP)address_args;
+
       auto v = std::make_unique<LASRcallback>(xmin, ymin, xmax, ymax, expose, fun, args, modify, drop_buffer);
       pipeline.push_back(std::move(v));
     }

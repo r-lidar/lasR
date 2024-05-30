@@ -26,7 +26,7 @@ Progress::Progress()
   sub = 0;
   interrupt_counter = 0;
   user_interrupt_event = false;
-  check_interrupt_enabled = false;
+  check_interrupt_enabled = true;
 };
 
 // Called only once in the processor function.
@@ -111,9 +111,9 @@ void Progress::update(uint64_t current, bool main)
   {
     this->current = current;
     this->compute_percentage();
-
-    check_interrupt();
   }
+
+  check_interrupt();
 };
 
 // Called by every stage and can be applied only by thread 0

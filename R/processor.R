@@ -100,6 +100,8 @@ exec = function(pipeline, on, with = NULL, ...)
 
   if (!valid) stop("Invalid argument 'on'.")
 
+  pipeline = serialize_pipeline(pipeline)
+
   ans <- .Call(`C_process`, pipeline, with)
 
   if (inherits(ans, "error"))
@@ -361,4 +363,28 @@ unset_exec_option = function()
   LASROPTIONS$noread <- NULL
   LASROPTIONS$noprocess <- NULL
   LASROPTIONS$verbose <- NULL
+}
+
+serialize_pipeline = function(pipeline)
+{
+  # convert R object (rasterize, callback) into pointer addresses for JSON serialization
+  for (i in seq_along(pipeline))
+  {
+    stage <- pipeline[[i]]
+
+    if (stage$algoname == "callback")
+    {
+      stage$fun <- address(stage$fun)
+      stage$args <- address(stage$args)
+    }
+    else if (stage$algoname == "aggregate")
+    {
+      stage$call <- address(stage$call)
+      stage$env <- address(stage$env)
+    }
+
+    pipeline[[i]] <- stage
+  }
+
+  return(pipeline)
 }

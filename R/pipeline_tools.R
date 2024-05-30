@@ -115,3 +115,8 @@ is_indexed = function(files)
   return (ans)
 }
 
+address = function(x)
+{
+  .Call(`C_address`, x)
+}
+
