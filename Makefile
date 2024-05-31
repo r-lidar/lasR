@@ -15,7 +15,8 @@ LAPACK_LIBS = $(shell pkg-config --libs lapack)
 TARGET = $(BIN_DIR)/lasr
 INCLUDES = -I./$(SRC_DIR)/ -I./$(SRC_DIR)/LASRcore/ -I./$(SRC_DIR)/LASRstages/ -I./$(SRC_DIR)/vendor/ -I./$(SRC_DIR)/vendor/LASlib/ -I./$(SRC_DIR)/vendor/LASzip/  $(GDAL_INCLUDE)  $(PROJ_INCLUDE) $(BLAS_INCLUDE)
 SRCS = $(wildcard $(SRC_DIR)/LASRcore/*.cpp $(SRC_DIR)/LASRstages/*.cpp $(SRC_DIR)/vendor/*/*.cpp $(SRC_DIR)/*.cpp)
-OBJS = $(SRCS:.cpp=.o)
+OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%.o,$(SRCS))
+
 
 
 # Default target
@@ -27,7 +28,8 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(GDAL_LIBS) $(PROJ_LIBS) $(BLAS_LIBS) $(LAPACK_LIBS)
 
 # Rule to compile the source files into object files
-$(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(BIN_DIR)/%.o: $(SRC_DIR)/%.cpp
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 # Clean rule to remove generated files
