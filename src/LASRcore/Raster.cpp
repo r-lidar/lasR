@@ -1,7 +1,7 @@
 #include "Raster.h"
 #include "NA.h"
 
-#include "Rcompatibility.h"
+#include "print.h"
 
 #include <cmath>
 

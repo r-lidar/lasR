@@ -2,7 +2,7 @@
 
 #include "openmp.h"
 #include "macros.h"
-#include "Rcompatibility.h"
+#include "print.h"
 
 #include <inttypes.h>
 #include <string>

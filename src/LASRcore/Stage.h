@@ -24,9 +24,9 @@
 #include "Raster.h"
 #include "Vector.h"
 #include "Progress.h"
-#include "Rcompatibility.h"
 #include "CRS.h"
 #include "error.h"
+#include "print.h"
 
 class Stage
 {

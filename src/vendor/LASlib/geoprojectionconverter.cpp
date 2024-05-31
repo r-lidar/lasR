@@ -43,7 +43,7 @@
 #include <unistd.h>
 #endif
 
-#include "Rcompatibility.h"
+#include "print.h"
 
 #if defined(_MSC_VER) && \
     (_MSC_FULL_VER >= 150000000)

@@ -1,5 +1,6 @@
 #include "CRS.h"
-#include "Rcompatibility.h"
+
+#include <stdio.h>
 
 CRS::CRS()
 {

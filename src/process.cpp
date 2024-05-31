@@ -13,8 +13,6 @@
   #endif
 #endif
 
-#include "Rcompatibility.h"
-
 #include <memory>
 #include <vector>
 #include <iostream>
@@ -22,6 +20,7 @@
 
 #include "openmp.h"
 #include "error.h"
+#include "print.h"
 #include "pipeline.h"
 #include "LAScatalog.h"
 #include "openmp.h"
