@@ -29,7 +29,7 @@ Progress::Progress()
 #ifdef USING_R
   interrupt_counter = 0;
   user_interrupt_event = false;
-  check_interrupt_enabled = true;
+  check_interrupt_enabled = false;
 #endif
 };
 
