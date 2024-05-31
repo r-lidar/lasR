@@ -38,9 +38,14 @@ bool process(const std::string& config_file)
   std::ifstream fjson(config_file);
   if (!fjson.is_open())
   {
-    last_error = "Could not open the json file containing the pipeline";
-    throw last_error;
+    #ifdef USING_R
+      return make_R_error("Could not open the json file containing the pipeline");
+    #else
+      eprint("Could not open the json file containing the pipeline");
+      return false;
+    #endif
   }
+
   nlohmann::json json;
   fjson >> json;
 
