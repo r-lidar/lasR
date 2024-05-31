@@ -25,12 +25,6 @@
 #include "LAScatalog.h"
 #include "openmp.h"
 
-// Parallel processing strategies
-#define SEQUENTIAL 1
-#define CONCURRENTPOINTS 2
-#define CONCURRENTFILES 3
-#define NESTED 4
-
 #ifdef USING_R
 SEXP process(SEXP sexp_config_file)
 {
@@ -57,7 +51,7 @@ bool process(const std::string& config_file)
   // Parse the processing options
   std::vector<int> ncpu = get_vector<int>(processing_options["ncores"]);
   if (ncpu.size() == 0) ncpu.push_back(1);
-  int strategy = processing_options.value("strategy", 2);
+  std::string strategy = processing_options.value("strategy", "concurrent-points");
   bool progrss = processing_options.value("progress", false);
   bool verbose = processing_options.value("verbose", false);
   double chunk_size = processing_options.value("chunk", 0);
@@ -71,9 +65,9 @@ bool process(const std::string& config_file)
   }
   int ncpu_outer_loop = 1; // concurrent files
   int ncpu_inner_loops = 1; // concurrent points
-  if (strategy == CONCURRENTPOINTS) ncpu_inner_loops = ncpu[0];
-  if (strategy == CONCURRENTFILES) ncpu_outer_loop = ncpu[0];
-  if (strategy == NESTED)
+  if (strategy == "concurrent-points") ncpu_inner_loops = ncpu[0];
+  if (strategy == "concurrent-files") ncpu_outer_loop = ncpu[0];
+  if (strategy == "nested")
   {
     if (ncpu.size() < 2) throw "Using nested strategy requires an array of two numbers in 'ncores'";
 
@@ -82,7 +76,9 @@ bool process(const std::string& config_file)
   }
   if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
 
-  uintptr_t original_CStackLimit = R_CStackLimit;
+  #ifdef USING_R
+    uintptr_t original_CStackLimit = R_CStackLimit;
+  #endif
 
   try
   {
@@ -253,7 +249,9 @@ bool process(const std::string& config_file)
 
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
-    R_CStackLimit = original_CStackLimit;
+    #ifdef USING_R
+      R_CStackLimit = original_CStackLimit;
+    #endif
 
     progress.done(true);
 
@@ -270,18 +268,33 @@ bool process(const std::string& config_file)
   }
   catch (std::string e)
   {
-    R_CStackLimit = original_CStackLimit;
-    return make_R_error(e.c_str());
+    #ifdef USING_R
+      R_CStackLimit = original_CStackLimit;
+      return make_R_error(e.c_str());
+    #else
+      eprint(e.c_str());
+      return false;
+    #endif
   }
   catch(...)
   {
     // # nocov start
-    R_CStackLimit = original_CStackLimit;
-    return make_R_error("c++ exception (unknown reason)");
+    #ifdef USING_R
+      R_CStackLimit = original_CStackLimit;
+      return make_R_error("c++ exception (unknown reason)");
+    #else
+      eprint("c++ exception (unknown reason)");
+      return false;
+    #endif
     // # nocov end
   }
 
-  return R_NilValue;
+  #ifdef USING_R
+    return R_NilValue;
+  #else
+    return false;
+  #endif
+
 }
 
 #ifdef USING_R

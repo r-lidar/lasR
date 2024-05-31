@@ -262,7 +262,6 @@ parse_options = function(on, with, ...)
   mode <- attr(strategy, "strategy")
   if (is.null(mode)) mode = "concurrent-files"
   mode <- match.arg(mode, modes)
-  mode <- match(mode, modes)
 
   # Global options have precedence on everything
   if (!is.null(LASROPTIONS$buffer)) buffer <- LASROPTIONS$buffer
@@ -277,14 +276,14 @@ parse_options = function(on, with, ...)
   {
     if (ncores[1] > 1) warning("This version of lasR has no OpenMP support")
     ncores <- 1L
-    mode <- 1L
+    mode <- "sequential"
   }
 
   stopifnot(is.numeric(buffer))
   stopifnot(is.numeric(chunk))
   stopifnot(is.logical(progress))
   stopifnot(is.numeric(ncores))
-  stopifnot(is.integer(mode))
+  stopifnot(is.character(mode))
   stopifnot(is.logical(verbose))
   stopifnot(is.logical(noread))
 
@@ -407,7 +406,6 @@ write_json = function(config)
   config$pipeline = unname(config$pipeline)
 
   json = tempfile(fileext = ".json")
-  json = "/home/jr/Téléchargements/pipeline.json"
   config = toJSON(config)
   write(config, json)
 
