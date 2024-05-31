@@ -108,14 +108,15 @@ exec = function(pipeline, on, with = NULL, ...)
 
   if (!on_is_valid) stop("Invalid argument 'on'.")
 
+  pipeline = list(processing = with, pipeline = pipeline)
+
   # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
   # sent to the processor
   json_file = toJSON(pipeline)
-  with$pipeline = json_file
 
-  ans <- .Call(`C_process`, with)
+  ans <- .Call(`C_process`, json_file)
 
-  file.remove(json_file)
+  #file.remove(json_file)
 
   if (inherits(ans, "error")) stop(ans)
 
@@ -375,12 +376,12 @@ unset_exec_option = function()
   LASROPTIONS$verbose <- NULL
 }
 
-toJSON = function(pipeline)
+toJSON = function(config)
 {
   # convert R object (rasterize, callback) into pointer addresses for JSON serialization
-  for (i in seq_along(pipeline))
+  for (i in seq_along(config$pipeline))
   {
-    stage <- pipeline[[i]]
+    stage <- config$pipeline[[i]]
 
     if (stage$algoname == "callback")
     {
@@ -400,11 +401,15 @@ toJSON = function(pipeline)
       }
     }
 
-    pipeline[[i]] <- stage
+    config$pipeline[[i]] <- stage
   }
 
+  config$pipeline = unname(config$pipeline)
+
   json = tempfile(fileext = ".json")
-  pipeline = rjson::toJSON(unname(pipeline), indent = 1)
-  write(pipeline, json)
+  json = "/home/jr/Téléchargements/pipeline.json"
+  config = rjson::toJSON(config, indent = 1)
+  write(config, json)
+
   return(json)
 }

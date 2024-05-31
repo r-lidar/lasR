@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "pipeline.h"
 #include "LAScatalog.h"
 
@@ -24,34 +26,36 @@
 #include "writelax.h"
 #include "writevpc.h"
 
+// If compiled as an R package include R's header, special R stages and helper functions
 #ifdef USING_R
-#include "R2cpp.h"
+
+#define R_NO_REMAP 1
+#include <R.h>
+#include <Rinternals.h>
+
 #include "aggregate.h"
 #include "callback.h"
 #include "readdataframe.h"
+
+SEXP get_element(SEXP list, const char *str)
+{
+  SEXP elmt = R_NilValue;
+  SEXP names = Rf_getAttrib(list, R_NamesSymbol);
+  for (int i = 0 ; i < Rf_length(list) ; i++) { if(strcmp(CHAR(STRING_ELT(names, i)), str) == 0)  { elmt = VECTOR_ELT(list, i); break; }}
+  if (Rf_isNull(elmt)) throw std::string("element '") + str +  "' not found"; // # nocov
+  return elmt;
+}
+
+SEXP string_address_to_sexp(const std::string& addr)
+{
+  uintptr_t ptr = strtoull(addr.c_str(), NULL, 16);
+  SEXP s = (SEXP)ptr;
+  return s;
+}
 #endif
 
-#include <algorithm>
-
-// To parse JSON
-#include <iostream>
-#include <fstream>
-#include "nlohmann/json.hpp"
-
-static std::vector<std::string> get_strings(const nlohmann::json& element);
-static std::vector<double> get_doubles(const nlohmann::json& element);
-
-bool Pipeline::parse(const std::string& file, bool progress)
+bool Pipeline::parse(const nlohmann::json& json, bool progress)
 {
-  // Open the JSON file
-  std::ifstream fjson(file);
-  if (!fjson.is_open())
-  {
-    last_error = "Could not open the json file containing the pipeline";
-    return false;
-  }
-  nlohmann::json json;
-  fjson >> json;
   int num_stages = json.size();
 
   // This is the extent of the coverage.
@@ -87,7 +91,7 @@ bool Pipeline::parse(const std::string& file, bool progress)
         // with lidR to process LAS objects
         if (!stage.contains("dataframe"))
         {
-          std::vector<std::string> files = get_strings(stage["files"]);
+          std::vector<std::string> files = get_vector<std::string>(stage["files"]);
 
           catalog = std::make_shared<LAScatalog>();
           if (!catalog->read(files, progress))
@@ -112,6 +116,7 @@ bool Pipeline::parse(const std::string& file, bool progress)
           xmax = catalog->get_xmax();
           ymax = catalog->get_ymax();
         }
+        #ifdef USING_R
         else
         {
           std::string address_dataframe_str = stage.at("dataframe");
@@ -139,6 +144,7 @@ bool Pipeline::parse(const std::string& file, bool progress)
           catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
           catalog->set_crs(CRS(wkt));
         }
+        #endif
       }
       else if (name.substr(0,6) == "reader")
       {
@@ -155,34 +161,37 @@ bool Pipeline::parse(const std::string& file, bool progress)
           pipeline.push_back(std::move(v));
         }
 
+        #ifdef USING_R
         if (name == "reader_dataframe")
         {
           std::string address_dataframe_str = stage.at("dataframe");
-          uintptr_t address_dataframe = strtoull(address_dataframe_str.c_str(), NULL, 16);
-          SEXP dataframe = (SEXP)address_dataframe;
+          SEXP dataframe = (SEXP)string_address_to_sexp(address_dataframe_str);
+
           std::vector<double> accuracy = stage.at("accuracy");
           std::string wkt = stage.at("crs");
+
           auto v = std::make_unique<LASRdataframereader>(xmin, ymin, xmax, ymax, dataframe, accuracy, wkt);
           pipeline.push_back(std::move(v));
         }
+        #endif
 
         if (catalog != nullptr)
         {
           // Special treatment of the reader to find the potential queries in the catalog
           if (stage.contains("xcenter"))
           {
-            std::vector<double> xcenter = get_doubles(stage["xcenter"]);
-            std::vector<double> ycenter = get_doubles(stage["ycenter"]);
-            std::vector<double> radius = get_doubles(stage["radius"]);
+            std::vector<double> xcenter = get_vector<double>(stage["xcenter"]);
+            std::vector<double> ycenter = get_vector<double>(stage["ycenter"]);
+            std::vector<double> radius = get_vector<double>(stage["radius"]);
             for (size_t j = 0 ; j <  xcenter.size() ; ++j) catalog->add_query(xcenter[j], ycenter[j], radius[j]);
           }
 
           if (stage.contains("xmin"))
           {
-            std::vector<double> xmin = get_doubles(stage["xmin"]);
-            std::vector<double> ymin = get_doubles(stage["ymin"]);
-            std::vector<double> xmax = get_doubles(stage["xmax"]);
-            std::vector<double> ymax = get_doubles(stage["ymax"]);
+            std::vector<double> xmin = get_vector<double>(stage["xmin"]);
+            std::vector<double> ymin = get_vector<double>(stage["ymin"]);
+            std::vector<double> xmax = get_vector<double>(stage["xmax"]);
+            std::vector<double> ymax = get_vector<double>(stage["ymax"]);
             for (size_t j = 0 ; j <  xmin.size() ; ++j) catalog->add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
           }
         }
@@ -195,7 +204,7 @@ bool Pipeline::parse(const std::string& file, bool progress)
         {
           double window = stage.at("window");
           float default_value = stage.value("default_value", NA_F32_RASTER);
-          std::vector<std::string> methods = get_strings(stage["method"]);
+          std::vector<std::string> methods = get_vector<std::string>(stage["method"]);
 
           auto v = std::make_unique<LASRrasterize>(xmin, ymin, xmax, ymax, res, window, methods, default_value);
           pipeline.push_back(std::move(v));
@@ -612,38 +621,4 @@ bool Pipeline::parse(const std::string& file, bool progress)
   parallelizable = is_parallelizable();
 
   return true;
-}
-
-static std::vector<std::string> get_strings(const nlohmann::json& element)
-{
-  std::vector<std::string> result;
-  if (element.is_array())
-  {
-    for (const auto& item : element)
-    {
-      result.push_back(item.get<std::string>());
-    }
-  }
-  else
-  {
-    result.push_back(element.get<std::string>());
-  }
-  return result;
-}
-
-static std::vector<double> get_doubles(const nlohmann::json& element)
-{
-  std::vector<double> result;
-  if (element.is_array())
-  {
-    for (const auto& item : element)
-    {
-      result.push_back(item.get<double>());
-    }
-  }
-  else
-  {
-    result.push_back(element.get<double>());
-  }
-  return result;
 }

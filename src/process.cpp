@@ -14,14 +14,12 @@
 #endif
 
 #include "Rcompatibility.h"
-#include "R2cpp.h"
 
-
-// STL
 #include <memory>
 #include <vector>
+#include <iostream>
+#include <fstream>
 
-// lasR
 #include "openmp.h"
 #include "error.h"
 #include "pipeline.h"
@@ -34,30 +32,54 @@
 #define CONCURRENTFILES 3
 #define NESTED 4
 
-SEXP process(SEXP args)
+#ifdef USING_R
+SEXP process(SEXP sexp_config_file)
 {
-  int ncpu = get_element_as_int(args, "ncores");
-  int strategy = get_element_as_int(args, "strategy");
-  bool progrss = get_element_as_bool(args, "progress");
-  bool verbose = get_element_as_bool(args, "verbose");
-  double chunk_size = get_element_as_double(args, "chunk");
-  std::string fprofiling = get_element_as_string(args, "profiling");
-  std::string fpipeline = get_element_as_string(args, "pipeline");
+  std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
+#else
+bool process(const std::string& config_file)
+{
+#endif
+
+  // Open the JSON file
+  std::ifstream fjson(config_file);
+  if (!fjson.is_open())
+  {
+    last_error = "Could not open the json file containing the pipeline";
+    throw last_error;
+  }
+  nlohmann::json json;
+  fjson >> json;
+
+  // The JSON file is made of the processing options and the pipeline
+  nlohmann::json processing_options = json["processing"];
+  nlohmann::json json_pipeline = json["pipeline"];
+
+  // Parse the processing options
+  std::vector<int> ncpu = get_vector<int>(processing_options["ncores"]);
+  if (ncpu.size() == 0) ncpu.push_back(1);
+  int strategy = processing_options.value("strategy", 2);
+  bool progrss = processing_options.value("progress", false);
+  bool verbose = processing_options.value("verbose", false);
+  double chunk_size = processing_options.value("chunk", 0);
+  std::string fprofiling = processing_options.value("profiling", "");
 
   // Check some multithreading stuff
-  if (ncpu > available_threads())
+  if (ncpu[0] > available_threads())
   {
-    warning("Number of cores requested %d but only %d available\n", ncpu, available_threads());
-    ncpu = available_threads();
+    warning("Number of cores requested %d but only %d available\n", ncpu[0], available_threads());
+    ncpu[0] = available_threads();
   }
   int ncpu_outer_loop = 1; // concurrent files
   int ncpu_inner_loops = 1; // concurrent points
-  if (strategy == CONCURRENTPOINTS) ncpu_inner_loops = ncpu;
-  if (strategy == CONCURRENTFILES) ncpu_outer_loop = ncpu;
+  if (strategy == CONCURRENTPOINTS) ncpu_inner_loops = ncpu[0];
+  if (strategy == CONCURRENTFILES) ncpu_outer_loop = ncpu[0];
   if (strategy == NESTED)
   {
-    ncpu_outer_loop = ncpu;
-    ncpu_inner_loops = get_element_as_vint(args, "ncores")[1];
+    if (ncpu.size() < 2) throw "Using nested strategy requires an array of two numbers in 'ncores'";
+
+    ncpu_outer_loop = ncpu[0];
+    ncpu_inner_loops = ncpu[1];
   }
   if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
 
@@ -67,7 +89,7 @@ SEXP process(SEXP args)
   {
     Pipeline pipeline;
 
-    if (!pipeline.parse(fpipeline, progrss))
+    if (!pipeline.parse(json_pipeline, progrss))
     {
       throw last_error;
     }
@@ -308,14 +330,25 @@ SEXP process(SEXP args)
 }
 
 #ifdef USING_R
-SEXP get_pipeline_info(SEXP args)
+SEXP get_pipeline_info(SEXP sexp_config_file)
 {
-  std::string fpipeline = get_element_as_string(args, "pipeline");
+  std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
+
+  std::ifstream fjson(config_file);
+  if (!fjson.is_open())
+  {
+    last_error = "Could not open the json file containing the pipeline";
+    throw last_error;
+  }
+  nlohmann::json json;
+  fjson >> json;
+
+  nlohmann::json json_pipeline = json["pipeline"];
 
   try
   {
     Pipeline pipeline;
-    if (!pipeline.parse(fpipeline))
+    if (!pipeline.parse(json_pipeline))
     {
       throw last_error;
     }

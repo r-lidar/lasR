@@ -96,9 +96,9 @@ print.LASRpipeline = function(x, ...)
 
 get_pipeline_info = function(pipeline)
 {
-  pipeline = toJSON(pipeline)
-  args = list(pipeline = pipeline)
-  ans = .Call(`C_get_pipeline_info`, args)
+  pipeline = list(processing = list(), pipeline = pipeline)
+  json_file = toJSON(pipeline)
+  ans = .Call(`C_get_pipeline_info`, json_file)
   if (inherits(ans, "error")) { stop(ans) } # nocov
   return(ans)
 }
