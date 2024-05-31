@@ -1,3 +1,5 @@
+#ifdef USING_R
+
 #include <R.h>
 #include <Rinternals.h>
 #include <stdlib.h> // for NULL
@@ -49,4 +51,6 @@ SEXP get_address(SEXP obj)
   snprintf(address, sizeof(address), "%p", (void*)obj);
   return mkString(address);
 }
+
+#endif
 

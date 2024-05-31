@@ -111,6 +111,8 @@ bool process(const std::string& config_file)
       ncpu_outer_loop = 1;
       warning("This pipeline is not parallizable using 'concurrent-files' strategy.\n");
     }
+
+#ifdef USING_R
     if (use_rcapi && ncpu_outer_loop > 1)
     {
       // The R's C stack is now unprotected — the work with R C API becomes more dangerous
@@ -121,6 +123,7 @@ bool process(const std::string& config_file)
       R_CStackLimit=(uintptr_t)-1;
       warning("Processing multiple files simulatneously with stages that imply injected R code is discouraged\n");
     }
+#endif
 
     pipeline.set_verbose(verbose);
     pipeline.set_ncpu(ncpu_inner_loops);
@@ -264,7 +267,11 @@ bool process(const std::string& config_file)
 
     pipeline.profiler.write(fprofiling);
 
+#ifdef USING_R
     return pipeline.to_R();
+#else
+    return true;
+#endif
   }
   catch (std::string e)
   {

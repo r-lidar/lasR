@@ -1,3 +1,5 @@
+#ifdef USING_R
+
 #include <Rinternals.h>
 
 #include "macros.h"
@@ -61,3 +63,5 @@ SEXP is_indexed(SEXP sexpfile)
 
   return Rf_ScalarLogical(indexed);
 }
+
+#endif

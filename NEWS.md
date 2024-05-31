@@ -5,7 +5,7 @@
 - Change: Removed old deprecated functions `processor()` and `reader()`.
 - New: Added new stage `write_lax`. This stage was automatically added by the engine but can now be explicitly added by users.
 - Change: The package no longer assigns `set_parallel_strategy(concurrent_points(half_core()))` when loading. Instead, if nothing is provided, this is interpreted as `concurrent_points(half_core())`. Thus, users can now write `exec(pipeline, on = file, ncores = 8)`. The engine will now respect `ncores = 8` because no global settings were assigned. The multi-threading vignette has been updated.
-- Internal: large amount of changes to separate `lasR` from R. `lasR` can now almost be compiled as a standalone software. At the R level the pipeline and the processing options are passed to the C++ engine via a JSON files instead of being passed via the R's C API effectively separating `lasR` and R itself. The R side of `lasR` is now purely an API to the standalone engine.
+- Internal: large amount of changes to separate `lasR` from R. `lasR` can now be compiled as a standalone software. A `Makefile` has been added to the repository. At the R level the pipeline and the processing options are passed to the C++ engine via a JSON files instead of being passed via the R's C API effectively separating `lasR` and R itself. The R side of `lasR` is now purely an API to the standalone engine. A JSON file produced by the `lasR` package can be executed with the standalone software: `lasr pipeline.json`. However the syntax of the JSON file is not documented and is not intended to be documented. Rather the JSON file should be produced by an API such as the `lasR` package or a QGIS plugin or a Python package. Obviously there is currently no such thing.
 
 # lasR 0.5.6
 
