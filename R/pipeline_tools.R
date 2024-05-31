@@ -78,7 +78,7 @@ print.LASRpipeline = function(x, ...)
     stop("Both operands must be of class LASRalgorithm") # nocov
 
   ans <- c(e1, e2)
-  class(ans) <- "LASRpipeline"
+  class(ans) <- c("LASRpipeline", "list")
   return(ans)
 }
 
@@ -90,13 +90,15 @@ print.LASRpipeline = function(x, ...)
   p <- lapply(p, function(x) { class(x) <- "list" ; x })
   ans <- do.call(c, p)
   names(ans) <- make.names(names(ans), unique = TRUE)
-  class(ans) <- "LASRpipeline"
+  class(ans) <- c("LASRpipeline", "list")
   return(ans)
 }
 
 get_pipeline_info = function(pipeline)
 {
-  ans = .Call(`C_get_pipeline_info`, pipeline)
+  pipeline = toJSON(pipeline)
+  args = list(pipeline = pipeline)
+  ans = .Call(`C_get_pipeline_info`, args)
   if (inherits(ans, "error")) { stop(ans) } # nocov
   return(ans)
 }

@@ -33,17 +33,22 @@
 #' @export
 exec = function(pipeline, on, with = NULL, ...)
 {
+  # Parse options and give precedence to 1. global options 2. LAScatalog 3. with arguments 4. ... arguments
   with = parse_options(on, with, ...)
 
+  # A reader stage is mandatory. It is allowed to omit it the engine adds it.
   if (is_reader_missing(pipeline))
   {
     pipeline = reader_las() + pipeline
   }
 
+  # A build_catalog stage is automatically added. Users do not need to take care of that one
   pipeline = build_catalog(on, with) + pipeline
 
-  valid = FALSE
+  on_is_valid = FALSE
 
+  # If 'on' is a LAS from lidR or a data.frame. Compatibility mode for R exclusively. The reader_las
+  # stage is modified to call R specific stages that are not compiled outside of R
   if (methods::is(on, "LAS") || is.data.frame(on))
   {
     accuracy = c(0,0,0)
@@ -75,39 +80,44 @@ exec = function(pipeline, on, with = NULL, ...)
     pipeline[[ind]]$accuracy = acc
     pipeline[[ind]]$crs = crs
 
-    valid = TRUE
+    on_is_valid = TRUE
   }
 
+  # If 'on' is a LAScatalog, for convenient compatibility with lidR we pick-up the file names
   if (methods::is(on, "LAScatalog"))
   {
     on <- on$filename
   }
 
+  # If 'on' is character, this is the default behavior.
   if (is.character(on))
   {
-    pipeline[[1]]$files <- normalizePath(on, mustWork = FALSE)
-    pipeline[[1]]$buffer <- with$buffer
-    pipeline[[1]]$noprocess <- with$noprocess
+    pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
+    pipeline$build_catalog$buffer <- with$buffer
+    pipeline$build_catalog$noprocess <- with$noprocess
 
+    # 'noprocess' is a hidden and not documented options to be compatible with LAScatalog$processed
     if (!is.null(with$noprocess))
     {
       if (length(with$noprocess) != length(on))
         stop("'noprocess' and 'on' have different length")
     }
 
-    valid = TRUE
+    on_is_valid = TRUE
   }
 
-  if (!valid) stop("Invalid argument 'on'.")
+  if (!on_is_valid) stop("Invalid argument 'on'.")
 
-  pipeline = serialize_pipeline(pipeline)
+  # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
+  # sent to the processor
+  json_file = toJSON(pipeline)
+  with$pipeline = json_file
 
-  ans <- .Call(`C_process`, pipeline, with)
+  ans <- .Call(`C_process`, with)
 
-  if (inherits(ans, "error"))
-  {
-    stop(ans)
-  }
+  file.remove(json_file)
+
+  if (inherits(ans, "error")) stop(ans)
 
   if (!with$noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)
@@ -365,7 +375,7 @@ unset_exec_option = function()
   LASROPTIONS$verbose <- NULL
 }
 
-serialize_pipeline = function(pipeline)
+toJSON = function(pipeline)
 {
   # convert R object (rasterize, callback) into pointer addresses for JSON serialization
   for (i in seq_along(pipeline))
@@ -382,9 +392,19 @@ serialize_pipeline = function(pipeline)
       stage$call <- address(stage$call)
       stage$env <- address(stage$env)
     }
+    else if (stage$algoname == "reader_dataframe" || stage$algoname == "build_catalog")
+    {
+      if (!is.null(stage$dataframe))
+      {
+        stage$dataframe = address(stage$dataframe)
+      }
+    }
 
     pipeline[[i]] <- stage
   }
 
-  return(pipeline)
+  json = tempfile(fileext = ".json")
+  pipeline = rjson::toJSON(unname(pipeline), indent = 1)
+  write(pipeline, json)
+  return(json)
 }

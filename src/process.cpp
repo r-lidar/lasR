@@ -34,7 +34,7 @@
 #define CONCURRENTFILES 3
 #define NESTED 4
 
-SEXP process(SEXP sexppipeline, SEXP args)
+SEXP process(SEXP args)
 {
   int ncpu = get_element_as_int(args, "ncores");
   int strategy = get_element_as_int(args, "strategy");
@@ -42,6 +42,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   bool verbose = get_element_as_bool(args, "verbose");
   double chunk_size = get_element_as_double(args, "chunk");
   std::string fprofiling = get_element_as_string(args, "profiling");
+  std::string fpipeline = get_element_as_string(args, "pipeline");
 
   // Check some multithreading stuff
   if (ncpu > available_threads())
@@ -66,7 +67,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
   {
     Pipeline pipeline;
 
-    if (!pipeline.parse(sexppipeline, progrss))
+    if (!pipeline.parse(fpipeline, progrss))
     {
       throw last_error;
     }
@@ -307,12 +308,14 @@ SEXP process(SEXP sexppipeline, SEXP args)
 }
 
 #ifdef USING_R
-SEXP get_pipeline_info(SEXP sexppipeline)
+SEXP get_pipeline_info(SEXP args)
 {
+  std::string fpipeline = get_element_as_string(args, "pipeline");
+
   try
   {
     Pipeline pipeline;
-    if (!pipeline.parse(sexppipeline))
+    if (!pipeline.parse(fpipeline))
     {
       throw last_error;
     }

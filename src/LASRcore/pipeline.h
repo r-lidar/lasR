@@ -1,8 +1,8 @@
 #ifndef LASRPIPELINE_H
 #define LASRPIPELINE_H
 
-#ifdef USING_R
 // R
+#ifdef USING_R
 #define R_NO_REMAP 1
 #include <R.h>
 #include <Rinternals.h>
@@ -28,7 +28,7 @@ public:
   Pipeline();
   Pipeline(const Pipeline& other);
   ~Pipeline();
-  bool parse(const SEXP sexpargs, bool progress = false); // implemented in parser.cpp
+  bool parse(const std::string& file, bool progress = false); // implemented in parser.cpp
   bool pre_run();
   bool run();
   void merge(const Pipeline& other);

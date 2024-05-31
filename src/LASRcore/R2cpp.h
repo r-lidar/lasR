@@ -10,6 +10,8 @@
 
 bool contains_element(SEXP list, const char *str);
 SEXP get_element(SEXP list, const char *str);
+SEXP string_address_to_sexp(const std::string& addr);
+
 bool get_element_as_bool(SEXP list, const char *str);
 int get_element_as_int(SEXP list, const char *str);
 double get_element_as_double(SEXP list, const char *str);

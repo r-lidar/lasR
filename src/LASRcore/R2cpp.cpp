@@ -18,6 +18,13 @@ SEXP get_element(SEXP list, const char *str)
   return elmt;
 }
 
+SEXP string_address_to_sexp(const std::string& addr)
+{
+  uintptr_t ptr = strtoull(addr.c_str(), NULL, 16);
+  SEXP s = (SEXP)ptr;
+  return s;
+}
+
 bool get_element_as_bool(SEXP list, const char *str)
 {
   SEXP elem = get_element(list, str);

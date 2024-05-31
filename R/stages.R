@@ -570,7 +570,7 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' @md
 rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...)
 {
-  class <- tryCatch({class(operators)}, error = function(x) return("call"))
+  class <- tryCatch({class(operators)[1]}, error = function(x) return("call"))
 
   p = list(...)
   default_value = p$default_value
@@ -1056,14 +1056,14 @@ set_lasr_class = function(x, raster = FALSE, vector = FALSE)
 
   x[["output"]] = normalizePath(x[["output"]], mustWork = FALSE)
 
-  cl <- "LASRalgorithm"
+  cl <- c("LASRalgorithm", "list")
   if (raster) cl <- c(cl, "LASRraster")
   if (vector) cl <- c(cl, "LASRvector")
 
   class(x) <- cl
   x <- list(x)
   names(x) <- x[[1]][["algoname"]]
-  class(x) <- "LASRpipeline"
+  class(x) <- c("LASRpipeline", "list")
   return(x)
 }
 
