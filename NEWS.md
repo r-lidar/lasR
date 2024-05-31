@@ -5,6 +5,7 @@
 - Change: Removed old deprecated functions `processor()` and `reader()`.
 - New: Added new stage `write_lax`. This stage was automatically added by the engine but can now be explicitly added by users.
 - Change: The package no longer assigns `set_parallel_strategy(concurrent_points(half_core()))` when loading. Instead, if nothing is provided, this is interpreted as `concurrent_points(half_core())`. Thus, users can now write `exec(pipeline, on = file, ncores = 8)`. The engine will now respect `ncores = 8` because no global settings were assigned. The multi-threading vignette has been updated.
+- Internal: large amount of changes to separate `lasR` from R. `lasR` can now almost be compiled as a standalone software. At the R level the pipeline and the processing options are passed to the C++ engine via a JSON files instead of being passed via the R's C API effectively separating `lasR` and R itself. The R side of `lasR` is now purely an API to the standalone engine.
 
 # lasR 0.5.6
 

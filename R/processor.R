@@ -407,7 +407,6 @@ toJSON = function(config)
   config$pipeline = unname(config$pipeline)
 
   json = tempfile(fileext = ".json")
-  json = "/home/jr/Téléchargements/pipeline.json"
   config = rjson::toJSON(config, indent = 1)
   write(config, json)
 
