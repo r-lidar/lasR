@@ -99,7 +99,7 @@ get_pipeline_info = function(pipeline)
   pipeline = list(processing = list(), pipeline = pipeline)
   json_file = write_json(pipeline)
   ans = .Call(`C_get_pipeline_info`, json_file)
-  if (inherits(ans, "error")) { stop(ans) } # nocov
+  if (inherits(ans, "error")) { stop(ans) }
   return(ans)
 }
 

@@ -271,57 +271,13 @@ bool process(const std::string& config_file)
   catch (std::string e)
   {
     R_CStackLimit = original_CStackLimit;
-
-    SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
-
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
-    SET_STRING_ELT(names, 0, Rf_mkChar("message")) ;
-    SET_STRING_ELT(names, 1, Rf_mkChar("call")) ;
-    Rf_setAttrib(res, R_NamesSymbol, names);
-
-    SEXP classes = PROTECT(Rf_allocVector(STRSXP, 3));
-    SET_STRING_ELT(classes, 0, Rf_mkChar("C++Error"));
-    SET_STRING_ELT(classes, 1, Rf_mkChar("error"));
-    SET_STRING_ELT(classes, 2, Rf_mkChar("condition"));
-    Rf_setAttrib(res, R_ClassSymbol, classes);
-
-    SEXP R_err = PROTECT(Rf_allocVector(STRSXP, 1));
-    SEXP R_msg = PROTECT(Rf_mkChar(e.c_str()));
-    SET_STRING_ELT(R_err, 0, R_msg);
-
-    SET_VECTOR_ELT(res, 0, R_err);
-    SET_VECTOR_ELT(res, 1, R_NilValue);
-
-    UNPROTECT(5);
-    return res;
+    return make_R_error(e.c_str());
   }
   catch(...)
   {
     // # nocov start
     R_CStackLimit = original_CStackLimit;
-
-    SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
-
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
-    SET_STRING_ELT(names, 0, Rf_mkChar("message")) ;
-    SET_STRING_ELT(names, 1, Rf_mkChar("call")) ;
-    Rf_setAttrib(res, R_NamesSymbol, names);
-
-    SEXP classes = PROTECT(Rf_allocVector(STRSXP, 3));
-    SET_STRING_ELT(classes, 0, Rf_mkChar("C++Error"));
-    SET_STRING_ELT(classes, 1, Rf_mkChar("error"));
-    SET_STRING_ELT(classes, 2, Rf_mkChar("condition"));
-    Rf_setAttrib(res, R_ClassSymbol, classes);
-
-    SEXP R_err = PROTECT(Rf_allocVector(STRSXP, 1));
-    SEXP R_msg = PROTECT(Rf_mkChar("c++ exception (unknown reason)"));
-    SET_STRING_ELT(R_err, 0, R_msg);
-
-    SET_VECTOR_ELT(res, 0, R_err);
-    SET_VECTOR_ELT(res, 1, R_NilValue);
-
-    UNPROTECT(5);
-    return res;
+    return make_R_error("c++ exception (unknown reason)");
     // # nocov end
   }
 
@@ -381,32 +337,11 @@ SEXP get_pipeline_info(SEXP sexp_config_file)
   }
   catch (std::string e)
   {
-    SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
-
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
-    SET_STRING_ELT(names, 0, Rf_mkChar("message")) ;
-    SET_STRING_ELT(names, 1, Rf_mkChar("call")) ;
-    Rf_setAttrib(res, R_NamesSymbol, names);
-
-    SEXP classes = PROTECT(Rf_allocVector(STRSXP, 3));
-    SET_STRING_ELT(classes, 0, Rf_mkChar("C++Error"));
-    SET_STRING_ELT(classes, 1, Rf_mkChar("error"));
-    SET_STRING_ELT(classes, 2, Rf_mkChar("condition"));
-    Rf_setAttrib(res, R_ClassSymbol, classes);
-
-    SEXP R_err = PROTECT(Rf_allocVector(STRSXP, 1));
-    SEXP R_msg = PROTECT(Rf_mkChar(e.c_str()));
-    SET_STRING_ELT(R_err, 0, R_msg);
-
-    SET_VECTOR_ELT(res, 0, R_err);
-    SET_VECTOR_ELT(res, 1, R_NilValue);
-
-    UNPROTECT(5);
-    return res;
+    return make_R_error(e.c_str());
   }
   catch(...)
   {
-    Rf_error("c++ exception (unknown reason)"); // # nocov
+    return make_R_error("c++ exception (unknown reason)"); // # nocov
   }
 
   return R_NilValue; // # nocov
