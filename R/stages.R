@@ -1055,6 +1055,7 @@ set_lasr_class = function(x, raster = FALSE, vector = FALSE)
   x <- Filter(Negate(is.null), x)
 
   x[["output"]] = normalizePath(x[["output"]], mustWork = FALSE)
+  x[["filter"]] = as.character(x[["filter"]])
 
   cl <- c("LASRalgorithm", "list")
   if (raster) cl <- c(cl, "LASRraster")

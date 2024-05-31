@@ -112,7 +112,7 @@ exec = function(pipeline, on, with = NULL, ...)
 
   # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
   # sent to the processor
-  json_file = toJSON(pipeline)
+  json_file = write_json(pipeline)
 
   ans <- .Call(`C_process`, json_file)
 
@@ -376,7 +376,7 @@ unset_exec_option = function()
   LASROPTIONS$verbose <- NULL
 }
 
-toJSON = function(config)
+write_json = function(config)
 {
   # convert R object (rasterize, callback) into pointer addresses for JSON serialization
   for (i in seq_along(config$pipeline))
@@ -407,8 +407,11 @@ toJSON = function(config)
   config$pipeline = unname(config$pipeline)
 
   json = tempfile(fileext = ".json")
-  config = rjson::toJSON(config, indent = 1)
+  json = "/home/jr/Téléchargements/pipeline.json"
+  config = toJSON(config)
   write(config, json)
 
   return(json)
 }
+
+

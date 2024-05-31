@@ -333,19 +333,20 @@ SEXP get_pipeline_info(SEXP sexp_config_file)
 {
   std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
 
-  std::ifstream fjson(config_file);
-  if (!fjson.is_open())
-  {
-    last_error = "Could not open the json file containing the pipeline";
-    throw last_error;
-  }
-  nlohmann::json json;
-  fjson >> json;
-
-  nlohmann::json json_pipeline = json["pipeline"];
-
   try
   {
+    std::ifstream fjson(config_file);
+    if (!fjson.is_open())
+    {
+      last_error = "Could not open the json file containing the pipeline";
+      throw last_error;
+    }
+    nlohmann::json json;
+    fjson >> json;
+
+    nlohmann::json json_pipeline = json["pipeline"];
+
+
     Pipeline pipeline;
     if (!pipeline.parse(json_pipeline))
     {
