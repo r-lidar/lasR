@@ -49,7 +49,7 @@ SEXP get_address(SEXP obj)
 {
   char address[20];
   snprintf(address, sizeof(address), "%p", (void*)obj);
-  return mkString(address);
+  return Rf_mkString(address);
 }
 
 #endif
