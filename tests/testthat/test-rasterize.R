@@ -23,7 +23,7 @@ test_that("rasterize non streamed works",
   #terra::plot(u, col = lidR::height.colors(25))
 
   expect_s4_class(u, "SpatRaster")
-  expect_equal(names(u),  c("count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zp50", "zabove810.5",  "imax", "imin", "imean", "imedian", "isd", "icv", "ip100"))
+  expect_equal(names(u),  c("count", "z_max", "z_min", "z_mean", "z_median", "z_sd", "z_cv", "z_p50", "z_above810.5",  "i_max", "i_min", "i_mean", "i_median", "i_sd", "i_cv", "i_p100"))
   expect_equal(dim(u), c(58, 58, 16))
   expect_equal(mean(u[[1]][], na.rm = T), 24.12985, tolerance = 1e-6) # count
   expect_equal(mean(u[[2]][], na.rm = T), 813.256, tolerance = 1e-6) # zmax
@@ -39,23 +39,18 @@ test_that("rasterize fails",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  expect_error(rasterize(1, "zp101"), "Non supported operators")
-
   met = rasterize(5, c("count"))
-  met[[1]]$method = "zp101"
+  met[[1]]$method = "z_p101"
   expect_error(exec(met, on = f), "Percentile out of range")
 
-  met[[1]]$method = "ip101"
+  met[[1]]$method = "i_p101"
   expect_error(exec(met, on = f), "Percentile out of range")
 
-  met[[1]]$method = "plop"
-  expect_error(exec(met, on = f), "metric plop not recognized")
+  met[[1]]$method = "jlop"
+  expect_error(exec(met, on = f), "Invalid metric name: jlop")
 
   met[[1]]$method = "zup"
-  expect_error(exec(met, on = f), "metric zup not recognized")
-
-  met[[1]]$method = "iup"
-  expect_error(exec(met, on = f), "metric iup not recognized")
+  expect_error(exec(met, on = f), "Invalid metric name: zup")
 })
 
 test_that("rasterize expression works",

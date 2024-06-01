@@ -23,7 +23,7 @@ public:
 private:
   bool streamable;
   double window;
-  LASRmetrics metrics;
+  Metrics metrics;
 };
 
 #endif
