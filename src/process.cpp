@@ -5,12 +5,12 @@
   #include <R.h>
   #include <Rinternals.h>
 
-  #ifndef _WIN32
+  /*#ifndef _WIN32
     #define CSTACK_DEFNS 1
     #include <Rinterface.h> // R_CStackLimit
   #else
-    extern __declspec(dllimport) uintptr_t R_CStackLimit; /* C stack limit */
-  #endif
+    extern __declspec(dllimport) uintptr_t R_CStackLimit; // C stack limit
+  #endif*/
 #endif
 
 #include <memory>
@@ -81,9 +81,9 @@ bool process(const std::string& config_file)
   }
   if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
 
-  #ifdef USING_R
-    uintptr_t original_CStackLimit = R_CStackLimit;
-  #endif
+  //#ifdef USING_R
+  //uintptr_t original_CStackLimit = R_CStackLimit;
+  //#endif
 
   try
   {
@@ -117,7 +117,6 @@ bool process(const std::string& config_file)
       warning("This pipeline is not parallizable using 'concurrent-files' strategy.\n");
     }
 
-#ifdef USING_R
     if (use_rcapi && ncpu_outer_loop > 1)
     {
       // The R's C stack is now unprotected — the work with R C API becomes more dangerous
@@ -125,10 +124,11 @@ bool process(const std::string& config_file)
       // It is supposed to be safe because every single call to the R's C API is protected in a critical section
       // https://stats.blogoverflow.com/2011/08/using-openmp-ized-c-code-with-r/
       // https://stat.ethz.ch/pipermail/r-devel/2007-June/046207.html
-      R_CStackLimit=(uintptr_t)-1;
-      warning("Processing multiple files simulatneously with stages that imply injected R code is discouraged\n");
+      //R_CStackLimit=(uintptr_t)-1;
+      ncpu_inner_loops = ncpu_outer_loop;
+      ncpu_outer_loop = 1;
+      warning("This pipeline is not parallizable using 'concurrent-files' strategy because of stage(s) that imply injected R code\n");
     }
-#endif
 
     pipeline.set_verbose(verbose);
     pipeline.set_ncpu(ncpu_inner_loops);
@@ -257,9 +257,9 @@ bool process(const std::string& config_file)
 
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
-    #ifdef USING_R
-      R_CStackLimit = original_CStackLimit;
-    #endif
+    //#ifdef USING_R
+    //R_CStackLimit = original_CStackLimit;
+    //#endif
 
     progress.done(true);
 
@@ -281,7 +281,7 @@ bool process(const std::string& config_file)
   catch (std::string e)
   {
     #ifdef USING_R
-      R_CStackLimit = original_CStackLimit;
+      //R_CStackLimit = original_CStackLimit;
       return make_R_error(e.c_str());
     #else
       eprint(e.c_str());
@@ -292,7 +292,7 @@ bool process(const std::string& config_file)
   {
     // # nocov start
     #ifdef USING_R
-      R_CStackLimit = original_CStackLimit;
+      //R_CStackLimit = original_CStackLimit;
       return make_R_error("c++ exception (unknown reason)");
     #else
       eprint("c++ exception (unknown reason)");

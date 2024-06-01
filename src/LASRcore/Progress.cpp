@@ -29,7 +29,7 @@ Progress::Progress()
 #ifdef USING_R
   interrupt_counter = 0;
   user_interrupt_event = false;
-  check_interrupt_enabled = false;
+  check_interrupt_enabled = true;
 #endif
 };
 
@@ -145,7 +145,6 @@ void Progress::reset()
 
 #ifdef USING_R
     this->interrupt_counter = 0;
-    this->check_interrupt_enabled = false;
 #endif
   }
 }
