@@ -1,11 +1,20 @@
 # lasR 0.6.0
 
-- New: Added new stage `stop_if` to conditionally escape the pipeline.
-- Doc: Introduced new section about `stop_if` in the [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
-- Change: Removed old deprecated functions `processor()` and `reader()`.
-- New: Added new stage `write_lax`. This stage was automatically added by the engine but can now be explicitly added by users.
-- Change: The package no longer assigns `set_parallel_strategy(concurrent_points(half_core()))` when loading. Instead, if nothing is provided, this is interpreted as `concurrent_points(half_core())`. Thus, users can now write `exec(pipeline, on = file, ncores = 8)`. The engine will now respect `ncores = 8` because no global settings were assigned. The multi-threading vignette has been updated.
-- Internal: large amount of changes to separate `lasR` from R. `lasR` can now be compiled as a standalone software. A `Makefile` has been added to the repository. At the R level the pipeline and the processing options are passed to the C++ engine via a JSON files instead of being passed via the R's C API effectively separating `lasR` and R itself. The R side of `lasR` is now purely an API to the standalone engine. A JSON file produced by the `lasR` package can be executed with the standalone software: `lasr pipeline.json`. However the syntax of the JSON file is not documented and is not intended to be documented. Rather the JSON file should be produced by an API such as the `lasR` package or a QGIS plugin or a Python package. Obviously there is currently no such thing.
+### NEW FEATURES
+
+1. New stage `stop_if` to conditionally escape the pipeline.  New section about `stop_if` in the [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
+
+2. New stage `write_lax`. This stage was automatically added by the engine but can now be explicitly added by users.
+
+3. New metrics in `rasterize`. The metric engine has been redesigned and allows any string with a format `attribute_metric` such `z_sd`, `i_mean`, `c_mode`, `a_mean`, `intensity_max`, `classification_mode`, `angle_mean` and many other combination.
+
+### BREAKING CHANGE
+
+1. The package no longer assigns `set_parallel_strategy(concurrent_points(half_core()))` when loading. Instead, if nothing is provided, this is interpreted as `concurrent_points(half_core())`. Thus, users can now write `exec(pipeline, on = file, ncores = 8)`. The engine will now respect `ncores = 8` because no global settings were assigned. The multi-threading vignette has been updated.
+
+### INTERNAL CHANGES
+
+1. A large amount of changes to separate `lasR` from R. `lasR` can now be compiled as a standalone software. A `Makefile` has been added to the repository. At the R level the pipeline and the processing options are passed to the C++ engine via a JSON file instead of being passed via the R's C API effectively separating `lasR` from R itself. The R side of `lasR` is now purely an API to the standalone engine. A JSON file produced by the `lasR` package can be executed with the standalone software: `lasr pipeline.json`. However the syntax of the JSON file is not documented and is not intended to be documented. Rather the JSON file should be produced by an API such as the `lasR` package or a QGIS plugin or a Python package. Obviously there is currently no such thing.
 
 # lasR 0.5.6
 
