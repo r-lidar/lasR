@@ -4,6 +4,8 @@
 #include "macros.h"
 #include <vector>
 #include <cstdlib>
+#include <string>
+#include <unordered_map>
 
 struct PointXY
 {
@@ -61,6 +63,9 @@ struct PointLAS : public PointXYZ
   unsigned short G;
   unsigned short B;
   unsigned short NIR;
+  std::unordered_map<std::string, double> extrabytes;
+
+  double get_extrabyte(const std::string& name) const;
 };
 
 enum ShapeType { UNKNOWN, RECTANGLE, CIRCLE, TRIANGLE, SPHERE};

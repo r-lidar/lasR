@@ -92,13 +92,25 @@ Metric Metrics::parse(const std::string& name)
     metric = metric.substr(0,5);
   }
 
-  auto accessor = attribute_functions.find(attribute);
-  if (accessor == attribute_functions.end()) throw std::invalid_argument("Invalid attribute name: " + attribute);
-
   auto metric_function = metric_functions.find(metric);
   if (metric_function == metric_functions.end()) throw std::invalid_argument("Invalid metric name: " + metric);
 
-  return Metric(metric_function->second, accessor->second, param);
+  // Special case to handle extra bytes
+  if (attribute[0] == '$')
+  {
+    attribute = attribute.substr(1);
+    auto accessor = [attribute](const PointLAS& p) { return p.get_extrabyte(attribute); };
+
+    return Metric(metric_function->second, accessor, param);
+  }
+  else
+  {
+    auto accessor = attribute_functions.find(attribute);
+    if (accessor == attribute_functions.end()) throw std::invalid_argument("Invalid attribute name: " + attribute);
+
+    return Metric(metric_function->second, accessor->second, param);
+  }
+
 }
 
 // streamable metrics

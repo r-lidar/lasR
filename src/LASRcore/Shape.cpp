@@ -1,4 +1,5 @@
 #include "Shape.h"
+#include "NA.h"
 
 #include <utility>    // std::swap
 #include <functional> // std::hash
@@ -89,6 +90,30 @@ void PointLAS::copy(const LASpoint* const p)
   G = p->get_R();
   B = p->get_R();
   NIR = p->get_NIR();
+
+  int i = 0;
+  while (p->has_attribute(i))
+  {
+    std::string name = p->get_attribute_name(i);
+    double value = p->get_attribute_as_float(i);
+    /*if (p->attributer->attributes[i].has_no_data())
+    {
+      if (value == *(double*)(p->attributer->attributes[i].no_data))
+      {
+        value = std::numeric_limits<double>::quiet_NaN();
+      }
+    }*/
+    extrabytes[name] = value;
+    i++;
+  }
+}
+
+double PointLAS::get_extrabyte(const std::string& name) const
+{
+  int val = NA_F32_RASTER;
+  auto it = extrabytes.find(name);
+  if (it != extrabytes.end()) val = it->second;
+  return val;
 }
 
 /* ====================
