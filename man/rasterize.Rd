@@ -42,29 +42,29 @@ It produces a derived product in raster format.
 }
 \section{Operators}{
 
-If \code{operators} is a string or a vector of strings. The string is composed of two parts separated by an
-underscore. The first part is the attribute on which the metric must be computed (e.g. z, intensity, classification).
-The second part is the name of the metrics (e.g. mean, sd, cv). A string thus typically looks like
-\code{"z_max"}, \verb{"intensity_min}, \code{"z_mean"}, \code{"classification_mode"}.\cr\cr
-The available attributes are accessible via a single letter or via there lowercase name:  t - gpstime,
+If \code{operators} is a string or a vector of strings, each string is composed of two parts separated by an
+underscore. The first part is the attribute on which the metric must be computed (e.g., z, intensity, classification).
+The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+\code{"z_max"}, \code{"intensity_min"}, \code{"z_mean"}, \code{"classification_mode"}.\cr\cr
+The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
 a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
 s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
 e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
-The available metrics names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX and mode.
-Some metrics have an attribute + name + a parameter X such as "pX" where "X" can be substituted by a number.
-Here, "z_pX" represents the Xth percentile, for instance, "z_p95" signifies the 95th
-percentile of z. "z_aboveX" corresponds to the percentage of points above X (sometime called canopy cover).\cr\cr
-It is possible to call a metric without the name of the attribute. In this case z is the default.
-Below are some example of valid calls:
+The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+Some metrics have an attribute + name + a parameter X, such as "pX" where "X" can be substituted by a number.
+Here, "z_pX" represents the Xth percentile; for instance, "z_p95" signifies the 95th
+percentile of z. "z_aboveX" corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+It is possible to call a metric without the name of the attribute. In this case, z is the default.
+Below are some examples of valid calls:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{rasterize(10, c("max", "count", "i_mean", "z_p95))
+\if{html}{\out{<div class="sourceCode">}}\preformatted{rasterize(10, c("max", "count", "i_mean", "z_p95"))
 rasterize(10, c("z_max", "c_count", "intensity_mean", "p95"))
 }\if{html}{\out{</div>}}
 
-\strong{Be careful}: the engine supports any combination of \code{attribute_metric} string. While they are
-all computable they are not all meaningful. For example \code{c_mode} makes sense but not \code{z_mode}. Also
-all metrics are computed with a 32 bits floating point accuracy thus \code{x_mean} or \code{y_sum} might be
-a sightly inaccurate but anyway these metrics are not supposed to be useful.
+\strong{Be careful}: the engine supports any combination of \code{attribute_metric} strings. While they are
+all computable, they are not all meaningful. For example, \code{c_mode} makes sense but not \code{z_mode}. Also,
+all metrics are computed with 32-bit floating point accuracy, so \code{x_mean} or \code{y_sum} might be
+slightly inaccurate, but anyway, these metrics are not supposed to be useful.
 \cr\cr
 If \code{operators} is an R user-defined expression, the function should return either a vector of numbers
 or a \code{list} containing atomic numbers. To assign a band name to the raster, the vector or the \code{list}
