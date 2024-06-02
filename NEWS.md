@@ -14,7 +14,7 @@
 
 1. The package no longer assigns `set_parallel_strategy(concurrent_points(half_core()))` when loading. Instead, if nothing is provided, this is interpreted as `concurrent_points(half_core())`. Thus, users can now write `exec(pipeline, on = file, ncores = 8)`. The engine will now respect `ncores = 8` because no global settings were assigned. The multi-threading vignette has been updated.
 
-2. Pipelines that include R-based stages (`rasterize` with R function, `callback`) are no longer parallelizable with the `concurrent-file` strategy. Parallelizing a pipeline that involves the R C API is terribly complex and eventually leads only to pseudo-parallelism with a lot of troubleshooting to deal with (especially to abort the pipeline). Consequently, we removed parallelism capabilities. The numerous new native metrics added in `rasterize` compensate for that loss.
+2. Pipelines that include R-based stages (`rasterize` with R function, `callback`) are no longer parallelizable with the `concurrent-file` strategy. Parallelizing a pipeline that involves the R C API is terribly complex and eventually leads only to pseudo-parallelism with a lot of troubleshooting to deal with (especially to abort the pipeline). Consequently, we removed parallelism capabilities. The numerous new native metrics added in `rasterize` compensate for that loss. The online documentation has been updated in consequence.
 
 ### INTERNAL CHANGES
 

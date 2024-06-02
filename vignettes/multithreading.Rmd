@@ -87,25 +87,14 @@ The LAS/LAZ files are processed in parallel. The point cloud from several files 
 
 ## Special cases
 
-In `lasR`, everything is written in pure C++ except for two stages that inject user-defined R code and use the R C API.
+In `lasR`, everything is written in pure C++ except for two stages that inject user-defined R code and use the R C API (see [R stages](r-stages.html))
 
-```r
+```r 
 rasterize(20, user_function(Z))
 callback(user_function(data))
 ```
 
-R is **NOT** multi-threaded, and thus calling these stages in parallel is not thread-safe and will crash the R session in the best case or deeply corrupt the R memory in the worst case. Consequently, these stages are protected and cannot run concurrently. When a pipeline has stages that use the R API (in orange in the figure below), the stages that use R are blocking the other stages that are waiting (see figure below).
-
-
-![](concurent_points_with_R.png){width=600px}
-
-Of course, as depicted in the diagram above, this incurs a computational time cost. If the blocking stages take a lot of time compared to the other stages it could even defeat the interest of the multi-files parallelization. Therefore, users are discouraged from using these stages if alternatives are available. For example, `rasterize()` offers numerous native metrics coded in C++, making custom metrics coded in R unnecessary.
-
-It is worth mentioning that the `lidR` package does not face this problem because each core runs a different and independent R session, thanks to the `future` package. While this approach has the advantage of being non blocking, it also comes with several inconveniences. In contrast, `lasR` utilizes only one R session to process multiple files in parallel. One consequences is that `lasR` will run `rasterize()` with custom metrics or `callback()` in parallel much slower than `lidR`.
-
-With multiple files and complex pipeline, the overhead of blocking the pipeline for stages that use R *might* be less significant because once the pipelines are out of sync, the blocking stages *may* no longer occur simultaneously and thus cease to be blocking, as illustrated in the figure below with 8 files and 4 cores. This happens only if the blocking stages are quick behind the other stages.
-
-![](concurent_points_with_R_8.png)
+R is **NOT** multi-threaded, and thus calling these stages in parallel is not thread-safe and will crash the R session in the best case or deeply corrupt the R memory in the worst case. Consequently, these stages are protected and pipelines involving these stages cannot be ran in parallel with the `concurrent-files` strategy.
 
 ## Real timeline
 
