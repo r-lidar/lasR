@@ -30,11 +30,9 @@ class Metrics
 public:
   Metrics();
   ~Metrics();
-  void add_point(const PointLAS& p);
   bool parse(const std::vector<std::string>& names);
-  void reset();
   int size() const;
-  float get_metric(int index) const;
+  float get_metric(int index, const PointCloud& points) const;
   float get_metric(int index, float x, float y) const;
   float get_default_value() const { return default_value; };
   void set_default_value(float val) { default_value = val; };
@@ -42,7 +40,6 @@ public:
 
 private:
   double percentile(const std::vector<double>& x, float p) const;
-
   float string2float(const std::string& s) const;
 
   // streamable metrics
@@ -64,7 +61,6 @@ private:
   float mode(PointAccessor accessor, const PointCloud& points, float param) const;
 
   float default_value;
-  PointCloud points;
 
   // Some predefined metrics such as z_max or z_min can be streamed. We use a pointer to simple functions.
   bool streamable;

@@ -101,17 +101,6 @@ Metric Metrics::parse(const std::string& name)
   return Metric(metric_function->second, accessor->second, param);
 }
 
-
-void Metrics::add_point(const PointLAS& p)
-{
-  points.push_back(p);
-}
-
-void Metrics::reset()
-{
-  points.clear();
-}
-
 // streamable metrics
 float Metrics::pmax  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x > y) ? x : y; }
 float Metrics::pmin  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x < y) ? x : y; }
@@ -240,7 +229,7 @@ float Metrics::get_metric(int index, float x, float y) const
   return (this->*f)(x,y);
 }
 
-float Metrics::get_metric(int index) const
+float Metrics::get_metric(int index, const PointCloud& points) const
 {
   if (points.size() == 0) return default_value;
   return regular_operators[index].compute(points);
@@ -277,7 +266,6 @@ float Metrics::string2float(const std::string& s) const
 
 Metrics::Metrics()
 {
-  reset();
   streamable = false;
   default_value = NA_F32_RASTER;
 }

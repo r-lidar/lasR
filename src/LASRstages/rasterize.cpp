@@ -164,21 +164,17 @@ bool LASRrasterize::process(LAS*& las)
     int cell = keys[i];
     las->query(*intervals[i], pts, &lasfilter);
 
-    for (const auto& p : pts) metrics.add_point(p);
-
     for (int i = 0 ; i < metrics.size() ; i++)
     {
-      float val = metrics.get_metric(i);
+      float val = metrics.get_metric(i, pts);
       raster.set_value(cell, val, i+1);
     }
-
-    metrics.reset();
 
     if (main_thread)
     {
       #pragma omp critical
       {
-        // can only be called in outer thread 0 AND is internally thread safe being called only in outer thread 0
+        // can only be called in outer thread 0 AND is internally thread safe being called only in inner thread 0
         (*progress)++;
         progress->show();
       }
