@@ -35,6 +35,27 @@ test_that("writelas writes 4 files",
   expect_true(all(file.exists(u)))
 })
 
+test_that("writelas writes 4 files with a buffered pipeline",
+{
+  f = paste0(system.file(package="lasR"), "/extdata/bcts")
+  f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+  f = f[1:2]
+
+  reader = reader_las(filter = "-keep_every_nth 10 -keep_first")
+  writer = write_las(keep_buffer = F)
+  u = exec(reader + writer, on = f, buffer = 50)
+  h = exec(hulls(), on = u)
+
+  expect_equal(as.numeric(sum(sf::st_area(h))), 103328.525)
+
+  reader = reader_las(filter = "-keep_every_nth 10 -keep_first")
+  writer = write_las(keep_buffer = T)
+  u = exec(reader + writer, on = f, buffer = 50)
+  h = exec(hulls(), on = u)
+
+  expect_equal(as.numeric(sum(sf::st_area(h))), 122834.395)
+})
+
 test_that("writelas writes 1 merged file",
 {
   f = paste0(system.file(package="lasR"), "/extdata/bcts")
