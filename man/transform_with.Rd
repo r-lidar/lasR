@@ -11,7 +11,7 @@ transform_with(stage, operator = "-", store_in_attribute = "")
 
 \item{operator}{string. '-' and '+' are supported.}
 
-\item{store_in_attribute}{numeric. Use an extra bytes attribute to store the result.}
+\item{store_in_attribute}{string. Use an extra bytes attribute to store the result.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.

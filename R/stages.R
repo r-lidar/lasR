@@ -962,7 +962,7 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #'
 #' @param stage LASRpipeline. A stage that produces a triangulation or a raster.
 #' @param operator string. '-' and '+' are supported.
-#' @param store_in_attribute numeric. Use an extra bytes attribute to store the result.
+#' @param store_in_attribute string. Use an extra bytes attribute to store the result.
 #'
 #' @template return-pointcloud
 #'
