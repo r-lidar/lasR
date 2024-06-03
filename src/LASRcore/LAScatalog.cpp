@@ -95,6 +95,7 @@ bool LAScatalog::read_vpc(const std::string& filename)
 {
   clear();
   use_dataframe = false;
+  use_vpc = true;
 
   // Get the parent file to resolve relative path later
   std::filesystem::path parent_folder = std::filesystem::path(filename).parent_path();
@@ -193,7 +194,7 @@ bool LAScatalog::read_vpc(const std::string& filename)
         return false; // # nocov
       }
 
-      bool spatial_index = feature["properties"].value("index:indexed", false);
+      bool spatial_index = feature["properties"].value("index:indexed", false); // backward compatibility
 
       files.push_back(file_path);
       add_wkt(wkt);
@@ -283,6 +284,8 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     Rectangle& bbox = bboxes[i];
     uint64_t n = npoints[i];
     bool index = indexed[i];
+    double zmin = zlim[i].first;
+    double zmax = zlim[i].second;
 
     std::string date;
     int year = dates[i].first;
@@ -303,7 +306,10 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
       date = "0-01-01T00:00:00Z";
     }
 
-    Rectangle bbwgs84 = bbox;
+    PointXY A = {bbox.minx, bbox.miny};
+    PointXY B = {bbox.maxx, bbox.miny};
+    PointXY C = {bbox.maxx, bbox.maxy};
+    PointXY D = {bbox.minx, bbox.maxy};
     OGRSpatialReference oTargetSRS;
     OGRSpatialReference oSourceSRS;
     oTargetSRS.importFromEPSG(4979);
@@ -311,17 +317,19 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     oSourceSRS = crs.get_crs();
     OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
     double z = 0;
-    if (!poTransform->Transform(1, &bbwgs84.minx, &bbwgs84.miny, &z) ||
-        !poTransform->Transform(1, &bbwgs84.maxx, &bbwgs84.maxy, &z))
+    if (!poTransform->Transform(1, &A.x, &A.y, &zmin) ||
+        !poTransform->Transform(1, &B.x, &B.y, &z) ||
+        !poTransform->Transform(1, &C.x, &C.y, &zmax) ||
+        !poTransform->Transform(1, &D.x, &D.y, &z))
     {
       last_error = "Transformation of the bounding in WGS 84 failed!";
       return false;
     }
 
     char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0], [%.9lf,%.9lf,0] ]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.miny,  bbwgs84.maxx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.maxy, bbwgs84.minx, bbwgs84.miny);
+    snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf] ]", A.x, A.y, zmin, B.x, B.y, zmin, C.x, C.y, zmax, D.x, D.y, zmax, A.x, A.y, zmin);
     std::string geometry(buffer);
-    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, 0, %.9lf, %.9lf, 0]", bbwgs84.minx, bbwgs84.miny, bbwgs84.maxx, bbwgs84.maxy);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), zmin, MAX(B.x, C.y), MAX(C.y, D.y), zmax);
     std::string sbbox(buffer);
 
     output << "  {" << std::endl;
@@ -343,10 +351,10 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     output << "      \"datetime\": " << autoquote(date) << "," << std::endl;
     output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
+    if (index) output << "      \"index:indexed\": " << "true," << std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
-    if (!wkt.empty()) output << "      \"proj:wtk2\": " << wkt << "," << std::endl;
+    if (!wkt.empty()) output << "      \"proj:wkt2\": " << wkt << "," << std::endl;
     if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
-    output << "      \"index:indexed\": " << ((index) ? "true" : "false") << std::endl;
     output << "    }," << std::endl;
     output << "    \"links\": []," << std::endl;
     output << "    \"assets\": {" << std::endl;
@@ -416,8 +424,10 @@ void LAScatalog::add_crs(const LASheader* header)
   }
 }
 
-bool LAScatalog::add_file(const std::string& file, bool noprocess)
+bool LAScatalog::add_file(std::string file, bool noprocess)
 {
+  std::replace(file.begin(), file.end(), '\\', '/' );
+
   LASreadOpener lasreadopener;
   lasreadopener.add_file_name(file.c_str());
   LASreader* lasreader = lasreadopener.open();
@@ -432,6 +442,7 @@ bool LAScatalog::add_file(const std::string& file, bool noprocess)
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
   npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
   dates.push_back({lasreader->header.file_creation_year, lasreader->header.file_creation_day});
+  zlim.push_back({lasreader->header.min_z, lasreader->header.max_z});
 
   lasreader->close();
   delete lasreader;
@@ -544,6 +555,11 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
   chunk.id = i;
 
   return success;
+}
+
+const std::vector<std::filesystem::path>& LAScatalog::get_files() const
+{
+  return files;
 }
 
 bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
@@ -733,6 +749,11 @@ int LAScatalog::get_number_indexed_files() const
   return std::count(indexed.begin(), indexed.end(), true);
 }
 
+void LAScatalog::set_all_indexed()
+{
+  std::fill(indexed.begin(), indexed.end(), true);
+}
+
 void LAScatalog::clear()
 {
   xmin = F64_MAX;
@@ -748,6 +769,7 @@ void LAScatalog::clear()
   //wkt.clear();
 
   use_dataframe = true;
+  use_vpc = false;
 
   buffer = 0;
   chunk_size = 0;
@@ -807,5 +829,3 @@ LAScatalog::~LAScatalog()
   if (laskdtree) delete laskdtree;
   for (auto p : queries) delete p;
 }
-
-

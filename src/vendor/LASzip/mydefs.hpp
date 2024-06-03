@@ -36,7 +36,7 @@
 #define STRICT_R_HEADERS
 #define __STDC_FORMAT_MACROS 1
 
-#include "Rcompatibility.h"
+#include "print.h"
 
 #include <string.h>
 #include <stdlib.h>

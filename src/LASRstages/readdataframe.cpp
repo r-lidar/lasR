@@ -1,3 +1,5 @@
+#ifdef USING_R
+
 #include "readdataframe.h"
 
 #include <algorithm>
@@ -355,3 +357,5 @@ double LASRdataframereader::guess_accuracy(SEXP x) const
 
   return 1/std::pow(10,n);
 }
+
+#endif

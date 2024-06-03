@@ -31,7 +31,7 @@ local maximum. Default is 2.}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processes.
+For a given stage when a filter is applied, only the points that meet the criteria are processed.
 The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
 \link{filters}.}
 
@@ -49,6 +49,11 @@ It is also possible to record the attributes of theses points such as the intens
 angle and so on.}
 
 \item{raster}{LASRalgorithm. A stage that produces a raster.}
+}
+\value{
+This stage produces a vector. The path provided to `ofile` is expected to be `.gpkg` or
+any other format supported by GDAL. Vector stages may produce geometries with Z coordinates.
+Thus, it is discouraged to store them in formats with no 3D support, such as shapefiles.
 }
 \description{
 The Local Maximum stage identifies points that are locally maximum. The window size is

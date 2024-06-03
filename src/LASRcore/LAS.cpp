@@ -564,7 +564,7 @@ bool LAS::add_attribute(int data_type, const std::string& name, const std::strin
   int attr_index = header->add_attribute(attribute);
   if (attr_index == -1)
   {
-    eprint("LASlib internal error: add_attribute failed"); // # nocov
+    last_error = "LASlib internal error: add_attribute failed"; // # nocov
     return false; // # nocov
   }
 
@@ -827,9 +827,8 @@ int LAS::get_point_data_record_length(int point_data_format, int num_extrabytes)
   }
 }
 
-int LAS::get_true_number_of_points() const
+U64 LAS::get_true_number_of_points() const
 {
-  int n = (int)MAX(header->number_of_point_records, header->extended_number_of_point_records);
-  return n;
+  return MAX(header->number_of_point_records, header->extended_number_of_point_records);
 }
 

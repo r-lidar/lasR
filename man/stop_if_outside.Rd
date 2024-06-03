@@ -31,12 +31,12 @@ dtm = rasterize(1, tri)
 # allows to escape the pipeline outside the bounding box
 pipeline = read + hll + stopif + tri + dtm
 ans1 <- exec(pipeline, on = f)
-plot(ans1$hulls$geom, axes = T)
-terra::plot(ans1$rasterize, add = T)
+plot(ans1$hulls$geom, axes = TRUE)
+terra::plot(ans1$rasterize, add = TRUE)
 
 # stopif can be applied before read. Only one file will actually be read and processed
 pipeline = stopif + read + hll + tri + dtm
 ans2 <- exec(pipeline, on = f)
-plot(ans2$hulls$geom, axes = T)
-terra::plot(ans1$rasterize, add = T, legend = FALSE)
+plot(ans2$hulls$geom, axes = TRUE)
+terra::plot(ans1$rasterize, add = TRUE, legend = FALSE)
 }

@@ -78,7 +78,7 @@ print.LASRpipeline = function(x, ...)
     stop("Both operands must be of class LASRalgorithm") # nocov
 
   ans <- c(e1, e2)
-  class(ans) <- "LASRpipeline"
+  class(ans) <- c("LASRpipeline", "list")
   return(ans)
 }
 
@@ -90,14 +90,16 @@ print.LASRpipeline = function(x, ...)
   p <- lapply(p, function(x) { class(x) <- "list" ; x })
   ans <- do.call(c, p)
   names(ans) <- make.names(names(ans), unique = TRUE)
-  class(ans) <- "LASRpipeline"
+  class(ans) <- c("LASRpipeline", "list")
   return(ans)
 }
 
 get_pipeline_info = function(pipeline)
 {
-  ans = .Call(`C_get_pipeline_info`, pipeline)
-  if (inherits(ans, "error")) { stop(ans) } # nocov
+  pipeline = list(processing = list(), pipeline = pipeline)
+  json_file = write_json(pipeline)
+  ans = .Call(`C_get_pipeline_info`, json_file)
+  if (inherits(ans, "error")) { stop(ans) }
   return(ans)
 }
 
@@ -113,5 +115,10 @@ is_indexed = function(files)
   }
 
   return (ans)
+}
+
+address = function(x)
+{
+  .Call(`C_address`, x)
 }
 

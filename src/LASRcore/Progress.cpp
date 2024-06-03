@@ -2,7 +2,7 @@
 
 #include "openmp.h"
 #include "macros.h"
-#include "Rcompatibility.h"
+#include "print.h"
 
 #include <inttypes.h>
 #include <string>
@@ -12,8 +12,9 @@
 #include <Rinternals.h> // for R_ToplevelExec
 #endif
 
+#ifdef USING_R
 bool Progress::user_interrupt_event = false;
-
+#endif
 // Called only once in the processor function
 Progress::Progress()
 {
@@ -24,9 +25,12 @@ Progress::Progress()
   display = false;
   prev = -1.0f;
   sub = 0;
+
+#ifdef USING_R
   interrupt_counter = 0;
   user_interrupt_event = false;
-  check_interrupt_enabled = false;
+  check_interrupt_enabled = true;
+#endif
 };
 
 // Called only once in the processor function.
@@ -52,7 +56,9 @@ Progress& Progress::operator++(int)
     this->current++;
     this->compute_percentage();
 
+#ifdef USING_R
     check_interrupt();
+#endif
   }
 
   return *this;
@@ -89,13 +95,15 @@ void Progress::update(uint64_t current, bool main)
 {
   if (main)
   {
-    #pragma omp critical (progress)
-    {
-      this->current = current;
-      this->compute_percentage();
-    }
+#pragma omp critical (progress)
+{
+  this->current = current;
+  this->compute_percentage();
+}
 
+#ifdef USING_R
     check_interrupt(true);
+#endif
 
     return;
   }
@@ -111,9 +119,11 @@ void Progress::update(uint64_t current, bool main)
   {
     this->current = current;
     this->compute_percentage();
-
-    check_interrupt();
   }
+
+#ifdef USING_R
+  check_interrupt();
+#endif
 };
 
 // Called by every stage and can be applied only by thread 0
@@ -132,8 +142,10 @@ void Progress::reset()
     this->prev = -1.0f;
     this->current = 0;
     this->ntotal = 0;
+
+#ifdef USING_R
     this->interrupt_counter = 0;
-    this->check_interrupt_enabled = false;
+#endif
   }
 }
 
@@ -218,10 +230,14 @@ void Progress::show(bool flush)
       print(" | ");
       sub->show(false);
 
+#ifdef USING_R
       if (user_interrupt_event)
         print(" (Interrupt signal detected: stopping asap)");
       else
         print(" (%d threads)",  omp_get_num_threads());
+#else
+      print(" (%d threads)",  omp_get_num_threads());
+#endif
     }
 
     if (flush)
@@ -251,6 +267,7 @@ void Progress::compute_percentage()
   if (this->percentage > 1.0f) this->percentage = 1.0f;
 }
 
+#ifdef USING_R
 bool Progress::check_interrupt(bool force)
 {
   // Do no check interrupt if an event has already been caught
@@ -296,3 +313,4 @@ void Progress::disable_check_interrupt()
   else
     check_interrupt_enabled = false;
 }
+#endif

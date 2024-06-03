@@ -8,7 +8,7 @@
 class LASRrasterize : public StageRaster
 {
 public:
-  LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods);
+  LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods, float default_value);
   LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, Stage* algorithm);
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
@@ -23,7 +23,7 @@ public:
 private:
   bool streamable;
   double window;
-  LASRmetrics metrics;
+  MetricManager metric_engine;
 };
 
 #endif

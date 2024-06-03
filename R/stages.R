@@ -13,7 +13,7 @@
 #' @param data_type character. The data type of the extra bytes attribute. Can be "uchar", "char", "ushort",
 #' "short", "uint", "int", "uint64", "int64", "float", "double".
 #' @param scale,offset numeric. The scale and offset of the data. See LAS specification.
-#'
+#' @template return-pointcloud
 #' @export
 #'
 #' @examples
@@ -39,6 +39,8 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #' point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
 #' in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved.
 #'
+#' @template return-pointcloud
+#'
 #' @examples
 #' f <- system.file("extdata", "Example.las", package="lasR")
 #'
@@ -61,6 +63,7 @@ add_rgb = function()
 #' @param call expression. User-defined expression.
 #' @template param-filter
 #' @template param-ofile
+#' @template return-raster
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
@@ -143,6 +146,8 @@ build_catalog = function(files, with)
 #' update the point cloud. Can be disabled.
 #' @param ... parameters of function `fun`
 #'
+#' @template return-pointcloud
+#'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
 #'
@@ -202,6 +207,8 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
 #' @param class integer. The class to assign to the points that match the condition.
 #'
+#' @template return-pointcloud
+#'
 #' @export
 classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 {
@@ -234,6 +241,9 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #' Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 #' Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 #' The order of the flags does not matter and the features are recorded in the order mentioned above.
+#'
+#' @template return-pointcloud
+#'
 #' @export
 
 #' @references Hackel, T., Wegner, J. D., & Schindler, K. (2016). Contour detection in unstructured 3D
@@ -264,6 +274,8 @@ geometry_features = function(k, r, features = "")
 #'
 #' @template param-filter
 #'
+#' @template return-pointcloud
+#'
 #' @examples
 #' f <- system.file("extdata", "Megaplot.las", package="lasR")
 #' read <- reader_las()
@@ -291,6 +303,8 @@ delete_points = function(filter = "")
 #' @param mesh NULL or LASRalgorithm. A `triangulate` stage. If NULL take the bounding box of the
 #' header of each file.
 #' @template param-ofile
+#'
+#' @template return-vector
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
@@ -372,6 +386,8 @@ load_raster = function(file, band = 1L)
 #' @template param-filter
 #' @template param-ofile
 #'
+#' @template return-vector
+#'
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
 #' read <- reader_las()
@@ -430,6 +446,8 @@ nothing = function(read = FALSE, stream = FALSE, loop = FALSE)
 #' @param dil_radius integer. Dilation radius (integer value, in pixels).
 #' @template param-ofile
 #'
+#' @template return-raster
+#'
 #' @references
 #' St-Onge, B., 2008. Methods for improving the quality of a true orthomosaic of Vexcel UltraCam
 #' images created using alidar digital surface model, Proceedings of the Silvilaser 2008, Edinburgh,
@@ -466,13 +484,30 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' It produces a derived product in raster format.
 #'
 #' @section Operators:
-#' If `operators` is a string or a vector of strings, the function employs internally optimized metrics.
-#' The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", and "zpXX" for the
-#' Z coordinates. Here, "zpXX" represents the XXth percentile, for instance, "zp95" signifies the 95th
-#' percentile. Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
-#' and others. Additionally, "count" is another available metric.
+#' If `operators` is a string or a vector of strings, each string is composed of two parts separated by an
+#' underscore. The first part is the attribute on which the metric must be computed (e.g., z, intensity, classification).
+#' The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+#' `"z_max"`, `"intensity_min"`, `"z_mean"`, `"classification_mode"`.\cr\cr
+#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+#' s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
+#' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+#' Some metrics have an attribute + name + a parameter X, such as "pX" where "X" can be substituted by a number.
+#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
+#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+#' It is possible to call a metric without the name of the attribute. In this case, z is the default.
+#' Below are some examples of valid calls:
+#' ```
+#' rasterize(10, c("max", "count", "i_mean", "z_p95"))
+#' rasterize(10, c("z_max", "c_count", "intensity_mean", "p95"))
+#' ```
+#' **Be careful**: the engine supports any combination of `attribute_metric` strings. While they are
+#' all computable, they are not all meaningful. For example, `c_mode` makes sense but not `z_mode`. Also,
+#' all metrics are computed with 32-bit floating point accuracy, so `x_mean` or `y_sum` might be
+#' slightly inaccurate, but anyway, these metrics are not supposed to be useful.
 #' \cr\cr
-#' If `operators` is a user-defined expression, the function should return either a vector of numbers
+#' If `operators` is an R user-defined expression, the function should return either a vector of numbers
 #' or a `list` containing atomic numbers. To assign a band name to the raster, the vector or the `list`
 #' must be named accordingly. The following are valid operators:
 #' ```
@@ -505,8 +540,14 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' as many others (see section 'Operators'). Can also rasterize a triangulation if the input is a
 #' LASRalgorithm for triangulation (see examples). Can also be a user-defined expression
 #' (see example and section 'Operators').
+#' @param ... `default_value` numeric. When rasterizing with an operator and a filter (e.g. `-keep_z_above 2`)
+#' some pixels that are covered by points may no longer contain any point that pass the filter criteria
+#' and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels without point that
+#' pass the filter, the later case can be assigned another value such as 0.
 #' @template param-filter
 #' @template param-ofile
+#'
+#' @template return-raster
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
@@ -542,9 +583,12 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' terra::plot(res[[3]]/25)  # divide by 25 to get the density
 #' @export
 #' @md
-rasterize = function(res, operators = "max", filter = "", ofile = temptif())
+rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...)
 {
-  class <- tryCatch({class(operators)}, error = function(x) return("call"))
+  class <- tryCatch({class(operators)[1]}, error = function(x) return("call"))
+
+  p = list(...)
+  default_value = p$default_value
 
   res_raster  <- res[1]
   res_window <- res[1]
@@ -564,14 +608,20 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif())
   }
   else if (is.character(operators))
   {
-    supported_operators <- c("max", "min", "count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "imax", "imin", "imean", "imedian", "isd", "icv")
-    valid <- operators %in% supported_operators
-    invalid_operator = operators[!valid]
-    if (length(invalid_operator) > 0)
-      valid[!valid] = grepl("^(zp|ip)([0-9]|[1-9][0-9]|100)$", invalid_operator)
+    # backward compatibility
+    former_operators <- c("max", "min", "count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zabove", "zp", "imax", "imin", "imean", "imedian", "isd", "icv", "iabove", "ip")
+    new_operators <- c("max", "min", "count", "z_max", "z_min", "z_mean", "z_median", "z_sd", "z_cv", "z_above", "z_p", "i_max", "i_min", "i_mean", "i_median", "i_sd", "i_cv", "i_above", "i_p")
+    replace_names <- function(x, old_names, new_names)
+    {
+      for (i in seq_along(old_names))
+      {
+        x <- gsub(old_names[i], new_names[i], x)
+      }
+      return(x)
+    }
+    operators <- replace_names(operators, former_operators, new_operators)
 
-    if (!all(valid)) stop("Non supported operators")
-    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile)
+    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile, default_value = default_value)
   }
   else
   {
@@ -690,6 +740,8 @@ reader_las_rectangles = function(xmin, ymin, xmax, ymax, filter = "", ...)
 #' pixels in `lidR`.
 #' @template param-ofile
 #'
+#' @template return-raster
+#'
 #' @references
 #' Dalponte, M. and Coomes, D. A. (2016), Tree-centric mapping of forest carbon density from
 #' airborne laser scanning and hyperspectral data. Methods Ecol Evol, 7: 1236–1245. doi:10.1111/2041-210X.12575.
@@ -754,6 +806,7 @@ set_crs = function(x)
 #'
 #' @param res numeric. voxel resolution
 #' @template param-filter
+#' @template return-pointcloud
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader_las()
@@ -802,14 +855,14 @@ sampling_pixel = function(res = 2, filter = "")
 #' # allows to escape the pipeline outside the bounding box
 #' pipeline = read + hll + stopif + tri + dtm
 #' ans1 <- exec(pipeline, on = f)
-#' plot(ans1$hulls$geom, axes = T)
-#' terra::plot(ans1$rasterize, add = T)
+#' plot(ans1$hulls$geom, axes = TRUE)
+#' terra::plot(ans1$rasterize, add = TRUE)
 #'
 #' # stopif can be applied before read. Only one file will actually be read and processed
 #' pipeline = stopif + read + hll + tri + dtm
 #' ans2 <- exec(pipeline, on = f)
-#' plot(ans2$hulls$geom, axes = T)
-#' terra::plot(ans1$rasterize, add = T, legend = FALSE)
+#' plot(ans2$hulls$geom, axes = TRUE)
+#' terra::plot(ans1$rasterize, add = TRUE, legend = FALSE)
 #' @export
 stop_if_outside = function(xmin, ymin, xmax, ymax)
 {
@@ -819,11 +872,30 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 
 #' Summary
 #'
-#' Summarize the dataset by counting the number of points, first returns, classes. It also produces
-#' a histogram of Z and Intensity. This stage does not modify the point cloud. It produces a
-#' summary as a `list`.
+#' Summarize the dataset by counting the number of points, first returns and other metrics for the **entire point cloud**.
+#' It also produces an histogram of Z and Intensity attributes for the **entiere point cloud**.
+#' It can also compute some metrics **for each file or chunk** with the same metric engine than \link{rasterize}.
+#' This stage does not modify the point cloud. It produces a summary as a `list`.
+#'
+#' @section Operators:
+#' Each string is composed of two parts separated by an underscore. The first part is the attribute
+#'  on which the metric must be computed (e.g., z, intensity, classification).
+#' The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+#' `"z_max"`, `"intensity_min"`, `"z_mean"`, `"classification_mode"`.\cr\cr
+#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+#' s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
+#' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+#' Some metrics have an attribute + name + a parameter X, such as `pX` where `X` can be substituted by a number.
+#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
+#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+#' It is possible to call a metric without the name of the attribute. In this case, z is the default.
 #'
 #' @param zwbin,iwbin numeric. Width of the bins for the histograms of Z and Intensity.
+#' @param metrics Character vector. "min", "max" and "count" are accepted as well
+#' as many others (see section 'Operators'). If `NULL` nothing is computed. If something is provided these
+#' metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples)
 #' @template param-filter
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
@@ -831,10 +903,18 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 #' pipeline <- read + summarise()
 #' ans <- exec(pipeline, on = f)
 #' ans
+#'
+#' # Compute metrics for each plot
+#' read = reader_las_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
+#' metrics = summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
+#' pipeline = read + metrics
+#' ans = exec(pipeline, on = f)
+#' ans$metrics
 #' @export
-summarise = function(zwbin = 2, iwbin = 25, filter = "")
+#' @md
+summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 {
-  ans <- list(algoname = "summarise", filter = filter, zwbin = zwbin, iwbin = iwbin)
+  ans <- list(algoname = "summarise", filter = filter, zwbin = zwbin, iwbin = iwbin, metrics = metrics)
   set_lasr_class(ans)
 }
 
@@ -854,6 +934,9 @@ summarise = function(zwbin = 2, iwbin = 25, filter = "")
 #'
 #' @template param-filter
 #' @template param-ofile
+#'
+#' @template return-vector
+#'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader_las()
@@ -881,6 +964,8 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' @param operator string. '-' and '+' are supported.
 #' @param store_in_attribute numeric. Use an extra bytes attribute to store the result.
 #'
+#' @template return-pointcloud
+#'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #'
@@ -891,7 +976,6 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' ans <- exec(pipeline, on = f)
 #'
 #' @seealso
-#' \link{reader}
 #' \link{triangulate}
 #' \link{write_las}
 #' @export
@@ -958,6 +1042,40 @@ write_vpc = function(ofile, absolute_path = FALSE)
   set_lasr_class(ans)
 }
 
+#' Write spatial indexing .lax files
+#'
+#' Creates a .lax file for each `.las` or `.laz` file. A .lax file contains spatial indexing information.
+#' Spatial indexing drastically speeds up tile buffering and spatial queries. In lasR, it is mandatory
+#' to have spatially indexed point clouds, either using .lax files or .copc.laz files. If the processed file
+#' collection is not spatially indexed, a `write_lax()` file will automatically be added at the beginning
+#' of the pipeline (see Details).
+#'
+#' When this stage is added automatically by `lasR`, it is placed at the beginning of the pipeline, and las/laz
+#' files are indexed **on-the-fly** when they are used. The advantage is that users do not need to do anything;
+#' it works transparently and does not delay the processing. The drawback is that, under this condition,
+#' the stage cannot be run in parallel. When this stage is explicitly added by the users, it can be
+#' placed anywhere in the pipeline but will always be executed first before anything else. All the
+#' files will be indexed first in parallel, and then the actual processing will start. To avoid overthinking
+#' about how it works, it is best and simpler to run `exec(write_lax(), on = files)` on the non indexed
+#' point cloud before doing anything with the point cloud.
+#'
+#' @param embedded boolean. A .lax file is an auxiliary file that accompanies its corresponding las
+#' or laz file. A .lax file can also be embedded within a laz file to produce a single file.
+#' @param overwrite boolean. This stage does not create a new spatial index if the corresponding point cloud
+#' already has a spatial index. If TRUE, it forces the creation of a new one. `copc.laz` files are never reindexed
+#' with `lax` files.
+#' @export
+#' @md
+#' @examples
+#' \dontrun{
+#' exec(write_lax(), on = files)
+#' }
+write_lax = function(embedded = FALSE, overwrite = FALSE)
+{
+  ans <- list(algoname = "write_lax", embedded = embedded, overwrite = overwrite)
+  set_lasr_class(ans)
+}
+
 # ==== INTERNALS =====
 
 generate_uid <- function(size = 6)
@@ -975,15 +1093,16 @@ set_lasr_class = function(x, raster = FALSE, vector = FALSE)
   x <- Filter(Negate(is.null), x)
 
   x[["output"]] = normalizePath(x[["output"]], mustWork = FALSE)
+  x[["filter"]] = as.character(x[["filter"]])
 
-  cl <- "LASRalgorithm"
+  cl <- c("LASRalgorithm", "list")
   if (raster) cl <- c(cl, "LASRraster")
   if (vector) cl <- c(cl, "LASRvector")
 
   class(x) <- cl
   x <- list(x)
   names(x) <- x[[1]][["algoname"]]
-  class(x) <- "LASRpipeline"
+  class(x) <- c("LASRpipeline", "list")
   return(x)
 }
 

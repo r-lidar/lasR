@@ -1,8 +1,8 @@
 #ifndef LASRPIPELINE_H
 #define LASRPIPELINE_H
 
-#ifdef USING_R
 // R
+#ifdef USING_R
 #define R_NO_REMAP 1
 #include <R.h>
 #include <Rinternals.h>
@@ -17,6 +17,9 @@
 #include <memory>
 #include <list>
 
+// JSON parser
+#include "nlohmann/json.hpp"
+
 class LAS;
 class LASpoint;
 class LASheader;
@@ -28,7 +31,7 @@ public:
   Pipeline();
   Pipeline(const Pipeline& other);
   ~Pipeline();
-  bool parse(const SEXP sexpargs, bool progress = false); // implemented in parser.cpp
+  bool parse(const nlohmann::json&, bool progress = false); // implemented in parser.cpp
   bool pre_run();
   bool run();
   void merge(const Pipeline& other);
@@ -75,5 +78,23 @@ private:
 
   std::list<std::unique_ptr<Stage>> pipeline;
 };
+
+template <typename T>
+std::vector<T> get_vector(const nlohmann::json& element)
+{
+  std::vector<T> result;
+  if (element.is_array())
+  {
+    for (const auto& item : element)
+    {
+      result.push_back(item.get<T>());
+    }
+  }
+  else
+  {
+    result.push_back(element.get<T>());
+  }
+  return result;
+}
 
 #endif

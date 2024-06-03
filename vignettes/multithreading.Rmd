@@ -27,7 +27,7 @@ suppressPackageStartupMessages(library(lasR))
 col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(25)
 ```
 
-The multi-threading in `lasR` is pretty similar to `lidR`, except it does not use the package `future`. Everything is natively coded in C++ with `OpenMP`.
+The multi-threading in `lasR` is pretty similar to `lidR`, except it does not use the package `future`. Everything is natively coded in C++ with `OpenMP`. There are 4 different parallelization strategies that can be assigned for a given task with `exec(pipeline, ncores = strategy_name(n))` or that can be assigned globally for the entiere session with `set_parallel_strategy(strategy_name(n))`.
 
 <blockquote style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 5px;">
 `lasR` uses `OpenMP` which means that the package supports parallelism on Linux and Windows but not on macOS where Apple has explicitly disabled `OpenMP` support in compilers that they ship in `Xcode`. Interested readers can read the following links: [OpenMP on macOS](https://mac.r-project.org/openmp/); [OpenBLAS and OpenMP on macOS](https://www.btskinner.io/code/install-r-with-openblas-and-openmp-on-macos-mojave/) ; [Enable OpenMP for macOS](https://github.com/Rdatatable/data.table/wiki/Installation#Enable-openmp-for-macos)
@@ -37,6 +37,8 @@ The multi-threading in `lasR` is pretty similar to `lidR`, except it does not us
 
 ```r
 set_parallel_strategy(sequential())
+# or
+exec(pipeline, on = f, ncores = sequential())
 ```
 
 The sequential strategy is **not** the default strategy. However, it is easier to start with this option to explain some specificities of `lasR`. In sequential processing, as the name indicates, the LAS/LAZ files are processed sequentially, and nothing is parallelized. The point cloud from one file passes through the pipeline while the other files are waiting to be processed. This is represented in the figure below.
@@ -48,9 +50,11 @@ The sequential strategy is **not** the default strategy. However, it is easier t
 
 ```r
 set_parallel_strategy(concurrent_points(4))
+# or
+exec(pipeline, on = f, ncores = concurrent_points(4))
 ```
 
-Concurrent points is the default strategy. The LAS/LAZ files are processed sequentially. The point cloud from one file passes through the pipeline while the other files are waiting. Inside the pipeline, some stages are parallelized and are processing the points in different threads. Each core processes a subset of the point cloud. The stages that are parallelized are consequently faster, but in practice, not a lot of stages can easily be parallelized this way.
+Concurrent points with `half_cores()` is the default strategy. The LAS/LAZ files are processed sequentially. The point cloud from one file passes through the pipeline while the other files are waiting. Inside the pipeline, some stages are parallelized and are processing the points in different threads. Each core processes a subset of the point cloud. The stages that are parallelized are consequently faster, but in practice, not a lot of stages can easily be parallelized this way.
 
 ![](concurent_points.png){width=600px}
 
@@ -58,6 +62,10 @@ Concurrent points is the default strategy. The LAS/LAZ files are processed seque
 
 ```r
 set_parallel_strategy(concurrent_files(4))
+# or
+exec(pipeline, on = f, ncores = concurrent_files(4))
+# or
+exec(pipeline, on = f, ncores = 4) # more convenient
 ```
 
 The LAS/LAZ files are processed in parallel. The point cloud from several files passes through several cloned pipelines while the other files are waiting. Inside the pipeline, the stages are not parallelized. This puts a lot of pressure on the disk because many LAS/LAZ files are read simultaneously, but also each stage can write some raster/vector/LAS files simultaneously. Additionally, it uses a lot of memory since many LAS files are loaded in memory simultaneously. With modern and fast SSD disks and a significant amount of RAM, this is the fastest option. Of course, users **should not** use all their cores; otherwise, they may run out of memory. See also the [benchmarks](benchmarks.html) vignette.
@@ -68,6 +76,8 @@ The LAS/LAZ files are processed in parallel. The point cloud from several files 
 
 ```r
 set_parallel_strategy(nested(4, 2))
+# or
+exec(pipeline, on = f, ncores = nested(4, 2))
 ```
 
 The LAS/LAZ files are processed in parallel. The point cloud from several files passes through several cloned pipelines while the other files are waiting. Inside the pipeline, some stages are also parallelized and are processing the points in different threads. Nested is reserved for experts only.
@@ -77,25 +87,14 @@ The LAS/LAZ files are processed in parallel. The point cloud from several files 
 
 ## Special cases
 
-In `lasR`, everything is written in pure C++ except for two stages that inject user-defined R code and use the R C API.
+In `lasR`, everything is written in pure C++ except for two stages that inject user-defined R code and use the R C API (see [R stages](r-stages.html))
 
-```r
+```r 
 rasterize(20, user_function(Z))
 callback(user_function(data))
 ```
 
-R is **NOT** multi-threaded, and thus calling these stages in parallel is not thread-safe and will crash the R session in the best case or deeply corrupt the R memory in the worst case. Consequently, these stages are protected and cannot run concurrently. When a pipeline has stages that use the R API (in orange in the figure below), the stages that use R are blocking the other stages that are waiting (see figure below).
-
-
-![](concurent_points_with_R.png){width=600px}
-
-Of course, as depicted in the diagram above, this incurs a computational time cost. If the blocking stages take a lot of time compared to the other stages it could even defeat the interest of the multi-files parallelization. Therefore, users are discouraged from using these stages if alternatives are available. For example, `rasterize()` offers numerous native metrics coded in C++, making custom metrics coded in R unnecessary.
-
-It is worth mentioning that the `lidR` package does not face this problem because each core runs a different and independent R session, thanks to the `future` package. While this approach has the advantage of being non blocking, it also comes with several inconveniences. In contrast, `lasR` utilizes only one R session to process multiple files in parallel. One consequences is that `lasR` will run `rasterize()` with custom metrics or `callback()` in parallel much slower than `lidR`.
-
-With multiple files and complex pipeline, the overhead of blocking the pipeline for stages that use R *might* be less significant because once the pipelines are out of sync, the blocking stages *may* no longer occur simultaneously and thus cease to be blocking, as illustrated in the figure below with 8 files and 4 cores. This happens only if the blocking stages are quick behind the other stages.
-
-![](concurent_points_with_R_8.png)
+R is **NOT** multi-threaded, and thus calling these stages in parallel is not thread-safe and will crash the R session in the best case or deeply corrupt the R memory in the worst case. Consequently, these stages are protected and pipelines involving these stages cannot be ran in parallel with the `concurrent-files` strategy.
 
 ## Real timeline
 

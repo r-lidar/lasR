@@ -197,6 +197,8 @@ bool LASRlocalmaximum::process(LAS*& las)
 
 bool LASRlocalmaximum::write()
 {
+  if (ofile.empty()) return true;
+
   int dupfid= 0;
   progress->reset();
   progress->set_total(lm.size());

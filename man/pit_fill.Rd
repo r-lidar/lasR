@@ -34,6 +34,10 @@ then the stage will not store the result on disk and will return nothing. It wil
 hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 }
+\value{
+This stage produces a raster. The path provided to `ofile` is expected to be `.tif` or any
+other format supported by GDAL.
+}
 \description{
 Pits and spikes filling for raster. Typically used for post-processing CHM. This algorithm
 is from St-Onge 2008 (see reference).

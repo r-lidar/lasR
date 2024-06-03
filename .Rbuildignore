@@ -20,6 +20,7 @@
 ^config\.status$
 ^config\.log$
 ^src/Makevars$
+^src/main.cpp$
 ^proj_conf_test*
 ^\.covrignore$
 ^_pkgdown\.yml$
@@ -29,3 +30,5 @@
 ^vignettes/articles$
 ^inst/gdal$
 ^inst/proj$
+^bin$
+^Makefile$

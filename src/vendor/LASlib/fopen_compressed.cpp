@@ -39,7 +39,7 @@
 #include <windows.h>
 #endif
 
-#include "Rcompatibility.h"
+#include "print.h"
 
 enum PIPES { READ_HANDLE, WRITE_HANDLE }; /* Constants 0 and 1 for READ and WRITE */
 

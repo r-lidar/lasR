@@ -1,6 +1,8 @@
 #ifndef LASRREADATAFRAME_H
 #define LASRREADATAFRAME_H
 
+#ifdef USING_R
+
 #include "Stage.h"
 
 class LASheader;
@@ -45,5 +47,9 @@ private:
 
   enum attributes{X, Y, Z, I, T, RN, NOR, SDF, EoF, CLASS, SYNT, KEYP, WITH, OVER, UD, SA, SAR, PSID, R, G, B, NIR, CHAN, BUFF};
 };
+
+#else
+#pragma message("LASRdataframereader skipped: cannot be compiled without R")
+#endif
 
 #endif

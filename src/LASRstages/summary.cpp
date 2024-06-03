@@ -3,7 +3,7 @@
 
 #include <iterator>
 
-LASRsummary::LASRsummary(double xmin, double ymin, double xmax, double ymax, double zwbin, double iwbin)
+LASRsummary::LASRsummary(double xmin, double ymin, double xmax, double ymax, double zwbin, double iwbin, const std::vector<std::string>& metrics)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -19,6 +19,8 @@ LASRsummary::LASRsummary(double xmin, double ymin, double xmax, double ymax, dou
   nwithheld = 0;
   nsynthetic = 0;
   //npoints_per_sdf = {0,0};
+
+  if (!metrics_engine.parse(metrics, false)) throw last_error;
 }
 
 bool LASRsummary::process(LASpoint*& p)
@@ -41,6 +43,8 @@ bool LASRsummary::process(LASpoint*& p)
   (zhistogram.find(z) == zhistogram.end()) ?  zhistogram[z] = 1 : zhistogram[z]++;
   (ihistogram.find(i) == ihistogram.end()) ?  ihistogram[i] = 1 : ihistogram[i]++;
 
+  if (metrics_engine.active())  cloud.push_back(PointLAS(p));
+
   return true;
 }
 
@@ -51,6 +55,18 @@ bool LASRsummary::process(LAS*& las)
   {
     p = &las->point;
     process(p);
+  }
+
+  if (metrics_engine.active())
+  {
+    for (int i = 0 ; i < metrics_engine.size() ; i++)
+    {
+      const std::string& name = metrics_engine.get_name(i);
+      float val = metrics_engine.get_metric(i, cloud);
+      metrics[name].push_back(val);
+    }
+
+    cloud.clear();
   }
 
   return true;
@@ -70,6 +86,29 @@ void LASRsummary::merge(const Stage* other)
   merge_maps(npoints_per_sdf, o->npoints_per_return);
   merge_maps(zhistogram, o->zhistogram);
   merge_maps(ihistogram, o->ihistogram);
+
+  if (metrics_engine.active())
+  {
+    int ncols = o->metrics.size();
+    int nrows = o->metrics.begin()->second.size();
+
+    for (const auto& pair : o->metrics)
+    {
+      const std::string& key = pair.first;
+      const std::vector<float>& vec = pair.second;
+      metrics[key].insert(metrics[key].end(), vec.begin(), vec.end());
+    }
+  }
+}
+
+void LASRsummary::sort(const std::vector<int>& order)
+{
+  for (auto& pair : metrics)
+  {
+    std::vector<float> ordered(pair.second.size());
+    for (size_t i = 0 ; i < pair.second.size() ; i++) ordered[order[i]] = pair.second[i];
+    pair.second.swap(ordered);
+  }
 }
 
 void LASRsummary::merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2)
@@ -86,7 +125,10 @@ void LASRsummary::merge_maps(std::map<int, uint64_t>& map1, const std::map<int, 
 
 SEXP LASRsummary::to_R()
 {
+  bool use_metrics = metrics_engine.active();
+
   int n = 10;
+  if (use_metrics) n++;
 
   // Create a list
   SEXP list = PROTECT(Rf_allocVector(VECSXP, n)); nsexpprotected++;
@@ -103,6 +145,7 @@ SEXP LASRsummary::to_R()
   SET_STRING_ELT(names, 7, Rf_mkChar("i_histogram"));
   SET_STRING_ELT(names, 8, Rf_mkChar("crs"));
   SET_STRING_ELT(names, 9, Rf_mkChar("epsg"));
+  if (use_metrics) SET_STRING_ELT(names, 10, Rf_mkChar("metrics"));
   Rf_setAttrib(list, R_NamesSymbol, names);
 
   // BASIC STATS
@@ -194,6 +237,8 @@ SEXP LASRsummary::to_R()
   }
   Rf_setAttrib(R_ihistogram, R_NamesSymbol, R_ihistogram_names);
 
+  // CRS
+
   std::string wkt = crs.get_wkt();
   SEXP R_wkt = PROTECT(Rf_allocVector(STRSXP, 1)); nsexpprotected++;
   SET_STRING_ELT(R_wkt, 0, Rf_mkCharLen(wkt.c_str(), wkt.length()));
@@ -211,6 +256,43 @@ SEXP LASRsummary::to_R()
   SET_VECTOR_ELT(list, 7, R_ihistogram);
   SET_VECTOR_ELT(list, 8, R_wkt);
   SET_VECTOR_ELT(list, 9, R_epsg);
+
+  // Metrics
+
+  if (use_metrics)
+  {
+    int ncols = metrics.size();
+    int nrows = metrics.begin()->second.size();
+
+    SEXP df = PROTECT(Rf_allocVector(VECSXP, ncols)); nsexpprotected++;
+    SEXP colnames = PROTECT(Rf_allocVector(STRSXP, ncols)); nsexpprotected++;
+
+    int colIdx = 0;
+    for (const auto& kv : metrics)
+    {
+      const std::string& name = kv.first;
+      const std::vector<float>& data = kv.second;
+
+      SEXP vec = PROTECT(Rf_allocVector(REALSXP, nrows)); nsexpprotected++;
+      for (int i = 0; i < nrows; ++i) {  REAL(vec)[i] = data[i]; }
+
+      SET_STRING_ELT(colnames, colIdx, Rf_mkChar(name.c_str()));
+      SET_VECTOR_ELT(df, colIdx, vec);
+
+      colIdx++;
+    }
+
+    Rf_setAttrib(df, R_ClassSymbol, Rf_ScalarString(Rf_mkChar("data.frame")));
+    Rf_setAttrib(df, R_NamesSymbol, colnames);
+
+    // Name the rows (see https://stackoverflow.com/questions/37069149/creating-a-r-data-frame-in-c-c)
+    SEXP rnms = PROTECT(Rf_allocVector(INTSXP, 2)); nsexpprotected++;
+    INTEGER(rnms)[0] = NA_INTEGER;
+    INTEGER(rnms)[1] = -nrows;
+    Rf_setAttrib(df, R_RowNamesSymbol, rnms);
+
+    SET_VECTOR_ELT(list, 10, df);
+  }
 
   return list;
 }

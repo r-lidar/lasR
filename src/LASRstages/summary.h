@@ -2,6 +2,7 @@
 #define LASRSUMMARY_H
 
 #include "Stage.h"
+#include "Metrics.h"
 
 #include <map>
 #include <vector>
@@ -10,16 +11,17 @@
 class LASRsummary: public Stage
 {
 public:
-  LASRsummary(double xmin, double ymin, double xmax, double ymax, double zwbin, double iwbin);
+  LASRsummary(double xmin, double ymin, double xmax, double ymax, double zwbin, double iwbin, const std::vector<std::string>& methods);
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
-  bool is_streamable() const override { return true; }
+  bool is_streamable() const override { return !metrics_engine.active(); }
   std::string get_name() const override { return "summary"; }
 
   // multi-threading
   bool is_parallelizable() const override { return true; };
   LASRsummary* clone() const override { return new LASRsummary(*this); };
   void merge(const Stage* other) override;
+  void sort(const std::vector<int>& order) override;
 
   #ifdef USING_R
   SEXP to_R() override;
@@ -40,6 +42,10 @@ private:
   std::map<int, uint64_t> npoints_per_sdf;
   std::map<int, uint64_t> zhistogram;
   std::map<int, uint64_t> ihistogram;
+  std::map<std::string, std::vector<float>> metrics;
+
+  MetricManager metrics_engine;
+  PointCollection cloud;
 };
 
 #endif

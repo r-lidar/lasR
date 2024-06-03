@@ -5,220 +5,248 @@
 #include <cmath>
 #include <numeric>
 #include <algorithm>
+#include <limits>
+#include <stdexcept>
 
-bool LASRmetrics::parse(const std::vector<std::string>& names)
+bool MetricManager::parse(const std::vector<std::string>& names, bool support_streamable)
 {
-  // Check if we have only streamable metrics
-  streamable = true;
-  for (const auto& name : names)
+  if (names.size() == 0) return true;
+
+  // Check if we have only streamable MetricManager
+  if (support_streamable)
   {
-    if (name != "max" && name != "min" && name != "count" && name != "zmax" && name != "zmin")
+    streamable = true;
+    for (const auto& name : names)
     {
-      streamable = false;
-      break;
+      if (name != "max" && name != "min" && name != "count" && name != "z_max" && name != "z_min")
+      {
+        streamable = false;
+        break;
+      }
     }
   }
 
-  // If we have only streamable metrics
+  // If we have only streamable MetricManager
   if (streamable)
   {
     for (const auto& name : names)
     {
-      if (name == "max" || name== "zmax")
-        streaming_operators.push_back(&LASRmetrics::pmax);
-      else if (name == "min" || name == "zmin")
-        streaming_operators.push_back(&LASRmetrics::pmin);
+      if (name == "max" || name == "z_max")
+        streaming_operators.push_back(&MetricManager::pmax);
+      else if (name == "min" || name == "z_min")
+        streaming_operators.push_back(&MetricManager::pmin);
       else if (name == "count")
-        streaming_operators.push_back(&LASRmetrics::pcount);
+        streaming_operators.push_back(&MetricManager::pcount);
+
+      this->names.push_back(name);
     }
 
     return true;
   }
 
-  // Regular case including non streamable metrics
-  for (const auto& name : names)
+  // Regular case including non streamable MetricManager
+  try
   {
-    if (name[0] == 'z')
+    for (const auto& name : names)
     {
-      if (name == "zmax")
-      {
-        regular_operators.push_back(&LASRmetrics::zmax);
-        param.push_back(0);
-      }
-      else if (name == "zmin")
-      {
-        regular_operators.push_back(&LASRmetrics::zmin);
-        param.push_back(0);
-      }
-      else if (name == "zmean")
-      {
-        regular_operators.push_back(&LASRmetrics::zmean);
-        param.push_back(0);
-      }
-      else if (name == "zmedian")
-      {
-        regular_operators.push_back(&LASRmetrics::zmedian);
-        param.push_back(0);
-      }
-      else if (name == "zsd")
-      {
-        regular_operators.push_back(&LASRmetrics::zsd);
-        param.push_back(0);
-      }
-      else if (name == "zcv")
-      {
-        regular_operators.push_back(&LASRmetrics::zcv);
-        param.push_back(0);
-      }
-      else if (name[1] == 'p')
-      {
-        std::string probs = name.substr(2);
-        int number = std::stoi(probs);
-        if (number < 0 || number > 100)
-        {
-          last_error = "Percentile out of range (0-100)";
-          return false;
-        }
-        regular_operators.push_back(&LASRmetrics::zpx);
-        param.push_back(number);
-      }
-      else
-      {
-        last_error = "metric " + name + " not recognized";
-        return false;
-      }
+      regular_operators.push_back(parse(name));
     }
-    else if (name[0] == 'i')
-    {
-      if (name == "imax")
-      {
-        regular_operators.push_back(&LASRmetrics::imax);
-        param.push_back(0);
-      }
-      else if (name == "imin")
-      {
-        regular_operators.push_back(&LASRmetrics::imin);
-        param.push_back(0);
-      }
-      else if (name == "imean")
-      {
-        regular_operators.push_back(&LASRmetrics::imean);
-        param.push_back(0);
-      }
-      else if (name == "imedian")
-      {
-        regular_operators.push_back(&LASRmetrics::imedian);
-        param.push_back(0);
-      }
-      else if (name == "isd")
-      {
-        regular_operators.push_back(&LASRmetrics::isd);
-        param.push_back(0);
-      }
-      else if (name == "icv")
-      {
-        regular_operators.push_back(&LASRmetrics::icv);
-        param.push_back(0);
-      }
-      else if (name[1] == 'p')
-      {
-        std::string probs = name.substr(2);
-        int number = std::stoi(probs);
-        if (number <= 0 || number > 100)
-        {
-          last_error = "Percentile out of range 0-100)";
-          return false;
-        }
-        regular_operators.push_back(&LASRmetrics::ipx);
-        param.push_back(number);
-      }
-      else
-      {
-        last_error = "metric " + name + " not recognized";
-        return false;
-      }
-    }
-    else if (name == "count")
-    {
-      regular_operators.push_back(&LASRmetrics::count);
-      param.push_back(0);
-    }
-    else
-    {
-      last_error = "metric " + name + " not recognized";
-      return false;
-    }
+  }
+  catch(std::exception& e)
+  {
+    last_error = e.what();
+    return false;
   }
 
   return true;
 }
 
-void LASRmetrics::add_point(const PointLAS& p)
+MetricCalculator MetricManager::parse(const std::string& name)
 {
-  z.push_back(p.z);
-  i.push_back(p.intensity);
-  zsum += p.z;
-  isum += p.intensity;
-  n++;
+  float param = 0;
+  std::string metric;
+  std::string attribute;
+
+  std::string::size_type underscore_pos = name.find('_');
+  if (underscore_pos == std::string::npos)
+  {
+    attribute = "z";
+    metric = name;
+  }
+  else
+  {
+    attribute = name.substr(0, underscore_pos);
+    metric = name.substr(underscore_pos + 1);
+  }
+
+  if (metric[0] == 'p')
+  {
+    std::string probs = metric.substr(1);
+    param = string_to_float(probs);
+
+    if (std::isnan(param)) throw std::invalid_argument("Invalid parameter in: " + name);
+    if (param < 0 || param > 100)  throw std::invalid_argument("Percentile out of range (0-100)");
+
+    metric = metric[0];
+  }
+  else if (metric.substr(0,5) == "above")
+  {
+    std::string h = metric.substr(5);
+    param = string_to_float(h);
+
+    if (std::isnan(param)) throw std::invalid_argument("Invalid parameter in: " + name);
+
+    metric = metric.substr(0,5);
+  }
+
+  auto accessor = attribute_functions.find(attribute);
+  if (accessor == attribute_functions.end()) throw std::invalid_argument("Invalid attribute name: " + attribute);
+
+  auto metric_function = metric_functions.find(metric);
+  if (metric_function == metric_functions.end()) throw std::invalid_argument("Invalid metric name: " + metric);
+
+  names.push_back(name);
+
+  return MetricCalculator(metric_function->second, accessor->second, param);
+}
+
+// streamable MetricManager
+float MetricManager::pmax  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x > y) ? x : y; }
+float MetricManager::pmin  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x < y) ? x : y; }
+float MetricManager::pcount(float x, float y) const { if (x == NA_F32_RASTER) return 1; return x+1; }
+
+// batch MetricManager
+
+float MetricManager::min(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  double min = std::numeric_limits<double>::max();
+  for (const auto& point : points)
+  {
+    double val = accessor(point);
+    if (min > val) min = val;
+  }
+  return min;
+}
+
+float MetricManager::max(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  double max = std::numeric_limits<double>::lowest();
+  for (const auto& point : points)
+  {
+    double val = accessor(point);
+    if (max < val) max = val;
+  }
+  return max;
+}
+
+float MetricManager::mean(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  double sum = 0.0;
+  for (const auto& point : points) sum += accessor(point);
+  return (float)(sum/points.size());
+}
+
+float MetricManager::median(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  std::vector<double> x;
+  x.reserve(points.size());
+  for (const auto& point : points) x.push_back(accessor(point));
+  std::sort(x.begin(), x.end());
+  return percentile(x, 50);
+}
+
+float MetricManager::sd(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  double sum = 0.0;
+  for (const auto& point : points) sum += accessor(point);
+  double mean = sum/points.size();
+
+  for (const auto& point : points)
+  {
+    double value = accessor(point);
+    sum += (value - mean) * (value - mean);
+  }
+
+  return (float)(std::sqrt(sum/(points.size()-1)));
+}
+
+float MetricManager::mode(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  std::unordered_map<double, int> registry;
+
+  for (const auto& point : points)
+  {
+    double value = accessor(point);
+    registry[value]++;
+  }
+
+  double mode = accessor(points[0]);
+  int count = registry[mode];
+
+  for (const auto& pair : registry)
+  {
+    if (pair.second > count)
+    {
+      mode = pair.first;
+      count = pair.second;
+    }
+  }
+
+  return (float)mode;
+}
+
+float MetricManager::cv(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  return sd(accessor, points, param)/mean(accessor, points, param);
+}
+
+float MetricManager::sum(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  double sum = 0;
+  for (const auto& point : points) sum += accessor(point);
+  return (float)sum;
+}
+
+float MetricManager::count(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+{
+  return (float)points.size();
 }
 
 
-void LASRmetrics::reset()
+float MetricManager::percentile(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
-  z.clear();
-  i.clear();
-  zsum = 0;
-  isum = 0;
-  n = 0;
-  sorted = false;
+  std::vector<double> x;
+  x.reserve(points.size());
+  for (const auto& point : points) x.push_back(accessor(point));
+  std::sort(x.begin(), x.end());
+  return percentile(x, param);
 }
 
-// streamable metrics
-float LASRmetrics::pmax  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x > y) ? x : y; }
-float LASRmetrics::pmin  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x < y) ? x : y; }
-float LASRmetrics::pcount(float x, float y) const { if (x == NA_F32_RASTER) return 1; return x+1; }
-
-// batch metrics
-float LASRmetrics::zmax(float p) const { return (float)z[n-1]; }
-float LASRmetrics::zmin(float p) const { return (float)z[0]; }
-float LASRmetrics::zmean(float p) const { return (float)zsum/n; }
-float LASRmetrics::zmedian(float p) const { return (n % 2 == 0) ? (float)((z[n/2 - 1] + z[n/2])/2) : (float)z[n/2]; }
-float LASRmetrics::zsd(float p) const { float m = zmean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(z[j]-m, 2); } return std::sqrt(sd)/n; }
-float LASRmetrics::zcv(float p) const { return zsd(0)/zmean(0); }
-float LASRmetrics::zpx(float p) const { return percentile(z, p); }
-float LASRmetrics::imax(float p) const { return (float)i[i.size()-1]; }
-float LASRmetrics::imin(float p) const { return (float)i[0]; }
-float LASRmetrics::imean(float p) const { return (float)isum/n; }
-float LASRmetrics::imedian(float p) const { return (n % 2 == 0) ? (float)((i[n/2 - 1] + i[n/2])/2) : (float)i[n/2]; }
-float LASRmetrics::isd(float p) const { float m = imean(0); float sd = 0; for(size_t j = 0; j < n; ++j) { sd += pow(i[j]-m, 2); } return std::sqrt(sd)/n; }
-float LASRmetrics::icv(float p) const { return isd(0)/imean(0); }
-float LASRmetrics::ipx(float p) const { return percentile(i, p); }
-float LASRmetrics::count(float p) const { return (float)n; }
-
-float LASRmetrics::get_metric(int index, float x, float y)
+float MetricManager::above(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
-  StreamingMetric& f = streaming_operators[index];
+  float k = 0;
+  for (const auto& point : points)
+  {
+    if (accessor(point) > param) k++;
+  }
+  return k/(float)points.size();
+}
+
+float MetricManager::get_metric(int index, float x, float y) const
+{
+  const StreamingMetric& f = streaming_operators[index];
   return (this->*f)(x,y);
 }
 
-float LASRmetrics::get_metric(int index)
+float MetricManager::get_metric(int index, const PointCollection& points) const
 {
-  if (!sorted)
-  {
-    std::sort(z.begin(), z.end());
-    std::sort(i.begin(), i.end());
-    sorted = true;
-  }
-
-  if (n == 0) return NA_F32_RASTER;
-
-  RegularMetric& f = regular_operators[index];
-  return (this->*f)(param[index]);
+  if (points.size() == 0) return default_value;
+  return regular_operators[index].compute(points);
 }
 
-float LASRmetrics::percentile(const std::vector<double>& x, float p) const
+double MetricManager::percentile(const std::vector<double>& x, float p) const
 {
-  float rank = (p / 100.0f) * ((float)n - 1) + 1;
+  float rank = (p / 100.0f) * ((float)x.size() - 1) + 1;
   int lowerIndex = (int)(std::floor(rank)) - 1;
   int upperIndex = (int)(std::ceil(rank)) - 1;
   double lowerValue = x[lowerIndex];
@@ -226,17 +254,36 @@ float LASRmetrics::percentile(const std::vector<double>& x, float p) const
   return lowerValue + (upperValue - lowerValue) * (rank - std::floor(rank));
 }
 
-int LASRmetrics::size() const
+int MetricManager::size() const
 {
   return (streamable) ? (int)streaming_operators.size() : (int)regular_operators.size();
 };
 
-LASRmetrics::LASRmetrics()
+bool MetricManager::active() const
 {
-  reset();
-  streamable = false;
+  return size() > 0;
 }
 
-LASRmetrics::~LASRmetrics()
+float MetricManager::string_to_float(const std::string& s) const
+{
+  try
+  {
+    float height = std::stof(s);
+    return height;
+  }
+  catch (std::exception& e)
+  {
+    return std::numeric_limits<float>::quiet_NaN();
+  }
+}
+
+
+MetricManager::MetricManager()
+{
+  streamable = false;
+  default_value = NA_F32_RASTER;
+}
+
+MetricManager::~MetricManager()
 {
 }

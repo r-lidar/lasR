@@ -13,7 +13,7 @@ is done (see examples).}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processes.
+For a given stage when a filter is applied, only the points that meet the criteria are processed.
 The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
 \link{filters}.}
 
@@ -24,6 +24,11 @@ intermediate stage.}
 
 \item{use_attribute}{character. By default the triangulation is performed on the coordinate Z. Can also be
 the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity'.}
+}
+\value{
+This stage produces a vector. The path provided to `ofile` is expected to be `.gpkg` or
+any other format supported by GDAL. Vector stages may produce geometries with Z coordinates.
+Thus, it is discouraged to store them in formats with no 3D support, such as shapefiles.
 }
 \description{
 Delaunay triangulation. Can be used to build a DTM, a CHM, normalize a point cloud, or any other

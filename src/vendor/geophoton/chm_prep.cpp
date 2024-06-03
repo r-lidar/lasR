@@ -20,7 +20,7 @@
 
 
 #include "chm_prep.h"
-#include "Rcompatibility.h"
+#include "print.h"
 
 #include <cstdlib>
 #include <cmath>

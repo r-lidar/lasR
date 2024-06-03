@@ -31,8 +31,8 @@ test_that("rasterize works with a filter (#29)",
 {
   f <- system.file("extdata", "Topography.las", package="lasR")
 
-  imean1 <- rasterize(4, "imean", filter = drop_ground())
-  imean2 <- rasterize(4, list(imean = mean(Intensity)), filter = drop_ground())
+  imean1 <- rasterize(4, "i_mean", filter = drop_ground())
+  imean2 <- rasterize(4, list(i_mean = mean(Intensity)), filter = drop_ground())
   pipeline = imean1+imean2
   ans = exec(pipeline, on = f)
 

@@ -13,6 +13,9 @@ transform_with(stage, operator = "-", store_in_attribute = "")
 
 \item{store_in_attribute}{numeric. Use an extra bytes attribute to store the result.}
 }
+\value{
+This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+}
 \description{
 This stage uses another stage that produced a Delaunay triangulation or a raster and performs an
 operation to modify the point cloud. This can typically be used to build a normalization stage
@@ -29,7 +32,6 @@ ans <- exec(pipeline, on = f)
 
 }
 \seealso{
-\link{reader}
 \link{triangulate}
 \link{write_las}
 }

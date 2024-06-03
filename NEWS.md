@@ -1,15 +1,52 @@
 # lasR 0.6.0
 
-- New: new stage `stop_if` to escape the pipeline conditionally
-- Doc: new section about `stop_if` in the [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html)
-- Change: old deprecated functions `processor()` and `reader()` were removed.
+### NEW FEATURES
 
-# lasR ?.?.?
+1. New stage `stop_if` to conditionally escape the pipeline. New section about `stop_if` in the [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
+
+2. New stage `write_lax`. This stage was automatically added by the engine but can now be explicitly added by users.
+
+3. New internal "metric engine". The metric engine is used to compute metrics in e.g. `rasterize()` with operators like `zmean`, `imean` and so on. The metric engine has been redesigned and allows any string with the format `attribute_metric` such as `z_sd`, `i_mean`, `c_mode`, `a_mean`, `intensity_max`, `classification_mode`, `angle_mean`, and any other combinations. All attributes are mapped and new functions are available such as `sum`, `mode`. Many more could be added easily. Former string such as `zmean` or `imax` are no longer valid and should be replaced by `z_mean` and `i_max` but are backward compatible.
+
+4.`rasterize` gained an access to the new metric engine and can compute much more metric natively
+
+5. `summarize()` gained an access to the metric engine and can compute metrics for each file or each chunk. Used in conjunction with `reader_las_circle()`, it can be used, for example, to compute plot inventory metrics. The [online tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) has been update. The section "plot inventory" no longer uses `callback()` and is preceded by a new section "summarise".
+
+
+### BREAKING CHANGES
+
+1. The package no longer assigns `set_parallel_strategy(concurrent_points(half_core()))` when loading. Instead, if nothing is provided, this is interpreted as `concurrent_points(half_core())`. Thus, users can now write `exec(pipeline, on = file, ncores = 8)`. The engine will now respect `ncores = 8` because no global settings were assigned. The multi-threading vignette has been updated.
+
+2. Pipelines that include R-based stages (`rasterize` with R function, `callback`) are no longer parallelizable with the `concurrent-file` strategy. Parallelizing a pipeline that involves the R C API is terribly complex and eventually leads only to pseudo-parallelism with a lot of troubleshooting to deal with (especially to abort the pipeline). Consequently, we removed parallelism capabilities. The numerous new native metrics added in the metric engine compensate for that loss. The online documentation has been updated in consequence.
+
+### INTERNAL CHANGES
+
+1. A large number of changes to separate `lasR` from R. `lasR` can now be compiled as standalone software. A `Makefile` has been added to the repository. At the R level, the pipeline and the processing options are passed to the C++ engine via a JSON file instead of being passed via the R's C API, effectively separating `lasR` from R itself. The R side of `lasR` is now purely an API to the standalone engine. A JSON file produced by the `lasR` package can be executed with the standalone software: `lasr pipeline.json`. However, the syntax of the JSON file is not documented and is not intended to be documented. Rather, the JSON file should be produced by an API such as the `lasR` package, a QGIS plugin, or a Python package. Obviously, there is currently no such thing.
+
+# lasR 0.5.6
+
+- Fix: `reader_las()` with COPC files, depth query (`-max_depth`), and buffer. The depth query was not performed at all. The fix is temporary: it breaks the progress bar of `reader_las()` but this is a less serious bug.
+- Fix: `reader_las()` with very large files.
+- Fix: `load_raster()` is thread-safe
+- New: `rasterize()` accepts a new argument `default_value`.  When rasterizing with an operator and a filter (e.g. `-keep_z_above 2`) some pixels that are covered by points may no longer contain any point that pass the filter criteria and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels but without point that pass the filter, the later case can be assigned another value such as 0.
+
+# lasR 0.5.5
+
+- Fix: #50 `write_vpc()` properly reprojects the bounding boxes in WGS84 
+- Enhance: `write_vpc()` writes `zmin` and `zmax` for each file.
+- Fix: #55 `local_maximum()` no longer fails with `ofile = ""`
+- Fix: progress bar of the `reader_las()` for COPC files.
+- Fix: metrics `zsd` and `isd` were incorrect due to wrong parenthesis in the code.
+
+# lasR 0.5.4
 
 - Fix: #48 segfault with `delete_points()` when 0 points left.
 - Enhance: #47 pipelines are named `list`.
 - Enhance: #47 the output `list` returned by `exec` is named and duplicated names are made unique with `make.names()`
 - Doc: added some notes in the documentation of `geometry_features()` to address question in #45
+- Enhance: #49 `set_crs()` no longer forces the pipeline to read the files.
+- Enhance: `exec()` normalizes the path so users do not get an error when providing a path with a `~`.
+- New: `rasterize()` gained a metric `zaboveX` to compute canopy cover.
 
 # lasR 0.5.3
 

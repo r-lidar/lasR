@@ -4,7 +4,7 @@
 \alias{rasterize}
 \title{Rasterize a point cloud}
 \usage{
-rasterize(res, operators = "max", filter = "", ofile = temptif())
+rasterize(res, operators = "max", filter = "", ofile = temptif(), ...)
 }
 \arguments{
 \item{res}{numeric. The resolution of the raster. Can be a vector with two resolutions.
@@ -18,7 +18,7 @@ LASRalgorithm for triangulation (see examples). Can also be a user-defined expre
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processes.
+For a given stage when a filter is applied, only the points that meet the criteria are processed.
 The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
 \link{filters}.}
 
@@ -26,6 +26,15 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 then the stage will not store the result on disk and will return nothing. It will however
 hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
+
+\item{...}{\code{default_value} numeric. When rasterizing with an operator and a filter (e.g. \verb{-keep_z_above 2})
+some pixels that are covered by points may no longer contain any point that pass the filter criteria
+and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels without point that
+pass the filter, the later case can be assigned another value such as 0.}
+}
+\value{
+This stage produces a raster. The path provided to `ofile` is expected to be `.tif` or any
+other format supported by GDAL.
 }
 \description{
 Rasterize a point cloud using different approaches. This stage does not modify the point cloud.
@@ -33,13 +42,31 @@ It produces a derived product in raster format.
 }
 \section{Operators}{
 
-If \code{operators} is a string or a vector of strings, the function employs internally optimized metrics.
-The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", and "zpXX" for the
-Z coordinates. Here, "zpXX" represents the XXth percentile, for instance, "zp95" signifies the 95th
-percentile. Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
-and others. Additionally, "count" is another available metric.
+If \code{operators} is a string or a vector of strings, each string is composed of two parts separated by an
+underscore. The first part is the attribute on which the metric must be computed (e.g., z, intensity, classification).
+The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+\code{"z_max"}, \code{"intensity_min"}, \code{"z_mean"}, \code{"classification_mode"}.\cr\cr
+The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
+The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+Some metrics have an attribute + name + a parameter X, such as "pX" where "X" can be substituted by a number.
+Here, \code{z_pX} represents the Xth percentile; for instance, \code{z_p95} signifies the 95th
+percentile of z. \code{z_aboveX} corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+It is possible to call a metric without the name of the attribute. In this case, z is the default.
+Below are some examples of valid calls:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{rasterize(10, c("max", "count", "i_mean", "z_p95"))
+rasterize(10, c("z_max", "c_count", "intensity_mean", "p95"))
+}\if{html}{\out{</div>}}
+
+\strong{Be careful}: the engine supports any combination of \code{attribute_metric} strings. While they are
+all computable, they are not all meaningful. For example, \code{c_mode} makes sense but not \code{z_mode}. Also,
+all metrics are computed with 32-bit floating point accuracy, so \code{x_mean} or \code{y_sum} might be
+slightly inaccurate, but anyway, these metrics are not supposed to be useful.
 \cr\cr
-If \code{operators} is a user-defined expression, the function should return either a vector of numbers
+If \code{operators} is an R user-defined expression, the function should return either a vector of numbers
 or a \code{list} containing atomic numbers. To assign a band name to the raster, the vector or the \code{list}
 must be named accordingly. The following are valid operators:
 

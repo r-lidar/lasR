@@ -28,8 +28,8 @@ test_that("vpc writer works",
 
   ans = sf::st_read(ans, quiet = TRUE)
   expect_s3_class(ans, "sf")
-  expect_equal(dim(ans), c(4L,9L))
-  expect_equal(as.numeric(sf::st_bbox(ans)), c(-127.627764657, 50.665469135, -127.624996787, 50.675051675))
+  expect_equal(dim(ans), c(4L,8L))
+  expect_equal(as.numeric(sf::st_bbox(ans)), c(-127.627836098, 50.665469135, -127.624899322, 50.675051675))
 })
 
 file.remove(f)

@@ -5,68 +5,91 @@
   #include <R.h>
   #include <Rinternals.h>
 
-  #ifndef _WIN32
+  /*#ifndef _WIN32
     #define CSTACK_DEFNS 1
     #include <Rinterface.h> // R_CStackLimit
   #else
-    extern __declspec(dllimport) uintptr_t R_CStackLimit; /* C stack limit */
-  #endif
+    extern __declspec(dllimport) uintptr_t R_CStackLimit; // C stack limit
+  #endif*/
 #endif
 
-#include "Rcompatibility.h"
-#include "R2cpp.h"
-
-
-// STL
 #include <memory>
 #include <vector>
+#include <iostream>
+#include <fstream>
 
-// lasR
 #include "openmp.h"
 #include "error.h"
+#include "print.h"
 #include "pipeline.h"
 #include "LAScatalog.h"
 #include "openmp.h"
 
-// Parallel processing strategies
-#define SEQUENTIAL 1
-#define CONCURRENTPOINTS 2
-#define CONCURRENTFILES 3
-#define NESTED 4
-
-SEXP process(SEXP sexppipeline, SEXP args)
+#ifdef USING_R
+SEXP process(SEXP sexp_config_file)
 {
-  int ncpu = get_element_as_int(args, "ncores");
-  int strategy = get_element_as_int(args, "strategy");
-  bool progrss = get_element_as_bool(args, "progress");
-  bool verbose = get_element_as_bool(args, "verbose");
-  double chunk_size = get_element_as_double(args, "chunk");
-  std::string fprofiling = get_element_as_string(args, "profiling");
+  std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
+#else
+bool process(const std::string& config_file)
+{
+#endif
+
+  // Open the JSON file
+  std::ifstream fjson(config_file);
+  if (!fjson.is_open())
+  {
+    #ifdef USING_R
+      return make_R_error("Could not open the json file containing the pipeline");
+    #else
+      eprint("Could not open the json file containing the pipeline");
+      return false;
+    #endif
+  }
+
+  nlohmann::json json;
+  fjson >> json;
+
+  // The JSON file is made of the processing options and the pipeline
+  nlohmann::json processing_options = json["processing"];
+  nlohmann::json json_pipeline = json["pipeline"];
+
+  // Parse the processing options
+  std::vector<int> ncpu = get_vector<int>(processing_options["ncores"]);
+  if (ncpu.size() == 0) ncpu.push_back(1);
+  std::string strategy = processing_options.value("strategy", "concurrent-points");
+  bool progrss = processing_options.value("progress", false);
+  bool verbose = processing_options.value("verbose", false);
+  double chunk_size = processing_options.value("chunk", 0);
+  std::string fprofiling = processing_options.value("profiling", "");
 
   // Check some multithreading stuff
-  if (ncpu > available_threads())
+  if (ncpu[0] > available_threads())
   {
-    warning("Number of cores requested %d but only %d available\n", ncpu, available_threads());
-    ncpu = available_threads();
+    warning("Number of cores requested %d but only %d available\n", ncpu[0], available_threads());
+    ncpu[0] = available_threads();
   }
   int ncpu_outer_loop = 1; // concurrent files
   int ncpu_inner_loops = 1; // concurrent points
-  if (strategy == CONCURRENTPOINTS) ncpu_inner_loops = ncpu;
-  if (strategy == CONCURRENTFILES) ncpu_outer_loop = ncpu;
-  if (strategy == NESTED)
+  if (strategy == "concurrent-points") ncpu_inner_loops = ncpu[0];
+  if (strategy == "concurrent-files") ncpu_outer_loop = ncpu[0];
+  if (strategy == "nested")
   {
-    ncpu_outer_loop = ncpu;
-    ncpu_inner_loops = get_element_as_vint(args, "ncores")[1];
+    if (ncpu.size() < 2) throw "Using nested strategy requires an array of two numbers in 'ncores'";
+
+    ncpu_outer_loop = ncpu[0];
+    ncpu_inner_loops = ncpu[1];
   }
   if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
 
-  uintptr_t original_CStackLimit = R_CStackLimit;
+  //#ifdef USING_R
+  //uintptr_t original_CStackLimit = R_CStackLimit;
+  //#endif
 
   try
   {
     Pipeline pipeline;
 
-    if (!pipeline.parse(sexppipeline, progrss))
+    if (!pipeline.parse(json_pipeline, progrss))
     {
       throw last_error;
     }
@@ -93,6 +116,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
       ncpu_outer_loop = 1;
       warning("This pipeline is not parallizable using 'concurrent-files' strategy.\n");
     }
+
     if (use_rcapi && ncpu_outer_loop > 1)
     {
       // The R's C stack is now unprotected — the work with R C API becomes more dangerous
@@ -100,8 +124,10 @@ SEXP process(SEXP sexppipeline, SEXP args)
       // It is supposed to be safe because every single call to the R's C API is protected in a critical section
       // https://stats.blogoverflow.com/2011/08/using-openmp-ized-c-code-with-r/
       // https://stat.ethz.ch/pipermail/r-devel/2007-June/046207.html
-      R_CStackLimit=(uintptr_t)-1;
-      warning("Processing multiple files simulatneously with stages that imply injected R code is discouraged\n");
+      //R_CStackLimit=(uintptr_t)-1;
+      ncpu_inner_loops = ncpu_outer_loop;
+      ncpu_outer_loop = 1;
+      warning("This pipeline is not parallizable using 'concurrent-files' strategy because of stage(s) that imply injected R code\n");
     }
 
     pipeline.set_verbose(verbose);
@@ -130,7 +156,7 @@ SEXP process(SEXP sexppipeline, SEXP args)
     pipeline.set_progress(&progress);
 
     // Pre-run processes the LAScatalog
-    // write_vpc() is the only stage that processed the LAScatalog
+    // write_vpc() and write_lax() are the only stage that can processed the LAScatalog
     if (!pipeline.pre_run())
     {
       throw last_error;
@@ -231,7 +257,9 @@ SEXP process(SEXP sexppipeline, SEXP args)
 
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
-    R_CStackLimit = original_CStackLimit;
+    //#ifdef USING_R
+    //R_CStackLimit = original_CStackLimit;
+    //#endif
 
     progress.done(true);
 
@@ -244,75 +272,64 @@ SEXP process(SEXP sexppipeline, SEXP args)
 
     pipeline.profiler.write(fprofiling);
 
+#ifdef USING_R
     return pipeline.to_R();
+#else
+    return true;
+#endif
   }
   catch (std::string e)
   {
-    R_CStackLimit = original_CStackLimit;
-
-    SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
-
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
-    SET_STRING_ELT(names, 0, Rf_mkChar("message")) ;
-    SET_STRING_ELT(names, 1, Rf_mkChar("call")) ;
-    Rf_setAttrib(res, R_NamesSymbol, names);
-
-    SEXP classes = PROTECT(Rf_allocVector(STRSXP, 3));
-    SET_STRING_ELT(classes, 0, Rf_mkChar("C++Error"));
-    SET_STRING_ELT(classes, 1, Rf_mkChar("error"));
-    SET_STRING_ELT(classes, 2, Rf_mkChar("condition"));
-    Rf_setAttrib(res, R_ClassSymbol, classes);
-
-    SEXP R_err = PROTECT(Rf_allocVector(STRSXP, 1));
-    SEXP R_msg = PROTECT(Rf_mkChar(e.c_str()));
-    SET_STRING_ELT(R_err, 0, R_msg);
-
-    SET_VECTOR_ELT(res, 0, R_err);
-    SET_VECTOR_ELT(res, 1, R_NilValue);
-
-    UNPROTECT(5);
-    return res;
+    #ifdef USING_R
+      //R_CStackLimit = original_CStackLimit;
+      return make_R_error(e.c_str());
+    #else
+      eprint(e.c_str());
+      return false;
+    #endif
   }
   catch(...)
   {
     // # nocov start
-    R_CStackLimit = original_CStackLimit;
-
-    SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
-
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
-    SET_STRING_ELT(names, 0, Rf_mkChar("message")) ;
-    SET_STRING_ELT(names, 1, Rf_mkChar("call")) ;
-    Rf_setAttrib(res, R_NamesSymbol, names);
-
-    SEXP classes = PROTECT(Rf_allocVector(STRSXP, 3));
-    SET_STRING_ELT(classes, 0, Rf_mkChar("C++Error"));
-    SET_STRING_ELT(classes, 1, Rf_mkChar("error"));
-    SET_STRING_ELT(classes, 2, Rf_mkChar("condition"));
-    Rf_setAttrib(res, R_ClassSymbol, classes);
-
-    SEXP R_err = PROTECT(Rf_allocVector(STRSXP, 1));
-    SEXP R_msg = PROTECT(Rf_mkChar("c++ exception (unknown reason)"));
-    SET_STRING_ELT(R_err, 0, R_msg);
-
-    SET_VECTOR_ELT(res, 0, R_err);
-    SET_VECTOR_ELT(res, 1, R_NilValue);
-
-    UNPROTECT(5);
-    return res;
+    #ifdef USING_R
+      //R_CStackLimit = original_CStackLimit;
+      return make_R_error("c++ exception (unknown reason)");
+    #else
+      eprint("c++ exception (unknown reason)");
+      return false;
+    #endif
     // # nocov end
   }
 
-  return R_NilValue;
+  #ifdef USING_R
+    return R_NilValue;
+  #else
+    return false;
+  #endif
+
 }
 
 #ifdef USING_R
-SEXP get_pipeline_info(SEXP sexppipeline)
+SEXP get_pipeline_info(SEXP sexp_config_file)
 {
+  std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
+
   try
   {
+    std::ifstream fjson(config_file);
+    if (!fjson.is_open())
+    {
+      last_error = "Could not open the json file containing the pipeline";
+      throw last_error;
+    }
+    nlohmann::json json;
+    fjson >> json;
+
+    nlohmann::json json_pipeline = json["pipeline"];
+
+
     Pipeline pipeline;
-    if (!pipeline.parse(sexppipeline))
+    if (!pipeline.parse(json_pipeline))
     {
       throw last_error;
     }
@@ -345,32 +362,11 @@ SEXP get_pipeline_info(SEXP sexppipeline)
   }
   catch (std::string e)
   {
-    SEXP res = PROTECT(Rf_allocVector(VECSXP, 2)) ;
-
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
-    SET_STRING_ELT(names, 0, Rf_mkChar("message")) ;
-    SET_STRING_ELT(names, 1, Rf_mkChar("call")) ;
-    Rf_setAttrib(res, R_NamesSymbol, names);
-
-    SEXP classes = PROTECT(Rf_allocVector(STRSXP, 3));
-    SET_STRING_ELT(classes, 0, Rf_mkChar("C++Error"));
-    SET_STRING_ELT(classes, 1, Rf_mkChar("error"));
-    SET_STRING_ELT(classes, 2, Rf_mkChar("condition"));
-    Rf_setAttrib(res, R_ClassSymbol, classes);
-
-    SEXP R_err = PROTECT(Rf_allocVector(STRSXP, 1));
-    SEXP R_msg = PROTECT(Rf_mkChar(e.c_str()));
-    SET_STRING_ELT(R_err, 0, R_msg);
-
-    SET_VECTOR_ELT(res, 0, R_err);
-    SET_VECTOR_ELT(res, 1, R_NilValue);
-
-    UNPROTECT(5);
-    return res;
+    return make_R_error(e.c_str());
   }
   catch(...)
   {
-    Rf_error("c++ exception (unknown reason)"); // # nocov
+    return make_R_error("c++ exception (unknown reason)"); // # nocov
   }
 
   return R_NilValue; // # nocov

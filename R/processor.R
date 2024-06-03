@@ -33,17 +33,22 @@
 #' @export
 exec = function(pipeline, on, with = NULL, ...)
 {
+  # Parse options and give precedence to 1. global options 2. LAScatalog 3. with arguments 4. ... arguments
   with = parse_options(on, with, ...)
 
+  # A reader stage is mandatory. It is allowed to omit it the engine adds it.
   if (is_reader_missing(pipeline))
   {
     pipeline = reader_las() + pipeline
   }
 
+  # A build_catalog stage is automatically added. Users do not need to take care of that one
   pipeline = build_catalog(on, with) + pipeline
 
-  valid = FALSE
+  on_is_valid = FALSE
 
+  # If 'on' is a LAS from lidR or a data.frame. Compatibility mode for R exclusively. The reader_las
+  # stage is modified to call R specific stages that are not compiled outside of R
   if (methods::is(on, "LAS") || is.data.frame(on))
   {
     accuracy = c(0,0,0)
@@ -75,35 +80,45 @@ exec = function(pipeline, on, with = NULL, ...)
     pipeline[[ind]]$accuracy = acc
     pipeline[[ind]]$crs = crs
 
-    valid = TRUE
+    on_is_valid = TRUE
   }
 
+  # If 'on' is a LAScatalog, for convenient compatibility with lidR we pick-up the file names
   if (methods::is(on, "LAScatalog"))
   {
     on <- on$filename
   }
 
+  # If 'on' is character, this is the default behavior.
   if (is.character(on))
   {
-    pipeline[[1]]$files = on
+    pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
+    pipeline$build_catalog$buffer <- with$buffer
+    pipeline$build_catalog$noprocess <- with$noprocess
 
+    # 'noprocess' is a hidden and not documented options to be compatible with LAScatalog$processed
     if (!is.null(with$noprocess))
     {
       if (length(with$noprocess) != length(on))
         stop("'noprocess' and 'on' have different length")
     }
 
-    valid = TRUE
+    on_is_valid = TRUE
   }
 
-  if (!valid) stop("Invalid argument 'on'.")
+  if (!on_is_valid) stop("Invalid argument 'on'.")
 
-  ans <- .Call(`C_process`, pipeline, with)
+  pipeline = list(processing = with, pipeline = pipeline)
 
-  if (inherits(ans, "error"))
-  {
-    stop(ans)
-  }
+  # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
+  # sent to the processor
+  json_file = write_json(pipeline)
+
+  ans <- .Call(`C_process`, json_file)
+
+  #file.remove(json_file)
+
+  if (inherits(ans, "error")) stop(ans)
 
   if (!with$noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)
@@ -200,7 +215,7 @@ parse_options = function(on, with, ...)
   buffer <- 0
   chunk <- 0
   progress <- FALSE
-  ncores <- if (has_omp_support()) concurrent_files(half_cores()) else sequential()
+  ncores <- if (has_omp_support()) concurrent_points(half_cores()) else sequential()
   noprocess <- NULL
   verbose <- FALSE
   noread <- FALSE
@@ -215,7 +230,6 @@ parse_options = function(on, with, ...)
   if (!is.null(dots$verbose)) verbose <- dots$verbose
   if (!is.null(dots$noread)) noread <- dots$noread
   if (!is.null(dots$profiling)) profiling <- dots$profiling
-
 
   # 'with' list has precedence
   if (!is.null(with$buffer)) buffer <- with$buffer
@@ -238,6 +252,7 @@ parse_options = function(on, with, ...)
       progress <- on@processing_options$progress
       processed <- on$processed
       if (!is.null(processed)) noprocess <- !processed
+      if (on@input_options$filter != "") warning(paste0("This LAScatalog has filter = \"", on@input_options$filter, "\" but this option is not automatically propagated to the 'reader_las()' stage.") , call. = FALSE, immediate. = TRUE)
     }
   }
 
@@ -245,9 +260,8 @@ parse_options = function(on, with, ...)
   ncores <- as.integer(strategy)
   modes <- c("sequential", "concurrent-points", "concurrent-files", "nested")
   mode <- attr(strategy, "strategy")
-  if (is.null(mode)) mode = "concurrent-points"
+  if (is.null(mode)) mode = "concurrent-files"
   mode <- match.arg(mode, modes)
-  mode <- match(mode, modes)
 
   # Global options have precedence on everything
   if (!is.null(LASROPTIONS$buffer)) buffer <- LASROPTIONS$buffer
@@ -262,14 +276,14 @@ parse_options = function(on, with, ...)
   {
     if (ncores[1] > 1) warning("This version of lasR has no OpenMP support")
     ncores <- 1L
-    mode <- 1L
+    mode <- "sequential"
   }
 
   stopifnot(is.numeric(buffer))
   stopifnot(is.numeric(chunk))
   stopifnot(is.logical(progress))
   stopifnot(is.numeric(ncores))
-  stopifnot(is.integer(mode))
+  stopifnot(is.character(mode))
   stopifnot(is.logical(verbose))
   stopifnot(is.logical(noread))
 
@@ -296,7 +310,7 @@ parse_options = function(on, with, ...)
 #' The first option is by explicitly naming each option. This option is deprecated and used for convenience and
 #' backward compatibility.
 #' \preformatted{
-#' exec(pipeline, on = f, progress = TRUE)
+#' exec(pipeline, on = f, progress = TRUE, ncores = 8)
 #' }
 #' The second option is by passing a `list` to the `with` argument. This option is more explicit
 #' and should be preferred. The `with` argument takes precedence over the explicit arguments.
@@ -307,7 +321,7 @@ parse_options = function(on, with, ...)
 #' some processing options that are respected by the `lasR` package. The options from a `LAScatalog`
 #' take precedence.
 #' \preformatted{
-#' exec(pipeline, on = ctg)
+#' exec(pipeline, on = ctg, ncores = 4)
 #' }
 #' The last option is by setting global processing options. This has global precedence and is mainly intended
 #' to provide a way for users to override options if they do not have access to the `exec()` function.
@@ -317,10 +331,9 @@ parse_options = function(on, with, ...)
 #' set_exec_options(progress = TRUE, ncores = concurrent_files(2))
 #' exec(pipeline, on = f)
 #' }
-#' By default lasR already set a global options for `ncores`. Thus providing `ncores` has no effect unless
-#' you call \link{unset_parallel_strategy} first.
-#' @param ncores An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files`, or
-#' `nested()`. See \link{multithreading}.
+#' @param ncores An object returned by one of `sequential()`, `concurrent_points()`, `concurrent_files()`, or
+#' `nested()`. See \link{multithreading}. If `NULL` the default is `concurrent_points(half_cores())`. If
+#' a simple integer is provided it corresponds to `concurrent_files(ncores)`.
 #' @param buffer numeric. Each file is read with a buffer. The default is NULL, which does not mean that
 #' the file won't be buffered. It means that the internal routine knows if a buffer is needed and will
 #' pick the greatest value between the internal suggestion and this value.
@@ -361,3 +374,42 @@ unset_exec_option = function()
   LASROPTIONS$noprocess <- NULL
   LASROPTIONS$verbose <- NULL
 }
+
+write_json = function(config)
+{
+  # convert R object (rasterize, callback) into pointer addresses for JSON serialization
+  for (i in seq_along(config$pipeline))
+  {
+    stage <- config$pipeline[[i]]
+
+    if (stage$algoname == "callback")
+    {
+      stage$fun <- address(stage$fun)
+      stage$args <- address(stage$args)
+    }
+    else if (stage$algoname == "aggregate")
+    {
+      stage$call <- address(stage$call)
+      stage$env <- address(stage$env)
+    }
+    else if (stage$algoname == "reader_dataframe" || stage$algoname == "build_catalog")
+    {
+      if (!is.null(stage$dataframe))
+      {
+        stage$dataframe = address(stage$dataframe)
+      }
+    }
+
+    config$pipeline[[i]] <- stage
+  }
+
+  config$pipeline = unname(config$pipeline)
+
+  json = tempfile(fileext = ".json")
+  config = toJSON(config)
+  write(config, json)
+
+  return(json)
+}
+
+

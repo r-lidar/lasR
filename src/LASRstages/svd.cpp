@@ -15,6 +15,10 @@
 #define KNNRADIUS 1
 #define PURERADIUS 2
 
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif
+
 LASRsvd::LASRsvd(int k, double r, std::string features)
 {
   this->k = k;
