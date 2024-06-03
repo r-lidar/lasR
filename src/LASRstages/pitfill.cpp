@@ -45,7 +45,7 @@ bool LASRpitfill::process()
   int sncol = rin.get_ncols();
   int snlin = rin.get_nrows();
 
-  if (geom.size() != sncol*snlin)
+  if (geom.size() != (unsigned int)sncol*(unsigned int)snlin)
   {
     last_error = "Internal error: wrong data size. Please report."; // # nocov
     return false; // # nocov

@@ -89,9 +89,6 @@ void LASRsummary::merge(const Stage* other)
 
   if (metrics_engine.active())
   {
-    int ncols = o->metrics.size();
-    int nrows = o->metrics.begin()->second.size();
-
     for (const auto& pair : o->metrics)
     {
       const std::string& key = pair.first;

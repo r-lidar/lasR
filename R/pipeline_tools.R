@@ -21,7 +21,7 @@ print.LASRalgorithm = function(x, ...)
   name <- x[["algoname"]]
   uuid <- x[["uid"]]
   args <- x[!names(x) %in% c( "uid", "algoname")]
-  cat(name, " (uid:", uuid, ")\n", sep = "")
+  cat(name, " (uid:", substr(uuid, 0, 4), ")\n", sep = "")
   for (name in names(args))
   {
     if (name == "connect")

@@ -1078,9 +1078,9 @@ write_lax = function(embedded = FALSE, overwrite = FALSE)
 
 # ==== INTERNALS =====
 
-generate_uid <- function(size = 6)
+generate_uid <- function(size = 8)
 {
-  paste(sample(c(letters, LETTERS, as.character(0:9)), size, replace = TRUE), collapse = "")
+  paste(sample(c(letters[1:6], as.character(0:8)), size, replace = TRUE), collapse = "")
 }
 
 set_lasr_class = function(x, raster = FALSE, vector = FALSE)
