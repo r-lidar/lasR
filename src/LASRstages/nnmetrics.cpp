@@ -13,7 +13,9 @@
 LASRnnmetrics::LASRnnmetrics(double xmin, double ymin, double xmax, double ymax, int k, double r, const std::vector<std::string>& methods, Stage* algorithm)
 {
   if (!metrics.parse(methods))
+  {
     throw last_error;
+  }
 
   this->xmin = xmin;
   this->ymin = ymin;
@@ -55,7 +57,7 @@ bool LASRnnmetrics::process(LAS*& las)
   bool main_thread = omp_get_thread_num() == 0;
 
   progress->reset();
-  progress->set_total(las->npoints);
+  progress->set_total(maxima.size());
   progress->set_prefix("neighborhood_metrics");
   progress->show();
 
@@ -65,8 +67,6 @@ bool LASRnnmetrics::process(LAS*& las)
     if (progress->interrupted()) continue;
 
     const PointLAS& p = maxima[i];
-
-    PointXYZAttrs lm(p.x, p.y, p.z);
 
     std::vector<PointLAS> pts;
     if (mode == PURERADIUS)
@@ -80,15 +80,14 @@ bool LASRnnmetrics::process(LAS*& las)
       las->knn(xyz, k, r, pts, &lasfilter);
     }
 
-    for (const auto& p : pts) metrics.add_point(p);
-
+    PointXYZAttrs pt(p.x, p.y, p.z);
+    pt.vals.reserve(metrics.size());
     for (int i = 0 ; i < metrics.size() ; i++)
     {
-      float val = metrics.get_metric(i);
-      lm.vals.push_back(val);
+      float val = metrics.get_metric(i, pts);
+      pt.vals.push_back(val);
     }
-
-    metrics.reset();
+    lm.push_back(pt);
 
     #pragma omp critical
     {
@@ -105,43 +104,27 @@ bool LASRnnmetrics::process(LAS*& las)
   return true;
 }
 
-bool LASRlocalmaximum::write()
+bool LASRnnmetrics::write()
 {
-  int dupfid= 0;
   progress->reset();
   progress->set_total(lm.size());
-  progress->set_prefix("Write local maxima on disk");
+  progress->set_prefix("Write neighborhood metrics on disk");
 
   if (lm.size() == 0) return true;
 
   for (const auto& p : lm)
   {
     bool success;
-    #pragma omp critical (write_localmax)
+    #pragma omp critical (write_nnmetric)
     {
-      success = vector.write(p, true);
+      success = vector.write(p);
     }
 
-    if (!success)
-    {
-      // /!\ TODO: not thread safe
-      if (last_error_code != GDALdataset::DUPFID)
-      {
-        return false;
-      }
-      else
-      {
-        dupfid++;
-        last_error_code = 0;
-      }
-    }
+    if (!success) return false;
 
     (*progress)++;
     progress->show();
   }
-
-  if (dupfid)
-    print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
 
   return true;
 }

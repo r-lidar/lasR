@@ -18,8 +18,8 @@ private:
   int mode;
   int k;
   double r;
-  LASRmetrics metrics;
-  std::vector<PointLAS> lm;
+  MetricManager metrics;
+  std::vector<PointXYZAttrs> lm;
 };
 
 #endif

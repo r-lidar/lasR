@@ -120,6 +120,63 @@ bool Vector::write(const PointLAS& p, bool write_attributes)
   return true;
 }
 
+bool Vector::write(const PointXYZAttrs& p)
+{
+  if (!dataset)
+  {
+    last_error = "cannot write with uninitialized GDALDataset"; // # nocov
+    return false; // # nocov
+  }
+
+  if (eGType != wkbPoint25D)
+  {
+    last_error = "ERROR: The file is not of type POINT"; // # nocov
+    return false; // # nocov
+  }
+
+  // Write only points inside the bounding box
+  if (p.x < extent[0] || p.x > extent[2] || p.y < extent[1] || p.y > extent[3])
+  {
+    return true;
+  }
+
+  // Check if a feature with the same FID already exists. This should not happened
+  /*OGRFeature* existingFeature = layer->GetFeature(p.FID);
+  if (existingFeature)
+  {
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "trying to insert a point with FID = %u that is already in the database. This may be due to overlapping tiles. Point skipped.", p.FID);
+    last_error = std::string(buffer);
+    last_error_code = DUPFID;
+    OGRFeature::DestroyFeature(existingFeature);  // Release the existing feature
+    return false;
+  }*/
+
+  OGRFeature* feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
+  OGRPoint point;
+  point.setX(p.x);
+  point.setY(p.y);
+  point.setZ(p.z);
+  feature->SetGeometry(&point);
+  //feature->SetFID(p.FID);
+
+  for (int i = 0 ; i < p.vals.size() ; i++) feature->SetField(i, p.vals[i]);
+
+  if (layer->CreateFeature(feature) != OGRERR_NONE)
+  {
+    // # nocov start
+    char buffer[512];
+    snprintf(buffer, sizeof(buffer), "error %d while writing point (%.2lf %.2lf). %s", CPLGetLastErrorNo(), p.x, p.y, CPLGetLastErrorMsg());
+    last_error = std::string(buffer);
+    OGRFeature::DestroyFeature(feature);
+    return false;
+    // # nocov end
+  }
+
+  OGRFeature::DestroyFeature(feature);
+  return true;
+}
+
 bool Vector::write(const std::vector<TriangleXYZ>& triangles)
 {
   if (!dataset)

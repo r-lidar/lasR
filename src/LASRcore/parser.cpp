@@ -10,6 +10,7 @@
 #include "filter.h"
 #include "loadraster.h"
 #include "localmaximum.h"
+#include "nnmetrics.h"
 #include "noiseivf.h"
 #include "nothing.h"
 #include "pitfill.h"
@@ -446,6 +447,28 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         int classification = stage.at("class");
         auto v = std::make_unique<LASRnoiseivf>(xmin, ymin, xmax, ymax, res, n, classification);
         pipeline.push_back(std::move(v));
+      }
+      else if (name == "neighborhood_metrics")
+      {
+        std::vector<std::string> metrics = get_vector<std::string>(stage["metrics"]);
+        int k = stage.at("k");
+        double r = stage.at("r");
+
+        std::string uid = stage.at("connect");
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
+        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
+
+        LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(it->get());
+        if (p)
+        {
+          auto v = std::make_unique<LASRnnmetrics>(xmin, ymin, xmax, ymax, k, r, metrics, p);
+          pipeline.push_back(std::move(v));
+        }
+        else
+        {
+          last_error = "Incompatible stage combination for neighborhood_metrics"; // # nocov
+          return false; // # nocov
+        }
       }
       else if (name == "add_extrabytes")
       {

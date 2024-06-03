@@ -420,8 +420,16 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
   set_lasr_class(ans, vector = TRUE)
 }
 
-
 # ===== N ====
+
+neighborhood_metrics = function(neighborhood, metrics, k = 10, r = 0, ofile = tempgpkg())
+{
+  nn = get_stage(neighborhood)
+  if (nn$algoname != "local_maximum") stop("the stage must be a local_maximum stage")
+
+  ans <- list(algoname = "neighborhood_metrics", connect = nn[["uid"]], k = k, r = r, metrics = metrics, ofile = ofile)
+  set_lasr_class(ans)
+}
 
 nothing = function(read = FALSE, stream = FALSE, loop = FALSE)
 {
