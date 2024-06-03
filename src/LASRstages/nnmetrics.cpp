@@ -12,11 +12,6 @@
 
 LASRnnmetrics::LASRnnmetrics(double xmin, double ymin, double xmax, double ymax, int k, double r, const std::vector<std::string>& methods, Stage* algorithm)
 {
-  if (!metrics.parse(methods))
-  {
-    throw last_error;
-  }
-
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
@@ -32,10 +27,11 @@ LASRnnmetrics::LASRnnmetrics(double xmin, double ymin, double xmax, double ymax,
 
   if (mode == PUREKNN) this->r = F64_MAX;
 
+  if (!metrics.parse(methods)) throw last_error;
+
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
-  for (const auto& attr : methods)
-    vector.add_field(attr, OFTReal);
+  for (const auto& attr : methods) vector.add_field(attr, OFTReal);
 
   set_connection(algorithm);
 }
@@ -106,11 +102,12 @@ bool LASRnnmetrics::process(LAS*& las)
 
 bool LASRnnmetrics::write()
 {
+  if (ofile.empty()) return true;
+  if (lm.size() == 0) return true;
+
   progress->reset();
   progress->set_total(lm.size());
   progress->set_prefix("Write neighborhood metrics on disk");
-
-  if (lm.size() == 0) return true;
 
   for (const auto& p : lm)
   {

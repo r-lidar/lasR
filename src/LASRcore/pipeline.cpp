@@ -290,7 +290,7 @@ bool Pipeline::set_chunk(const Chunk& chunk)
       return false; // # nocov
     }
 
-    if(!stage->set_input_file_name(chunk.name))
+    if (!stage->set_input_file_name(chunk.name))
     {
       last_error = "in " + stage->get_name() + " while initalizing file: " + last_error; // # nocov
       return false; // # nocov

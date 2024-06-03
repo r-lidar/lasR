@@ -198,13 +198,12 @@ bool LASRlocalmaximum::process(LAS*& las)
 bool LASRlocalmaximum::write()
 {
   if (ofile.empty()) return true;
+  if (lm.size() == 0) return true;
 
   int dupfid= 0;
   progress->reset();
   progress->set_total(lm.size());
   progress->set_prefix("Write local maxima on disk");
-
-  if (lm.size() == 0) return true;
 
   for (const auto& p : lm)
   {
