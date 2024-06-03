@@ -76,12 +76,29 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     for (auto& [key, stage] : json.items())
     {
       std::string name = stage.at("algoname");
-      std::string uid = stage.at("uid");
+      std::string uid = stage.value("uid", "xxx-xxx");
 
-      // This stage is a placeholder stage added at the R level to carry the file paths and processing options
-      // it adds no stage in the pipeline
-      if (name == "build_catalog")
+      if (name == "add_extrabytes")
       {
+        std::string data_type = stage.at("data_type");
+        std::string name = stage.at("name");
+        std::string desc = stage.at("description");
+        double scale = stage.value("scale", 1);
+        double offset = stage.value("offset", 0);
+
+        auto v = std::make_unique<LASRaddattribute>(data_type, name, desc, scale, offset);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "add_rgb")
+      {
+        auto v = std::make_unique<LASRaddrgb>();
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "build_catalog")
+      {
+        // This stage is a placeholder stage added at the R level to carry the file paths and processing options
+        // it adds no stage in the pipeline
+
         // This is the buffer provided by the user. The actual buffer may be larger
         // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
         // stage tells us 50.
@@ -145,6 +162,111 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           catalog->set_crs(CRS(wkt));
         }
         #endif
+      }
+      else if (name == "classify_isolated_points")
+      {
+        double res = stage.at("res");
+        int n = stage.at("n");
+        int classification = stage.at("class");
+        auto v = std::make_unique<LASRnoiseivf>(xmin, ymin, xmax, ymax, res, n, classification);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "filter")
+      {
+        auto v = std::make_unique<LASRfilter>();
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "hulls")
+      {
+        LASRtriangulate* p = nullptr;
+        if (stage.contains("connect"))
+        {
+          std::string uid = stage.at("connect");
+          auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
+          if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
+          p = dynamic_cast<LASRtriangulate*>(it->get());
+          if (p == nullptr)
+          {
+            last_error = "Incompatible stage combination for 'hulls'"; // # nocov
+            return false; // # nocov
+          }
+        }
+
+        auto v = std::make_unique<LASRboundaries>(xmin, ymin, xmax, ymax, p);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "load_raster")
+      {
+        std::string file = stage.at("file");
+        int band = stage.value("band", 1);
+
+        auto v = std::make_unique<LASRloadraster>(file, band);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "local_maximum")
+      {
+        double ws = stage.at("ws");
+        double min_height = stage.value("min_height", 2);
+
+        if (!stage.contains("connect"))
+        {
+          std::string use_attribute = stage.value("use_attribute", "Z");
+          bool record_attributes = stage.value("record_attributes", false);
+
+          auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, use_attribute, record_attributes);
+          pipeline.push_back(std::move(v));
+        }
+        else
+        {
+          std::string uid = stage.at("connect");
+          auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
+          if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
+
+          StageRaster* p = dynamic_cast<StageRaster*>(it->get());
+          if (p)
+          {
+            auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, p);
+            pipeline.push_back(std::move(v));
+          }
+          else
+          {
+            last_error = "Incompatible stage combination for local_maximum"; // # nocov
+            return false; // # nocov
+          }
+        }
+      }
+      else if (name == "nothing")
+      {
+        bool read = stage.value("read", false);
+        bool stream = stage.value("stream", false);
+        bool loop = stage.value("loop", false);
+
+        auto v = std::make_unique<LASRnothing>(read, stream, loop);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "pit_fill")
+      {
+        std::string uid = stage.at("connect");
+        int lap_size = stage.value("lap_size", 3);
+        float thr_lap = stage.value("thr_lap", 0.1f);
+        float thr_spk = stage.value("thr_spk", -0.1f);
+        int med_size = stage.value("med_size", 3);
+        int dil_radius = stage.value("dil_radius", 0);
+
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
+        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
+
+        StageRaster* p = dynamic_cast<StageRaster*>(it->get());
+        if (p)
+        {
+          auto v = std::make_unique<LASRpitfill>(xmin, ymin, xmax, ymax, lap_size, thr_lap, thr_spk, med_size, dil_radius, p);
+          pipeline.push_back(std::move(v));
+        }
+        else
+        {
+          last_error = "Incompatible stage combination for 'pit_fill'"; // # nocov
+          return false; // # nocov
+        }
       }
       else if (name.substr(0,6) == "reader")
       {
@@ -228,177 +350,12 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           }
         }
       }
-      else if (name == "load_raster")
-      {
-        std::string file = stage.at("file");
-        int band = stage.at("band");
-        auto v = std::make_unique<LASRloadraster>(file, band);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "filter")
-      {
-        auto v = std::make_unique<LASRfilter>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "local_maximum")
-      {
-        double ws = stage.at("ws");
-        double min_height = stage.at("min_height");
-
-        if (!stage.contains("connect"))
-        {
-          std::string use_attribute = stage.at("use_attribute");
-          bool record_attributes = stage.at("record_attributes");
-          auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, use_attribute, record_attributes);
-          pipeline.push_back(std::move(v));
-        }
-        else
-        {
-          std::string uid = stage.at("connect");
-          auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
-          if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
-
-          StageRaster* p = dynamic_cast<StageRaster*>(it->get());
-          if (p)
-          {
-            auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax, ws, min_height, p);
-            pipeline.push_back(std::move(v));
-          }
-          else
-          {
-            last_error = "Incompatible stage combination for local_maximum"; // # nocov
-            return false; // # nocov
-          }
-        }
-      }
-      else if (name == "summarise")
-      {
-        double zwbin = stage.at("zwbin");
-        double iwbin = stage.at("iwbin");
-        std::vector<std::string> metrics;
-        if (stage.contains("metrics")) metrics = get_vector<std::string>(stage["metrics"]);
-
-        auto v = std::make_unique<LASRsummary>(xmin, ymin, xmax, ymax, zwbin, iwbin, metrics);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "triangulate")
-      {
-        double max_edge = stage.at("max_edge");
-        std::string use_attribute = stage.at("use_attribute");
-        auto v = std::make_unique<LASRtriangulate>(xmin, ymin, xmax, ymax, max_edge, use_attribute);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "write_las")
-      {
-        bool keep_buffer = stage.at("keep_buffer");
-        auto v = std::make_unique<LASRlaswriter>(xmin, xmax, ymin, ymax, keep_buffer);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "write_lax")
-      {
-        indexer = true;
-        bool embedded = stage.at("embedded");
-        bool overwrite = stage.at("overwrite");
-        auto v = std::make_unique<LASRlaxwriter>(embedded, overwrite, false);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "write_vpc")
-      {
-        bool absolute_path = stage.at("absolute");
-        auto v = std::make_unique<LASRvpcwriter>(absolute_path);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "transform_with")
-      {
-        std::string uid = stage.at("connect");
-        std::string op = stage.at("operator");
-        std::string attr = stage.at("store_in_attribute");
-        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
-        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
-
-        LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
-        StageRaster* q = dynamic_cast<StageRaster*>(it->get());
-        if (p)
-        {
-          auto v = std::make_unique<LASRtransformwith>(xmin, ymin, xmax, ymax, p, op, attr);
-          pipeline.push_back(std::move(v));
-        }
-        else if(q)
-        {
-          auto v = std::make_unique<LASRtransformwith>(xmin, ymin, xmax, ymax, q, op, attr);
-          pipeline.push_back(std::move(v));
-        }
-        else
-        {
-          last_error = "Incompatible stage combination for 'rasterize'"; // # nocov
-          return false; // # nocov
-        }
-      }
-      else if (name == "pit_fill")
-      {
-        std::string uid = stage.at("connect");
-        int lap_size = stage.at("lap_size");
-        float thr_lap = (float)stage.at("thr_lap");
-        float thr_spk = (float)stage.at("thr_spk");
-        int med_size = stage.at("med_size");
-        int dil_radius = stage.at("dil_radius");
-
-        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
-        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
-
-        StageRaster* p = dynamic_cast<StageRaster*>(it->get());
-        if (p)
-        {
-          auto v = std::make_unique<LASRpitfill>(xmin, ymin, xmax, ymax, lap_size, thr_lap, thr_spk, med_size, dil_radius, p);
-          pipeline.push_back(std::move(v));
-        }
-        else
-        {
-          last_error = "Incompatible stage combination for 'pit_fill'"; // # nocov
-          return false; // # nocov
-        }
-      }
-      else if (name  == "sampling_voxel")
-      {
-        double res = stage.at("res");
-        auto v = std::make_unique<LASRsamplingvoxels>(xmin, ymin, xmax, ymax, res);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name  == "sampling_pixel")
-      {
-        double res = stage.at("res");
-        auto v = std::make_unique<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name  == "set_crs")
-      {
-        int epsg = stage.at("epsg");
-        std::string wkt = stage.at("wkt");
-        if (epsg > 0)
-        {
-          auto v = std::make_unique<LASRsetcrs>(epsg);
-          pipeline.push_back(std::move(v));
-        }
-        else
-        {
-          auto v = std::make_unique<LASRsetcrs>(wkt);
-          pipeline.push_back(std::move(v));
-        }
-      }
-      else if (name  == "svd")
-      {
-        int k = stage.at("k");
-        double r = stage.at("r");
-        std::string features = stage.at("features");
-        auto v = std::make_unique<LASRsvd>(k, r, features);
-        pipeline.push_back(std::move(v));
-      }
       else if (name  == "region_growing")
       {
-        double th_tree = stage.at("th_tree");
-        double th_seed = stage.at("th_seed");
-        double th_cr = stage.at("th_cr");
-        double max_cr = stage.at("max_cr");
+        double th_tree = stage.value("th_tree", 2);
+        double th_seed = stage.value("th_seed", 0.45);
+        double th_cr = stage.value("th_cr", 0.55);
+        double max_cr = stage.value("max_cr", 20);
 
         std::string uid1 = stage.at("connect1");
         std::string uid2 = stage.at("connect2");
@@ -420,57 +377,47 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           return false; // # nocov
         }
       }
-      else if (name == "hulls")
-      {
-        LASRtriangulate* p = nullptr;
-        if (stage.contains("connect"))
-        {
-          std::string uid = stage.at("connect");
-          auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
-          if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
-          p = dynamic_cast<LASRtriangulate*>(it->get());
-          if (p == nullptr)
-          {
-            last_error = "Incompatible stage combination for 'hulls'"; // # nocov
-            return false; // # nocov
-          }
-        }
-
-        auto v = std::make_unique<LASRboundaries>(xmin, ymin, xmax, ymax, p);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "classify_isolated_points")
+      else if (name  == "sampling_voxel")
       {
         double res = stage.at("res");
-        int n = stage.at("n");
-        int classification = stage.at("class");
-        auto v = std::make_unique<LASRnoiseivf>(xmin, ymin, xmax, ymax, res, n, classification);
+
+        auto v = std::make_unique<LASRsamplingvoxels>(xmin, ymin, xmax, ymax, res);
         pipeline.push_back(std::move(v));
       }
-      else if (name == "add_extrabytes")
+      else if (name  == "sampling_pixel")
       {
-        std::string data_type = stage.at("data_type");
-        std::string name = stage.at("name");
-        std::string desc = stage.at("description");
-        double scale = stage.at("scale");
-        double offset = stage.at("offset");
-        auto v = std::make_unique<LASRaddattribute>(data_type, name, desc, scale, offset);
+        double res = stage.at("res");
+
+        auto v = std::make_unique<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res);
         pipeline.push_back(std::move(v));
       }
-      else if (name == "add_rgb")
+      else if (name  == "set_crs")
       {
-        auto v = std::make_unique<LASRaddrgb>();
-        pipeline.push_back(std::move(v));
+        int epsg = stage.value("epsg", 0);
+        std::string wkt = stage.value("wkt", "");
+
+        if (epsg > 0)
+        {
+          auto v = std::make_unique<LASRsetcrs>(epsg);
+          pipeline.push_back(std::move(v));
+        }
+        else if (wkt.size() > 0)
+        {
+          auto v = std::make_unique<LASRsetcrs>(wkt);
+          pipeline.push_back(std::move(v));
+        }
       }
       else if (name == "stop_if")
       {
         std::string condition = stage.at("condition");
+
         if (condition == "outside_bbox")
         {
           double minx = stage.at("xmin");
           double miny = stage.at("ymin");
           double maxx = stage.at("xmax");
           double maxy = stage.at("ymax");
+
           auto v = std::make_unique<LASRbreakoutsidebbox>(minx, miny, maxx, maxy);
           pipeline.push_back(std::move(v));
         }
@@ -480,13 +427,81 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           return false;
         }
       }
-      else if (name == "nothing")
+      else if (name == "summarise")
       {
-        bool read = stage.at("read");
-        bool stream = stage.at("stream");
-        bool loop = stage.at("loop");
+        double zwbin = stage.value("zwbin", 2);
+        double iwbin = stage.value("iwbin", 50);
 
-        auto v = std::make_unique<LASRnothing>(read, stream, loop);
+        std::vector<std::string> metrics;
+        if (stage.contains("metrics")) metrics = get_vector<std::string>(stage.at("metrics"));
+
+        auto v = std::make_unique<LASRsummary>(xmin, ymin, xmax, ymax, zwbin, iwbin, metrics);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name  == "svd")
+      {
+        int k = stage.at("k");
+        double r = stage.value("r", 0);
+        std::string features = stage.value("features", "");
+
+        auto v = std::make_unique<LASRsvd>(k, r, features);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "transform_with")
+      {
+        std::string uid = stage.at("connect");
+        std::string op = stage.value("operator", "-");
+        std::string attr = stage.value("store_in_attribute", "");
+
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
+        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
+
+        LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(it->get());
+        StageRaster* q = dynamic_cast<StageRaster*>(it->get());
+        if (p)
+        {
+          auto v = std::make_unique<LASRtransformwith>(xmin, ymin, xmax, ymax, p, op, attr);
+          pipeline.push_back(std::move(v));
+        }
+        else if(q)
+        {
+          auto v = std::make_unique<LASRtransformwith>(xmin, ymin, xmax, ymax, q, op, attr);
+          pipeline.push_back(std::move(v));
+        }
+        else
+        {
+          last_error = "Incompatible stage combination for 'rasterize'"; // # nocov
+          return false; // # nocov
+        }
+      }
+      else if (name == "triangulate")
+      {
+        double max_edge = stage.at("max_edge");
+        std::string use_attribute = stage.at("use_attribute");
+        auto v = std::make_unique<LASRtriangulate>(xmin, ymin, xmax, ymax, max_edge, use_attribute);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "write_las")
+      {
+        bool keep_buffer = stage.value("keep_buffer", false);
+
+        auto v = std::make_unique<LASRlaswriter>(xmin, xmax, ymin, ymax, keep_buffer);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "write_lax")
+      {
+        indexer = true;
+        bool embedded = stage.value("embedded", false);
+        bool overwrite = stage.value("overwrite", false);
+
+        auto v = std::make_unique<LASRlaxwriter>(embedded, overwrite, false);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "write_vpc")
+      {
+        bool absolute_path = stage.value("absolute", false);
+
+        auto v = std::make_unique<LASRvpcwriter>(absolute_path);
         pipeline.push_back(std::move(v));
       }
       #ifdef USING_R
@@ -529,14 +544,11 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         auto& it = pipeline.back();
         it->set_uid(uid);
 
-        // If we intend to actually to process the point cloud we check that a reader stage is present if needed
-        if (catalog != nullptr)
+        // If we intend to actually process the point cloud we check that a reader stage is present if needed
+        if (catalog != nullptr && it->need_points() && !reader)
         {
-          if (it->need_points() && !reader)
-          {
-            last_error = "The stage " + it->get_name() + " processes the point cloud but is not preceded by a reader stage";
-            return false;
-          }
+          last_error = "The stage " + it->get_name() + " processes the point cloud but is not preceded by a reader stage";
+          return false;
         }
       }
     }
@@ -549,7 +561,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       stage->set_verbose(verbose);
     }
 
-    // If build catalog == false we do not build a catalog and thus
+    // If catalog == nullptr we did not build a catalog and thus
     // it means that we do not have access to the files. The pipeline is parsed
     // but can't be executed and won't be executed. This happens only in get_pipeline_info()
     // that parses the pipeline in order to know if a buffer is needed or if the pipeline is
@@ -581,8 +593,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           continue;
         }
 
-        std::string filter = stage.at("filter");
-        std::string output = stage.at("output");
+        std::string filter = stage.value("filter", "");
+        std::string output = stage.value("output", "");
 
         // We set the CRS from the CRS of the catalog but then we get back the CRS. If we have
         // the 'set_crs' stage this updates the CRS assigned to the next stages
