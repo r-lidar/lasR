@@ -275,7 +275,10 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       {
         double zwbin = stage.at("zwbin");
         double iwbin = stage.at("iwbin");
-        auto v = std::make_unique<LASRsummary>(xmin, ymin, xmax, ymax, zwbin, iwbin);
+        std::vector<std::string> metrics;
+        if (stage.contains("metrics")) metrics = get_vector<std::string>(stage["metrics"]);
+
+        auto v = std::make_unique<LASRsummary>(xmin, ymin, xmax, ymax, zwbin, iwbin, metrics);
         pipeline.push_back(std::move(v));
       }
       else if (name == "triangulate")

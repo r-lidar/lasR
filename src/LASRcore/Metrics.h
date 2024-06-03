@@ -8,72 +8,74 @@
 
 #include "Shape.h"
 
-using PointCloud = std::vector<PointLAS>;
-using PointAccessor = std::function<double(const PointLAS&)>;
-using MetricFunction = std::function<float(PointAccessor, const PointCloud&, float)>;
+using PointCollection = std::vector<PointLAS>;
+using PointAttributeAccessor = std::function<double(const PointLAS&)>;
+using MetricComputation = std::function<float(PointAttributeAccessor, const PointCollection&, float)>;
 
-class Metric
+class MetricCalculator
 {
 public:
-  Metric(MetricFunction metric, PointAccessor accessor, float param): metric(metric), accessor(accessor), param(param) {}
-  float compute(const PointCloud& points) const { return metric(accessor, points, param); };
-  void set_param(float x) { param = x; };
+  MetricCalculator(MetricComputation computation, PointAttributeAccessor accessor, float param) : computation(computation), accessor(accessor), param(param) {}
+  float compute(const PointCollection& points) const { return computation(accessor, points, param); }
+  void set_param(float x) { param = x; }
 
 private:
-  MetricFunction metric;
-  PointAccessor accessor;
+  MetricComputation computation;
+  PointAttributeAccessor accessor;
   float param;
 };
 
-class Metrics
+class MetricManager
 {
 public:
-  Metrics();
-  ~Metrics();
-  bool parse(const std::vector<std::string>& names);
+  MetricManager();
+  ~MetricManager();
+  bool parse(const std::vector<std::string>& names, bool support_streamable = true);
   int size() const;
-  float get_metric(int index, const PointCloud& points) const;
+  bool active() const;
+  float get_metric(int index, const PointCollection& points) const;
   float get_metric(int index, float x, float y) const;
-  float get_default_value() const { return default_value; };
-  void set_default_value(float val) { default_value = val; };
+  const std::string& get_name(int index) { return names[index]; }
+  float get_default_value() const { return default_value; }
+  void set_default_value(float val) { default_value = val; }
   bool is_streamable() const { return streamable; }
 
 private:
   double percentile(const std::vector<double>& x, float p) const;
-  float string2float(const std::string& s) const;
+  float string_to_float(const std::string& s) const;
 
-  // streamable metrics
+  // Streamable metrics
   float pmax  (float x, float y) const;
   float pmin  (float x, float y) const;
   float pcount(float x, float y) const;
 
-  // non streamable metrics
-  float min(PointAccessor accessor, const PointCloud& points, float param) const;
-  float max(PointAccessor accessor, const PointCloud& points, float param) const;
-  float mean(PointAccessor accessor, const PointCloud& points, float param) const;
-  float median(PointAccessor accessor, const PointCloud& points, float param) const;
-  float sd(PointAccessor accessor, const PointCloud& points, float param) const;
-  float cv(PointAccessor accessor, const PointCloud& points, float param) const;
-  float sum(PointAccessor accessor, const PointCloud& points, float param) const;
-  float percentile(PointAccessor accessor, const PointCloud& points, float param) const;
-  float above(PointAccessor accessor, const PointCloud& points, float param) const;
-  float count(PointAccessor accessor, const PointCloud& points, float param) const;
-  float mode(PointAccessor accessor, const PointCloud& points, float param) const;
+  // Non-streamable metrics
+  float min(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float max(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float mean(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float median(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float sd(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float cv(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float sum(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float percentile(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float above(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float count(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float mode(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
 
   float default_value;
+  std::vector<std::string> names;
 
-  // Some predefined metrics such as z_max or z_min can be streamed. We use a pointer to simple functions.
+  // Predefined metrics such as z_max or z_min can be streamed. We use a pointer to simple functions.
   bool streamable;
-  typedef float (Metrics::*StreamingMetric)(float, float) const;
+  typedef float (MetricManager::*StreamingMetric)(float, float) const;
   std::vector<StreamingMetric> streaming_operators;
 
-  // Regular metrics can't be streamed. We use a parser and a Metrics object to handle the complexity of the
-  // system.
-  Metric parse(const std::string& name);
-  std::vector<Metric> regular_operators;
+  // Regular metrics can't be streamed. We use a parser and a MetricCalculator object to handle the complexity of the system.
+  MetricCalculator parse(const std::string& name);
+  std::vector<MetricCalculator> regular_operators;
 
   // Map of string to attribute accessors
-  std::unordered_map<std::string, PointAccessor> attribute_functions = {
+  std::unordered_map<std::string, PointAttributeAccessor> attribute_functions = {
     {"x", [](const PointLAS& p) { return p.x; }},
     {"y", [](const PointLAS& p) { return p.y; }},
     {"z", [](const PointLAS& p) { return p.z; }},
@@ -99,7 +101,7 @@ private:
     {"intensity", [](const PointLAS& p) { return p.intensity; }},
     {"returnnumber", [](const PointLAS& p) { return p.return_number; }},
     {"numberofreturn", [](const PointLAS& p) { return p.number_of_returns; }},
-    {"cclassification", [](const PointLAS& p) { return p.classification; }},
+    {"classification", [](const PointLAS& p) { return p.classification; }},
     {"gpstime", [](const PointLAS& p) { return p.gps_time; }},
     {"synthetic", [](const PointLAS& p) { return p.synthetic_flag; }},
     {"keypoint", [](const PointLAS& p) { return p.keypoint_flag; }},
@@ -112,25 +114,26 @@ private:
     {"angle", [](const PointLAS& p) { return p.scan_angle; }},
     {"scanangle", [](const PointLAS& p) { return p.scan_angle; }},
     {"red", [](const PointLAS& p) { return p.R; }},
-    {"gren", [](const PointLAS& p) { return p.G; }},
+    {"green", [](const PointLAS& p) { return p.G; }},
     {"blue", [](const PointLAS& p) { return p.B; }},
     {"nir", [](const PointLAS& p) { return p.NIR; }}
   };
 
   // Map of string to metric functions
-  std::unordered_map<std::string, MetricFunction> metric_functions = {
-    {"max", [this](PointAccessor accessor, const PointCloud& points, float param) { return max(accessor, points, param); }},
-    {"min", [this](PointAccessor accessor, const PointCloud& points, float param) { return min(accessor, points, param); }},
-    {"mean", [this](PointAccessor accessor, const PointCloud& points, float param) { return mean(accessor, points, param); }},
-    {"median", [this](PointAccessor accessor, const PointCloud& points, float param) { return median(accessor, points, param); }},
-    {"sd", [this](PointAccessor accessor, const PointCloud& points, float param) { return sd(accessor, points, param); }},
-    {"cv", [this](PointAccessor accessor, const PointCloud& points, float param) { return cv(accessor, points, param); }},
-    {"sum", [this](PointAccessor accessor, const PointCloud& points, float param) { return sum(accessor, points, param); }},
-    {"above", [this](PointAccessor accessor, const PointCloud& points, float param) { return above(accessor, points, param); }},
-    {"mode", [this](PointAccessor accessor, const PointCloud& points, float param) { return mode(accessor, points, param); }},
-    {"count", [this](PointAccessor accessor, const PointCloud& points, float param) { return count(accessor, points, param); }},
-    {"p", [this](PointAccessor accessor, const PointCloud& points, float param) { return percentile(accessor, points, param); }}
+  std::unordered_map<std::string, MetricComputation> metric_functions = {
+    {"max", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return max(accessor, points, param); }},
+    {"min", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return min(accessor, points, param); }},
+    {"mean", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return mean(accessor, points, param); }},
+    {"median", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return median(accessor, points, param); }},
+    {"sd", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return sd(accessor, points, param); }},
+    {"cv", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return cv(accessor, points, param); }},
+    {"sum", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return sum(accessor, points, param); }},
+    {"above", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return above(accessor, points, param); }},
+    {"mode", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return mode(accessor, points, param); }},
+    {"count", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return count(accessor, points, param); }},
+    {"p", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return percentile(accessor, points, param); }}
   };
 };
+
 
 #endif

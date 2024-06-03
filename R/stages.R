@@ -494,8 +494,8 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
 #' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
 #' Some metrics have an attribute + name + a parameter X, such as "pX" where "X" can be substituted by a number.
-#' Here, "z_pX" represents the Xth percentile; for instance, "z_p95" signifies the 95th
-#' percentile of z. "z_aboveX" corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
+#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
 #' It is possible to call a metric without the name of the attribute. In this case, z is the default.
 #' Below are some examples of valid calls:
 #' ```
@@ -872,11 +872,30 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 
 #' Summary
 #'
-#' Summarize the dataset by counting the number of points, first returns, classes. It also produces
-#' a histogram of Z and Intensity. This stage does not modify the point cloud. It produces a
-#' summary as a `list`.
+#' Summarize the dataset by counting the number of points, first returns and other metrics for the **entire point cloud**.
+#' It also produces an histogram of Z and Intensity attributes for the **entiere point cloud**.
+#' It can also compute some metrics **for each file or chunk** with the same metric engine than \link{rasterize}.
+#' This stage does not modify the point cloud. It produces a summary as a `list`.
+#'
+#' @section Operators:
+#' Each string is composed of two parts separated by an underscore. The first part is the attribute
+#'  on which the metric must be computed (e.g., z, intensity, classification).
+#' The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+#' `"z_max"`, `"intensity_min"`, `"z_mean"`, `"classification_mode"`.\cr\cr
+#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+#' s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
+#' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+#' Some metrics have an attribute + name + a parameter X, such as `pX` where `X` can be substituted by a number.
+#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
+#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+#' It is possible to call a metric without the name of the attribute. In this case, z is the default.
 #'
 #' @param zwbin,iwbin numeric. Width of the bins for the histograms of Z and Intensity.
+#' @param metrics Character vector. "min", "max" and "count" are accepted as well
+#' as many others (see section 'Operators'). If `NULL` nothing is computed. If something is provided these
+#' metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples)
 #' @template param-filter
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
@@ -884,10 +903,18 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 #' pipeline <- read + summarise()
 #' ans <- exec(pipeline, on = f)
 #' ans
+#'
+#' # Compute metrics for each plot
+#' read = reader_las_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
+#' metrics = summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
+#' pipeline = read + metrics
+#' ans = exec(pipeline, on = f)
+#' ans$metrics
 #' @export
-summarise = function(zwbin = 2, iwbin = 25, filter = "")
+#' @md
+summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 {
-  ans <- list(algoname = "summarise", filter = filter, zwbin = zwbin, iwbin = iwbin)
+  ans <- list(algoname = "summarise", filter = filter, zwbin = zwbin, iwbin = iwbin, metrics = metrics)
   set_lasr_class(ans)
 }
 

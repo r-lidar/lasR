@@ -353,22 +353,6 @@ plot(ans, axes = T, lwd = 0.5, col = "gray")
 
 However `hulls()` is more likely to be used without a triangulation. In this case it returns the bounding box of each LAS/LAZ file read from the header. And if it is used with `triangulate(0)` it returns the convex hull but this is a very inefficient way to get the convex hull.
 
-## Sampling Voxel
-
-The `sampling_voxel()` and `summarise()` functions operate similarly to other algorithms, and their output depends on their position in the pipeline:
-
-
-```{r, echo = FALSE}
-f <- c(system.file("extdata", "Topography.las", package="lasR"))
-```
-
-```{r sampling}
-pipeline = summarise() + sampling_voxel(4) + summarise()
-ans = exec(pipeline, on = f)
-print(head(ans[[1]]))
-print(head(ans[[2]]))
-```
-
 ## Readers
 
 `reader_las()` MUST be the first stage of each pipeline even if it can conveniently be omitted in its simplest form. However there are several readers hidden behind `reader_las()`: 
@@ -396,15 +380,47 @@ pipeline = reader_las_circles(xcenter, ycenter, 11.28) + pipeline
 
 These readers allow building a ground inventory pipeline, or a plot extraction for examples
 
+## Summarise
+
+The `summarise()` stage computes metrics of interest from the entire point cloud, i.e., all the points read. In the following example, we are processing four files. The stage reports the number of points, number of first returns, histograms, and other metrics.
+
+```{r, echo=FALSE}
+f = paste0(system.file(package="lasR"), "/extdata/bcts")
+f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+```
+
+```{r summary}
+read = reader_las()
+summary = summarise()
+pipeline = read + summary
+ans = exec(pipeline, on = f)
+head(ans)
+```
+
+Like other stages, the output produced by summarise() depends on its positioning in the pipeline. Let's insert a sampling stage (not described in this tutorial). We can see that it summarizes the point cloud in its current state in the pipeline.
+
+```{r, echo = FALSE}
+f <- c(system.file("extdata", "Topography.las", package="lasR"))
+```
+
+```{r sampling}
+pipeline = summarise() + sampling_voxel(4) + summarise()
+ans = exec(pipeline, on = f)
+print(head(ans[[1]]))
+print(head(ans[[2]]))
+```
+
+`summarise()` can also compute some metrics. In this case, the metrics are not computed for the entire point cloud (i.e., all the points read) but for each chunk read (i.e., each file or each query). This feature, for example, allows computing metrics for a plot inventory.
+
 ## Plot inventory
 
-This pipeline extracts a plot inventory using a shapefile from a non-normalized point cloud, normalizes each plot, computes metrics for each plot, and writes each normalized and non-normalized plot in separate files. Each circular plot is **loaded with a buffer** to perform a correct triangulation. The plots are exposed to R without the buffer using `drop_buffer = TRUE`.
+This pipeline extracts a plot inventory using a shapefile from a non-normalized point cloud, normalizes each plot with `transform_with()`, and computes some metrics for each plot using `summarise()`. It also writes each normalized and non-normalized plot in separate files. This means that, in a single pass, it performs the extraction, normalization, saving, and computation.
+
+Each circular plot is loaded with a buffer to perform a correct triangulation, but all stages natively know how to handle a buffer. This means that `summarise()` computes the metrics without including buffer points and `write_las()` does not write the buffer points.
 
 ```{r inventory, eval=FALSE}
 ofiles_plot <- paste0(tempdir(), "/plot_*.las")
 ofiles_plot_norm <- paste0(tempdir(), "/plot_*_norm.las")
-
-my_metric_fun = function(data) { mean(data$Z) }
 
 library(sf)
 inventory <- st_read("shapefile.shp")
@@ -414,13 +430,13 @@ ycenter <- coordinates[,2]
 
 read <- reader_las(xc = xcenter, yc = ycenter, r = 11.28) 
 tri <- triangulate(filter = keep_ground())
-trans <- transform_with(tri)
+norm <- transform_with(tri)
 norm <- tri + trans
-metric <- callback(my_metric_fun, expose = "z", drop_buffer = TRUE)
+metrics <- summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
 write1 <- write_las(ofiles_plot)
 write2 <- write_las(ofiles_plot_norm)
 
-pipeline = read + trans + write1 + norm + write2
+pipeline = read + write1 + norm + write2
 ```
 
 ## Wildcard Usage

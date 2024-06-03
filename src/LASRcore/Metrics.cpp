@@ -8,36 +8,43 @@
 #include <limits>
 #include <stdexcept>
 
-bool Metrics::parse(const std::vector<std::string>& names)
+bool MetricManager::parse(const std::vector<std::string>& names, bool support_streamable)
 {
-  // Check if we have only streamable metrics
-  streamable = true;
-  for (const auto& name : names)
+  if (names.size() == 0) return true;
+
+  // Check if we have only streamable MetricManager
+  if (support_streamable)
   {
-    if (name != "max" && name != "min" && name != "count" && name != "z_max" && name != "z_min")
+    streamable = true;
+    for (const auto& name : names)
     {
-      streamable = false;
-      break;
+      if (name != "max" && name != "min" && name != "count" && name != "z_max" && name != "z_min")
+      {
+        streamable = false;
+        break;
+      }
     }
   }
 
-  // If we have only streamable metrics
+  // If we have only streamable MetricManager
   if (streamable)
   {
     for (const auto& name : names)
     {
       if (name == "max" || name == "z_max")
-        streaming_operators.push_back(&Metrics::pmax);
+        streaming_operators.push_back(&MetricManager::pmax);
       else if (name == "min" || name == "z_min")
-        streaming_operators.push_back(&Metrics::pmin);
+        streaming_operators.push_back(&MetricManager::pmin);
       else if (name == "count")
-        streaming_operators.push_back(&Metrics::pcount);
+        streaming_operators.push_back(&MetricManager::pcount);
+
+      this->names.push_back(name);
     }
 
     return true;
   }
 
-  // Regular case including non streamable metrics
+  // Regular case including non streamable MetricManager
   try
   {
     for (const auto& name : names)
@@ -54,7 +61,7 @@ bool Metrics::parse(const std::vector<std::string>& names)
   return true;
 }
 
-Metric Metrics::parse(const std::string& name)
+MetricCalculator MetricManager::parse(const std::string& name)
 {
   float param = 0;
   std::string metric;
@@ -75,7 +82,7 @@ Metric Metrics::parse(const std::string& name)
   if (metric[0] == 'p')
   {
     std::string probs = metric.substr(1);
-    param = string2float(probs);
+    param = string_to_float(probs);
 
     if (std::isnan(param)) throw std::invalid_argument("Invalid parameter in: " + name);
     if (param < 0 || param > 100)  throw std::invalid_argument("Percentile out of range (0-100)");
@@ -85,7 +92,7 @@ Metric Metrics::parse(const std::string& name)
   else if (metric.substr(0,5) == "above")
   {
     std::string h = metric.substr(5);
-    param = string2float(h);
+    param = string_to_float(h);
 
     if (std::isnan(param)) throw std::invalid_argument("Invalid parameter in: " + name);
 
@@ -98,17 +105,19 @@ Metric Metrics::parse(const std::string& name)
   auto metric_function = metric_functions.find(metric);
   if (metric_function == metric_functions.end()) throw std::invalid_argument("Invalid metric name: " + metric);
 
-  return Metric(metric_function->second, accessor->second, param);
+  names.push_back(name);
+
+  return MetricCalculator(metric_function->second, accessor->second, param);
 }
 
-// streamable metrics
-float Metrics::pmax  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x > y) ? x : y; }
-float Metrics::pmin  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x < y) ? x : y; }
-float Metrics::pcount(float x, float y) const { if (x == NA_F32_RASTER) return 1; return x+1; }
+// streamable MetricManager
+float MetricManager::pmax  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x > y) ? x : y; }
+float MetricManager::pmin  (float x, float y) const { if (x == NA_F32_RASTER) return y; return (x < y) ? x : y; }
+float MetricManager::pcount(float x, float y) const { if (x == NA_F32_RASTER) return 1; return x+1; }
 
-// batch metrics
+// batch MetricManager
 
-float Metrics::min(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::min(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   double min = std::numeric_limits<double>::max();
   for (const auto& point : points)
@@ -119,7 +128,7 @@ float Metrics::min(PointAccessor accessor, const PointCloud& points, float param
   return min;
 }
 
-float Metrics::max(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::max(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   double max = std::numeric_limits<double>::lowest();
   for (const auto& point : points)
@@ -130,14 +139,14 @@ float Metrics::max(PointAccessor accessor, const PointCloud& points, float param
   return max;
 }
 
-float Metrics::mean(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::mean(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   double sum = 0.0;
   for (const auto& point : points) sum += accessor(point);
   return (float)(sum/points.size());
 }
 
-float Metrics::median(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::median(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   std::vector<double> x;
   x.reserve(points.size());
@@ -146,7 +155,7 @@ float Metrics::median(PointAccessor accessor, const PointCloud& points, float pa
   return percentile(x, 50);
 }
 
-float Metrics::sd(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::sd(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   double sum = 0.0;
   for (const auto& point : points) sum += accessor(point);
@@ -161,7 +170,7 @@ float Metrics::sd(PointAccessor accessor, const PointCloud& points, float param)
   return (float)(std::sqrt(sum/(points.size()-1)));
 }
 
-float Metrics::mode(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::mode(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   std::unordered_map<double, int> registry;
 
@@ -186,25 +195,25 @@ float Metrics::mode(PointAccessor accessor, const PointCloud& points, float para
   return (float)mode;
 }
 
-float Metrics::cv(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::cv(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   return sd(accessor, points, param)/mean(accessor, points, param);
 }
 
-float Metrics::sum(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::sum(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   double sum = 0;
   for (const auto& point : points) sum += accessor(point);
   return (float)sum;
 }
 
-float Metrics::count(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::count(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   return (float)points.size();
 }
 
 
-float Metrics::percentile(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::percentile(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   std::vector<double> x;
   x.reserve(points.size());
@@ -213,7 +222,7 @@ float Metrics::percentile(PointAccessor accessor, const PointCloud& points, floa
   return percentile(x, param);
 }
 
-float Metrics::above(PointAccessor accessor, const PointCloud& points, float param) const
+float MetricManager::above(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
   float k = 0;
   for (const auto& point : points)
@@ -223,19 +232,19 @@ float Metrics::above(PointAccessor accessor, const PointCloud& points, float par
   return k/(float)points.size();
 }
 
-float Metrics::get_metric(int index, float x, float y) const
+float MetricManager::get_metric(int index, float x, float y) const
 {
   const StreamingMetric& f = streaming_operators[index];
   return (this->*f)(x,y);
 }
 
-float Metrics::get_metric(int index, const PointCloud& points) const
+float MetricManager::get_metric(int index, const PointCollection& points) const
 {
   if (points.size() == 0) return default_value;
   return regular_operators[index].compute(points);
 }
 
-double Metrics::percentile(const std::vector<double>& x, float p) const
+double MetricManager::percentile(const std::vector<double>& x, float p) const
 {
   float rank = (p / 100.0f) * ((float)x.size() - 1) + 1;
   int lowerIndex = (int)(std::floor(rank)) - 1;
@@ -245,12 +254,17 @@ double Metrics::percentile(const std::vector<double>& x, float p) const
   return lowerValue + (upperValue - lowerValue) * (rank - std::floor(rank));
 }
 
-int Metrics::size() const
+int MetricManager::size() const
 {
   return (streamable) ? (int)streaming_operators.size() : (int)regular_operators.size();
 };
 
-float Metrics::string2float(const std::string& s) const
+bool MetricManager::active() const
+{
+  return size() > 0;
+}
+
+float MetricManager::string_to_float(const std::string& s) const
 {
   try
   {
@@ -264,13 +278,12 @@ float Metrics::string2float(const std::string& s) const
 }
 
 
-Metrics::Metrics()
+MetricManager::MetricManager()
 {
   streamable = false;
   default_value = NA_F32_RASTER;
 }
 
-Metrics::~Metrics()
+MetricManager::~MetricManager()
 {
 }
-
