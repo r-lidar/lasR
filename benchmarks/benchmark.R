@@ -48,6 +48,29 @@ f = c("/home/jr/Documents/Ulaval/ALS data/BCTS/092L072242_BCTS_2.laz",
 
 ti = Sys.time()
 
+if (test == 0)
+{
+  if (lasR)
+  {
+    pipeline = rasterize(20, c("z_max", "z_mean", "z_median", "z_p95", "i_mean", "i_sd"))
+    exec(pipeline, on = f, progress = TRUE, noread = TRUE)
+  }
+  else
+  {
+    m = function(z, i)
+    {
+      zmax = max(z)
+      zmean = mean(z)
+      zmedian = median(z)
+      zp95 = quantile(z, probs = 0.95)
+      imean = mean(i)
+      isd = sd(i)
+      return(list(zmax = zmax, zmean = zmean, zmedian = zmedian, zp95 = zp95, imean = imean, isd = isd))
+    }
+    ctg = readLAScatalog(f)
+    chm = pixel_metrics(ctg, ~m(Z, Intensity), 20)
+  }
+}
 if (test == 1)
 {
   if (lasR)
