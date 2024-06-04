@@ -14,7 +14,7 @@ in another stage. If the point cloud already has RGB, nothing happens, RGB value
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,7 @@ in another stage. If the point cloud already has RGB, nothing happens, RGB value
     <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
     <a class="dropdown-item" href="../articles/tutorial.html">Tutorial</a>
     <a class="dropdown-item" href="../articles/multithreading.html">Parallel processing</a>
+    <a class="dropdown-item" href="../articles/r-stages.html">R stages</a>
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
     <div class="dropdown-divider"></div>
     <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
@@ -76,6 +77,12 @@ in another stage. If the point cloud already has RGB, nothing happens, RGB value
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">add_rgb</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    
+
+<p>This stage transforms the point cloud in the pipeline. It consequently returns nothing.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -83,7 +90,7 @@ in another stage. If the point cloud already has RGB, nothing happens, RGB value
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu">add_rgb</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpAWjukZ/Example.las"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmputCK9Z/Example.las"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

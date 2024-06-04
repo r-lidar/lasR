@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,6 +48,7 @@
     <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
     <a class="dropdown-item" href="../articles/tutorial.html">Tutorial</a>
     <a class="dropdown-item" href="../articles/multithreading.html">Parallel processing</a>
+    <a class="dropdown-item" href="../articles/r-stages.html">R stages</a>
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
     <div class="dropdown-divider"></div>
     <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
@@ -95,7 +96,11 @@ Roussel</h4>
 <p>The multi-threading in <code>lasR</code> is pretty similar to
 <code>lidR</code>, except it does not use the package
 <code>future</code>. Everything is natively coded in C++ with
-<code>OpenMP</code>.</p>
+<code>OpenMP</code>. There are 4 different parallelization strategies
+that can be assigned for a given task with
+<code>exec(pipeline, ncores = strategy_name(n))</code> or that can be
+assigned globally for the entiere session with
+<code>set_parallel_strategy(strategy_name(n))</code>.</p>
 <blockquote style="background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 10px; font-size: 14px; border-radius: 5px;">
 <code>lasR</code> uses <code>OpenMP</code> which means that the package
 supports parallelism on Linux and Windows but not on macOS where Apple
@@ -110,7 +115,9 @@ OpenMP for macOS</a>
 <h2 id="sequential-strategy">Sequential strategy<a class="anchor" aria-label="anchor" href="#sequential-strategy"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">sequential</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">sequential</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># or</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fu"><a href="../reference/multithreading.html">sequential</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The sequential strategy is <strong>not</strong> the default strategy.
 However, it is easier to start with this option to explain some
 specificities of <code>lasR</code>. In sequential processing, as the
@@ -124,21 +131,28 @@ represented in the figure below.</p>
 <h2 id="concurrent-points-strategy">Concurrent points strategy<a class="anchor" aria-label="anchor" href="#concurrent-points-strategy"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">concurrent_points</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Concurrent points is the default strategy. The LAS/LAZ files are
-processed sequentially. The point cloud from one file passes through the
-pipeline while the other files are waiting. Inside the pipeline, some
-stages are parallelized and are processing the points in different
-threads. Each core processes a subset of the point cloud. The stages
-that are parallelized are consequently faster, but in practice, not a
-lot of stages can easily be parallelized this way.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">concurrent_points</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># or</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fu"><a href="../reference/multithreading.html">concurrent_points</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Concurrent points with <code><a href="../reference/multithreading.html">half_cores()</a></code> is the default
+strategy. The LAS/LAZ files are processed sequentially. The point cloud
+from one file passes through the pipeline while the other files are
+waiting. Inside the pipeline, some stages are parallelized and are
+processing the points in different threads. Each core processes a subset
+of the point cloud. The stages that are parallelized are consequently
+faster, but in practice, not a lot of stages can easily be parallelized
+this way.</p>
 <p><img src="concurent_points.png" width="600"></p>
 </div>
 <div class="section level2">
 <h2 id="concurrent-files-strategy">Concurrent files strategy<a class="anchor" aria-label="anchor" href="#concurrent-files-strategy"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">concurrent_files</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">concurrent_files</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># or</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fu"><a href="../reference/multithreading.html">concurrent_files</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># or</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span> <span class="co"># more convenient</span></span></code></pre></div>
 <p>The LAS/LAZ files are processed in parallel. The point cloud from
 several files passes through several cloned pipelines while the other
 files are waiting. Inside the pipeline, the stages are not parallelized.
@@ -155,7 +169,9 @@ their cores; otherwise, they may run out of memory. See also the <a href="benchm
 <h2 id="nested-strategy">Nested strategy<a class="anchor" aria-label="anchor" href="#nested-strategy"></a>
 </h2>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">nested</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">nested</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># or</span></span>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fu"><a href="../reference/multithreading.html">nested</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The LAS/LAZ files are processed in parallel. The point cloud from
 several files passes through several cloned pipelines while the other
 files are waiting. Inside the pipeline, some stages are also
@@ -167,42 +183,16 @@ is reserved for experts only.</p>
 <h2 id="special-cases">Special cases<a class="anchor" aria-label="anchor" href="#special-cases"></a>
 </h2>
 <p>In <code>lasR</code>, everything is written in pure C++ except for
-two stages that inject user-defined R code and use the R C API.</p>
+two stages that inject user-defined R code and use the R C API (see <a href="r-stages.html">R stages</a>)</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fu">user_function</span><span class="op">(</span><span class="va">Z</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/callback.html">callback</a></span><span class="op">(</span><span class="fu">user_function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>R is <strong>NOT</strong> multi-threaded, and thus calling these
 stages in parallel is not thread-safe and will crash the R session in
 the best case or deeply corrupt the R memory in the worst case.
-Consequently, these stages are protected and cannot run concurrently.
-When a pipeline has stages that use the R API (in orange in the figure
-below), the stages that use R are blocking the other stages that are
-waiting (see figure below).</p>
-<p><img src="concurent_points_with_R.png" width="600"></p>
-<p>Of course, as depicted in the diagram above, this incurs a
-computational time cost. If the blocking stages take a lot of time
-compared to the other stages it could even defeat the interest of the
-multi-files parallelization. Therefore, users are discouraged from using
-these stages if alternatives are available. For example,
-<code><a href="../reference/rasterize.html">rasterize()</a></code> offers numerous native metrics coded in C++,
-making custom metrics coded in R unnecessary.</p>
-<p>It is worth mentioning that the <code>lidR</code> package does not
-face this problem because each core runs a different and independent R
-session, thanks to the <code>future</code> package. While this approach
-has the advantage of being non blocking, it also comes with several
-inconveniences. In contrast, <code>lasR</code> utilizes only one R
-session to process multiple files in parallel. One consequences is that
-<code>lasR</code> will run <code><a href="../reference/rasterize.html">rasterize()</a></code> with custom metrics
-or <code><a href="../reference/callback.html">callback()</a></code> in parallel much slower than
-<code>lidR</code>.</p>
-<p>With multiple files and complex pipeline, the overhead of blocking
-the pipeline for stages that use R <em>might</em> be less significant
-because once the pipelines are out of sync, the blocking stages
-<em>may</em> no longer occur simultaneously and thus cease to be
-blocking, as illustrated in the figure below with 8 files and 4 cores.
-This happens only if the blocking stages are quick behind the other
-stages.</p>
-<p><img src="concurent_points_with_R_8.png"></p>
+Consequently, these stages are protected and pipelines involving these
+stages cannot be ran in parallel with the <code>concurrent-files</code>
+strategy.</p>
 </div>
 <div class="section level2">
 <h2 id="real-timeline">Real timeline<a class="anchor" aria-label="anchor" href="#real-timeline"></a>

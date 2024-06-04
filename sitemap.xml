@@ -22,6 +22,9 @@
     <loc>/articles/pipeline.html</loc>
   </url>
   <url>
+    <loc>/articles/r-stages.html</loc>
+  </url>
+  <url>
     <loc>/articles/tutorial.html</loc>
   </url>
   <url>
@@ -53,9 +56,6 @@
   </url>
   <url>
     <loc>/reference/delete_points.html</loc>
-  </url>
-  <url>
-    <loc>/reference/deprecated.html</loc>
   </url>
   <url>
     <loc>/reference/dtm.html</loc>
@@ -112,6 +112,9 @@
     <loc>/reference/set_exec_options.html</loc>
   </url>
   <url>
+    <loc>/reference/stop_if_outside.html</loc>
+  </url>
+  <url>
     <loc>/reference/summarise.html</loc>
   </url>
   <url>
@@ -128,6 +131,9 @@
   </url>
   <url>
     <loc>/reference/write_las.html</loc>
+  </url>
+  <url>
+    <loc>/reference/write_lax.html</loc>
   </url>
   <url>
     <loc>/reference/write_vpc.html</loc>

@@ -22,7 +22,7 @@ online tutorial."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,7 @@ online tutorial."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax
     <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
     <a class="dropdown-item" href="../articles/tutorial.html">Tutorial</a>
     <a class="dropdown-item" href="../articles/multithreading.html">Parallel processing</a>
+    <a class="dropdown-item" href="../articles/r-stages.html">R stages</a>
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
     <div class="dropdown-divider"></div>
     <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
@@ -112,6 +113,12 @@ point cloud attributes (see examples).</p></dd>
 update the point cloud. Can be disabled.</p></dd>
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    
+
+<p>This stage transforms the point cloud in the pipeline. It consequently returns nothing.</p>
+    </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>In <code>lasR</code>, the point cloud is not exposed to R in a <code>data.frame</code> like in lidR. It is stored internally

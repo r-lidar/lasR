@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,7 @@
     <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
     <a class="dropdown-item" href="../articles/tutorial.html">Tutorial</a>
     <a class="dropdown-item" href="../articles/multithreading.html">Parallel processing</a>
+    <a class="dropdown-item" href="../articles/r-stages.html">R stages</a>
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
     <div class="dropdown-divider"></div>
     <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
@@ -60,6 +61,26 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.0" id="lasr-060">lasR 0.6.0<a class="anchor" aria-label="anchor" href="#lasr-060"></a></h2>
+<div class="section level4">
+<h4 id="new-features-0-6-0">NEW FEATURES<a class="anchor" aria-label="anchor" href="#new-features-0-6-0"></a></h4>
+<ol style="list-style-type: decimal"><li><p>New stage <code>stop_if</code> to conditionally escape the pipeline. New section about <code>stop_if</code> in the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html" class="external-link">online tutorial</a>.</p></li>
+<li><p>New stage <code>write_lax</code>. This stage was automatically added by the engine but can now be explicitly added by users.</p></li>
+<li><p>New internal “metric engine”. The metric engine is used to compute metrics in e.g. <code><a href="../reference/rasterize.html">rasterize()</a></code> with operators like <code>zmean</code>, <code>imean</code> and so on. The metric engine has been redesigned and allows any string with the format <code>attribute_metric</code> such as <code>z_sd</code>, <code>i_mean</code>, <code>c_mode</code>, <code>a_mean</code>, <code>intensity_max</code>, <code>classification_mode</code>, <code>angle_mean</code>, and any other combinations. All attributes are mapped and new functions are available such as <code>sum</code>, <code>mode</code>. Many more could be added easily. Former strings such as <code>zmean</code> or <code>imax</code> are no longer valid and should be replaced by <code>z_mean</code> and <code>i_max</code> but are backward compatible.</p></li>
+<li><p><code>rasterize</code> gained an access to the new metric engine and can compute much more metric natively</p></li>
+<li><p><code>summarize()</code> gained an access to the metric engine and can compute metrics for each file or each chunk. Used in conjunction with <code>reader_las_circle()</code>, it can be used, for example, to compute plot inventory metrics. The <a href="https://r-lidar.github.io/lasR/articles/tutorial.html" class="external-link">online tutorial</a> has been update. The section “plot inventory” no longer uses <code><a href="../reference/callback.html">callback()</a></code> and is preceded by a new section “summarise”.</p></li>
+</ol></div>
+<div class="section level4">
+<h4 id="breaking-changes-0-6-0">BREAKING CHANGES<a class="anchor" aria-label="anchor" href="#breaking-changes-0-6-0"></a></h4>
+<ol style="list-style-type: decimal"><li><p>The package no longer assigns <code>set_parallel_strategy(concurrent_points(half_core()))</code> when loading. Instead, if nothing is provided, this is interpreted as <code>concurrent_points(half_core())</code>. Thus, users can now write <code>exec(pipeline, on = file, ncores = 8)</code>. The engine will now respect <code>ncores = 8</code> because no global settings with global precedence were assigned. The multi-threading vignette has been updated.</p></li>
+<li><p>Pipelines that include R-based stages (<code>rasterize</code> with R function, <code>callback</code>) are no longer parallelizable with the <code>concurrent-file</code> strategy. Parallelizing a pipeline that involves the R C API is terribly complex and eventually leads only to pseudo-parallelism with a lot of troubleshooting to deal with (especially to abort the pipeline). Consequently, we removed parallelism capabilities. The numerous new native metrics added in the metric engine compensate for that loss. The online documentation has been updated in consequence.</p></li>
+</ol></div>
+<div class="section level4">
+<h4 id="internal-changes-0-6-0">INTERNAL CHANGES<a class="anchor" aria-label="anchor" href="#internal-changes-0-6-0"></a></h4>
+<ol style="list-style-type: decimal"><li>A large number of changes to separate <code>lasR</code> from R. <code>lasR</code> can now be compiled as standalone software. A <code>Makefile</code> has been added to the repository. At the R level, the pipeline and the processing options are passed to the C++ engine via a JSON file instead of being passed via the R’s C API, effectively separating <code>lasR</code> from R itself. The R side of <code>lasR</code> is now purely an API to the standalone engine. A JSON file produced by the <code>lasR</code> package can be executed with the standalone software: <code>lasr pipeline.json</code>. However, the syntax of the JSON file is not documented and is not intended to be documented. Rather, the JSON file should be produced by an API such as the <code>lasR</code> package, a QGIS plugin, or a Python package. Obviously, there is currently no such thing.</li>
+</ol></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.6" id="lasr-056">lasR 0.5.6<a class="anchor" aria-label="anchor" href="#lasr-056"></a></h2>
 <ul><li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> with COPC files, depth query (<code>-max_depth</code>), and buffer. The depth query was not performed at all. The fix is temporary: it breaks the progress bar of <code><a href="../reference/reader_las.html">reader_las()</a></code> but this is a less serious bug.</li>
@@ -205,7 +226,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="lasr-030">lasR 0.3.0<a class="anchor" aria-label="anchor" href="#lasr-030"></a></h2>
 <ul><li>
-<p>Change: <code><a href="../reference/deprecated.html">processor()</a></code> and <code><a href="../reference/deprecated.html">reader()</a></code> are deprecated and are replaced by <code><a href="../reference/exec.html">exec()</a></code> and <code><a href="../reference/reader_las.html">reader_las()</a></code>. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the <code>LAScatalog</code> processing options and this was not possible with the previous syntax.</p>
+<p>Change: <code>processor()</code> and <code>reader()</code> are deprecated and are replaced by <code><a href="../reference/exec.html">exec()</a></code> and <code><a href="../reference/reader_las.html">reader_las()</a></code>. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the <code>LAScatalog</code> processing options and this was not possible with the previous syntax.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">lidR</span><span class="fu">::</span><span class="fu">readLAScatalog</span><span class="op">(</span><span class="op">)</span></span>
@@ -260,7 +281,7 @@
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="lasr-011-2024-02-08">lasR 0.1.1 (2024-02-08)<a class="anchor" aria-label="anchor" href="#lasr-011-2024-02-08"></a></h2>
-<ul><li>Doc: Corrected the documentation for the argument <code>ncores</code> in <code><a href="../reference/deprecated.html">processor()</a></code>, which incorrectly mentioned that it was not supported.</li>
+<ul><li>Doc: Corrected the documentation for the argument <code>ncores</code> in <code>processor()</code>, which incorrectly mentioned that it was not supported.</li>
 <li>New: Added new functions <code><a href="../reference/multithreading.html">ncores()</a></code> and <code><a href="../reference/multithreading.html">half_cores()</a></code>.</li>
 <li>Fix: Corrected the reader progress bar display when reading a las file with a filter and a buffer.</li>
 <li>Fix: Fixed the overall progress bar, which was delayed by one file and was showing incorrect progress.</li>

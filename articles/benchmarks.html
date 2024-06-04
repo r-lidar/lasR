@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,6 +48,7 @@
     <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
     <a class="dropdown-item" href="../articles/tutorial.html">Tutorial</a>
     <a class="dropdown-item" href="../articles/multithreading.html">Parallel processing</a>
+    <a class="dropdown-item" href="../articles/r-stages.html">R stages</a>
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
     <div class="dropdown-divider"></div>
     <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
@@ -222,8 +223,8 @@ in more efficient memory management.</p>
 <span></span>
 <span><span class="co"># lasR</span></span>
 <span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
-<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/deprecated.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/deprecated.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu">reader</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/normalize.html">normalize</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">processor</span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="result-3">Result<a class="anchor" aria-label="anchor" href="#result-3"></a>
@@ -244,8 +245,8 @@ in more efficient memory management.</p>
 <span></span>
 <span><span class="co"># lasR</span></span>
 <span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
-<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/deprecated.html">reader</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/local_maximum.html">local_maximum</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/deprecated.html">processor</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu">reader</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/local_maximum.html">local_maximum</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
+<span><span class="fu">processor</span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="result-4">Result<a class="anchor" aria-label="anchor" href="#result-4"></a>

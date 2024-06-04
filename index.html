@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,6 +48,7 @@
     <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
     <a class="dropdown-item" href="articles/tutorial.html">Tutorial</a>
     <a class="dropdown-item" href="articles/multithreading.html">Parallel processing</a>
+    <a class="dropdown-item" href="articles/r-stages.html">R stages</a>
     <a class="dropdown-item" href="articles/baba.html">Buffered Area Based Approach</a>
     <div class="dropdown-divider"></div>
     <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
@@ -86,7 +87,7 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>There is currently no plan for releasing <code>lasR</code> on CRAN. <code>lasR</code> is hosted on <code>r-universe</code> instead:</p>
+<p>There is currently no plan for releasing <code>lasR</code> on CRAN. <code>lasR</code> is hosted on <code>r-universe</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'lasR'</span>, repos <span class="op">=</span> <span class="st">'https://r-lidar.r-universe.dev'</span><span class="op">)</span></span></code></pre></div>
 <p>Users can’t rely on the CRAN versioning system and RStudio update button to get the latest version of <code>lasR</code>. When loading <code>lasR</code> with <code><a href="https://github.com/r-lidar/lasR" class="external-link">library(lasR)</a></code>, an internal routine checks for the latest version and prints a message if a new version is available. Updates are more frequent this way.</p>
@@ -107,10 +108,8 @@
 </h2>
 <ul>
 <li>Introduces the concept of pipelines, that is missing in <code>lidR</code>, to chain multiple operations on a point cloud optimally.</li>
-<li>Is written exclusively in C/C++ without a single line of R.</li>
-<li>Uses the code of <code>lidR</code> but brings significant speed and memory improvements.</li>
+<li>Is written exclusively in C/C++ without a single line of R. The R code is only an API to a standalone C++ software.</li>
 <li>Does not load the point cloud into a <code>data.frame</code>. The point cloud is stored in a C++ structure that is not exposed to users.</li>
-<li>Uses GDAL instead of relying on <code>terra</code> and <code>sf</code> for more flexibility at the C++ level.</li>
 <li>Has only 1 strong dependencies to <code>gdal</code>. But if <code>sf</code> and <code>terra</code> are installed the experience is better.</li>
 </ul>
 <p>More details in the corresponding <a href="https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr" class="external-link">vignette</a></p>

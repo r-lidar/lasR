@@ -14,7 +14,7 @@ passed to the exec() function in four ways. See details."><!-- mathjax --><scrip
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,7 @@ passed to the exec() function in four ways. See details."><!-- mathjax --><scrip
     <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
     <a class="dropdown-item" href="../articles/tutorial.html">Tutorial</a>
     <a class="dropdown-item" href="../articles/multithreading.html">Parallel processing</a>
+    <a class="dropdown-item" href="../articles/r-stages.html">R stages</a>
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
     <div class="dropdown-divider"></div>
     <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
@@ -87,8 +88,9 @@ passed to the <code><a href="exec.html">exec()</a></code> function in four ways.
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>ncores</dt>
-<dd><p>An object returned by one of <code><a href="multithreading.html">sequential()</a></code>, <code><a href="multithreading.html">concurrent_points()</a></code>, <code>concurrent_files</code>, or
-<code><a href="multithreading.html">nested()</a></code>. See <a href="multithreading.html">multithreading</a>.</p></dd>
+<dd><p>An object returned by one of <code><a href="multithreading.html">sequential()</a></code>, <code><a href="multithreading.html">concurrent_points()</a></code>, <code><a href="multithreading.html">concurrent_files()</a></code>, or
+<code><a href="multithreading.html">nested()</a></code>. See <a href="multithreading.html">multithreading</a>. If <code>NULL</code> the default is <code>concurrent_points(half_cores())</code>. If
+a simple integer is provided it corresponds to <code>concurrent_files(ncores)</code>.</p></dd>
 
 
 <dt>progress</dt>
@@ -116,18 +118,18 @@ with large files or processing a massive <code>copc</code> file.</p></dd>
     <p>There are 4 ways to pass processing options, and it is important to understand the precedence rules:<br><br>
 The first option is by explicitly naming each option. This option is deprecated and used for convenience and
 backward compatibility.</p><div class="sourceCode"><pre><code><span></span>
-<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, progress <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div><p>The second option is by passing a <code>list</code> to the <code>with</code> argument. This option is more explicit
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, progress <span class="op">=</span> <span class="cn">TRUE</span>, ncores <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span></code></pre></div><p>The second option is by passing a <code>list</code> to the <code>with</code> argument. This option is more explicit
 and should be preferred. The <code>with</code> argument takes precedence over the explicit arguments.</p><div class="sourceCode"><pre><code><span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, with <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>progress <span class="op">=</span> <span class="cn">TRUE</span>, chunk <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><p>The third option is by using a <code>LAScatalog</code> from the <code>lidR</code> package. A <code>LAScatalog</code> already carries
 some processing options that are respected by the <code>lasR</code> package. The options from a <code>LAScatalog</code>
 take precedence.</p><div class="sourceCode"><pre><code><span></span>
-<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div><p>The last option is by setting global processing options. This has global precedence and is mainly intended
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span>, ncores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div><p>The last option is by setting global processing options. This has global precedence and is mainly intended
 to provide a way for users to override options if they do not have access to the <code><a href="exec.html">exec()</a></code> function.
 This may happen when a developer creates a function that executes a pipeline internally, and users cannot
 provide any options.</p><div class="sourceCode"><pre><code><span></span>
 <span><span class="fu"><a href="../reference/set_exec_options.html">set_exec_options</a></span><span class="op">(</span>progress <span class="op">=</span> <span class="cn">TRUE</span>, ncores <span class="op">=</span> <span class="fu"><a href="../reference/multithreading.html">concurrent_files</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></code></pre></div><p>By default lasR already set a global options for <code>ncores</code>. Thus providing <code>ncores</code> has no effect unless
-you call <a href="multithreading.html">unset_parallel_strategy</a> first.</p>
+<span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></code></pre></div>
+
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

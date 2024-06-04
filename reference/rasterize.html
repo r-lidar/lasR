@@ -12,7 +12,7 @@ It produces a derived product in raster format."><!-- mathjax --><script src="ht
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,7 @@ It produces a derived product in raster format."><!-- mathjax --><script src="ht
     <h6 class="dropdown-header" data-toc-skip>Tutorials</h6>
     <a class="dropdown-item" href="../articles/tutorial.html">Tutorial</a>
     <a class="dropdown-item" href="../articles/multithreading.html">Parallel processing</a>
+    <a class="dropdown-item" href="../articles/r-stages.html">R stages</a>
     <a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a>
     <div class="dropdown-divider"></div>
     <h6 class="dropdown-header" data-toc-skip>Ressources</h6>
@@ -111,18 +112,38 @@ pass the filter, the later case can be assigned another value such as 0.</p></dd
 
 </dl></div>
     <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    
+
+<p>This stage produces a raster. The path provided to `ofile` is expected to be `.tif` or any
+other format supported by GDAL.</p>
+    </div>
+    <div class="section level2">
     <h2 id="operators">Operators<a class="anchor" aria-label="anchor" href="#operators"></a></h2>
     
 
-<p>If <code>operators</code> is a string or a vector of strings, the function employs internally optimized metrics.
-Some metrics have a name + a number such as "zpXX" where "XX" can be substituted by a number.
-The available metrics include "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zpXX" and "zaboveXX"
-for the Z coordinates. Here, "zpX" represents the Xth percentile, for instance, "zp95" signifies the 95th
-percentile. "zaboveX" corresponds to the percentage of points above X (sometime called canopy cover).
-Similarly, the same metrics are accessible with the letter "i" for intensity, such as "imax"
-and others. Additionally, "count" is another available metric.
+<p>If <code>operators</code> is a string or a vector of strings, each string is composed of two parts separated by an
+underscore. The first part is the attribute on which the metric must be computed (e.g., z, intensity, classification).
+The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+<code>"z_max"</code>, <code>"intensity_min"</code>, <code>"z_mean"</code>, <code>"classification_mode"</code>.<br><br>
+The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.<br><br>
+The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+Some metrics have an attribute + name + a parameter X, such as "pX" where "X" can be substituted by a number.
+Here, <code>z_pX</code> represents the Xth percentile; for instance, <code>z_p95</code> signifies the 95th
+percentile of z. <code>z_aboveX</code> corresponds to the percentage of points above X (sometimes called canopy cover).<br><br>
+It is possible to call a metric without the name of the attribute. In this case, z is the default.
+Below are some examples of valid calls:</p>
+<p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rasterize</span>(<span class="dv">10</span>, <span class="fu">c</span>(<span class="st">"max"</span>, <span class="st">"count"</span>, <span class="st">"i_mean"</span>, <span class="st">"z_p95"</span>))</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">rasterize</span>(<span class="dv">10</span>, <span class="fu">c</span>(<span class="st">"z_max"</span>, <span class="st">"c_count"</span>, <span class="st">"intensity_mean"</span>, <span class="st">"p95"</span>))</span></code></pre><p></p></div>
+<p><strong>Be careful</strong>: the engine supports any combination of <code>attribute_metric</code> strings. While they are
+all computable, they are not all meaningful. For example, <code>c_mode</code> makes sense but not <code>z_mode</code>. Also,
+all metrics are computed with 32-bit floating point accuracy, so <code>x_mean</code> or <code>y_sum</code> might be
+slightly inaccurate, but anyway, these metrics are not supposed to be useful.
 <br><br>
-If <code>operators</code> is a user-defined expression, the function should return either a vector of numbers
+If <code>operators</code> is an R user-defined expression, the function should return either a vector of numbers
 or a <code>list</code> containing atomic numbers. To assign a band name to the raster, the vector or the <code>list</code>
 must be named accordingly. The following are valid operators:</p>
 <p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>f <span class="ot">=</span> <span class="cf">function</span>(x) { <span class="fu">return</span>(<span class="fu">mean</span>(x)) }</span>
@@ -166,23 +187,23 @@ in this case.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 1, 1  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e6c4c9dc683.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1e6c4c9dc683 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1edd7167c1d6.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1edd7167c1d6 </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 30, 30, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 10, 10  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273350, 273650, 5274350, 5274650  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e6c1b67e6ed.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1e6c1b67e6ed </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1edd793e09f2.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1edd793e09f2 </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 144, 144, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 2, 2  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273356, 273644, 5274356, 5274644  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e6c2a95938a.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1edd733c7bd9.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> name        : max </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Demonstration of buffered rasterization</span></span></span>
