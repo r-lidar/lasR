@@ -1,3 +1,7 @@
+# lasR 0.6.1
+
+- Fix metrics `cv` and `sd` that return `NAs` instead of `Inf` in the edges case where they are undefined.
+
 # lasR 0.6.0
 
 ### NEW FEATURES
