@@ -1,6 +1,7 @@
 # lasR 0.6.1
 
-- Fix metrics `cv` and `sd` that return `NAs` instead of `Inf` in the edges case where they are undefined.
+- Fix: metrics `cv` and `sd` that return `NAs` instead of `Inf` in the edges case where they are undefined.
+- Enhance: progress bar displays better the number of cores used
 
 # lasR 0.6.0
 

@@ -128,6 +128,7 @@ bool LASRrasterize::process(LAS*& las)
   progress->reset();
   progress->set_prefix("Rasterize");
   progress->set_total(map.size());
+  progress->set_ncpu(ncpu);
   progress->show();
 
   // OpenMP cannot parallelize on a map. Create vectors to hold keys and references to corresponding vectors

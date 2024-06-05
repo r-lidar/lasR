@@ -18,6 +18,7 @@ public:
   void reset();
   void set_display(bool display);
   void set_total(uint64_t nmax);
+  void set_ncpu(int ncpu);
   void done(bool main = false);
   void show(bool flush = true);
 
@@ -53,6 +54,7 @@ private:
   Progress* sub;
 
   bool display;
+  int ncpu;
 };
 
 #endif
