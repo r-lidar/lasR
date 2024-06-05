@@ -726,6 +726,11 @@ LASreader* LASreadOpener::open(const CHAR* other_file_name, BOOL reset_after_oth
 			lasreaderbuffered->set_scale_intensity(scale_intensity);
 			lasreaderbuffered->set_translate_scan_angle(translate_scan_angle);
 			lasreaderbuffered->set_scale_scan_angle(scale_scan_angle);
+			lasreaderbuffered->set_copc_stream_order(copc_stream_order);
+			if (filter) lasreaderbuffered->set_filter(filter);
+			if (transform) lasreaderbuffered->set_transform(transform);
+			if (ignore) lasreaderbuffered->set_ignore(ignore);
+			if (inside_depth) lasreaderbuffered->inside_copc_depth(inside_depth, copc_depth, copc_resolution);
 			if (other_file_name) // special case when other file name was specified
 			{
 				file_name = other_file_name;
@@ -819,9 +824,6 @@ LASreader* LASreadOpener::open(const CHAR* other_file_name, BOOL reset_after_oth
 				}
 				file_name_current++;
 			}
-			if (filter) lasreaderbuffered->set_filter(filter);
-			if (transform) lasreaderbuffered->set_transform(transform);
-			if (ignore) lasreaderbuffered->set_ignore(ignore);
 			if (!lasreaderbuffered->open())
 			{
 				eprint("ERROR: cannot open lasreaderbuffered with %d file names\n", file_name_number + neighbor_file_name_number);
@@ -1653,10 +1655,11 @@ BOOL LASreadOpener::reopen(LASreader* lasreader, BOOL remain_buffered)
 		}
 		else if ((buffer_size > 0) && ((file_name_number > 1) || (neighbor_file_name_number > 0)))
 		{
-			LASreaderBuffered* lasreaderbuffered = (LASreaderBuffered*)lasreader;
-			if (!lasreaderbuffered->reopen())
-			{
-				eprint("ERROR: cannot reopen lasreaderbuffered\n");
+		  LASreaderBuffered* lasreaderbuffered = (LASreaderBuffered*)lasreader;
+		  if (inside_depth) lasreaderbuffered->inside_copc_depth(inside_depth, copc_depth, copc_resolution);
+		  if (!lasreaderbuffered->reopen())
+		  {
+		    eprint("ERROR: cannot reopen lasreaderbuffered\n");
 				return FALSE;
 			}
 			if (inside_rectangle || inside_tile || inside_circle)
@@ -1666,7 +1669,6 @@ BOOL LASreadOpener::reopen(LASreader* lasreader, BOOL remain_buffered)
 				else if (inside_tile) lasreaderbuffered->inside_tile(inside_tile[0], inside_tile[1], inside_tile[2]);
 				else lasreaderbuffered->inside_circle(inside_circle[0], inside_circle[1], inside_circle[2]);
 			}
-			if (inside_depth) lasreaderbuffered->inside_copc_depth(inside_depth, copc_depth, copc_resolution);
 			if (!remain_buffered) lasreaderbuffered->remove_buffer();
 			return TRUE;
 		}

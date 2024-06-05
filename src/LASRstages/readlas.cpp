@@ -52,15 +52,15 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
   lasreadopener->set_merged(true);
   lasreadopener->set_stored(false);
   lasreadopener->set_populate_header(true);
-  //lasreadopener->set_buffer_size(chunk.buffer);
+  lasreadopener->set_buffer_size(chunk.buffer);
   lasreadopener->parse_str(filtercpy);
   lasreadopener->set_copc_stream_ordered_by_chunk();
 
   free(filtercpy);
 
-  for (auto& file : chunk.neighbour_files) lasreadopener->add_file_name(file.c_str());
+  //for (auto& file : chunk.neighbour_files) lasreadopener->add_file_name(file.c_str());
   for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str());
-  //for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
+  for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
 
   if (chunk.shape == ShapeType::RECTANGLE)
     lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
