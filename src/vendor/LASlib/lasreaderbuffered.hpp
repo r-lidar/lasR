@@ -2,9 +2,9 @@
 ===============================================================================
 
   FILE:  lasreaderbuffered.hpp
-  
+
   CONTENTS:
-  
+
     Reads LIDAR points from the LAS format and add those points from provided
     neighboring files that fall within the bounding box of this file extended
     by the user-specified buffer.
@@ -27,12 +27,12 @@
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  
+
   CHANGE HISTORY:
-  
+
      2 May 2023 -- adding support of COPC spatial index standard
     17 July 2012 -- created after converting the LASzip paper from LaTeX to Word
-  
+
 ===============================================================================
 */
 #ifndef LAS_READER_BUFFERED_HPP
@@ -53,6 +53,7 @@ public:
   void set_parse_string(const CHAR* parse_string);
   void set_skip_lines(I32 skip_lines);
   void set_populate_header(BOOL populate_header);
+  void set_copc_stream_order(U8 stream_order);
 
   BOOL set_file_name(const CHAR* file_name);
   BOOL add_neighbor_file_name(const CHAR* file_name);

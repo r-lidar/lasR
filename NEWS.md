@@ -1,3 +1,9 @@
+# lasR 0.6.1
+
+- Fix: metrics `cv` and `sd` that return `NAs` instead of `Inf` in the edges case where they are undefined.
+- Enhance: progress bar displays better the number of cores used.
+- Fix: progress bar for the `reader_las()` stage. It now displays the correct percentage.
+
 # lasR 0.6.0
 
 ### NEW FEATURES

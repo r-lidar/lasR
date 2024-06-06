@@ -105,6 +105,7 @@ bool LASRlocalmaximum::process(LAS*& las)
   progress->reset();
   progress->set_total(las->npoints);
   progress->set_prefix("Local maximum");
+  progress->set_ncpu(ncpu);
 
   // Local maximum algorithm
   double hws = ws/2;
