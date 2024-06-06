@@ -29,6 +29,8 @@ private:
   bool keep_buffer;
   LASwriter* laswriter;
   LASheader* lasheader;
+  double scales[3];
+  double offsets[3];
 };
 
 #endif
