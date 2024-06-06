@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,6 +61,13 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.1" id="lasr-061">lasR 0.6.1<a class="anchor" aria-label="anchor" href="#lasr-061"></a></h2>
+<ul><li>Fix: metrics <code>cv</code> and <code>sd</code> that return <code>NAs</code> instead of <code>Inf</code> in the edges case where they are undefined.</li>
+<li>Enhance: progress bar displays better the number of cores used.</li>
+<li>Fix: progress bar for the <code><a href="../reference/reader_las.html">reader_las()</a></code> stage. It now displays the correct percentage.</li>
+<li>Fix: <code><a href="../reference/write_las.html">write_las()</a></code> without wildcard (merge mode) works with files that have different formats and scales/offsets</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.0" id="lasr-060">lasR 0.6.0<a class="anchor" aria-label="anchor" href="#lasr-060"></a></h2>
 <div class="section level4">
