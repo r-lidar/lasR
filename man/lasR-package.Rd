@@ -29,6 +29,7 @@ Other contributors:
   \item Benoît St-Onge (Is the author of the included 'chm_prep' function) [copyright holder]
   \item Niels Lohmann (Is the author of the included json parser) [copyright holder]
   \item Volodymyr Bilonenko (Is the author of the included delaunator triangulation) [copyright holder]
+  \item State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University (Is the copyright holder of the included CSF) [copyright holder]
 }
 
 }

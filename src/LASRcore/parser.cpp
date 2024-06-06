@@ -7,6 +7,7 @@
 #include "addrgb.h"
 #include "boundaries.h"
 #include "breakif.h"
+#include "csf.h"
 #include "filter.h"
 #include "loadraster.h"
 #include "localmaximum.h"
@@ -163,11 +164,25 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         }
         #endif
       }
+      else if (name == "classify_with_csf")
+      {
+        bool slope_smooth = stage.value("slope_smooth", false);
+        float class_threshold = stage.value("class_threshold", 0.5);
+        float cloth_resolution = stage.value("cloth_resolution", 0.5);
+        int rigidness = stage.value("rigidness", 1);
+        int iterations = stage.value("iterations", 500);
+        float time_step = stage.value("time_step", 0.65);
+        int classification = stage.value("class", 2);
+
+        auto v = std::make_unique<LASRcsf>(xmin, ymin, xmax, ymax, slope_smooth, class_threshold, cloth_resolution, rigidness, iterations, time_step, classification);
+        pipeline.push_back(std::move(v));
+      }
       else if (name == "classify_isolated_points")
       {
-        double res = stage.at("res");
-        int n = stage.at("n");
-        int classification = stage.at("class");
+        double res = stage.value("res", 5);
+        int n = stage.value("n", 6);
+        int classification = stage.value("class", 18);
+
         auto v = std::make_unique<LASRnoiseivf>(xmin, ymin, xmax, ymax, res, n, classification);
         pipeline.push_back(std::move(v));
       }

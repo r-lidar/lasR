@@ -7,7 +7,8 @@ Authors@R: c(
     person("Martin", "Isenburg", email = "", role = "cph", comment = "Is the author of the included LASlib and LASzip libraries"),
     person("Benoît", "St-Onge", email = "", role = "cph", comment = "Is the author of the included 'chm_prep' function"),
     person("Niels", "Lohmann", email = "", role = "cph", comment = "Is the author of the included json parser"),
-    person("Volodymyr", "Bilonenko", email = "", role = "cph", comment = "Is the author of the included delaunator triangulation"))
+    person("Volodymyr", "Bilonenko", email = "", role = "cph", comment = "Is the author of the included delaunator triangulation"),
+    person("State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University", "", email = "", role = "cph", comment = "Is the copyright holder of the included CSF"))
 Description: Fast and pipeable airborne lidar processing tools. Read/write 
     'las' and 'laz' files, computation of metrics in area based approach, point filtering, normalization,
     individual tree segmentation and other manipulations in a powerful and versatile processing chain.

@@ -33,12 +33,12 @@ public:
 
     // for a cloth particle, if no corresponding lidar point are found.
     // the heightval are set as its neighbor's
-    double static findHeightValByNeighbor(Particle *p, Cloth& cloth);
+    double static findHeightValByNeighbor(Particle *p);
     double static findHeightValByScanline(Particle *p, Cloth& cloth);
 
     void static   RasterTerrian(Cloth          & cloth,
                                 csf::PointCloud& pc,
-                                vector<double> & heightVal);
+                                std::vector<double> & heightVal);
 };
 
 #endif // ifndef _KNN_H_

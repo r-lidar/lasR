@@ -1,5 +1,5 @@
 // ======================================================================================
-// Copyright 2017 State Key Laboratory of Remote Sensing Science, 
+// Copyright 2017 State Key Laboratory of Remote Sensing Science,
 // Institute of Remote Sensing Science and Engineering, Beijing Normal University
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,19 +96,22 @@ Cloth::Cloth(const Vec3& _origin_pos,
 
 double Cloth::timeStep() {
     int particleCount = static_cast<int>(particles.size());
-    
+    //#ifdef CSF_USE_OPENMP
+    #pragma omp parallel for num_threads(ncpu)
+    //#endif
     for (int i = 0; i < particleCount; i++) {
         particles[i].timeStep();
     }
 
-    
+    //#ifdef CSF_USE_OPENMP
+    #pragma omp parallel for num_threads(ncpu)
+    //#endif
     for (int j = 0; j < particleCount; j++) {
         particles[j].satisfyConstraintSelf(constraint_iterations);
     }
 
     double maxDiff = 0;
 
-    
     for (int i = 0; i < particleCount; i++) {
         if (particles[i].isMovable()) {
             double diff = fabs(particles[i].old_pos.f[1] - particles[i].pos.f[1]);
@@ -129,7 +132,10 @@ void Cloth::addForce(const Vec3 direction) {
 
 void Cloth::terrCollision() {
     int particleCount = static_cast<int>(particles.size());
-    
+
+    //#ifdef CSF_USE_OPENMP
+    #pragma omp parallel for num_threads(ncpu)
+    //#endif
     for (int i = 0; i < particleCount; i++) {
         Vec3 v = particles[i].getPos();
 
@@ -141,16 +147,16 @@ void Cloth::terrCollision() {
 }
 
 void Cloth::movableFilter() {
-    vector<Particle> tmpParticles;
+    std::vector<Particle> tmpParticles;
 
     for (int x = 0; x < num_particles_width; x++) {
         for (int y = 0; y < num_particles_height; y++) {
             Particle *ptc = getParticle(x, y);
 
             if (ptc->isMovable() && !ptc->isVisited) {
-                queue<int> que;
-                vector<XY> connected; // store the connected component
-                vector<vector<int> > neibors;
+                std::queue<int> que;
+                std::vector<XY> connected; // store the connected component
+                std::vector<std::vector<int> > neibors;
                 int sum   = 1;
                 int index = y * num_particles_width + x;
 
@@ -166,7 +172,7 @@ void Cloth::movableFilter() {
                     que.pop();
                     int cur_x = ptc_f->pos_x;
                     int cur_y = ptc_f->pos_y;
-                    vector<int> neibor;
+                    std::vector<int> neibor;
 
                     if (cur_x > 0) {
                         Particle *ptc_left = getParticle(cur_x - 1, cur_y);
@@ -239,7 +245,7 @@ void Cloth::movableFilter() {
                 }
 
                 if (sum > MAX_PARTICLE_FOR_POSTPROCESSIN) {
-                    vector<int> edgePoints = findUnmovablePoint(connected);
+                    std::vector<int> edgePoints = findUnmovablePoint(connected);
                     handle_slop_connected(edgePoints, connected, neibors);
                 }
             }
@@ -247,10 +253,10 @@ void Cloth::movableFilter() {
     }
 }
 
-vector<int> Cloth::findUnmovablePoint(vector<XY> connected) {
-    vector<int> edgePoints;
+std::vector<int> Cloth::findUnmovablePoint(std::vector<XY> connected) {
+    std::vector<int> edgePoints;
 
-    for (size_t i = 0; i < connected.size(); i++) {
+    for (std::size_t i = 0; i < connected.size(); i++) {
         int x         = connected[i].x;
         int y         = connected[i].y;
         int index     = y * num_particles_width + x;
@@ -328,14 +334,14 @@ vector<int> Cloth::findUnmovablePoint(vector<XY> connected) {
     return edgePoints;
 }
 
-void Cloth::handle_slop_connected(vector<int> edgePoints, vector<XY> connected, vector<vector<int> > neibors) {
-    vector<bool> visited;
+void Cloth::handle_slop_connected(std::vector<int> edgePoints, std::vector<XY> connected, std::vector<std::vector<int> > neibors) {
+    std::vector<bool> visited;
 
-    for (size_t i = 0; i < connected.size(); i++) visited.push_back(false);
+    for (std::size_t i = 0; i < connected.size(); i++) visited.push_back(false);
 
-    queue<int> que;
+    std::queue<int> que;
 
-    for (size_t i = 0; i < edgePoints.size(); i++) {
+    for (std::size_t i = 0; i < edgePoints.size(); i++) {
         que.push(edgePoints[i]);
         visited[edgePoints[i]] = true;
     }
@@ -346,7 +352,7 @@ void Cloth::handle_slop_connected(vector<int> edgePoints, vector<XY> connected, 
 
         int index_center = connected[index].y * num_particles_width + connected[index].x;
 
-        for (size_t i = 0; i < neibors[index].size(); i++) {
+        for (std::size_t i = 0; i < neibors[index].size(); i++) {
             int index_neibor = connected[neibors[index][i]].y * num_particles_width + connected[neibors[index][i]].x;
 
             if ((fabs(heightvals[index_center] - heightvals[index_neibor]) < smoothThreshold) &&
@@ -364,8 +370,20 @@ void Cloth::handle_slop_connected(vector<int> edgePoints, vector<XY> connected, 
     }
 }
 
-void Cloth::saveToFile(string path) {
-    string filepath = "cloth_nodes.txt";
+std::vector<double> Cloth::toVector() {
+    std::vector<double> clothCoordinates;
+    clothCoordinates.reserve(particles.size()*3);
+    for(auto& particle : particles) {
+        clothCoordinates.push_back(particle.getPos().f[0]);
+        clothCoordinates.push_back(particle.getPos().f[2]);
+        clothCoordinates.push_back(-particle.getPos().f[1]);
+    }
+    return clothCoordinates;
+}
+
+
+void Cloth::saveToFile(std::string path) {
+    std::string filepath = "cloth_nodes.txt";
 
     if (path == "") {
         filepath = "cloth_nodes.txt";
@@ -373,20 +391,20 @@ void Cloth::saveToFile(string path) {
         filepath = path;
     }
 
-    ofstream f1(filepath.c_str());
+    std::ofstream f1(filepath.c_str());
 
     if (!f1)
         return;
 
-    for (size_t i = 0; i < particles.size(); i++) {
-        f1 << fixed << setprecision(8) << particles[i].getPos().f[0] << "	"<< particles[i].getPos().f[2] << "	"<< -particles[i].getPos().f[1] << endl;
+    for (std::size_t i = 0; i < particles.size(); i++) {
+        f1 << std::fixed << std::setprecision(8) << particles[i].getPos().f[0] << "	"<< particles[i].getPos().f[2] << "	"<< -particles[i].getPos().f[1] << std::endl;
     }
 
     f1.close();
 }
 
-void Cloth::saveMovableToFile(string path) {
-    string filepath = "cloth_movable.txt";
+void Cloth::saveMovableToFile(std::string path) {
+    std::string filepath = "cloth_movable.txt";
 
     if (path == "") {
         filepath = "cloth_movable.txt";
@@ -394,15 +412,15 @@ void Cloth::saveMovableToFile(string path) {
         filepath = path;
     }
 
-    ofstream f1(filepath.c_str());
+    std::ofstream f1(filepath.c_str());
 
     if (!f1)
         return;
 
-    for (size_t i = 0; i < particles.size(); i++) {
+    for (std::size_t i = 0; i < particles.size(); i++) {
         if (particles[i].isMovable()) {
-            f1 << fixed << setprecision(8) << particles[i].getPos().f[0] << "	"
-               << particles[i].getPos().f[2] << "	"<< -particles[i].getPos().f[1] << endl;
+            f1 << std::fixed << std::setprecision(8) << particles[i].getPos().f[0] << "	"
+               << particles[i].getPos().f[2] << "	"<< -particles[i].getPos().f[1] << std::endl;
         }
     }
 

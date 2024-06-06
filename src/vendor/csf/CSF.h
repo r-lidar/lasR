@@ -1,5 +1,5 @@
-﻿// ======================================================================================
-// Copyright 2017 State Key Laboratory of Remote Sensing Science, 
+// ======================================================================================
+// Copyright 2017 State Key Laboratory of Remote Sensing Science,
 // Institute of Remote Sensing Science and Engineering, Beijing Normal University
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,7 @@
 #include <vector>
 #include <string>
 #include "point_cloud.h"
-using namespace std;
+#include "Cloth.h"
 
 
 struct Params {
@@ -72,15 +72,18 @@ public:
     ~CSF();
 
     // set pointcloud from vector
-    void setPointCloud(vector<csf::Point> points);
+    void setPointCloud(std::vector<csf::Point> points);
+
+    // set point cloud from a two-dimentional array. it defines a N*3 point cloud by the given rows.
+    // it is the method used to set point cloud from python (numpy array)
+    void setPointCloud(double *points, int rows, int cols);
+
     // set point cloud from a one-dimentional array. it defines a N*3 point cloud by the given rows.
+    // it is the method used to set point cloud from matlab
     void setPointCloud(double *points, int rows);
 
-    // set point cloud for python
-    void setPointCloud(vector<vector<float> > points);
-
     // read pointcloud from txt file: (X Y Z) for each line
-    void readPointsFromFile(string filename);
+    void readPointsFromFile(std::string filename);
 
     inline csf::PointCloud& getPointCloud() {
         return point_cloud;
@@ -91,10 +94,10 @@ public:
     }
 
     // save points to file
-    void savePoints(vector<int> grp, string path);
+    void savePoints(std::vector<int> grp, std::string path);
 
     // get size of pointcloud
-    size_t size() {
+    std::size_t size() {
         return point_cloud.size();
     }
 
@@ -102,12 +105,18 @@ public:
     void setPointCloud(csf::PointCloud& pc);
 
     // The results are index of ground points in the original
-    // pointcloud
+    // pointcloud and write the cloth particles coordinates
     void do_filtering(std::vector<int>& groundIndexes,
                       std::vector<int>& offGroundIndexes,
-                      bool              exportCloth = false);
+                      bool exportCloth=true);
+
+
+    std::vector<double> do_cloth_export();
 
 private:
+
+    // Do the filtering and return the Cloth object
+    Cloth do_cloth();
 
 #ifdef _CSF_DLL_EXPORT_
     class __declspec (dllexport)csf::PointCloud point_cloud;
@@ -118,6 +127,7 @@ private:
 public:
 
     Params params;
+    int ncpu;
     int index;
 };
 

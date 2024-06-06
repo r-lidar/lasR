@@ -1,5 +1,5 @@
 // ======================================================================================
-// Copyright 2017 State Key Laboratory of Remote Sensing Science,
+// Copyright 2017 State Key Laboratory of Remote Sensing Science, 
 // Institute of Remote Sensing Science and Engineering, Beijing Normal University
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,27 +18,23 @@
 #include "point_cloud.h"
 
 
-void csf::PointCloud::computeBoundingBox(Point& bbMin, Point& bbMax)
-{
-  if (empty())
-  {
-    bbMin = bbMax = Point();
-    return;
-  }
+void csf::PointCloud::computeBoundingBox(Point& bbMin, Point& bbMax) {
+    if (empty()) {
+        bbMin = bbMax = Point();
+        return;
+    }
 
-  bbMin = bbMax = at(0);
+    bbMin = bbMax = at(0);
 
-  for (std::size_t i = 1; i < size(); i++)
-  { // zwm
-    const csf::Point& P = at(i);
+    for (std::size_t i = 1; i < size(); i++) { // zwm
+        const csf::Point& P = at(i);
 
-    if (P.x < bbMin.x) bbMin.x = P.x;
-    else if (P.x > bbMax.x) bbMax.x = P.x;
-
-    if (P.y < bbMin.y) bbMin.y = P.y;
-    else if (P.y > bbMax.y) bbMax.y = P.y;
-
-    if (P.z < bbMin.z) bbMin.z = P.z;
-    else if (P.z > bbMax.z) bbMax.z = P.z;
-  }
+        for (int d = 0; d < 3; ++d) {
+            if (P.u[d] < bbMin.u[d]) {
+                bbMin.u[d] = P.u[d];
+            } else if (P.u[d] > bbMax.u[d]) {
+                bbMax.u[d] = P.u[d];
+            }
+        }
+    }
 }

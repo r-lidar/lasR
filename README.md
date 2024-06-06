@@ -71,3 +71,7 @@ More details in the corresponding [vignette](https://r-lidar.github.io/lasR/arti
   - © 2008-2016 National ICT Australia (NICTA)
   - © 2017-2024 Data61 / CSIRO
   - Provided under Apache license
+- For `Cloth Simulation Filter (CSF)`
+  - © 2017 State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University
+  - Provided under Apache License
+  - W. Zhang, J. Qi, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data Filtering Method Based on Cloth Simulation,” Remote Sens., vol. 8, no. 6, p. 501, 2016.

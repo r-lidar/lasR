@@ -39,21 +39,21 @@
 #ifndef _CLOTH_H_
 #define _CLOTH_H_
 
+
+#ifdef _WIN32
+# include <windows.h>
+#endif // ifdef _WIN32
 #include <math.h>
 #include <vector>
 #include <iostream>
-//#include <omp.h>
-#include <iostream>
+#ifdef CSF_USE_OPENMP
+#include <omp.h>
+#endif
 #include <sstream>
 #include <list>
 #include <cmath>
-#include <vector>
 #include <string>
-#include <list>
 #include <queue>
-#include <cmath>
-#include <list>
-using namespace std;
 
 #include "Vec3.h"
 #include "Particle.h"
@@ -88,7 +88,7 @@ public:
 
     Vec3 origin_pos;
     double step_x, step_y;
-    vector<double> heightvals; // height values
+    std::vector<double> heightvals; // height values
     int num_particles_width;   // number of particles in width direction
     int num_particles_height;  // number of particles in height direction
 
@@ -101,13 +101,15 @@ public:
         p2->neighborsList.push_back(p1);
     }
 
+    int ncpu;
+
 public:
 
     int getSize() {
         return num_particles_width * num_particles_height;
     }
 
-    size_t get1DIndex(int x, int y) {
+    std::size_t get1DIndex(int x, int y) {
         return y * num_particles_width + x;
     }
 
@@ -148,15 +150,17 @@ public:
 
     void movableFilter();
 
-    vector<int> findUnmovablePoint(vector<XY> connected);
+    std::vector<int> findUnmovablePoint(std::vector<XY> connected);
 
-    void        handle_slop_connected(vector<int>          edgePoints,
-                                      vector<XY>           connected,
-                                      vector<vector<int> > neibors);
+    void        handle_slop_connected(std::vector<int>          edgePoints,
+                                      std::vector<XY>           connected,
+                                      std::vector<std::vector<int> > neibors);
 
-    void saveToFile(string path = "");
+    void saveToFile(std::string path = "");
 
-    void saveMovableToFile(string path = "");
+    std::vector<double> toVector();
+
+    void saveMovableToFile(std::string path = "");
 };
 
 

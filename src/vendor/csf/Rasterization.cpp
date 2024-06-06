@@ -51,13 +51,13 @@ double Rasterization::findHeightValByScanline(Particle *p, Cloth& cloth) {
             return crresHeight;
     }
 
-    return findHeightValByNeighbor(p, cloth);
+    return findHeightValByNeighbor(p);
 }
 
 
-double Rasterization::findHeightValByNeighbor(Particle *p, Cloth& cloth) {
-    queue<Particle *>  nqueue;
-    vector<Particle *> pbacklist;
+double Rasterization::findHeightValByNeighbor(Particle *p) {
+    std::queue<Particle *>  nqueue;
+    std::vector<Particle *> pbacklist;
     int neiborsize = p->neighborsList.size();
 
     for (int i = 0; i < neiborsize; i++) {
@@ -101,7 +101,7 @@ double Rasterization::findHeightValByNeighbor(Particle *p, Cloth& cloth) {
 
 void Rasterization::RasterTerrian(Cloth          & cloth,
                                   csf::PointCloud& pc,
-                                  vector<double> & heightVal) {
+                                  std::vector<double> & heightVal) {
 
     for (std::size_t i = 0; i < pc.size(); i++) {
         double pc_x = pc[i].x;
@@ -130,6 +130,9 @@ void Rasterization::RasterTerrian(Cloth          & cloth,
     }
     heightVal.resize(cloth.getSize());
 
+    // #ifdef CSF_USE_OPENMP
+    // #pragma omp parallel for
+    // #endif
     for (int i = 0; i < cloth.getSize(); i++) {
         Particle *pcur          = cloth.getParticle1d(i);
         double    nearestHeight = pcur->nearestPointHeight;

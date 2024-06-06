@@ -1,5 +1,5 @@
-// ======================================================================================
-// Copyright 2017 State Key Laboratory of Remote Sensing Science,
+﻿// ======================================================================================
+// Copyright 2017 State Key Laboratory of Remote Sensing Science, 
 // Institute of Remote Sensing Science and Engineering, Beijing Normal University
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,11 +39,17 @@
 namespace csf {
 
 struct Point {
-  double x;
-  double y;
-  double z;
+    union {
+        struct {
+            double x;
+			double y;
+			double z;
+        };
+		double u[3];
+    };
 
-  Point() : x(0), y(0), z(0) {}
+    Point() : x(0), y(0), z(0) {}
+    Point(double x, double y, double z) : x(x), y(y), z(z) {}
 };
 
 class PointCloud : public std::vector<Point>{
