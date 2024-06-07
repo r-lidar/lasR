@@ -39,22 +39,16 @@
 #ifndef _CLOTH_H_
 #define _CLOTH_H_
 
-
-#ifdef _WIN32
-# include <windows.h>
-#endif // ifdef _WIN32
 #include <math.h>
 #include <vector>
 #include <iostream>
-#ifdef CSF_USE_OPENMP
-#include <omp.h>
-#endif
 #include <sstream>
 #include <list>
 #include <cmath>
 #include <string>
 #include <queue>
 
+#include "openmp.h"
 #include "Vec3.h"
 #include "Particle.h"
 // #include <boost/progress.hpp>

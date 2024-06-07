@@ -249,7 +249,7 @@ classify_with_ivf = function(res = 5, n = 6L, class = 18L)
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' pipeline = classify_with_csf(TRUE, 1 ,1, time_step = 1) + write_las()
-#' ans = exec(pipeline, on = f, progress = T)
+#' ans = exec(pipeline, on = f, progress = TRUE)
 classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_resolution = 0.5, rigidness = 1L, iterations = 500L, time_step = 0.65, class = 2L)
 {
   ans <- list(algoname = "classify_with_csf", slope_smooth = slope_smooth, class_threshold = class_threshold, cloth_resolution = cloth_resolution, rigidness = rigidness, iterations = iterations, time_step = time_step, class = class)
