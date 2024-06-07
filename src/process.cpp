@@ -152,7 +152,9 @@ bool process(const std::string& config_file)
     progress.set_prefix("Overall");
     progress.set_total(n);
     progress.set_display(progrss);
+    progress.set_ncpu(ncpu_outer_loop);
     progress.create_subprocess();
+
     pipeline.set_progress(&progress);
 
     // Pre-run processes the LAScatalog

@@ -114,6 +114,7 @@ bool LASRsvd::process(LAS*& las)
   progress->reset();
   progress->set_total(las->npoints);
   progress->set_prefix("SVD/PCA");
+  progress->set_ncpu(ncpu);
   progress->show();
 
   // The next for loop is at the level a nested parallel region. Printing the progress bar

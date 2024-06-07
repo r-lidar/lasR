@@ -16,6 +16,14 @@ test_that("reader works with multiple files",
   expect_length(u, 0)
 })
 
+test_that("reader works with multiple files and filter",
+{
+  pipeline = reader_las(filter = keep_ground()) + summarise()
+
+  expect_error({u = exec(pipeline, on = c(f,f))}, NA)
+  expect_equal(names(u$npoints_per_class), "2")
+})
+
 test_that("reader fails if file does not exist",
 {
   p = reader_las()

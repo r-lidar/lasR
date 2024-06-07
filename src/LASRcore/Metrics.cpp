@@ -157,6 +157,8 @@ float MetricManager::median(PointAttributeAccessor accessor, const PointCollecti
 
 float MetricManager::sd(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
+  if (points.size() == 1) return NA_F32_RASTER;
+
   double sum = 0.0;
   for (const auto& point : points) sum += accessor(point);
   double mean = sum/points.size();
@@ -197,7 +199,10 @@ float MetricManager::mode(PointAttributeAccessor accessor, const PointCollection
 
 float MetricManager::cv(PointAttributeAccessor accessor, const PointCollection& points, float param) const
 {
-  return sd(accessor, points, param)/mean(accessor, points, param);
+  float avg = mean(accessor, points, param);
+  float std = sd(accessor, points, param);
+  if (avg == 0 || avg == NA_F32_RASTER || std == NA_F32_RASTER) return NA_F32_RASTER;
+  return std/avg;
 }
 
 float MetricManager::sum(PointAttributeAccessor accessor, const PointCollection& points, float param) const

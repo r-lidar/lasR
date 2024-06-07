@@ -33,6 +33,7 @@
 #include "lasindex.hpp"
 #include "lasfilter.hpp"
 #include "lastransform.hpp"
+#include "lascopc.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -90,6 +91,28 @@ void LASreaderBuffered::set_populate_header(BOOL populate_header)
   lasreadopener.set_populate_header(populate_header);
   lasreadopener_neighbors.set_populate_header(populate_header);
 }
+
+void LASreaderBuffered::set_copc_stream_order(U8 stream_order)
+{
+  copc_stream_order = stream_order;
+  if (copc_stream_order == 0)
+  {
+    lasreadopener.set_copc_stream_ordered_by_chunk();
+    lasreadopener_neighbors.set_copc_stream_ordered_by_chunk();
+  }
+  else if (copc_stream_order == 1)
+  {
+    lasreadopener.set_copc_stream_ordered_spatially();
+    lasreadopener_neighbors.set_copc_stream_ordered_spatially();
+  }
+  else if (copc_stream_order == 2)
+  {
+    lasreadopener.set_copc_stream_ordered_by_level();
+    lasreadopener_neighbors.set_copc_stream_ordered_by_level();;
+  }
+
+}
+
 
 BOOL LASreaderBuffered::set_file_name(const char* file_name)
 {
@@ -445,12 +468,21 @@ BOOL LASreaderBuffered::inside_rectangle(const F64 min_x, const F64 min_y, const
 
 BOOL LASreaderBuffered::inside_copc_depth(const U8 mode, const I32 depth, const F32 resolution)
 {
-  if (!header.vlr_copc_info)
-    return FALSE;
-
   inside_depth = mode;
   copc_depth = depth;
   copc_resolution = resolution;
+
+  if (mode == 1)
+  {
+    lasreadopener.set_max_depth(depth);
+    lasreadopener_neighbors.set_max_depth(depth);
+  }
+  else if (mode == 2)
+  {
+    lasreadopener.set_resolution(resolution);
+    lasreadopener_neighbors.set_resolution(resolution);
+  }
+
   return TRUE;
 }
 

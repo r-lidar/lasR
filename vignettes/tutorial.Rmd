@@ -430,7 +430,7 @@ ycenter <- coordinates[,2]
 
 read <- reader_las(xc = xcenter, yc = ycenter, r = 11.28) 
 tri <- triangulate(filter = keep_ground())
-norm <- transform_with(tri)
+trans <- transform_with(tri)
 norm <- tri + trans
 metrics <- summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
 write1 <- write_las(ofiles_plot)
