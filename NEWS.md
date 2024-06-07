@@ -1,3 +1,7 @@
+# lasR 0.6.2
+
+- Fix: writing copc file from a copc file crashed.
+
 # lasR 0.6.1
 
 - Fix: metrics `cv` and `sd` that return `NAs` instead of `Inf` in the edges case where they are undefined.
