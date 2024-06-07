@@ -196,12 +196,12 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
   set_lasr_class(ans)
 }
 
-#' Classify isolated points
+#' Classify noise points
 #'
 #' The stage identifies points that have only a few other points in their surrounding
 #' 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification. Used with class 18,
-#' it classifies points as noise and is similar to \href{https://rapidlasso.de/lasnoise/}{lasnoise}
-#' from LAStools. This stage modifies the point cloud in the pipeline but does not produce any output.
+#' it classifies points as noise. This stage modifies the point cloud in the pipeline but does not
+#' produce any output.
 #'
 #' @param res numeric. Resolution of the voxels.
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
@@ -218,10 +218,10 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 
 #' Classify ground points
 #'
-#' Classify points using the Cloth Simulation Filter (see references). This method is a strict implementation of
-#' the CSF algorithm made by Zhang et al. (2016) (see references) that relies on the authors' original
-#' source code. This stages modifies the classification of the points. If the point cloud already has
-#' ground points, the classification of the original ground point is set to zero.
+#' Classify points using the Cloth Simulation Filter by Zhang et al. (2016) (see references) that relies
+#' on the authors' original source code. If the point cloud already has ground points, the classification
+#' of the original ground point is set to zero. This stage modifies the point cloud in the pipeline but
+#' does not produce any output.
 #'
 #' @param slope_smooth logical. When steep slopes exist, set this parameter to TRUE to reduce
 #' errors during post-processing.
@@ -235,7 +235,7 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #' there is no need to change this value.
 #' @param time_step scalar. Time step when simulating the cloth under gravity. The default value
 #' is 0.65. Usually, there is no need to change this value. It is suitable for most cases.
-#' @param clas integer. The classification to attribute to the points. Usually 2 for ground points.
+#' @param class integer. The classification to attribute to the points. Usually 2 for ground points.
 #'
 #' @references
 #' W. Zhang, J. Qi*, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data
@@ -245,8 +245,8 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #' @export
 #'
 #' @examples
-#' LASfile <- system.file("extdata", "Topography.laz", package="lidR")
-#' pipeline = lasR:::classify_with_csf(TRUE, 1 ,1, time_step = 1) + write_las("~/Téléchargements/Pintendre/Pintendre_classified.las")
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#' pipeline = classify_with_csf(TRUE, 1 ,1, time_step = 1) + write_las()
 #' ans = exec(pipeline, on = f, progress = T)
 classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_resolution = 0.5, rigidness = 1L, iterations = 500L, time_step = 0.65, class = 2L)
 {

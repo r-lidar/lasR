@@ -33,17 +33,17 @@ there is no need to change this value.}
 \item{time_step}{scalar. Time step when simulating the cloth under gravity. The default value
 is 0.65. Usually, there is no need to change this value. It is suitable for most cases.}
 
-\item{clas}{integer. The classification to attribute to the points. Usually 2 for ground points.}
+\item{class}{integer. The classification to attribute to the points. Usually 2 for ground points.}
 }
 \description{
-Classify points using the Cloth Simulation Filter (see references). This method is a strict implementation of
-the CSF algorithm made by Zhang et al. (2016) (see references) that relies on the authors' original
-source code. This stages modifies the classification of the points. If the point cloud already has
-ground points, the classification of the original ground point is set to zero.
+Classify points using the Cloth Simulation Filter by Zhang et al. (2016) (see references) that relies
+on the authors' original source code. If the point cloud already has ground points, the classification
+of the original ground point is set to zero. This stage modifies the point cloud in the pipeline but
+does not produce any output.
 }
 \examples{
-LASfile <- system.file("extdata", "Topography.laz", package="lidR")
-pipeline = lasR:::classify_with_csf(TRUE, 1 ,1, time_step = 1) + write_las("~/Téléchargements/Pintendre/Pintendre_classified.las")
+f <- system.file("extdata", "Topography.las", package="lasR")
+pipeline = classify_with_csf(TRUE, 1 ,1, time_step = 1) + write_las()
 ans = exec(pipeline, on = f, progress = T)
 }
 \references{

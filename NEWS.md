@@ -1,3 +1,13 @@
+# lasR 0.7.0
+
+### NEW FEATURES
+
+1. New stage `classify_with_csf()` to classify ground points.
+
+### BREAKING CHANGES
+
+1. 
+
 # lasR 0.6.2
 
 - Fix: writing copc file from a copc file crashed.
