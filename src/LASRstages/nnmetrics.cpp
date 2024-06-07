@@ -57,6 +57,8 @@ bool LASRnnmetrics::process(LAS*& las)
   progress->set_prefix("neighborhood_metrics");
   progress->show();
 
+  lm.resize(maxima.size());
+
   #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
   for (int i = 0 ; i < maxima.size() ; i++)
   {
@@ -84,10 +86,10 @@ bool LASRnnmetrics::process(LAS*& las)
       pt.vals.push_back(val);
     }
 
+    lm[i] = pt;
+
     #pragma omp critical
     {
-      lm.push_back(pt);
-
       if (main_thread)
       {
         (*progress)++;
