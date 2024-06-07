@@ -9,9 +9,9 @@
 #include "breakif.h"
 #include "csf.h"
 #include "filter.h"
+#include "ivf.h"
 #include "loadraster.h"
 #include "localmaximum.h"
-#include "noiseivf.h"
 #include "nothing.h"
 #include "pitfill.h"
 #include "rasterize.h"
@@ -177,13 +177,13 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         auto v = std::make_unique<LASRcsf>(xmin, ymin, xmax, ymax, slope_smooth, class_threshold, cloth_resolution, rigidness, iterations, time_step, classification);
         pipeline.push_back(std::move(v));
       }
-      else if (name == "classify_isolated_points")
+      else if (name == "classify_with_ivf")
       {
         double res = stage.value("res", 5);
         int n = stage.value("n", 6);
         int classification = stage.value("class", 18);
 
-        auto v = std::make_unique<LASRnoiseivf>(xmin, ymin, xmax, ymax, res, n, classification);
+        auto v = std::make_unique<LASRivf>(xmin, ymin, xmax, ymax, res, n, classification);
         pipeline.push_back(std::move(v));
       }
       else if (name == "filter")

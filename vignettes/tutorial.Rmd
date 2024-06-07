@@ -543,7 +543,8 @@ The topic is covered in a [dedicated article](multithreading.html)
 - `add_extrabytes()`
 - `add_rgb()`
 - `callback()`
-- `classify_isolated_voxel()`
+- `classify_with_ivf()`
+- `classify_with_csf()`
 - `delete_points()`
 - `geometry_features()`
 - `load_raster()`

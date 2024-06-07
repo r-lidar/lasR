@@ -6,7 +6,7 @@
 
 ### BREAKING CHANGES
 
-1. 
+1. `classify_isolated_voxels()` renamed into `classify_with_ivf()` for consistency.
 
 # lasR 0.6.2
 

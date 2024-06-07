@@ -198,10 +198,10 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 
 #' Classify noise points
 #'
-#' The stage identifies points that have only a few other points in their surrounding
-#' 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification. Used with class 18,
-#' it classifies points as noise. This stage modifies the point cloud in the pipeline but does not
-#' produce any output.
+#' Classify points using Isolated Voxel Filter. The stage identifies points that have only a few other
+#' points in their surrounding 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification.
+#' Used with class 18, it classifies points as noise. This stage modifies the point cloud in the pipeline
+#' but does not produce any output.
 #'
 #' @param res numeric. Resolution of the voxels.
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
@@ -210,9 +210,9 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 #' @template return-pointcloud
 #'
 #' @export
-classify_isolated_points = function(res = 5, n = 6L, class = 18L)
+classify_with_ivf = function(res = 5, n = 6L, class = 18L)
 {
-  ans <- list(algoname = "classify_isolated_points", res = res, n = n, class = class)
+  ans <- list(algoname = "classify_with_ivf", res = res, n = n, class = class)
   set_lasr_class(ans)
 }
 
@@ -236,6 +236,8 @@ classify_isolated_points = function(res = 5, n = 6L, class = 18L)
 #' @param time_step scalar. Time step when simulating the cloth under gravity. The default value
 #' is 0.65. Usually, there is no need to change this value. It is suitable for most cases.
 #' @param class integer. The classification to attribute to the points. Usually 2 for ground points.
+#'
+#' @template return-pointcloud
 #'
 #' @references
 #' W. Zhang, J. Qi*, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data

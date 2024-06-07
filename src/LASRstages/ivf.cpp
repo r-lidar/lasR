@@ -1,7 +1,7 @@
-#include "noiseivf.h"
+#include "ivf.h"
 #include <unordered_map>
 
-LASRnoiseivf::LASRnoiseivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification)
+LASRivf::LASRivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -12,7 +12,7 @@ LASRnoiseivf::LASRnoiseivf(double xmin, double ymin, double xmax, double ymax, d
   this->classification = classification;
 }
 
-bool LASRnoiseivf::process(LAS*& las)
+bool LASRivf::process(LAS*& las)
 {
   double xmin = las->header->min_x;
   double ymin = las->header->min_y;

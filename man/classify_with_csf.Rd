@@ -35,6 +35,9 @@ is 0.65. Usually, there is no need to change this value. It is suitable for most
 
 \item{class}{integer. The classification to attribute to the points. Usually 2 for ground points.}
 }
+\value{
+This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+}
 \description{
 Classify points using the Cloth Simulation Filter by Zhang et al. (2016) (see references) that relies
 on the authors' original source code. If the point cloud already has ground points, the classification
