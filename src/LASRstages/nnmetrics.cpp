@@ -83,10 +83,11 @@ bool LASRnnmetrics::process(LAS*& las)
       float val = metrics.get_metric(i, pts);
       pt.vals.push_back(val);
     }
-    lm.push_back(pt);
 
     #pragma omp critical
     {
+      lm.push_back(pt);
+
       if (main_thread)
       {
         (*progress)++;

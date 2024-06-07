@@ -422,12 +422,52 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
 
 # ===== N ====
 
+#' Compute metrics for a neighborhood
+#'
+#' This stage calculates specified metrics for a given neighborhood. Currently the neighborhood to be
+#' "local_maximum" stage. For each local maximum found by the local maximum stage, it searches for the
+#' points in neighborhood and computes metrics using these points.
+#'
+#' @section Operators:
+#' Each string is composed of two parts separated by an underscore. The first part is the attribute
+#'  on which the metric must be computed (e.g., z, intensity, classification).
+#' The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+#' `"z_max"`, `"intensity_min"`, `"z_mean"`, `"classification_mode"`.\cr\cr
+#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+#' s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
+#' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+#' Some metrics have an attribute + name + a parameter X, such as `pX` where `X` can be substituted by a number.
+#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
+#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+#' It is possible to call a metric without the name of the attribute. In this case, z is the default.
+#'
+#' @param metrics Character vector. "min", "max" and "count" are accepted as well as many others
+#' (see section 'Operators'). If `NULL` nothing is computed.
+#' @param neighborhood Currently support only a "local_maximum" stage.
+#' @param k,r integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
+#' sphere. If k is given and r is missing, computes with the knn, if r is given and k is missing
+#' computes with a sphere neighborhood, if k and r are given computes with the knn and a limit on the
+#' search distance.
+#' @param ofile A file path where the output will be stored. Default is a temporary GeoPackage file.
+#'
+#' @template return-vector
+#'
+#' @examples
+#' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+#' read <- reader_las()
+#' lmf <- local_maximum(5, ofile = "")
+#' nnm = lasR:::neighborhood_metrics(lmf, k = 10, metrics = c("i_mean", "count"))
+#' ans <- exec(read + lmf + nnm, on = f)
+#' ans
+#' @noRd
 neighborhood_metrics = function(neighborhood, metrics, k = 10, r = 0, ofile = tempgpkg())
 {
   nn = get_stage(neighborhood)
   if (nn$algoname != "local_maximum") stop("the stage must be a local_maximum stage")
 
-  ans <- list(algoname = "neighborhood_metrics", connect = nn[["uid"]], k = k, r = r, metrics = metrics, ofile = ofile)
+  ans <- list(algoname = "neighborhood_metrics", connect = nn[["uid"]], k = k, r = r, metrics = metrics, output = ofile)
   set_lasr_class(ans)
 }
 
