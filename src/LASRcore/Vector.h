@@ -15,6 +15,7 @@ public:
   Vector(const Vector& vector, const Chunk& chunk);
   bool create_file();
   bool write(const PointLAS& p, bool write_attributes = false);
+  bool write(const PointXYZAttrs& p);
   bool write(const std::vector<TriangleXYZ>& triangles);
   bool write(const std::vector<PolygonXY>& poly);
   void add_field(const std::string& name, OGRFieldType type);

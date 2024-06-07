@@ -63,6 +63,12 @@ struct PointLAS : public PointXYZ
   unsigned short NIR;
 };
 
+struct PointXYZAttrs : PointXYZ
+{
+  using PointXYZ::PointXYZ;
+  std::vector<double> vals;
+};
+
 enum ShapeType { UNKNOWN, RECTANGLE, CIRCLE, TRIANGLE, SPHERE};
 
 struct Shape

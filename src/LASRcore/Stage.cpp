@@ -95,7 +95,7 @@ void Stage::update_connection(Stage* stage)
   if (it != connections.end()) it->second = stage;
 }
 
-bool Stage::is_valid_pointer(void* p)
+bool Stage::is_valid_pointer(void* p) const
 {
   if (p == nullptr)
   {
