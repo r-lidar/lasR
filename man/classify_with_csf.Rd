@@ -47,7 +47,7 @@ does not produce any output.
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 pipeline = classify_with_csf(TRUE, 1 ,1, time_step = 1) + write_las()
-ans = exec(pipeline, on = f, progress = T)
+ans = exec(pipeline, on = f, progress = TRUE)
 }
 \references{
 W. Zhang, J. Qi*, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data
