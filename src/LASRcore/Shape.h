@@ -68,6 +68,12 @@ struct PointLAS : public PointXYZ
   double get_extrabyte(const std::string& name) const;
 };
 
+struct PointXYZAttrs : PointXYZ
+{
+  using PointXYZ::PointXYZ;
+  std::vector<double> vals;
+};
+
 enum ShapeType { UNKNOWN, RECTANGLE, CIRCLE, TRIANGLE, SPHERE};
 
 struct Shape

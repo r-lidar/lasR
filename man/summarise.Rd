@@ -4,10 +4,14 @@
 \alias{summarise}
 \title{Summary}
 \usage{
-summarise(zwbin = 2, iwbin = 25, filter = "")
+summarise(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 }
 \arguments{
 \item{zwbin, iwbin}{numeric. Width of the bins for the histograms of Z and Intensity.}
+
+\item{metrics}{Character vector. "min", "max" and "count" are accepted as well
+as many others (see section 'Operators'). If \code{NULL} nothing is computed. If something is provided these
+metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples)}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
@@ -16,14 +20,39 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 \link{filters}.}
 }
 \description{
-Summarize the dataset by counting the number of points, first returns, classes. It also produces
-a histogram of Z and Intensity. This stage does not modify the point cloud. It produces a
-summary as a `list`.
+Summarize the dataset by counting the number of points, first returns and other metrics for the \strong{entire point cloud}.
+It also produces an histogram of Z and Intensity attributes for the \strong{entiere point cloud}.
+It can also compute some metrics \strong{for each file or chunk} with the same metric engine than \link{rasterize}.
+This stage does not modify the point cloud. It produces a summary as a \code{list}.
 }
+\section{Operators}{
+
+Each string is composed of two parts separated by an underscore. The first part is the attribute
+on which the metric must be computed (e.g., z, intensity, classification).
+The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+\code{"z_max"}, \code{"intensity_min"}, \code{"z_mean"}, \code{"classification_mode"}.\cr\cr
+The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
+The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+Some metrics have an attribute + name + a parameter X, such as \code{pX} where \code{X} can be substituted by a number.
+Here, \code{z_pX} represents the Xth percentile; for instance, \code{z_p95} signifies the 95th
+percentile of z. \code{z_aboveX} corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+It is possible to call a metric without the name of the attribute. In this case, z is the default.
+}
+
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 read <- reader_las()
 pipeline <- read + summarise()
 ans <- exec(pipeline, on = f)
 ans
+
+# Compute metrics for each plot
+read = reader_las_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
+metrics = summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
+pipeline = read + metrics
+ans = exec(pipeline, on = f)
+ans$metrics
 }

@@ -52,8 +52,8 @@ s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata
 e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
 The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
 Some metrics have an attribute + name + a parameter X, such as "pX" where "X" can be substituted by a number.
-Here, "z_pX" represents the Xth percentile; for instance, "z_p95" signifies the 95th
-percentile of z. "z_aboveX" corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+Here, \code{z_pX} represents the Xth percentile; for instance, \code{z_p95} signifies the 95th
+percentile of z. \code{z_aboveX} corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
 It is possible to call a metric without the name of the attribute. In this case, z is the default.
 Below are some examples of valid calls:
 

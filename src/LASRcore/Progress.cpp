@@ -15,7 +15,8 @@
 #ifdef USING_R
 bool Progress::user_interrupt_event = false;
 #endif
-// Called only once in the processor function
+
+// Called only once in the processor() function
 Progress::Progress()
 {
   percentage = 0.0f;
@@ -25,6 +26,7 @@ Progress::Progress()
   display = false;
   prev = -1.0f;
   sub = 0;
+  ncpu = 1;
 
 #ifdef USING_R
   interrupt_counter = 0;
@@ -33,14 +35,22 @@ Progress::Progress()
 #endif
 };
 
-// Called only once in the processor function.
+// Called only once in the processor() function.
 Progress::~Progress()
 {
   if (sub) delete sub;
 }
 
+// Called only once in the processor() function
+void Progress::create_subprocess()
+{
+  if (sub) delete sub;
+  sub = new Progress();
+  sub->set_display(this->display);
+}
+
 // Operator ++ is called only within stages. The main progress bar is using update() and MUST NOT
-// call ++. It is thread safe: only the thread 0 can call the operator ++
+// call ++ operator. It is thread safe: only the thread 0 can call the operator ++
 // Each call to ++ checks if there is a interrupt event pending so there is no need to explicitly call
 // Progress::check_interrupt() this is automatically done in thread 0 when using the progress bar.
 Progress& Progress::operator++(int)
@@ -56,21 +66,13 @@ Progress& Progress::operator++(int)
     this->current++;
     this->compute_percentage();
 
-#ifdef USING_R
+    #ifdef USING_R
     check_interrupt();
-#endif
+    #endif
   }
 
   return *this;
 };
-
-// Called only once in the processor function
-void Progress::create_subprocess()
-{
-  if (sub) delete sub;
-  sub = new Progress();
-  sub->set_display(this->display);
-}
 
 // Called by every stage and the main progress bar before to create a sub progress bar. When called
 // it applies to the sub-progress this is why is is called before to create a sub progress in the
@@ -95,15 +97,15 @@ void Progress::update(uint64_t current, bool main)
 {
   if (main)
   {
-#pragma omp critical (progress)
-{
-  this->current = current;
-  this->compute_percentage();
-}
+    #pragma omp critical (progress)
+    {
+      this->current = current;
+      this->compute_percentage();
+    }
 
-#ifdef USING_R
+    #ifdef USING_R
     check_interrupt(true);
-#endif
+    #endif
 
     return;
   }
@@ -121,9 +123,9 @@ void Progress::update(uint64_t current, bool main)
     this->compute_percentage();
   }
 
-#ifdef USING_R
+  #ifdef USING_R
   check_interrupt();
-#endif
+  #endif
 };
 
 // Called by every stage and can be applied only by thread 0
@@ -142,10 +144,11 @@ void Progress::reset()
     this->prev = -1.0f;
     this->current = 0;
     this->ntotal = 0;
+    this->ncpu = 1;
 
-#ifdef USING_R
+    #ifdef USING_R
     this->interrupt_counter = 0;
-#endif
+    #endif
   }
 }
 
@@ -167,6 +170,14 @@ void Progress::set_total(uint64_t nmax)
     sub->set_total(nmax);
   else
     this->ntotal = nmax;
+}
+
+void Progress::set_ncpu(int n)
+{
+  if (sub)
+    sub->ncpu = n;
+  else
+    this->ncpu = n;
 }
 
 // Called by every stage and can be applied only by thread 0. It is also called by the processor
@@ -216,9 +227,9 @@ void Progress::show(bool flush)
     if (ntotal > 0)
     {
       this->prev = this->percentage;
-      int completed = (int)(15 * percentage);
-      int remaining = (int)(15 - completed);
-      print("%s: [%.*s%*s] %.0lf%%", this->prefix.c_str(), completed, PROGRESSSYM, remaining, "", percentage * 100);
+      int completed = (int)(10 * percentage);
+      int remaining = (int)(10 - completed);
+      print("%s: [%.*s%*s] %.0lf%% (%d threads)", this->prefix.c_str(), completed, PROGRESSSYM, remaining, "", percentage * 100, ncpu);
     }
     else
     {
@@ -230,24 +241,21 @@ void Progress::show(bool flush)
       print(" | ");
       sub->show(false);
 
-#ifdef USING_R
+      #ifdef USING_R
       if (user_interrupt_event)
         print(" (Interrupt signal detected: stopping asap)");
-      else
-        print(" (%d threads)",  omp_get_num_threads());
-#else
-      print(" (%d threads)",  omp_get_num_threads());
-#endif
+      #endif
     }
 
     if (flush)
     {
       print("%*s\r", 20, "");
-#ifdef USING_R
+
+      #ifdef USING_R
       R_FlushConsole();
-#else
+      #else
       fflush(stdout);
-#endif
+      #endif
     }
   }
 }

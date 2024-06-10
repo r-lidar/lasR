@@ -13,17 +13,17 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
   this->window = (window > res) ? (window-res)/2 : 0;
   raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
 
-  if (!metrics.parse(methods))
+  if (!metric_engine.parse(methods))
   {
     throw last_error;
   }
 
-  metrics.set_default_value(default_value);
+  metric_engine.set_default_value(default_value);
 
-  for (int j = 0 ; j < metrics.size() ; j++)
+  for (int j = 0 ; j < metric_engine.size() ; j++)
     raster.set_band_name(methods[j], j);
 
-  this->streamable = metrics.is_streamable();
+  this->streamable = metric_engine.is_streamable();
 }
 
 LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, Stage* algorithm)
@@ -43,8 +43,7 @@ LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax,
 
 bool LASRrasterize::process(LASpoint*& p)
 {
-  // No operator registered means that we are in a non streamable rasterization
-  if (metrics.size() == 0) return true;
+  if (!metric_engine.is_streamable())  return true;
   if (p->get_withheld_flag() != 0) return true;
   if (lasfilter.filter(p)) return true;
 
@@ -58,12 +57,12 @@ bool LASRrasterize::process(LASpoint*& p)
   else
     cells.push_back(raster.cell_from_xy(x,y));
 
-  for (int i = 0 ; i < metrics.size() ; ++i)
+  for (int i = 0 ; i < metric_engine.size() ; ++i)
   {
     for (int cell : cells)
     {
       float v = raster.get_value(cell, i+1);
-      float res = metrics.get_metric(i, v, z);
+      float res = metric_engine.get_metric(i, v, z);
       raster.set_value(cell, res, i+1);
     }
   }
@@ -129,6 +128,7 @@ bool LASRrasterize::process(LAS*& las)
   progress->reset();
   progress->set_prefix("Rasterize");
   progress->set_total(map.size());
+  progress->set_ncpu(ncpu);
   progress->show();
 
   // OpenMP cannot parallelize on a map. Create vectors to hold keys and references to corresponding vectors
@@ -155,7 +155,7 @@ bool LASRrasterize::process(LAS*& las)
   // Next calls, all touch a different cell and are thus thread safe
   raster.set_value(0, NA_F32_RASTER, 1);
 
-  #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
+  #pragma omp parallel for num_threads(ncpu) firstprivate(metric_engine)
   for (size_t i = 0; i < n; ++i)
   {
     if (progress->interrupted()) continue;
@@ -164,9 +164,9 @@ bool LASRrasterize::process(LAS*& las)
     int cell = keys[i];
     las->query(*intervals[i], pts, &lasfilter);
 
-    for (int i = 0 ; i < metrics.size() ; i++)
+    for (int i = 0 ; i < metric_engine.size() ; i++)
     {
-      float val = metrics.get_metric(i, pts);
+      float val = metric_engine.get_metric(i, pts);
       raster.set_value(cell, val, i+1);
     }
 

@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -Wno-unused-parameter -std=c++17 -O2 -fopenmp
+CXXFLAGS = -Wall -Wno-unused-parameter -std=c++17 -O2 -fopenmp
 
 SRC_DIR = src
 BIN_DIR = bin

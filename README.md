@@ -13,7 +13,7 @@ The `lasR` package (pronounce laser) **does not** intent to supersede the `lidR`
 
 ## Installation
 
-There is currently no plan for releasing `lasR` on CRAN. `lasR` is hosted on `r-universe` instead:
+There is currently no plan for releasing `lasR` on CRAN. `lasR` is hosted on `r-universe`:
 
 ```r
 install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')
@@ -36,10 +36,8 @@ The following benchmark compares how much time and RAM memory it takes for `lasR
 ## Main differences with `lidR`
 
 - Introduces the concept of pipelines, that is missing in `lidR`, to chain multiple operations on a point cloud optimally.
-- Is written exclusively in C/C++ without a single line of R.
-- Uses the code of `lidR` but brings significant speed and memory improvements.
+- Is written exclusively in C/C++ without a single line of R. The R code is only an API to a standalone C++ software.
 - Does not load the point cloud into a `data.frame`. The point cloud is stored in a C++ structure that is not exposed to users.
-- Uses GDAL instead of relying on `terra` and `sf` for more flexibility at the C++ level.
 - Has only 1 strong dependencies to `gdal`. But if `sf` and  `terra` are installed the experience is better.
 
 More details in the corresponding [vignette](https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr)
@@ -73,3 +71,7 @@ More details in the corresponding [vignette](https://r-lidar.github.io/lasR/arti
   - © 2008-2016 National ICT Australia (NICTA)
   - © 2017-2024 Data61 / CSIRO
   - Provided under Apache license
+- For `Cloth Simulation Filter (CSF)`
+  - © 2017 State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University
+  - Provided under Apache License
+  - W. Zhang, J. Qi, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data Filtering Method Based on Cloth Simulation,” Remote Sens., vol. 8, no. 6, p. 501, 2016.

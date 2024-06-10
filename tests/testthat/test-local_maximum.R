@@ -12,6 +12,15 @@ test_that("local maximum works",
   expect_equal(dim(ans), c(297, 1))
 })
 
+test_that("local maximum works with wildcard (#62)",
+{
+  f <- system.file("extdata", "MixedConifer.las", package="lasR")
+  lmf = local_maximum(3, record_attributes = T, ofile = paste0(tempdir(), "/*_ttops.gpkg"))
+  ans = exec(lmf, on = f)
+
+  expect_equal(dim(ans), c(297, 6))
+})
+
 test_that("local maximum works with multiple files",
 {
   f = paste0(system.file(package="lasR"), "/extdata/bcts/")

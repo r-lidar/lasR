@@ -196,12 +196,12 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
   set_lasr_class(ans)
 }
 
-#' Classify isolated points
+#' Classify noise points
 #'
-#' The stage identifies points that have only a few other points in their surrounding
-#' 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification. Used with class 18,
-#' it classifies points as noise and is similar to \href{https://rapidlasso.de/lasnoise/}{lasnoise}
-#' from LAStools. This stage modifies the point cloud in the pipeline but does not produce any output.
+#' Classify points using Isolated Voxel Filter. The stage identifies points that have only a few other
+#' points in their surrounding 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification.
+#' Used with class 18, it classifies points as noise. This stage modifies the point cloud in the pipeline
+#' but does not produce any output.
 #'
 #' @param res numeric. Resolution of the voxels.
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
@@ -210,9 +210,49 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 #' @template return-pointcloud
 #'
 #' @export
-classify_isolated_points = function(res = 5, n = 6L, class = 18L)
+classify_with_ivf = function(res = 5, n = 6L, class = 18L)
 {
-  ans <- list(algoname = "classify_isolated_points", res = res, n = n, class = class)
+  ans <- list(algoname = "classify_with_ivf", res = res, n = n, class = class)
+  set_lasr_class(ans)
+}
+
+#' Classify ground points
+#'
+#' Classify points using the Cloth Simulation Filter by Zhang et al. (2016) (see references) that relies
+#' on the authors' original source code. If the point cloud already has ground points, the classification
+#' of the original ground point is set to zero. This stage modifies the point cloud in the pipeline but
+#' does not produce any output.
+#'
+#' @param slope_smooth logical. When steep slopes exist, set this parameter to TRUE to reduce
+#' errors during post-processing.
+#' @param class_threshold scalar. The distance to the simulated cloth to classify a point cloud into ground
+#' and non-ground. The default is 0.5.
+#' @param cloth_resolution scalar. The distance between particles in the cloth. This is usually set to the
+#' average distance of the points in the point cloud. The default value is 0.5.
+#' @param rigidness integer. The rigidness of the cloth. 1 stands for very soft (to fit rugged
+#' terrain), 2 stands for medium, and 3 stands for hard cloth (for flat terrain). The default is 1.
+#' @param iterations integer. Maximum iterations for simulating cloth. The default value is 500. Usually,
+#' there is no need to change this value.
+#' @param time_step scalar. Time step when simulating the cloth under gravity. The default value
+#' is 0.65. Usually, there is no need to change this value. It is suitable for most cases.
+#' @param class integer. The classification to attribute to the points. Usually 2 for ground points.
+#'
+#' @template return-pointcloud
+#'
+#' @references
+#' W. Zhang, J. Qi*, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data
+#' Filtering Method Based on Cloth Simulation,” Remote Sens., vol. 8, no. 6, p. 501, 2016.
+#' (http://www.mdpi.com/2072-4292/8/6/501/htm)
+#'
+#' @export
+#'
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#' pipeline = classify_with_csf(TRUE, 1 ,1, time_step = 1) + write_las()
+#' ans = exec(pipeline, on = f, progress = TRUE)
+classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_resolution = 0.5, rigidness = 1L, iterations = 500L, time_step = 0.65, class = 2L)
+{
+  ans <- list(algoname = "classify_with_csf", slope_smooth = slope_smooth, class_threshold = class_threshold, cloth_resolution = cloth_resolution, rigidness = rigidness, iterations = iterations, time_step = time_step, class = class)
   set_lasr_class(ans)
 }
 
@@ -420,8 +460,56 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
   set_lasr_class(ans, vector = TRUE)
 }
 
-
 # ===== N ====
+
+#' Compute metrics for a neighborhood
+#'
+#' This stage calculates specified metrics for a given neighborhood. Currently the neighborhood to be
+#' "local_maximum" stage. For each local maximum found by the local maximum stage, it searches for the
+#' points in neighborhood and computes metrics using these points.
+#'
+#' @section Operators:
+#' Each string is composed of two parts separated by an underscore. The first part is the attribute
+#'  on which the metric must be computed (e.g., z, intensity, classification).
+#' The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+#' `"z_max"`, `"intensity_min"`, `"z_mean"`, `"classification_mode"`.\cr\cr
+#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+#' s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
+#' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+#' Some metrics have an attribute + name + a parameter X, such as `pX` where `X` can be substituted by a number.
+#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
+#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+#' It is possible to call a metric without the name of the attribute. In this case, z is the default.
+#'
+#' @param metrics Character vector. "min", "max" and "count" are accepted as well as many others
+#' (see section 'Operators'). If `NULL` nothing is computed.
+#' @param neighborhood Currently support only a "local_maximum" stage.
+#' @param k,r integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
+#' sphere. If k is given and r is missing, computes with the knn, if r is given and k is missing
+#' computes with a sphere neighborhood, if k and r are given computes with the knn and a limit on the
+#' search distance.
+#' @param ofile A file path where the output will be stored. Default is a temporary GeoPackage file.
+#'
+#' @template return-vector
+#'
+#' @examples
+#' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+#' read <- reader_las()
+#' lmf <- local_maximum(5, ofile = "")
+#' nnm = lasR:::neighborhood_metrics(lmf, k = 10, metrics = c("i_mean", "count"))
+#' ans <- exec(read + lmf + nnm, on = f)
+#' ans
+#' @noRd
+neighborhood_metrics = function(neighborhood, metrics, k = 10, r = 0, ofile = tempgpkg())
+{
+  nn = get_stage(neighborhood)
+  if (nn$algoname != "local_maximum") stop("the stage must be a local_maximum stage")
+
+  ans <- list(algoname = "neighborhood_metrics", connect = nn[["uid"]], k = k, r = r, metrics = metrics, output = ofile)
+  set_lasr_class(ans)
+}
 
 nothing = function(read = FALSE, stream = FALSE, loop = FALSE)
 {
@@ -494,8 +582,8 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
 #' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
 #' Some metrics have an attribute + name + a parameter X, such as "pX" where "X" can be substituted by a number.
-#' Here, "z_pX" represents the Xth percentile; for instance, "z_p95" signifies the 95th
-#' percentile of z. "z_aboveX" corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
+#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
 #' It is possible to call a metric without the name of the attribute. In this case, z is the default.
 #' Below are some examples of valid calls:
 #' ```
@@ -872,11 +960,30 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 
 #' Summary
 #'
-#' Summarize the dataset by counting the number of points, first returns, classes. It also produces
-#' a histogram of Z and Intensity. This stage does not modify the point cloud. It produces a
-#' summary as a `list`.
+#' Summarize the dataset by counting the number of points, first returns and other metrics for the **entire point cloud**.
+#' It also produces an histogram of Z and Intensity attributes for the **entiere point cloud**.
+#' It can also compute some metrics **for each file or chunk** with the same metric engine than \link{rasterize}.
+#' This stage does not modify the point cloud. It produces a summary as a `list`.
+#'
+#' @section Operators:
+#' Each string is composed of two parts separated by an underscore. The first part is the attribute
+#'  on which the metric must be computed (e.g., z, intensity, classification).
+#' The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
+#' `"z_max"`, `"intensity_min"`, `"z_mean"`, `"classification_mode"`.\cr\cr
+#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
+#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
+#' s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
+#' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
+#' Some metrics have an attribute + name + a parameter X, such as `pX` where `X` can be substituted by a number.
+#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
+#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
+#' It is possible to call a metric without the name of the attribute. In this case, z is the default.
 #'
 #' @param zwbin,iwbin numeric. Width of the bins for the histograms of Z and Intensity.
+#' @param metrics Character vector. "min", "max" and "count" are accepted as well
+#' as many others (see section 'Operators'). If `NULL` nothing is computed. If something is provided these
+#' metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples)
 #' @template param-filter
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
@@ -884,10 +991,18 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 #' pipeline <- read + summarise()
 #' ans <- exec(pipeline, on = f)
 #' ans
+#'
+#' # Compute metrics for each plot
+#' read = reader_las_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
+#' metrics = summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
+#' pipeline = read + metrics
+#' ans = exec(pipeline, on = f)
+#' ans$metrics
 #' @export
-summarise = function(zwbin = 2, iwbin = 25, filter = "")
+#' @md
+summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 {
-  ans <- list(algoname = "summarise", filter = filter, zwbin = zwbin, iwbin = iwbin)
+  ans <- list(algoname = "summarise", filter = filter, zwbin = zwbin, iwbin = iwbin, metrics = metrics)
   set_lasr_class(ans)
 }
 
@@ -935,7 +1050,7 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #'
 #' @param stage LASRpipeline. A stage that produces a triangulation or a raster.
 #' @param operator string. '-' and '+' are supported.
-#' @param store_in_attribute numeric. Use an extra bytes attribute to store the result.
+#' @param store_in_attribute string. Use an extra bytes attribute to store the result.
 #'
 #' @template return-pointcloud
 #'
@@ -1051,9 +1166,9 @@ write_lax = function(embedded = FALSE, overwrite = FALSE)
 
 # ==== INTERNALS =====
 
-generate_uid <- function(size = 6)
+generate_uid <- function(size = 8)
 {
-  paste(sample(c(letters, LETTERS, as.character(0:9)), size, replace = TRUE), collapse = "")
+  paste(sample(c(letters[1:6], as.character(0:8)), size, replace = TRUE), collapse = "")
 }
 
 set_lasr_class = function(x, raster = FALSE, vector = FALSE)

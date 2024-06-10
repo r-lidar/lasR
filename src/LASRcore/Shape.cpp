@@ -96,13 +96,14 @@ void PointLAS::copy(const LASpoint* const p)
   {
     std::string name = p->get_attribute_name(i);
     double value = p->get_attribute_as_float(i);
-    /*if (p->attributer->attributes[i].has_no_data())
+    if (p->attributer->attributes[i].has_no_data())
     {
       if (value == *(double*)(p->attributer->attributes[i].no_data))
       {
         value = std::numeric_limits<double>::quiet_NaN();
       }
-    }*/
+    }
+    //print("Extrabyte %s %lf\n", name.c_str(), value);
     extrabytes[name] = value;
     i++;
   }

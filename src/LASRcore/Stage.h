@@ -66,7 +66,7 @@ public:
   const std::map<std::string, Stage*>& get_connection() { return connections; };
   CRS get_crs() const { return crs; };
 
-  bool is_valid_pointer(void*);
+  bool is_valid_pointer(void*) const;
 
   // The default method consists in returning the string 'ofile'.
   #ifdef USING_R

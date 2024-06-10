@@ -106,6 +106,7 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
   progress->reset();
   progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Interpolation");
+  progress->set_ncpu(ncpu);
   progress->show();
 
   // The next for loop is at the level a nested parallel region. Printing the progress bar
@@ -202,6 +203,7 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
   progress->reset();
   progress->set_prefix("Delaunay contours");
   progress->set_total(d->triangles.size()/3);
+  progress->set_ncpu(ncpu);
   progress->show();
 
   // The next for loop is at the level a nested parallel region. Printing the progress bar

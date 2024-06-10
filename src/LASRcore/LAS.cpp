@@ -379,7 +379,6 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
   double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
 
   int n = 0;
-  double radius_squared = radius * radius;
   std::vector<Interval> intervals;
   if (radius < radius_max)
   {
@@ -412,21 +411,13 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
       }
 
       // After fetching the point
-      if (n < k)
-      {
-        radius *= 1.5;
-        radius_squared = radius* radius;
-      }
+      if (n < k) radius *= 1.5;
     }
   }
 
   // We incremented the radius until we get k points. If the radius is bigger than the max radius we use radius = max radius
   // and we may not have k points.
-  if (radius >= radius_max)
-  {
-    radius = radius_max;
-    radius_squared = radius*radius;
-  }
+  if (radius >= radius_max) radius = radius_max;
 
   // We perform the query for real
   intervals.clear();
@@ -460,7 +451,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
   });
 
   // We keep the k first results into the result
-  if (k < res.size()) res.resize(k);
+  if ((size_t)k < res.size()) res.resize(k);
 
   return true;
 }

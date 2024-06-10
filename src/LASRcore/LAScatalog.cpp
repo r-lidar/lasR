@@ -410,7 +410,7 @@ void LAScatalog::add_crs(const LASheader* header)
 
   if (header->vlr_geo_ogc_wkt)
   {
-    for (int j = 0; j < header->number_of_variable_length_records; j++)
+    for (unsigned int j = 0; j < header->number_of_variable_length_records; j++)
     {
       if (header->vlrs[j].record_id == 2112)
       {

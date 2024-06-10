@@ -462,6 +462,8 @@ public:
     laszip = 0;
     vlr_lastiling = 0;
     vlr_lasoriginal = 0;
+    vlr_copc_info = 0;
+    vlr_copc_entries = 0;
     user_data_after_header_size = 0;
     user_data_after_header = 0;
     attributes_linked = FALSE;

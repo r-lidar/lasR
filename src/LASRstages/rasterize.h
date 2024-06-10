@@ -23,7 +23,7 @@ public:
 private:
   bool streamable;
   double window;
-  Metrics metrics;
+  MetricManager metric_engine;
 };
 
 #endif
