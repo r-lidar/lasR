@@ -1,6 +1,7 @@
 # lasR 0.6.2
 
 - Fix: writing copc file from a copc file crashed.
+- Fix: #62 attributes of the vector files were not recorded when the output file template contains a wildcard `*`
 
 # lasR 0.6.1
 

@@ -38,6 +38,7 @@ Vector::Vector(const Vector& vector, const Chunk& chunk) : GDALdataset()
   dType = vector.dType;
   oSRS = vector.oSRS;
   writetype = vector.writetype;
+  fields = vector.fields;
 }
 
 bool Vector::create_file()
