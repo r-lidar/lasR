@@ -118,7 +118,6 @@ MetricCalculator MetricManager::parse(const std::string& name)
   {
     // We can't find the attribute in the list of existing attributes. This might be an extrabyte (or a typo)
     // we assume an extrabyte for now
-    printf("WARNING extrabyte for %s\n", attribute.c_str());
     attribute_accessor = [attribute](const PointLAS& p) { return p.get_extrabyte(attribute); };
   }
 

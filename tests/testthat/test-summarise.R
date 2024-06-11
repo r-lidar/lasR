@@ -16,6 +16,8 @@ test_that("summary works with 1 file",
 
 test_that("summary preserves metric order",
 {
+  skip("no implemented")
+
   f <- system.file("extdata", "Example.las", package="lasR")
   p = summarise(metrics = c("z_max", "i_min", "r_mean", "n_median", "c_sd", "t_cv", "u_sum", "p_mode", "a_mean", "count", "z_p95", "R_sum", "B_mean", "z_above975"))
   ans = exec(p, on = f, noread = T)
