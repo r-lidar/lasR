@@ -324,7 +324,7 @@ bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter
 
         PointLAS pl(&p);
         pl.FID = i;
-        addr.push_back(pl);
+        addr.push_back(std::move(pl));
       }
     }
   }
@@ -356,7 +356,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
 
         PointLAS pl(&p);
         pl.FID = i;
-        addr.push_back(pl);
+        addr.push_back(std::move(pl));
       }
     }
   }
@@ -438,7 +438,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
 
       PointLAS pl(&p);
       pl.FID = i;
-      res.push_back(pl);
+      res.push_back(std::move(pl));
     }
   }
 

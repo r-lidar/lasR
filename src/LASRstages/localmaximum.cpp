@@ -165,13 +165,13 @@ bool LASRlocalmaximum::process(LAS*& las)
         if (it == unicity_table->end())
         {
           (*unicity_table)[FID] = *counter;
-          lm.push_back(pp);
+          lm.push_back(std::move(pp));
           lm.back().FID = *counter;
           (*counter)++;
         }
         else
         {
-          lm.push_back(pp);
+          lm.push_back(std::move(pp));
           lm.back().FID = it->second;
         }
       }

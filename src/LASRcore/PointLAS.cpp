@@ -5,6 +5,7 @@
 #include "NA.h"
 
 #include <limits>
+#include <cstring>
 
 PointLAS::PointLAS()
 {
@@ -20,86 +21,25 @@ PointLAS::PointLAS(const LASpoint* const p)
 // Copy constructor
 PointLAS::PointLAS(const PointLAS& other) : PointXYZ(other)
 {
-  FID = other.FID;
-  intensity = other.intensity;
-  return_number = other.return_number;
-  number_of_returns = other.number_of_returns;
-  scan_direction_flag = other.scan_direction_flag;
-  edge_of_flight_line = other.edge_of_flight_line;
-  classification = other.classification;
-  synthetic_flag = other.synthetic_flag;
-  keypoint_flag = other.keypoint_flag;
-  withheld_flag = other.withheld_flag;
-  overlap_flag = other.overlap_flag;
-  scan_angle = other.scan_angle;
-  user_data = other.user_data;
-  point_source_ID = other.point_source_ID;
-  gps_time = other.gps_time;
-  R = other.R;
-  G = other.G;
-  B = other.B;
-  NIR = other.NIR;
-  extrabytes = other.extrabytes ? new std::unordered_map<std::string, double>(*other.extrabytes) : nullptr;
+  std::memcpy(this, &other, sizeof(PointLAS));
+  if (other.extrabytes) extrabytes = new std::unordered_map<std::string, double>(*other.extrabytes);
 }
 
 // Move constructor
-PointLAS::PointLAS(PointLAS&& other) noexcept : PointXYZ(std::move(other))
+PointLAS::PointLAS(PointLAS&& other) noexcept
 {
-  FID = other.FID;
-  intensity = other.intensity;
-  return_number = other.return_number;
-  number_of_returns = other.number_of_returns;
-  scan_direction_flag = other.scan_direction_flag;
-  edge_of_flight_line = other.edge_of_flight_line;
-  classification = other.classification;
-  synthetic_flag = other.synthetic_flag;
-  keypoint_flag = other.keypoint_flag;
-  withheld_flag = other.withheld_flag;
-  overlap_flag = other.overlap_flag;
-  scan_angle = other.scan_angle;
-  user_data = other.user_data;
-  point_source_ID = other.point_source_ID;
-  gps_time = other.gps_time;
-  R = other.R;
-  G = other.G;
-  B = other.B;
-  NIR = other.NIR;
-  extrabytes = other.extrabytes;
+  memcpy(this, &other, sizeof(PointLAS));
   other.extrabytes = nullptr;
 }
 
 // Copy assignment operator
 PointLAS& PointLAS::operator=(const PointLAS& other)
 {
-  if (this == &other)
-  {
-    return *this;
-  }
-
-  PointXYZ::operator=(other);
-
-  FID = other.FID;
-  intensity = other.intensity;
-  return_number = other.return_number;
-  number_of_returns = other.number_of_returns;
-  scan_direction_flag = other.scan_direction_flag;
-  edge_of_flight_line = other.edge_of_flight_line;
-  classification = other.classification;
-  synthetic_flag = other.synthetic_flag;
-  keypoint_flag = other.keypoint_flag;
-  withheld_flag = other.withheld_flag;
-  overlap_flag = other.overlap_flag;
-  scan_angle = other.scan_angle;
-  user_data = other.user_data;
-  point_source_ID = other.point_source_ID;
-  gps_time = other.gps_time;
-  R = other.R;
-  G = other.G;
-  B = other.B;
-  NIR = other.NIR;
+  if (this == &other) return *this;
 
   delete extrabytes;
-  extrabytes = other.extrabytes ? new std::unordered_map<std::string, double>(*other.extrabytes) : nullptr;
+  memcpy(this, &other, sizeof(PointLAS));
+  if (other.extrabytes) extrabytes = new std::unordered_map<std::string, double>(*other.extrabytes);
 
   return *this;
 }
@@ -107,34 +47,10 @@ PointLAS& PointLAS::operator=(const PointLAS& other)
 // Move assignment operator
 PointLAS& PointLAS::operator=(PointLAS&& other) noexcept
 {
-  if (this == &other)
-  {
-    return *this;
-  }
-
-  PointXYZ::operator=(std::move(other));
-
-  FID = other.FID;
-  intensity = other.intensity;
-  return_number = other.return_number;
-  number_of_returns = other.number_of_returns;
-  scan_direction_flag = other.scan_direction_flag;
-  edge_of_flight_line = other.edge_of_flight_line;
-  classification = other.classification;
-  synthetic_flag = other.synthetic_flag;
-  keypoint_flag = other.keypoint_flag;
-  withheld_flag = other.withheld_flag;
-  overlap_flag = other.overlap_flag;
-  scan_angle = other.scan_angle;
-  user_data = other.user_data;
-  point_source_ID = other.point_source_ID;
-  gps_time = other.gps_time;
-  R = other.R;
-  G = other.G;
-  B = other.B;
-  NIR = other.NIR;
+  if (this == &other)  return *this;
 
   delete extrabytes;
+  memcpy(this, &other, sizeof(PointLAS));
   extrabytes = other.extrabytes;
   other.extrabytes = nullptr;
 

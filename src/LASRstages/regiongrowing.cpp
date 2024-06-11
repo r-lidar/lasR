@@ -83,7 +83,7 @@ bool LASRregiongrowing::process(LAS*& las)
   progress->set_prefix("growing region");
   progress->set_total(raster.get_ncells());
 
-  const std::vector<PointLAS> lm = lmf->get_maxima();
+  const std::vector<PointLAS>& lm = lmf->get_maxima();
   const Raster& image = rst->get_raster();
 
   struct Region
