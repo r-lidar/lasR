@@ -163,6 +163,7 @@ float MetricManager::sd(PointAttributeAccessor accessor, const PointCollection& 
   for (const auto& point : points) sum += accessor(point);
   double mean = sum/points.size();
 
+  sum = 0;
   for (const auto& point : points)
   {
     double value = accessor(point);
