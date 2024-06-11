@@ -50,6 +50,7 @@ bool MetricManager::parse(const std::vector<std::string>& names, bool support_st
     for (const auto& name : names)
     {
       regular_operators.push_back(parse(name));
+      this->names.push_back(name);
     }
   }
   catch(std::exception& e)
