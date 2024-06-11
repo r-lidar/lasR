@@ -484,7 +484,7 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
 #' It is possible to call a metric without the name of the attribute. In this case, z is the default.
 #'
 #' @param metrics Character vector. "min", "max" and "count" are accepted as well as many others
-#' (see section 'Operators'). If `NULL` nothing is computed.
+#' (see \link{metric_engine}). If `NULL` nothing is computed.
 #' @param neighborhood Currently support only a "local_maximum" stage.
 #' @param k,r integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
 #' sphere. If k is given and r is missing, computes with the knn, if r is given and k is missing
@@ -572,29 +572,13 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' It produces a derived product in raster format.
 #'
 #' @section Operators:
-#' If `operators` is a string or a vector of strings, each string is composed of two parts separated by an
-#' underscore. The first part is the attribute on which the metric must be computed (e.g., z, intensity, classification).
-#' The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
-#' `"z_max"`, `"intensity_min"`, `"z_mean"`, `"classification_mode"`.\cr\cr
-#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
-#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
-#' s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
-#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
-#' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
-#' Some metrics have an attribute + name + a parameter X, such as "pX" where "X" can be substituted by a number.
-#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
-#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
-#' It is possible to call a metric without the name of the attribute. In this case, z is the default.
+#' If `operators` is a string or a vector of strings: read \link{metric_engine} to see the possible strings
 #' Below are some examples of valid calls:
 #' ```
 #' rasterize(10, c("max", "count", "i_mean", "z_p95"))
 #' rasterize(10, c("z_max", "c_count", "intensity_mean", "p95"))
 #' ```
-#' **Be careful**: the engine supports any combination of `attribute_metric` strings. While they are
-#' all computable, they are not all meaningful. For example, `c_mode` makes sense but not `z_mode`. Also,
-#' all metrics are computed with 32-bit floating point accuracy, so `x_mean` or `y_sum` might be
-#' slightly inaccurate, but anyway, these metrics are not supposed to be useful.
-#' \cr\cr
+#' \cr
 #' If `operators` is an R user-defined expression, the function should return either a vector of numbers
 #' or a `list` containing atomic numbers. To assign a band name to the raster, the vector or the `list`
 #' must be named accordingly. The following are valid operators:
@@ -610,14 +594,14 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' @section Buffered:
 #' If the argument `res` is a vector with two numbers, the first number represents the resolution of
 #' the output raster, and the second number represents the size of the windows used to compute the
-#' metrics. This approach is called Buffered Area Based Approach (BABA).\cr
+#' metrics. This approach is called Buffered Area Based Approach (BABA).\cr\cr
 #' In classical rasterization, the metrics are computed independently for each pixel. For example,
 #' predicting a resource typically involves computing metrics with a 400 square meter pixel, resulting
 #' in a raster with a resolution of 20 meters. It is not possible to achieve a finer granularity with
-#' this method.\cr
+#' this method.\cr\cr
 #' However, with buffered rasterization, it is possible to compute the raster at a resolution of 10
 #' meters (i.e., computing metrics every 10 meters) while using 20 x 20 windows for metric computation.
-#' In this case, the windows overlap, essentially creating a moving window effect.\cr
+#' In this case, the windows overlap, essentially creating a moving window effect.\cr\cr
 #' This option does not apply when rasterizing a triangulation, and the second value is not considered
 #' in this case.
 #'
@@ -965,25 +949,10 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 #' It can also compute some metrics **for each file or chunk** with the same metric engine than \link{rasterize}.
 #' This stage does not modify the point cloud. It produces a summary as a `list`.
 #'
-#' @section Operators:
-#' Each string is composed of two parts separated by an underscore. The first part is the attribute
-#'  on which the metric must be computed (e.g., z, intensity, classification).
-#' The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
-#' `"z_max"`, `"intensity_min"`, `"z_mean"`, `"classification_mode"`.\cr\cr
-#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
-#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
-#' s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
-#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr\cr
-#' The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
-#' Some metrics have an attribute + name + a parameter X, such as `pX` where `X` can be substituted by a number.
-#' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
-#' percentile of z. `z_aboveX` corresponds to the percentage of points above X (sometimes called canopy cover).\cr\cr
-#' It is possible to call a metric without the name of the attribute. In this case, z is the default.
-#'
 #' @param zwbin,iwbin numeric. Width of the bins for the histograms of Z and Intensity.
 #' @param metrics Character vector. "min", "max" and "count" are accepted as well
-#' as many others (see section 'Operators'). If `NULL` nothing is computed. If something is provided these
-#' metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples)
+#' as many others (see \link{metric_engine}). If `NULL` nothing is computed. If something is provided these
+#' metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples).
 #' @template param-filter
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")

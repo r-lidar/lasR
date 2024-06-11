@@ -7,6 +7,7 @@
 
 #include "Interval.h"
 #include "Shape.h"
+#include "PointLAS.h"
 
 #include <vector>
 #include <string>

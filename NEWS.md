@@ -4,6 +4,8 @@
 
 1. New stage `classify_with_csf()` to classify ground points.
 
+2. The metric engine introduced in v0.6.0 can now compute metrics on extrabytes attributes. e.g. `Amplitude_mean` 
+
 ### BREAKING CHANGES
 
 1. `classify_isolated_voxels()` renamed into `classify_with_ivf()` for consistency.

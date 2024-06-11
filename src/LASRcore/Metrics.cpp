@@ -50,6 +50,7 @@ bool MetricManager::parse(const std::vector<std::string>& names, bool support_st
     for (const auto& name : names)
     {
       regular_operators.push_back(parse(name));
+      this->names.push_back(name);
     }
   }
   catch(std::exception& e)
@@ -63,6 +64,9 @@ bool MetricManager::parse(const std::vector<std::string>& names, bool support_st
 
 MetricCalculator MetricManager::parse(const std::string& name)
 {
+  // name is in the format attribute_functionXX where attribute is an attribute of the points
+  // function is a function to apply and XX an optional parameter. We first parse the string
+
   float param = 0;
   std::string metric;
   std::string attribute;
@@ -99,15 +103,26 @@ MetricCalculator MetricManager::parse(const std::string& name)
     metric = metric.substr(0,5);
   }
 
-  auto accessor = attribute_functions.find(attribute);
-  if (accessor == attribute_functions.end()) throw std::invalid_argument("Invalid attribute name: " + attribute);
+  // The string is parsed. We can instantiate the accessors
 
-  auto metric_function = metric_functions.find(metric);
-  if (metric_function == metric_functions.end()) throw std::invalid_argument("Invalid metric name: " + metric);
+  auto it1 = metric_functions.find(metric);
+  if (it1 == metric_functions.end()) throw std::invalid_argument("Invalid metric name: " + metric);
 
-  names.push_back(name);
+  PointAttributeAccessor attribute_accessor;
+  auto it2 = attribute_functions.find(attribute);
+  if (it2 != attribute_functions.end())
+  {
+    attribute_accessor = it2->second;
+  }
+  else
+  {
+    // We can't find the attribute in the list of existing attributes. This might be an extrabyte (or a typo)
+    // we assume an extrabyte for now
+    printf("WARNING extrabyte for %s\n", attribute.c_str());
+    attribute_accessor = [attribute](const PointLAS& p) { return p.get_extrabyte(attribute); };
+  }
 
-  return MetricCalculator(metric_function->second, accessor->second, param);
+  return MetricCalculator(it1->second, attribute_accessor, param);
 }
 
 // streamable MetricManager
@@ -163,7 +178,7 @@ float MetricManager::sd(PointAttributeAccessor accessor, const PointCollection& 
   for (const auto& point : points) sum += accessor(point);
   double mean = sum/points.size();
 
-  sum = 0;
+  sum = 0.0;
   for (const auto& point : points)
   {
     double value = accessor(point);

@@ -13,6 +13,21 @@ test_that("rasterize streamed works",
   expect_equal(mean(u[[3]][], na.rm = T), 24.12985, tolerance = 1e-6)
 })
 
+test_that("rasterize works with extrabyte",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+  norm = normalize(TRUE)
+  met = rasterize(5, c("HAG_mean", "HAG_max", "plop_sum"))
+  u = exec(norm+met, on = f)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u), c("HAG_min", "HAG_max", "plop_sum"))
+  expect_equal(dim(u), c(58, 58, 3))
+  expect_equal(mean(u[[1]][], na.rm = T), 3.13473, tolerance = 1e-6)
+  expect_equal(mean(u[[2]][], na.rm = T), 7.94414, tolerance = 1e-6)
+  expect_true(all(is.nan(u[[3]][])))
+})
+
 test_that("rasterize non streamed works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")

@@ -52,45 +52,6 @@ bool PointXYZ::operator==(const PointXYZ& other) const
   return (x == other.x) && (y == other.y) && (z == other.z);
 }
 
-#include "laszip.hpp"
-#include "laspoint.hpp"
-
-PointLAS::PointLAS()
-{
-  memset((void*)this, 0, sizeof(PointLAS));
-}
-
-PointLAS::PointLAS(const LASpoint* const p)
-{
-  copy(p);
-}
-
-void PointLAS::copy(const LASpoint* const p)
-{
-  FID = 0;
-  x = p->get_x();
-  y = p->get_y();
-  z = p->get_z();
-  intensity = p->get_intensity();
-  return_number = (p->is_extended_point_type()) ? p->get_extended_return_number() : p->get_return_number();
-  number_of_returns = (p->is_extended_point_type()) ? p->get_extended_number_of_returns() : p->get_number_of_returns();
-  scan_direction_flag = p->get_scan_direction_flag();
-  edge_of_flight_line = p->get_edge_of_flight_line();
-  classification = (p->is_extended_point_type()) ? p->get_extended_classification() : p->get_classification();
-  synthetic_flag = p->get_synthetic_flag();
-  keypoint_flag = p->get_keypoint_flag();
-  withheld_flag = p->get_withheld_flag();
-  overlap_flag =  p->get_extended_overlap_flag();
-  scan_angle = (p->is_extended_point_type()) ? p->get_scan_angle() : p->get_scan_angle_rank();
-  user_data = p->get_user_data();
-  point_source_ID = p->get_point_source_ID();
-  gps_time = p->get_gps_time();
-  R = p->get_R();
-  G = p->get_R();
-  B = p->get_R();
-  NIR = p->get_NIR();
-}
-
 /* ====================
  * SHAPE
  * ====================*/

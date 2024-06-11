@@ -2,7 +2,7 @@
 #define VECTOR_H
 
 #include "GDALdataset.h"
-#include "Shape.h"
+#include "PointLAS.h"
 #include "Chunk.h"
 
 typedef std::pair<std::string, OGRFieldType> Field;

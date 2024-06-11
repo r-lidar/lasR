@@ -14,6 +14,16 @@ test_that("summary works with 1 file",
   expect_equal(u$epsg, 26917)
 })
 
+test_that("summary preserves metric order",
+{
+  f <- system.file("extdata", "Example.las", package="lasR")
+  p = summarise(metrics = c("z_max", "i_min", "r_mean", "n_median", "c_sd", "t_cv", "u_sum", "p_mode", "a_mean", "count", "z_p95", "R_sum", "B_mean", "z_above975"))
+  ans = exec(p, on = f, noread = T)
+  m = ans$metrics
+
+  expect_equal(names(m), c("z_max", "i_min", "r_mean", "n_median", "c_sd", "t_cv", "u_sum", "p_mode", "a_mean", "count", "z_p95", "R_sum", "B_mean", "z_above975"))
+})
+
 test_that("summary works with 4 files",
 {
   f = paste0(system.file(package="lasR"), "/extdata/bcts")
