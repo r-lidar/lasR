@@ -21,14 +21,14 @@ PointLAS::PointLAS(const LASpoint* const p)
 // Copy constructor
 PointLAS::PointLAS(const PointLAS& other) : PointXYZ(other)
 {
-  std::memcpy(this, &other, sizeof(PointLAS));
+  std::memcpy((void*)this, (void*)&other, sizeof(PointLAS));
   if (other.extrabytes) extrabytes = new std::unordered_map<std::string, double>(*other.extrabytes);
 }
 
 // Move constructor
 PointLAS::PointLAS(PointLAS&& other) noexcept
 {
-  memcpy(this, &other, sizeof(PointLAS));
+  std::memcpy((void*)this, (void*)&other, sizeof(PointLAS));
   other.extrabytes = nullptr;
 }
 
@@ -38,7 +38,7 @@ PointLAS& PointLAS::operator=(const PointLAS& other)
   if (this == &other) return *this;
 
   delete extrabytes;
-  memcpy(this, &other, sizeof(PointLAS));
+  std::memcpy((void*)this, (void*)&other, sizeof(PointLAS));
   if (other.extrabytes) extrabytes = new std::unordered_map<std::string, double>(*other.extrabytes);
 
   return *this;
@@ -50,7 +50,7 @@ PointLAS& PointLAS::operator=(PointLAS&& other) noexcept
   if (this == &other)  return *this;
 
   delete extrabytes;
-  memcpy(this, &other, sizeof(PointLAS));
+  std::memcpy((void*)this, (void*)&other, sizeof(PointLAS));
   extrabytes = other.extrabytes;
   other.extrabytes = nullptr;
 
