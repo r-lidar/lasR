@@ -188,13 +188,12 @@ void PointLAS::copy(const LASpoint* const p)
       extrabytes = new std::unordered_map<std::string, double>();
 
     (*extrabytes)[name] = value;
-    i++;
   }
 }
 
 double PointLAS::get_extrabyte(const std::string& name) const
 {
-  int val = NA_F32_RASTER;
+  double val = std::numeric_limits<double>::quiet_NaN();
   if (extrabytes)
   {
     auto it = extrabytes->find(name);
