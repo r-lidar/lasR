@@ -37,37 +37,6 @@ struct Pixel
   Pixel(int i, int j, int val) : i(i), j(j), val(val) {}
 };
 
-class LASpoint;
-
-struct PointLAS : public PointXYZ
-{
-  PointLAS();
-  PointLAS(const LASpoint* const p);
-  void copy(const LASpoint* const p);
-  unsigned int FID;
-  unsigned short intensity;
-  unsigned char return_number;
-  unsigned char number_of_returns;
-  bool scan_direction_flag;
-  bool edge_of_flight_line;
-  unsigned char classification;
-  bool synthetic_flag;
-  bool keypoint_flag;
-  bool withheld_flag;
-  bool overlap_flag;
-  float scan_angle;
-  char user_data;
-  unsigned short point_source_ID;
-  double gps_time;
-  unsigned short R;
-  unsigned short G;
-  unsigned short B;
-  unsigned short NIR;
-  std::unordered_map<std::string, double> extrabytes;
-
-  double get_extrabyte(const std::string& name) const;
-};
-
 struct PointXYZAttrs : PointXYZ
 {
   using PointXYZ::PointXYZ;

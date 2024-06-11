@@ -6,7 +6,7 @@
 #include <functional>
 #include <unordered_map>
 
-#include "Shape.h"
+#include "PointLAS.h"
 
 using PointCollection = std::vector<PointLAS>;
 using PointAttributeAccessor = std::function<double(const PointLAS&)>;
