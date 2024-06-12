@@ -46,6 +46,8 @@ bool LASRsamplingpoisson::process(LAS*& las)
   progress->set_prefix("Poisson disk sampling");
   progress->set_total(index.size());
 
+  int n = 0;
+
   for (int i : index)
   {
     las->seek(i);
@@ -91,6 +93,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
     if (valid)
     {
       grid[key].emplace_back(px, py, pz);
+      n++;
     }
     else
     {
@@ -103,6 +106,15 @@ bool LASRsamplingpoisson::process(LAS*& las)
   }
 
   las->update_header();
+
+  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
+  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
+  // actually remove the points. This will save some computation later.
+  double ratio = (double)n/(double)las->npoints;
+  if (ratio > 1/3)
+  {
+    if (!las->delete_withheld()) return false;
+  }
 
   return true;
 }
@@ -132,11 +144,11 @@ bool LASRsamplingvoxels::process(LAS*& las)
   double rxmax = las->header->max_x;
   double rymax = las->header->max_y;
 
-  rxmin = ROUNDANY(rxmin - 0.5*res, res);
-  rymin = ROUNDANY(rxmin - 0.5*res, res);
-  rzmin = ROUNDANY(rzmin - 0.5*res, res);
-  rxmax = ROUNDANY(rxmax + 0.5*res, res);
-  rymax = ROUNDANY(rxmax + 0.5*res, res);
+  rxmin = ROUNDANY(rxmin - 0.5 * res, res);
+  rymin = ROUNDANY(rymin - 0.5 * res, res);
+  rzmin = ROUNDANY(rzmin - 0.5 * res, res);
+  rxmax = ROUNDANY(rxmax + 0.5 * res, res);
+  rymax = ROUNDANY(rymax + 0.5 * res, res);
   //double rzmax = las->header->max_z;
 
   int width = (rxmax - rxmin)/res;
