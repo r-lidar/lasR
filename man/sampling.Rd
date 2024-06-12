@@ -4,13 +4,13 @@
 \alias{sampling_voxel}
 \alias{sampling_pixel}
 \alias{sampling_poisson}
-\title{Sample the point cloud keeping one random point per units}
+\title{Sample the point cloud}
 \usage{
 sampling_voxel(res = 2, filter = "")
 
 sampling_pixel(res = 2, filter = "")
 
-sampling_poisson(radius = 2, filter = "")
+sampling_poisson(distance = 2, filter = "")
 }
 \arguments{
 \item{res}{numeric. pixel/voxel resolution}
@@ -21,7 +21,7 @@ For a given stage when a filter is applied, only the points that meet the criter
 The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
 \link{filters}.}
 
-\item{radius}{numeric. radius for poisson sampling}
+\item{distance}{numeric. Minimum distance between points for poisson sampling.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.
