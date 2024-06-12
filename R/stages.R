@@ -871,12 +871,13 @@ set_crs = function(x)
   set_lasr_class(ans)
 }
 
-#' Sample the point cloud keeping one random point per units
+#' Sample the point cloud
 #'
-#' Sample the point cloud, keeping one random point per pixel or per voxel. This stage modifies
-#' the point cloud in the pipeline but does not produce any output.
+#' Sample the point cloud, keeping one random point per pixel or per voxel or perform a poisson sampling.
+#' This stages modify the point cloud in the pipeline but do not produce any output.
 #'
-#' @param res numeric. voxel resolution
+#' @param res numeric. pixel/voxel resolution
+#' @param distance numeric. Minimum distance between points for poisson sampling.
 #' @template param-filter
 #' @template return-pointcloud
 #' @examples
@@ -901,6 +902,15 @@ sampling_pixel = function(res = 2, filter = "")
   ans <- list(algoname = "sampling_pixel", res = res, filter = filter)
   set_lasr_class(ans)
 }
+
+#' @export
+#' @rdname sampling
+sampling_poisson = function(distance = 2, filter = "")
+{
+  ans <- list(algoname = "sampling_poisson", distance = distance, filter = filter)
+  set_lasr_class(ans)
+}
+
 
 #' Stop the pipeline if a conditionally
 #'

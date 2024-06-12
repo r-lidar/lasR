@@ -6,6 +6,8 @@
 
 2. The metric engine introduced in v0.6.0 can now compute metrics on extrabytes attributes. e.g. `Amplitude_mean` 
 
+3. New stage `sampling_poisson` to perform Poisson Disk Sampling
+
 ### BREAKING CHANGES
 
 1. `classify_isolated_voxels()` renamed into `classify_with_ivf()` for consistency.

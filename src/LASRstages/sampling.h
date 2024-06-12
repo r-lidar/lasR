@@ -3,6 +3,22 @@
 
 #include "Stage.h"
 
+class LASRsamplingpoisson : public Stage
+{
+public:
+  LASRsamplingpoisson(double xmin, double ymin, double xmax, double ymax, double distance);
+  bool process(LAS*& las) override;
+  double need_buffer() const override { return distance; }
+  std::string get_name() const override { return "poisson_sampling"; }
+
+  // multi-threading
+  bool is_parallelizable() const override { return true; };
+  LASRsamplingpoisson* clone() const override { return new LASRsamplingpoisson(*this); };
+
+private:
+  double distance;
+};
+
 class LASRsamplingvoxels : public Stage
 {
 public:

@@ -415,18 +415,25 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           return false; // # nocov
         }
       }
-      else if (name  == "sampling_voxel")
-      {
-        double res = stage.at("res");
-
-        auto v = std::make_unique<LASRsamplingvoxels>(xmin, ymin, xmax, ymax, res);
-        pipeline.push_back(std::move(v));
-      }
       else if (name  == "sampling_pixel")
       {
         double res = stage.at("res");
 
         auto v = std::make_unique<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name  == "sampling_poisson")
+      {
+        double distance = stage.at("distance");
+
+        auto v = std::make_unique<LASRsamplingpoisson>(xmin, ymin, xmax, ymax, distance);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name  == "sampling_voxel")
+      {
+        double res = stage.at("res");
+
+        auto v = std::make_unique<LASRsamplingvoxels>(xmin, ymin, xmax, ymax, res);
         pipeline.push_back(std::move(v));
       }
       else if (name  == "set_crs")
