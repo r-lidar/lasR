@@ -23,9 +23,10 @@ bool LASRsamplingpoisson::process(LAS*& las)
 
   std::unordered_map<int, std::vector<PointXYZ>> grid;
 
+  std::mt19937 rng(0);
   std::vector<int> index(las->npoints);
   std::iota(index.begin(), index.end(), 0);
-  std::shuffle(index.begin(), index.end(), std::mt19937{std::random_device{}()});
+  std::shuffle(index.begin(), index.end(), rng);
 
   double rxmin = las->header->min_x;
   double rymin = las->header->min_y;
@@ -52,6 +53,11 @@ bool LASRsamplingpoisson::process(LAS*& las)
   {
     las->seek(i);
     if (las->point.get_withheld_flag() != 0) continue;
+    if (lasfilter.filter(&las->point))
+    {
+      las->remove_point();
+      continue;
+    }
 
     double px = las->point.get_x();
     double py = las->point.get_y();
@@ -134,9 +140,10 @@ bool LASRsamplingvoxels::process(LAS*& las)
 {
   std::unordered_set<int> registry;
 
+  std::mt19937 rng(0);
   std::vector<int> index(las->npoints);
   std::iota(index.begin(), index.end(), 0);
-  std::shuffle(index.begin(), index.end(), std::mt19937{std::random_device{}()});
+  std::shuffle(index.begin(), index.end(), rng);
 
   double rxmin = las->header->min_x;
   double rymin = las->header->min_y;
@@ -158,10 +165,17 @@ bool LASRsamplingvoxels::process(LAS*& las)
   progress->set_prefix("voxel sampling");
   progress->set_total(index.size());
 
+  int n = 0;
+
   for (int i : index)
   {
     las->seek(i);
     if (las->point.get_withheld_flag() != 0) continue;
+    if (lasfilter.filter(&las->point))
+    {
+      las->remove_point();
+      continue;
+    }
 
     // Voxel of this point
     int nx = std::floor((las->point.get_x() - rxmin) / res);
@@ -171,7 +185,10 @@ bool LASRsamplingvoxels::process(LAS*& las)
 
     // Do we retain this point ? We look into the registry to know if the voxel exist. If not, we retain the point.
     if (registry.find(key) == registry.end())
+    {
       registry.insert(key);
+      n++;
+    }
     else
       las->remove_point();
 
@@ -181,6 +198,15 @@ bool LASRsamplingvoxels::process(LAS*& las)
   }
 
   las->update_header();
+
+  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
+  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
+  // actually remove the points. This will save some computation later.
+  double ratio = (double)n/(double)las->npoints;
+  if (ratio > 1/3)
+  {
+    if (!las->delete_withheld()) return false;
+  }
 
   return true;
 }
@@ -200,9 +226,10 @@ bool LASRsamplingpixels::process(LAS*& las)
 {
   std::unordered_set<int> registry;
 
+  std::mt19937 rng(0);
   std::vector<int> index(las->npoints);
   std::iota(index.begin(), index.end(), 0);
-  std::shuffle(index.begin(), index.end(), std::mt19937{std::random_device{}()});
+  std::shuffle(index.begin(), index.end(), rng);
 
   double rxmin = las->header->min_x;
   double rymin = las->header->min_y;
@@ -214,17 +241,27 @@ bool LASRsamplingpixels::process(LAS*& las)
   progress->set_prefix("voxel sampling");
   progress->set_total(index.size());
 
+  int n = 0;
+
   for (int i : index)
   {
     las->seek(i);
     if (las->point.get_withheld_flag() != 0) continue;
+    if (lasfilter.filter(&las->point))
+    {
+      las->remove_point();
+      continue;
+    }
 
     // Pixel of this point
     int key = grid.cell_from_xy(las->point.get_x(), las->point.get_y());
 
     // Do we retain this point ? We look into the registry to know if the pixel exist. If not, we retain the point.
     if (registry.find(key) == registry.end())
+    {
       registry.insert(key);
+      n++;
+    }
     else
       las->remove_point();
 
@@ -234,6 +271,15 @@ bool LASRsamplingpixels::process(LAS*& las)
   }
 
   las->update_header();
+
+  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
+  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
+  // actually remove the points. This will save some computation later.
+  double ratio = (double)n/(double)las->npoints;
+  if (ratio > 1/3)
+  {
+    if (!las->delete_withheld()) return false;
+  }
 
   return true;
 }
