@@ -98,6 +98,7 @@ private:
     {"B", [](const PointLAS& p) { return p.B; }},
     {"N", [](const PointLAS& p) { return p.NIR; }},
 
+    // # nocov start
     {"intensity", [](const PointLAS& p) { return p.intensity; }},
     {"returnnumber", [](const PointLAS& p) { return p.return_number; }},
     {"numberofreturn", [](const PointLAS& p) { return p.number_of_returns; }},
@@ -117,6 +118,7 @@ private:
     {"green", [](const PointLAS& p) { return p.G; }},
     {"blue", [](const PointLAS& p) { return p.B; }},
     {"nir", [](const PointLAS& p) { return p.NIR; }}
+    // # nocov end
   };
 
   // Map of string to metric functions

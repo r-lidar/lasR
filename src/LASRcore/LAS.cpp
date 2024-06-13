@@ -157,8 +157,8 @@ bool LAS::seek(int pos)
 {
   if (pos < 0 || pos >= npoints)
   {
-    last_error = "seek out of bounds";
-    return false;
+    last_error = "seek out of bounds"; // # nocov
+    return false; // # nocov
   }
 
   current_point = pos;
