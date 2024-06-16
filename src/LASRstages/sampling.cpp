@@ -40,8 +40,8 @@ bool LASRsamplingpoisson::process(LAS*& las)
   rxmax = ROUNDANY(rxmax + 0.5 * res, res);
   rymax = ROUNDANY(rymax + 0.5 * res, res);
 
-  int width = (rxmax - rxmin) / res;
-  int height = (rymax - rymin) / res;
+  int length = (rxmax - rxmin) / res;
+  int width = (rymax - rymin) / res;
 
   progress->reset();
   progress->set_prefix("Poisson disk sampling");
@@ -49,6 +49,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
 
   int n = 0;
 
+  int k = 0;
   for (int i : index)
   {
     las->seek(i);
@@ -67,17 +68,37 @@ bool LASRsamplingpoisson::process(LAS*& las)
     int nx = std::floor((px - rxmin) / res);
     int ny = std::floor((py - rymin) / res);
     int nz = std::floor((pz - rzmin) / res);
-    int key = nx + ny*width + nz*width*height;
+    int key = nx + ny*length + nz*length*width;
 
     // Do we retain this point? We look into the 27 neighbors to figure out if it is not to close to already inserted points
     bool valid = true;
+
+    // Check the central voxel, this should be enough in most cases and allows to skip the 26 neighbors
+    int key2 = (nx+0) + (ny+0)*length + (nz+0)*length*width;
+    if (grid.find(key2) != grid.end())
+    {
+      for (const auto& neighbor : grid[key2])
+      {
+        double dist_square = (px - neighbor.x) * (px - neighbor.x) +  (py - neighbor.y) * (py - neighbor.y) + (pz - neighbor.z) * (pz - neighbor.z);
+        if (dist_square < r_square)
+        {
+          valid = false;
+          break;
+        }
+        k++;
+      }
+    }
+
     for (int dx = -1; dx <= 1 && valid; ++dx)
     {
       for (int dy = -1; dy <= 1 && valid; ++dy)
       {
         for (int dz = -1; dz <= 1; ++dz)
         {
-          int key2 = (nx+dx) + (ny+dy)*width + (nz+dz)*width*height;
+          if (dx == 0 && dy == 0 && dz == 0)
+            continue;
+
+          key2 = (nx+dx) + (ny+dy)*length + (nz+dz)*length*width;
 
           // If there are points the voxel
           if (grid.find(key2) != grid.end())
@@ -111,6 +132,8 @@ bool LASRsamplingpoisson::process(LAS*& las)
     if (progress->interrupted()) break;
   }
 
+  progress->done();
+
   las->update_header();
 
   // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
@@ -139,6 +162,8 @@ LASRsamplingvoxels::LASRsamplingvoxels(double xmin, double ymin, double xmax, do
 bool LASRsamplingvoxels::process(LAS*& las)
 {
   std::unordered_set<int> registry;
+  std::vector<bool> bitregistry;
+  bool use_bitregistry = false;
 
   std::mt19937 rng(0);
   std::vector<int> index(las->npoints);
@@ -150,16 +175,26 @@ bool LASRsamplingvoxels::process(LAS*& las)
   double rzmin = las->header->min_z;
   double rxmax = las->header->max_x;
   double rymax = las->header->max_y;
+  double rzmax = las->header->max_z;
 
   rxmin = ROUNDANY(rxmin - 0.5 * res, res);
   rymin = ROUNDANY(rymin - 0.5 * res, res);
   rzmin = ROUNDANY(rzmin - 0.5 * res, res);
   rxmax = ROUNDANY(rxmax + 0.5 * res, res);
   rymax = ROUNDANY(rymax + 0.5 * res, res);
-  //double rzmax = las->header->max_z;
+  rzmax = ROUNDANY(rzmax + 0.5 * res, res);
 
-  int width = (rxmax - rxmin)/res;
-  int height = (rymax - rymin)/res;
+  int length = (rxmax - rxmin)/res;
+  int width = (rymax - rymin)/res;
+  int height = (rzmax - rzmin)/res;
+
+  size_t nvoxels = (size_t)length*(size_t)width*(size_t)height;
+  if (nvoxels < 1024e9) // 128 MB
+  {
+    print("Use bit registry\n");
+    bitregistry.resize(nvoxels);
+    use_bitregistry = true;
+  }
 
   progress->reset();
   progress->set_prefix("voxel sampling");
@@ -181,21 +216,35 @@ bool LASRsamplingvoxels::process(LAS*& las)
     int nx = std::floor((las->point.get_x() - rxmin) / res);
     int ny = std::floor((las->point.get_y() - rymin) / res);
     int nz = std::floor((las->point.get_z() - rzmin) / res);
-    int key = nx + ny*width + nz*width*height;
+    int key = nx + ny*length + nz*length*width;
 
     // Do we retain this point ? We look into the registry to know if the voxel exist. If not, we retain the point.
-    if (registry.find(key) == registry.end())
+    if (use_bitregistry)
     {
-      registry.insert(key);
-      n++;
+      if (!bitregistry[key])
+      {
+        bitregistry[key] = true;
+        n++;
+      }
+      else
+      {
+        las->remove_point();
+      }
     }
     else
-      las->remove_point();
+    {
+      if (registry.insert(key).second)
+        n++;
+      else
+        las->remove_point();
+    }
 
     (*progress)++;
     progress->show();
     if (progress->interrupted()) break;
   }
+
+  progress->done();
 
   las->update_header();
 
@@ -225,6 +274,8 @@ LASRsamplingpixels::LASRsamplingpixels(double xmin, double ymin, double xmax, do
 bool LASRsamplingpixels::process(LAS*& las)
 {
   std::unordered_set<int> registry;
+  std::vector<bool> bitregistry;
+  bool use_bitregistry = false;
 
   std::mt19937 rng(0);
   std::vector<int> index(las->npoints);
@@ -237,8 +288,15 @@ bool LASRsamplingpixels::process(LAS*& las)
   double rymax = las->header->max_y;
   Grid grid(rxmin, rymin, rxmax, rymax, res);
 
+  size_t npixels = grid.get_ncells();
+  if (npixels < 1024e9) // 128 MB
+  {
+    bitregistry.resize(npixels);
+    use_bitregistry = true;
+  }
+
   progress->reset();
-  progress->set_prefix("voxel sampling");
+  progress->set_prefix("pixel sampling");
   progress->set_total(index.size());
 
   int n = 0;
@@ -257,18 +315,32 @@ bool LASRsamplingpixels::process(LAS*& las)
     int key = grid.cell_from_xy(las->point.get_x(), las->point.get_y());
 
     // Do we retain this point ? We look into the registry to know if the pixel exist. If not, we retain the point.
-    if (registry.find(key) == registry.end())
+    if (use_bitregistry)
     {
-      registry.insert(key);
-      n++;
+      if (!bitregistry[key])
+      {
+        bitregistry[key] = true;
+        n++;
+      }
+      else
+      {
+        las->remove_point();
+      }
     }
     else
-      las->remove_point();
+    {
+      if (registry.insert(key).second)
+        n++;
+      else
+        las->remove_point();
+    }
 
     (*progress)++;
     progress->show();
     if (progress->interrupted()) break;
   }
+
+  progress->done();
 
   las->update_header();
 

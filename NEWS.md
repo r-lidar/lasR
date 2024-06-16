@@ -8,6 +8,8 @@
 
 3. New stage `sampling_poisson` to perform Poisson Disk Sampling
 
+4. `sampling_pixel` and `sampling_voxel` are faster.
+
 ### FIXES
 
 1. `sampling_*` stages respect the `filter` argument
