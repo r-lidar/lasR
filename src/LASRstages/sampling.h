@@ -3,7 +3,30 @@
 
 #include "Stage.h"
 
-class LASRsamplingpoisson : public Stage
+#include <algorithm>
+#include <random>
+
+class LASRsampling : public Stage
+{
+public:
+  void shuffle(std::vector<int>& x, int shuffle_size)
+  {
+    std::mt19937 rng(0);
+
+    if (shuffle_size > 0)
+    {
+      int s = x.size();
+      for (int i = 0; i < s; i += shuffle_size/2)
+      {
+        int start = std::max(0, i - shuffle_size / 2);
+        int end = std::min(s, i + shuffle_size / 2 + 1);
+        std::shuffle(x.begin() + start, x.begin() + end, rng);
+      }
+    }
+  };
+};
+
+class LASRsamplingpoisson : public LASRsampling
 {
 public:
   LASRsamplingpoisson(double xmin, double ymin, double xmax, double ymax, double distance, int shuffle_size);
@@ -20,7 +43,7 @@ private:
   int shuffle_size;
 };
 
-class LASRsamplingvoxels : public Stage
+class LASRsamplingvoxels : public LASRsampling
 {
 public:
   LASRsamplingvoxels(double xmin, double ymin, double xmax, double ymax, double res, int shuffle_size);
@@ -37,7 +60,7 @@ private:
   int shuffle_size;
 };
 
-class LASRsamplingpixels : public Stage
+class LASRsamplingpixels : public LASRsampling
 {
 public:
   LASRsamplingpixels(double xmin, double ymin, double xmax, double ymax, double res, int shuffle_size);

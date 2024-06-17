@@ -3,8 +3,6 @@
 
 #include <unordered_map>
 #include <unordered_set>
-#include <algorithm>
-#include <random>
 
 /*
  * Comment on computing strategies. There are two computing strategies:
@@ -42,22 +40,9 @@ bool LASRsamplingpoisson::process(LAS*& las)
   std::vector<std::vector<PointXYZ>> vregistry;
   bool use_vregistry = false;
 
-  std::mt19937 rng(0);
   std::vector<int> index(las->npoints);
   std::iota(index.begin(), index.end(), 0);
-
-  // introduce some entropy in the loop order
-  print("ss = %d\n", shuffle_size);
-  if (shuffle_size > 0)
-  {
-    int s = index.size();
-    for (int i = 0; i < s; i += shuffle_size/2)
-    {
-      int start = std::max(0, i - shuffle_size / 2);
-      int end = std::min(s, i + shuffle_size / 2 + 1);
-      std::shuffle(index.begin() + start, index.begin() + end, rng);
-    }
-  }
+  shuffle(index, shuffle_size);
 
   double rxmin = las->header->min_x;
   double rymin = las->header->min_y;
@@ -243,21 +228,9 @@ bool LASRsamplingvoxels::process(LAS*& las)
   std::vector<bool> bitregistry;
   bool use_bitregistry = false;
 
-  std::mt19937 rng(0);
   std::vector<int> index(las->npoints);
   std::iota(index.begin(), index.end(), 0);
-
-  // introduce some entropy in the loop order
-  if (shuffle_size > 0)
-  {
-    int s = index.size();
-    for (int i = 0; i < s; i += shuffle_size/2)
-    {
-      int start = std::max(0, i - shuffle_size / 2);
-      int end = std::min(s, i + shuffle_size / 2 + 1);
-      std::shuffle(index.begin() + start, index.begin() + end, rng);
-    }
-  }
+  shuffle(index, shuffle_size);
 
   double rxmin = las->header->min_x;
   double rymin = las->header->min_y;
@@ -366,21 +339,9 @@ bool LASRsamplingpixels::process(LAS*& las)
   std::vector<bool> bitregistry;
   bool use_bitregistry = false;
 
-  std::mt19937 rng(0);
   std::vector<int> index(las->npoints);
   std::iota(index.begin(), index.end(), 0);
-
-  // introduce some entropy in the loop order
-  if (shuffle_size > 0)
-  {
-    int s = index.size();
-    for (int i = 0; i < s; i += shuffle_size/2)
-    {
-      int start = std::max(0, i - shuffle_size / 2);
-      int end = std::min(s, i + shuffle_size / 2 + 1);
-      std::shuffle(index.begin() + start, index.begin() + end, rng);
-    }
-  }
+  shuffle(index, shuffle_size);
 
   double rxmin = las->header->min_x;
   double rymin = las->header->min_y;
