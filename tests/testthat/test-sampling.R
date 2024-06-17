@@ -60,8 +60,8 @@ test_that("poisson sampling works",
   pipeline = vox + write + summarise()
   ans = exec(pipeline, on = f)
 
-  expect_equal(ans$summary$npoints, 3732L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 2791, `2` = 713, `3` = 199, `4` = 26, `5` = 2, `6` = 1))
+  expect_equal(ans$summary$npoints, 4136L)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 3153, `2` = 758, `3` = 193, `4` = 30, `5` = 2))
 })
 
 test_that("poisson sampling respect filter",
@@ -73,7 +73,7 @@ test_that("poisson sampling respect filter",
   pipeline = vox + write + summarise()
   ans = exec(pipeline, on = f)
 
-  expect_equal(ans$summary$npoints, 3606L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 3606))
+  expect_equal(ans$summary$npoints, 3928L)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 3928L))
 })
 

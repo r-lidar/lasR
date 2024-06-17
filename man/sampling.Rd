@@ -6,11 +6,11 @@
 \alias{sampling_poisson}
 \title{Sample the point cloud}
 \usage{
-sampling_voxel(res = 2, filter = "")
+sampling_voxel(res = 2, filter = "", ...)
 
-sampling_pixel(res = 2, filter = "")
+sampling_pixel(res = 2, filter = "", ...)
 
-sampling_poisson(distance = 2, filter = "")
+sampling_poisson(distance = 2, filter = "", ...)
 }
 \arguments{
 \item{res}{numeric. pixel/voxel resolution}
@@ -20,6 +20,8 @@ interest. The available filters are those from LASlib and can be found by runnin
 For a given stage when a filter is applied, only the points that meet the criteria are processed.
 The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
 \link{filters}.}
+
+\item{...}{unused}
 
 \item{distance}{numeric. Minimum distance between points for poisson sampling.}
 }

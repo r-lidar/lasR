@@ -878,6 +878,7 @@ set_crs = function(x)
 #'
 #' @param res numeric. pixel/voxel resolution
 #' @param distance numeric. Minimum distance between points for poisson sampling.
+#' @param ... unused
 #' @template param-filter
 #' @template return-pointcloud
 #' @examples
@@ -889,25 +890,37 @@ set_crs = function(x)
 #' exec(pipeline, on = f)
 #' @export
 #' @rdname sampling
-sampling_voxel = function(res = 2, filter = "")
+sampling_voxel = function(res = 2, filter = "", ...)
 {
-  ans <- list(algoname = "sampling_voxel", res = res, filter = filter)
+  shuffle_size = .Machine$integer.max
+  p = list(...)
+  if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
+
+  ans <- list(algoname = "sampling_voxel", res = res, filter = filter, shuffle_size = shuffle_size)
   set_lasr_class(ans)
 }
 
 #' @export
 #' @rdname sampling
-sampling_pixel = function(res = 2, filter = "")
+sampling_pixel = function(res = 2, filter = "", ...)
 {
-  ans <- list(algoname = "sampling_pixel", res = res, filter = filter)
+  shuffle_size = .Machine$integer.max
+  p = list(...)
+  if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
+
+  ans <- list(algoname = "sampling_pixel", res = res, filter = filter, shuffle_size = shuffle_size)
   set_lasr_class(ans)
 }
 
 #' @export
 #' @rdname sampling
-sampling_poisson = function(distance = 2, filter = "")
+sampling_poisson = function(distance = 2, filter = "", ...)
 {
-  ans <- list(algoname = "sampling_poisson", distance = distance, filter = filter)
+  shuffle_size = 1000
+  p = list(...)
+  if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
+
+  ans <- list(algoname = "sampling_poisson", distance = distance, filter = filter, shuffle_size = shuffle_size)
   set_lasr_class(ans)
 }
 

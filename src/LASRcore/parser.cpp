@@ -418,22 +418,25 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       else if (name  == "sampling_pixel")
       {
         double res = stage.at("res");
+        int shuffle_size = stage.value("shuffle_size", 10000);
 
-        auto v = std::make_unique<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res);
+        auto v = std::make_unique<LASRsamplingpixels>(xmin, ymin, xmax, ymax, res, shuffle_size);
         pipeline.push_back(std::move(v));
       }
       else if (name  == "sampling_poisson")
       {
         double distance = stage.at("distance");
+        int shuffle_size = stage.value("shuffle_size", 1000);
 
-        auto v = std::make_unique<LASRsamplingpoisson>(xmin, ymin, xmax, ymax, distance);
+        auto v = std::make_unique<LASRsamplingpoisson>(xmin, ymin, xmax, ymax, distance, shuffle_size);
         pipeline.push_back(std::move(v));
       }
       else if (name  == "sampling_voxel")
       {
         double res = stage.at("res");
+        int shuffle_size = stage.value("shuffle_size", 10000);
 
-        auto v = std::make_unique<LASRsamplingvoxels>(xmin, ymin, xmax, ymax, res);
+        auto v = std::make_unique<LASRsamplingvoxels>(xmin, ymin, xmax, ymax, res, shuffle_size);
         pipeline.push_back(std::move(v));
       }
       else if (name  == "set_crs")
