@@ -52,7 +52,10 @@
     <loc>/reference/chm.html</loc>
   </url>
   <url>
-    <loc>/reference/classify_isolated_points.html</loc>
+    <loc>/reference/classify_with_csf.html</loc>
+  </url>
+  <url>
+    <loc>/reference/classify_with_ivf.html</loc>
   </url>
   <url>
     <loc>/reference/delete_points.html</loc>
@@ -83,6 +86,9 @@
   </url>
   <url>
     <loc>/reference/local_maximum.html</loc>
+  </url>
+  <url>
+    <loc>/reference/metric_engine.html</loc>
   </url>
   <url>
     <loc>/reference/multithreading.html</loc>

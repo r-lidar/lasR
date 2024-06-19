@@ -62,6 +62,26 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.7.0" id="lasr-070">lasR 0.7.0<a class="anchor" aria-label="anchor" href="#lasr-070"></a></h2>
+<div class="section level4">
+<h4 id="new-features-0-7-0">NEW FEATURES<a class="anchor" aria-label="anchor" href="#new-features-0-7-0"></a></h4>
+<ol style="list-style-type: decimal"><li><p>New stage <code><a href="../reference/classify_with_csf.html">classify_with_csf()</a></code> to classify ground points.</p></li>
+<li><p>The metric engine introduced in v0.6.0 can now compute metrics on extrabytes attributes. e.g. <code>Amplitude_mean</code></p></li>
+<li><p>New stage <code>sampling_poisson</code> to perform Poisson Disk Sampling</p></li>
+<li><p><code>sampling_pixel</code> and <code>sampling_voxel</code> are faster.</p></li>
+</ol></div>
+<div class="section level4">
+<h4 id="fixes-0-7-0">FIXES<a class="anchor" aria-label="anchor" href="#fixes-0-7-0"></a></h4>
+<ol style="list-style-type: decimal"><li>
+<code>sampling_*</code> stages respect the <code>filter</code> argument</li>
+</ol></div>
+<div class="section level4">
+<h4 id="breaking-changes-0-7-0">BREAKING CHANGES<a class="anchor" aria-label="anchor" href="#breaking-changes-0-7-0"></a></h4>
+<ol style="list-style-type: decimal"><li>
+<code>classify_isolated_voxels()</code> renamed into <code><a href="../reference/classify_with_ivf.html">classify_with_ivf()</a></code> for consistency.</li>
+</ol></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.2" id="lasr-062">lasR 0.6.2<a class="anchor" aria-label="anchor" href="#lasr-062"></a></h2>
 <ul><li>Fix: writing copc file from a copc file crashed.</li>
 <li>Fix: <a href="https://github.com/r-lidar/lasR/issues/62" class="external-link">#62</a> attributes of the vector files were not recorded when the output file template contains a wildcard <code>*</code>

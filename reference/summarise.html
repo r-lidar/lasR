@@ -88,8 +88,8 @@ This stage does not modify the point cloud. It produces a summary as a <code>lis
 
 <dt>metrics</dt>
 <dd><p>Character vector. "min", "max" and "count" are accepted as well
-as many others (see section 'Operators'). If <code>NULL</code> nothing is computed. If something is provided these
-metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples)</p></dd>
+as many others (see <a href="metric_engine.html">metric_engine</a>). If <code>NULL</code> nothing is computed. If something is provided these
+metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples).</p></dd>
 
 
 <dt>filter</dt>
@@ -100,24 +100,6 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 <a href="filters.html">filters</a>.</p></dd>
 
 </dl></div>
-    <div class="section level2">
-    <h2 id="operators">Operators<a class="anchor" aria-label="anchor" href="#operators"></a></h2>
-    
-
-<p>Each string is composed of two parts separated by an underscore. The first part is the attribute
-on which the metric must be computed (e.g., z, intensity, classification).
-The second part is the name of the metric (e.g., mean, sd, cv). A string thus typically looks like
-<code>"z_max"</code>, <code>"intensity_min"</code>, <code>"z_mean"</code>, <code>"classification_mode"</code>.<br><br>
-The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
-a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
-s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
-e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.<br><br>
-The available metric names are: count, max, min, mean, median, sum, sd, cv, pX (percentile), aboveX, and mode.
-Some metrics have an attribute + name + a parameter X, such as <code>pX</code> where <code>X</code> can be substituted by a number.
-Here, <code>z_pX</code> represents the Xth percentile; for instance, <code>z_p95</code> signifies the 95th
-percentile of z. <code>z_aboveX</code> corresponds to the percentage of points above X (sometimes called canopy cover).<br><br>
-It is possible to call a metric without the name of the attribute. In this case, z is the default.</p>
-    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
