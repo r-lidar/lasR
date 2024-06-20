@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,10 +62,6 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.7.1" id="lasr-071">lasR 0.7.1<a class="anchor" aria-label="anchor" href="#lasr-071"></a></h2>
-<ul><li>Fix <a href="https://github.com/r-lidar/lasR/issues/64" class="external-link">#64</a> Metrics on RGB were actually computed on RRR</li>
-</ul></div>
-    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.7.0" id="lasr-070">lasR 0.7.0<a class="anchor" aria-label="anchor" href="#lasr-070"></a></h2>
 <div class="section level4">
 <h4 id="new-features-0-7-0">NEW FEATURES<a class="anchor" aria-label="anchor" href="#new-features-0-7-0"></a></h4>
@@ -76,8 +72,9 @@
 </ol></div>
 <div class="section level4">
 <h4 id="fixes-0-7-0">FIXES<a class="anchor" aria-label="anchor" href="#fixes-0-7-0"></a></h4>
-<ol style="list-style-type: decimal"><li>
-<code>sampling_*</code> stages respect the <code>filter</code> argument</li>
+<ol style="list-style-type: decimal"><li><p><code>sampling_*</code> stages respect the <code>filter</code> argument</p></li>
+<li><p>Fix <a href="https://github.com/r-lidar/lasR/issues/63" class="external-link">#63</a> crash when some chunk are skipped either because they have 0 points of because of the <code>stop_if</code> stage.</p></li>
+<li><p>Fix <a href="https://github.com/r-lidar/lasR/issues/64" class="external-link">#64</a> metrics on RGB were actually computed on RRR</p></li>
 </ol></div>
 <div class="section level4">
 <h4 id="breaking-changes-0-7-0">BREAKING CHANGES<a class="anchor" aria-label="anchor" href="#breaking-changes-0-7-0"></a></h4>
