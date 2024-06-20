@@ -3,21 +3,36 @@
 
 #include "Stage.h"
 
-class LASRbreakoutsidebbox : public Stage
+class LASRbreak : public Stage
 {
 public:
-  LASRbreakoutsidebbox(double xmin, double ymin, double xmax, double ymax);
+  LASRbreak() { this->state = false; };
   std::string get_name() const override { return "stop_if"; };
-  bool set_chunk(const Chunk& chunk) override;
   bool break_pipeline() override { return state; };
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
   void clear(bool) override { state = false; };
 
-  // multi-threading
+protected:
+  bool state;
+};
+
+class LASRbreakoutsidebbox : public LASRbreak
+{
+public:
+  LASRbreakoutsidebbox(double xmin, double ymin, double xmax, double ymax);
+  bool set_chunk(const Chunk& chunk) override;
   LASRbreakoutsidebbox* clone() const override { return new LASRbreakoutsidebbox(*this); };
+};
+
+class LASRbreakbeforechunk : public LASRbreak
+{
+public:
+  LASRbreakbeforechunk(int index) { this->index = index; };
+  bool set_chunk(const Chunk& chunk) override;
+  LASRbreakbeforechunk* clone() const override { return new LASRbreakbeforechunk(*this); };
 
 private:
-  bool state;
+  int index;
 };
 #endif

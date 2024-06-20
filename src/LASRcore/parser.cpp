@@ -469,6 +469,13 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           auto v = std::make_unique<LASRbreakoutsidebbox>(minx, miny, maxx, maxy);
           pipeline.push_back(std::move(v));
         }
+        else if (condition == "chunk_id_below")
+        {
+          int index = stage.at("index");
+
+          auto v = std::make_unique<LASRbreakbeforechunk>(index);
+          pipeline.push_back(std::move(v));
+        }
         else
         {
           last_error = "Invalid condition in break_if";

@@ -965,6 +965,13 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
   set_lasr_class(ans)
 }
 
+stop_if_chunk_id_below = function(index)
+{
+  index <- as.integer(index)
+  ans <- list(algoname = "stop_if", condition = "chunk_id_below", index = index)
+  set_lasr_class(ans)
+}
+
 #' Summary
 #'
 #' Summarize the dataset by counting the number of points, first returns and other metrics for the **entire point cloud**.
