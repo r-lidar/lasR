@@ -84,8 +84,8 @@ void PointLAS::copy(const LASpoint* const p)
   point_source_ID = p->get_point_source_ID();
   gps_time = p->get_gps_time();
   R = p->get_R();
-  G = p->get_R();
-  B = p->get_R();
+  G = p->get_G();
+  B = p->get_B();
   NIR = p->get_NIR();
 
   for (int i = 0 ; i < p->attributer->number_attributes ; i++)
