@@ -1,7 +1,3 @@
-# lasR 0.7.1
-
-- Fix #64 Metrics on RGB were actually computed on RRR
-
 # lasR 0.7.0
 
 ### NEW FEATURES
@@ -17,6 +13,11 @@
 ### FIXES
 
 1. `sampling_*` stages respect the `filter` argument
+
+2. Fix #63 crash when some chunk are skipped either because they have 0 points of because of the `stop_if` stage.
+
+3. Fix #64 metrics on RGB were actually computed on RRR
+
 
 ### BREAKING CHANGES
 
