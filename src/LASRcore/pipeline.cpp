@@ -199,7 +199,11 @@ bool Pipeline::run_loaded()
     if (verbose) print("Stage: %s\n", stage->get_name().c_str());
 
     // Some stages are capable of breaking the pipeline if a conditional statement is met
-    if (stage->break_pipeline()) break;
+    if (stage->break_pipeline())
+    {
+      order.pop_back();
+      break;
+    }
 
     // Some stages need no input, they are connected to another stage
     // (such as pit_fill which is connected to a raster stage and does not need any point)
@@ -227,7 +231,11 @@ bool Pipeline::run_loaded()
     uint64_t npoints = 0;
     npoints += header->number_of_point_records;
     npoints += header->extended_number_of_point_records;
-    if (npoints == 0) return true;
+    if (npoints == 0)
+    {
+      order.pop_back();
+      return true;
+    }
 
     // Some stages need the header to get initialized (write_las is the only one)
     stage->set_header(header);
