@@ -1,3 +1,7 @@
+# lasR 0.7.1
+
+- Fix #64 Metrics on RGB were actually computed on RRR
+
 # lasR 0.7.0
 
 ### NEW FEATURES
