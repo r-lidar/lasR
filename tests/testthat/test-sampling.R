@@ -1,5 +1,7 @@
 test_that("voxel sampling works",
 {
+  skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
+
   f = system.file("extdata", "Topography.las", package="lasR")
   o = tempfile(fileext = ".las")
   vox = sampling_voxel(5)
@@ -13,6 +15,8 @@ test_that("voxel sampling works",
 
 test_that("voxel sampling respect filter",
 {
+  skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
+
   f = system.file("extdata", "Topography.las", package="lasR")
   o = tempfile(fileext = ".las")
   vox = sampling_voxel(5, filter = keep_first())
@@ -27,6 +31,8 @@ test_that("voxel sampling respect filter",
 
 test_that("pixel sampling works",
  {
+   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
+
    f = system.file("extdata", "Topography.las", package="lasR")
    o = tempfile(fileext = ".las")
    vox = sampling_pixel(5)
@@ -40,6 +46,8 @@ test_that("pixel sampling works",
 
 test_that("pixel sampling respect filter",
 {
+  skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
+
   f = system.file("extdata", "Topography.las", package="lasR")
   o = tempfile(fileext = ".las")
   vox = sampling_pixel(5, filter = keep_first())
@@ -53,6 +61,8 @@ test_that("pixel sampling respect filter",
 
 test_that("poisson sampling works",
 {
+  skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
+
   f = system.file("extdata", "Topography.las", package="lasR")
   o = tempfile(fileext = ".las")
   vox = sampling_poisson(5)
@@ -66,6 +76,8 @@ test_that("poisson sampling works",
 
 test_that("poisson sampling respect filter",
 {
+  skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
+
   f = system.file("extdata", "Topography.las", package="lasR")
   o = tempfile(fileext = ".las")
   vox = sampling_poisson(5, filter = keep_first())
