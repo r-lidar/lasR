@@ -26,12 +26,14 @@ bool LASRivf::process(LAS*& las)
   //int depth = std::floor((zmax - zmin) / res);
 
   // Stores for a given voxel the number of point in its 27 voxels neighbourhood
-  std::unordered_map<int, int> dynamic_registry;
+  std::unordered_map<Voxel, int, VoxelHash> dynamic_registry;
 
 
   progress->reset();
   progress->set_total(las->npoints*2);
   progress->set_prefix("Isolated voxels");
+
+  Voxel key;
 
   while(las->read_point())
   {
@@ -48,7 +50,8 @@ bool LASRivf::process(LAS*& las)
         {
           if (!(i == 0 && j == 0 && k == 0))
           {
-            int key = (nx+i) + (ny+j)*width + (nz+k)*width*height;
+            //int key = (nx+i) + (ny+j)*width + (nz+k)*width*height;
+            key = {nx, ny, nz};
             dynamic_registry.insert({key, 0});
             dynamic_registry[key]++;
           }
@@ -67,7 +70,8 @@ bool LASRivf::process(LAS*& las)
     int nx = std::floor((las->point.get_x() - xmin) / res);
     int ny = std::floor((las->point.get_y() - ymin) / res);
     int nz = std::floor((las->point.get_z() - zmin) / res);
-    int key = nx + ny*width + nz*width*height;
+    //int key = nx + ny*width + nz*width*height;
+    key = {nx, ny, nz};
     if (dynamic_registry[key] <= n)
     {
       las->point.set_classification(classification);

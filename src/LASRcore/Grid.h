@@ -6,6 +6,33 @@
 #include <cmath>
 #include <vector>
 
+struct Voxel
+{
+  int i, j, k;
+  Voxel() : i(0), j(0), k(0) {}
+  Voxel(int i, int j, int k) : i(i), j(j), k(k) {}
+  size_t hash() const
+  {
+    // Create individual hashes for x and y
+    size_t hashi = std::hash<int>{}(i);
+    size_t hashj = std::hash<int>{}(j);
+    size_t hashk = std::hash<int>{}(k);
+
+    // Combine the individual hashes using a hash combiner
+    size_t seed = 0;
+    seed ^= hashi + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hashj + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hashk + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed;
+  };
+  bool operator==(const Voxel& other) const { return i == other.i && j == other.j && k == other.k; };
+};
+
+struct VoxelHash
+{
+  std::size_t operator()(const Voxel& voxel) const { return voxel.hash() ;}
+};
+
 class Grid
 {
 public:
@@ -47,5 +74,29 @@ protected:
   double xres, yres;
 };
 
+/*class Grid3D : public Grid
+{
+  Grid3D(double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, double res);
+  Grid3D(double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, int nrows, int ncols, int nlyrs);
+  Grid3D(const Grid3D& grid);
+
+  void get_cells(double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, std::vector<int>& cell) const;
+
+  int cell_from_xyz(double x, double y, double z) const;
+  inline int col_from_cell(int cell) const { return cell % ncols; }
+  inline int row_from_cell(int cell) const { return (cell / ncols) % nrows; }
+  inline int lyr_from_cell(int cell) const { return cell / (ncols * nrows); }
+  inline int cell_from_row_col_lyr(int row, int col, int lyr) const { return (lyr * nrows * ncols) + (row * ncols) + col; }
+  inline double z_from_lyr(int lyr) const { return zmin + ((lyr + 0.5) * zres); }
+  inline double z_from_cell(int cell) const { return z_from_lyr(lyr_from_cell(cell)); }
+
+
+  inline int get_nlyrs() const { return nlyrs; }
+  inline double get_zres() const { return zres; }
+
+  int nlyrs;
+  double zmin, zmax;
+  double zres;
+};*/
 
 #endif //GRID_H

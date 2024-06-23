@@ -12,11 +12,6 @@
  *    tiny resolutions where the number of voxels would be huge.
  * 2. using a bitset of a std::vector. ALL pixels/voxels are allocated. This is much faster (because of the
  *    cost of the hash map mainly) but may require to alloc a lot of memory.
- *
- * The switch occurs at 128 MB of memory. With a bitset this allows pixels/voxels of approximately 10 cm
- * on a 2 x 2 km x 400 m tile. This should be more than enough to never use the map/set strategy.
- * With a std:vector of std::vector this allows 5.3 bilions voxels which represents 50 cm voxels on a
- * 1 x 1 km x 500 m tile.
  */
 
 // POISSON SAMPLING
@@ -36,7 +31,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
   double r_square = distance*distance;
   double res = distance; // Cell size for the grid
 
-  std::unordered_map<int, std::vector<PointXYZ>> uregistry;
+  std::unordered_map<Voxel, std::vector<PointXYZ>, VoxelHash> uregistry;
   std::vector<std::vector<PointXYZ>> vregistry;
   bool use_vregistry = false;
 
@@ -94,7 +89,8 @@ bool LASRsamplingpoisson::process(LAS*& las)
     int nx = std::floor((px - rxmin) / res);
     int ny = std::floor((py - rymin) / res);
     int nz = std::floor((pz - rzmin) / res);
-    int key = nx + ny*length + nz*length*width;
+    int vkey;
+    Voxel ukey;
 
     // Do we retain this point? We will look into the 27 neighbors to find if it is not too close to an already inserted points
     bool valid = true;
@@ -103,7 +99,9 @@ bool LASRsamplingpoisson::process(LAS*& las)
     // >>>>>
     if (use_vregistry)
     {
-      for (const auto& neighbor : vregistry[key])
+      vkey = nx + ny*length + nz*length*width;
+
+      for (const auto& neighbor : vregistry[vkey])
       {
         double dist_square = (px - neighbor.x) * (px - neighbor.x) +  (py - neighbor.y) * (py - neighbor.y) + (pz - neighbor.z) * (pz - neighbor.z);
         if (dist_square < r_square)
@@ -115,9 +113,11 @@ bool LASRsamplingpoisson::process(LAS*& las)
     }
     else
     {
-      if (uregistry.find(key) != uregistry.end())
+      ukey = {nx, ny, nz};
+
+      if (uregistry.find(ukey) != uregistry.end())
       {
-        for (const auto& neighbor : uregistry[key])
+        for (const auto& neighbor : uregistry[ukey])
         {
           double dist_square = (px - neighbor.x) * (px - neighbor.x) +  (py - neighbor.y) * (py - neighbor.y) + (pz - neighbor.z) * (pz - neighbor.z);
           if (dist_square < r_square)
@@ -130,7 +130,6 @@ bool LASRsamplingpoisson::process(LAS*& las)
     }
     // >>>>>
 
-    int key2;
     for (int dx = -1; dx <= 1 && valid; ++dx)
     {
       for (int dy = -1; dy <= 1 && valid; ++dy)
@@ -139,11 +138,11 @@ bool LASRsamplingpoisson::process(LAS*& las)
         {
           if (dx == 0 && dy == 0 && dz == 0) continue;
 
-          key2 = (nx+dx) + (ny+dy)*length + (nz+dz)*length*width;
-
           // If there are points the voxel
           if (use_vregistry)
           {
+            int key2 = (nx+dx) + (ny+dy)*length + (nz+dz)*length*width;
+
             if (key2 < 0 || key2 >= vregistry.size()) continue; // This happens at the edges where the voxels are not allocated
 
             for (const auto& neighbor : vregistry[key2])
@@ -158,6 +157,8 @@ bool LASRsamplingpoisson::process(LAS*& las)
           }
           else
           {
+            Voxel key2(nx+dx, ny+dy, nz+dz);
+
             if (uregistry.find(key2) != uregistry.end())
             {
               for (const auto& neighbor : uregistry[key2])
@@ -178,9 +179,9 @@ bool LASRsamplingpoisson::process(LAS*& las)
     if (valid)
     {
       if (use_vregistry)
-        vregistry[key].emplace_back(px, py, pz);
+        vregistry[vkey].emplace_back(px, py, pz);
       else
-        uregistry[key].emplace_back(px, py, pz);
+        uregistry[ukey].emplace_back(px, py, pz);
 
       n++;
     }
@@ -224,7 +225,7 @@ LASRsamplingvoxels::LASRsamplingvoxels(double xmin, double ymin, double xmax, do
 
 bool LASRsamplingvoxels::process(LAS*& las)
 {
-  std::unordered_set<int> uregistry;
+  std::unordered_set<Voxel, VoxelHash> uregistry;
   std::vector<bool> bitregistry;
   bool use_bitregistry = false;
 
@@ -277,11 +278,12 @@ bool LASRsamplingvoxels::process(LAS*& las)
     int nx = std::floor((las->point.get_x() - rxmin) / res);
     int ny = std::floor((las->point.get_y() - rymin) / res);
     int nz = std::floor((las->point.get_z() - rzmin) / res);
-    int key = nx + ny*length + nz*length*width;
 
     // Do we retain this point ? We look into the registry to know if the voxel exist. If not, we retain the point.
     if (use_bitregistry)
     {
+       int key = nx + ny*length + nz*length*width;
+
       if (!bitregistry[key])
       {
         bitregistry[key] = true;
@@ -294,6 +296,8 @@ bool LASRsamplingvoxels::process(LAS*& las)
     }
     else
     {
+      Voxel key(nx, ny, nz);
+
       if (uregistry.insert(key).second)
         n++;
       else
