@@ -58,7 +58,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
   size_t height = (rzmax - rzmin) / res;
 
   size_t nvoxels = length*width*height;
-  if (nvoxels < 1024e9/192) // 128 MB: 24 bytes (192 bits) per std::vector
+  if (nvoxels < INT_MAX) // Cells numbers are stored has int
   {
     vregistry.resize(nvoxels);
     use_vregistry = true;
@@ -143,7 +143,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
           {
             int key2 = (nx+dx) + (ny+dy)*length + (nz+dz)*length*width;
 
-            if (key2 < 0 || key2 >= vregistry.size()) continue; // This happens at the edges where the voxels are not allocated
+            if (key2 < 0 || key2 >= (int)vregistry.size()) continue; // This happens at the edges where the voxels are not allocated
 
             for (const auto& neighbor : vregistry[key2])
             {
@@ -252,7 +252,7 @@ bool LASRsamplingvoxels::process(LAS*& las)
   int height = (rzmax - rzmin)/res;
 
   size_t nvoxels = (size_t)length*(size_t)width*(size_t)height;
-  if (nvoxels < 1024e9) // 128 MB
+  if (nvoxels < INT_MAX) // Cells numbers are stored has int
   {
     bitregistry.resize(nvoxels);
     use_bitregistry = true;
@@ -354,7 +354,7 @@ bool LASRsamplingpixels::process(LAS*& las)
   Grid grid(rxmin, rymin, rxmax, rymax, res);
 
   size_t npixels = grid.get_ncells();
-  if (npixels < 1024e9) // 128 MB
+  if (npixels < INT_MAX) // Cells numbers are stored has int
   {
     bitregistry.resize(npixels);
     use_bitregistry = true;
