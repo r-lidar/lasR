@@ -1,5 +1,7 @@
 #include "Grid.h"
 
+#include <string>
+
 Grid::Grid(double xmin, double ymin, double xmax, double ymax, double res)
 {
   this->xres = res;
@@ -13,6 +15,9 @@ Grid::Grid(double xmin, double ymin, double xmax, double ymax, double res)
   this->ncols = std::round((this->xmax-this->xmin)/xres);
   this->nrows = std::round((this->ymax-this->ymin)/yres);
   this->ncells = ncols*nrows;
+
+  if (ncols != ncells / nrows)
+    throw std::string("Internal error: integer overflow for the number of cells in this grid."); // # nocov
 }
 
 Grid::Grid(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols)
@@ -28,6 +33,9 @@ Grid::Grid(double xmin, double ymin, double xmax, double ymax, int nrows, int nc
   this->nrows = nrows;
   this->ncols = ncols;
   this->ncells = ncols*nrows;
+
+  if (ncols != ncells / nrows)
+    throw std::string("Internal error: integer overflow for the number of cells in this grid."); // # nocov
 }
 
 Grid::Grid(const Grid& grid)
@@ -158,6 +166,80 @@ std::vector<int> Grid::get_cells_dissagregated(const std::vector<int>& cells, in
   return std::pair<double, double>{x,y};
 }*/
 
+
+/*Grid3D::Grid3D(double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, double res) : Grid(xmin, ymin, xmax, ymax, res)
+{
+  this->xres = res;
+  this->yres = res;
+  this->zres = res;
+
+  this->xmin = ROUNDANY(xmin - 0.5 * xres, xres);
+  this->xmax = ROUNDANY(xmax - 0.5 * xres, xres) + xres;
+  this->ymin = ROUNDANY(ymin - 0.5 * yres, yres);
+  this->ymax = ROUNDANY(ymax - 0.5 * yres, yres) + yres;
+  this->zmin = ROUNDANY(zmin - 0.5 * zres, zres);
+  this->zmax = ROUNDANY(zmax - 0.5 * zres, zres) + zres;
+
+  this->ncols = std::round((this->xmax-this->xmin)/xres);
+  this->nrows = std::round((this->ymax-this->ymin)/yres);
+  this->nlyrs = std::round((this->zmax-this->zmin)/zres);
+
+  this->ncells = ncols*nrows*nlyrs;
+
+  if (ncols != ncells / nrows)
+    throw std::string("Internal error: integer overflow for the number of cells in this grid."); // # nocov
+}
+
+Grid3D::Grid3D(double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, int nrows, int ncols, int nlyrs) : Grid(xmin, ymin, xmax, ymax, nrows, ncols)
+{
+  this->xmin = xmin;
+  this->xmax = xmax;
+  this->ymin = ymin;
+  this->ymax = ymax;
+  this->zmin = zmin;
+  this->zmax = zmax;
+
+  this->xres = (xmax-xmin)/ncols;
+  this->yres = (ymax-ymin)/nrows;
+  this->zres = (zmax-zmin)/nlyrs;
+
+  this->nrows = nrows;
+  this->ncols = ncols;
+  this->nlyrs = nlyrs;
+  this->ncells = ncols*nrows*nlyrs;
+
+  if (ncols != ncells / nrows)
+    throw std::string("Internal error: integer overflow for the number of cells in this grid."); // # nocov
+}
+
+Grid3D::Grid3D(const Grid3D& grid) : Grid(grid)
+{
+  zmin = grid.zmin;
+  zmax = grid.zmax;
+
+  zres = grid.zres;
+
+  nlyrs = grid.nlyrs;
+}
+
+void Grid3D::get_cells(double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, std::vector<int>& cells) const
+{
+  int colmin = (xmin - this->xmin) / xres;
+  int colmax = (xmax - this->xmin) / xres;
+  int rowmin = (this->ymax - ymax) / yres;
+  int rowmax = (this->ymax - ymin) / yres;
+  int lyrmin = (zmin - this->zmin) / zres;
+  int lyrmax = (zmax - this->zmin) / zres;
+  cells.clear();
+
+  for (int col = std::max(colmin,0) ; col <= std::min(colmax, (int)ncols-1) ; col++) {
+    for (int row = std::max(rowmin,0) ; row <= std::min(rowmax, (int)nrows-1) ; row++) {
+      for (int lyr = std::max(lyrmin,0) ; row <= std::min(lyrmax, (int)nlyrs-1) ; lyr++) {
+        cells.push_back(lyr * nrows * ncols + row * ncols + col);
+      }
+    }
+  }
+}*/
 
 
 
