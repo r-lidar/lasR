@@ -1,7 +1,9 @@
 #include "ivf.h"
+#include "Grid.h"
+
 #include <unordered_map>
 
-LASRivf::LASRivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification)
+LASRivf::LASRivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification, bool force_map)
 {
   this->xmin = xmin;
   this->ymin = ymin;
@@ -10,50 +12,81 @@ LASRivf::LASRivf(double xmin, double ymin, double xmax, double ymax, double res,
   this->res = res;
   this->n = n;
   this->classification = classification;
+  this->force_map = force_map;
 }
 
 bool LASRivf::process(LAS*& las)
 {
-  double xmin = las->header->min_x;
-  double ymin = las->header->min_y;
-  double zmin = las->header->min_z;
-  double xmax = las->header->max_x;
-  double ymax = las->header->max_y;
-  //double zmax = las->header->max_z;
+  // Stores for a given voxel the number of point in its 27 voxels neighborhood
+  std::unordered_map<Voxel, int, VoxelHash> uregistry;
+  std::vector<int> vregistry;
+  bool use_vregistry = false;
 
-  int width = std::floor((xmax - xmin) / res);
-  int height = std::floor((ymax - ymin) / res);
-  //int depth = std::floor((zmax - zmin) / res);
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rzmin = las->header->min_z;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
+  double rzmax = las->header->max_z;
 
-  // Stores for a given voxel the number of point in its 27 voxels neighbourhood
-  std::unordered_map<Voxel, int, VoxelHash> dynamic_registry;
+  rxmin = ROUNDANY(rxmin - 0.5 * res, res);
+  rymin = ROUNDANY(rymin - 0.5 * res, res);
+  rzmin = ROUNDANY(rzmin - 0.5 * res, res);
+  rxmax = ROUNDANY(rxmax + 0.5 * res, res);
+  rymax = ROUNDANY(rymax + 0.5 * res, res);
+  rzmax = ROUNDANY(rzmax + 0.5 * res, res);
 
+  size_t length = (rxmax - rxmin) / res;
+  size_t width  = (rymax - rymin) / res;
+  size_t height = (rzmax - rzmin) / res;
+  size_t nvoxels = length*width*height;
+
+  if (!force_map && nvoxels < INT_MAX/sizeof(int)) // 256 MB
+  {
+    vregistry.resize(nvoxels);
+    std::fill(vregistry.begin(), vregistry.end(), 0);
+    use_vregistry = true;
+  }
 
   progress->reset();
   progress->set_total(las->npoints*2);
   progress->set_prefix("Isolated voxels");
 
-  Voxel key;
+  Voxel ukey;
+  int vkey;
 
-  while(las->read_point())
+  while (las->read_point())
   {
-    int nx = std::floor((las->point.get_x() - xmin) / res);
-    int ny = std::floor((las->point.get_y() - ymin) / res);
-    int nz = std::floor((las->point.get_z() - zmin) / res);
+    int nx = std::floor((las->point.get_x() - rxmin) / res);
+    int ny = std::floor((las->point.get_y() - rymin) / res);
+    int nz = std::floor((las->point.get_z() - rzmin) / res);
 
-    // Add one in the 27 neighbouring voxel of this point
+    // Add one in the 27 neighboring voxels of this point
     for (int i : {-1,0,1})
     {
       for (int j : {-1,0,1})
       {
         for (int k : {-1,0,1})
         {
-          if (!(i == 0 && j == 0 && k == 0))
+          if (i == 0 && j == 0 && k == 0)
+            continue;
+
+          int xi = nx+i;
+          int yj = ny+j;
+          int zk = nz+k;
+
+          if (xi < 0 || xi >= length || yj < 0 || yj >= width || zk < 0 || zk >= height)
+            continue; // This happens on the edges
+
+          if (use_vregistry)
           {
-            //int key = (nx+i) + (ny+j)*width + (nz+k)*width*height;
-            key = {nx, ny, nz};
-            dynamic_registry.insert({key, 0});
-            dynamic_registry[key]++;
+            vkey = xi + yj*length + zk*length*width;
+            vregistry[vkey]++;
+          }
+          else
+          {
+            ukey = {xi, yj, zk};
+            uregistry[ukey]++;
           }
         }
       }
@@ -65,14 +98,26 @@ bool LASRivf::process(LAS*& las)
 
   // Loop again through each point.
   // Check if the number of points in its neighbourhood is above the threshold
-  while(las->read_point())
+  while (las->read_point())
   {
-    int nx = std::floor((las->point.get_x() - xmin) / res);
-    int ny = std::floor((las->point.get_y() - ymin) / res);
-    int nz = std::floor((las->point.get_z() - zmin) / res);
-    //int key = nx + ny*width + nz*width*height;
-    key = {nx, ny, nz};
-    if (dynamic_registry[key] <= n)
+    int nx = std::floor((las->point.get_x() - rxmin) / res);
+    int ny = std::floor((las->point.get_y() - rymin) / res);
+    int nz = std::floor((las->point.get_z() - rzmin) / res);
+
+    int count;
+
+    if (use_vregistry)
+    {
+      vkey = nx + ny*length + nz*length*width;
+      count = vregistry[vkey] ;
+    }
+    else
+    {
+      ukey = {nx, ny, nz};
+      count = uregistry[ukey];
+    }
+
+    if (count < n)
     {
       las->point.set_classification(classification);
       las->update_point();

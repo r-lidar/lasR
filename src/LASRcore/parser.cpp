@@ -183,8 +183,9 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         double res = stage.value("res", 5);
         int n = stage.value("n", 6);
         int classification = stage.value("class", 18);
+        bool force_map = stage.value("force_map", false);
 
-        auto v = std::make_unique<LASRivf>(xmin, ymin, xmax, ymax, res, n, classification);
+        auto v = std::make_unique<LASRivf>(xmin, ymin, xmax, ymax, res, n, classification, force_map);
         pipeline.push_back(std::move(v));
       }
       else if (name == "filter")

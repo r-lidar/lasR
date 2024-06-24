@@ -6,7 +6,7 @@
 class LASRivf: public Stage
 {
 public:
-  LASRivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification);
+  LASRivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification, bool force_map);
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; };
   std::string get_name() const override { return "ivf"; };
@@ -18,6 +18,7 @@ private:
   double res;
   int n;
   int classification;
+  bool force_map;
 
 };
 

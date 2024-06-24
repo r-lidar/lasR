@@ -54,11 +54,11 @@ bool LASRsamplingpoisson::process(LAS*& las)
   rzmax = ROUNDANY(rzmax + 0.5 * res, res);
 
   size_t length = (rxmax - rxmin) / res;
-  size_t width = (rymax - rymin) / res;
+  size_t width  = (rymax - rymin) / res;
   size_t height = (rzmax - rzmin) / res;
-
   size_t nvoxels = length*width*height;
-  if (nvoxels < INT_MAX) // Cells numbers are stored has int
+
+  if (nvoxels < INT_MAX/sizeof(std::vector<PointXYZ>)) // Cells numbers are stored has int
   {
     vregistry.resize(nvoxels);
     use_vregistry = true;
@@ -89,6 +89,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
     int nx = std::floor((px - rxmin) / res);
     int ny = std::floor((py - rymin) / res);
     int nz = std::floor((pz - rzmin) / res);
+
     int vkey;
     Voxel ukey;
 
@@ -248,7 +249,7 @@ bool LASRsamplingvoxels::process(LAS*& las)
   rzmax = ROUNDANY(rzmax + 0.5 * res, res);
 
   int length = (rxmax - rxmin)/res;
-  int width = (rymax - rymin)/res;
+  int width  = (rymax - rymin)/res;
   int height = (rzmax - rzmin)/res;
 
   size_t nvoxels = (size_t)length*(size_t)width*(size_t)height;

@@ -1,3 +1,8 @@
+# lasR 0.7.1
+
+- Fix: sampling stages robustly support more than 4 billions voxels
+- Enhance: noise with `ivf` is faster.
+
 # lasR 0.7.0
 
 ### NEW FEATURES

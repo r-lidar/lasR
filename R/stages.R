@@ -206,7 +206,6 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 #' @param res numeric. Resolution of the voxels.
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
 #' @param class integer. The class to assign to the points that match the condition.
-#'
 #' @template return-pointcloud
 #'
 #' @export
