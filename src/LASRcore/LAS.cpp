@@ -122,7 +122,7 @@ bool LAS::add_point(const LASpoint& p)
 
   if (npoints == I32_MAX)
   {
-    last_error = "LASR cannot stores more than 4294967295 points"; // # nocov
+    last_error = "LASR cannot stores more than 2147483647 points"; // # nocov
     return false;                                                  // # nocov
   }
 
@@ -191,7 +191,7 @@ bool LAS::read_point(bool include_withhelded)
     current_interval = 0;
 
     if (!inside)
-      intervals_to_read.push_back({0, npoints-1});
+      intervals_to_read.push_back({0, (int)npoints-1});
     else if (inside && shape)
       index->query(shape->xmin(), shape->ymin(), shape->xmax(), shape->ymax(), intervals_to_read);
     else

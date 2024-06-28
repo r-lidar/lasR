@@ -65,8 +65,8 @@ private:
 
 public:
   LASpoint point;
-  int npoints;
-  int current_point;
+  size_t npoints;
+  size_t current_point;
   LASheader* header;
 
 private:
