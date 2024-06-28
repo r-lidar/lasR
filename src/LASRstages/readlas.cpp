@@ -138,6 +138,8 @@ bool LASRlasreader::process(LAS*& las)
 
   progress->done();
 
+  if (verbose) print(" Number of point read %d\n", las->npoints);
+
   return true;
 }
 

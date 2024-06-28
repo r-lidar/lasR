@@ -200,6 +200,8 @@ bool LASRsamplingpoisson::process(LAS*& las)
 
   las->update_header();
 
+  if (verbose) print(" sampling retained %d points\n", n);
+
   // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
@@ -207,6 +209,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
   if (ratio > 1/3)
   {
     if (!las->delete_withheld()) return false;
+    if (verbose) print(" memory layout reallocated\n");
   }
 
   return true;
@@ -314,6 +317,8 @@ bool LASRsamplingvoxels::process(LAS*& las)
 
   las->update_header();
 
+  if (verbose) print(" sampling retained %d points\n", n);
+
   // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
@@ -321,6 +326,7 @@ bool LASRsamplingvoxels::process(LAS*& las)
   if (ratio > 1/3)
   {
     if (!las->delete_withheld()) return false;
+    if (verbose) print(" memory layout reallocated\n");
   }
 
   return true;
@@ -409,6 +415,8 @@ bool LASRsamplingpixels::process(LAS*& las)
 
   las->update_header();
 
+  if (verbose) print(" sampling retained %d points\n", n);
+
   // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
@@ -416,6 +424,7 @@ bool LASRsamplingpixels::process(LAS*& las)
   if (ratio > 1/3)
   {
     if (!las->delete_withheld()) return false;
+    if (verbose) print(" memory layout reallocated\n");
   }
 
   return true;
