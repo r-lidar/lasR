@@ -2,6 +2,7 @@
 
 - Fix: sampling stages robustly support more than 4 billions voxels
 - Enhance: noise with `ivf` is faster.
+- Fix: fix memory corruption for point clouds above 4.3 GB
 
 # lasR 0.7.0
 
