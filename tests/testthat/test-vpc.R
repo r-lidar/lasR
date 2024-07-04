@@ -53,3 +53,40 @@ test_that("vpc writer fails without CRS",
   pipeline = reader_las() + set_crs(32617) + write_vpc(o)
   expect_error(exec(pipeline, on = f), NA)
 })
+
+test_that("vpc writer uses GPS time",
+{
+  f <- system.file("extdata", "Topography.las", package="lasR")
+  o = tempfile(fileext = ".vpc")
+
+  pipeline = reader_las() + write_vpc(o)
+
+  ans = exec(pipeline, on = f)
+  ans = sf::st_read(ans, quiet = TRUE, stringsAsFactors = TRUE)
+
+  date = ans$datetime
+  attr(date, "tzone") <- "UTC"
+
+  expect_equal(as.character(date), "2018-01-01")
+
+  pipeline = reader_las() + write_vpc(o, use_gpstime = T)
+
+  ans = exec(pipeline, on = f)
+  ans = sf::st_read(ans, quiet = TRUE, stringsAsFactors = TRUE)
+
+  date = ans$datetime
+  attr(date, "tzone") <- "UTC"
+
+  expect_equal(as.character(ans$datetime), "2018-09-06 20:00:00")
+})
+
+test_that("vpc writer does not uses GPS time",
+{
+  f <- system.file("extdata", "Megaplot.las", package="lasR")
+  o = tempfile(fileext = ".vpc")
+
+  pipeline = reader_las() + write_vpc(o, use_gpstime = T)
+
+  expect_error(exec(pipeline, on = f), NA)
+})
+

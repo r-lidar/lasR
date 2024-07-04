@@ -556,8 +556,9 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       else if (name == "write_vpc")
       {
         bool absolute_path = stage.value("absolute", false);
+        bool use_gpstime = stage.value("use_gpstime", false);
 
-        auto v = std::make_unique<LASRvpcwriter>(absolute_path);
+        auto v = std::make_unique<LASRvpcwriter>(absolute_path, use_gpstime);
         pipeline.push_back(std::move(v));
       }
       #ifdef USING_R

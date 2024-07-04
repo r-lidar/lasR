@@ -1,3 +1,10 @@
+# lasR 0.7.2
+
+- New argument `use_gpstime` in `write_vpc()`
+- Fix: division by 0 in raster stage initialization
+- Fix: datetime parsing in `write_vpc()`
+- Fix: `write_vpc()` writes valid files readable by QGIS
+
 # lasR 0.7.1
 
 - Fix: sampling stages robustly support more than 4 billions voxels

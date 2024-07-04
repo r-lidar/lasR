@@ -1113,6 +1113,13 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #'
 #' @param ofile character. The file path with extension .vpc where to write the virtual point cloud file
 #' @param absolute_path boolean. The absolute path to the files is stored in the tile index file.
+#' @param use_gpstime logical. To fill the datetime attribute in the VPC file, it uses the year and
+#' day of year recorded in the header. These attributes are usually NOT relevant. They are often zeroed
+#' and the official signification of these attributes corresponds to the creation of the LAS file.
+#' There is no guarantee that this date corresponds to the acquisition date. If `use_gpstime = TRUE`,
+#' it will use the gpstime of **the first point** recorded in each file to compute the day and year of
+#' acquisition. This works only if the GPS time is recorded as Adjusted Standard GPS Time and not with GPS
+#' Week Time.
 #' @references
 #' \url{https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/}\cr
 #' \url{https://github.com/PDAL/wrench/blob/main/vpc-spec.md}
@@ -1121,10 +1128,11 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' pipeline = write_vpc("folder/dataset.vpc")
 #' exec(pipeline, on = "folder")
 #' }
+#' @md
 #' @export
-write_vpc = function(ofile, absolute_path = FALSE)
+write_vpc = function(ofile, absolute_path = FALSE, use_gpstime = FALSE)
 {
-  ans <- list(algoname = "write_vpc", output = ofile, absolute = absolute_path)
+  ans <- list(algoname = "write_vpc", output = ofile, absolute = absolute_path, use_gpstime = use_gpstime)
   set_lasr_class(ans)
 }
 

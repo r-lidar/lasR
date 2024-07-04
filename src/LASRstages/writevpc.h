@@ -6,7 +6,7 @@
 class LASRvpcwriter: public Stage
 {
 public:
-  LASRvpcwriter(bool absolute_path = false);
+  LASRvpcwriter(bool absolute_path = false, bool use_gpstime = false);
   bool process(LAScatalog*& p) override;
   std::string get_name() const override { return "write_vpc"; }
   bool need_points() const override { return false; }
@@ -19,6 +19,7 @@ public:
   LASRvpcwriter* clone() const override { return new LASRvpcwriter(*this); };
 
   bool absolute_path;
+  bool use_gpstime;
 };
 
 #endif

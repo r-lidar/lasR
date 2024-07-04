@@ -222,7 +222,7 @@ bool LAScatalog::read_vpc(const std::string& filename)
   return true;
 }
 
-bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolute_path)
+bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolute_path, bool use_gpstime)
 {
   if (use_dataframe)
   {
@@ -288,18 +288,59 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     double zmax = zlim[i].second;
 
     std::string date;
-    int year = dates[i].first;
-    int doy = dates[i].second;
+    int year;
+    int doy;
+
+    if (use_gpstime)
+    {
+      if (gpstime_encodind_bits[i])
+      {
+        if (gpstime_dates.size() == 0)
+        {
+          warning("This files as no GPS time. Cannot use GPS time to assign a date.");
+          year = header_dates[i].first;
+          doy = header_dates[i].second;
+        }
+        else
+        {
+          year = gpstime_dates[i].first;
+          doy = gpstime_dates[i].second;
+        }
+      }
+      else
+      {
+        warning("The GPS time is not recorded as Adjusted Standard GPS Time but as GPS Week Time. Cannot use GPS time to assign a date.");
+        year = header_dates[i].first;
+        doy = header_dates[i].second;
+      }
+    }
+    else
+    {
+      year = header_dates[i].first;
+      doy = header_dates[i].second;
+    }
+
     if (year > 0)
     {
-      if (doy == 0) doy = 1;
+      // Initialize the tm structure to represent January 1st of the given year
       std::tm timeinfo = {};
       timeinfo.tm_year = year - 1900;
-      timeinfo.tm_mday = doy;
-      std::mktime(&timeinfo);
+      timeinfo.tm_mon = 0; // January
+      timeinfo.tm_mday = 1; // 1st day
+
+      // Convert tm structure to time_t (seconds since epoch)
+      time_t first_day_of_year = timegm(&timeinfo);
+
+      // Add the day of the year (doy - 1) days to the first day of the year
+      time_t desired_day = first_day_of_year + doy * 86400; // 86400 seconds in a day
+
+      // Convert the resulting time_t back to tm structure
+      gmtime_r(&desired_day, &timeinfo);
+
+      // Format the date
       char buffer[26];
-      strftime(buffer, 26, "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
-      date = std::string(buffer);
+      strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+      date = std::string(buffer);date = std::string(buffer);
     }
     else
     {
@@ -354,7 +395,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     if (index) output << "      \"index:indexed\": " << "true," << std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
     if (!wkt.empty()) output << "      \"proj:wkt2\": " << wkt << "," << std::endl;
-    if (epsg != 0) output << "      \"proj:epsg\": " << epsg << "," << std::endl;
+    if (epsg != 0) output << "      \"proj:epsg\": " << epsg << std::endl;
     output << "    }," << std::endl;
     output << "    \"links\": []," << std::endl;
     output << "    \"assets\": {" << std::endl;
@@ -441,8 +482,26 @@ bool LAScatalog::add_file(std::string file, bool noprocess)
   add_crs(&lasreader->header);
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
   npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
-  dates.push_back({lasreader->header.file_creation_year, lasreader->header.file_creation_day});
+  header_dates.push_back({lasreader->header.file_creation_year, lasreader->header.file_creation_day});
   zlim.push_back({lasreader->header.min_z, lasreader->header.max_z});
+  gpstime_encodind_bits.push_back(lasreader->header.get_global_encoding_bit(0));
+
+  lasreader->read_point();
+  if (lasreader->point.have_gps_time && lasreader->header.get_global_encoding_bit(0) == true)
+  {
+    uint64_t ns = ((uint64_t)lasreader->point.get_gps_time()+1000000000ULL)*1000000000ULL + 315964800000000000ULL; // offset between gps epoch and unix epoch is 315964800 seconds
+
+    struct timespec ts;
+    ts.tv_sec = ns / 1000000000ULL;
+    ts.tv_nsec = ns % 1000000000ULL;
+
+    struct tm stm;
+    gmtime_r(&ts.tv_sec, &stm);
+
+    gpstime_dates.push_back({stm.tm_year + 1900, stm.tm_yday});
+
+    //std::cout << stm.tm_year + 1900 << "-" << stm.tm_mon + 1 << "-" << stm.tm_mday << " " << stm.tm_hour << ":" << stm.tm_min << ":" << stm.tm_sec << std::endl;
+  }
 
   lasreader->close();
   delete lasreader;
