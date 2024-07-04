@@ -21,9 +21,12 @@
 #include "openmp.h"
 #include "error.h"
 #include "print.h"
+
 #include "pipeline.h"
 #include "LAScatalog.h"
-#include "openmp.h"
+
+#include "DrawflowParser.h"
+#include "nlohmann/json.hpp"
 
 #ifdef USING_R
 SEXP process(SEXP sexp_config_file)
@@ -49,15 +52,34 @@ bool process(const std::string& config_file)
   nlohmann::json json;
   fjson >> json;
 
+  // The json file is maybe a file produce by Drawflow. It must be converted into something
+  // understandable by lasR
+  if (json.contains("drawflow"))
+  {
+    try
+    {
+      json = DrawflowParser::parse(json);
+    }
+    catch (std::exception& e)
+    {
+      #ifdef USING_R
+        return make_R_error(e.what());
+      #else
+        eprint(e.what());
+        return false;
+      #endif
+    }
+  }
+
   // The JSON file is made of the processing options and the pipeline
   nlohmann::json processing_options = json["processing"];
   nlohmann::json json_pipeline = json["pipeline"];
 
   // Parse the processing options
   std::vector<int> ncpu = get_vector<int>(processing_options["ncores"]);
-  if (ncpu.size() == 0) ncpu.push_back(1);
+  if (ncpu.size() == 0) ncpu.push_back(std::ceil((float)omp_get_num_threads()/2));
   std::string strategy = processing_options.value("strategy", "concurrent-points");
-  bool progrss = processing_options.value("progress", false);
+  bool progrss = processing_options.value("progress", true);
   bool verbose = processing_options.value("verbose", false);
   double chunk_size = processing_options.value("chunk", 0);
   std::string fprofiling = processing_options.value("profiling", "");

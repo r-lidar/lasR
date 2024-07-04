@@ -33,6 +33,9 @@
 #' @export
 exec = function(pipeline, on, with = NULL, ...)
 {
+  args = list(...)
+  fjson = args$json
+
   # Parse options and give precedence to 1. global options 2. LAScatalog 3. with arguments 4. ... arguments
   with = parse_options(on, with, ...)
 
@@ -113,6 +116,7 @@ exec = function(pipeline, on, with = NULL, ...)
   # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
   # sent to the processor
   json_file = write_json(pipeline)
+  if (!is.null(fjson)) file.copy(json_file, normalizePath(fjson, mustWork = FALSE))
 
   ans <- .Call(`C_process`, json_file)
 
