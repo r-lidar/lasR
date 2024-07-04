@@ -8,7 +8,7 @@
 // Default constructor creates a Raster from (0,0) to (0,0) with a resolution of 0
 // GDALdataset is NOT initialized.
 // data is NOT initialized
-Raster::Raster() : Grid(0, 0, 0, 0, 0, 0), GDALdataset()
+Raster::Raster() : Grid(), GDALdataset()
 {
   extent[0] = this->xmin;
   extent[1] = this->ymin;
