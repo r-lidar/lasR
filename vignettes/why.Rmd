@@ -27,9 +27,13 @@ suppressPackageStartupMessages(library(lasR))
 
 ## Rationnale for `lasR` vs. `lidR`
 
-Do we need a new package? The short answer lies in the following graph. The x-axis represents the time to perform three different rasterizations (a CHM, a DTM, and a density map), and the y-axis represents the amount of RAM memory used for `lidR` and `lasR` (more details in the [benchmark](benchmarks.html) vignette). `lasR` is intended to be much more efficient than `lidR` both in terms of memory usage and computation times.
+Do we need a new package in addition to `lidR`? Short answer: yes!
 
-```{r, fig.width=6, fig.height=4, warning=F, echo=-1, echo=FALSE, fig.align = 'center'}
+### Speed
+
+The short answer lies in the following graph. The x-axis represents the time to perform three different rasterizations (a CHM, a DTM, and a density map), and the y-axis represents the amount of RAM memory used for `lidR` and `lasR` (more details in the [benchmark](benchmarks.html) vignette). `lasR` is intended to be much more efficient than `lidR` both in terms of memory usage and computation times.
+
+```{r, fig.width=5, fig.height=3.5, warning=F, echo=-1, echo=FALSE, fig.align = 'center'}
 col1 = rgb(0, 0.5, 1, alpha = 0.5)
 col2 = rgb(1, 0, 0, alpha = 0.5)
 
@@ -65,9 +69,13 @@ lines(x, y, col = "red", lwd = 2)
 legend("topleft", legend = c("lidR", "lasR"), fill = c( col = col1, col2), border = NA)
 ```
 
+### Pipeline
+
 The second issue is the absence of a powerful pipeline engine in `lidR`. Performing a task as simple as extracting and deriving metrics for multiple inventory plots from a non-normalized collection of files is not that easy in `lidR`. It is straightforward if the point cloud is normalized, but if not, users must write a complex custom script. With the introduction of real pipelines, `lasR` enables users to do more complex tasks in an easier way (see [the tutorial](tutorial.html) vignette as well as [the pipeline](pipeline.html) vignette).
 
-Last but not least, I have almost a decade of additional experience with R, C++, point cloud processing, and a lot of feedback compared to when I started the creation of `lidR`. I was simply not technically capable of writing `lasR` ten years ago!
+### R binding
+
+Last but not least, `lidR` is closely tied to R and can only exist as an R package. `lasR`, on the other hand, is standalone software. The R component of `lasR` is merely an API, and other APIs may exist. We plan to develop a `python` package, `QGIS` plugin, and standalone GUI software in the future. In its current state, `lasR` is only available as an R package.
 
 ## Main differences between `lasR` and `lidR`
 
