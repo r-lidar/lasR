@@ -77,7 +77,7 @@ test_that("vpc writer uses GPS time",
   date = ans$datetime
   attr(date, "tzone") <- "UTC"
 
-  expect_equal(as.character(ans$datetime), "2018-09-06 20:00:00")
+  expect_equal(as.character(date), "2018-09-07")
 })
 
 test_that("vpc writer does not uses GPS time",
