@@ -502,6 +502,10 @@ bool LAScatalog::add_file(std::string file, bool noprocess)
 
     //std::cout << stm.tm_year + 1900 << "-" << stm.tm_mon + 1 << "-" << stm.tm_mday << " " << stm.tm_hour << ":" << stm.tm_min << ":" << stm.tm_sec << std::endl;
   }
+  else
+  {
+    gpstime_dates.push_back({0, 0});
+  }
 
   lasreader->close();
   delete lasreader;
