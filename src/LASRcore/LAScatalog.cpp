@@ -14,7 +14,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <filesystem>
-#include <ctime>
+#include <time.h>
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
