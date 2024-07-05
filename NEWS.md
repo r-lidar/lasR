@@ -1,3 +1,7 @@
+# lasR 0.7.3
+
+- Fix: message and warning are thread safe. A pipeline that printed message on the console could crash. This is expected to be safe now.
+
 # lasR 0.7.2
 
 - New argument `use_gpstime` in `write_vpc()`
