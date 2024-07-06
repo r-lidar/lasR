@@ -77,3 +77,22 @@ OGRSpatialReference CRS::get_crs() const
 int CRS::get_epsg() const { return epsg; }
 std::string CRS::get_wkt() const { return wkt; }
 bool CRS::is_valid() const { return valid; }
+
+double CRS::get_linear_units() const
+{
+  double dfLinearUnitSize;
+  const char* pszLinearUnitName;
+  dfLinearUnitSize = oSRS.GetLinearUnits(&pszLinearUnitName);
+  return dfLinearUnitSize;
+}
+
+bool CRS::is_meters() const
+{
+  return get_linear_units() == 1.0f;
+}
+
+bool CRS::is_feets() const
+{
+  double value = get_linear_units();
+  return std::fabs(value - 0.3048) < 1e-4;
+}

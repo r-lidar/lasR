@@ -1,5 +1,6 @@
-# lasR 0.7.3
+# lasR 0.8.0
 
+- New: stage `sort_points()` to optimize compression.
 - Fix: message and warning are thread safe. A pipeline that printed message on the console could crash. This is expected to be safe now.
 
 # lasR 0.7.2

@@ -20,6 +20,7 @@
 #include "readlas.h"
 #include "regiongrowing.h"
 #include "setcrs.h"
+#include "sort.h"
 #include "summary.h"
 #include "svd.h"
 #include "triangulate.h"
@@ -455,6 +456,12 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           auto v = std::make_unique<LASRsetcrs>(wkt);
           pipeline.push_back(std::move(v));
         }
+      }
+      else if (name == "sort")
+      {
+        bool spatial = stage.value("spatial", true);
+        auto v = std::make_unique<LASRsort>(spatial);
+        pipeline.push_back(std::move(v));
       }
       else if (name == "stop_if")
       {
