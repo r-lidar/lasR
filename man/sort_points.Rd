@@ -7,20 +7,19 @@
 sort_points(spatial = TRUE)
 }
 \arguments{
-\item{spatial}{boolean Add spatial sorting stage.}
+\item{spatial}{Boolean indicating whether to add a spatial sorting stage.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.
 }
 \description{
-The points are sorted by scanner channel, gpstime and return number in order to maximize the LAZ
-compression. An optional second sort stage can be added to also sort points spatially. In this case
-a grid of 50 meters is applied and points are sorted by scanner channel, gpstime and return number
-within each cell of the grid. This increase data locality, seeds up spatial query but increases a
-bit the final size of the files when compressed in LAZ format.
+The points are sorted by scanner channel, GPSTime, and return number to maximize LAZ
+compression. An optional second sorting step can be added to also sort points spatially. In this case,
+a grid of 50 meters is applied, and points are sorted by scanner channel, GPSTime, and return number
+within each cell of the grid. This increases data locality, speeds up spatial queries, but slightly
+increases the final size of the files when compressed in LAZ format.
 }
 \examples{
-#'
 f <- system.file("extdata", "Topography.las", package="lasR")
 exec(sort_points(), on = f)
 }
