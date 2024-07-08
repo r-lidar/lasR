@@ -448,7 +448,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
 
         auto v = std::make_unique<LASRsetcrs>();
         if (epsg > 0) v = std::make_unique<LASRsetcrs>(epsg);
-        else if (wkt.size() > 0) auto v = std::make_unique<LASRsetcrs>(wkt);
+        else if (wkt.size() > 0) v = std::make_unique<LASRsetcrs>(wkt);
 
         pipeline.push_back(std::move(v));
       }
@@ -666,7 +666,6 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         const auto p = it->get();
         p->set_crs(current_crs);
         current_crs = p->get_crs();
-
         p->set_filter(filter);
 
         // Create empty files that will be filled later during the processing
