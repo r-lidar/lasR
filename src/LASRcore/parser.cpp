@@ -446,16 +446,11 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         int epsg = stage.value("epsg", 0);
         std::string wkt = stage.value("wkt", "");
 
-        if (epsg > 0)
-        {
-          auto v = std::make_unique<LASRsetcrs>(epsg);
-          pipeline.push_back(std::move(v));
-        }
-        else if (wkt.size() > 0)
-        {
-          auto v = std::make_unique<LASRsetcrs>(wkt);
-          pipeline.push_back(std::move(v));
-        }
+        auto v = std::make_unique<LASRsetcrs>();
+        if (epsg > 0) v = std::make_unique<LASRsetcrs>(epsg);
+        else if (wkt.size() > 0) auto v = std::make_unique<LASRsetcrs>(wkt);
+
+        pipeline.push_back(std::move(v));
       }
       else if (name == "sort")
       {
@@ -671,6 +666,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         // Create empty files that will be filled later during the processing
         if (!p->set_output_file(output)) return false;
 
+        i++;
         it++;
       }
 
