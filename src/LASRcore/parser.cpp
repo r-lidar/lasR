@@ -655,6 +655,12 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         std::string filter = stage.value("filter", "");
         std::string output = stage.value("output", "");
 
+        if (catalog->file_exists(output))
+        {
+          last_error = "Cannot override a file used as a source of point-cloud: " + output;
+          return false;
+        }
+
         // We set the CRS from the CRS of the catalog but then we get back the CRS. If we have
         // the 'set_crs' stage this updates the CRS assigned to the next stages
         const auto p = it->get();

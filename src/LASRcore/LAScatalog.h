@@ -47,6 +47,7 @@ public:
   void build_index();
   void set_all_indexed();
   void clear();
+  bool file_exists(std::string& file);
 
   #ifdef USING_R
   // Special to build a LAScatalog from a data.frame in R

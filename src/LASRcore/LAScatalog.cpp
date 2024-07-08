@@ -860,6 +860,12 @@ void LAScatalog::clear()
   queries.clear();
 }
 
+bool LAScatalog::file_exists(std::string& file)
+{
+  auto it = std::find(files.begin(), files.end(), file);
+  return it != files.end();
+}
+
 PathType LAScatalog::parse_path(const std::string& path)
 {
   std::filesystem::path file_path(path);
