@@ -12,7 +12,8 @@ bool LASRsort::process(LAS*& las)
   auto end_time = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
   float second = (float)duration.count()/1000.0f;
-  print("  First sort took %.2f sec.\n", second);
+
+  //print("  First sort took %.2f sec.\n", second);
 
   if (!spatial) return true;
 
@@ -50,7 +51,8 @@ bool LASRsort::process(LAS*& las)
   end_time = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
   second = (float)duration.count()/1000.0f;
-  print("  Indexing took %.2f sec.\n", second);
+
+  //print("  Indexing took %.2f sec.\n", second);
 
   start_time = std::chrono::high_resolution_clock::now();
 
@@ -59,7 +61,8 @@ bool LASRsort::process(LAS*& las)
   end_time = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
   second = (float)duration.count()/1000.0f;
-  print("  Second sort took %.2f sec.\n", second);
+
+  //print("  Second sort took %.2f sec.\n", second);
 
   return true;
 }
