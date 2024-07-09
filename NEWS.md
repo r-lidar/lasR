@@ -1,8 +1,8 @@
 # lasR 0.8.0
 
 - New: stage `sort_points()` to optimize compression.
-- New: protection against overwritting processed files while processing
-- Fix: message and warning are thread safe. A pipeline that printed message on the console could crash. This is expected to be safe now.
+- New: protection against overwriting processed files while processing
+- Fix: messages and warnings are thread safe. A pipeline that printed message on the console could crash. This is expected to be safe now.
 - Fix: #70
 
 # lasR 0.7.2
