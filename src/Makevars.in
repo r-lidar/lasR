@@ -1,7 +1,8 @@
-PKG_CPPFLAGS= @PKG_CPPFLAGS@ -DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R -I./ -I./LASRcore/ -I./LASRstages/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/
+PKG_CPPFLAGS= @PKG_CPPFLAGS@ -DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R -I./ -I./LASRcore/ -I./LASRstages/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ -I/vendor/Andrea/Headers/
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 PKG_LIBS=@PKG_LIBS@ $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)
 CXX_STD=CXX17
-SOURCES = $(wildcard LASRcore/*.cpp LASRstages/*.cpp vendor/*/*.cpp ./*.cpp)
+SOURCES = $(wildcard vendor/Andrea/Classes/*.cpp vendor/Andrea/Classes/*/*.cpp LASRcore/*.cpp LASRstages/*.cpp vendor/*/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
 OBJECTS = $(TEMP1:.c=.o)
