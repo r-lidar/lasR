@@ -14,6 +14,7 @@
 #include "localmaximum.h"
 #include "nnmetrics.h"
 #include "nothing.h"
+#include "pdt.h"
 #include "pitfill.h"
 #include "rasterize.h"
 #include "sampling.h"
@@ -177,6 +178,11 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         int classification = stage.value("class", 2);
 
         auto v = std::make_unique<LASRcsf>(xmin, ymin, xmax, ymax, slope_smooth, class_threshold, cloth_resolution, rigidness, iterations, time_step, classification);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "classify_with_pdt")
+      {
+        auto v = std::make_unique<LASRpdt>(xmin, ymin, xmax, ymax);
         pipeline.push_back(std::move(v));
       }
       else if (name == "classify_with_ivf")
