@@ -1,3 +1,7 @@
+# lasR 0.7.3
+
+- Fix: #71 `write_lax()` is 2x faster when used as a single stage
+
 # lasR 0.7.2
 
 - New argument `use_gpstime` in `write_vpc()`
