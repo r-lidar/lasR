@@ -1,6 +1,7 @@
 # lasR 0.7.3
 
 - Fix: #71 `write_lax()` is 2x faster when used as a single stage
+- Fix: progress bar of `write_lax()` for LAS 1.4.
 
 # lasR 0.7.2
 

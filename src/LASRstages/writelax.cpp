@@ -107,12 +107,14 @@ bool LASRlaxwriter::write_lax(const std::string& file)
 
   lasquadtree->setup(lasreader->header.min_x, lasreader->header.max_x, lasreader->header.min_y, lasreader->header.max_y, t);
 
+  uint64_t n = MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records);
+
   LASindex lasindex;
   lasindex.prepare(lasquadtree, 1000);
 
   progress->reset();
   progress->set_prefix("Write LAX");
-  progress->set_total(lasreader->header.number_of_point_records);
+  progress->set_total(n);
 
   while (lasreader->read_point())
   {
