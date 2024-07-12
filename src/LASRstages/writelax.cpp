@@ -25,7 +25,7 @@ bool LASRlaxwriter::process(LAScatalog*& ctg)
   Progress* current = this->progress;
   progress.set_prefix("Pre-processing");
   progress.set_total(files.size());
-  progress.set_display(true);
+  progress.set_display(current->get_display());
   progress.set_ncpu(ncpu_concurrent_files);
   progress.create_subprocess();
   this->progress = &progress;
