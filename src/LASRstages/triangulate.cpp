@@ -62,11 +62,9 @@ bool LASRtriangulate::process(LAS*& las)
     }
   }
 
-  if (coords.size() < 3)
-  {
-    //last_error = "impossible to construct a Delaunay triangulation with " + std::to_string(coords.size()) + " points";
-    return true;
-  }
+  // Does not fail because contour can work with d == nullptr
+  // However 'interpolate' will handle the case and fail
+  if (coords.size() < 3) return true;
 
   this->las = las;
   d = new delaunator::Delaunator(coords);
@@ -78,6 +76,12 @@ bool LASRtriangulate::process(LAS*& las)
 
 bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster)
 {
+  if (d == nullptr)
+  {
+    last_error = "no Delaunay triangulation: there were fewer than 3 points during the 'triangulate' stage";
+    return false;
+  }
+
   int n = (raster == nullptr) ? las->npoints : raster->get_ncells();
   res.resize(n);
   std::fill(res.begin(), res.end(), NA_F64);
@@ -95,12 +99,6 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
       last_error = std::string(buffer);
       return false;
     }
-  }
-
-  if (d == nullptr)
-  {
-    last_error = "internal error: nullptr to Delaunator"; // # nocov
-    return false; // # nocov
   }
 
   progress->reset();

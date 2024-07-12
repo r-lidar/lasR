@@ -99,7 +99,7 @@ bool LASRrasterize::process(LAS*& las)
     }
 
     std::vector<double> z;
-    p->interpolate(z, &raster);
+    if (!p->interpolate(z, &raster)) return false;
     for (auto i = 0 ; i < raster.get_ncells() ; i++) raster.set_value(i, (float)z[i]);
     return true;
   }

@@ -1,3 +1,9 @@
+# lasR 0.8.1
+
+- New: filter `keep_ground_and_water()`
+- Change: `normalize` uses `keep_ground_and_water()`
+- Fix: #73 `triangulation` fails with < 3 points
+
 # lasR 0.8.0
 
 - New: stage `sort_points()` to optimize compression.

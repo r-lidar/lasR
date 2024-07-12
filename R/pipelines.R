@@ -19,7 +19,7 @@
 #' @md
 normalize = function(extrabytes = FALSE)
 {
-  tri <- triangulate(filter = keep_ground())
+  tri <- triangulate(filter = keep_ground_and_water())
   pipeline <- tri
 
   if (extrabytes)

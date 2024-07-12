@@ -40,6 +40,17 @@ test_that("triangulate works with intensity",
 })
 
 
+test_that("interpolation fails with 0 points",
+{
+  f <- system.file("extdata", "Topography.las", package="lasR")
+  mesh  = triangulate(50, filter = "-keep_class 24")
+  trans = transform_with(mesh)
+  rr = rasterize(2, mesh)
+
+  expect_error(exec(mesh + trans, on = f), "no Delaunay triangulation")
+  expect_error(exec(mesh + rr, on = f), "no Delaunay triangulation")
+})
+
 #test_that("triangulate fails with 0 points (#25)",
 #{
 #  f <- system.file("extdata", "las14_pdrf6.laz", package="lasR")

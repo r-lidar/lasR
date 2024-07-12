@@ -74,7 +74,8 @@ bool LASRtransformwith::process(LAS*& las)
 
   if (triangulation != nullptr)
   {
-    triangulation->interpolate(hag, nullptr);
+    if (!triangulation->interpolate(hag, nullptr))
+      return false;
   }
   else
   {
