@@ -1,5 +1,10 @@
 #include "setcrs.h"
 
+LASRsetcrs::LASRsetcrs()
+{
+  crs = CRS();
+}
+
 LASRsetcrs::LASRsetcrs(int epsg)
 {
   crs = CRS(epsg, true);

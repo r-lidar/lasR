@@ -964,6 +964,28 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
   set_lasr_class(ans)
 }
 
+#' Sort points in the point cloud
+#'
+#' The points are sorted by scanner channel, GPSTime, and return number to maximize LAZ
+#' compression. An optional second sorting step can be added to also sort points spatially. In this case,
+#' a grid of 50 meters is applied, and points are sorted by scanner channel, GPSTime, and return number
+#' within each cell of the grid. This increases data locality, speeds up spatial queries, but slightly
+#' increases the final size of the files when compressed in LAZ format.
+#'
+#' @param spatial Boolean indicating whether to add a spatial sorting stage.
+#'
+#' @template return-pointcloud
+#'
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#' exec(sort_points(), on = f)
+#' @export
+sort_points = function(spatial = TRUE)
+{
+  ans <- list(algoname = "sort", spatial = spatial)
+  set_lasr_class(ans)
+}
+
 stop_if_chunk_id_below = function(index)
 {
   index <- as.integer(index)

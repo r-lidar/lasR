@@ -32,3 +32,4 @@
 ^inst/proj$
 ^bin$
 ^Makefile$
+^.vscode$

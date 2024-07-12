@@ -20,6 +20,7 @@
 #include "readlas.h"
 #include "regiongrowing.h"
 #include "setcrs.h"
+#include "sort.h"
 #include "summary.h"
 #include "svd.h"
 #include "triangulate.h"
@@ -445,16 +446,17 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         int epsg = stage.value("epsg", 0);
         std::string wkt = stage.value("wkt", "");
 
-        if (epsg > 0)
-        {
-          auto v = std::make_unique<LASRsetcrs>(epsg);
-          pipeline.push_back(std::move(v));
-        }
-        else if (wkt.size() > 0)
-        {
-          auto v = std::make_unique<LASRsetcrs>(wkt);
-          pipeline.push_back(std::move(v));
-        }
+        auto v = std::make_unique<LASRsetcrs>();
+        if (epsg > 0) v = std::make_unique<LASRsetcrs>(epsg);
+        else if (wkt.size() > 0) v = std::make_unique<LASRsetcrs>(wkt);
+
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "sort")
+      {
+        bool spatial = stage.value("spatial", true);
+        auto v = std::make_unique<LASRsort>(spatial);
+        pipeline.push_back(std::move(v));
       }
       else if (name == "stop_if")
       {
@@ -653,17 +655,23 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         std::string filter = stage.value("filter", "");
         std::string output = stage.value("output", "");
 
+        if (catalog->file_exists(output))
+        {
+          last_error = "Cannot override a file used as a source of point-cloud: " + output;
+          return false;
+        }
+
         // We set the CRS from the CRS of the catalog but then we get back the CRS. If we have
         // the 'set_crs' stage this updates the CRS assigned to the next stages
         const auto p = it->get();
         p->set_crs(current_crs);
         current_crs = p->get_crs();
-
         p->set_filter(filter);
 
         // Create empty files that will be filled later during the processing
         if (!p->set_output_file(output)) return false;
 
+        i++;
         it++;
       }
 

@@ -14,6 +14,11 @@ public:
   OGRSpatialReference get_crs() const;
   int get_epsg() const;
   bool is_valid() const;
+  double get_linear_units() const;
+  bool is_meters() const;
+  bool is_feets() const;
+  void dump() const;
+
   std::string get_wkt() const;
 
 private:
