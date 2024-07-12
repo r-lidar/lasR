@@ -9,8 +9,8 @@ dtm(res = 1, add_class = NULL, ofile = temptif())
 \arguments{
 \item{res}{numeric. The resolution of the raster.}
 
-\item{add_class}{integer. By default it triangulates using ground points (class 2). It is possible
-to provide additional classes such as 9 for water.}
+\item{add_class}{integer. By default it triangulates using ground and water points (classes 2 and 9).
+It is possible to provide additional classes.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
 then the stage will not store the result on disk and will return nothing. It will however

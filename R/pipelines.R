@@ -43,8 +43,8 @@ normalize = function(extrabytes = FALSE)
 #' Create a Digital Terrain Model using \link{triangulate} and \link{rasterize}.
 #'
 #' @param res numeric. The resolution of the raster.
-#' @param add_class integer. By default it triangulates using ground points (class 2). It is possible
-#' to provide additional classes such as 9 for water.
+#' @param add_class integer. By default it triangulates using ground and water points (classes 2 and 9).
+#' It is possible to provide additional classes.
 #' @template param-ofile
 #'
 #' @examples
@@ -57,7 +57,7 @@ normalize = function(extrabytes = FALSE)
 #' @export
 dtm = function(res = 1, add_class = NULL, ofile = temptif())
 {
-  filter = keep_ground()
+  filter = keep_ground_and_water()
   if (!is.null(add_class)) filter <- filter + keep_class(add_class)
   tin <- triangulate(filter = filter)
   chm <- rasterize(res, tin, ofile = ofile)
