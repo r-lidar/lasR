@@ -57,6 +57,7 @@ public:
   virtual std::string get_name() const = 0;
 
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
+  void set_ncpu_concurrent_files(int ncpu) { this->ncpu_concurrent_files = ncpu; }
   void set_verbose(bool verbose) { this->verbose = verbose; };
   void set_uid(std::string s) { uid = s; };
   void set_filter(const std::string& f);
@@ -90,6 +91,7 @@ protected:
 
 protected:
   int ncpu;
+  int ncpu_concurrent_files;
   double xmin;
   double ymin;
   double xmax;

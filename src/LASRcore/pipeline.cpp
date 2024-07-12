@@ -329,6 +329,12 @@ void Pipeline::set_ncpu(int ncpu)
   for (auto&& stage : pipeline) stage->set_ncpu(ncpu);
 }
 
+void Pipeline::set_ncpu_concurrent_files(int ncpu)
+{
+  for (auto&& stage : pipeline) stage->set_ncpu_concurrent_files(ncpu);
+}
+
+
 void Pipeline::set_verbose(bool verbose)
 {
   this->verbose = verbose;

@@ -2,6 +2,7 @@
 
 - Fix: #71 `write_lax()` is 2x faster when used as a single stage
 - Fix: progress bar of `write_lax()` for LAS 1.4.
+- Fix: #74 `write_lax()` is now parallelized
 
 # lasR 0.7.2
 

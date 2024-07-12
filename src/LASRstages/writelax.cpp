@@ -21,7 +21,7 @@ bool LASRlaxwriter::process(LAScatalog*& ctg)
   bool success = true;
   const auto& files = ctg->get_files();
 
-  #pragma omp parallel for num_threads(ncpu)
+  #pragma omp parallel for num_threads(ncpu_concurrent_files)
   for (size_t i = 0 ; i < files.size() ; i++)
   {
     if (!success) continue;

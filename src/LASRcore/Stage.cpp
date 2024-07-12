@@ -13,6 +13,8 @@ Stage::Stage()
   verbose = false;
   circular = false;
   progress = nullptr;
+  ncpu = 1;
+  ncpu_concurrent_files = 1;
 
   #ifdef USING_R
   nsexpprotected = 0;
@@ -22,6 +24,7 @@ Stage::Stage()
 Stage::Stage(const Stage& other)
 {
   ncpu = other.ncpu;
+  ncpu_concurrent_files = other.ncpu_concurrent_files;
   xmin = other.xmin;
   ymin = other.ymin;
   xmax = other.xmax;
