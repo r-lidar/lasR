@@ -2,6 +2,21 @@
 
 #include <string>
 
+Grid::Grid()
+{
+  this->xres = 0;
+  this->yres = 0;
+
+  this->xmin = 0;
+  this->xmax = 0;
+  this->ymin = 0;
+  this->ymax = 0;
+
+  this->ncols = 0;
+  this->nrows = 0;
+  this->ncells = 0;
+}
+
 Grid::Grid(double xmin, double ymin, double xmax, double ymax, double res)
 {
   this->xres = res;

@@ -172,12 +172,9 @@ bool LAS::seek(int pos)
 void LAS::get_xyz(int pos, double* xyz) const
 {
   unsigned char* buf = buffer + pos * point.total_point_size;
-  unsigned int X = *((unsigned int*)buf);
-  unsigned int Y = *((unsigned int*)(buf+4));
-  unsigned int Z = *((unsigned int*)(buf+8));
-  xyz[0] = point.quantizer->get_x(X);
-  xyz[1] = point.quantizer->get_y(Y);
-  xyz[2] = point.quantizer->get_z(Z);
+  xyz[0] = get_x(buf);
+  xyz[1] = get_y(buf);
+  xyz[2] = get_z(buf);
   return;
 }
 
@@ -286,6 +283,82 @@ bool LAS::delete_withheld()
     capacity = npoints*point.total_point_size;
     if (!realloc_buffer()) return false;
   }
+
+  return true;
+}
+
+// Static functions defined for C qsort in LAS::sort
+static inline double get_gps_time_extended(const unsigned char* buf) { return *((const double*)&buf[22]); };
+static inline double get_gps_time_legacy(const unsigned char* buf) { return *((const double*)&buf[20]); };
+static inline unsigned char get_scanner_channel(const unsigned char* buf) { return (buf[15] >> 4) & 0x03; };
+static inline unsigned char get_return_number(const unsigned char* buf) { return buf[14] & 0x0F; };
+static int compare_buffers(const void *a, const void *b)
+{
+  if (get_gps_time_extended((const unsigned char*)a) < get_gps_time_extended((const unsigned char*)b)) return -1;
+  if (get_gps_time_extended((const unsigned char*)a) > get_gps_time_extended((const unsigned char*)b)) return 1;
+  if (get_scanner_channel((const unsigned char*)a) < get_scanner_channel((const unsigned char*)b)) return -1;
+  if (get_scanner_channel((const unsigned char*)a) > get_scanner_channel((const unsigned char*)b)) return 1;
+  if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
+  return 1;
+}
+static int compare_buffers_nochannel(const void *a, const void *b)
+{
+  if (get_gps_time_legacy((const unsigned char*)a) < get_gps_time_legacy((const unsigned char*)b)) return -1;
+  if (get_gps_time_legacy((const unsigned char*)a) > get_gps_time_legacy((const unsigned char*)b)) return 1;
+  if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
+  return 1;
+}
+static int compare_buffers_nogps(const void *a, const void *b)
+{
+  if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
+  return 1;
+}
+
+bool LAS::sort()
+{
+  if (point.have_gps_time && point.is_extended_point_type())
+    qsort((void*)buffer, npoints, point.total_point_size, compare_buffers);
+  else if (point.have_gps_time)
+    qsort((void*)buffer, npoints, point.total_point_size, compare_buffers_nochannel);
+  else
+    qsort((void*)buffer, npoints, point.total_point_size, compare_buffers_nogps);
+
+  reindex();
+
+  return true;
+}
+
+bool LAS::sort(const std::vector<int>& order)
+{
+  std::vector<bool> visited(npoints, false);
+  char* temp = (char*)malloc(point.total_point_size);
+  size_t chunk_size = point.total_point_size;
+
+  for (size_t i = 0; i < npoints; ++i)
+  {
+    if (visited[i] || order[i] == i) continue;
+
+    size_t current = i;
+
+    memcpy(temp, buffer + current * chunk_size, chunk_size);
+
+    while (!visited[current])
+    {
+      visited[current] = true;
+      size_t next = order[current];
+
+      if (next != i)
+        memcpy(buffer + current * chunk_size, buffer + next * chunk_size, chunk_size);
+      else
+        memcpy(buffer + current * chunk_size, temp, chunk_size);
+
+      current = next;
+    }
+  }
+
+  free(temp);
+
+  reindex();
 
   return true;
 }
@@ -629,6 +702,13 @@ void LAS::clean_query()
   intervals_to_read.clear();
 }
 
+void LAS::reindex()
+{
+  clean_index();
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+  while (read_point()) index->insert(point.get_x(), point.get_y());
+}
+
 bool LAS::is_attribute_loadable(int index)
 {
   if (index < 0) return false;
@@ -823,3 +903,9 @@ U64 LAS::get_true_number_of_points() const
   return MAX(header->number_of_point_records, header->extended_number_of_point_records);
 }
 
+double LAS::get_x(const unsigned char* buf) const { unsigned int X = *((unsigned int*)buf);     return point.quantizer->get_x(X); };
+double LAS::get_y(const unsigned char* buf) const { unsigned int Y = *((unsigned int*)(buf+4)); return point.quantizer->get_y(Y); };
+double LAS::get_z(const unsigned char* buf) const { unsigned int Z = *((unsigned int*)(buf+8)); return point.quantizer->get_z(Z); };
+double LAS::get_gpstime(const unsigned char* buf) const { if (point.is_extended_point_type()) return *((const double*)&buf[22]); else return *((const double*)&buf[20]); };
+unsigned char LAS::get_scanner_channel(const unsigned char* buf) const { if (point.is_extended_point_type()) return (buf[15] >> 4) & 0x03; else return 0; };
+unsigned char LAS::get_return_number(const unsigned char* buf) const { return buf[14] & 0x0F; };

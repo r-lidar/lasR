@@ -24,7 +24,7 @@ public:
   LAScatalog();
   ~LAScatalog();
   bool read(const std::vector<std::string>& files, bool progress = false);
-  bool write_vpc(const std::string& file, const CRS& crs, bool absolute_path);
+  bool write_vpc(const std::string& file, const CRS& crs, bool absolute_path, bool use_gpstime);
   bool is_source_vpc() { return use_vpc; };
   void set_buffer(double buffer) { this->buffer = buffer; };
   void add_query(double xmin, double ymin, double xmax, double ymax);
@@ -47,6 +47,7 @@ public:
   void build_index();
   void set_all_indexed();
   void clear();
+  bool file_exists(std::string& file);
 
   #ifdef USING_R
   // Special to build a LAScatalog from a data.frame in R
@@ -95,9 +96,11 @@ private:
   std::vector<uint64_t> npoints;            // number of points
   std::vector<bool> indexed;                // the file has a spatial index
   std::vector<bool> noprocess;              // the file is not processed and is used only for buffering
+  std::vector<bool> gpstime_encodind_bits;
   std::vector<Rectangle> bboxes;            // bounding boxes of the files
   std::vector<std::filesystem::path> files; // path to files
-  std::vector<std::pair<unsigned short, unsigned short>> dates;
+  std::vector<std::pair<unsigned short, unsigned short>> header_dates;
+  std::vector<std::pair<unsigned short, unsigned short>> gpstime_dates;
   std::vector<std::pair<double, double>> zlim;
 
   // queries, partial read

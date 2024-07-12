@@ -155,6 +155,7 @@ bool process(const std::string& config_file)
 
     pipeline.set_verbose(verbose);
     pipeline.set_ncpu(ncpu_inner_loops);
+    pipeline.set_ncpu_concurrent_files(ncpu_outer_loop);
 
     if (verbose)
     {

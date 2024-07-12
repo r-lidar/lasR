@@ -76,3 +76,10 @@ test_that("writelas writes 1 merged file",
   expect_equal(v$npoints_per_return, c("1" = 1981696L))
   expect_equal(v$npoints_per_class, c("1" = 1899830L, "2" = 81866L))
 })
+
+test_that("Cannot overwrite processed file",
+{
+  file <- system.file("extdata", "MixedConifer.las", package = "lasR")
+  pipeline = set_crs(25832) + write_las(ofile = file)
+  expect_error(exec(pipeline, on = file), "Cannot override a file used as a source of point-cloud")
+})

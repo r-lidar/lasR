@@ -36,6 +36,8 @@ public:
   bool is_attribute_loadable(int index);
   bool realloc_point_and_buffer();
   bool delete_withheld();
+  bool sort();
+  bool sort(const std::vector<int>& order);
 
   // Thread safe queries
   void get_xyz(int pos, double* xyz) const;
@@ -58,10 +60,19 @@ public:
 
 private:
   void clean_index();
+  void reindex();
   void clean_query();
   bool alloc_buffer();
   bool realloc_buffer();
   U64 get_true_number_of_points() const;
+
+  // Access to point attributes without copying the whole point
+  inline double get_x(const unsigned char* buf) const;
+  inline double get_y(const unsigned char* buf) const;
+  inline double get_z(const unsigned char* buf) const;
+  inline double get_gpstime(const unsigned char* buf) const;
+  inline unsigned char get_scanner_channel(const unsigned char* buf) const;
+  inline unsigned char get_return_number(const unsigned char* buf) const;
 
 public:
   LASpoint point;

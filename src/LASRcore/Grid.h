@@ -38,6 +38,7 @@ class Grid
 public:
   enum Contiguity {ROOK = 4, QUEEN = 8};
 
+  Grid();
   Grid(double xmin, double ymin, double xmax, double ymax, double res);
   Grid(double xmin, double ymin, double xmax, double ymax, int nrows, int ncols);
   Grid(const Grid& grid);

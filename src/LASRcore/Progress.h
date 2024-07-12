@@ -17,6 +17,7 @@ public:
   void update(uint64_t current, bool main = false);
   void reset();
   void set_display(bool display);
+  bool get_display() const { return display; };
   void set_total(uint64_t nmax);
   void set_ncpu(int ncpu);
   void set_async_message_file(std::string& file);
