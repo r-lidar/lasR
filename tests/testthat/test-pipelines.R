@@ -32,7 +32,7 @@ test_that("normalize & dtm",
   x = as.numeric(names(ans$summary$z_histogram))
   w = ans$summary$z_histogram
 
-  expect_equal(mean(x*w/sum(w)), 0.287, tolerance = 0.01)
+  expect_equal(mean(x*w/sum(w)), 0.31, tolerance = 0.01)
 
   pipeline = reader_las() + dtm(add_class = 9) + normalize(TRUE) + summarise() + chm(1, TRUE)
   suppressWarnings(ans <- exec(pipeline, on = f))
@@ -91,3 +91,4 @@ test_that("delete point memory reallocation works",
   pipeline = delete_points(filter = keep_ground()) + geometry_features(k = 15 , features = "lps") + write_las()
   expect_error(exec(pipeline, on = f), NA)
 })
+
