@@ -3,7 +3,7 @@
 point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
 in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved."><meta property="og:description" content="Modifies the LAS format to convert into a format with RGB attributes. Values are zeroed: the underlying
 point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
-in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved."></head><body>
+in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved."><meta property="og:image" content="/logo.svg"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -11,7 +11,7 @@ in another stage. If the point cloud already has RGB, nothing happens, RGB value
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,8 +47,7 @@ in another stage. If the point cloud already has RGB, nothing happens, RGB value
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Add RGB attributes to a LAS file</h1>
+      <img src="../logo.svg" class="logo" alt=""><h1>Add RGB attributes to a LAS file</h1>
       <small class="dont-index">Source: <a href="https://github.com/r-lidar/lasR/blob/main/R/stages.R" class="external-link"><code>R/stages.R</code></a></small>
       <div class="d-none name"><code>add_rgb.Rd</code></div>
     </div>
@@ -75,7 +74,7 @@ in another stage. If the point cloud already has RGB, nothing happens, RGB value
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu">add_rgb</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpF2ggjF/Example.las"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpiRqbxI/Example.las"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
