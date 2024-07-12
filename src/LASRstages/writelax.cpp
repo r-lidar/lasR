@@ -21,15 +21,34 @@ bool LASRlaxwriter::process(LAScatalog*& ctg)
   bool success = true;
   const auto& files = ctg->get_files();
 
+  Progress progress;
+  Progress* current = this->progress;
+  progress.set_prefix("Pre-processing");
+  progress.set_total(files.size());
+  progress.set_display(true);
+  progress.set_ncpu(ncpu_concurrent_files);
+  progress.create_subprocess();
+  this->progress = &progress;
+
   #pragma omp parallel for num_threads(ncpu_concurrent_files)
   for (size_t i = 0 ; i < files.size() ; i++)
   {
     if (!success) continue;
     std::string file = files[i].string();
     if (!write_lax(file)) success = false;
+
+    #pragma omp critical
+    {
+      progress.update(i, true);
+      progress.show();
+    }
   }
 
   ctg->set_all_indexed();
+
+  progress.done();
+  progress.done(true);
+  this->progress = current;
 
   return success;
 }
