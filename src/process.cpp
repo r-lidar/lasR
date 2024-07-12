@@ -83,6 +83,7 @@ bool process(const std::string& config_file)
   bool verbose = processing_options.value("verbose", false);
   double chunk_size = processing_options.value("chunk", 0);
   std::string fprofiling = processing_options.value("profiling", "");
+  std::string async_communication_file = processing_options.value("async_communication_file", "/tmp/com0.txt");
 
   // Check some multithreading stuff
   if (ncpu[0] > available_threads())
@@ -176,6 +177,7 @@ bool process(const std::string& config_file)
     progress.set_display(progrss);
     progress.set_ncpu(ncpu_outer_loop);
     progress.create_subprocess();
+    progress.set_async_message_file(async_communication_file);
 
     pipeline.set_progress(&progress);
 

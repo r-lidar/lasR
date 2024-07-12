@@ -19,6 +19,7 @@ public:
   void set_display(bool display);
   void set_total(uint64_t nmax);
   void set_ncpu(int ncpu);
+  void set_async_message_file(std::string& file);
   void done(bool main = false);
   void show(bool flush = true);
 
@@ -52,6 +53,11 @@ private:
 
   // sub process
   Progress* sub;
+
+  // api communication
+  bool use_async_api;
+  std::string async_communication_file;
+
 
   bool display;
   int ncpu;
