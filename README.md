@@ -1,4 +1,4 @@
-lasR <img src="https://raw.githubusercontent.com/r-lidar/lasR/master/man/figures/logo200x231.png" align="right"/>
+lasR <img src="https://github.com/r-lidar/lasR/blob/main/man/figures/lasR200x231.png?raw=true" align="right"/>
 ======================================================================================================
 
 ![license](https://img.shields.io/badge/Licence-GPL--3-blue.svg)
