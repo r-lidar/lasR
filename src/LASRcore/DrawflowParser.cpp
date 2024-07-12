@@ -25,6 +25,40 @@ nlohmann::json DrawflowParser::parse(nlohmann::json json)
 
   auto data = home["data"];
 
+  // Iterate through the data object to find the processing_options node
+  // Then clean it
+  // ===================================================================
+  nlohmann::json processing_options;
+  for (auto it = data.begin(); it != data.end(); it++)
+  {
+    if (it.value().contains("name") && it.value()["name"] == "processing_options")
+    {
+      processing_options = it.value();
+      it = data.erase(it);
+      break;
+    }
+  }
+
+  if (processing_options.empty())
+    throw std::runtime_error("Error: no 'Processing options' node.");
+
+  if (!processing_options.contains("data"))
+    throw std::runtime_error("Internal error 'processing_options' does not have any data");
+
+  if (!processing_options["data"].contains("files"))
+    throw std::runtime_error("Error in Processing Options: 'files' is missing");
+
+  nlohmann::json processing_json = nlohmann::json::object();
+  for (const auto& [key, value] : processing_options["data"].items())
+  {
+    processing_json[key] = convert_if_numeric(value);
+  }
+
+  //std::cout << std::setw(2) << processing_json << std::endl;
+
+  // Parse and sort the pipeline with a Depth First Sort
+  // =====================================================
+
   // Step 1: Determine the nodes with no incoming connections (no inputs)
   std::unordered_map<std::string, bool> has_inputs;
   for (const auto& node : data.items())
@@ -144,11 +178,8 @@ nlohmann::json DrawflowParser::parse(nlohmann::json json)
     pipeline_json.push_back(node_json);
   }
 
-  simplified_pipeline["processing"] = nlohmann::json::object();
+  simplified_pipeline["processing"] = processing_json;
   simplified_pipeline["pipeline"] = pipeline_json;
-
-  // Output the simplified JSON to the console
-  std::cout << std::setw(4) << simplified_pipeline << std::endl;
 
   return simplified_pipeline;
 }

@@ -111,10 +111,9 @@ exec = function(pipeline, on, with = NULL, ...)
 
   if (!on_is_valid) stop("Invalid argument 'on'.")
 
-  pipeline = list(processing = with, pipeline = pipeline)
-
   # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
   # sent to the processor
+  pipeline = list(processing = with, pipeline = pipeline)
   json_file = write_json(pipeline)
   if (!is.null(fjson)) file.copy(json_file, normalizePath(fjson, mustWork = FALSE))
 

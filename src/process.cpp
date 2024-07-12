@@ -85,6 +85,24 @@ bool process(const std::string& config_file)
   std::string fprofiling = processing_options.value("profiling", "");
   std::string async_communication_file = processing_options.value("async_communication_file", "/tmp/com0.txt");
 
+  // build_catalog() has been added at R level because there are some subtleties to handle LAS and LAScatalog
+  // object from lidR. If build_catalog is missing, add it because we are using an API that is not R
+  if (json_pipeline.empty() || json_pipeline[0]["algoname"] != "build_catalog")
+  {
+    nlohmann::json build_catalog = {
+      {"algoname", "build_catalog"},
+      {"files", processing_options["files"]},
+      {"buffer", processing_options.value("buffer", 0)},
+      {"uid", "6275696c645f636174616c6f67"},
+      {"output", ""},
+      {"filter", ""}
+    };
+    json_pipeline.insert(json_pipeline.begin(), build_catalog);
+  }
+
+  std::cout << std::setw(2) << json_pipeline << std::endl;
+  return R_NilValue;
+
   // Check some multithreading stuff
   if (ncpu[0] > available_threads())
   {

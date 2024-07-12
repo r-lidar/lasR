@@ -147,8 +147,8 @@
           <i class="fas fa-chevron-right"></i><span> Mandatory stages</span>
         </div>
         <div class="subcategory">
-          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="build_catalog">
-            <i class="fas fa-shapes"></i><span> build_catalog</span>
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="processing_options">
+            <i class="fas fa-shapes"></i><span> Processing options</span>
           </div>
           <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="reader_las">
             <i class="fas fa-stream"></i><span> reader_las</span>
@@ -295,7 +295,7 @@
     const editor = new Drawflow(id);
     editor.reroute = true;
     editor.useuuid = true;
-    const dataToImport = { "drawflow": { "Home": { "data": { "01ea4b57-5f56-4a44-a415-3be61dc990bd": { "id": "01ea4b57-5f56-4a44-a415-3be61dc990bd", "name": "build_catalog", "data": { "files": "#system.file(\"extdata\", \"Topography.las\", package = \"lasR\")#", "ncores": "4" }, "class": "build_catalog", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-shapes\"></i> build_catalog</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"oconnectors\"><p><span>files </span><i class=\"fas fa-file\"></i></p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>files: <input type=\"text\" value=\"plop\" df-files></p>\n              <p>ncores: <input type=\"text\" df-ncores></p>\n              <p>strategy:\n                 <select df-strategy>\n                    <option value=\"concurrent-points\">concurrent-points</option>\n                    <option value=\"concurrent-files\">concurrent-files</option>\n                    <option value=\"nested\">nested</option>\n                    <option value=\"sequential\">sequential</option>\n                 </select>\n              </p>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": {}, "outputs": { "output_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "output": "input_1" }] } }, "pos_x": 60, "pos_y": 207 }, "4a28317c-d9be-451f-b8f0-c681f777997c": { "id": "4a28317c-d9be-451f-b8f0-c681f777997c", "name": "reader_las", "data": { "filter": "-keep_first" }, "class": "reader_las", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-stream\"></i> reader_las</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\"><p><i class=\"fas fa-file\"></i><span> files</span></p></div>\n                <div class=\"oconnectors\"><p><span>cloud </span><i class=\"fas fa-spinner\"></i></p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n                <p>filter: <input type=\"text\" df-filter></p>\n            </div>\n            </div>\n        </div>\n        ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "01ea4b57-5f56-4a44-a415-3be61dc990bd", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [{ "node": "047bb7db-2734-4d89-93a3-4b632bd63cf3", "output": "input_1" }, { "node": "eb16041f-c2ff-41e4-8948-33cf6ea3e70a", "output": "input_1" }] } }, "pos_x": 379, "pos_y": 205 }, "047bb7db-2734-4d89-93a3-4b632bd63cf3": { "id": "047bb7db-2734-4d89-93a3-4b632bd63cf3", "name": "rasterize", "data": { "res": "2", "method": "z_max", "output": "#temptif()#" }, "class": "rasterize", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-border-all\"></i> rasterize</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\">\n                    <p>cloud | mesh</p>\n                </div>\n                <div class=\"oconnectors\"><p>raster</p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>res: <input type=\"text\" df-res></p>\n              <p>operators: <input type=\"text\" df-method></p>\n              <p>filter: <input type=\"text\" df-filter></p>\n              <p>ofile:  <input type=\"text\" df-output></p>\n              <p>default value: <input type=\"text\" df-default_value>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [] } }, "pos_x": 712, "pos_y": 343 }, "eb16041f-c2ff-41e4-8948-33cf6ea3e70a": { "id": "eb16041f-c2ff-41e4-8948-33cf6ea3e70a", "name": "rasterize", "data": { "res": "20", "method": "z_mean", "output": "#temptif()#" }, "class": "rasterize", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-border-all\"></i> rasterize</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\">\n                    <p>cloud | mesh</p>\n                </div>\n                <div class=\"oconnectors\"><p>raster</p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>res: <input type=\"text\" df-res></p>\n              <p>operators: <input type=\"text\" df-method></p>\n              <p>filter: <input type=\"text\" df-filter></p>\n              <p>ofile:  <input type=\"text\" df-output></p>\n              <p>default value: <input type=\"text\" df-default_value>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [] } }, "pos_x": 974, "pos_y": -46 } } } } }
+    const dataToImport = { "drawflow": { "Home": { "data": { "01ea4b57-5f56-4a44-a415-3be61dc990bd": { "id": "01ea4b57-5f56-4a44-a415-3be61dc990bd", "name": "processing_options", "data": { "files": "#system.file(\"extdata\", \"Topography.las\", package = \"lasR\")#", "ncores": "4" }, "class": "processing_options", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-shapes\"></i> processing_options</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"oconnectors\"><p><span>files </span><i class=\"fas fa-file\"></i></p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>files: <input type=\"text\" value=\"plop\" df-files></p>\n              <p>ncores: <input type=\"text\" df-ncores></p>\n              <p>strategy:\n                 <select df-strategy>\n                    <option value=\"concurrent-points\">concurrent-points</option>\n                    <option value=\"concurrent-files\">concurrent-files</option>\n                    <option value=\"nested\">nested</option>\n                    <option value=\"sequential\">sequential</option>\n                 </select>\n              </p>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": {}, "outputs": { "output_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "output": "input_1" }] } }, "pos_x": 60, "pos_y": 207 }, "4a28317c-d9be-451f-b8f0-c681f777997c": { "id": "4a28317c-d9be-451f-b8f0-c681f777997c", "name": "reader_las", "data": { "filter": "-keep_first" }, "class": "reader_las", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-stream\"></i> reader_las</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\"><p><i class=\"fas fa-file\"></i><span> files</span></p></div>\n                <div class=\"oconnectors\"><p><span>cloud </span><i class=\"fas fa-spinner\"></i></p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n                <p>filter: <input type=\"text\" df-filter></p>\n            </div>\n            </div>\n        </div>\n        ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "01ea4b57-5f56-4a44-a415-3be61dc990bd", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [{ "node": "047bb7db-2734-4d89-93a3-4b632bd63cf3", "output": "input_1" }, { "node": "eb16041f-c2ff-41e4-8948-33cf6ea3e70a", "output": "input_1" }] } }, "pos_x": 379, "pos_y": 205 }, "047bb7db-2734-4d89-93a3-4b632bd63cf3": { "id": "047bb7db-2734-4d89-93a3-4b632bd63cf3", "name": "rasterize", "data": { "res": "2", "method": "z_max", "output": "#temptif()#" }, "class": "rasterize", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-border-all\"></i> rasterize</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\">\n                    <p>cloud | mesh</p>\n                </div>\n                <div class=\"oconnectors\"><p>raster</p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>res: <input type=\"text\" df-res></p>\n              <p>operators: <input type=\"text\" df-method></p>\n              <p>filter: <input type=\"text\" df-filter></p>\n              <p>ofile:  <input type=\"text\" df-output></p>\n              <p>default value: <input type=\"text\" df-default_value>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [] } }, "pos_x": 712, "pos_y": 343 }, "eb16041f-c2ff-41e4-8948-33cf6ea3e70a": { "id": "eb16041f-c2ff-41e4-8948-33cf6ea3e70a", "name": "rasterize", "data": { "res": "20", "method": "z_mean", "output": "#temptif()#" }, "class": "rasterize", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-border-all\"></i> rasterize</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\">\n                    <p>cloud | mesh</p>\n                </div>\n                <div class=\"oconnectors\"><p>raster</p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>res: <input type=\"text\" df-res></p>\n              <p>operators: <input type=\"text\" df-method></p>\n              <p>filter: <input type=\"text\" df-filter></p>\n              <p>ofile:  <input type=\"text\" df-output></p>\n              <p>default value: <input type=\"text\" df-default_value>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [] } }, "pos_x": 974, "pos_y": -46 } } } } }
     editor.start();
     editor.import(dataToImport);
 
@@ -448,7 +448,6 @@
             <div class="title-box"><i class="fas fa-stream"></i> reader_las</div>
             <div class="box">
             <div class="connectors">
-                <div class="iconnectors"><p><i class="fas fa-file"></i><span> files</span></p></div>
                 <div class="oconnectors"><p><span>cloud </span><i class="fas fa-spinner"></i></p></div>
             </div>
             <hr/>
@@ -458,7 +457,7 @@
             </div>
         </div>
         `;
-          editor.addNode('reader_las', 1, 1, pos_x, pos_y, 'reader_las', {}, reader_las);
+          editor.addNode('reader_las', 0, 1, pos_x, pos_y, 'reader_las', {}, reader_las);
           break;
         case 'write_las':
           var write_las = `
@@ -589,17 +588,18 @@
           `;
           editor.addNode('rasterize', 1, 1, pos_x, pos_y, 'rasterize_tin', {}, rasterize_tin);
           break;
-        case 'build_catalog':
-          var build_catalog = `
+        case 'processing_options':
+          var processing_options = `
         <div>
-            <div class="title-box"><i class="fas fa-shapes"></i> build_catalog</div>
+            <div class="title-box"><i class="fas fa-shapes"></i> Processing options</div>
             <div class="box">
             <div class="connectors">
-                <div class="oconnectors"><p><span>files </span><i class="fas fa-file"></i></p></div>
             </div>
             <hr/>
             <div class="parameters">
-              <p>files: <input type="text" value="plop" df-files></p>
+              <p>files: <input type="text" df-files></p>
+              <p>buffer: <input type="text" df-buffer></p>
+              <p>chunk: <input type="text" df-chunk></p>
               <p>ncores: <input type="text" df-ncores></p>
               <p>strategy:
                  <select df-strategy>
@@ -613,7 +613,7 @@
             </div>
         </div>
           `;
-          editor.addNode('build_catalog', 0, 1, pos_x, pos_y, 'build_catalog', {}, build_catalog);
+          editor.addNode('processing_options', 0, 0, pos_x, pos_y, 'processing_options', {}, processing_options);
           break;
         default:
       }
