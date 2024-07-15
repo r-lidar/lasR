@@ -239,6 +239,15 @@ void Progress::show(bool flush)
 
   if (display && must_show())
   {
+    if (use_async_api)
+    {
+      FILE* file = fopen(async_communication_file.c_str(), "w");
+      if (file == NULL) return;
+      fprintf(file, "%lf", this->percentage);
+      fclose(file);
+      return;
+    }
+
     if (ntotal > 0)
     {
       this->prev = this->percentage;
@@ -271,14 +280,6 @@ void Progress::show(bool flush)
       #else
       fflush(stdout);
       #endif
-    }
-
-    if (use_async_api)
-    {
-      FILE* file = fopen(async_communication_file.c_str(), "w");
-      if (file == NULL) return;
-      fprintf(file, "%lf", this->percentage);
-      fclose(file);
     }
   }
 }

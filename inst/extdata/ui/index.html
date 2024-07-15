@@ -10,125 +10,30 @@
 </head>
 
 <body>
-  <script src="drawflow.min.js"></script>
+  <!-- font-awsome -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
+
+  <!-- Drawflow -->
+  <script src="https://cdn.jsdelivr.net/npm/drawflow@0.0.59/dist/drawflow.min.js"></script>
   <link rel="stylesheet" type="text/css" href="drawflow.css">
   <link rel="stylesheet" type="text/css" href="beautiful.css" />
+
+  <!-- ??? -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
   <script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
 
-  <style>
-    .connectors {
-      display: flex;
-      gap: 4%;
-    }
+  <!-- Sweet altert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
 
-    .iconnectors,
-    .oconnectors {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+  <!-- Awsome complete -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
 
-    .iconnectors {
-      justify-content: flex-start;
-    }
-
-    .oconnectors {
-      justify-content: flex-start;
-      text-align: right;
-    }
-
-    .iconnectors p,
-    .oconnectors p {
-      margin: 0;
-      margin-bottom: 8px;
-      font-size: inherit;
-      font-family: inherit;
-      color: inherit;
-    }
-
-    .oconnectors p {
-      margin-right: 10px;
-    }
-
-    .oconnectors span {
-      margin-right: 5px;
-    }
-
-    .iconnectors span {
-      margin-left: 20px;
-    }
-
-    hr {
-      border: none;
-      height: 2px;
-      background-color: #ccc;
-      margin: 10px 0;
-    }
-
-    .category {
-      line-height: 50px;
-      border-bottom: 1px solid var(--border-color);
-      padding-left: 20px;
-    }
-
-    .subcategory {
-      display: none;
-    }
-
-    .toggle-btn {
-      cursor: pointer;
-    }
-
-    .json-content {
-      font-size: 10px;
-      /* Adjust font size as needed */
-      width: 400px;
-      max-height: 500px;
-      /* Set maximum height */
-      overflow: auto;
-      /* Add scroll if content overflows */
-      background-color: #f5f5f5;
-      /* Light background color */
-      padding: 10px;
-      /* Padding for better readability */
-      border: 1px solid #ddd;
-      /* Border for visual separation */
-      white-space: pre-wrap;
-      /* Preserve white space and wrap long lines */
-      line-height: 1.5;
-      /* Adjust line height for better readability */
-      text-align: left;
-    }
-
-    pre {
-      outline: 1px solid #ccc;
-      padding: 5px;
-      margin: 5px;
-    }
-
-    .string {
-      color: green;
-    }
-
-    .number {
-      color: darkorange;
-    }
-
-    .boolean {
-      color: blue;
-    }
-
-    .null {
-      color: magenta;
-    }
-
-    .key {
-      color: red;
-    }
-  </style>
+  <!-- lasR -->
+  <link rel="stylesheet" type="text/css" href="lasR.css" />
+  <script src="lasR_stages.js"></script>
+  <script src="lasR_show_json.js"></script>
+  <script src="lasR_autocomplete.js"></script>
 
   <header>
     <h2>lasR App</h2>
@@ -143,6 +48,11 @@
 
       <!-- madatory -->
       <div class="category">
+
+        <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="help">
+          <i class="fas fa-circle-question"></i><span> Help</span>
+        </div>
+
         <div class="toggle-btn">
           <i class="fas fa-chevron-right"></i><span> Mandatory stages</span>
         </div>
@@ -174,12 +84,19 @@
           <i class="fas fa-chevron-right"></i><span> Raster</span>
         </div>
         <div class="subcategory">
+
           <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="rasterize">
             <i class="fas fa-border-all"></i><span> rasterize</span>
           </div>
+
           <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="rasterize_tin">
             <i class="fas fa-border-all"></i><span> rasterize tin</span>
           </div>
+
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="chm_p2r">
+            <i class="fas fa-border-all"></i><span> Canopy Height Model</span>
+          </div>
+
         </div>
       </div>
 
@@ -208,6 +125,7 @@
       </div>
 
       <!-- Classify -->
+      <!--
       <div class="category">
         <div class="toggle-btn">
           <i class="fas fa-chevron-right"></i><span> Classify</span>
@@ -216,8 +134,9 @@
 
         </div>
       </div>
-
+      -->
       <!-- Tree segmentation -->
+      <!--
       <div class="category">
         <div class="toggle-btn">
           <i class="fas fa-chevron-right"></i><span> Tree segmentation</span>
@@ -226,7 +145,7 @@
 
         </div>
       </div>
-
+      -->
     </div>
 
     <div class="col-right">
@@ -295,39 +214,11 @@
     const editor = new Drawflow(id);
     editor.reroute = true;
     editor.useuuid = true;
-    const dataToImport = { "drawflow": { "Home": { "data": { "01ea4b57-5f56-4a44-a415-3be61dc990bd": { "id": "01ea4b57-5f56-4a44-a415-3be61dc990bd", "name": "processing_options", "data": { "files": "#system.file(\"extdata\", \"Topography.las\", package = \"lasR\")#", "ncores": "4" }, "class": "processing_options", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-shapes\"></i> processing_options</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"oconnectors\"><p><span>files </span><i class=\"fas fa-file\"></i></p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>files: <input type=\"text\" value=\"plop\" df-files></p>\n              <p>ncores: <input type=\"text\" df-ncores></p>\n              <p>strategy:\n                 <select df-strategy>\n                    <option value=\"concurrent-points\">concurrent-points</option>\n                    <option value=\"concurrent-files\">concurrent-files</option>\n                    <option value=\"nested\">nested</option>\n                    <option value=\"sequential\">sequential</option>\n                 </select>\n              </p>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": {}, "outputs": { "output_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "output": "input_1" }] } }, "pos_x": 60, "pos_y": 207 }, "4a28317c-d9be-451f-b8f0-c681f777997c": { "id": "4a28317c-d9be-451f-b8f0-c681f777997c", "name": "reader_las", "data": { "filter": "-keep_first" }, "class": "reader_las", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-stream\"></i> reader_las</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\"><p><i class=\"fas fa-file\"></i><span> files</span></p></div>\n                <div class=\"oconnectors\"><p><span>cloud </span><i class=\"fas fa-spinner\"></i></p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n                <p>filter: <input type=\"text\" df-filter></p>\n            </div>\n            </div>\n        </div>\n        ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "01ea4b57-5f56-4a44-a415-3be61dc990bd", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [{ "node": "047bb7db-2734-4d89-93a3-4b632bd63cf3", "output": "input_1" }, { "node": "eb16041f-c2ff-41e4-8948-33cf6ea3e70a", "output": "input_1" }] } }, "pos_x": 379, "pos_y": 205 }, "047bb7db-2734-4d89-93a3-4b632bd63cf3": { "id": "047bb7db-2734-4d89-93a3-4b632bd63cf3", "name": "rasterize", "data": { "res": "2", "method": "z_max", "output": "#temptif()#" }, "class": "rasterize", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-border-all\"></i> rasterize</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\">\n                    <p>cloud | mesh</p>\n                </div>\n                <div class=\"oconnectors\"><p>raster</p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>res: <input type=\"text\" df-res></p>\n              <p>operators: <input type=\"text\" df-method></p>\n              <p>filter: <input type=\"text\" df-filter></p>\n              <p>ofile:  <input type=\"text\" df-output></p>\n              <p>default value: <input type=\"text\" df-default_value>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [] } }, "pos_x": 712, "pos_y": 343 }, "eb16041f-c2ff-41e4-8948-33cf6ea3e70a": { "id": "eb16041f-c2ff-41e4-8948-33cf6ea3e70a", "name": "rasterize", "data": { "res": "20", "method": "z_mean", "output": "#temptif()#" }, "class": "rasterize", "html": "\n        <div>\n            <div class=\"title-box\"><i class=\"fas fa-border-all\"></i> rasterize</div>\n            <div class=\"box\">\n            <div class=\"connectors\">\n                <div class=\"iconnectors\">\n                    <p>cloud | mesh</p>\n                </div>\n                <div class=\"oconnectors\"><p>raster</p></div>\n            </div>\n            <hr/>\n            <div class=\"parameters\">\n              <p>res: <input type=\"text\" df-res></p>\n              <p>operators: <input type=\"text\" df-method></p>\n              <p>filter: <input type=\"text\" df-filter></p>\n              <p>ofile:  <input type=\"text\" df-output></p>\n              <p>default value: <input type=\"text\" df-default_value>\n            </div>\n            </div>\n        </div>\n          ", "typenode": false, "inputs": { "input_1": { "connections": [{ "node": "4a28317c-d9be-451f-b8f0-c681f777997c", "input": "output_1" }] } }, "outputs": { "output_1": { "connections": [] } }, "pos_x": 974, "pos_y": -46 } } } } }
     editor.start();
     editor.import(dataToImport);
 
-    /*
-      var welcome = `
-      <div>
-        <div class="title-box">👏 Welcome!!</div>
-        <div class="box">
-          <p>Simple flow library <b>demo</b>
-          <a href="https://github.com/jerosoler/Drawflow" target="_blank">Drawflow</a> by <b>Jero Soler</b></p><br>
-
-          <p>Multiple input / outputs<br>
-             Data sync nodes<br>
-             Import / export<br>
-             Modules support<br>
-             Simple use<br>
-             Type: Fixed or Edit<br>
-             Events: view console<br>
-             Pure Javascript<br>
-          </p>
-          <br>
-          <p><b><u>Shortkeys:</u></b></p>
-          <p>🎹 <b>Delete</b> for remove selected<br>
-          💠 Mouse Left Click == Move<br>
-          ❌ Mouse Right == Delete Option<br>
-          🔍 Ctrl + Wheel == Zoom<br>
-          📱 Mobile support<br>
-          ...</p>
-        </div>
-      </div>
-      `;
-  */
+    initializeAwesomplete('.laslibfilter', laslibfilterslist);
+    initializeAwesomplete('.metricengine', attributeMetricCombinations);
 
     //editor.addNode(name, inputs, outputs, posx, posy, class, data, html);
     /*editor.addNode('welcome', 0, 0, 50, 50, 'welcome', {}, welcome );
@@ -335,59 +226,19 @@
     */
 
     // Events!
-    editor.on('nodeCreated', function (id) {
-      console.log("Node created " + id);
-    })
-
-    editor.on('nodeRemoved', function (id) {
-      console.log("Node removed " + id);
-    })
-
-    editor.on('nodeSelected', function (id) {
-      console.log("Node selected " + id);
-    })
-
-    editor.on('moduleCreated', function (name) {
-      console.log("Module Created " + name);
-    })
-
-    editor.on('moduleChanged', function (name) {
-      console.log("Module Changed " + name);
-    })
-
-    editor.on('connectionCreated', function (connection) {
-      console.log('Connection created');
-      console.log(connection);
-    })
-
-    editor.on('connectionRemoved', function (connection) {
-      console.log('Connection removed');
-      console.log(connection);
-    })
-
-    editor.on('mouseMove', function (position) {
-      console.log('Position mouse x:' + position.x + ' y:' + position.y);
-    })
-
-    editor.on('nodeMoved', function (id) {
-      console.log("Node moved " + id);
-    })
-
-    editor.on('zoom', function (zoom) {
-      console.log('Zoom level ' + zoom);
-    })
-
-    editor.on('translate', function (position) {
-      console.log('Translate x:' + position.x + ' y:' + position.y);
-    })
-
-    editor.on('addReroute', function (id) {
-      console.log("Reroute added " + id);
-    })
-
-    editor.on('removeReroute', function (id) {
-      console.log("Reroute removed " + id);
-    })
+    editor.on('nodeCreated', function (id) { console.log("Node created " + id); })
+    editor.on('nodeRemoved', function (id) { console.log("Node removed " + id); })
+    editor.on('nodeSelected', function (id) { console.log("Node selected " + id); })
+    editor.on('moduleCreated', function (name) { console.log("Module Created " + name); })
+    editor.on('moduleChanged', function (name) { console.log("Module Changed " + name); })
+    editor.on('connectionCreated', function (connection) { console.log('Connection created'); console.log(connection); })
+    editor.on('connectionRemoved', function (connection) { console.log('Connection removed'); console.log(connection); })
+    editor.on('mouseMove', function (position) { /*console.log('Position mouse x:' + position.x + ' y:' + position.y);*/ })
+    editor.on('nodeMoved', function (id) { console.log("Node moved " + id); })
+    editor.on('zoom', function (zoom) { console.log('Zoom level ' + zoom); })
+    editor.on('translate', function (position) { console.log('Translate x:' + position.x + ' y:' + position.y); })
+    editor.on('addReroute', function (id) { console.log("Reroute added " + id); })
+    editor.on('removeReroute', function (id) { console.log("Reroute removed " + id); })
 
     /* DRAG EVENT */
 
@@ -437,186 +288,36 @@
       if (editor.editor_mode === 'fixed') {
         return false;
       }
-      pos_x = pos_x * (editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)) - (editor.precanvas.getBoundingClientRect().x * (editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)));
-      pos_y = pos_y * (editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)) - (editor.precanvas.getBoundingClientRect().y * (editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)));
 
+      const canvasWidth = editor.precanvas.clientWidth;
+      const canvasHeight = editor.precanvas.clientHeight;
+      const zoom = editor.zoom;
+      const rect = editor.precanvas.getBoundingClientRect();
 
-      switch (name) {
-        case 'reader_las':
-          var reader_las = `
-        <div>
-            <div class="title-box"><i class="fas fa-stream"></i> reader_las</div>
-            <div class="box">
-            <div class="connectors">
-                <div class="oconnectors"><p><span>cloud </span><i class="fas fa-spinner"></i></p></div>
-            </div>
-            <hr/>
-            <div class="parameters">
-                <p>filter: <input type="text" df-filter></p>
-            </div>
-            </div>
-        </div>
-        `;
-          editor.addNode('reader_las', 0, 1, pos_x, pos_y, 'reader_las', {}, reader_las);
-          break;
-        case 'write_las':
-          var write_las = `
-          <div>
-            <div class="title-box"><i class="fas fa-file-pen"></i> write_las</div>
-            <div class="box">
-            <div class="connectors">
-                <div class="iconnectors"><i class="fas fa-spinner"></i><p><span> cloud</span></p></div>
-            </div>
-            <hr/>
-            <div class="parameters">
-                <p>ofile: <input type="text" df-output></p>
-                <p>filter: <input type="text" df-filter></p>
-                <p>keep_buffer:
-                <select df-channel>
-                    <option value="false">false</option>
-                    <option value="true">true</option>
-                </select>
-                </p>
-            </div>
-            </div>
-          </div>
-          `
-          editor.addNode('write_las', 1, 0, pos_x, pos_y, 'write_las', {}, write_las);
-          break;
-        case 'triangulate':
-          var triangulate = `
-        <div>
-            <div class="title-box"><i class="fas fa-square-caret-up"></i> triangulate</div>
-            <div class="box">
-            <div class="connectors">
-                <div class="iconnectors">
-                  <p><i class="fas fa-spinner"></i><span> cloud</span></p>
-                </div>
-                <div class="oconnectors">
-                  <p><span>tin </span><i class="fas fa-recycle"></i></p>
-                </div>
-            </div>
-            <hr/>
-            <div class="parameters">
-              <p>max_edge: <input type="text" df-max_edge value="0"></p>
-              <p>filter: <input type="text" df-filter></p>
-              <p>ofile: <input type="text" df-output></p>
-              <p>use_attribute:
-               <select df-use_attribute>
-                    <option value="Z">Z</option>
-                    <option value="Intensity">Intensity</option>
-                </select></p>
-            </div>
-            </div>
-        </div>
-          `;
-          editor.addNode('triangulate', 1, 1, pos_x, pos_y, 'triangulate', {}, triangulate);
-          break;
-        case 'transform_with':
-          var transform_with = `
-        <div>
-            <div class="title-box"><i class="fas fa-exchange-alt"></i> transform_with</div>
-            <div class="box">
-                <div class="connectors">
-                    <div class="iconnectors">
-                      <p><i class="fas fa-spinner"></i><span> cloud</span></p>
-                      <p>raster | tin</p>
-                    </div>
-                    <div class="oconnectors"><p><span>cloud </span><i class="fas fa-spinner"></i></p></div>
-                </div>
-                <hr/>
-                <div class="parameters">
-                  <p>operator:
-                   <select df-operator>
-                        <option value="-">-</option>
-                        <option value="+">+</option>
-                    </select> </p>
-                  <p>store_in_attribute: <input type="text" df-store_in_attribute value="Z"></p>
-                </div>
-            </div>
-         </div>
-          `;
-          editor.addNode('transform_with', 2, 1, pos_x, pos_y, 'transform_with', {}, transform_with);
-          break;
-        case 'rasterize':
-          var rasterize = `
-        <div>
-            <div class="title-box"><i class="fas fa-border-all"></i> rasterize</div>
-            <div class="box">
-            <div class="connectors">
-                <div class="iconnectors">
-                    <p><i class="fas fa-spinner"></i><span> cloud</span></p>
-                </div>
-                <div class="oconnectors">
-                  <p><span>raster </span><i class="fas fa-layer-group"></i></p>
-                </div>
-            </div>
-            <hr/>
-            <div class="parameters">
-              <p>res: <input type="text" df-res></p>
-              <p>operators: <input type="text" df-method></p>
-              <p>filter: <input type="text" df-filter></p>
-              <p>ofile:  <input type="text" df-output></p>
-              <p>default value: <input type="text" df-default_value>
-            </div>
-            </div>
-        </div>
-          `;
-          editor.addNode('rasterize', 1, 1, pos_x, pos_y, 'rasterize', {}, rasterize);
-          break;
-        case 'rasterize_tin':
-          var rasterize_tin = `
-        <div>
-            <div class="title-box"><i class="fas fa-border-all"></i> rasterize tin</div>
-            <div class="box">
-            <div class="connectors">
-                <div class="iconnectors">
-                    <p><i class="fas fa-recycle"></i><span> tin</span></p>
-                </div>
-                <div class="oconnectors">
-                  <p><span>raster </span><i class="fas fa-layer-group"></i></p>
-                </div>
-            </div>
-            <hr/>
-            <div class="parameters">
-              <p>res: <input type="text" df-res></p>
-              <p>filter: <input type="text" df-filter></p>
-              <p>ofile:  <input type="text" df-output></p>
-            </div>
-            </div>
-        </div>
-          `;
-          editor.addNode('rasterize', 1, 1, pos_x, pos_y, 'rasterize_tin', {}, rasterize_tin);
-          break;
-        case 'processing_options':
-          var processing_options = `
-        <div>
-            <div class="title-box"><i class="fas fa-shapes"></i> Processing options</div>
-            <div class="box">
-            <div class="connectors">
-            </div>
-            <hr/>
-            <div class="parameters">
-              <p>files: <input type="text" df-files></p>
-              <p>buffer: <input type="text" df-buffer></p>
-              <p>chunk: <input type="text" df-chunk></p>
-              <p>ncores: <input type="text" df-ncores></p>
-              <p>strategy:
-                 <select df-strategy>
-                    <option value="concurrent-points">concurrent-points</option>
-                    <option value="concurrent-files">concurrent-files</option>
-                    <option value="nested">nested</option>
-                    <option value="sequential">sequential</option>
-                 </select>
-              </p>
-            </div>
-            </div>
-        </div>
-          `;
-          editor.addNode('processing_options', 0, 0, pos_x, pos_y, 'processing_options', {}, processing_options);
-          break;
-        default:
+      pos_x = pos_x * (canvasWidth / (canvasWidth * zoom)) - (rect.x * (canvasWidth / (canvasWidth * zoom)));
+      pos_y = pos_y * (canvasHeight / (canvasHeight * zoom)) - (rect.y * (canvasHeight / (canvasHeight * zoom)));
+
+      const nodes = {
+        'reader_las': () => editor.addNode('reader_las', 0, 1, pos_x, pos_y, 'reader_las', {}, reader_las),
+        'write_las': () => editor.addNode('write_las', 1, 0, pos_x, pos_y, 'write_las', { "keep_buffer": "false" }, write_las),
+        'triangulate': () => editor.addNode('triangulate', 1, 1, pos_x, pos_y, 'triangulate', { "max_edge": 0, "use_attribute": "Z" }, triangulate),
+        'transform_with': () => editor.addNode('transform_with', 2, 1, pos_x, pos_y, 'transform_with', {}, transform_with),
+        'rasterize': () => editor.addNode('rasterize', 1, 1, pos_x, pos_y, 'rasterize', { "output": "#temptif()#" }, rasterize),
+        'rasterize_tin': () => editor.addNode('rasterize', 2, 1, pos_x, pos_y, 'rasterize_tin', { "output": "#temptif()#" }, rasterize_tin),
+        'chm_p2r': () => editor.addNode('rasterize', 1, 1, pos_x, pos_y, 'Canopy Height Model', { "res": 1, "method": "z_max", "output": "#temptif()#" }, rasterize),
+        'processing_options': () => editor.addNode('processing_options', 0, 0, pos_x, pos_y, 'processing_options', {}, processing_options),
+        'help': () => editor.addNode('help', 0, 0, pos_x, pos_y, 'help', {}, help)
+      };
+
+      if (nodes[name]) {
+        console.log("Adding node:", name);
+        nodes[name]();
+      } else {
+        console.log("Node name not recognized:", name);
       }
+
+      initializeAwesomplete('.laslibfilter', laslibfilterslist);
+      initializeAwesomplete('.metricengine', attributeMetricCombinations);
     }
 
     var transform = '';
@@ -635,7 +336,6 @@
       //e.target.children[0].style.top  =  -editor.canvas_y - editor.container.offsetTop +'px';
       //e.target.children[0].style.left  =  -editor.canvas_x  - editor.container.offsetLeft +'px';
       editor.editor_mode = "fixed";
-
     }
 
     function closemodal(e) {
@@ -657,7 +357,6 @@
     }
 
     function changeMode(option) {
-
       //console.log(lock.id);
       if (option == 'lock') {
         lock.style.display = 'none';
@@ -666,7 +365,6 @@
         lock.style.display = 'block';
         unlock.style.display = 'none';
       }
-
     }
 
     window.addEventListener("message", function (event) {
@@ -678,6 +376,9 @@
       }
       else if (event.data === "ShinyTriggerClear") {
         editor.clearModuleSelected();
+        editor.import(default_pipeline)
+        initializeAwesomplete('.laslibfilter', laslibfilterslist);
+        initializeAwesomplete('.metricengine', attributeMetricCombinations);
       }
       else if (event.data === "ShinyTriggerExport") {
         downloadJSON();
@@ -694,68 +395,6 @@
         }
       }
     });
-
-    document.addEventListener('keydown', function (event) {
-      // Check if the 'Ctrl' key and the 'Q' key were pressed
-      if (event.ctrlKey && event.key === ' ') {
-        event.preventDefault();
-        const cleanedData = removeHtmlProperties(editor.export());
-        Swal.fire({
-          title: 'JSON',
-          html: '<pre class="json-content">' + syntaxHighlight(JSON.stringify(cleanedData, null, 2)) + '</pre>'
-        });
-      }
-    });
-
-    function escapeHtml(unsafe) {
-      return unsafe.replace(/[&<"']/g, function (m) {
-        switch (m) {
-          case '&':
-            return '&amp;';
-          case '<':
-            return '&lt;';
-          case '"':
-            return '&quot;';
-          case "'":
-            return '&#39;';
-          default:
-            return m;
-        }
-      });
-    }
-
-    function removeHtmlProperties(obj) {
-      if (Array.isArray(obj)) {
-        return obj.map(removeHtmlProperties); // Recursively process each item in the array
-      } else if (typeof obj === 'object' && obj !== null) {
-        return Object.keys(obj).reduce((result, key) => {
-          if (key !== 'html') { // Exclude the 'html' key
-            result[key] = removeHtmlProperties(obj[key]); // Recursively process each property
-          }
-          return result;
-        }, {});
-      }
-      return obj; // Return non-object values unchanged
-    }
-
-    function syntaxHighlight(json) {
-      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-        var cls = 'number';
-        if (/^"/.test(match)) {
-          if (/:$/.test(match)) {
-            cls = 'key';
-          } else {
-            cls = 'string';
-          }
-        } else if (/true|false/.test(match)) {
-          cls = 'boolean';
-        } else if (/null/.test(match)) {
-          cls = 'null';
-        }
-        return '<span class="' + cls + '">' + match + '</span>';
-      });
-    }
   </script>
 </body>
 

@@ -1,0 +1,212 @@
+{
+    "drawflow": {
+        "Home": {
+            "data": {
+                "52d81405-7985-4e6b-841b-5718e6537142": {
+                    "id": "52d81405-7985-4e6b-841b-5718e6537142",
+                    "name": "processing_options",
+                    "data": {
+                        "files": "#system.file(\"extdata\", \"Topography.las\", package = \"lasR\")#",
+                        "ncores": "4"
+                    },
+                    "class": "processing_options",
+                    "html": "\n<div>\n    <div class=\"title-box\">\n      <i class=\"fas fa-shapes\"></i> Processing options\n      <a href=\"https://r-lidar.github.io/lasR/reference/exec.html\" target=\"_blank\"  title=\"Help\"><i class=\"fas fa-question-circle\"></i></a>\n    </div>\n    <div class=\"box\">\n    <div class=\"connectors\"></div>\n    <hr/>\n    <div class=\"parameters\">\n      <p>files: <input type=\"text\" df-files></p>\n      <p>buffer: <input type=\"text\" df-buffer></p>\n      <p>chunk: <input type=\"text\" df-chunk></p>\n      <p>ncores: <input type=\"text\" df-ncores></p>\n      <p>strategy:\n         <select df-strategy>\n            <option value=\"concurrent-points\">concurrent-points</option>\n            <option value=\"concurrent-files\">concurrent-files</option>\n            <option value=\"nested\">nested</option>\n            <option value=\"sequential\">sequential</option>\n         </select>\n      </p>\n    </div>\n    </div>\n</div>\n",
+                    "typenode": false,
+                    "inputs": {},
+                    "outputs": {},
+                    "pos_x": 59,
+                    "pos_y": 7
+                },
+                "5e4d8e55-9fce-4bf3-89eb-6e5123b4b253": {
+                    "id": "5e4d8e55-9fce-4bf3-89eb-6e5123b4b253",
+                    "name": "reader_las",
+                    "data": {
+                        "filter": "-keep_first"
+                    },
+                    "class": "reader_las",
+                    "html": "\n<div>\n    <div class=\"title-box\">\n      <i class=\"fas fa-stream\"></i> reader_las\n      <a href=\"https://r-lidar.github.io/lasR/reference/reader_las.html\" target=\"_blank\"  title=\"Help\"><i class=\"fas fa-question-circle\"></i></a>\n    </div>\n    <div class=\"box\">\n    <div class=\"connectors\">\n        <div class=\"oconnectors\"><p><span>cloud </span><i class=\"fas fa-spinner\"></i></p></div>\n    </div>\n    <hr/>\n    <div class=\"parameters\">\n        <p>filter: <input class=\"laslibfilter\" type=\"text\" df-filter></p>\n    </div>\n    </div>\n</div>\n",
+                    "typenode": false,
+                    "inputs": {},
+                    "outputs": {
+                        "output_1": {
+                            "connections": [
+                                {
+                                    "node": "bc6a3d31-ff70-499f-95a3-89eee02fd028",
+                                    "output": "input_1"
+                                },
+                                {
+                                    "node": "73063946-1d1d-4d1a-b786-420d20943a1a",
+                                    "output": "input_1"
+                                },
+                                {
+                                    "node": "82c9d3b2-d5b7-45cd-9147-5172d363b800",
+                                    "output": "input_1"
+                                },
+                                {
+                                    "node": "fc5631f9-872c-42fc-8f42-6ab997fdc279",
+                                    "output": "input_1"
+                                }
+                            ]
+                        }
+                    },
+                    "pos_x": 221.14285714285714,
+                    "pos_y": 392
+                },
+                "bc6a3d31-ff70-499f-95a3-89eee02fd028": {
+                    "id": "bc6a3d31-ff70-499f-95a3-89eee02fd028",
+                    "name": "rasterize",
+                    "data": {
+                        "output": "#temptif()#",
+                        "res": "20",
+                        "method": "z_mean"
+                    },
+                    "class": "rasterize",
+                    "html": "\n<div>\n    <div class=\"title-box\">\n      <i class=\"fas fa-border-all\"></i> rasterize\n      <a href=\"https://r-lidar.github.io/lasR/reference/rasterize.html\" target=\"_blank\"  title=\"Help\"><i class=\"fas fa-question-circle\"></i></a>\n    </div>\n    <div class=\"box\">\n    <div class=\"connectors\">\n        <div class=\"iconnectors\">\n            <p><i class=\"fas fa-spinner\"></i><span> cloud</span></p>\n        </div>\n        <div class=\"oconnectors\">\n          <p><span>raster </span><i class=\"fas fa-layer-group\"></i></p>\n        </div>\n    </div>\n    <hr/>\n    <div class=\"parameters\">\n      <p>res: <input type=\"text\" df-res></p>\n      <p>operators: <input class=\"metricengine\" type=\"text\" df-method></p>\n      <p>filter: <input class=\"laslibfilter\" type=\"text\" df-filter></p>\n      <p>ofile:  <input type=\"text\" df-output></p>\n      <p>default value: <input type=\"text\" df-default_value>\n    </div>\n    </div>\n</div>\n",
+                    "typenode": false,
+                    "inputs": {
+                        "input_1": {
+                            "connections": [
+                                {
+                                    "node": "5e4d8e55-9fce-4bf3-89eb-6e5123b4b253",
+                                    "input": "output_1"
+                                }
+                            ]
+                        }
+                    },
+                    "outputs": {
+                        "output_1": {
+                            "connections": []
+                        }
+                    },
+                    "pos_x": 627,
+                    "pos_y": 23.571428571428573
+                },
+                "73063946-1d1d-4d1a-b786-420d20943a1a": {
+                    "id": "73063946-1d1d-4d1a-b786-420d20943a1a",
+                    "name": "rasterize",
+                    "data": {
+                        "res": 1,
+                        "method": "z_max",
+                        "output": "#temptif()#"
+                    },
+                    "class": "Canopy Height Model",
+                    "html": "\n<div>\n    <div class=\"title-box\">\n      <i class=\"fas fa-border-all\"></i> rasterize\n      <a href=\"https://r-lidar.github.io/lasR/reference/rasterize.html\" target=\"_blank\"  title=\"Help\"><i class=\"fas fa-question-circle\"></i></a>\n    </div>\n    <div class=\"box\">\n    <div class=\"connectors\">\n        <div class=\"iconnectors\">\n            <p><i class=\"fas fa-spinner\"></i><span> cloud</span></p>\n        </div>\n        <div class=\"oconnectors\">\n          <p><span>raster </span><i class=\"fas fa-layer-group\"></i></p>\n        </div>\n    </div>\n    <hr/>\n    <div class=\"parameters\">\n      <p>res: <input type=\"text\" df-res></p>\n      <p>operators: <input class=\"metricengine\" type=\"text\" df-method></p>\n      <p>filter: <input class=\"laslibfilter\" type=\"text\" df-filter></p>\n      <p>ofile:  <input type=\"text\" df-output></p>\n      <p>default value: <input type=\"text\" df-default_value>\n    </div>\n    </div>\n</div>\n",
+                    "typenode": false,
+                    "inputs": {
+                        "input_1": {
+                            "connections": [
+                                {
+                                    "node": "5e4d8e55-9fce-4bf3-89eb-6e5123b4b253",
+                                    "input": "output_1"
+                                }
+                            ]
+                        }
+                    },
+                    "outputs": {
+                        "output_1": {
+                            "connections": []
+                        }
+                    },
+                    "pos_x": 606.5714285714286,
+                    "pos_y": 631
+                },
+                "d4890bdf-1de5-46d3-bc72-335c40476832": {
+                    "id": "d4890bdf-1de5-46d3-bc72-335c40476832",
+                    "name": "write_las",
+                    "data": {
+                        "keep_buffer": "false",
+                        "output": "/tmp/norm.laz"
+                    },
+                    "class": "write_las",
+                    "html": "\n<div>\n    <div class=\"title-box\">\n      <i class=\"fas fa-file-pen\"></i> write_las\n      <a href=\"https://r-lidar.github.io/lasR/reference/write_las.html\" target=\"_blank\"  title=\"Help\"><i class=\"fas fa-question-circle\"></i></a>\n    </div>\n    <div class=\"box\">\n    <div class=\"connectors\">\n        <div class=\"iconnectors\"><i class=\"fas fa-spinner\"></i><p><span> cloud</span></p></div>\n    </div>\n    <hr/>\n    <div class=\"parameters\">\n        <p>ofile: <input type=\"text\" df-output></p>\n        <p>filter: <input class=\"laslibfilter\" type=\"text\" df-filter></p>\n        <p>keep_buffer:\n        <select df-keep_buffer>\n            <option value=\"false\">false</option>\n            <option value=\"true\">true</option>\n        </select>\n        </p>\n    </div>\n    </div>\n</div>\n",
+                    "typenode": false,
+                    "inputs": {
+                        "input_1": {
+                            "connections": [
+                                {
+                                    "node": "fc5631f9-872c-42fc-8f42-6ab997fdc279",
+                                    "input": "output_1"
+                                }
+                            ]
+                        }
+                    },
+                    "outputs": {},
+                    "pos_x": 1882.5714285714287,
+                    "pos_y": -77
+                },
+                "82c9d3b2-d5b7-45cd-9147-5172d363b800": {
+                    "id": "82c9d3b2-d5b7-45cd-9147-5172d363b800",
+                    "name": "triangulate",
+                    "data": {
+                        "max_edge": 0,
+                        "use_attribute": "Z",
+                        "filter": "-keep_class 2"
+                    },
+                    "class": "triangulate",
+                    "html": "\n<div>\n    <div class=\"title-box\">\n      <i class=\"fas fa-square-caret-up\"></i> triangulate\n      <a href=\"https://r-lidar.github.io/lasR/reference/triangulate.html\" target=\"_blank\"  title=\"Help\"><i class=\"fas fa-question-circle\"></i></a>\n    </div>\n    <div class=\"box\">\n    <div class=\"connectors\">\n        <div class=\"iconnectors\">\n          <p><i class=\"fas fa-spinner\"></i><span> cloud</span></p>\n        </div>\n        <div class=\"oconnectors\">\n          <p><span>tin </span><i class=\"fas fa-recycle\"></i></p>\n        </div>\n    </div>\n    <hr/>\n    <div class=\"parameters\">\n      <p>max_edge: <input type=\"text\" df-max_edge></p>\n      <p>filter: <input class=\"laslibfilter\" type=\"text\" df-filter></p>\n      <p>ofile: <input type=\"text\" df-output></p>\n      <p>use_attribute:\n       <select df-use_attribute>\n            <option value=\"Z\">Z</option>\n            <option value=\"Intensity\">Intensity</option>\n        </select></p>\n    </div>\n    </div>\n</div>\n",
+                    "typenode": false,
+                    "inputs": {
+                        "input_1": {
+                            "connections": [
+                                {
+                                    "node": "5e4d8e55-9fce-4bf3-89eb-6e5123b4b253",
+                                    "input": "output_1"
+                                }
+                            ]
+                        }
+                    },
+                    "outputs": {
+                        "output_1": {
+                            "connections": [
+                                {
+                                    "node": "fc5631f9-872c-42fc-8f42-6ab997fdc279",
+                                    "output": "input_2"
+                                }
+                            ]
+                        }
+                    },
+                    "pos_x": 991.1428571428571,
+                    "pos_y": 501
+                },
+                "fc5631f9-872c-42fc-8f42-6ab997fdc279": {
+                    "id": "fc5631f9-872c-42fc-8f42-6ab997fdc279",
+                    "name": "transform_with",
+                    "data": {},
+                    "class": "transform_with",
+                    "html": "\n<div>\n    <div class=\"title-box\">\n      <i class=\"fas fa-exchange-alt\"></i> transform_with\n     <a href=\"https://r-lidar.github.io/lasR/reference/transform_with.html\" target=\"_blank\"  title=\"Help\"><i class=\"fas fa-question-circle\"></i></a>\n    </div>\n    <div class=\"box\">\n        <div class=\"connectors\">\n            <div class=\"iconnectors\">\n              <p><i class=\"fas fa-spinner\"></i><span> cloud</span></p>\n              <p>raster | tin</p>\n            </div>\n            <div class=\"oconnectors\"><p><span>cloud </span><i class=\"fas fa-spinner\"></i></p></div>\n        </div>\n        <hr/>\n        <div class=\"parameters\">\n          <p>operator:\n           <select df-operator>\n                <option value=\"-\">-</option>\n                <option value=\"+\">+</option>\n            </select> </p>\n          <p>store_in_attribute: <input type=\"text\" df-store_in_attribute value=\"Z\"></p>\n        </div>\n    </div>\n </div>\n",
+                    "typenode": false,
+                    "inputs": {
+                        "input_1": {
+                            "connections": [
+                                {
+                                    "node": "5e4d8e55-9fce-4bf3-89eb-6e5123b4b253",
+                                    "input": "output_1"
+                                }
+                            ]
+                        },
+                        "input_2": {
+                            "connections": [
+                                {
+                                    "node": "82c9d3b2-d5b7-45cd-9147-5172d363b800",
+                                    "input": "output_1"
+                                }
+                            ]
+                        }
+                    },
+                    "outputs": {
+                        "output_1": {
+                            "connections": [
+                                {
+                                    "node": "d4890bdf-1de5-46d3-bc72-335c40476832",
+                                    "output": "input_1"
+                                }
+                            ]
+                        }
+                    },
+                    "pos_x": 1502,
+                    "pos_y": 236.42857142857142
+                }
+            }
+        }
+    }
+}

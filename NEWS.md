@@ -1,3 +1,8 @@
+# lasR 0.9.0
+
+- Internal: internal changes to support visual programming. See the [lasRui project](https://github.com/r-lidar/lasRui).
+- `exec()` accepts the path to a json file produced by a UI (non documented)
+
 # lasR 0.8.0
 
 - New: stage `sort_points()` to optimize compression.

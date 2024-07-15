@@ -100,9 +100,6 @@ bool process(const std::string& config_file)
     json_pipeline.insert(json_pipeline.begin(), build_catalog);
   }
 
-  std::cout << std::setw(2) << json_pipeline << std::endl;
-  return R_NilValue;
-
   // Check some multithreading stuff
   if (ncpu[0] > available_threads())
   {

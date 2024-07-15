@@ -51,7 +51,7 @@ nlohmann::json DrawflowParser::parse(nlohmann::json json)
   nlohmann::json processing_json = nlohmann::json::object();
   for (const auto& [key, value] : processing_options["data"].items())
   {
-    processing_json[key] = convert_if_numeric(value);
+    processing_json[key] = convert_if_numeric_or_boolean(value);
   }
 
   //std::cout << std::setw(2) << processing_json << std::endl;
@@ -149,7 +149,7 @@ nlohmann::json DrawflowParser::parse(nlohmann::json json)
     {
       for (const auto& [key, value] : data[id]["data"].items())
       {
-        node_json[key] = convert_if_numeric(value); // Convert numeric strings to numbers
+        node_json[key] = convert_if_numeric_or_boolean(value); // Convert numeric strings to numbers
       }
     }
 
@@ -159,7 +159,6 @@ nlohmann::json DrawflowParser::parse(nlohmann::json json)
       auto inputs = data[id]["inputs"];
       if (inputs.size() > 1)
       {
-        std::cout << inputs.dump(4) << std::endl;
         int i = 0;
         for (const auto& input : inputs.items())
         {
@@ -184,11 +183,12 @@ nlohmann::json DrawflowParser::parse(nlohmann::json json)
   return simplified_pipeline;
 }
 
-nlohmann::json DrawflowParser::convert_if_numeric(const nlohmann::json& value)
+nlohmann::json DrawflowParser::convert_if_numeric_or_boolean(const nlohmann::json& value)
 {
   if (value.is_string())
   {
     std::string s = value.get<std::string>();
+
     if (is_number(s))
     {
       std::istringstream iss(s);
@@ -196,9 +196,17 @@ nlohmann::json DrawflowParser::convert_if_numeric(const nlohmann::json& value)
       iss >> d;
       return d;
     }
+    else if (s == "true")
+    {
+      return true;
+    }
+    else if (s == "false")
+    {
+      return false;
+    }
   }
 
-  return value; // Return the original value if it's not a numeric string
+  return value; // Return the original value if it's not a numeric or boolean string
 }
 
 bool DrawflowParser::is_number(const std::string& s)
