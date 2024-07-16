@@ -29,9 +29,11 @@
 #include "nlohmann/json.hpp"
 
 #ifdef USING_R
-SEXP process(SEXP sexp_config_file)
+SEXP process(SEXP sexp_config_file, SEXP sexp_async_communication_file)
 {
   std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
+  std::string async_communication_file = std::string(CHAR(STRING_ELT(sexp_async_communication_file, 0)));
+
 #else
 bool process(const std::string& config_file)
 {
@@ -83,7 +85,6 @@ bool process(const std::string& config_file)
   bool verbose = processing_options.value("verbose", false);
   double chunk_size = processing_options.value("chunk", 0);
   std::string fprofiling = processing_options.value("profiling", "");
-  std::string async_communication_file = processing_options.value("async_communication_file", "/tmp/com0.txt");
 
   // build_catalog() has been added at R level because there are some subtleties to handle LAS and LAScatalog
   // object from lidR. If build_catalog is missing, add it because we are using an API that is not R

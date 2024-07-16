@@ -131,7 +131,7 @@ exec = function(pipeline, on, with = NULL, ...)
     if (!is.null(fjson)) file.copy(json_file, normalizePath(fjson, mustWork = FALSE))
   }
 
-  ans <- .Call(`C_process`, json_file)
+  ans <- .Call(`C_process`, json_file, "")
 
   #file.remove(json_file)
 
