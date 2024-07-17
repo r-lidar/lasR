@@ -35,6 +35,7 @@ exec = function(pipeline, on, with = NULL, ...)
 {
   args = list(...)
   fjson = args$json
+  async_com = ""
 
   # Parse options and give precedence to 1. global options 2. LAScatalog 3. with arguments 4. ... arguments
   with = parse_options(on, with, ...)
@@ -49,6 +50,7 @@ exec = function(pipeline, on, with = NULL, ...)
     processed_content <- do.call(c, processed_content)
     json_file <- tempfile(fileext = ".json")
     writeLines(processed_content, json_file)
+    async_com = tempfile(fileext = ".tmp")
   }
   else if (methods::is(pipeline, "LASRpipeline"))
   {
@@ -131,7 +133,7 @@ exec = function(pipeline, on, with = NULL, ...)
     if (!is.null(fjson)) file.copy(json_file, normalizePath(fjson, mustWork = FALSE))
   }
 
-  ans <- .Call(`C_process`, json_file, "")
+  ans <- .Call(`C_process`, json_file, async_com)
 
   #file.remove(json_file)
 

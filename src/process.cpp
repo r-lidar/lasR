@@ -82,6 +82,7 @@ bool process(const std::string& config_file)
   if (ncpu.size() == 0) ncpu.push_back(std::ceil((float)omp_get_num_threads()/2));
   std::string strategy = processing_options.value("strategy", "concurrent-points");
   bool progrss = processing_options.value("progress", true);
+  progrss = progrss && async_communication_file.empty();
   bool verbose = processing_options.value("verbose", false);
   double chunk_size = processing_options.value("chunk", 0);
   std::string fprofiling = processing_options.value("profiling", "");
