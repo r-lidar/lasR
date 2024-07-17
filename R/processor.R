@@ -33,88 +33,107 @@
 #' @export
 exec = function(pipeline, on, with = NULL, ...)
 {
+  args = list(...)
+  fjson = args$json
+  async_com = ""
+
   # Parse options and give precedence to 1. global options 2. LAScatalog 3. with arguments 4. ... arguments
   with = parse_options(on, with, ...)
 
-  # A reader stage is mandatory. It is allowed to omit it the engine adds it.
-  if (is_reader_missing(pipeline))
+  if (is.character(pipeline))
   {
-    pipeline = reader_las() + pipeline
+    if (!file.exists(pipeline))
+      stop("File does not exist")
+
+    file_content <- readLines(pipeline, warn = FALSE)
+    processed_content <- lapply(file_content, interpolate_R_expression)
+    processed_content <- do.call(c, processed_content)
+    json_file <- tempfile(fileext = ".json")
+    writeLines(processed_content, json_file)
+    async_com = tempfile(fileext = ".tmp")
   }
-
-  # A build_catalog stage is automatically added. Users do not need to take care of that one
-  pipeline = build_catalog(on, with) + pipeline
-
-  on_is_valid = FALSE
-
-  # If 'on' is a LAS from lidR or a data.frame. Compatibility mode for R exclusively. The reader_las
-  # stage is modified to call R specific stages that are not compiled outside of R
-  if (methods::is(on, "LAS") || is.data.frame(on))
+  else if (methods::is(pipeline, "LASRpipeline"))
   {
-    accuracy = c(0,0,0)
-
-    if (methods::is(on, "LAS"))
+    # A reader stage is mandatory. It is allowed to omit it the engine adds it.
+    if (is_reader_missing(pipeline))
     {
-      accuracy <- c(on@header@PHB[["X scale factor"]], on@header@PHB[["Y scale factor"]], on@header@PHB[["Z scale factor"]])
-      crs <- on@crs$wkt
-      on <- on@data
-      attr(on, "accuracy") <- accuracy
-      attr(on, "crs") <- crs
+      pipeline = reader_las() + pipeline
     }
 
-    crs <- attr(on, "crs")
-    if (is.null(crs)) crs = ""
-    if (!is.character(crs) & length(crs != 1)) stop("The CRS of this data.frame is not a WKT string")
+    # A build_catalog stage is automatically added. Users do not need to take care of that one
+    pipeline = build_catalog(on, with) + pipeline
 
-    acc <- attr(on, "accuracy")
-    if (is.null(acc)) acc = c(0, 0, 0)
-    if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
+    on_is_valid = FALSE
 
-    pipeline[[1]]$dataframe = on
-    pipeline[[1]]$crs = crs
-    pipeline[[1]]$files = NULL
-
-    ind = get_reader_index(pipeline)
-    pipeline[[ind]]$algoname = "reader_dataframe"
-    pipeline[[ind]]$dataframe = on
-    pipeline[[ind]]$accuracy = acc
-    pipeline[[ind]]$crs = crs
-
-    on_is_valid = TRUE
-  }
-
-  # If 'on' is a LAScatalog, for convenient compatibility with lidR we pick-up the file names
-  if (methods::is(on, "LAScatalog"))
-  {
-    on <- on$filename
-  }
-
-  # If 'on' is character, this is the default behavior.
-  if (is.character(on))
-  {
-    pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
-    pipeline$build_catalog$buffer <- with$buffer
-    pipeline$build_catalog$noprocess <- with$noprocess
-
-    # 'noprocess' is a hidden and not documented options to be compatible with LAScatalog$processed
-    if (!is.null(with$noprocess))
+    # If 'on' is a LAS from lidR or a data.frame. Compatibility mode for R exclusively. The reader_las
+    # stage is modified to call R specific stages that are not compiled outside of R
+    if (methods::is(on, "LAS") || is.data.frame(on))
     {
-      if (length(with$noprocess) != length(on))
-        stop("'noprocess' and 'on' have different length")
+      accuracy = c(0,0,0)
+
+      if (methods::is(on, "LAS"))
+      {
+        accuracy <- c(on@header@PHB[["X scale factor"]], on@header@PHB[["Y scale factor"]], on@header@PHB[["Z scale factor"]])
+        crs <- on@crs$wkt
+        on <- on@data
+        attr(on, "accuracy") <- accuracy
+        attr(on, "crs") <- crs
+      }
+
+      crs <- attr(on, "crs")
+      if (is.null(crs)) crs = ""
+      if (!is.character(crs) & length(crs != 1)) stop("The CRS of this data.frame is not a WKT string")
+
+      acc <- attr(on, "accuracy")
+      if (is.null(acc)) acc = c(0, 0, 0)
+      if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
+
+      pipeline[[1]]$dataframe = on
+      pipeline[[1]]$crs = crs
+      pipeline[[1]]$files = NULL
+
+      ind = get_reader_index(pipeline)
+      pipeline[[ind]]$algoname = "reader_dataframe"
+      pipeline[[ind]]$dataframe = on
+      pipeline[[ind]]$accuracy = acc
+      pipeline[[ind]]$crs = crs
+
+      on_is_valid = TRUE
     }
 
-    on_is_valid = TRUE
+    # If 'on' is a LAScatalog, for convenient compatibility with lidR we pick-up the file names
+    if (methods::is(on, "LAScatalog"))
+    {
+      on <- on$filename
+    }
+
+    # If 'on' is character, this is the default behavior.
+    if (is.character(on))
+    {
+      pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
+      pipeline$build_catalog$buffer <- with$buffer
+      pipeline$build_catalog$noprocess <- with$noprocess
+
+      # 'noprocess' is a hidden and not documented options to be compatible with LAScatalog$processed
+      if (!is.null(with$noprocess))
+      {
+        if (length(with$noprocess) != length(on))
+          stop("'noprocess' and 'on' have different length")
+      }
+
+      on_is_valid = TRUE
+    }
+
+    if (!on_is_valid) stop("Invalid argument 'on'.")
+
+    # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
+    # sent to the processor
+    pipeline = list(processing = with, pipeline = pipeline)
+    json_file = write_json(pipeline)
+    if (!is.null(fjson)) file.copy(json_file, normalizePath(fjson, mustWork = FALSE))
   }
 
-  if (!on_is_valid) stop("Invalid argument 'on'.")
-
-  pipeline = list(processing = with, pipeline = pipeline)
-
-  # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
-  # sent to the processor
-  json_file = write_json(pipeline)
-
-  ans <- .Call(`C_process`, json_file)
+  ans <- .Call(`C_process`, json_file, async_com)
 
   #file.remove(json_file)
 

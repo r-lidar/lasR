@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>lasRui | Interactive pipeline builder</title>
+  <meta name="description" content="Simple Web App to build pipelines for the lasR software.">
+</head>
+
+<body>
+  <!-- font-awsome -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
+
+  <!-- Drawflow -->
+  <script src="https://cdn.jsdelivr.net/npm/drawflow@0.0.59/dist/drawflow.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="drawflow.css">
+  <link rel="stylesheet" type="text/css" href="beautiful.css" />
+
+  <!-- ??? -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+
+  <!-- Sweet altert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+
+  <!-- Awsome complete -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
+
+  <!-- lasR -->
+  <link rel="stylesheet" type="text/css" href="lasR.css" />
+  <script src="lasR_stages.js"></script>
+  <script src="lasR_show_json.js"></script>
+  <script src="lasR_autocomplete.js"></script>
+
+  <header>
+    <h2>lasR App</h2>
+    <!--<div class="github-link"><a href="https://github.com/jerosoler/Drawflow" target="_blank"><i class="fab fa-github fa-3x"></i></a></div>
+    <div class="them-edit-link"><a href="https://jerosoler.github.io/drawflow-theme-generator/" target="_blank">🎨</a></div>-->
+  </header>
+
+  <div class="wrapper">
+
+    <!-- Dragable stage side column -->
+    <div class="col">
+
+      <!-- madatory -->
+      <div class="category">
+
+        <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="help">
+          <i class="fas fa-circle-question"></i><span> Help</span>
+        </div>
+
+        <div class="toggle-btn">
+          <i class="fas fa-chevron-right"></i><span> Mandatory stages</span>
+        </div>
+        <div class="subcategory">
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="processing_options">
+            <i class="fas fa-shapes"></i><span> Processing options</span>
+          </div>
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="reader_las">
+            <i class="fas fa-stream"></i><span> reader_las</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- writers -->
+      <div class="category">
+        <div class="toggle-btn">
+          <i class="fas fa-chevron-right"></i><span> Writers</span>
+        </div>
+        <div class="subcategory">
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="write_las">
+            <i class="fas fa-file-pen"></i><span> write_las</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raster -->
+      <div class="category">
+        <div class="toggle-btn">
+          <i class="fas fa-chevron-right"></i><span> Raster</span>
+        </div>
+        <div class="subcategory">
+
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="rasterize">
+            <i class="fas fa-border-all"></i><span> rasterize</span>
+          </div>
+
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="rasterize_tin">
+            <i class="fas fa-border-all"></i><span> rasterize tin</span>
+          </div>
+
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="chm_p2r">
+            <i class="fas fa-border-all"></i><span> Canopy Height Model</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Mesh-->
+      <div class="category">
+        <div class="toggle-btn">
+          <i class="fas fa-chevron-right"></i><span> Mesh</span>
+        </div>
+        <div class="subcategory">
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="triangulate">
+            <i class="fas fa-square-caret-up"></i><span> triangulate</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transform -->
+      <div class="category">
+        <div class="toggle-btn">
+          <i class="fas fa-chevron-right"></i><span> Transform</span>
+        </div>
+        <div class="subcategory">
+          <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="transform_with">
+            <i class="fas fa-exchange-alt"></i><span> transform_with</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Classify -->
+      <!--
+      <div class="category">
+        <div class="toggle-btn">
+          <i class="fas fa-chevron-right"></i><span> Classify</span>
+        </div>
+        <div class="subcategory">
+
+        </div>
+      </div>
+      -->
+      <!-- Tree segmentation -->
+      <!--
+      <div class="category">
+        <div class="toggle-btn">
+          <i class="fas fa-chevron-right"></i><span> Tree segmentation</span>
+        </div>
+        <div class="subcategory">
+
+        </div>
+      </div>
+      -->
+    </div>
+
+    <div class="col-right">
+      <!--<div class="menu">
+        <ul>
+          <li onclick="editor.changeModule('Home'); changeModule(event);" class="selected">Home</li>
+          <li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li>
+        </ul>
+      </div>-->
+      <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
+
+        <!--
+        <div class="btn-show" onclick="Swal.fire({ title: 'Export',
+        html: '<pre><code>'+JSON.stringify(editor.export(), null,4)+'</code></pre>'
+        })">Show</div>
+        <div class="btn-export" onclick="downloadJSON()">Export</div>
+        <div class="btn-clear" onclick="editor.clearModuleSelected()">Clear</div>
+        -->
+        <div class="btn-lock">
+          <i id="lock" class="fas fa-lock" onclick="editor.editor_mode='fixed'; changeMode('lock');"></i>
+          <i id="unlock" class="fas fa-lock-open" onclick="editor.editor_mode='edit'; changeMode('unlock');"
+            style="display:none;"></i>
+        </div>
+        <div class="bar-zoom">
+          <i class="fas fa-search-minus" onclick="editor.zoom_out()"></i>
+          <i class="fas fa-search" onclick="editor.zoom_reset()"></i>
+          <i class="fas fa-search-plus" onclick="editor.zoom_in()"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.toggle-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        const subcategory = button.nextElementSibling;
+        if (subcategory.style.display === 'none' || subcategory.style.display === '') {
+          subcategory.style.display = 'block';
+          button.querySelector('i').classList.remove('fa-chevron-right');
+          button.querySelector('i').classList.add('fa-chevron-down');
+        }
+        else {
+          subcategory.style.display = 'none';
+          button.querySelector('i').classList.remove('fa-chevron-down');
+          button.querySelector('i').classList.add('fa-chevron-right');
+        }
+      });
+    });
+  </script>
+
+  <script>
+    function downloadJSON() {
+      const jsonData = JSON.stringify(editor.export(), null, 4); // Get the JSON data from the editor
+      const blob = new Blob([jsonData], { type: 'application/json' }); // Create a Blob object from the JSON data
+      const link = document.createElement('a'); // Create a link element
+      link.download = 'exported_data.json'; // Set the download attribute with a filename
+      link.href = URL.createObjectURL(blob); // Create a URL for the Blob and set it as the href attribute
+      document.body.appendChild(link); // Append the link to the document body (required for Firefox)
+      link.click(); // Programmatically click the link to trigger the download
+      document.body.removeChild(link); // Remove the link from the document
+    }
+  </script>
+
+  <script>
+    var id = document.getElementById("drawflow");
+    const editor = new Drawflow(id);
+    editor.reroute = true;
+    editor.useuuid = true;
+    editor.start();
+    editor.import(dataToImport);
+
+    initializeAwesomplete('.laslibfilter', laslibfilterslist);
+    initializeAwesomplete('.metricengine', attributeMetricCombinations);
+
+    //editor.addNode(name, inputs, outputs, posx, posy, class, data, html);
+    /*editor.addNode('welcome', 0, 0, 50, 50, 'welcome', {}, welcome );
+    editor.addModule('Other');
+    */
+
+    // Events!
+    editor.on('nodeCreated', function (id) { console.log("Node created " + id); })
+    editor.on('nodeRemoved', function (id) { console.log("Node removed " + id); })
+    editor.on('nodeSelected', function (id) { console.log("Node selected " + id); })
+    editor.on('moduleCreated', function (name) { console.log("Module Created " + name); })
+    editor.on('moduleChanged', function (name) { console.log("Module Changed " + name); })
+    editor.on('connectionCreated', function (connection) { console.log('Connection created'); console.log(connection); })
+    editor.on('connectionRemoved', function (connection) { console.log('Connection removed'); console.log(connection); })
+    editor.on('mouseMove', function (position) { /*console.log('Position mouse x:' + position.x + ' y:' + position.y);*/ })
+    editor.on('nodeMoved', function (id) { console.log("Node moved " + id); })
+    editor.on('zoom', function (zoom) { console.log('Zoom level ' + zoom); })
+    editor.on('translate', function (position) { console.log('Translate x:' + position.x + ' y:' + position.y); })
+    editor.on('addReroute', function (id) { console.log("Reroute added " + id); })
+    editor.on('removeReroute', function (id) { console.log("Reroute removed " + id); })
+
+    /* DRAG EVENT */
+
+    /* Mouse and Touch Actions */
+
+    var elements = document.getElementsByClassName('drag-drawflow');
+    for (var i = 0; i < elements.length; i++) {
+      elements[i].addEventListener('touchend', drop, false);
+      elements[i].addEventListener('touchmove', positionMobile, false);
+      elements[i].addEventListener('touchstart', drag, false);
+    }
+
+    var mobile_item_selec = '';
+    var mobile_last_move = null;
+    function positionMobile(ev) {
+      mobile_last_move = ev;
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drag(ev) {
+      if (ev.type === "touchstart") {
+        mobile_item_selec = ev.target.closest(".drag-drawflow").getAttribute('data-node');
+      } else {
+        ev.dataTransfer.setData("node", ev.target.getAttribute('data-node'));
+      }
+    }
+
+    function drop(ev) {
+      if (ev.type === "touchend") {
+        var parentdrawflow = document.elementFromPoint(mobile_last_move.touches[0].clientX, mobile_last_move.touches[0].clientY).closest("#drawflow");
+        if (parentdrawflow != null) {
+          addNodeToDrawFlow(mobile_item_selec, mobile_last_move.touches[0].clientX, mobile_last_move.touches[0].clientY);
+        }
+        mobile_item_selec = '';
+      } else {
+        ev.preventDefault();
+        var data = ev.dataTransfer.getData("node");
+        addNodeToDrawFlow(data, ev.clientX, ev.clientY);
+      }
+
+    }
+
+    function addNodeToDrawFlow(name, pos_x, pos_y) {
+      if (editor.editor_mode === 'fixed') {
+        return false;
+      }
+
+      const canvasWidth = editor.precanvas.clientWidth;
+      const canvasHeight = editor.precanvas.clientHeight;
+      const zoom = editor.zoom;
+      const rect = editor.precanvas.getBoundingClientRect();
+
+      pos_x = pos_x * (canvasWidth / (canvasWidth * zoom)) - (rect.x * (canvasWidth / (canvasWidth * zoom)));
+      pos_y = pos_y * (canvasHeight / (canvasHeight * zoom)) - (rect.y * (canvasHeight / (canvasHeight * zoom)));
+
+      const nodes = {
+        'reader_las': () => editor.addNode('reader_las', 0, 1, pos_x, pos_y, 'reader_las', {}, reader_las),
+        'write_las': () => editor.addNode('write_las', 1, 0, pos_x, pos_y, 'write_las', { "keep_buffer": "false" }, write_las),
+        'triangulate': () => editor.addNode('triangulate', 1, 1, pos_x, pos_y, 'triangulate', { "max_edge": 0, "use_attribute": "Z" }, triangulate),
+        'transform_with': () => editor.addNode('transform_with', 2, 1, pos_x, pos_y, 'transform_with', {}, transform_with),
+        'rasterize': () => editor.addNode('rasterize', 1, 1, pos_x, pos_y, 'rasterize', { "output": "#temptif()#" }, rasterize),
+        'rasterize_tin': () => editor.addNode('rasterize', 2, 1, pos_x, pos_y, 'rasterize_tin', { "output": "#temptif()#" }, rasterize_tin),
+        'chm_p2r': () => editor.addNode('rasterize', 1, 1, pos_x, pos_y, 'Canopy Height Model', { "res": 1, "method": "z_max", "output": "#temptif()#" }, rasterize),
+        'processing_options': () => editor.addNode('processing_options', 0, 0, pos_x, pos_y, 'processing_options', {}, processing_options),
+        'help': () => editor.addNode('help', 0, 0, pos_x, pos_y, 'help', {}, help)
+      };
+
+      if (nodes[name]) {
+        console.log("Adding node:", name);
+        nodes[name]();
+      } else {
+        console.log("Node name not recognized:", name);
+      }
+
+      initializeAwesomplete('.laslibfilter', laslibfilterslist);
+      initializeAwesomplete('.metricengine', attributeMetricCombinations);
+    }
+
+    var transform = '';
+    function showpopup(e) {
+      e.target.closest(".drawflow-node").style.zIndex = "9999";
+      e.target.children[0].style.display = "block";
+      //document.getElementById("modalfix").style.display = "block";
+
+      //e.target.children[0].style.transform = 'translate('+translate.x+'px, '+translate.y+'px)';
+      transform = editor.precanvas.style.transform;
+      editor.precanvas.style.transform = '';
+      editor.precanvas.style.left = editor.canvas_x + 'px';
+      editor.precanvas.style.top = editor.canvas_y + 'px';
+      console.log(transform);
+
+      //e.target.children[0].style.top  =  -editor.canvas_y - editor.container.offsetTop +'px';
+      //e.target.children[0].style.left  =  -editor.canvas_x  - editor.container.offsetLeft +'px';
+      editor.editor_mode = "fixed";
+    }
+
+    function closemodal(e) {
+      e.target.closest(".drawflow-node").style.zIndex = "2";
+      e.target.parentElement.parentElement.style.display = "none";
+      //document.getElementById("modalfix").style.display = "none";
+      editor.precanvas.style.transform = transform;
+      editor.precanvas.style.left = '0px';
+      editor.precanvas.style.top = '0px';
+      editor.editor_mode = "edit";
+    }
+
+    function changeModule(event) {
+      var all = document.querySelectorAll(".menu ul li");
+      for (var i = 0; i < all.length; i++) {
+        all[i].classList.remove('selected');
+      }
+      event.target.classList.add('selected');
+    }
+
+    function changeMode(option) {
+      //console.log(lock.id);
+      if (option == 'lock') {
+        lock.style.display = 'none';
+        unlock.style.display = 'block';
+      } else {
+        lock.style.display = 'block';
+        unlock.style.display = 'none';
+      }
+    }
+
+    window.addEventListener("message", function (event) {
+      console.log('Receive message from external API...');
+
+      if (event.data === "ShinyTriggerRun") {
+        var data = editor.export();
+        window.parent.postMessage({ type: 'ExportData', payload: JSON.stringify(data) }, '*'); // Post the data back to Shiny
+      }
+      else if (event.data === "ShinyTriggerClear") {
+        editor.clearModuleSelected();
+        editor.import(default_pipeline)
+        initializeAwesomplete('.laslibfilter', laslibfilterslist);
+        initializeAwesomplete('.metricengine', attributeMetricCombinations);
+      }
+      else if (event.data === "ShinyTriggerExport") {
+        downloadJSON();
+      }
+      else if (event.data.type === "ShinyTriggerUpload") {
+        const data = event.data.payload;
+
+        try {
+          const jsonData = JSON.parse(data); // Parse the string to JSON
+          editor.import(jsonData);
+        }
+        catch (error) {
+          console.error('Failed to parse JSON data:', error);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

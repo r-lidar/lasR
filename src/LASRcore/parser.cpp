@@ -364,7 +364,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
 
         if (!stage.contains("connect"))
         {
-          double window = stage.at("window");
+          double window = stage.value("window", res);
           float default_value = stage.value("default_value", NA_F32_RASTER);
           std::vector<std::string> methods = get_vector<std::string>(stage["method"]);
 

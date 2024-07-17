@@ -27,6 +27,7 @@ Progress::Progress()
   prev = -1.0f;
   sub = 0;
   ncpu = 1;
+  use_async_api = false;
 
 #ifdef USING_R
   interrupt_counter = 0;
@@ -180,6 +181,20 @@ void Progress::set_ncpu(int n)
     this->ncpu = n;
 }
 
+void Progress::set_async_message_file(std::string& file)
+{
+  if (file.size() > 0)
+  {
+    use_async_api = true;
+    async_communication_file = file;
+  }
+  else
+  {
+    use_async_api = false;
+    async_communication_file = "";
+  }
+}
+
 // Called by every stage and can be applied only by thread 0. It is also called by the processor
 // outside open mp region
 void Progress::done(bool main)
@@ -224,6 +239,15 @@ void Progress::show(bool flush)
 
   if (display && must_show())
   {
+    if (use_async_api)
+    {
+      FILE* file = fopen(async_communication_file.c_str(), "w");
+      if (file == NULL) return;
+      fprintf(file, "%lf", this->percentage);
+      fclose(file);
+      return;
+    }
+
     if (ntotal > 0)
     {
       this->prev = this->percentage;

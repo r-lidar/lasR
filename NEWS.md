@@ -1,5 +1,7 @@
-# lasR 0.8.1
+# lasR 0.9.0
 
+- Internal: internal changes to support visual programming. See the [lasRui project](https://github.com/r-lidar/lasRui).
+- `exec()` accepts the path to a json file produced by a UI (non documented)
 - New: filter `keep_ground_and_water()`
 - Change: `normalize` uses `keep_ground_and_water()`
 - Fix: #73 `triangulation` fails with < 3 points
