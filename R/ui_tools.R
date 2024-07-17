@@ -10,7 +10,9 @@ interpolate_R_expression = function(str)
 
   evaluated <- sapply(extracted[[1]], function(x) {
     cleaned <- gsub('\\\\\"', '\"', x)  # Clean the string
-    eval(parse(text = gsub('#', '', cleaned)))  # Remove # and evaluate
+    parsed  <- eval(parse(text = gsub('#', '', cleaned)))  # Remove and evaluate
+    parsed <- gsub('\\\\', '/', parsed)  # Windows path
+    parsed
   })
 
   for (i in seq_along(evaluated)) {

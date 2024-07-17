@@ -370,20 +370,22 @@
     window.addEventListener("message", function (event) {
       console.log('Receive message from external API...');
 
-      if (event.data === "ShinyTriggerRun") {
-        var data = editor.export();
-        window.parent.postMessage({ type: 'ExportData', payload: JSON.stringify(data) }, '*'); // Post the data back to Shiny
+      if (event.data === "APITriggerRun") {
+        console.log("Export pipeline to API");
+        var json = editor.export();
+        json.drawflow.uuid = generateUUID();
+        window.parent.postMessage({ type: 'ExportData', payload: JSON.stringify(json) }, '*'); // Post the data back to Shiny
       }
-      else if (event.data === "ShinyTriggerClear") {
+      else if (event.data === "APITriggerClear") {
         editor.clearModuleSelected();
         editor.import(default_pipeline)
         initializeAwesomplete('.laslibfilter', laslibfilterslist);
         initializeAwesomplete('.metricengine', attributeMetricCombinations);
       }
-      else if (event.data === "ShinyTriggerExport") {
+      else if (event.data === "APITriggerExport") {
         downloadJSON();
       }
-      else if (event.data.type === "ShinyTriggerUpload") {
+      else if (event.data.type === "APITriggerUpload") {
         const data = event.data.payload;
 
         try {
