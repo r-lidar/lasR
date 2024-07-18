@@ -32,9 +32,6 @@ to the original collection of files."><meta property="og:image" content="/logo.s
     <li><a class="dropdown-item" href="../articles/multithreading.html">Parallel processing</a></li>
     <li><a class="dropdown-item" href="../articles/r-stages.html">R stages</a></li>
     <li><a class="dropdown-item" href="../articles/baba.html">Buffered Area Based Approach</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Ressources</h6></li>
-    <li><a class="dropdown-item" href="../articles/pipeline.html">Pipelines</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -99,7 +96,7 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 <span class="r-in"><span><span class="va">normalize</span> <span class="op">&lt;-</span> <span class="va">tri</span> <span class="op">+</span> <span class="fu"><a href="transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">normalize</span> <span class="op">+</span> <span class="fu">write_las</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*_norm.las"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpRuXEvy/Topography_norm.las"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpPEvSrC/Topography_norm.las"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
