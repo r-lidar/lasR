@@ -655,12 +655,6 @@ bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
     chunk.name = "data.frame";
   }
 
-  // No buffer, we don't need to go further there is not other file to read
-  if (buffer <= 0)
-  {
-    return true;
-  }
-
   // We are working with an R data.frame: there is no file and especially
   // no neighbouring files. We can exit now.
   if (use_dataframe)

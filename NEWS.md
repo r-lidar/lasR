@@ -1,3 +1,7 @@
+# lasR 0.9.1
+
+- Fix: better handle datasets with overlaping tiles but non duplicated points
+
 # lasR 0.9.0
 
 - Internal: internal changes to support visual programming. See the [lasRui project](https://github.com/r-lidar/lasRui).

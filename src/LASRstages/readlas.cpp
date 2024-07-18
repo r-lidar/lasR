@@ -30,6 +30,7 @@ LASRlasreader::~LASRlasreader()
 
 bool LASRlasreader::set_chunk(const Chunk& chunk)
 {
+  chunk.dump();
   if (lasreader)
   {
     lasreader->close();
@@ -58,7 +59,12 @@ bool LASRlasreader::set_chunk(const Chunk& chunk)
 
   free(filtercpy);
 
-  //for (auto& file : chunk.neighbour_files) lasreadopener->add_file_name(file.c_str());
+  // In theory if buffer = 0 we should not have neighbor files on a properly tiled dataset. If the files
+  // overlap this could arise but the neighbor file won't be read because buffer = 0 does allows to instantiate
+  // LASreaderBuffer. We force an epsilon buffer
+  if (chunk.buffer == 0 && chunk.neighbour_files.size() > 0)
+    lasreadopener->set_buffer_size(EPSILON);
+
   for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str());
   for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
 
