@@ -1,3 +1,7 @@
+# lasR 0.10.0
+
+- New: new stage `classify_with_sor()` to classify outlier with statistical outlier removal.
+
 # lasR 0.9.1
 
 - Fix: better handle datasets with overlaping tiles but non duplicated points

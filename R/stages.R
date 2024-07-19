@@ -198,7 +198,27 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 
 #' Classify noise points
 #'
-#' Classify points using Isolated Voxel Filter. The stage identifies points that have only a few other
+#' Classify points using the Statistical Outliers Removal (SOR) methods first described in the PCL
+#' library and also implemented in CloudCompare (see references). For each point, it computes the mean
+#' distance to all its k-nearest neighbors. The points that are farther than the average distance
+#' plus a number of times (multiplier) the standard deviation are considered noise.
+#'
+#' @param k	numeric. The number of neighbours
+#' @param m numeric. Multiplier. The maximum distance will be: ⁠avg distance + m * std deviation⁠
+#' @param class integer. The class to assign to the points that match the condition.
+#'
+#' @template return-pointcloud
+#'
+#' @export
+classify_with_sor = function(k = 8, m = 6, class = 18L)
+{
+  ans <- list(algoname = "classify_with_sor", k = k, m = m, class = class)
+  set_lasr_class(ans)
+}
+
+#' Classify noise points
+#'
+#' Classify points using Isolated Voxel Filter (IVF). The stage identifies points that have only a few other
 #' points in their surrounding 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification.
 #' Used with class 18, it classifies points as noise. This stage modifies the point cloud in the pipeline
 #' but does not produce any output.

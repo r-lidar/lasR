@@ -20,6 +20,7 @@
 #include "readlas.h"
 #include "regiongrowing.h"
 #include "setcrs.h"
+#include "sor.h"
 #include "sort.h"
 #include "summary.h"
 #include "svd.h"
@@ -187,6 +188,15 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         bool force_map = stage.value("force_map", false);
 
         auto v = std::make_unique<LASRivf>(xmin, ymin, xmax, ymax, res, n, classification, force_map);
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "classify_with_sor")
+      {
+        int k = stage.value("k", 10);
+        int m = stage.value("m", 3);
+        int classification = stage.value("class", 18);
+
+        auto v = std::make_unique<LASRsor>(xmin, ymin, xmax, ymax, k, m, classification);
         pipeline.push_back(std::move(v));
       }
       else if (name == "filter")
