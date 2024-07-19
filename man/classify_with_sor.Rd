@@ -4,7 +4,7 @@
 \alias{classify_with_sor}
 \title{Classify noise points}
 \usage{
-classify_with_sor(k = 10, m = 3, class = 18L)
+classify_with_sor(k = 8, m = 6, class = 18L)
 }
 \arguments{
 \item{k}{numeric. The number of neighbours}
@@ -19,6 +19,6 @@ This stage transforms the point cloud in the pipeline. It consequently returns n
 \description{
 Classify points using the Statistical Outliers Removal (SOR) methods first described in the PCL
 library and also implemented in CloudCompare (see references). For each point, it computes the mean
-distance to all its k-nearest neighbours. The points that are farther than the average distance
+distance to all its k-nearest neighbors. The points that are farther than the average distance
 plus a number of times (multiplier) the standard deviation are considered noise.
 }
