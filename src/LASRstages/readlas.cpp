@@ -30,7 +30,6 @@ LASRlasreader::~LASRlasreader()
 
 bool LASRlasreader::set_chunk(const Chunk& chunk)
 {
-  chunk.dump();
   if (lasreader)
   {
     lasreader->close();
