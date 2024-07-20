@@ -49,6 +49,7 @@
 <ul><li>Fix: Better handle datasets with overlapping tiles and non-duplicated points.</li>
 <li>Fix: Trigger lax indexation for a single file when processing by chunks.</li>
 <li>Fix: <code><a href="../reference/local_maximum.html">local_maximum()</a></code> could return multiple too-close local maximum points if two close points have the exact same Z coordinates and the exact same X or Y coordinates (but not both X and Y; duplicated points were properly handled). This particularly affected <code><a href="../reference/local_maximum.html">local_maximum_raster()</a></code>, where two pixels can easily have the same Z and the same X or Y.</li>
+<li>Fix: <code><a href="../reference/region_growing.html">region_growing()</a></code> the <code>th_tree</code> argument was not properly respected.</li>
 <li>Enhance: Progress estimation display when indexing a single file.</li>
 </ul></div>
     <div class="section level2">
