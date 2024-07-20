@@ -146,7 +146,7 @@ bool LASRlocalmaximum::process(LAS*& las)
     // is non-synchronized with other iterations and it will simply prevent skipping one computation early
     for (auto& pt : points)
     {
-      if (pt.z == pp.z && pt.x != pp.x && pt.y != pp.y && status[pt.FID] == LMX) status[i] = NLM; // Handle duplicated height for different points
+      if (pt.z == pp.z && (pt.x != pp.x || pt.y != pp.y) && status[pt.FID] == LMX) status[i] = NLM; // Handle duplicated height for different points
       if (pt.z > pp.z) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
       if (pt.z < pp.z) status[pt.FID] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
     }
