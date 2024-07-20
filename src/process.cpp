@@ -140,11 +140,6 @@ bool process(const std::string& config_file)
 
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
 
-    if (!lascatalog->set_chunk_size(chunk_size))
-    {
-      throw last_error;
-    }
-
     int n = lascatalog->get_number_chunks();
 
     // Check some multi-threading stuff

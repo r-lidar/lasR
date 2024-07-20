@@ -106,6 +106,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
         // stage tells us 50.
         buffer = stage.value("buffer", 0);
+        chunk_size = stage.value("chunk", 0);
 
         // No element 'dataframe'? We are processing some files. Otherwise with have a compatibility layer
         // with lidR to process LAS objects
@@ -636,6 +637,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       num_stages--;
       catalog->set_buffer(need_buffer()); // We parsed the pipeline so we know if we need a buffer
       catalog->build_index(); // The catalog is built, we have the bbox of all the LAS files. We can build a spatial index
+      if (!catalog->set_chunk_size(chunk_size)) return false;
 
       // We iterate over all the stage again to assign the filter, the crs and the output file.
       // This is done here because set_output_file() does create a file on disk and we want
@@ -679,7 +681,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       // only if needed.
       if (!catalog->check_spatial_index() && !indexer)
       {
-        auto v = std::make_unique<LASRlaxwriter>(false, false, true);
+        bool onthefly = catalog->get_number_files() > 1;
+        auto v = std::make_unique<LASRlaxwriter>(false, false, onthefly);
         pipeline.push_front(std::move(v));
 
         if (catalog->is_source_vpc())

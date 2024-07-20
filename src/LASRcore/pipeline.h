@@ -70,6 +70,7 @@ private:
   bool parallelizable;
   bool read_payload;
   double buffer;
+  double chunk_size;
   std::vector<int> order;
 
   LAS* las;                             // owned by this
