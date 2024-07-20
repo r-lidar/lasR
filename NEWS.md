@@ -1,8 +1,8 @@
 # lasR 0.9.1
 
-- Fix: better handle datasets with overlaping tiles but non duplicated points
+- Fix: better handle datasets with overlapping tiles but non duplicated points
 - Fix: trigger lax indexation for a single file when processing by chunks.
-- Enhance: progress estimation distaply when indexing a single file.
+- Enhance: progress estimation display when indexing a single file.
 
 # lasR 0.9.0
 
