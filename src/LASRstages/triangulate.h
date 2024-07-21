@@ -21,7 +21,7 @@ public:
   bool process(LAS*& las) override;
   bool interpolate(std::vector<double>& res, const Raster* raster = nullptr);
   bool contour(std::vector<Edge>& edges) const;
-  double need_buffer() const override { return 50.0; }
+  double need_buffer() const override { return 20.0; }
   void clear(bool last) override;
   bool write() override;
   std::string get_name() const override { return "triangulate"; }
