@@ -41,6 +41,8 @@ bool LASRtriangulate::process(LAS*& las)
     }
   }
 
+  this->las = las;
+
   progress->reset();
   progress->set_prefix("Delaunay triangulation");
   progress->set_total(0);
@@ -66,7 +68,6 @@ bool LASRtriangulate::process(LAS*& las)
   // However 'interpolate' will handle the case and fail
   if (coords.size() < 3) return true;
 
-  this->las = las;
   d = new delaunator::Delaunator(coords);
 
   progress->done();
@@ -76,16 +77,11 @@ bool LASRtriangulate::process(LAS*& las)
 
 bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster)
 {
-  if (d == nullptr)
-  {
-    last_error = "no Delaunay triangulation: there were fewer than 3 points during the 'triangulate' stage";
-    return false;
-  }
-
   int n = (raster == nullptr) ? las->npoints : raster->get_ncells();
   res.resize(n);
   std::fill(res.begin(), res.end(), NA_F64);
 
+  if (d == nullptr) return true;
   if (res.size() == 0) return true; // Fix #40
 
   LAStransform* lastransform = nullptr;
