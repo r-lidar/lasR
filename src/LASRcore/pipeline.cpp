@@ -179,6 +179,8 @@ bool Pipeline::run_streamed()
       last_error = "in '" + stage->get_name() + "' while writing the output: " + last_error;
       return false;
     }
+
+    stage->reset_filter();
   }
 
   return true;
@@ -265,6 +267,11 @@ bool Pipeline::run_loaded()
 
     profiler.toc();
     profiler.insert(stage->get_name());
+  }
+
+  for (auto&& stage : pipeline)
+  {
+    stage->reset_filter();
   }
 
   return true;

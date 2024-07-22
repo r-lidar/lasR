@@ -5,6 +5,7 @@
 - Fix: `local_maximum()` could return multiple too-close local maximum points if two close points have the exact same Z coordinates and the exact same X or Y coordinates (but not both X and Y; duplicated points were properly handled). This particularly affected `local_maximum_raster()`, where two pixels can easily have the same Z and the same X or Y.
 - Fix: `region_growing()` the `th_tree` argument was not properly respected.
 - Fix: `transform_with` with a TIN won't fail if there is no TIN. Instead all points will be removed.
+- Fix: possible edge artifacts were possible for some filter
 - Enhance: Progress estimation display when indexing a single file.
 
 # lasR 0.9.0
