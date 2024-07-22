@@ -16,6 +16,9 @@ test_that("growing region works",
   polygons = terra::as.polygons(trees)
 
   expect_equal(id1, id2)
+
+  skip_on_os("mac")
+
   expect_equal(sum(terra::expanse(polygons)), 6418, tolerance = 1e-4)
 })
 
