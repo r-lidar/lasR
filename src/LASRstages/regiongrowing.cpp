@@ -136,13 +136,13 @@ bool LASRregiongrowing::process(LAS*& las)
           if (raster.get_value(cell) != raster.get_nodata()) continue;
 
           float val = image.get_value(cell);
-          double threshold1 = MIN3(th_tree, hSeed*th_seed, mhCrown*th_crown);
+          double threshold1 = MIN(hSeed*th_seed, mhCrown*th_crown);
           double threshold2 = hSeed+hSeed*0.05;
           double x = raster.x_from_cell(cell);
           double y = raster.y_from_cell(cell);
           double sqdistance = (x-region.top.x)*(x-region.top.x) + (y-region.top.y)*(y-region.top.y);
 
-          bool expend = (val > threshold1) && (val <= threshold2) && (sqdistance < DIST);
+          bool expend = (val > threshold1) && (val <= threshold2) && (sqdistance < DIST) && (val > th_tree);
 
           if (expend)                                     // The pixel in part of the region
           {

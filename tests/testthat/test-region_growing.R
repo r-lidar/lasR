@@ -8,12 +8,15 @@ test_that("growing region works",
   tree = region_growing(chm, lmx, max_cr = 10)
   u = exec(reader + chm + lmx + tree, on = f)
 
+  chm = u[[1]]
   ttops = u[[2]]
   trees = u[[3]]
   id1 = sort(na.omit(as.numeric(unique(trees[]))))
   id2 = 1:nrow(ttops)-1
+  polygons = terra::as.polygons(trees)
 
   expect_equal(id1, id2)
+  expect_equal(sum(terra::expanse(polygons)), 6418, tolerance = 1e-4)
 })
 
 test_that("growing region works with multiple files",
@@ -35,7 +38,7 @@ test_that("growing region works with multiple files",
   #plot(u$local_maximum$geom, add = TRUE, cex = 0.1, pch = 19)
 
   expect_equal(length(unique(u$region_growing[])), 2235)
-  expect_equal(nrow(u$local_maximum), 2235L)
+  expect_equal(nrow(u$local_maximum), 2234L)
   expect_equal(sum(is.na(u$rasterize[])), 5367L)
 
   # We have an issue on the r-universe version of macos-r-release it is 81 instead of 83

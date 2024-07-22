@@ -30,7 +30,7 @@ test_that("local maximum works with multiple files",
   lmf = local_maximum(5, min_height = 330, record_attributes = T)
   ans = exec(lmf, on = f)
 
-  expect_equal(dim(ans), c(2235, 6))
+  expect_equal(dim(ans), c(2234, 6))
 })
 
 test_that("local maximum works with extra bytes",
@@ -65,8 +65,8 @@ test_that("local maximum works with a raster",
 
   ans = exec(chm  + lmf1 + pit + lmf2, on = f)
 
-  expect_equal(dim(ans[[2]]), c(262L, 1L))
-  expect_equal(dim(ans[[4]]), c(222L, 1L))
+  expect_equal(dim(ans[[2]]), c(258L, 1L))
+  expect_equal(dim(ans[[4]]), c(220L, 1L))
 })
 
 test_that("growing region works with a raster with multiple files",
@@ -84,6 +84,6 @@ test_that("growing region works with a raster with multiple files",
   #terra::plot(u$rasterize, col = lidR::height.colors(25))
   #plot(u$local_maximum$geom, add = TRUE, cex = 0.1, pch = 19)
 
-  expect_equal(nrow(u$local_maximum), 2110L)
+  expect_equal(nrow(u$local_maximum), 2099L)
 })
 

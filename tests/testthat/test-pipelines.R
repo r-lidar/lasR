@@ -55,7 +55,7 @@ test_that("pipleline info works",
   info = lasR:::get_pipeline_info(pipeline)
 
   expect_equal(info$streamable, FALSE)
-  expect_equal(info$buffer, 50)
+  expect_equal(info$buffer, 20)
   expect_equal(info$read_points, TRUE)
 
   pipeline = hulls()

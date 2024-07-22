@@ -47,8 +47,13 @@ test_that("interpolation fails with 0 points",
   trans = transform_with(mesh)
   rr = rasterize(2, mesh)
 
-  expect_error(exec(mesh + trans, on = f), "no Delaunay triangulation")
-  expect_error(exec(mesh + rr, on = f), "no Delaunay triangulation")
+  expect_error(exec(mesh + trans, on = f), NA)
+
+  ans = exec(mesh + rr, on = f)
+
+  expect_s4_class(ans, "SpatRaster")
+  expect_equal(dim(ans), c(144L, 144L, 1L))
+  expect_true(all(is.na(ans[])))
 })
 
 #test_that("triangulate fails with 0 points (#25)",
