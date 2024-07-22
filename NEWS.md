@@ -6,6 +6,7 @@
 - Fix: `region_growing()` the `th_tree` argument was not properly respected.
 - Fix: `transform_with` with a TIN won't fail if there is no TIN. Instead all points will be removed.
 - Fix: possible edge artifacts were possible for some filter
+- Fix: #78 WGS84 VPC bounding box
 - Enhance: Progress estimation display when indexing a single file.
 
 # lasR 0.9.0

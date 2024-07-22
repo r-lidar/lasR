@@ -379,7 +379,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf], [%.9lf,%.9lf,%.3lf] ]", A.x, A.y, zmin, B.x, B.y, zmin, C.x, C.y, zmax, D.x, D.y, zmax, A.x, A.y, zmin);
     std::string geometry(buffer);
-    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), zmin, MAX(B.x, C.y), MAX(C.y, D.y), zmax);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), zmin, MAX(B.x, C.x), MAX(C.y, D.y), zmax);
     std::string sbbox(buffer);
 
     output << "  {" << std::endl;
