@@ -192,7 +192,7 @@ test_that("rasterize splits the raster on demand",
   expect_equal(length(ans1), 2L)
   expect_s4_class(ans2, "SpatRaster")
   expect_equal(basename(ans1), c("chm_bcts_1_0.tif", "chm_bcts_1_1.tif"))
-  expect_equal(dim(ans2), c(272L,98L,1L))
+  expect_equal(dim(ans2), c(71, 21L,1L))
 
   r1 = terra::rast(ans1[1])
   r2 = terra::rast(ans1[2])

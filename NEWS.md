@@ -1,6 +1,7 @@
 # lasR 0.10.0
 
 - New: new stage `classify_with_sor()` to classify outlier with statistical outlier removal.
+- Change: #79 raster produced on a subset of data have the minimal possible extent instead of the full extent of the point cloud
 
 # lasR 0.9.1
 

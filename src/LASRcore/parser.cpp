@@ -351,21 +351,55 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         if (catalog != nullptr)
         {
           // Special treatment of the reader to find the potential queries in the catalog
+          // If we have query we also recompute the bounding box in order to create outputs
+          // with the minimal bounding box
           if (stage.contains("xcenter"))
           {
+            xmin = std::numeric_limits<double>::max();
+            ymin = std::numeric_limits<double>::max();
+            xmax = std::numeric_limits<double>::lowest();
+            ymax = std::numeric_limits<double>::lowest();
+
             std::vector<double> xcenter = get_vector<double>(stage["xcenter"]);
             std::vector<double> ycenter = get_vector<double>(stage["ycenter"]);
             std::vector<double> radius = get_vector<double>(stage["radius"]);
-            for (size_t j = 0 ; j <  xcenter.size() ; ++j) catalog->add_query(xcenter[j], ycenter[j], radius[j]);
+
+            for (size_t j = 0 ; j <  xcenter.size() ; ++j)
+            {
+              double x = xcenter[j];
+              double y = ycenter[j];
+              double r = radius[j];
+
+              catalog->add_query(x, y, r);
+
+              xmin = MIN(xmin, x-r);
+              ymin = MIN(ymin, y-r);
+              xmax = MAX(xmax, x+r);
+              ymax = MAX(ymax, y+r);
+            }
           }
 
           if (stage.contains("xmin"))
           {
-            std::vector<double> xmin = get_vector<double>(stage["xmin"]);
-            std::vector<double> ymin = get_vector<double>(stage["ymin"]);
-            std::vector<double> xmax = get_vector<double>(stage["xmax"]);
-            std::vector<double> ymax = get_vector<double>(stage["ymax"]);
-            for (size_t j = 0 ; j <  xmin.size() ; ++j) catalog->add_query(xmin[j], ymin[j], xmax[j], ymax[j]);
+            xmin = std::numeric_limits<double>::max();
+            ymin = std::numeric_limits<double>::max();
+            xmax = std::numeric_limits<double>::lowest();
+            ymax = std::numeric_limits<double>::lowest();
+
+            std::vector<double> bbxmin = get_vector<double>(stage["xmin"]);
+            std::vector<double> bbymin = get_vector<double>(stage["ymin"]);
+            std::vector<double> bbxmax = get_vector<double>(stage["xmax"]);
+            std::vector<double> bbymax = get_vector<double>(stage["ymax"]);
+
+            for (size_t j = 0 ; j <  bbxmin.size() ; ++j)
+            {
+              catalog->add_query(bbxmin[j], bbymin[j], bbxmax[j], bbymax[j]);
+
+              xmin = MIN(xmin, bbxmin[j]);
+              ymin = MIN(ymin, bbymin[j]);
+              xmax = MAX(xmax, bbxmax[j]);
+              ymax = MAX(ymax, bbymax[j]);
+            }
           }
         }
       }
