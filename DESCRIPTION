@@ -3,7 +3,7 @@ Type: Package
 Version: 0.9.1
 Title: Fast and Pipeable Airborne LiDAR Data Tools
 Authors@R: c(
-    person("Jean-Romain", "Roussel", email = "jean-romain.roussel.1@ulaval.ca", role = c("aut", "cre", "cph")),
+    person("Jean-Romain", "Roussel", email = "info@r-lidar.com", role = c("aut", "cre", "cph")),
     person("Martin", "Isenburg", email = "", role = "cph", comment = "Is the author of the included LASlib and LASzip libraries"),
     person("Benoît", "St-Onge", email = "", role = "cph", comment = "Is the author of the included 'chm_prep' function"),
     person("Niels", "Lohmann", email = "", role = "cph", comment = "Is the author of the included json parser"),
