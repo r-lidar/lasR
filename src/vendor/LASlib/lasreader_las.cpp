@@ -804,7 +804,18 @@ BOOL LASreaderLAS::open(ByteStreamIn* stream, BOOL peek_only, U32 decompress_sel
           }
           else if (header.vlrs[i].record_id == 4) // ExtraBytes
           {
-            header.init_attributes(header.vlrs[i].record_length_after_header/sizeof(LASattribute), (LASattribute*)header.vlrs[i].data);
+            if (header.attribute_sizes == 0)
+            {
+              header.init_attributes(header.vlrs[i].record_length_after_header/sizeof(LASattribute), (LASattribute*)header.vlrs[i].data);
+            }
+            else
+            {
+              U32 number_attributes = header.vlrs[i].record_length_after_header/sizeof(LASattribute);
+              LASattribute* attributes = (LASattribute*)header.vlrs[i].data;
+              for (j = 0; j < (U32)number_attributes; j++)
+              header.add_attribute(attributes[j]);
+            }
+
             for (j = 0; j < (U32)header.number_attributes; j++)
             {
               if (header.attributes[j].data_type > 10)

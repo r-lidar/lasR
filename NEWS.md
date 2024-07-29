@@ -3,6 +3,12 @@
 - New: new stage `classify_with_sor()` to classify outlier with statistical outlier removal.
 - Change: #79 raster produced on a subset of data have the minimal possible extent instead of the full extent of the point cloud
 
+# lasR 0.9.2
+
+- Fix #81: add a warning if the Delaunay triangulation was not computed (< 3 points)
+- Fix #81: read file with multiple Extra Bytes definitions.
+- Fix #80: circular buffer are properly removed from raster
+
 # lasR 0.9.1
 
 - Fix: Better handle datasets with overlapping tiles and non-duplicated points.

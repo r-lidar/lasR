@@ -53,3 +53,11 @@ test_that("reader_circle creates raster with minimal bbox",
   expect_equal(dim(ans), c(161, 11, 1))
   expect_equal(sum(is.na(ans[])), 1622)
 })
+
+test_that("circle buffer is removed #80",
+{
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  ans <- exec(reader_las_circles(273500, 5274500, 20) + rasterize(2, "z_mean"), on = f, buffer = 20)
+
+  expect_equal(sum(is.na(ans[])), 136L)
+})
