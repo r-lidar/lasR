@@ -2,6 +2,7 @@
 
 - Fix #81: add a warning if the Delaunay triangulation was not computed (< 3 points)
 - Fix #81: read file with multiple Extra Bytes definitions.
+- Fix #80: circular buffer are properly removed from raster
 
 # lasR 0.9.1
 

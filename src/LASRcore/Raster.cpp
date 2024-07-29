@@ -16,6 +16,7 @@ Raster::Raster() : Grid(), GDALdataset()
   extent[3] = this->ymax;
 
   buffer = 0;
+  circular = false;
 
   GDALdataset::set_raster(0, 0, 0, 0, 0);
   nodata  = NA_F32_RASTER;
@@ -32,6 +33,7 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, i
   extent[3] = this->ymax;
 
   buffer = 0;
+  circular = false;
 
   GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
   set_nbands(layers);
@@ -49,6 +51,7 @@ Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset()
 
   GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
   buffer = raster.buffer;
+  circular = raster.circular;
   set_nbands(raster.nBands);
   band_names = raster.band_names;
   nodata = raster.nodata;
@@ -159,6 +162,7 @@ bool Raster::set_nbands(int nbands)
 void Raster::set_chunk(const Chunk& chunk)
 {
   buffer = std::ceil(chunk.buffer/xres); // buffer in pixel
+  circular = chunk.shape == ShapeType::CIRCLE;
 
   //print("Chunk %.1lf %.1lf %.1lf %.1lf (+%.1lf m)\n", chunk.xmin, chunk.xmax, chunk.ymin, chunk.ymax, chunk.buffer);
 
@@ -305,8 +309,23 @@ bool Raster::write()
         for (int col = buffer ; col < ncols - buffer ; ++col)
         {
           int originalIndex = row * ncols + col + (i-1)*ncells;
-          int modifiedIndex = (row - buffer) * ncols_no_buffer + (col - buffer);
-          data_no_buffer[modifiedIndex] = data[originalIndex];
+
+          int new_row = (row - buffer);
+          int new_col = (col - buffer);
+          int modifiedIndex = new_row * ncols_no_buffer + new_col;
+
+          float val = data[originalIndex];
+
+          // Remove the buffer but the query is circular
+          if (circular)
+          {
+            float centerx = (float)ncols_no_buffer/2;
+            float centery = (float)nrows_no_buffer/2;
+            float distance = std::sqrt((new_col - centerx) * (new_col - centerx) + (new_row - centery) * (new_row - centery));
+            if (distance > buffer) val = NA_F32_RASTER;
+          }
+
+          data_no_buffer[modifiedIndex] = val;
         }
       }
 

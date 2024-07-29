@@ -44,3 +44,11 @@ test_that("reader_circle perform a queries",
   pipeline = reader_las_circles(8850000, 629400, 20) + read()
   expect_error(exec(pipeline, f, buffer = 5), "cannot find")
 })
+
+test_that("circle buffer is removed #80",
+{
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  ans <- exec(reader_las_circles(273500, 5274500, 20) + rasterize(2, "z_mean"), on = f, buffer = 20)
+
+  expect_equal(sum(is.na(ans[])), 20431L)
+})

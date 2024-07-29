@@ -34,6 +34,7 @@ public:
 
 private:
   int buffer;
+  bool circular;
   double extent[4]; // The actual full bbox of the underlying raster which is constant contrary to the grid bbox that correspond to the current chunk
   std::vector<float> data;
 };
