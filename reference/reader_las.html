@@ -119,8 +119,6 @@ The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". Fo
 <span class="r-in"><span><span class="co"># Perform a query and apply the pipeline on a subset</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu">reader_las_circles</span><span class="op">(</span><span class="fl">273500</span>, <span class="fl">5274500</span>, <span class="fl">20</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">2</span>, <span class="st">"zmax"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 files do not have a spatial index. Spatial indexing speeds up tile buffering and spatial queries drastically.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Files will be indexed on-the-fly. This will take some extra time now but will speed up everything later.</span>
 <span class="r-in"><span><span class="co"># terra::plot(ans)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Perform a query and apply the pipeline on a subset with 1 output files per query</span></span></span>
