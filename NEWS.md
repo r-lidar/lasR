@@ -1,3 +1,8 @@
+# lasR 0.9.2
+
+- Fix #81: add a warning if the Delaunay triangulation was not computed (< 3 points)
+- Fix #81: read file with multiple Extra Bytes definitions.
+
 # lasR 0.9.1
 
 - Fix: Better handle datasets with overlapping tiles and non-duplicated points.
