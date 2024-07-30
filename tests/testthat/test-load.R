@@ -34,4 +34,8 @@ test_that("load raster fails",
   pipeline =  load_raster(r, 2)
   expect_error(exec(pipeline, on = f), "beyond the number of bands")
 
+  u <- system.file("extdata", "Topography.las", package = "lasR")
+  r = exec(rasterize(2), on = u, noread = TRUE)
+  r
+  expect_error(exec(load_raster(r,band=1L), on=f), "non overlaping bounding boxes")
 })

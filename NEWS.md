@@ -3,6 +3,7 @@
 - Fix #81: add a warning if the Delaunay triangulation was not computed (< 3 points)
 - Fix #81: read file with multiple Extra Bytes definitions.
 - Fix #80: circular buffer are properly removed from raster
+- Fix #83: abort the pipeline initialization in `load_raster()` if the raster does not have an extent that overlaps the point-cloud
 
 # lasR 0.9.1
 
