@@ -133,3 +133,10 @@ nested <- function(ncores = ncores()/4L, ncores2 = 2L)
 has_omp_support = function() { .Call(`C_has_omp_support`) }
 
 available_threads <- function() { .Call(`C_available_threads`) }
+
+get_ram <- function()
+{
+  avail = .Call(`C_get_available_ram`)
+  total = .Call(`C_get_total_ram`)
+  c(avail, total)
+}
