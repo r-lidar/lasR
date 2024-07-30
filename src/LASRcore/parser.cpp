@@ -219,7 +219,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         std::string file = stage.at("file");
         int band = stage.value("band", 1);
 
-        auto v = std::make_unique<LASRloadraster>(file, band);
+        auto v = std::make_unique<LASRloadraster>(xmin, ymin, xmax, ymax, file, band);
         pipeline.push_back(std::move(v));
       }
       else if (name == "local_maximum")

@@ -6,7 +6,7 @@
 class LASRloadraster : public StageRaster
 {
 public:
-  LASRloadraster(const std::string& file, int band);
+  LASRloadraster(double xmin, double ymin, double xmax, double ymax, const std::string& file, int band);
   bool set_chunk(const Chunk& chunk) override;
   std::string get_name() const override { return "load_raster"; };
   bool is_streamable() const override { return true; };
