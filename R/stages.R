@@ -350,6 +350,44 @@ delete_points = function(filter = "")
   set_lasr_class(ans)
 }
 
+# ===== F =====
+
+#' Calculate focal ("moving window") values for each cell of a raster
+#'
+#' Calculate focal ("moving window") values for each cell of a raster using various functions. NAs
+#' are always omitted; thus, this stage effectively acts as an NA filler. The window is always circular.
+#' The edges are handled by adjusting the window.
+#'
+#' @param raster LASRalgorithm. A stage that produces a raster.
+#' @param size numeric. The window size **in the units of the point cloud**, not in pixels. For example, 2 means 2 meters
+#' or 2 feet, not 2 pixels.
+#' @param fun string. Function to apply. Supported functions are 'mean', 'median', 'min', 'max', 'sum'.
+#' @template param-ofile
+#' @template return-raster
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package = "lasR")
+#'
+#' chm = rasterize(2, "zmax")
+#' chm2 = lasR:::focal(chm, 8, fun = "mean")
+#' chm3 = lasR:::focal(chm, 8, fun = "max")
+#' pipeline <- reader_las() + chm + chm2 + chm2
+#' ans = exec(pipeline, on = f)
+#'
+#' terra::plot(ans[[1]])
+#' terra::plot(ans[[2]])
+#' terra::plot(ans[[3]])
+#' @export
+focal = function(raster, size, fun = "mean", ofile = temptif())
+{
+  raster = get_stage(raster)
+  if (!methods::is(raster, "LASRraster")) stop("'raster' must be a raster stage")  # nocov
+
+  stopifnot(size > 0)
+
+  ans = list(algoname = "focal",  connect = raster[["uid"]], size = size, fun = fun, output = ofile)
+  set_lasr_class(ans, raster = TRUE)
+}
+
 # ===== H =====
 
 #' Contour of a point cloud

@@ -9,6 +9,7 @@
 #include "breakif.h"
 #include "csf.h"
 #include "filter.h"
+#include "focal.h"
 #include "ivf.h"
 #include "loadraster.h"
 #include "localmaximum.h"
@@ -204,6 +205,26 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       {
         auto v = std::make_unique<LASRfilter>();
         pipeline.push_back(std::move(v));
+      }
+      else if (name == "focal")
+      {
+        std::string uid = stage.at("connect");
+        float size = stage.at("size");
+        std::string fun = stage.value("fun", "mean");
+        auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
+        if (it == pipeline.end()) { last_error = "Cannot find stage with this uid"; return false; }
+
+        StageRaster* p = dynamic_cast<StageRaster*>(it->get());
+        if (p)
+        {
+          auto v = std::make_unique<LASRfocal>(size, fun, p);
+          pipeline.push_back(std::move(v));
+        }
+        else
+        {
+          last_error = "Incompatible stage combination for 'focal'"; // # nocov
+          return false; // # nocov
+        }
       }
       else if (name == "hulls")
       {
