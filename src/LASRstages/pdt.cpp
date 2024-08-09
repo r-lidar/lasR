@@ -1,20 +1,20 @@
 #include "pdt.h"
+#include "Grouper.h"
 
-#include "Shape.h"
-#include "openmp.h"
-#include "NA.h"
+#include "hporro/delaunay.h"
 
-#include "lastransform.hpp"
+#include <algorithm>
 
-LASRpdt::LASRpdt(double xmin, double ymin, double xmax, double ymax)
+LASRpdt::LASRpdt()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-
-  this->npoints = 0;
   this->las = nullptr;
+  this->d = nullptr;
+
+  this->seed_resolution_search = 50;
+  this->max_iteration_angle = 10;
+  this->max_terrain_angle = 75;
+  this->max_iteration_distance = 1.4;
+  this->min_triangle_size = 0.01;
 
   vector.set_geometry_type(wkbMultiPolygon25D);
 }
@@ -22,37 +22,173 @@ LASRpdt::LASRpdt(double xmin, double ymin, double xmax, double ymax)
 bool LASRpdt::process(LAS*& las)
 {
   progress->reset();
-  progress->set_prefix("Delaunay triangulation");
+  progress->set_prefix("Progressive TIN densification");
   progress->set_total(las->npoints);
   progress->show();
 
-  const Point2Dd BT_P1(1e+10, 0);
-  const Point2Dd BT_P2(0, 1e+10);
-  const Point2Dd BT_P3(-1e+10, -1e+10);
-  d.setBoundingTrianglePoints(BT_P1, BT_P2, BT_P3);
+  this->las = las;
 
-  LASpoint* p;
+  double xmin = las->header->min_x;
+  double ymin = las->header->min_y;
+
+  // =====================
+  // Find some seed points
+  // =====================
+
+  // Keep the lowest points per 50 m grid cells
+
+  Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, seed_resolution_search);
+  std::vector<PointLAS> seeds;
+  seeds.resize(grid.get_ncells());
+  for (auto& seed : seeds) seed.z = F64_MAX;
+
   while (las->read_point())
   {
-    p = &las->point;
-    if (!lasfilter.filter(p))
+    if (lasfilter.filter(&las->point)) continue;
+
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    double z = las->point.get_z();
+    unsigned int id = las->current_point;
+    int cell = grid.cell_from_xy(x,y);
+
+    PointLAS& p = seeds[cell];
+    if (z < p.z)
     {
-      d.addPoint(Point2Dd((p->get_x()-xmin)*1000, (p->get_y()-ymin)*1000));
-      index_map.push_back(las->current_point);
-      npoints++;
+      p.x = x;
+      p.y = y;
+      p.z = z;
+      p.FID = id;
+    }
+  }
+
+  auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const PointXYZ& p) { return p.z == F64_MAX; });
+  seeds.erase(new_end, seeds.end());
+
+  std::vector<Vec2> pts;
+  pts.reserve(seeds.size());
+  index_map.clear();
+  for (const auto& seed : seeds)
+  {
+    pts.push_back({(seed.x-xmin)*1000, (seed.y-ymin)*1000});
+    index_map.push_back(seed.FID);
+  }
+
+  // ============================
+  // Triangulate the seed points
+  // ============================
+
+  d = new Triangulation(pts, pts.size(), true);
+
+  return true;
+
+  // =============================
+  // Progressive TIN densification
+  // =============================
+
+  print("\nProgressive TIN densitifcation\n");
+
+  int count;
+
+  do
+  {
+    count = 0;
+
+    // Placeholder for special bbox points
+    double z_placeholder = las->header->min_z;
+
+    LASpoint* p;
+    while (las->read_point())
+    {
+      p = &las->point;
+
+      (*progress)++;
+      progress->show();
+
+      if (lasfilter.filter(&las->point)) continue;
+
+      // Coordinates of the current point
+      PointXYZ P(p->get_x(),p->get_y(),p->get_z());
+      Vec2 pt((P.x-xmin)*1000, (P.y-ymin)*1000);
+
+      // Find the index of the triangle in which this point lies
+      int tri_index = d->findContainerTriangleSqrtSearch(pt);
+
+      // The point has already been inserted, it is a point of the triangulation
+      if (tri_index < 0) continue;
+
+      // Find the index of the vertices
+      int idA = d->triangles[tri_index].v[0];
+      int idB = d->triangles[tri_index].v[1];
+      int idC = d->triangles[tri_index].v[2];
+
+      // The index may map one of the 4 additional points that are not actually in the point cloud and
+      // that serve as bounding box. Otherwise retrieve the coordinates in the point cloud.
+      auto query_coordinates = [&](int id, PointLAS& p)
+      {
+        if (id < 4)
+        {
+          p.x = d->vertices[id].pos[0];
+          p.y = d->vertices[id].pos[1];
+          p.z = z_placeholder;
+        }
+        else
+        {
+          las->get_point(index_map[id-4], p, nullptr, nullptr);
+        }
+      };
+
+      PointLAS A,B,C;
+      query_coordinates(idA, A);
+      query_coordinates(idB, B);
+      query_coordinates(idC, C);
+
+      // This is the triangle in which we are suppose to insert the point
+      TriangleXYZ triangle(A,B,C);
+      triangle.make_clock_wise();
+
+      // If the triangle is < 1 cm, stop subdividing. This is computationally demanding for no
+      // significant improvement
+      if (triangle.square_max_edge_size() < min_triangle_size) continue;
+
+      // Compute the normal
+      PointXYZ n = triangle.normal();
+
+      // Angle of the triangle in degrees
+      double triangle_angle = std::acos(n.z) * (180.0 / M_PI);
+
+      // Distance from P to the triangle plane
+      // (figure 3 in Axelsson's paper)
+      double dist_d = triangle.distance(P);
+
+      // Project P onto the triangle plane
+      PointXYZ proj_P(P.x - (dist_d * n.x), P.y - (dist_d * n.y), P.z - (dist_d * n.z));
+
+      // Compute the distances from P to the three vertices of the triangle
+      double dist_P0 = P.distance(triangle.A);
+      double dist_P1 = P.distance(triangle.B);
+      double dist_P2 = P.distance(triangle.C);
+
+      // Convert the angles to radians
+      // (figure 3 in Axelsson's paper)
+      double alpha = asin(dist_d / dist_P0) * 180.0f/M_PI;
+      double beta  = asin(dist_d / dist_P1) * 180.0f/M_PI;
+      double gamma = asin(dist_d / dist_P2) * 180.0f/M_PI;
+
+      double angle = MAX3(alpha, beta, gamma);
+
+      // Check if the angles and distance meet the threshold criteria
+      if (angle < max_iteration_angle && dist_d < max_iteration_distance)
+      {
+        d->delaunayInsertion(Vec2((P.x-xmin)*1000, (P.y-ymin)*1000), tri_index);
+        index_map.push_back(las->current_point);
+        count++;
+      }
     }
 
-    (*progress)++;
-    progress->show();
-  }
+    printf("Added %d point in the triangulation\n", count);
 
-  if (npoints < 3)
-  {
-    //last_error = "impossible to construct a Delaunay triangulation with " + std::to_string(coords.size()) + " points";
-    return true;
-  }
-
-  this->las = las;
+  } while(count > 0);
 
   progress->done();
 
@@ -63,24 +199,57 @@ bool LASRpdt::write()
 {
   if (ofile.empty()) return true;
 
-  progress->set_total(d.triangles.size());
+  progress->set_total(d->tcount);
   progress->set_prefix("Write triangulation");
   progress->show();
 
-  print("Triangle size %lu\n", d.triangles.size());
-
+  print("\n WRITE \n", d->tcount);
+  print("Triangle size %lu\n", d->tcount);
+  print("index_map size %lu\n", index_map.size());
   auto start_time = std::chrono::high_resolution_clock::now();
 
   std::vector<TriangleXYZ> triangles;
 
-  for (unsigned int i = 0 ; i < d.triangles.size(); i++)
+  for (unsigned int i = 0 ; i < d->tcount; i++)
   {
-    if (d.triangles[i]->getIsDeleted() == true) continue;
+    int idA = d->triangles[i].v[0] - 4;
+    int idB = d->triangles[i].v[1] - 4;
+    int idC = d->triangles[i].v[2] - 4;
 
-    PointXYZ A(d.triangles[i]->getA()->x()/1000+xmin, d.triangles[i]->getA()->y()/1000+ymin);
-    PointXYZ B(d.triangles[i]->getB()->x()/1000+xmin, d.triangles[i]->getB()->y()/1000+ymin);
-    PointXYZ C(d.triangles[i]->getC()->x()/1000+xmin, d.triangles[i]->getC()->y()/1000+ymin);
+    if (idA < 0 || idB < 0 || idC < 0)
+      continue;
+
+    //print("Vertices %d %d %d\n", idA, idB, idC);
+
+    PointLAS A,B,C;
+    las->get_point(index_map[idA], A, nullptr, nullptr);
+    las->get_point(index_map[idB], B, nullptr, nullptr);
+    las->get_point(index_map[idC], C, nullptr, nullptr);
+
+    Vec2 a = d->vertices[d->triangles[i].v[0]].pos;
+    Vec2 b = d->vertices[d->triangles[i].v[1]].pos;
+    Vec2 c = d->vertices[d->triangles[i].v[2]].pos;
+
+    //print("A (%.1lf, %.1lf, %.1lf) vs  (%.1lf, %.1lf)\n", A.x, A.y, A.z, a[0]/1000+xmin, a[1]/1000+ymin);
+    //print("B (%.1lf, %.1lf, %.1lf) vs  (%.1lf, %.1lf)\n", B.x, B.y, B.z, b[0]/1000+xmin, b[1]/1000+ymin);
+    //print("C (%.1lf, %.1lf, %.1lf) vs  (%.1lf, %.1lf)\n", C.x, C.y, C.z, c[0]/1000+xmin, c[1]/1000+ymin);
+
+
+    //if (A.x != a[0]/1000+xmin || A.y != a[1]/1000+ymin ||  B.x != b[0]/1000+xmin || B.y != b[1]/1000+ymin ||  C.x != c[0]/1000+xmin || C.y != c[1]/1000+ymin)
+    //  print(">>>>>>> %lu\n", i);
+
     TriangleXYZ triangle(A, B, C);
+
+    /*Vec2 a = d->vertices[d->triangles[i].v[0]].pos;
+     PointXYZ A(a[0]/1000+xmin, a[1]/1000+ymin);
+
+     Vec2 b = d->vertices[d->triangles[i].v[1]].pos;
+     PointXYZ B(b[0]/1000+xmin, b[1]/1000+ymin);
+
+     Vec2 c = d->vertices[d->triangles[i].v[2]].pos;
+     PointXYZ C(c[0]/1000+xmin, c[1]/1000+ymin);
+
+     TriangleXYZ triangle(A, B, C);*/
     triangle.make_clock_wise();
     triangles.push_back(triangle);
 
@@ -91,25 +260,27 @@ bool LASRpdt::write()
 
   progress->done();
 
-  #pragma omp critical (write_triangulation)
-  {
-    vector.write(triangles);
-  }
+#pragma omp critical (write_triangulation)
+{
+  vector.write(triangles);
+}
 
-  if (verbose)
-  {
-    // # nocov start
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    float second = (float)duration.count()/1000.0f;
-    print("  Writing Delaunay triangulation took %.2f sec\n", second);
-    // # nocov end
-  }
+if (verbose)
+{
+  // # nocov start
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+  float second = (float)duration.count()/1000.0f;
+  print("  Writing Delaunay triangulation took %.2f sec\n", second);
+  // # nocov end
+}
 
-  return true;
+return true;
 }
 
 void LASRpdt::clear(bool last)
 {
-  d.cleanDelaunayTriangulation();
+  delete d;
+  d = nullptr;
+  index_map.clear();
 }

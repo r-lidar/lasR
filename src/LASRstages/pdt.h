@@ -5,12 +5,12 @@
 #include "Vector.h"
 #include "Shape.h"
 
-#include "Andrea/Headers/delaunaytriangulationcore.h"
+class Triangulation;
 
 class LASRpdt : public StageVector
 {
 public:
-  LASRpdt(double xmin, double ymin, double xmax, double ymax);
+  LASRpdt();
   bool process(LAS*& las) override;
   double need_buffer() const override { return 50.0; }
   void clear(bool last) override;
@@ -21,9 +21,14 @@ public:
   LASRpdt* clone() const override { return new LASRpdt(*this); };
 
 private:
-  unsigned int npoints;
+  double seed_resolution_search;
+  double max_iteration_angle;
+  double max_terrain_angle;
+  double max_iteration_distance;
+  double min_triangle_size;
+
   std::vector<int> index_map;
-  DelaunayTriangulationCore d;
+  Triangulation* d;
   LAS* las;
 };
 

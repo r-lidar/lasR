@@ -182,7 +182,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       }
       else if (name == "classify_with_pdt")
       {
-        auto v = std::make_unique<LASRpdt>(xmin, ymin, xmax, ymax);
+        auto v = std::make_unique<LASRpdt>();
         pipeline.push_back(std::move(v));
       }
       else if (name == "classify_with_ivf")
