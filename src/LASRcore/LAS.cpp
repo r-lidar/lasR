@@ -299,19 +299,22 @@ static int compare_buffers(const void *a, const void *b)
   if (get_scanner_channel((const unsigned char*)a) < get_scanner_channel((const unsigned char*)b)) return -1;
   if (get_scanner_channel((const unsigned char*)a) > get_scanner_channel((const unsigned char*)b)) return 1;
   if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
-  return 1;
+  if (get_return_number((const unsigned char*)a) > get_return_number((const unsigned char*)b)) return 1;
+  return 0;
 }
 static int compare_buffers_nochannel(const void *a, const void *b)
 {
   if (get_gps_time_legacy((const unsigned char*)a) < get_gps_time_legacy((const unsigned char*)b)) return -1;
   if (get_gps_time_legacy((const unsigned char*)a) > get_gps_time_legacy((const unsigned char*)b)) return 1;
   if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
-  return 1;
+  if (get_return_number((const unsigned char*)a) > get_return_number((const unsigned char*)b)) return 1;
+  return 0;
 }
 static int compare_buffers_nogps(const void *a, const void *b)
 {
   if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
-  return 1;
+  if (get_return_number((const unsigned char*)a) > get_return_number((const unsigned char*)b)) return 1;
+  return 0;
 }
 
 bool LAS::sort()

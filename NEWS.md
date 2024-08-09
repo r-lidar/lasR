@@ -6,9 +6,11 @@
 
 # lasR 0.9.2
 
-- Fix #81: add a warning if the Delaunay triangulation was not computed (< 3 points)
-- Fix #81: read file with multiple Extra Bytes definitions.
-- Fix #80: circular buffer are properly removed from raster
+- Fix #81: Added a warning if the Delaunay triangulation was not computed (fewer than 3 points).
+- Fix #81: Read files with multiple Extra Bytes definitions.
+- Fix #80: Circular buffers are properly removed from raster.
+- Fix #83: Aborted the pipeline initialization in `load_raster()` if the raster does not have an extent that overlaps with the point cloud.
+- Fix #88: `sort()` now handles duplicated gpstime properly.
 
 # lasR 0.9.1
 
