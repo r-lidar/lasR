@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,10 +46,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.2" id="lasr-092">lasR 0.9.2<a class="anchor" aria-label="anchor" href="#lasr-092"></a></h2>
-<ul><li>Fix <a href="https://github.com/r-lidar/lasR/issues/81" class="external-link">#81</a>: add a warning if the Delaunay triangulation was not computed (&lt; 3 points)</li>
-<li>Fix <a href="https://github.com/r-lidar/lasR/issues/81" class="external-link">#81</a>: read file with multiple Extra Bytes definitions.</li>
-<li>Fix <a href="https://github.com/r-lidar/lasR/issues/80" class="external-link">#80</a>: circular buffer are properly removed from raster</li>
-<li>Fix <a href="https://github.com/r-lidar/lasR/issues/83" class="external-link">#83</a>: abort the pipeline initialization in <code><a href="../reference/load_raster.html">load_raster()</a></code> if the raster does not have an extent that overlaps the point-cloud</li>
+<ul><li>Fix <a href="https://github.com/r-lidar/lasR/issues/81" class="external-link">#81</a>: Added a warning if the Delaunay triangulation was not computed (fewer than 3 points).</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/81" class="external-link">#81</a>: Read files with multiple Extra Bytes definitions.</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/80" class="external-link">#80</a>: Circular buffers are properly removed from raster.</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/83" class="external-link">#83</a>: Aborted the pipeline initialization in <code><a href="../reference/load_raster.html">load_raster()</a></code> if the raster does not have an extent that overlaps with the point cloud.</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/88" class="external-link">#88</a>: <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> now handles duplicated gpstime properly.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.1" id="lasr-091">lasR 0.9.1<a class="anchor" aria-label="anchor" href="#lasr-091"></a></h2>
