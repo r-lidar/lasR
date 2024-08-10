@@ -1,8 +1,6 @@
 #ifndef DELAUNAY_H
 #define DELAUNAY_H
 
-//#include <GL/gl3w.h>
-
 #define __H_BREAKPOINT__ __asm__("int $3")
 // #define __H_ASSERT__(condition) if(!(condition)) {__H_BREAKPOINT__; return false;}
 #define __H_ASSERT__(condition) if(!(condition)) { std::cout << __LINE__ << std::endl; triangles[t1] = pt1; triangles[t2] = pt2; return false;}
@@ -12,14 +10,10 @@
 #include <vector>
 #include <set>
 #include <unordered_set>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
-#define __H_REAL__ double
-typedef glm::dvec2 Vec2;
+#include "utils.h"
 
 class Triangle;
-
 
 class Vertex {
 public:
@@ -123,13 +117,5 @@ public:
     std::set<std::pair<int,double>> getFRNN_distance_exp(int v, float r);
     std::vector<std::vector<std::pair<int,double>>> get_all_FRNN(float r);
 };
-
-double crossa(Vec2 a, Vec2 b);
-bool isLeft(Vec2 a, Vec2 b);
-bool isRight(Vec2 a, Vec2 b);
-bool mightBeLeft(Vec2 a, Vec2 b);
-double det(double a, double b, double c, double d, double e, double f, double g, double h, double i);
-double inCircle(Vec2 a, Vec2 b, Vec2 c, Vec2 d);
-void save_mesh(Triangulation *t, const char *filename);
 
 #endif

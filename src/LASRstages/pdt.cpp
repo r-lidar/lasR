@@ -80,8 +80,6 @@ bool LASRpdt::process(LAS*& las)
 
   d = new Triangulation(pts, pts.size(), true);
 
-  return true;
-
   // =============================
   // Progressive TIN densification
   // =============================

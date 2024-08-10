@@ -1,9 +1,11 @@
 #include <iostream>
 
+#include "pred3d.h"
+#include "utils.h"
+
 #include "delaunay.h"
 #include "constants.h"
 
-#include "pred3d.h"
 static bool initialized = false;
 
 #include <queue>
@@ -11,8 +13,7 @@ static bool initialized = false;
 #include <algorithm>
 #include <csignal>
 #include <cassert>
-
-#include "utils.h"
+#include <cmath>
 
 //VERTEX IMPL
 Vertex::Vertex(Vec2 v, int t) : pos(v), tri_index(t){}
@@ -44,9 +45,9 @@ bool Triangulation::isInside(int t, Vec2 p){
     Vec2 p1 = vertices[triangles[t].v[0]].pos;
     Vec2 p2 = vertices[triangles[t].v[1]].pos;
     Vec2 p3 = vertices[triangles[t].v[2]].pos;
-    return (orient2d(glm::value_ptr(p1),glm::value_ptr(p2),glm::value_ptr(p))>0) &&
-           (orient2d(glm::value_ptr(p2),glm::value_ptr(p3),glm::value_ptr(p))>0) &&
-           (orient2d(glm::value_ptr(p3),glm::value_ptr(p1),glm::value_ptr(p))>0);
+    return (orient2d(&(p1.x),&(p2.x),&(p.x))>0) &&
+           (orient2d(&(p2.x),&(p3.x),&(p.x))>0) &&
+           (orient2d(&(p3.x),&(p1.x),&(p.x))>0);
     // b-a goes from a to b
     // if(isLeft(p2-p1,p-p1) && isLeft(p3-p2,p-p2) && isLeft(p1-p3,p-p3)) return true;
     // return false;
@@ -95,9 +96,9 @@ bool Triangulation::isInEdge(int t, Vec2 p){
     Vec2 p2 = vertices[triangles[t].v[1]].pos;
     Vec2 p3 = vertices[triangles[t].v[2]].pos;
 
-    return (orient2d(glm::value_ptr(p1),glm::value_ptr(p2),glm::value_ptr(p))==0) &&
-           (orient2d(glm::value_ptr(p2),glm::value_ptr(p3),glm::value_ptr(p))==0) &&
-           (orient2d(glm::value_ptr(p3),glm::value_ptr(p1),glm::value_ptr(p))==0);
+    return (orient2d(&(p1.x),&(p2.x),&(p.x))==0) &&
+           (orient2d(&(p2.x),&(p3.x),&(p.x))==0) &&
+           (orient2d(&(p3.x),&(p1.x),&(p.x))==0);
     // b-a goes from a to b
     // Vec2 a1 = p1-p2; Vec2 b1 = p-p2;
     // Vec2 a2 = p2-p3; Vec2 b2 = p-p3;
@@ -112,10 +113,10 @@ Triangulation::Triangulation(std::vector<Vec2> points, int numP, bool logSearch 
         exactinit();
         initialized = true;
     }
-    __H_REAL__ minx = 10000000;
-    __H_REAL__ miny = 10000000;
-    __H_REAL__ maxx =-10000000;
-    __H_REAL__ maxy =-10000000;
+    double minx = 10000000;
+    double miny = 10000000;
+    double maxx =-10000000;
+    double maxy =-10000000;
 
     if(doSorting)
         std::sort(points.begin(),points.end(),[](Vec2 a,Vec2 b){return (a.x==b.x?a.y<b.y:a.x<b.x);});
@@ -250,8 +251,6 @@ int Triangulation::findContainerTriangleLinearSearch(Vec2 p){
 
 int Triangulation::findContainerTriangleSqrtSearch(Vec2 p, int prop){
 
-    //printf("  sqrt search (%.1lf, %.1lf) in triangle %d\n", p[0], p[1], prop);
-
     if (prop < 0) prop = tcount-1;
 
     if(isInside(prop,p))return prop;
@@ -266,10 +265,10 @@ int Triangulation::findContainerTriangleSqrtSearch(Vec2 p, int prop){
         if(f==-1)continue;
         Vec2 a = vertices[triangles[t].v[(i+1)%3]].pos;
         Vec2 b = vertices[triangles[t].v[(i+2)%3]].pos;
-        // glm::value_ptr(v)
+        // &(v)
         if(
-            (orient2d(glm::value_ptr(v),glm::value_ptr(p),glm::value_ptr(a))*orient2d(glm::value_ptr(v),glm::value_ptr(p),glm::value_ptr(b))<0) &&
-            (orient2d(glm::value_ptr(a),glm::value_ptr(b),glm::value_ptr(p))*orient2d(glm::value_ptr(a),glm::value_ptr(b),glm::value_ptr(v))<0)
+            (orient2d(&(v.x),&(p.x),&(a.x))*orient2d(&(v.x),&(p.x),&(b.x))<0) &&
+            (orient2d(&(a.x),&(b.x),&(p.x))*orient2d(&(a.x),&(b.x),&(v.x))<0)
             // (mightBeLeft(p-v,a-v) && mightBeLeft(b-v,p-v)) ||
             // (mightBeLeft(p-v,b-v) && mightBeLeft(a-v,p-v))
         ){
@@ -533,7 +532,7 @@ bool Triangulation::isCCW(int f){
     Vec2 p0 = vertices[triangles[f].v[0]].pos;
     Vec2 p1 = vertices[triangles[f].v[1]].pos;
     Vec2 p2 = vertices[triangles[f].v[2]].pos;
-    return (orient2d(glm::value_ptr(p0),glm::value_ptr(p1),glm::value_ptr(p2))>0);
+    return (orient2d(&(p0.x),&(p1.x),&(p2.x))>0);
     // if((crossa(p0,p1)+crossa(p1,p2)+crossa(p2,p0))>IN_TRIANGLE_EPS) return true;
     // return false;
 }
@@ -963,7 +962,7 @@ bool Triangulation::isConvexBicell(int t1, int t2){
         // Vec2 prev = p1-p0;
         // Vec2 act = p2-p1;
         // if(crossa(prev,act)<0) return false;
-        if(orient2d(glm::value_ptr(p0),glm::value_ptr(p1),glm::value_ptr(p2))<=0) return false;
+        if(orient2d(&(p0.x),&(p1.x),&(p2.x))<=0) return false;
     }
 
     return true;
