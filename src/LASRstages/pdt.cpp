@@ -85,7 +85,7 @@ bool LASRpdt::process(LAS*& las)
 
   prof.tic();
 
-  d = new Triangulation(pts, pts.size(), true);
+  d = new Triangulation(pts);
 
   prof.toc();
   print("Triangulating seeds took %.2f s\n", prof.elapsed());
@@ -126,7 +126,7 @@ bool LASRpdt::process(LAS*& las)
 
       // Find the index of the triangle in which this point lies
       auto start_time = std::chrono::high_resolution_clock::now();
-      tri_index = d->findContainerTriangleSqrtSearch(pt, tri_index);
+      tri_index = d->findContainerTriangle(pt, tri_index);
       auto end_time = std::chrono::high_resolution_clock::now();
       total_search_time += end_time - start_time;
 

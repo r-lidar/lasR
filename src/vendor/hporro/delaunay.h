@@ -9,11 +9,10 @@
 class Triangulation
 {
 public:
-  Triangulation(const std::vector<Vec2>& points, int numP, bool logSearch);
+  Triangulation(const std::vector<Vec2>& points);
   ~Triangulation();
   bool delaunayInsertion(const Vec2& point, int tri_index = -1);
-  int findContainerTriangleLinearSearch(const Vec2& p) const;
-  int findContainerTriangleSqrtSearch(const Vec2& p, int prop = -1) const;
+  int findContainerTriangle(const Vec2& p, int prop) const;
   double triangleArea(int f) const;
 
   Vertex *vertices;
@@ -40,6 +39,9 @@ private:
 
   void remem(); // checks if more memory is needed, and if it is needed, allocates more memory.
 
+  //int findContainerTriangleLinearSearch(const Vec2& p) const;
+  //int findContainerTriangleSqrtSearch(const Vec2& p, int prop = -1) const;
+
   //bool sanity(int);
   //bool integrity(int t);
   //bool validTriangle(int t);
@@ -50,8 +52,6 @@ private:
   int maxTriangles;
   int maxVertices;
   int incount = 0;
-
-  bool doLogSearch = true;
 
   float a;
   Vec2 p0,p1,p2,p3;

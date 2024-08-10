@@ -14,13 +14,15 @@ static bool initialized = false;
 #define MIN3(a,b,c) (((a)>(b)) ? (((b)>(c)) ? (c) : (b)) : (((a)>(c)) ? (c) : (a)));
 #endif
 
-Triangulation::Triangulation(const std::vector<Vec2>& points, int numP, bool logSearch = true) : doLogSearch(logSearch)
+Triangulation::Triangulation(const std::vector<Vec2>& points)
 {
   if (!initialized)
   {
     exactinit();
     initialized = true;
   }
+
+  int numP = points.size();
 
   double minx = 10000000;
   double miny = 10000000;
@@ -74,8 +76,7 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
 {
   remem();
 
-  int tri_index = -1;
-  tri_index = (doLogSearch) ? findContainerTriangleSqrtSearch(p,prop) : findContainerTriangleLinearSearch(p);
+  int tri_index = findContainerTriangle(p,prop);
 
   Vec2 a = vertices[triangles[tri_index].v[0]].pos;
   Vec2 b = vertices[triangles[tri_index].v[1]].pos;
@@ -133,7 +134,54 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
   return true;
 }
 
-int Triangulation::findContainerTriangleLinearSearch(const Vec2& p) const
+int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
+{
+  // If the initial triangle index is invalid, start with the last triangle
+  if (prop < 0 || prop >= tcount) prop = tcount - 1;
+
+  // Initialize the current triangle index
+  int t = prop;
+
+  // Continue searching until we either find the triangle or exhaust neighbors
+  while (true)
+  {
+    // Check if the point is inside the current triangle or on its edge
+    if (isInside(t, p) || isInEdge(t, p)) return t;
+
+    // Calculate the centroid of the current triangle
+    Vec2 v = (vertices[triangles[t].v[0]].pos + vertices[triangles[t].v[1]].pos + vertices[triangles[t].v[2]].pos) / 3.0;
+
+    bool foundNext = false;
+
+    // Iterate over the neighbors of the current triangle
+    for (int i = 0 ; i < 3 ; i++)
+    {
+      int f = triangles[t].t[i];
+
+      // If there is no neighbor in this direction, skip to the next one
+      if (f == -1) continue;
+
+      // Get the vertices of the edge opposite to the neighbor
+      Vec2 a = vertices[triangles[t].v[(i + 1) % 3]].pos;
+      Vec2 b = vertices[triangles[t].v[(i + 2) % 3]].pos;
+
+      // Perform orientation tests to check if the point lies in the neighboring triangle
+      if ((orient2d(&v.x, &p.x, &a.x) * orient2d(&v.x, &p.x, &b.x) < 0) &&
+          (orient2d(&a.x, &b.x, &p.x) * orient2d(&a.x, &b.x, &v.x) < 0))
+      {
+        // If the point is likely in the neighbor, update the current triangle and continue
+        t = f;
+        foundNext = true;
+        break;
+      }
+    }
+
+    // If no suitable neighbor is found, return -1 indicating the point is outside the triangulation
+    if (!foundNext) return -1;
+  }
+}
+
+/*int Triangulation::findContainerTriangleLinearSearch(const Vec2& p) const
 {
   for (int i = 0 ; i < tcount ; i++)
   {
@@ -152,9 +200,9 @@ int Triangulation::findContainerTriangleLinearSearch(const Vec2& p) const
   }
 
   return -1;
-}
+}*/
 
-int Triangulation::findContainerTriangleSqrtSearch(const Vec2& p, int prop) const
+/*int Triangulation::findContainerTriangleSqrtSearch(const Vec2& p, int prop) const
 {
   if (prop < 0) prop = tcount-1;
 
@@ -181,7 +229,7 @@ int Triangulation::findContainerTriangleSqrtSearch(const Vec2& p, int prop) cons
   }
 
   return -1;
-}
+}*/
 
 double Triangulation::triangleArea(int f) const
 {
