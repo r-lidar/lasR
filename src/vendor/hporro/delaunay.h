@@ -35,7 +35,7 @@ public:
 
 class Triangulation {
 public:
-    Triangulation(std::vector<Vec2> points, int numP, bool logSearch);
+    Triangulation(const std::vector<Vec2>& points, int numP, bool logSearch);
     ~Triangulation();
 
     Vertex *vertices;

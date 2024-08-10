@@ -286,8 +286,8 @@ int compress(int elen, REAL *e, REAL *h);
 
 REAL estimate(int elen, REAL *e);
 
-REAL orient2dadapt(REAL *pa, REAL *pb, REAL *pc, REAL detsum);
-REAL orient2d(REAL *pa, REAL *pb, REAL *pc);
+REAL orient2dadapt(const REAL *pa, const REAL *pb, const REAL *pc, REAL detsum);
+REAL orient2d(const REAL *pa, const REAL *pb, const REAL *pc);
 
 REAL orient3dexact(REAL *pa, REAL *pb, REAL *pc, REAL *pd);
 REAL orient3dadapt(REAL *pa, REAL *pb, REAL *pc, REAL *pd, REAL permanent);

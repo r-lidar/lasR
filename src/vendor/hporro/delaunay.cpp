@@ -108,7 +108,7 @@ bool Triangulation::isInEdge(int t, Vec2 p){
     // return false;
 }
 
-Triangulation::Triangulation(std::vector<Vec2> points, int numP, bool logSearch = true) :  doLogSearch(logSearch), doSorting(false) {
+Triangulation::Triangulation(const std::vector<Vec2>& points, int numP, bool logSearch = true) :  doLogSearch(logSearch), doSorting(false) {
     if(!initialized){
         exactinit();
         initialized = true;
@@ -118,8 +118,8 @@ Triangulation::Triangulation(std::vector<Vec2> points, int numP, bool logSearch 
     double maxx =-10000000;
     double maxy =-10000000;
 
-    if(doSorting)
-        std::sort(points.begin(),points.end(),[](Vec2 a,Vec2 b){return (a.x==b.x?a.y<b.y:a.x<b.x);});
+    //if(doSorting)
+    //    std::sort(points.begin(),points.end(),[](Vec2 a,Vec2 b){return (a.x==b.x?a.y<b.y:a.x<b.x);});
 
     for(auto p: points){
         minx = std::min(minx,p.x);

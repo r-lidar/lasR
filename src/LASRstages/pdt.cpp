@@ -14,7 +14,7 @@ LASRpdt::LASRpdt()
   this->max_iteration_angle = 10;
   this->max_terrain_angle = 75;
   this->max_iteration_distance = 1.4;
-  this->min_triangle_size = 0.01;
+  this->min_triangle_size = 0.1;
 
   vector.set_geometry_type(wkbMultiPolygon25D);
 }
