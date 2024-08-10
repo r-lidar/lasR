@@ -1,15 +1,7 @@
 #ifndef DELAUNAY_H
 #define DELAUNAY_H
 
-#define __H_BREAKPOINT__ __asm__("int $3")
-// #define __H_ASSERT__(condition) if(!(condition)) {__H_BREAKPOINT__; return false;}
-#define __H_ASSERT__(condition) if(!(condition)) { std::cout << __LINE__ << std::endl; triangles[t1] = pt1; triangles[t2] = pt2; return false;}
-// #define __H_BREAK_ASSERT__(condition) if(!(condition)) {__H_BREAKPOINT__; assert(condition);}
-#define __H_BREAK_ASSERT__(condition)
-
 #include <vector>
-#include <set>
-#include <unordered_set>
 
 #include "utils.h"
 #include "geometry.h"
@@ -17,87 +9,52 @@
 class Triangulation
 {
 public:
-    Triangulation(const std::vector<Vec2>& points, int numP, bool logSearch);
-    ~Triangulation();
+  Triangulation(const std::vector<Vec2>& points, int numP, bool logSearch);
+  ~Triangulation();
+  bool delaunayInsertion(const Vec2& point, int tri_index = -1);
+  int findContainerTriangleLinearSearch(const Vec2& p) const;
+  int findContainerTriangleSqrtSearch(const Vec2& p, int prop = -1) const;
+  double triangleArea(int f) const;
 
-    Vertex *vertices;
-    Triangle *triangles;
-    double *lengths;
+  Vertex *vertices;
+  Triangle *triangles;
+  int vcount = 0;
+  int tcount = 0;
 
-    bool delaunayInsertion(Vec2 point, int tri_index = -1);
-    void addPointInside(Vec2 point,int);
-    void addPointInEdge(Vec2 point, int t1, int t2);
-    void addPointInEdge(Vec2 point, int t);
-    bool flip(int t1, int t2);
-    int findContainerTriangleLinearSearch(Vec2 p);
-    int findContainerTriangleSqrtSearch(Vec2 p, int prop = -1);
-    int findCHTriangle(int guess);
+private:
+  void addPointInside(const Vec2& point,int);
+  void addPointInEdge(const Vec2& point, int t1, int t2);
+  void addPointInEdge(const Vec2& point, int t);
 
-    std::set<int> getNeighbours(int index);
-    std::set<int> getNeighbourTriangles(int index);
-    void movePoint(int index, Vec2 delta);
-    void whichTriangle();
-    int closestNeighbour(int index);
-    float closestNeighbourDistance(int index);
-    std::pair<int,int> getVerticesSharedByTriangles(int t1, int t2);
+  bool legalize(int t);
+  bool legalize(int t1, int t2);
+  bool flip(int t1, int t2);
 
-    double triangleArea(int f);
+  bool isInside(int t, Vec2) const; //checks if a Vec2 is inside the triangle in the index t
+  bool isInside(int t, int v) const;
+  bool isInEdge(int t, Vec2) const; //checks if a Vec2 is in a edge of a triangle
 
-    bool isInside(int t, Vec2); //checks if a Vec2 is inside the triangle in the index t
-    bool isInside(int t, int v);
-    bool isInEdge(int t, Vec2); //checks if a Vec2 is in a edge of a triangle
-    bool legalize(int t);
-    bool legalize(int t1, int t2);
-    bool isConvexBicell(int t1, int t2); // Checks if a bicell is convex
+  bool isConvexBicell(int t1, int t2); // Checks if a bicell is convex
+  bool isCCW(int f) const; // check if a triangle, in the position f of the triangles array, is ccw
+  bool areConnected(int,int) const;
 
-    bool areConnected(int,int);
-    bool frontTest(int);
-    bool sanity(int);
-    bool allSanity();
-    bool isCCW(int f); // check if a triangle, in the position f of the triangles array, is ccw
-    bool integrity(int t);
-    bool validTriangle(int t);
-    bool next(int t0,int t1); //checks if two triangles are next to each other
+  void remem(); // checks if more memory is needed, and if it is needed, allocates more memory.
 
-    void print(); // prints the triangulation to standard output
-    void print_ind(); // prints connectivity
+  //bool sanity(int);
+  //bool integrity(int t);
+  //bool validTriangle(int t);
 
-    int maxTriangles;
-    int maxVertices;
-    int vcount = 0;
-    int tcount = 0;
-    int incount = 0;
-    int edgecount = 0;
-    int oedgecount = 0;
-    int point_being_moved = -1;
+  //void print(); // prints the triangulation to standard output
+  //void print_ind(); // prints connectivity
 
-    bool doLogSearch = true;
-    bool doSorting = true;
+  int maxTriangles;
+  int maxVertices;
+  int incount = 0;
 
-    float a;
-    Vec2 p0,p1,p2,p3;
+  bool doLogSearch = true;
 
-    // ---------------------- T2 --------------------
-    int calcLongestEdge(int t); // gives the int corresponding to the opposite vertex of the longest edge of a triangle
-    std::vector<int> calcLepp(int t);
-    void centroidAll(double angle);
-    void addCentroids();
-    void longestEdgeBisect(int t);
-    void remem(); // checks if more memory is needed, and if it is needed, allocates more memory.
-
-    // Kinetic delaunay
-    Vec2* velocity;
-    float radius = 0.5;
-    struct RemovedVertex{
-        int t[3]; // indices to the triangles array
-        int v; // index to the vertices array
-    };
-    RemovedVertex removeVertex(int v); // removes a vertex from a triangulation, and returns it
-    void reAddVertex(RemovedVertex rmvx); // add a vertex when it was previously deleted
-    std::set<int> getFRNN(int v, float r);
-    std::set<std::pair<int,double>> getFRNN_distance(int v, float r);
-    std::set<std::pair<int,double>> getFRNN_distance_exp(int v, float r);
-    std::vector<std::vector<std::pair<int,double>>> get_all_FRNN(float r);
+  float a;
+  Vec2 p0,p1,p2,p3;
 };
 
 #endif

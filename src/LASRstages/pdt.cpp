@@ -1,7 +1,6 @@
 #include "pdt.h"
-#include "Grouper.h"
-
 #include "hporro/delaunay.h"
+#include "Profiler.h"
 
 #include <algorithm>
 
@@ -34,6 +33,9 @@ bool LASRpdt::process(LAS*& las)
   // =====================
   // Find some seed points
   // =====================
+
+  Profiler prof;
+  prof.tic();
 
   // Keep the lowest points per 50 m grid cells
 
@@ -74,17 +76,29 @@ bool LASRpdt::process(LAS*& las)
     index_map.push_back(seed.FID);
   }
 
+  prof.toc();
+  print("Selecting seeds took %.2f s\n", prof.elapsed());
+
   // ============================
   // Triangulate the seed points
   // ============================
 
+  prof.tic();
+
   d = new Triangulation(pts, pts.size(), true);
+
+  prof.toc();
+  print("Triangulating seeds took %.2f s\n", prof.elapsed());
 
   // =============================
   // Progressive TIN densification
   // =============================
 
   print("\nProgressive TIN densitifcation\n");
+
+  prof.tic();
+
+  std::chrono::duration<double> total_search_time(0);
 
   int count;
 
@@ -110,7 +124,10 @@ bool LASRpdt::process(LAS*& las)
       Vec2 pt((P.x-xmin)*1000, (P.y-ymin)*1000);
 
       // Find the index of the triangle in which this point lies
+      auto start_time = std::chrono::high_resolution_clock::now();
       int tri_index = d->findContainerTriangleSqrtSearch(pt);
+      auto end_time = std::chrono::high_resolution_clock::now();
+      total_search_time += end_time - start_time;
 
       // The point has already been inserted, it is a point of the triangulation
       if (tri_index < 0) continue;
@@ -184,9 +201,14 @@ bool LASRpdt::process(LAS*& las)
       }
     }
 
-    printf("Added %d point in the triangulation\n", count);
+    print("Added %d points in the triangulation\n", count);
 
   } while(count > 0);
+
+  prof.toc();
+  print("Densification took %.2f s\n", prof.elapsed());
+
+  printf("Triangle search took: %.2f seconds\n", total_search_time.count());
 
   progress->done();
 
@@ -201,9 +223,6 @@ bool LASRpdt::write()
   progress->set_prefix("Write triangulation");
   progress->show();
 
-  print("\n WRITE \n", d->tcount);
-  print("Triangle size %lu\n", d->tcount);
-  print("index_map size %lu\n", index_map.size());
   auto start_time = std::chrono::high_resolution_clock::now();
 
   std::vector<TriangleXYZ> triangles;
