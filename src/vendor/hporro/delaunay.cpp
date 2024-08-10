@@ -9,6 +9,11 @@
 
 static bool initialized = false;
 
+#ifndef MAX3
+#define MAX3(a,b,c) (((a)>(b)) ? (((a)>(c)) ? (a) : (c)) : (((b)>(c)) ? (b) : (c)));
+#define MIN3(a,b,c) (((a)>(b)) ? (((b)>(c)) ? (c) : (b)) : (((a)>(c)) ? (c) : (a)));
+#endif
+
 Triangulation::Triangulation(const std::vector<Vec2>& points, int numP, bool logSearch = true) : doLogSearch(logSearch)
 {
   if (!initialized)
@@ -201,6 +206,20 @@ bool Triangulation::isInside(int t, Vec2 p) const
   Vec2 p2 = vertices[triangles[t].v[1]].pos;
   Vec2 p3 = vertices[triangles[t].v[2]].pos;
 
+  double lim;
+
+  lim = MIN3(p1.x, p2.x, p3.x);
+  if (p.x < lim) return false;
+
+  lim = MAX3(p1.x, p2.x, p3.x);
+  if (p.x > lim) return false;
+
+  lim = MIN3(p1.y, p2.y, p3.y);
+  if (p.y < lim) return false;
+
+  lim = MAX3(p1.y, p2.y, p3.y);
+  if (p.y > lim) return false;
+
   return (orient2d(&(p1.x),&(p2.x),&(p.x)) > 0) &&
     (orient2d(&(p2.x),&(p3.x),&(p.x)) > 0) &&
     (orient2d(&(p3.x),&(p1.x),&(p.x)) > 0);
@@ -217,12 +236,28 @@ bool Triangulation::isInEdge(int t, Vec2 p) const
 {
   if (t==-1) return false;
 
-  if (triangles[t].v[0] == -1 && triangles[t].v[1] == -1 && triangles[t].v[2] == -1) return false;
+  if (triangles[t].v[0] == -1 && triangles[t].v[1] == -1 && triangles[t].v[2] == -1)
+    return false;
 
   Vec2 p1 = vertices[triangles[t].v[0]].pos;
   Vec2 p2 = vertices[triangles[t].v[1]].pos;
   Vec2 p3 = vertices[triangles[t].v[2]].pos;
 
+  double lim;
+
+  lim = MIN3(p1.x, p2.x, p3.x);
+  if (p.x < lim) return false;
+
+  lim = MAX3(p1.x, p2.x, p3.x);
+  if (p.x > lim) return false;
+
+  lim = MIN3(p1.y, p2.y, p3.y);
+  if (p.y < lim) return false;
+
+  lim = MAX3(p1.y, p2.y, p3.y);
+  if (p.y > lim) return false;
+
+  // JR: should be an OR operation??
   return (orient2d(&(p1.x),&(p2.x),&(p.x)) == 0) &&
     (orient2d(&(p2.x),&(p3.x),&(p.x)) == 0) &&
     (orient2d(&(p3.x),&(p1.x),&(p.x)) == 0);

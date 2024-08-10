@@ -110,6 +110,7 @@ bool LASRpdt::process(LAS*& las)
     double z_placeholder = las->header->min_z;
 
     LASpoint* p;
+    int tri_index = -1;
     while (las->read_point())
     {
       p = &las->point;
@@ -125,7 +126,7 @@ bool LASRpdt::process(LAS*& las)
 
       // Find the index of the triangle in which this point lies
       auto start_time = std::chrono::high_resolution_clock::now();
-      int tri_index = d->findContainerTriangleSqrtSearch(pt);
+      tri_index = d->findContainerTriangleSqrtSearch(pt, tri_index);
       auto end_time = std::chrono::high_resolution_clock::now();
       total_search_time += end_time - start_time;
 
