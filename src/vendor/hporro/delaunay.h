@@ -12,28 +12,10 @@
 #include <unordered_set>
 
 #include "utils.h"
+#include "geometry.h"
 
-class Triangle;
-
-class Vertex {
-public:
-    Vertex(Vec2 v, int t);
-    Vertex();
-    Vertex(Vec2);
-    Vec2 pos;
-    int tri_index;
-    void print();
-};
-
-class Triangle {
-public:
-    Triangle(int v1,int v2,int v3,int t1,int t2,int t3);
-    Triangle();
-    int v[3]; // indices to the vertices vector
-    int t[3]; // indices to the triangles vector
-};
-
-class Triangulation {
+class Triangulation
+{
 public:
     Triangulation(const std::vector<Vec2>& points, int numP, bool logSearch);
     ~Triangulation();

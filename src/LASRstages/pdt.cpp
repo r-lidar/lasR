@@ -11,9 +11,9 @@ LASRpdt::LASRpdt()
   this->d = nullptr;
 
   this->seed_resolution_search = 50;
-  this->max_iteration_angle = 10;
+  this->max_iteration_angle = 15;
   this->max_terrain_angle = 75;
-  this->max_iteration_distance = 1.4;
+  this->max_iteration_distance = 1;
   this->min_triangle_size = 0.1;
 
   vector.set_geometry_type(wkbMultiPolygon25D);

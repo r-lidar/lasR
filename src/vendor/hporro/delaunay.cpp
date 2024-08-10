@@ -11,51 +11,30 @@ static bool initialized = false;
 #include <queue>
 #include <stack>
 #include <algorithm>
-#include <csignal>
-#include <cassert>
 #include <cmath>
 
-//VERTEX IMPL
-Vertex::Vertex(Vec2 v, int t) : pos(v), tri_index(t){}
-Vertex::Vertex(Vec2 v) : pos(v){}
-Vertex::Vertex(){}
-void Vertex::print(){
-    std::cout << pos.x << " " << pos.y << std::endl;
-}
+bool Triangulation::isInside(int t, Vec2 p)
+{
+    if (t == -1)
+      return false;
 
-//TRIANGLE IMPL
-Triangle::Triangle(int v0,int v1,int v2,int t0,int t1,int t2){
-    v[0] = v0;
-    v[1] = v1;
-    v[2] = v2;
-    t[0] = t0;
-    t[1] = t1;
-    t[2] = t2;
-}
-Triangle::Triangle(){}
+    if ((triangles[t].v[0] == -1) && (triangles[t].v[1] == -1) && (triangles[t].v[2] == -1))
+      return false;
 
-//TRIANGULATION IMPL
-bool Triangulation::isInside(int t, Vec2 p){
-    if (t == -1)return 0;
-    if(
-        (triangles[t].v[0] == -1) &&
-        (triangles[t].v[1] == -1) &&
-        (triangles[t].v[2] == -1)
-    ) return 0;
     Vec2 p1 = vertices[triangles[t].v[0]].pos;
     Vec2 p2 = vertices[triangles[t].v[1]].pos;
     Vec2 p3 = vertices[triangles[t].v[2]].pos;
+
     return (orient2d(&(p1.x),&(p2.x),&(p.x))>0) &&
            (orient2d(&(p2.x),&(p3.x),&(p.x))>0) &&
            (orient2d(&(p3.x),&(p1.x),&(p.x))>0);
-    // b-a goes from a to b
-    // if(isLeft(p2-p1,p-p1) && isLeft(p3-p2,p-p2) && isLeft(p1-p3,p-p3)) return true;
-    // return false;
 }
 
-bool Triangulation::isInside(int t, int v){
-    if(t==-1)return 0;
-    return isInside(t,vertices[v].pos);
+bool Triangulation::isInside(int t, int v)
+{
+    if (t==-1) return 0;
+
+    return isInside(t, vertices[v].pos);
 }
 
 bool Triangulation::validTriangle(int t){ // checks for repeated vertices or triangles
@@ -152,10 +131,10 @@ Triangulation::Triangulation(const std::vector<Vec2>& points, int numP, bool log
     vcount = 4;
     tcount = 2;
 
-#if ASSERT_PROBLEMS
+/*#if ASSERT_PROBLEMS
     assert(isCCW(0)&&isCCW(1));
     assert(frontTest(0));
-#endif
+#endif*/
 
     for(int i=0;i<(int)points.size();i++){
         delaunayInsertion(points[i]);
@@ -336,9 +315,9 @@ bool Triangulation::delaunayInsertion(Vec2 p, int prop){
 
 // gets the pair of vertex indices shared by two triangles
 std::pair<int,int> Triangulation::getVerticesSharedByTriangles(int t1, int t2){
-#if ASSERT_PROBLEMS
+/*#if ASSERT_PROBLEMS
     assert(areConnected(t1,t2));
-#endif
+#endif*/
     for(int i=0;i<3;i++){
         std::pair<int,int> v1 = std::make_pair(triangles[t1].v[i],triangles[t1].v[(i+1)%3]);
         for(int j=0;j<3;j++){
@@ -394,7 +373,7 @@ bool Triangulation::legalize(int t1, int t2){
     return 1;
 }
 void Triangulation::addPointInEdge(Vec2 v, int t0, int t1){
-#if ASSERT_PROBLEMS
+/*#if ASSERT_PROBLEMS
     assert(isCCW(t0)&&isCCW(t1));
     assert(integrity(t0)&&integrity(t1));
     assert(frontTest(t0)&&frontTest(t1));
@@ -402,7 +381,7 @@ void Triangulation::addPointInEdge(Vec2 v, int t0, int t1){
     assert(sanity(t0));
     assert(sanity(t1));
     assert(next(t0,t1));
-#endif
+#endif*/
     remem();
     int p = vcount;
     vertices[vcount++] = Vertex(v);
@@ -422,12 +401,12 @@ void Triangulation::addPointInEdge(Vec2 v, int t0, int t1){
         }
     }
 
-#if ASSERT_PROBLEMS
+/*#if ASSERT_PROBLEMS
     assert(t0_v!=-1);
     assert(t1_v!=-1);
     assert(triangles[t0].t[t0_v]==t1);
     assert(triangles[t1].t[t1_v]==t0);
-#endif
+#endif*/
 
     f0 = triangles[t0].t[(t0_v+1)%3];
     p1 = triangles[t0].v[(t0_v+2)%3];
@@ -450,7 +429,7 @@ void Triangulation::addPointInEdge(Vec2 v, int t0, int t1){
 
     remem();
 
-#if ASSERT_PROBLEMS
+/*#if ASSERT_PROBLEMS
     assert(isCCW(t0));
     assert(isCCW(t1));
     assert(isCCW(t2));
@@ -459,15 +438,15 @@ void Triangulation::addPointInEdge(Vec2 v, int t0, int t1){
     assert(integrity(t1));
     assert(integrity(t2));
     assert(integrity(t3));
-#endif
+#endif*/
 }
 
 void Triangulation::addPointInEdge(Vec2 v, int t){
-#if ASSERT_PROBLEMS
+/*#if ASSERT_PROBLEMS
     assert(isCCW(t));
     // assert(isInEdge(t,v));
     assert(integrity(t));
-#endif
+#endif*/
     remem();
 
     int x = triangles[t].t[0] == -1 ? 0 : (triangles[t].t[1] == -1 ? 1 : 2);
@@ -493,13 +472,13 @@ void Triangulation::addPointInEdge(Vec2 v, int t){
         triangles[f2].t[1] = (triangles[f2].t[1] == t ? t1 : triangles[f2].t[1]);
         triangles[f2].t[2] = (triangles[f2].t[2] == t ? t1 : triangles[f2].t[2]);
     }
-#if ASSERT_PROBLEMS
+/*#if ASSERT_PROBLEMS
     assert(isCCW(t)&&isCCW(t1));
     assert(areConnected(t,t1));
     assert(integrity(t));
     assert(integrity(t1));
     assert(integrity(f2));
-#endif
+#endif*/
 
     remem();
 }
