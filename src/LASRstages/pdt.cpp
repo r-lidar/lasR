@@ -4,16 +4,17 @@
 
 #include <algorithm>
 
-LASRpdt::LASRpdt()
+LASRpdt::LASRpdt(double distance, double angle, double res, double min_size, int classification)
 {
   this->las = nullptr;
   this->d = nullptr;
 
-  this->seed_resolution_search = 50;
-  this->max_iteration_angle = 15;
+  this->seed_resolution_search = res;
+  this->max_iteration_angle = angle;
   this->max_terrain_angle = 75;
-  this->max_iteration_distance = 1;
-  this->min_triangle_size = 0.1;
+  this->max_iteration_distance = distance;
+  this->min_triangle_size = min_size;
+  this->classification = classification;
 
   vector.set_geometry_type(wkbMultiPolygon25D);
 }
@@ -76,25 +77,20 @@ bool LASRpdt::process(LAS*& las)
     index_map.push_back(seed.FID);
   }
 
-  prof.toc();
-  print("Selecting seeds took %.2f s\n", prof.elapsed());
-
   // ============================
   // Triangulate the seed points
   // ============================
 
-  prof.tic();
-
   d = new Triangulation(pts);
 
   prof.toc();
-  print("Triangulating seeds took %.2f s\n", prof.elapsed());
+  print("Triangulating seeds took %.2f secs\n", prof.elapsed());
 
   // =============================
   // Progressive TIN densification
   // =============================
 
-  print("\nProgressive TIN densitifcation\n");
+  print("Progressive TIN densitifcation\n");
 
   prof.tic();
 
@@ -202,16 +198,54 @@ bool LASRpdt::process(LAS*& las)
       }
     }
 
-    print("Added %d points in the triangulation\n", count);
+    print("  Added %d points in the triangulation\n", count);
 
   } while(count > 0);
 
   prof.toc();
-  print("Densification took %.2f s\n", prof.elapsed());
-
-  printf("Triangle search took: %.2f seconds\n", total_search_time.count());
+  print("Densification took %.2f secs\n", prof.elapsed());
+  print("Triangle search took: %.2f secs\n", total_search_time.count());
 
   progress->done();
+
+  // =====================================
+  // Reclassify the points as unclassified
+  // =====================================
+
+  while (las->read_point())
+  {
+    if (las->point.get_classification() == classification)
+    {
+      las->point.set_classification(1);
+      las->update_point();
+    }
+  }
+
+  // =====================================
+  // Classify ground points
+  // =====================================
+
+  for (unsigned int i = 0 ; i < d->tcount; i++)
+  {
+    int idA = d->triangles[i].v[0] - 4;
+    int idB = d->triangles[i].v[1] - 4;
+    int idC = d->triangles[i].v[2] - 4;
+
+    if (idA < 0 || idB < 0 || idC < 0)
+      continue;
+
+    las->seek(index_map[idA]);
+    las->point.set_classification(classification);
+    las->update_point();
+
+    las->seek(index_map[idB]);
+    las->point.set_classification(classification);
+    las->update_point();
+
+    las->seek(index_map[idC]);
+    las->point.set_classification(classification);
+    las->update_point();
+  }
 
   return true;
 }

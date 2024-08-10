@@ -255,6 +255,52 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
   set_lasr_class(ans)
 }
 
+#' Classify ground points
+#'
+#' Classify points using a variation of the Progressive TIN densification by Axelsson (2000) (see references).
+#' It classifies ground points by iteratively creating a triangulated surface model (TIN). The algorithm
+#' starts by selecting local low points. It assumes at least one ground-level point in any given area
+#' of e.g. 50m. The initial TIN model's triangles are mostly below ground, touching only at vertices.
+#' In subsequent iterations, more points are added to better follow the true ground surface. Iteration
+#' parameters determine point acceptance as ground. The iteration angle (e.g., 4.0 for flat terrain, 10.0
+#' for mountainous terrain) controls the eagerness to classify points based on ground level variations.
+#' Iteration distance prevents large upward jumps in the model, avoiding points in low vegetation or
+#' on low buildings. The iteration angle can be reduced automatically, if the triangles become small.
+#' This reduces the eagerness to classify more ground points inside small triangles and thus, avoids
+#' unnecessary point density of the ground model. The iteration angle inside small triangles approaches
+#' zero if the longest triangle edge is shorter than a given Edge length value. Furthermore, the iteration
+#' can be stopped completely if triangle edges are shorter than a given limit.
+#'
+#' @param distance scalar. Iteration distance threshold (figure 3 in original paper)
+#' errors during post-processing.
+#' @param angle scalar. Iteration angle threshold (figure 3 in original paper). Use a smaller angle value
+#' (close to 4.0) in flat terrain and a bigger value (close to 10.0)
+#' @param res scalar. Resolution to search seed points.  Usually, there is no need to change this value.
+#' It is suitable for most cases.
+#' @param min_size scale. Minimum triangle size. The densification is be stopped if a triangle
+#' is shorter than this limit. Usually, there is no need to change this value.
+#' It is suitable for most cases.
+#' @param class integer. The classification to attribute to the points. Usually 2 for ground points.
+#'
+#' @template return-pointcloud
+#'
+#' @references
+#' Axelsson, P. (2000). DEM Generation from Laser Scanner Data Using adaptive TIN Models. International
+#' Archives of Photogrammetry and Remote Sensing, 33(B4), 110–117. https://doi.org/10.1016/j.isprsjprs.2005.10.005
+#'
+#' @export
+#'
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#' pipeline = classify_with_pdt(TRUE, 1 ,1, time_step = 1) + write_las()
+#' ans = exec(pipeline, on = f, progress = TRUE)
+classify_with_pdt = function(distance = 1, angle = 15, res = 50, min_size = 0.1, class = 2L)
+{
+  ans <- list(algoname = "classify_with_pdt", distance = distance, angle = angle, res = res, min_size = min_size, class = class)
+  set_lasr_class(ans)
+}
+
+
 # ===== G =====
 
 #' Compute pointwise geometry features

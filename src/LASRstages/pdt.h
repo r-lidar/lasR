@@ -10,12 +10,12 @@ class Triangulation;
 class LASRpdt : public StageVector
 {
 public:
-  LASRpdt();
+  LASRpdt(double distance, double angle, double res, double min_size, int classification);
   bool process(LAS*& las) override;
   double need_buffer() const override { return 50.0; }
   void clear(bool last) override;
   bool write() override;
-  std::string get_name() const override { return "Progressive TIN densification"; }
+  std::string get_name() const override { return "pdt"; }
 
   // multi-threading
   LASRpdt* clone() const override { return new LASRpdt(*this); };
@@ -26,6 +26,7 @@ private:
   double max_terrain_angle;
   double max_iteration_distance;
   double min_triangle_size;
+  int classification;
 
   std::vector<int> index_map;
   Triangulation* d;
