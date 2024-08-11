@@ -26,7 +26,11 @@ struct PointXYZ : public PointXY
   PointXYZ();
   PointXYZ(double x, double y);
   PointXYZ(double x, double y, double z);
-  double distance(const PointXYZ&) const;
+  double distance(const PointXYZ& other) const;
+  double dot(const PointXYZ& other) const;
+  PointXYZ operator-(const PointXYZ& other) const;
+  PointXYZ operator*(double scalar) const;
+  PointXYZ operator+(const PointXYZ& other) const;
   bool operator==(const PointXYZ& other) const;
   //ool operator<(const PointXYZ& other) const;
 };
@@ -119,7 +123,6 @@ public:
   bool contains(double x, double y) const override;
   bool contains(const PointXY& p) const;
   double square_max_edge_size() const;
-  double distance(const PointXYZ& p) const;
   void linear_interpolation(PointXYZ& p) const;
   inline double xmin() const override { return MIN3(A.x, B.x, C.x); }
   inline double xmax() const override { return MAX3(A.x, B.x, C.x); }

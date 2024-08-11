@@ -97,9 +97,10 @@ bool LASRpdt::process(LAS*& las)
   std::chrono::duration<double> total_search_time(0);
 
   int count;
-
+  int iteration = 0;
   do
   {
+    iteration++;
     count = 0;
 
     // Placeholder for special bbox points
@@ -155,11 +156,11 @@ bool LASRpdt::process(LAS*& las)
       query_coordinates(idB, B);
       query_coordinates(idC, C);
 
-      // This is the triangle in which we are suppose to insert the point
+      // This is the triangle in which we are supposed to insert the point
       TriangleXYZ triangle(A,B,C);
-      triangle.make_clock_wise();
+      //triangle.make_clock_wise();
 
-      // If the triangle is < 1 cm, stop subdividing. This is computationally demanding for no
+      // If the triangle is < 10 cm, stop subdividing. This is computationally demanding for no
       // significant improvement
       if (triangle.square_max_edge_size() < min_triangle_size) continue;
 
@@ -169,14 +170,16 @@ bool LASRpdt::process(LAS*& las)
       // Angle of the triangle in degrees
       double triangle_angle = std::acos(n.z) * (180.0 / M_PI);
 
-      // Distance from P to the triangle plane
-      // (figure 3 in Axelsson's paper)
-      double dist_d = triangle.distance(P);
+      // Calculate the perpendicular projection of P onto the triangle
+      // and th distance d from P to the Projection (figure 3 in Axelsson's paper)
+      PointXYZ v = P - A;
+      double dist_d = v.dot(n);
+      PointXYZ P_proj = P - n * dist_d;
+      dist_d = std::abs(dist_d);
 
-      // Project P onto the triangle plane
-      PointXYZ proj_P(P.x - (dist_d * n.x), P.y - (dist_d * n.y), P.z - (dist_d * n.z));
+      if (!triangle.contains(P_proj)) continue;
 
-      // Compute the distances from P to the three vertices of the triangle
+      // Calculate the distances from P to the three vertices of the triangle
       double dist_P0 = P.distance(triangle.A);
       double dist_P1 = P.distance(triangle.B);
       double dist_P2 = P.distance(triangle.C);
@@ -186,19 +189,26 @@ bool LASRpdt::process(LAS*& las)
       double alpha = asin(dist_d / dist_P0) * 180.0f/M_PI;
       double beta  = asin(dist_d / dist_P1) * 180.0f/M_PI;
       double gamma = asin(dist_d / dist_P2) * 180.0f/M_PI;
+      alpha = std::abs(alpha);
+      beta = std::abs(beta);
+      gamma = std::abs(gamma);
 
       double angle = MAX3(alpha, beta, gamma);
 
       // Check if the angles and distance meet the threshold criteria
       if (angle < max_iteration_angle && dist_d < max_iteration_distance)
       {
-        d->delaunayInsertion(Vec2((P.x-xmin)*1000, (P.y-ymin)*1000), tri_index);
-        index_map.push_back(las->current_point);
-        count++;
+        if (d->delaunayInsertion(Vec2((P.x-xmin)*1000, (P.y-ymin)*1000), tri_index))
+        {
+          index_map.push_back(las->current_point);
+          count++;
+        }
       }
     }
 
-    print("  Added %d points in the triangulation\n", count);
+    //print("Added %d points in the triangulation\n", count);
+
+    //if (iteration >= 1) break;
 
   } while(count > 0);
 

@@ -136,6 +136,8 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
 
 int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
 {
+  int iteration = 0;
+
   // If the initial triangle index is invalid, start with the last triangle
   if (prop < 0 || prop >= tcount) prop = tcount - 1;
 
@@ -145,8 +147,14 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
   // Continue searching until we either find the triangle or exhaust neighbors
   while (true)
   {
+    iteration++;
+
     // Check if the point is inside the current triangle or on its edge
-    if (isInside(t, p) || isInEdge(t, p)) return t;
+    if (isInside(t, p) || isInEdge(t, p))
+    {
+      //printf("%d\n", iteration);
+      return t;
+    }
 
     // Calculate the centroid of the current triangle
     Vec2 v = (vertices[triangles[t].v[0]].pos + vertices[triangles[t].v[1]].pos + vertices[triangles[t].v[2]].pos) / 3.0;

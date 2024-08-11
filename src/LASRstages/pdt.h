@@ -12,7 +12,7 @@ class LASRpdt : public StageVector
 public:
   LASRpdt(double distance, double angle, double res, double min_size, int classification);
   bool process(LAS*& las) override;
-  double need_buffer() const override { return 50.0; }
+  double need_buffer() const override { return 30.0; }
   void clear(bool last) override;
   bool write() override;
   std::string get_name() const override { return "pdt"; }

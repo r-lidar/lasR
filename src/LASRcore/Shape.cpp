@@ -52,6 +52,26 @@ double PointXYZ::distance(const PointXYZ& p) const
   return std::sqrt(pow(x - p.x, 2) + pow(y - p.y, 2) + pow(z - p.z, 2));
 }
 
+PointXYZ PointXYZ::operator-(const PointXYZ &other) const
+{
+  return PointXYZ(x - other.x, y - other.y, z - other.z);
+}
+
+PointXYZ PointXYZ::operator*(double scalar) const
+{
+  return PointXYZ(x * scalar, y * scalar, z * scalar);
+}
+
+double PointXYZ::dot(const PointXYZ &other) const
+{
+  return x * other.x + y * other.y + z * other.z;
+}
+
+PointXYZ PointXYZ::operator+(const PointXYZ &other) const
+{
+  return PointXYZ(x + other.x, y + other.y, z + other.z);
+}
+
 bool PointXYZ::operator==(const PointXYZ& other) const
 {
   return (x == other.x) && (y == other.y) && (z == other.z);
@@ -92,34 +112,26 @@ PointXYZ TriangleXYZ::normal() const
   PointXYZ edge2(C.x - A.x, C.y - A.y, C.z - A.z);
 
   // Compute cross product
-  PointXYZ normal;
-  normal.x = edge1.y * edge2.z - edge1.z * edge2.y;
-  normal.y = edge1.z * edge2.x - edge1.x * edge2.z;
-  normal.z = edge1.x * edge2.y - edge1.y * edge2.x;
+  PointXYZ n;
+  n.x = edge1.y * edge2.z - edge1.z * edge2.y;
+  n.y = edge1.z * edge2.x - edge1.x * edge2.z;
+  n.z = edge1.x * edge2.y - edge1.y * edge2.x;
 
   // Normalize the vector
-  double length = sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
-  normal.x /= length;
-  normal.y /= length;
-  normal.z /= length;
+  double length = sqrt(n.dot(n));
+  n.x /= length;
+  n.y /= length;
+  n.z /= length;
 
   // Ensure the z-component is oriented upward
-  if (normal.z < 0)
+  /*if (n.z < 0)
   {
-    normal.x = -normal.x;
-    normal.y = -normal.y;
-    normal.z = -normal.z;
-  }
+    n.x = -n.x;
+    n.y = -n.y;
+    n.z = -n.z;
+  }*/
 
-  return normal;
-}
-
-double TriangleXYZ::distance(const PointXYZ& p) const
-{
-  PointXYZ n = normal();
-  double dot1 = n.x * A.x + n.y * A.y + n.z * A.z;
-  double dot2 = n.x * p.x + n.y * p.y + n.z * p.z;
-  return std::fabs(dot2 - dot1);
+  return n;
 }
 
 PointXYZ TriangleXYZ::centroid() const
