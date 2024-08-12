@@ -1,13 +1,11 @@
 #include "constants.h"
-#include "pred3d.h"
+//#include "pred3d.h"
 #include "utils.h"
 
 #include "delaunay.h"
 
 #include <algorithm>
 #include <cmath>
-
-static bool initialized = false;
 
 #ifndef MAX3
 #define MAX3(a,b,c) (((a)>(b)) ? (((a)>(c)) ? (a) : (c)) : (((b)>(c)) ? (b) : (c)));
@@ -16,12 +14,6 @@ static bool initialized = false;
 
 Triangulation::Triangulation(const std::vector<Vec2>& points)
 {
-  if (!initialized)
-  {
-    exactinit();
-    initialized = true;
-  }
-
   int numP = points.size();
 
   double minx = 10000000;
@@ -174,8 +166,7 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
       Vec2 b = vertices[triangles[t].v[(i + 2) % 3]].pos;
 
       // Perform orientation tests to check if the point lies in the neighboring triangle
-      if ((orient2d(&v.x, &p.x, &a.x) * orient2d(&v.x, &p.x, &b.x) < 0) &&
-          (orient2d(&a.x, &b.x, &p.x) * orient2d(&a.x, &b.x, &v.x) < 0))
+      if ((orient2d(v, p, a) * orient2d(v, p, b) < 0) && (orient2d(a, b, p) * orient2d(a, b, v) < 0))
       {
         // If the point is likely in the neighbor, update the current triangle and continue
         t = f;
@@ -276,9 +267,7 @@ bool Triangulation::isInside(int t, Vec2 p) const
   lim = MAX3(p1.y, p2.y, p3.y);
   if (p.y > lim) return false;
 
-  return (orient2d(&(p1.x),&(p2.x),&(p.x)) > 0) &&
-    (orient2d(&(p2.x),&(p3.x),&(p.x)) > 0) &&
-    (orient2d(&(p3.x),&(p1.x),&(p.x)) > 0);
+  return (orient2d(p1, p2, p) > 0) && (orient2d(p2, p3, p) > 0) && (orient2d(p3, p1, p) > 0);
 }
 
 bool Triangulation::isInside(int t, int v) const
@@ -290,7 +279,7 @@ bool Triangulation::isInside(int t, int v) const
 
 bool Triangulation::isInEdge(int t, Vec2 p) const
 {
-  if (t==-1) return false;
+  if (t == -1) return false;
 
   if (triangles[t].v[0] == -1 && triangles[t].v[1] == -1 && triangles[t].v[2] == -1)
     return false;
@@ -313,18 +302,8 @@ bool Triangulation::isInEdge(int t, Vec2 p) const
   lim = MAX3(p1.y, p2.y, p3.y);
   if (p.y > lim) return false;
 
-  // JR: should be an OR operation??
-  return (orient2d(&(p1.x),&(p2.x),&(p.x)) == 0) &&
-    (orient2d(&(p2.x),&(p3.x),&(p.x)) == 0) &&
-    (orient2d(&(p3.x),&(p1.x),&(p.x)) == 0);
-
-  // b-a goes from a to b
-  // Vec2 a1 = p1-p2; Vec2 b1 = p-p2;
-  // Vec2 a2 = p2-p3; Vec2 b2 = p-p3;
-  // Vec2 a3 = p3-p1; Vec2 b3 = p-p1;
-  // if(mightBeLeft(p2-p1,p-p1) && mightBeLeft(p3-p2,p-p2) && mightBeLeft(p1-p3,p-p3))
-  // if( (a1[0]>=b1[0] && a1[1]>=b1[1]) || (a2[0]>=b2[0] && a2[1]>=b2[1]) || (a3[0]>=b3[0] && a3[1]>=b3[1]) ) return true;
-  // return false;
+  // JR: shouldn't be an OR operation??
+  return (orient2d(p1, p2, p) == 0) && (orient2d(p2, p3, p) == 0) && (orient2d(p3, p1, p) == 0);
 }
 
 // checks for repeated vertices or triangles
@@ -596,7 +575,7 @@ bool Triangulation::isCCW(int f) const
   Vec2 p1 = vertices[triangles[f].v[1]].pos;
   Vec2 p2 = vertices[triangles[f].v[2]].pos;
 
-  return (orient2d(&(p0.x),&(p1.x),&(p2.x)) > 0);
+  return (orient2d(p0, p1, p2) > 0);
 
   // if((crossa(p0,p1)+crossa(p1,p2)+crossa(p2,p0))>IN_TRIANGLE_EPS) return true;
   // return false;
@@ -727,20 +706,20 @@ void Triangulation::remem()
 bool Triangulation::isConvexBicell(int t1, int t2)
 {
   int i,j; // find which are the different indices
-  for(i=0;i<3;i++){
-    if(
-      triangles[t1].v[i]!=triangles[t2].v[0] &&
+
+  for(i = 0 ; i < 3 ; i++)
+  {
+    if(triangles[t1].v[i]!=triangles[t2].v[0] &&
         triangles[t1].v[i]!=triangles[t2].v[1] &&
-        triangles[t1].v[i]!=triangles[t2].v[2]
-    )
+        triangles[t1].v[i]!=triangles[t2].v[2])
       break;
   }
-  for(j=0;j<3;j++){
-    if(
-      triangles[t2].v[j]!=triangles[t1].v[0] &&
+
+  for(j = 0 ; j < 3 ; j++)
+  {
+    if(triangles[t2].v[j]!=triangles[t1].v[0] &&
         triangles[t2].v[j]!=triangles[t1].v[1] &&
-        triangles[t2].v[j]!=triangles[t1].v[2]
-    )
+        triangles[t2].v[j]!=triangles[t1].v[2])
       break;
   }
 
@@ -765,10 +744,7 @@ bool Triangulation::isConvexBicell(int t1, int t2)
     Vec2 p0 = bicell[(i-1+4)%4];
     Vec2 p1 = bicell[i];
     Vec2 p2 = bicell[(i+1)%4];
-    // Vec2 prev = p1-p0;
-    // Vec2 act = p2-p1;
-    // if(crossa(prev,act)<0) return false;
-    if(orient2d(&(p0.x),&(p1.x),&(p2.x))<=0) return false;
+    if (orient2d(p0, p1, p2) <= 0) return false;
   }
 
   return true;
