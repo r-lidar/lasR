@@ -77,7 +77,7 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
   // we dont insert repeated points
   for (int i = 0 ; i < 3 ; i++)
   {
-    if ((std::abs(p[0]-points[i][0]) < IN_TRIANGLE_EPS) && (std::abs(p[1]-points[i][1]) < IN_TRIANGLE_EPS))
+    if ((std::abs(p.x-points[i].x) < IN_TRIANGLE_EPS) && (std::abs(p.y-points[i].y) < IN_TRIANGLE_EPS))
       return false;
   }
 
@@ -132,6 +132,8 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
 
   // Initialize the current triangle index
   int t = prop;
+  visited.resize(tcount);
+  std::fill(visited.begin(), visited.end(), false);
 
   // Continue searching until we either find the triangle or exhaust neighbors
   while (true)
@@ -139,11 +141,7 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
     iteration++;
 
     // Check if the point is inside the current triangle or on its edge
-    if (isInside(t, p) || isInEdge(t, p))
-    {
-      //printf("%d\n", iteration);
-      return t;
-    }
+    if (isInside(t, p) || isInEdge(t, p)) return t;
 
     // Calculate the centroid of the current triangle
     Vec2 v = (vertices[triangles[t].v[0]].pos + vertices[triangles[t].v[1]].pos + vertices[triangles[t].v[2]].pos) / 3.0;
@@ -158,6 +156,9 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
       // If there is no neighbor in this direction, skip to the next one
       if (f == -1) continue;
 
+      // Skip if the neighbor has already been visited
+      if (visited[f]) continue;
+
       // Get the vertices of the edge opposite to the neighbor
       Vec2 a = vertices[triangles[t].v[(i + 1) % 3]].pos;
       Vec2 b = vertices[triangles[t].v[(i + 2) % 3]].pos;
@@ -165,6 +166,9 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
       // Perform orientation tests to check if the point lies in the neighboring triangle
       if ((orient2d(v, p, a) * orient2d(v, p, b) < 0) && (orient2d(a, b, p) * orient2d(a, b, v) < 0))
       {
+        // Mark current triangle as visited
+        visited[t] = true;
+
         // If the point is likely in the neighbor, update the current triangle and continue
         t = f;
         foundNext = true;

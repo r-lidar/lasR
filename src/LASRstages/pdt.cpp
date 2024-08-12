@@ -148,8 +148,8 @@ bool LASRpdt::process(LAS*& las)
       {
         if (id < 4)
         {
-          p.x = d->vertices[id].pos[0];
-          p.y = d->vertices[id].pos[1];
+          p.x = d->vertices[id].pos.x;
+          p.y = d->vertices[id].pos.y;
           p.z = z_placeholder;
         }
         else

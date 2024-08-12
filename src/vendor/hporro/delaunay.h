@@ -54,6 +54,7 @@ private:
   int maxTriangles;
   int maxVertices;
   int incount = 0;
+  mutable std::vector<bool> visited; // Track visited triangles
 
   float a;
   Vec2 p0,p1,p2,p3;
