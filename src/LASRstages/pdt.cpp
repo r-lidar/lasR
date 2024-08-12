@@ -87,7 +87,7 @@ bool LASRpdt::process(LAS*& las)
   d = new Triangulation(pts);
 
   prof.toc();
-  print("Triangulating seeds took %.2f secs\n", prof.elapsed());
+  print("Triangulating %d seeds took %.2f secs\n", d->vcount, prof.elapsed());
 
   // =============================
   // Progressive TIN densification
@@ -216,15 +216,14 @@ bool LASRpdt::process(LAS*& las)
     prof2.toc();
 
     float perc = (double)count/(double)d->vcount;
-    print("Iteration %d: adding %d points (+%.4f\%) to the ground took %.2f secs\n", iteration, count, perc, prof2.elapsed());
+    print("  Iteration %d: adding %d points (+%.4f\%) to the ground took %.2f secs\n", iteration, count, perc, prof2.elapsed());
 
     if (perc < 1.0f/1000.0f) break;
 
   } while(count > 0);
 
   prof.toc();
-  print("Densification took %.2f secs\n", prof.elapsed());
-  print("Triangle search took: %.2f secs\n", total_search_time.count());
+  print("Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(),  total_search_time.count());
 
   progress->done();
 
