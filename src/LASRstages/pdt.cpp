@@ -14,7 +14,7 @@ LASRpdt::LASRpdt(double distance, double angle, double res, double min_size, int
   this->max_iteration_angle = angle;
   this->max_terrain_angle = 75;
   this->max_iteration_distance = distance;
-  this->min_triangle_size = min_size;
+  this->min_triangle_size = min_size*min_size;
   this->classification = classification;
 
   vector.set_geometry_type(wkbMultiPolygon25D);
