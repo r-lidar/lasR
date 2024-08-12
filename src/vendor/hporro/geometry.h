@@ -16,6 +16,7 @@ struct Vec2
   Vec2 operator/(float a) const { return Vec2{x / a, y / a}; }
   Vec2 operator*(float a) const { return Vec2{x * a, y * a}; }
   Vec2& operator+=(const Vec2& other) { x += other.x; y += other.y; return *this; }
+  double dot(const Vec2& other) { return x*other.x + y*other.y; }
 
   double& operator[](std::size_t index)
   {

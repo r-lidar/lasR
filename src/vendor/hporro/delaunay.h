@@ -3,7 +3,6 @@
 
 #include <vector>
 
-#include "utils.h"
 #include "geometry.h"
 
 class Triangulation
@@ -13,7 +12,6 @@ public:
   ~Triangulation();
   bool delaunayInsertion(const Vec2& point, int tri_index = -1);
   int findContainerTriangle(const Vec2& p, int prop) const;
-  double triangleArea(int f) const;
 
   Vertex *vertices;
   Triangle *triangles;
@@ -36,6 +34,10 @@ private:
   bool isConvexBicell(int t1, int t2); // Checks if a bicell is convex
   bool isCCW(int f) const; // check if a triangle, in the position f of the triangles array, is ccw
   bool areConnected(int,int) const;
+
+  double orient2d(const Vec2& pa, const Vec2& pb, const Vec2& pc) const;
+  double inCircle(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d) const;
+  bool pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const;
 
   void remem(); // checks if more memory is needed, and if it is needed, allocates more memory.
 
