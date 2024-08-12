@@ -1,6 +1,7 @@
 #include "pdt.h"
 #include "hporro/delaunay.h"
 #include "Profiler.h"
+#include "Raster.h"
 
 #include <algorithm>
 
@@ -30,6 +31,8 @@ bool LASRpdt::process(LAS*& las)
 
   double xmin = las->header->min_x;
   double ymin = las->header->min_y;
+
+  Raster dtm(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 1);
 
   // =====================
   // Find some seed points
@@ -90,7 +93,7 @@ bool LASRpdt::process(LAS*& las)
   // Progressive TIN densification
   // =============================
 
-  print("Progressive TIN densitifcation\n");
+  print("Progressive TIN densification\n");
 
   prof.tic();
 
@@ -100,6 +103,10 @@ bool LASRpdt::process(LAS*& las)
   int iteration = 0;
   do
   {
+
+    Profiler prof2;
+    prof2.tic();
+
     iteration++;
     count = 0;
 
@@ -206,9 +213,12 @@ bool LASRpdt::process(LAS*& las)
       }
     }
 
-    //print("Added %d points in the triangulation\n", count);
+    prof2.toc();
 
-    //if (iteration >= 1) break;
+    float perc = (double)count/(double)d->vcount;
+    print("Iteration %d: adding %d points (+%.4f\%) to the ground took %.2f secs\n", iteration, count, perc, prof2.elapsed());
+
+    if (perc < 1.0f/1000.0f) break;
 
   } while(count > 0);
 
@@ -345,4 +355,48 @@ void LASRpdt::clear(bool last)
   delete d;
   d = nullptr;
   index_map.clear();
+}
+
+// See LASRtriangulate::interpolate
+void LASRpdt::compute_dtm(const Triangulation* d, Raster* r) const
+{
+  // Generate the raster points in this triangle
+  double xres = r->get_xres();
+  double yres = r->get_yres();
+
+  for (unsigned int i = 0 ; i < d->tcount; i++)
+  {
+    int idA = d->triangles[i].v[0] - 4;
+    int idB = d->triangles[i].v[1] - 4;
+    int idC = d->triangles[i].v[2] - 4;
+
+    if (idA < 0 || idB < 0 || idC < 0)
+      continue;
+
+    PointLAS A,B,C;
+    las->get_point(index_map[idA], A, nullptr, nullptr);
+    las->get_point(index_map[idB], B, nullptr, nullptr);
+    las->get_point(index_map[idC], C, nullptr, nullptr);
+    TriangleXYZ triangle(A, B, C);
+
+
+    double minx = ROUNDANY(triangle.xmin() - 0.5 * xres, xres);
+    double miny = ROUNDANY(triangle.ymin() - 0.5 * yres, yres);
+    double maxx = ROUNDANY(triangle.xmax() - 0.5 * xres, xres) + xres;
+    double maxy = ROUNDANY(triangle.ymax() - 0.5 * yres, yres) + yres;
+
+    for (double x = minx ; x <= maxx ; x += xres)
+    {
+      for (double y = miny ; y <= maxy ; y += yres)
+      {
+        if (!triangle.contains({x,y})) continue;
+
+        PointXYZ p(x,y);
+        triangle.linear_interpolation(p);
+
+        int cell = r->cell_from_xy(x,y);
+        if (cell != -1) r->set_value(cell, p.z);
+      }
+    }
+  }
 }

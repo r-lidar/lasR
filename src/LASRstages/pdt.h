@@ -6,6 +6,7 @@
 #include "Shape.h"
 
 class Triangulation;
+class Raster;
 
 class LASRpdt : public StageVector
 {
@@ -19,6 +20,9 @@ public:
 
   // multi-threading
   LASRpdt* clone() const override { return new LASRpdt(*this); };
+
+private:
+  void compute_dtm(const Triangulation* d, Raster* r) const;
 
 private:
   double seed_resolution_search;
