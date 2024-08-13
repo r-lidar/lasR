@@ -28,6 +28,8 @@ bool LASRcsf::process(LAS*& las)
 
   while(las->read_point())
   {
+    if (lasfilter.filter(&las->point)) continue;
+
     csf::Point p;
     p.x = las->point.get_x();
     p.y = las->point.get_y();
@@ -57,6 +59,8 @@ bool LASRcsf::process(LAS*& las)
   int k = 0;
   while(las->read_point())
   {
+    if (lasfilter.filter(&las->point)) continue;
+
     if (i == ground[k])
     {
       k++;
