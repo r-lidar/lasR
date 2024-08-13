@@ -1,11 +1,14 @@
 #include "pdt.h"
-#include "hporro/delaunay.h"
 #include "Profiler.h"
 #include "Raster.h"
+#include "NA.h"
+
+#include "hporro/delaunay.h"
 
 #include <algorithm>
+#include <cmath>
 
-LASRpdt::LASRpdt(double distance, double angle, double res, double min_size, int classification)
+LASRpdt::LASRpdt(double distance, double angle, double res, double min_size, double offset, int classification)
 {
   this->las = nullptr;
   this->d = nullptr;
@@ -15,6 +18,7 @@ LASRpdt::LASRpdt(double distance, double angle, double res, double min_size, int
   this->max_terrain_angle = 75;
   this->max_iteration_distance = distance;
   this->min_triangle_size = min_size*min_size;
+  this->offset = offset;
   this->classification = classification;
 
   vector.set_geometry_type(wkbMultiPolygon25D);
@@ -22,11 +26,6 @@ LASRpdt::LASRpdt(double distance, double angle, double res, double min_size, int
 
 bool LASRpdt::process(LAS*& las)
 {
-  progress->reset();
-  progress->set_prefix("Progressive TIN densification");
-  progress->set_total(las->npoints);
-  progress->show();
-
   this->las = las;
 
   double xmin = las->header->min_x;
@@ -198,8 +197,7 @@ bool LASRpdt::process(LAS*& las)
 
   if (verbose) print("  Iteration 0: adding %d seeds to the ground took %.2f secs\n", count, prof.elapsed());
 
-
-  compute_dtm(d, &dtm);
+  interpolate(&dtm);
 
   // =============================
   // Progressive TIN densification
@@ -213,6 +211,10 @@ bool LASRpdt::process(LAS*& las)
 
   do
   {
+    progress->reset();
+    progress->set_prefix("PDT");
+    progress->set_total(las->npoints);
+    progress->show();
 
     Profiler prof2;
     prof2.tic();
@@ -322,6 +324,9 @@ bool LASRpdt::process(LAS*& las)
           count++;
         }
       }
+
+      progress->update(las->current_point);
+      progress->show();
     }
 
     prof2.toc();
@@ -331,7 +336,7 @@ bool LASRpdt::process(LAS*& las)
 
     if (perc < 1.0f/1000.0f) break;
 
-    compute_dtm(d, &dtm);
+    interpolate(&dtm);
 
   } while(count > 0);
 
@@ -379,6 +384,25 @@ bool LASRpdt::process(LAS*& las)
     las->update_point();
   }
 
+  if (offset == 0) return true;
+
+  // =============================================
+  // Classify ground points with buffer above mesh
+  // =============================================
+
+  dtm = Raster(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 0.25);
+  interpolate(&dtm);
+
+  while (las->read_point())
+  {
+    double zdtm = dtm.get_value(las->point.get_x(), las->point.get_y());
+    if (zdtm != dtm.get_nodata() && std::abs(zdtm - las->point.get_z()) <= offset)
+    {
+      las->point.set_classification(classification);
+      las->update_point();
+    }
+  }
+
   return true;
 }
 
@@ -414,26 +438,7 @@ bool LASRpdt::write()
     Vec2 b = d->vertices[d->triangles[i].v[1]].pos;
     Vec2 c = d->vertices[d->triangles[i].v[2]].pos;
 
-    //print("A (%.1lf, %.1lf, %.1lf) vs  (%.1lf, %.1lf)\n", A.x, A.y, A.z, a[0]/1000+xmin, a[1]/1000+ymin);
-    //print("B (%.1lf, %.1lf, %.1lf) vs  (%.1lf, %.1lf)\n", B.x, B.y, B.z, b[0]/1000+xmin, b[1]/1000+ymin);
-    //print("C (%.1lf, %.1lf, %.1lf) vs  (%.1lf, %.1lf)\n", C.x, C.y, C.z, c[0]/1000+xmin, c[1]/1000+ymin);
-
-
-    //if (A.x != a[0]/1000+xmin || A.y != a[1]/1000+ymin ||  B.x != b[0]/1000+xmin || B.y != b[1]/1000+ymin ||  C.x != c[0]/1000+xmin || C.y != c[1]/1000+ymin)
-    //  print(">>>>>>> %lu\n", i);
-
     TriangleXYZ triangle(A, B, C);
-
-    /*Vec2 a = d->vertices[d->triangles[i].v[0]].pos;
-     PointXYZ A(a[0]/1000+xmin, a[1]/1000+ymin);
-
-     Vec2 b = d->vertices[d->triangles[i].v[1]].pos;
-     PointXYZ B(b[0]/1000+xmin, b[1]/1000+ymin);
-
-     Vec2 c = d->vertices[d->triangles[i].v[2]].pos;
-     PointXYZ C(c[0]/1000+xmin, c[1]/1000+ymin);
-
-     TriangleXYZ triangle(A, B, C);*/
     triangle.make_clock_wise();
     triangles.push_back(triangle);
 
@@ -470,15 +475,18 @@ void LASRpdt::clear(bool last)
 }
 
 // See LASRtriangulate::interpolate
-void LASRpdt::compute_dtm(const Triangulation* d, Raster* r) const
+void LASRpdt::interpolate(Raster* r) const
 {
   Profiler prof;
   prof.tic();
+
+  r->set_value(0, r->get_nodata());
 
   // Generate the raster points in this triangle
   double xres = r->get_xres();
   double yres = r->get_yres();
 
+  #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < d->tcount; i++)
   {
     int idA = d->triangles[i].v[0] - 4;
@@ -493,7 +501,6 @@ void LASRpdt::compute_dtm(const Triangulation* d, Raster* r) const
     las->get_point(index_map[idB], B, nullptr, nullptr);
     las->get_point(index_map[idC], C, nullptr, nullptr);
     TriangleXYZ triangle(A, B, C);
-
 
     double minx = ROUNDANY(triangle.xmin() - 0.5 * xres, xres);
     double miny = ROUNDANY(triangle.ymin() - 0.5 * yres, yres);
@@ -516,6 +523,45 @@ void LASRpdt::compute_dtm(const Triangulation* d, Raster* r) const
   }
 
   prof.toc();
-  print("  DTM took %.2f secs\n", prof.elapsed());
+  if (verbose) print("  DTM interpolation took %.2f secs\n", prof.elapsed());
+}
+
+// See LASRtriangulate::interpolate
+void LASRpdt::interpolate(std::vector<double>& x) const
+{
+  Profiler prof;
+  prof.tic();
+
+  x.resize(las->npoints);
+  std::fill(x.begin(), x.end(), NA_F64);
+
+  #pragma omp parallel for num_threads(ncpu)
+  for (unsigned int i = 0 ; i < d->tcount; i++)
+  {
+    int idA = d->triangles[i].v[0] - 4;
+    int idB = d->triangles[i].v[1] - 4;
+    int idC = d->triangles[i].v[2] - 4;
+
+    if (idA < 0 || idB < 0 || idC < 0)
+      continue;
+
+    PointLAS A,B,C;
+    las->get_point(index_map[idA], A, nullptr, nullptr);
+    las->get_point(index_map[idB], B, nullptr, nullptr);
+    las->get_point(index_map[idC], C, nullptr, nullptr);
+    TriangleXYZ triangle(A, B, C);
+
+    std::vector<PointLAS> points;
+    las->query(&triangle, points, nullptr, nullptr);
+
+    for (auto& p : points)
+    {
+      triangle.linear_interpolation(p);
+      x[p.FID] = p.z;
+    }
+  }
+
+  prof.toc();
+  if (verbose) print("  LAS interpolation took %.2f secs\n", prof.elapsed());
 }
 

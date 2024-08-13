@@ -183,11 +183,12 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       else if (name == "classify_with_pdt")
       {
         float distance = stage.value("distance", 1);
-        float angle = stage.value("angle", 10);
+        float angle = stage.value("angle", 15);
         float res = stage.value("res", 50);
         float min_size = stage.value("min_size", 0.1);
+        float offset = stage.value("offset", 0.05);
         int classification = stage.value("class", 2);
-        auto v = std::make_unique<LASRpdt>(distance, angle, res, min_size, classification);
+        auto v = std::make_unique<LASRpdt>(distance, angle, res, min_size, offset, classification);
         pipeline.push_back(std::move(v));
       }
       else if (name == "classify_with_ivf")

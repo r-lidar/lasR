@@ -257,7 +257,7 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 
 #' Ground Point Classification
 #'
-#' This function classifies ground points using a modified version of the Progressive TIN
+#' Classify ground points using a modified version of the Progressive TIN
 #' densification method by Axelsson (2000) (see references). The approach involves iteratively c
 #' onstructing a triangulated surface model (TIN) to classify ground points (see details). **This
 #' algorithm is robust and much more robust than the CSF in \link{classify_with_csf} and should be
@@ -279,19 +279,23 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' needing explicit noise classification. However, it is preferable to have noise classified points
 #' to guarantee optimal results.
 #' \cr\cr
-#' The iteration angle can be automatically reduced if the triangles become too small, which helps
-#' avoid excessive point density in small areas. The process can also stop entirely if the triangle
-#' edges become shorter than a specified length.
+#' The densification process can also stop if the triangle edges become shorter than a specified length.
 #'
 #' @param distance Scalar. The threshold for iteration distance, as described in Figure 3 of Axelsson's paper.
 #' @param angle Scalar. The threshold for iteration angle, as illustrated in Figure 3 of Axelsson's paper.
 #' Use smaller values (close to 4.0) for flat areas and larger values (close to 10.0) for mountainous
 #' areas.
-#' @param res Scalar. The resolution for locating seed points. The default setting is usually adequate
-#' for most scenarios.
+#' @param res Scalar. The resolution for locating seed points. It takes the lowest point per grid cell.
+#' It should be larger than any above ground structure such as building or bridges. In forested lands
+#' 5 m is good but larger values are recommended if human made stucture can be observed.
 #' @param min_size Scalar. The minimum size for triangles. Densification halts if triangles are smaller
 #' than this limit. The default setting is generally suitable for most scenarios.
+#' @param offset Scalar. Points can be above the triangulation of ground points and still become ground.
+#' if `offset = 0` only vertices of the triangulation are classified as ground. If `offset > 0` a buffer
+#' below and above the mesh is added for classification.
 #' @param class Integer. The classification to assign to the points, typically 2 for ground points.
+#' @param ... Unused
+#' @template param-filter
 #'
 #' @template return-pointcloud
 #'
@@ -306,9 +310,9 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' pipeline = classify_with_pdt() + write_las()
 #' ans = exec(pipeline, on = f, progress = TRUE)
-classify_with_pdt = function(distance = 1, angle = 15, res = 50, min_size = 0.1, class = 2L)
+classify_with_pdt = function(distance = 1, angle = 15, res = 5, min_size = 0.1, offset = 0.05, ..., class = 2L, filter = "-keep_last")
 {
-  ans <- list(algoname = "classify_with_pdt", distance = distance, angle = angle, res = res, min_size = min_size, class = class)
+  ans <- list(algoname = "classify_with_pdt", distance = distance, angle = angle, res = res, min_size = min_size, offset = offset, class = class, filter = filter)
   set_lasr_class(ans)
 }
 
