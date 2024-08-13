@@ -1,5 +1,9 @@
 # lasR 0.9.2
 
+- Fix: filter based on return number, number of returns or classification such as `-keep_last`, `-keep_class 128` or working with LAS 1.4
+
+# lasR 0.9.2
+
 - Fix #81: Added a warning if the Delaunay triangulation was not computed (fewer than 3 points).
 - Fix #81: Read files with multiple Extra Bytes definitions.
 - Fix #80: Circular buffers are properly removed from raster.
