@@ -67,7 +67,9 @@ does not produce any output.</p>
 <span>  rigidness <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  iterations <span class="op">=</span> <span class="fl">500L</span>,</span>
 <span>  time_step <span class="op">=</span> <span class="fl">0.65</span>,</span>
-<span>  class <span class="op">=</span> <span class="fl">2L</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  class <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  filter <span class="op">=</span> <span class="st">"-keep_last"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -105,8 +107,20 @@ there is no need to change this value.</p></dd>
 is 0.65. Usually, there is no need to change this value. It is suitable for most cases.</p></dd>
 
 
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Unused</p></dd>
+
+
 <dt id="arg-class">class<a class="anchor" aria-label="anchor" href="#arg-class"></a></dt>
 <dd><p>integer. The classification to attribute to the points. Usually 2 for ground points.</p></dd>
+
+
+<dt id="arg-filter">filter<a class="anchor" aria-label="anchor" href="#arg-filter"></a></dt>
+<dd><p>the 'filter' argument allows filtering of the point-cloud to work with points of
+interest. The available filters are those from LASlib and can be found by running <a href="filters.html">filter_usage</a>.
+For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+<a href="filters.html">filters</a>.</p></dd>
 
 </dl></div>
     <div class="section level2">
