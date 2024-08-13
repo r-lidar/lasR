@@ -1,8 +1,12 @@
 #include "constants.h"
+#include "pred3d.h"
+
 #include "delaunay.h"
 
 #include <algorithm>
 #include <cmath>
+
+static bool initialized = false;
 
 #ifndef MAX3
 #define MAX3(a,b,c) (((a)>(b)) ? (((a)>(c)) ? (a) : (c)) : (((b)>(c)) ? (b) : (c)));
@@ -12,6 +16,12 @@
 Triangulation::Triangulation()
 {
   int numP = 10000; // allocate memory for 10000 points
+
+  if (!initialized)
+  {
+    exactinit();
+    initialized = true;
+  }
 
   double minx = -1e8;
   double miny = -1e8;
@@ -151,7 +161,8 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
       Vec2 b = vertices[triangles[t].v[(i + 2) % 3]].pos;
 
       // Perform orientation tests to check if the point lies in the neighboring triangle
-      if ((orient2d(v, p, a) * orient2d(v, p, b) < 0) && (orient2d(a, b, p) * orient2d(a, b, v) < 0))
+      if ((orient2d(v, p, a) * orient2d(v, p, b) < 0) &&
+          (orient2d(a, b, p) * orient2d(a, b, v) < 0))
       {
         // Mark current triangle as visited
         visited[t] = true;
@@ -256,7 +267,7 @@ bool Triangulation::isInside(int t, int v) const
 
 bool Triangulation::isInEdge(int t, Vec2 p) const
 {
-  if (t == -1) return false;
+  if (t==-1) return false;
 
   if (triangles[t].v[0] == -1 && triangles[t].v[1] == -1 && triangles[t].v[2] == -1)
     return false;
@@ -279,8 +290,16 @@ bool Triangulation::isInEdge(int t, Vec2 p) const
   lim = MAX3(p1.y, p2.y, p3.y);
   if (p.y > lim) return false;
 
-  // JR: shouldn't be an OR operation??
+  // JR: should be an OR operation??
   return (orient2d(p1, p2, p) == 0) && (orient2d(p2, p3, p) == 0) && (orient2d(p3, p1, p) == 0);
+
+  // b-a goes from a to b
+  // Vec2 a1 = p1-p2; Vec2 b1 = p-p2;
+  // Vec2 a2 = p2-p3; Vec2 b2 = p-p3;
+  // Vec2 a3 = p3-p1; Vec2 b3 = p-p1;
+  // if(mightBeLeft(p2-p1,p-p1) && mightBeLeft(p3-p2,p-p2) && mightBeLeft(p1-p3,p-p3))
+  // if( (a1[0]>=b1[0] && a1[1]>=b1[1]) || (a2[0]>=b2[0] && a2[1]>=b2[1]) || (a3[0]>=b3[0] && a3[1]>=b3[1]) ) return true;
+  // return false;
 }
 
 // checks for repeated vertices or triangles
@@ -697,7 +716,8 @@ bool Triangulation::isConvexBicell(int t1, int t2)
   {
     if (triangles[t2].v[j]!=triangles[t1].v[0] &&
         triangles[t2].v[j]!=triangles[t1].v[1] &&
-        triangles[t2].v[j]!=triangles[t1].v[2])
+        triangles[t2].v[j]!=triangles[t1].v[2]
+    )
       break;
   }
 
@@ -722,7 +742,10 @@ bool Triangulation::isConvexBicell(int t1, int t2)
     Vec2 p0 = bicell[(i-1+4)%4];
     Vec2 p1 = bicell[i];
     Vec2 p2 = bicell[(i+1)%4];
-    if (orient2d(p0, p1, p2) <= 0) return false;
+    // Vec2 prev = p1-p0;
+    // Vec2 act = p2-p1;
+    // if(crossa(prev,act)<0) return false;
+    if(orient2d(p0, p1, p2)<=0) return false;
   }
 
   return true;
@@ -730,15 +753,19 @@ bool Triangulation::isConvexBicell(int t1, int t2)
 
 double Triangulation::orient2d(const Vec2& pa, const Vec2& pb, const Vec2& pc) const
 {
-  double det = (pb.x - pa.x) * (pc.y - pa.y) - (pb.y - pa.y) * (pc.x - pa.x);
+  return orient2d(pa, pb, pc);
+
+  /*double det = (pb.x - pa.x) * (pc.y - pa.y) - (pb.y - pa.y) * (pc.x - pa.x);
   if (std::abs(det) < IN_TRIANGLE_EPS) det = 0.0;
-  return det;
+  return det;*/
 }
 
 double Triangulation::inCircle(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d) const
 {
+  return incircle(&(a.x), &(b.x), &(c.x), &(d.x));
+
   // Compute the determinant of the 4x4 matrix
-  double ax = a.x - d.x;
+  /*double ax = a.x - d.x;
   double ay = a.y - d.y;
   double bx = b.x - d.x;
   double by = b.y - d.y;
@@ -751,7 +778,7 @@ double Triangulation::inCircle(const Vec2& a, const Vec2& b, const Vec2& c, cons
 
   if (std::abs(det) < IN_CIRCLE_EPS) det = 0.0; // Cocircular
 
-  return det;
+  return det;*/
 }
 
 bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const
