@@ -255,32 +255,43 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
   set_lasr_class(ans)
 }
 
-#' Classify ground points
+#' Ground Point Classification
 #'
-#' Classify points using a variation of the Progressive TIN densification by Axelsson (2000) (see references).
-#' It classifies ground points by iteratively creating a triangulated surface model (TIN). The algorithm
-#' starts by selecting local low points. It assumes at least one ground-level point in any given area
-#' of e.g. 50m. The initial TIN model's triangles are mostly below ground, touching only at vertices.
-#' In subsequent iterations, more points are added to better follow the true ground surface. Iteration
-#' parameters determine point acceptance as ground. The iteration angle (e.g., 4.0 for flat terrain, 10.0
-#' for mountainous terrain) controls the eagerness to classify points based on ground level variations.
-#' Iteration distance prevents large upward jumps in the model, avoiding points in low vegetation or
-#' on low buildings. The iteration angle can be reduced automatically, if the triangles become small.
-#' This reduces the eagerness to classify more ground points inside small triangles and thus, avoids
-#' unnecessary point density of the ground model. The iteration angle inside small triangles approaches
-#' zero if the longest triangle edge is shorter than a given Edge length value. Furthermore, the iteration
-#' can be stopped completely if triangle edges are shorter than a given limit.
+#' This function classifies ground points using a modified version of the Progressive TIN
+#' densification method by Axelsson (2000) (see references). The approach involves iteratively c
+#' onstructing a triangulated surface model (TIN) to classify ground points (see details). **This
+#' algorithm is robust and much more robust than the CSF in \link{classify_with_csf} and should be
+#' preferred**. It is also robust to low noise points.
 #'
-#' @param distance scalar. Iteration distance threshold (figure 3 in original paper)
-#' errors during post-processing.
-#' @param angle scalar. Iteration angle threshold (figure 3 in original paper). Use a smaller angle value
-#' (close to 4.0) in flat terrain and a bigger value (close to 10.0)
-#' @param res scalar. Resolution to search seed points.  Usually, there is no need to change this value.
-#' It is suitable for most cases.
-#' @param min_size scale. Minimum triangle size. The densification is be stopped if a triangle
-#' is shorter than this limit. Usually, there is no need to change this value.
-#' It is suitable for most cases.
-#' @param class integer. The classification to attribute to the points. Usually 2 for ground points.
+#' The method begins by identifying local low points, assuming at least one ground-level point exists
+#' within any X meters area. Initially, the triangles of the TIN model are mostly below the ground
+#' surface, only touching lowest points at their vertices. As the iterations progress, additional
+#' points are incorporated to more accurately follow the true ground surface.\cr\cr
+#' The classification process is controlled by two main parameters:
+#' \itemize{
+#' \item Iteration angle: This controls the rate at which points are classified based on variations in
+#' ground level. Use smaller values (e.g., 4.0) for flat terrain and larger values (e.g., 10.0) for
+#'  mountainous regions.
+#' \item Iteration distance: This limits large upward jumps in the model, preventing the misclassification
+#'  of points in low vegetation or on small buildings.
+#' }
+#' The algorithm is robust to low noise points, meaning it can handle some level of noise without
+#' needing explicit noise classification. However, it is preferable to have noise classified points
+#' to guarantee optimal results.
+#' \cr\cr
+#' The iteration angle can be automatically reduced if the triangles become too small, which helps
+#' avoid excessive point density in small areas. The process can also stop entirely if the triangle
+#' edges become shorter than a specified length.
+#'
+#' @param distance Scalar. The threshold for iteration distance, as described in Figure 3 of Axelsson's paper.
+#' @param angle Scalar. The threshold for iteration angle, as illustrated in Figure 3 of Axelsson's paper.
+#' Use smaller values (close to 4.0) for flat areas and larger values (close to 10.0) for mountainous
+#' areas.
+#' @param res Scalar. The resolution for locating seed points. The default setting is usually adequate
+#' for most scenarios.
+#' @param min_size Scalar. The minimum size for triangles. Densification halts if triangles are smaller
+#' than this limit. The default setting is generally suitable for most scenarios.
+#' @param class Integer. The classification to assign to the points, typically 2 for ground points.
 #'
 #' @template return-pointcloud
 #'
@@ -289,10 +300,11 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' Archives of Photogrammetry and Remote Sensing, 33(B4), 110–117. https://doi.org/10.1016/j.isprsjprs.2005.10.005
 #'
 #' @export
+#' @md
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline = classify_with_pdt(TRUE, 1 ,1, time_step = 1) + write_las()
+#' pipeline = classify_with_pdt() + write_las()
 #' ans = exec(pipeline, on = f, progress = TRUE)
 classify_with_pdt = function(distance = 1, angle = 15, res = 50, min_size = 0.1, class = 2L)
 {
