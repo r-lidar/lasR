@@ -111,7 +111,7 @@ bool LASRpdt::process(LAS*& las)
   for (auto& P : seeds)
   {
     // Rescale reoffset to fit in the bounding box of the triangulation
-    Vec2 pt((P.x-xmin)*1000, (P.y-ymin)*1000);
+    Vec2 pt(P.x-xmin, P.y-ymin);
 
     tri_index = d->findContainerTriangle(pt, tri_index);
 
@@ -129,8 +129,8 @@ bool LASRpdt::process(LAS*& las)
     {
       if (id < 4)
       {
-        p.x = d->vertices[id].pos.x/1000 + xmin;
-        p.y = d->vertices[id].pos.y/1000 + ymin;
+        p.x = d->vertices[id].pos.x + xmin;
+        p.y = d->vertices[id].pos.y + ymin;
         p.z = zmean;
       }
       else
@@ -185,7 +185,7 @@ bool LASRpdt::process(LAS*& las)
     // Check if the angles and distance meet the threshold criteria
     if (angle < max_iteration_angle && dist_d < 20)
     {
-      if (d->delaunayInsertion(Vec2((P.x-xmin)*1000, (P.y-ymin)*1000), tri_index))
+      if (d->delaunayInsertion(Vec2(P.x-xmin, P.y-ymin), tri_index))
       {
         index_map.push_back(P.FID);
         count++;
@@ -235,7 +235,7 @@ bool LASRpdt::process(LAS*& las)
 
       // Coordinates of the current point
       PointXYZ P(p->get_x(),p->get_y(),p->get_z());
-      Vec2 pt((P.x-xmin)*1000, (P.y-ymin)*1000);
+      Vec2 pt(P.x-xmin, P.y-ymin);
 
       double zdtm = dtm.get_value(P.x, P.y);
       if (zdtm != dtm.get_nodata() && std::abs(zdtm - P.z) > 3*max_iteration_distance)
@@ -261,8 +261,8 @@ bool LASRpdt::process(LAS*& las)
       {
         if (id < 4)
         {
-          p.x = d->vertices[id].pos.x/1000 + xmin;
-          p.y = d->vertices[id].pos.y/1000 + ymin;
+          p.x = d->vertices[id].pos.x + xmin;
+          p.y = d->vertices[id].pos.y + ymin;
           p.z = zmean;
         }
         else
@@ -318,7 +318,7 @@ bool LASRpdt::process(LAS*& las)
       // Check if the angles and distance meet the threshold criteria
       if (angle < max_iteration_angle && dist_d < max_iteration_distance)
       {
-        if (d->delaunayInsertion(Vec2((P.x-xmin)*1000, (P.y-ymin)*1000), tri_index))
+        if (d->delaunayInsertion(Vec2(P.x-xmin, P.y-ymin), tri_index))
         {
           index_map.push_back(las->current_point);
           count++;
