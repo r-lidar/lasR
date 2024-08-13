@@ -25,6 +25,10 @@ public:
   // multi-threading
   bool is_parallelizable() const override { return merged == false; };
   LASRlaswriter* clone() const override { return new LASRlaswriter(*this); };
+
+private:
+  void clean_copc_ext(std::string& path);
+
 private:
   bool keep_buffer;
   LASwriter* laswriter;

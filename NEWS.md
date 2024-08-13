@@ -1,6 +1,7 @@
 # lasR 0.9.2
 
 - Fix: filter based on return number, number of returns or classification such as `-keep_last`, `-keep_class 128` or working with LAS 1.4
+- Enhance: prevent the possibility to write a file with the extension `.copc.las`. `.copc` is automatically discarded
 - New: `classify_with_csf()` gained a `filter` argument
 
 # lasR 0.9.2
