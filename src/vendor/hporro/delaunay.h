@@ -8,7 +8,7 @@
 class Triangulation
 {
 public:
-  Triangulation(const std::vector<Vec2>& points);
+  Triangulation();
   ~Triangulation();
   bool delaunayInsertion(const Vec2& point, int tri_index = -1);
   int findContainerTriangle(const Vec2& p, int prop) const;

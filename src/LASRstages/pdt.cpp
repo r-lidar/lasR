@@ -31,25 +31,34 @@ bool LASRpdt::process(LAS*& las)
 
   double xmin = las->header->min_x;
   double ymin = las->header->min_y;
+  double zmin = las->header->min_z;
 
   Raster dtm(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 1);
+
+  Profiler prof;
+  prof.tic();
 
   // =====================
   // Find some seed points
   // =====================
 
-  Profiler prof;
-  prof.tic();
+  // ----------------------------------
+  // Keeps the lowest points of
+  // each cell of a grid (usually 50 m)
+  // ----------------------------------
 
-  // Keep the lowest points per 50 m grid cells
+  if (verbose) print("Search seeds:\n");
 
   Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, seed_resolution_search);
   std::vector<PointLAS> seeds;
   seeds.resize(grid.get_ncells());
   for (auto& seed : seeds) seed.z = F64_MAX;
 
+  int counter = 0;
   while (las->read_point())
   {
+    counter++;
+
     if (lasfilter.filter(&las->point)) continue;
 
     double x = las->point.get_x();
@@ -68,39 +77,140 @@ bool LASRpdt::process(LAS*& las)
     }
   }
 
+  if (counter == 0)
+  {
+    last_error = "0 point to process";
+    return false;
+  }
+
   auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const PointXYZ& p) { return p.z == F64_MAX; });
   seeds.erase(new_end, seeds.end());
 
-  std::vector<Vec2> pts;
-  pts.reserve(seeds.size());
-  index_map.clear();
-  for (const auto& seed : seeds)
-  {
-    pts.push_back({(seed.x-xmin)*1000, (seed.y-ymin)*1000});
-    index_map.push_back(seed.FID);
-  }
+  // Sort descending to insert higher seeds first in order to reduce the chance to insert a low outlier first
+  std::sort(seeds.begin(), seeds.end(), [](const PointXYZ& a, const PointXYZ& b) { return a.z > b.z; });
+
+  double zmean = 0.0f;
+  for (const auto& point : seeds) zmean += point.z;
+  zmean /= (double)seeds.size();
 
   // ============================
   // Triangulate the seed points
   // ============================
 
-  d = new Triangulation(pts);
+  // -------------------------------------------------------
+  // Instead of triangulating all the seeds as described in the original paper,
+  // we are applying the progressive densification at this first step in order
+  // to get rid of low outliers.
+  // ---------------------------------------------------------
+
+  d = new Triangulation();
+
+  int count = 0;
+  int iteration = 0;
+  int tri_index = -1;
+
+  for (auto& P : seeds)
+  {
+    // Rescale reoffset to fit in the bounding box of the triangulation
+    Vec2 pt((P.x-xmin)*1000, (P.y-ymin)*1000);
+
+    tri_index = d->findContainerTriangle(pt, tri_index);
+
+    // The point has already been inserted, it is a point of the triangulation
+    if (tri_index < 0) continue;
+
+    // Find the index of the vertices
+    int idA = d->triangles[tri_index].v[0];
+    int idB = d->triangles[tri_index].v[1];
+    int idC = d->triangles[tri_index].v[2];
+
+    // The index may map one of the 4 additional points that are not actually in the point cloud and
+    // that serve as bounding box. Otherwise retrieve the coordinates in the point cloud.
+    auto query_coordinates = [&](int id, PointLAS& p)
+    {
+      if (id < 4)
+      {
+        p.x = d->vertices[id].pos.x/1000 + xmin;
+        p.y = d->vertices[id].pos.y/1000 + ymin;
+        p.z = zmean;
+      }
+      else
+      {
+        las->get_point(index_map[id-4], p, nullptr, nullptr);
+      }
+    };
+
+    PointLAS A,B,C;
+    query_coordinates(idA, A);
+    query_coordinates(idB, B);
+    query_coordinates(idC, C);
+
+    // This is the triangle in which we are supposed to insert the point
+    TriangleXYZ triangle(A,B,C);
+
+    // If the triangle is < 10 cm, stop subdividing. This is computationally demanding for no
+    // significant improvement
+    if (triangle.square_max_edge_size() < min_triangle_size) continue;
+
+    // Compute the normal
+    PointXYZ n = triangle.normal();
+
+    // Angle of the triangle in degrees
+    double triangle_angle = std::acos(n.z) * (180.0 / M_PI);
+
+    // Calculate the perpendicular projection of P onto the triangle
+    // and the distance d from P to the Projection (figure 3 in Axelsson's paper)
+    PointXYZ v = P - A;
+    double dist_d = v.dot(n);
+    PointXYZ P_proj = P - n * dist_d;
+    dist_d = std::abs(dist_d);
+
+    if (!triangle.contains(P_proj)) continue;
+
+    // Calculate the distances from P to the three vertices of the triangle
+    double dist_P0 = P.distance(triangle.A);
+    double dist_P1 = P.distance(triangle.B);
+    double dist_P2 = P.distance(triangle.C);
+
+    // Convert the angles to radians
+    // (figure 3 in Axelsson's paper)
+    double alpha = asin(dist_d / dist_P0) * 180.0f/M_PI;
+    double beta  = asin(dist_d / dist_P1) * 180.0f/M_PI;
+    double gamma = asin(dist_d / dist_P2) * 180.0f/M_PI;
+    alpha = std::abs(alpha);
+    beta = std::abs(beta);
+    gamma = std::abs(gamma);
+
+    double angle = MAX3(alpha, beta, gamma);
+
+    // Check if the angles and distance meet the threshold criteria
+    if (angle < max_iteration_angle && dist_d < 20)
+    {
+      if (d->delaunayInsertion(Vec2((P.x-xmin)*1000, (P.y-ymin)*1000), tri_index))
+      {
+        index_map.push_back(P.FID);
+        count++;
+      }
+    }
+  }
 
   prof.toc();
-  print("Triangulating %d seeds took %.2f secs\n", d->vcount, prof.elapsed());
+
+  if (verbose) print("  Iteration 0: adding %d seeds to the ground took %.2f secs\n", count, prof.elapsed());
+
+
+  compute_dtm(d, &dtm);
 
   // =============================
   // Progressive TIN densification
   // =============================
 
-  print("Progressive TIN densification\n");
+  if (verbose) print("Progressive TIN densification:\n");
 
   prof.tic();
 
   std::chrono::duration<double> total_search_time(0);
 
-  int count;
-  int iteration = 0;
   do
   {
 
@@ -110,11 +220,8 @@ bool LASRpdt::process(LAS*& las)
     iteration++;
     count = 0;
 
-    // Placeholder for special bbox points
-    double z_placeholder = las->header->min_z;
-
     LASpoint* p;
-    int tri_index = -1;
+    tri_index = -1;
     while (las->read_point())
     {
       p = &las->point;
@@ -127,6 +234,10 @@ bool LASRpdt::process(LAS*& las)
       // Coordinates of the current point
       PointXYZ P(p->get_x(),p->get_y(),p->get_z());
       Vec2 pt((P.x-xmin)*1000, (P.y-ymin)*1000);
+
+      double zdtm = dtm.get_value(P.x, P.y);
+      if (zdtm != dtm.get_nodata() && std::abs(zdtm - P.z) > 3*max_iteration_distance)
+        continue;
 
       // Find the index of the triangle in which this point lies
       auto start_time = std::chrono::high_resolution_clock::now();
@@ -148,9 +259,9 @@ bool LASRpdt::process(LAS*& las)
       {
         if (id < 4)
         {
-          p.x = d->vertices[id].pos.x;
-          p.y = d->vertices[id].pos.y;
-          p.z = z_placeholder;
+          p.x = d->vertices[id].pos.x/1000 + xmin;
+          p.y = d->vertices[id].pos.y/1000 + ymin;
+          p.z = zmean;
         }
         else
         {
@@ -216,14 +327,16 @@ bool LASRpdt::process(LAS*& las)
     prof2.toc();
 
     float perc = (double)count/(double)d->vcount;
-    print("  Iteration %d: adding %d points (+%.4f\%) to the ground took %.2f secs\n", iteration, count, perc, prof2.elapsed());
+    if (verbose) print("  Iteration %d: adding %d points (+%.1f\%) to the ground took %.2f secs\n", iteration, count, perc*100, prof2.elapsed());
 
     if (perc < 1.0f/1000.0f) break;
+
+    compute_dtm(d, &dtm);
 
   } while(count > 0);
 
   prof.toc();
-  print("Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(),  total_search_time.count());
+  if (verbose) print("Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(),  total_search_time.count());
 
   progress->done();
 
@@ -359,6 +472,9 @@ void LASRpdt::clear(bool last)
 // See LASRtriangulate::interpolate
 void LASRpdt::compute_dtm(const Triangulation* d, Raster* r) const
 {
+  Profiler prof;
+  prof.tic();
+
   // Generate the raster points in this triangle
   double xres = r->get_xres();
   double yres = r->get_yres();
@@ -398,4 +514,8 @@ void LASRpdt::compute_dtm(const Triangulation* d, Raster* r) const
       }
     }
   }
+
+  prof.toc();
+  print("  DTM took %.2f secs\n", prof.elapsed());
 }
+

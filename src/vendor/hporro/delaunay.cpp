@@ -9,21 +9,14 @@
 #define MIN3(a,b,c) (((a)>(b)) ? (((b)>(c)) ? (c) : (b)) : (((a)>(c)) ? (c) : (a)));
 #endif
 
-Triangulation::Triangulation(const std::vector<Vec2>& points)
+Triangulation::Triangulation()
 {
-  int numP = points.size();
+  int numP = 10000; // allocate memory for 10000 points
 
-  double minx = 10000000;
-  double miny = 10000000;
-  double maxx =-10000000;
-  double maxy =-10000000;
-  for(auto p: points)
-  {
-    minx = std::min(minx,p.x);
-    miny = std::min(miny,p.y);
-    maxx = std::max(maxx,p.x);
-    maxy = std::max(maxy,p.y);
-  }
+  double minx = -10000000;
+  double miny = -10000000;
+  double maxx = 10000000;
+  double maxy = 10000000;
 
   a = std::max(maxx-minx,maxy-miny);
 
@@ -47,11 +40,6 @@ Triangulation::Triangulation(const std::vector<Vec2>& points)
 
   vcount = 4;
   tcount = 2;
-
-  for(int i = 0 ; i < (int)points.size() ; i++)
-  {
-    delaunayInsertion(points[i]);
-  }
 }
 
 Triangulation::~Triangulation()
