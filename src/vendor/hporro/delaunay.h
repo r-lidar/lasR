@@ -36,8 +36,8 @@ private:
   bool areConnected(int,int) const;
 
   //double orient2d(const Vec2& pa, const Vec2& pb, const Vec2& pc) const;
-  //double inCircle(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d) const;
-  //bool pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const;
+  double inCircle(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d) const;
+  bool pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const;
 
   void remem(); // checks if more memory is needed, and if it is needed, allocates more memory.
 

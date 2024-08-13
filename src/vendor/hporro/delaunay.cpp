@@ -1,6 +1,5 @@
 #include "constants.h"
 #include "pred3d.h"
-#include "utils.h"
 #include "delaunay.h"
 
 #include <algorithm>
@@ -764,12 +763,12 @@ bool Triangulation::isConvexBicell(int t1, int t2)
   //return det;
 }*/
 
-/*double Triangulation::inCircle(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d) const
+double Triangulation::inCircle(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d) const
 {
   return incircle(&(a.x), &(b.x), &(c.x), &(d.x));
 
   // Compute the determinant of the 4x4 matrix
-  double ax = a.x - d.x;
+  /*double ax = a.x - d.x;
   double ay = a.y - d.y;
   double bx = b.x - d.x;
   double by = b.y - d.y;
@@ -782,10 +781,10 @@ bool Triangulation::isConvexBicell(int t1, int t2)
 
   if (std::abs(det) < IN_CIRCLE_EPS) det = 0.0; // Cocircular
 
-  return det;
-}*/
+  return det;*/
+}
 
-/*bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const
+bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const
 {
   if (p1 == p2) return false;
   if (p.x < std::min(p1.x,p2.x) + IN_TRIANGLE_EPS) return false;
@@ -797,4 +796,4 @@ bool Triangulation::isConvexBicell(int t1, int t2)
   Vec2 n = Vec2(-a.y,a.x);
 
   return std::abs((p-p1).dot(n)) < IN_TRIANGLE_EPS;
-}*/
+}
