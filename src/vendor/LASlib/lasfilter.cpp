@@ -432,7 +432,7 @@ class LAScriterionKeepFirstReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "keep_first"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return (point->return_number > 1); };
+  inline BOOL filter(const LASpoint* point) { return (point->get_return_number() > 1); };
 };
 
 class LAScriterionKeepFirstOfManyReturn : public LAScriterion
@@ -440,7 +440,7 @@ class LAScriterionKeepFirstOfManyReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "keep_first_of_many"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return ((point->number_of_returns == 1) || (point->return_number > 1)); };
+  inline BOOL filter(const LASpoint* point) { return ((point->get_number_of_returns() == 1) || (point->get_return_number() > 1)); };
 };
 
 class LAScriterionKeepMiddleReturn : public LAScriterion
@@ -448,7 +448,7 @@ class LAScriterionKeepMiddleReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "keep_middle"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return ((point->return_number == 1) || (point->return_number >= point->number_of_returns)); };
+  inline BOOL filter(const LASpoint* point) { return ((point->get_return_number() == 1) || (point->get_return_number() >= point->get_number_of_returns())); };
 };
 
 class LAScriterionKeepLastReturn : public LAScriterion
@@ -456,7 +456,7 @@ class LAScriterionKeepLastReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "keep_last"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return (point->return_number < point->number_of_returns); };
+  inline BOOL filter(const LASpoint* point) { return (point->get_return_number() < point->get_number_of_returns()); };
 };
 
 class LAScriterionKeepLastOfManyReturn : public LAScriterion
@@ -464,7 +464,7 @@ class LAScriterionKeepLastOfManyReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "keep_last_of_many"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return ((point->return_number == 1) || (point->return_number < point->number_of_returns)); };
+  inline BOOL filter(const LASpoint* point) { return ((point->get_return_number() == 1) || (point->get_return_number() < point->get_number_of_returns())); };
 };
 
 class LAScriterionKeepSecondLast : public LAScriterion
@@ -472,7 +472,7 @@ class LAScriterionKeepSecondLast : public LAScriterion
 public:
   inline const CHAR* name() const { return "keep_second_last"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return ((point->number_of_returns <= 1) || (point->return_number != (point->number_of_returns-1))); };
+  inline BOOL filter(const LASpoint* point) { return ((point->get_number_of_returns() <= 1) || (point->get_return_number() != (point->get_number_of_returns()-1))); };
 };
 
 class LAScriterionDropFirstReturn : public LAScriterion
@@ -480,7 +480,7 @@ class LAScriterionDropFirstReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "drop_first"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return (point->return_number == 1); };
+  inline BOOL filter(const LASpoint* point) { return (point->get_return_number() == 1); };
 };
 
 class LAScriterionDropFirstOfManyReturn : public LAScriterion
@@ -488,7 +488,7 @@ class LAScriterionDropFirstOfManyReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "drop_first_of_many"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return ((point->number_of_returns > 1) && (point->return_number == 1)); };
+  inline BOOL filter(const LASpoint* point) { return ((point->get_number_of_returns() > 1) && (point->get_return_number() == 1)); };
 };
 
 class LAScriterionDropMiddleReturn : public LAScriterion
@@ -496,7 +496,7 @@ class LAScriterionDropMiddleReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "drop_middle"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return ((point->return_number > 1) && (point->return_number < point->number_of_returns)); };
+  inline BOOL filter(const LASpoint* point) { return ((point->get_return_number() > 1) && (point->get_return_number() < point->get_number_of_returns())); };
 };
 
 class LAScriterionDropLastReturn : public LAScriterion
@@ -504,7 +504,7 @@ class LAScriterionDropLastReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "drop_last"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return (point->return_number >= point->number_of_returns); };
+  inline BOOL filter(const LASpoint* point) { return (point->get_return_number() >= point->get_number_of_returns()); };
 };
 
 class LAScriterionDropLastOfManyReturn : public LAScriterion
@@ -512,7 +512,7 @@ class LAScriterionDropLastOfManyReturn : public LAScriterion
 public:
   inline const CHAR* name() const { return "drop_last_of_many"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return ((point->number_of_returns > 1) && (point->return_number >= point->number_of_returns)); };
+  inline BOOL filter(const LASpoint* point) { return ((point->get_number_of_returns() > 1) && (point->get_return_number() >= point->get_number_of_returns())); };
 };
 
 class LAScriterionDropSecondLast : public LAScriterion
@@ -520,7 +520,7 @@ class LAScriterionDropSecondLast : public LAScriterion
 public:
   inline const CHAR* name() const { return "drop_second_last"; };
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline BOOL filter(const LASpoint* point) { return ((point->number_of_returns > 1) && (point->return_number == (point->number_of_returns-1))); };
+  inline BOOL filter(const LASpoint* point) { return ((point->get_number_of_returns() > 1) && (point->get_return_number() == (point->get_number_of_returns()-1))); };
 };
 
 class LAScriterionKeepReturns : public LAScriterion
@@ -853,7 +853,7 @@ public:
     return n;
   };
   inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_CLASSIFICATION; };
-  inline BOOL filter(const LASpoint* point) { return ((1u << point->classification) & drop_classification_mask); };
+  inline BOOL filter(const LASpoint* point) { return ((1u << point->get_classification()) & drop_classification_mask); };
   LAScriterionKeepClassifications(U32 keep_classification_mask) { drop_classification_mask = ~keep_classification_mask; };
   inline U32 get_keep_classification_mask() const { return ~drop_classification_mask; };
 private:
@@ -871,7 +871,7 @@ public:
     return n;
   };
   inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_CLASSIFICATION; };
-  inline BOOL filter(const LASpoint* point) { return ((1 << point->classification) & drop_classification_mask); };
+  inline BOOL filter(const LASpoint* point) { return ((1 << point->get_classification()) & drop_classification_mask); };
   LAScriterionDropClassifications(U32 drop_classification_mask) { this->drop_classification_mask = drop_classification_mask; };
   inline U32 get_drop_classification_mask() const { return drop_classification_mask; };
 private:
