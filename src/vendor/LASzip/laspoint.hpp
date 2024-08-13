@@ -549,11 +549,11 @@ public:
   inline I32 get_Z() const { return Z; };
   inline const I32* get_XYZ() const { return &X; };
   inline U16 get_intensity() const { return intensity; };
-  inline U8 get_return_number() const { return return_number; };
-  inline U8 get_number_of_returns() const { return number_of_returns; };
+  inline U8 get_return_number() const { if (extended_point_type) return extended_return_number; else return return_number; };
+  inline U8 get_number_of_returns() const { if (extended_point_type) return extended_number_of_returns; else return number_of_returns; };
   inline U8 get_scan_direction_flag() const { return scan_direction_flag; };
   inline U8 get_edge_of_flight_line() const { return edge_of_flight_line; };
-  inline U8 get_classification() const { return classification; };
+  inline U8 get_classification() const { if (extended_point_type) return extended_classification; else return classification; };
   inline U8 get_synthetic_flag() const { return synthetic_flag; };
   inline U8 get_keypoint_flag() const { return keypoint_flag; };
   inline U8 get_withheld_flag() const { return withheld_flag; };
