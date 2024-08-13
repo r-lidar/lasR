@@ -13,10 +13,10 @@ Triangulation::Triangulation()
 {
   int numP = 10000; // allocate memory for 10000 points
 
-  double minx = -10000000;
-  double miny = -10000000;
-  double maxx = 10000000;
-  double maxy = 10000000;
+  double minx = -1e8;
+  double miny = -1e8;
+  double maxx = 1e8;
+  double maxy = 1e8;
 
   a = std::max(maxx-minx,maxy-miny);
 
@@ -30,10 +30,10 @@ Triangulation::Triangulation()
   vertices = new Vertex[maxVertices]; // num of vertices
   triangles = new Triangle[maxTriangles]; // 2(n+6) - 2 - 3 = 2n+7 // num of faces
 
-  vertices[0] = Vertex(Vec2(-10000000,-1000000));
-  vertices[1] = Vertex(Vec2( 10000000,-10000000));
-  vertices[2] = Vertex(Vec2( 10000000, 10000000));
-  vertices[3] = Vertex(Vec2(-10000000, 10000000));
+  vertices[0] = Vertex(Vec2(minx, miny));
+  vertices[1] = Vertex(Vec2(maxx, miny));
+  vertices[2] = Vertex(Vec2(maxx, maxy));
+  vertices[3] = Vertex(Vec2(minx, maxy));
 
   triangles[0] = Triangle(0,1,2,-1,1,-1);
   triangles[1] = Triangle(0,2,3,-1,-1,0);
@@ -71,10 +71,10 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
 
   for (int i = 0; i < 3 ; i++)
   {
-    if (pointInSegment(p, points[(i+1)%3],points[(i+2)%3]))
+    if (pointInSegment(p, points[(i+1)%3], points[(i+2)%3]))
     {
       // insert a point in the i edge
-      if(triangles[tri_index].t[i]==-1)
+      if (triangles[tri_index].t[i] == -1)
       {
         addPointInEdge(p, tri_index);
         legalize(tri_index);
@@ -84,7 +84,7 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
       else
       {
         addPointInEdge(p, tri_index, triangles[tri_index].t[i]);
-        for(int j=0;j<3;j++)
+        for (int  j = 0 ; j < 3 ; j++)
         {
           legalize(triangles[tri_index].t[i]);
           legalize(tri_index);
@@ -97,14 +97,13 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
     }
   }
 
-  if (tri_index !=- 1)
+  if (tri_index != -1)
   {
     this->incount++;
-    addPointInside(p,tri_index);
+    addPointInside(p, tri_index);
     legalize(tri_index);
     legalize(tcount-1);
     legalize(tcount-2);
-
     return true;
   }
 
@@ -460,9 +459,10 @@ bool Triangulation::legalize(int t)
 
 bool Triangulation::legalize(int t1, int t2)
 {
-  if ( t2 == -1) return true;
-  if ( t1 == -1) return true;
-  if (!areConnected(t1,t2)) return true;
+  if (t2 == -1) return true;
+  if (t1 == -1) return true;
+
+  if (!areConnected(t1, t2)) return true;
 
   int a[6];
   a[0] = triangles[t1].v[0];
@@ -479,7 +479,7 @@ bool Triangulation::legalize(int t1, int t2)
 
   for(int i = 3 ; i < 6 ; i++)
   {
-    if ((a[i]!=b[0]) && (a[i]!=b[1]) && (a[i]!=b[2]))
+    if ((a[i] != b[0]) && (a[i] != b[1]) && (a[i] != b[2]))
     {
       b[3] = a[i];
     }
@@ -491,17 +491,17 @@ bool Triangulation::legalize(int t1, int t2)
 
   for (int i = 0 ; i < 3 ; i++)
   {
-    if((a[i]!=b[4]) && (a[i]!=b[5]) && (a[i]!=b[6]))
+    if ((a[i] != b[4]) && (a[i] != b[5]) && (a[i] != b[6]))
     {
       b[7] = a[i];
     }
   }
 
-  if(isConvexBicell(t1,t2) &&
-     (inCircle(vertices[b[0]].pos,vertices[b[1]].pos,vertices[b[2]].pos,vertices[b[3]].pos)>0 ||
-     inCircle(vertices[b[4]].pos,vertices[b[5]].pos,vertices[b[6]].pos,vertices[b[7]].pos)>0))
+  if (isConvexBicell(t1,t2) &&
+     (inCircle(vertices[b[0]].pos,vertices[b[1]].pos, vertices[b[2]].pos, vertices[b[3]].pos) > 0 ||
+      inCircle(vertices[b[4]].pos,vertices[b[5]].pos, vertices[b[6]].pos, vertices[b[7]].pos) > 0))
   {
-    bool p = flip(t1,t2);
+    bool p = flip(t1, t2);
     legalize(t1);
     legalize(t2);
     return p;
@@ -610,7 +610,7 @@ bool Triangulation::flip(int t1, int t2)
   triangles[t2].t[1] = f22;
   triangles[t2].t[2] = f11;
 
-  if(f11 != -1)
+  if (f11 != -1)
   {
     for (int k = 0 ; k < 3 ; k++)
     {
@@ -687,15 +687,15 @@ bool Triangulation::isConvexBicell(int t1, int t2)
 
   for(i = 0 ; i < 3 ; i++)
   {
-    if(triangles[t1].v[i]!=triangles[t2].v[0] &&
-        triangles[t1].v[i]!=triangles[t2].v[1] &&
-        triangles[t1].v[i]!=triangles[t2].v[2])
+    if (triangles[t1].v[i] != triangles[t2].v[0] &&
+        triangles[t1].v[i] != triangles[t2].v[1] &&
+        triangles[t1].v[i] != triangles[t2].v[2])
       break;
   }
 
   for(j = 0 ; j < 3 ; j++)
   {
-    if(triangles[t2].v[j]!=triangles[t1].v[0] &&
+    if (triangles[t2].v[j]!=triangles[t1].v[0] &&
         triangles[t2].v[j]!=triangles[t1].v[1] &&
         triangles[t2].v[j]!=triangles[t1].v[2])
       break;
@@ -715,7 +715,7 @@ bool Triangulation::isConvexBicell(int t1, int t2)
    //                    j
    */
 
-  std::vector<Vec2> bicell = {vertices[triangles[t1].v[(i+1)%3]].pos,vertices[triangles[t2].v[j]].pos,vertices[triangles[t2].v[(j+1)%3]].pos,vertices[triangles[t1].v[i]].pos};
+  std::vector<Vec2> bicell = {vertices[triangles[t1].v[(i+1)%3]].pos, vertices[triangles[t2].v[j]].pos, vertices[triangles[t2].v[(j+1)%3]].pos, vertices[triangles[t1].v[i]].pos};
 
   for( i = 0 ; i < 4 ; i++)
   {
@@ -756,11 +756,11 @@ double Triangulation::inCircle(const Vec2& a, const Vec2& b, const Vec2& c, cons
 
 bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const
 {
-  if(p1 == p2) return false;
-  if(p.x < std::min(p1.x,p2.x) + IN_TRIANGLE_EPS) return false;
-  if(p.x > std::max(p1.x,p2.x) + IN_TRIANGLE_EPS) return false;
-  if(p.y < std::min(p1.y,p2.y) + IN_TRIANGLE_EPS) return false;
-  if(p.y > std::max(p1.y,p2.y) + IN_TRIANGLE_EPS) return false;
+  if (p1 == p2) return false;
+  if (p.x < std::min(p1.x,p2.x) + IN_TRIANGLE_EPS) return false;
+  if (p.x > std::max(p1.x,p2.x) + IN_TRIANGLE_EPS) return false;
+  if (p.y < std::min(p1.y,p2.y) + IN_TRIANGLE_EPS) return false;
+  if (p.y > std::max(p1.y,p2.y) + IN_TRIANGLE_EPS) return false;
 
   Vec2 a = p1-p2;
   Vec2 n = Vec2(-a.y,a.x);
