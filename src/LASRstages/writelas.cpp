@@ -43,8 +43,9 @@ bool LASRlaswriter::set_input_file_name(const std::string& file)
 bool LASRlaswriter::set_output_file(const std::string& file)
 {
   template_filename = file;
-  size_t pos = file.find('*');
+  clean_copc_ext(template_filename);
 
+  size_t pos = file.find('*');
   if (pos == std::string::npos)
   {
     merged = true;
@@ -156,5 +157,17 @@ void LASRlaswriter::clear(bool last)
       delete laswriter;
       laswriter = nullptr;
     }
+  }
+}
+
+void LASRlaswriter::clean_copc_ext(std::string& path)
+{
+  const std::string suffix = ".copc.las";
+  const std::string toRemove = ".copc";
+
+  // Check if the path ends with .copc.las
+  if (path.size() >= suffix.size() && path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0)
+  {
+    path.erase(path.size() - suffix.size(), toRemove.size()); // Remove .copc
   }
 }
