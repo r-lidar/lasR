@@ -1,6 +1,6 @@
 #include "constants.h"
 #include "pred3d.h"
-
+#include "utils.h"
 #include "delaunay.h"
 
 #include <algorithm>
@@ -161,8 +161,8 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
       Vec2 b = vertices[triangles[t].v[(i + 2) % 3]].pos;
 
       // Perform orientation tests to check if the point lies in the neighboring triangle
-      if ((orient2d(v, p, a) * orient2d(v, p, b) < 0) &&
-          (orient2d(a, b, p) * orient2d(a, b, v) < 0))
+      if ((orient2d(&v.x, &p.x, &a.x) * orient2d(&v.x, &p.x, &b.x) < 0) &&
+          (orient2d(&a.x, &b.x, &p.x) * orient2d(&a.x, &b.x, &v.x) < 0))
       {
         // Mark current triangle as visited
         visited[t] = true;
@@ -255,7 +255,9 @@ bool Triangulation::isInside(int t, Vec2 p) const
   lim = MAX3(p1.y, p2.y, p3.y);
   if (p.y > lim) return false;
 
-  return (orient2d(p1, p2, p) > 0) && (orient2d(p2, p3, p) > 0) && (orient2d(p3, p1, p) > 0);
+  return (orient2d(&(p1.x),&(p2.x),&(p.x)) > 0) &&
+    (orient2d(&(p2.x),&(p3.x),&(p.x)) > 0) &&
+    (orient2d(&(p3.x),&(p1.x),&(p.x)) > 0);
 }
 
 bool Triangulation::isInside(int t, int v) const
@@ -291,7 +293,9 @@ bool Triangulation::isInEdge(int t, Vec2 p) const
   if (p.y > lim) return false;
 
   // JR: should be an OR operation??
-  return (orient2d(p1, p2, p) == 0) && (orient2d(p2, p3, p) == 0) && (orient2d(p3, p1, p) == 0);
+  return (orient2d(&(p1.x),&(p2.x),&(p.x)) == 0) &&
+    (orient2d(&(p2.x),&(p3.x),&(p.x)) == 0) &&
+    (orient2d(&(p3.x),&(p1.x),&(p.x)) == 0);
 
   // b-a goes from a to b
   // Vec2 a1 = p1-p2; Vec2 b1 = p-p2;
@@ -572,7 +576,7 @@ bool Triangulation::isCCW(int f) const
   Vec2 p1 = vertices[triangles[f].v[1]].pos;
   Vec2 p2 = vertices[triangles[f].v[2]].pos;
 
-  return (orient2d(p0, p1, p2) > 0);
+  return (orient2d(&(p0.x),&(p1.x),&(p2.x)) > 0);
 
   // if((crossa(p0,p1)+crossa(p1,p2)+crossa(p2,p0))>IN_TRIANGLE_EPS) return true;
   // return false;
@@ -721,7 +725,7 @@ bool Triangulation::isConvexBicell(int t1, int t2)
       break;
   }
 
-  /*
+   //
    //                    i
    //                    ^
    //                   / \
@@ -733,7 +737,7 @@ bool Triangulation::isConvexBicell(int t1, int t2)
    //                   \ /
    //                    v
    //                    j
-   */
+   //
 
   std::vector<Vec2> bicell = {vertices[triangles[t1].v[(i+1)%3]].pos, vertices[triangles[t2].v[j]].pos, vertices[triangles[t2].v[(j+1)%3]].pos, vertices[triangles[t1].v[i]].pos};
 
@@ -745,27 +749,27 @@ bool Triangulation::isConvexBicell(int t1, int t2)
     // Vec2 prev = p1-p0;
     // Vec2 act = p2-p1;
     // if(crossa(prev,act)<0) return false;
-    if(orient2d(p0, p1, p2)<=0) return false;
+    if(orient2d(&(p0.x),&(p1.x),&(p2.x))<=0) return false;
   }
 
   return true;
 }
 
-double Triangulation::orient2d(const Vec2& pa, const Vec2& pb, const Vec2& pc) const
+/*double Triangulation::orient2d(const Vec2& pa, const Vec2& pb, const Vec2& pc) const
 {
   return orient2d(pa, pb, pc);
 
-  /*double det = (pb.x - pa.x) * (pc.y - pa.y) - (pb.y - pa.y) * (pc.x - pa.x);
-  if (std::abs(det) < IN_TRIANGLE_EPS) det = 0.0;
-  return det;*/
-}
+  //double det = (pb.x - pa.x) * (pc.y - pa.y) - (pb.y - pa.y) * (pc.x - pa.x);
+  //if (std::abs(det) < IN_TRIANGLE_EPS) det = 0.0;
+  //return det;
+}*/
 
-double Triangulation::inCircle(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d) const
+/*double Triangulation::inCircle(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d) const
 {
   return incircle(&(a.x), &(b.x), &(c.x), &(d.x));
 
   // Compute the determinant of the 4x4 matrix
-  /*double ax = a.x - d.x;
+  double ax = a.x - d.x;
   double ay = a.y - d.y;
   double bx = b.x - d.x;
   double by = b.y - d.y;
@@ -778,10 +782,10 @@ double Triangulation::inCircle(const Vec2& a, const Vec2& b, const Vec2& c, cons
 
   if (std::abs(det) < IN_CIRCLE_EPS) det = 0.0; // Cocircular
 
-  return det;*/
-}
+  return det;
+}*/
 
-bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const
+/*bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2) const
 {
   if (p1 == p2) return false;
   if (p.x < std::min(p1.x,p2.x) + IN_TRIANGLE_EPS) return false;
@@ -793,4 +797,4 @@ bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2
   Vec2 n = Vec2(-a.y,a.x);
 
   return std::abs((p-p1).dot(n)) < IN_TRIANGLE_EPS;
-}
+}*/
