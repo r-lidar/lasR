@@ -449,22 +449,22 @@ bool LASRpdt::write()
 
   progress->done();
 
-#pragma omp critical (write_triangulation)
-{
-  vector.write(triangles);
-}
+  #pragma omp critical (write_ptd)
+  {
+    vector.write(triangles);
+  }
 
-if (verbose)
-{
-  // # nocov start
-  auto end_time = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-  float second = (float)duration.count()/1000.0f;
-  print("  Writing Delaunay triangulation took %.2f sec\n", second);
-  // # nocov end
-}
+  if (verbose)
+  {
+    // # nocov start
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    float second = (float)duration.count()/1000.0f;
+    print("  Writing Delaunay triangulation took %.2f sec\n", second);
+    // # nocov end
+  }
 
-return true;
+  return true;
 }
 
 void LASRpdt::clear(bool last)
