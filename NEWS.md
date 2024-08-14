@@ -4,11 +4,11 @@
 - New: new stage `focal()` to post-process rasters in the pipeline.
 - Change: #79 raster produced on a subset of data have the minimal possible extent instead of the full extent of the point cloud
 
-# lasR 0.9.2
+# lasR 0.9.3
 
-- Fix: filter based on return number, number of returns or classification such as `-keep_last`, `-keep_class 128` or working with LAS 1.4
-- Enhance: prevent the possibility to write a file with the extension `.copc.las`. `.copc` is automatically discarded
-- New: `classify_with_csf()` gained a `filter` argument
+- Fix: Filters based on return number, number of returns, or classification (e.g., `-keep_last`, `-keep_class 128`) are now functional with LAS 1.4.
+- Enhancement: Prevent the possibility of writing a file with the `.copc.las` extension; `.copc` is automatically discarded.
+- New: The `classify_with_csf()` stage has gained a `filter` argument.
 
 # lasR 0.9.2
 
