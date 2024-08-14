@@ -33,6 +33,7 @@ bool LASRpdt::process(LAS*& las)
   double zmin = las->header->min_z;
 
   Raster dtm(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 1);
+  std::vector<bool> inserted(las->npoints, false);
 
   Profiler prof;
   prof.tic();
@@ -183,13 +184,11 @@ bool LASRpdt::process(LAS*& las)
     double angle = MAX3(alpha, beta, gamma);
 
     // Check if the angles and distance meet the threshold criteria
-    if (angle < max_iteration_angle && dist_d < 20)
+    if (d->delaunayInsertion(Vec2(P.x-xmin, P.y-ymin), tri_index))
     {
-      if (d->delaunayInsertion(Vec2(P.x-xmin, P.y-ymin), tri_index))
-      {
-        index_map.push_back(P.FID);
-        count++;
-      }
+      index_map.push_back(P.FID);
+      inserted[P.FID] = true;
+      count++;
     }
   }
 
@@ -232,6 +231,8 @@ bool LASRpdt::process(LAS*& las)
       progress->show();
 
       if (lasfilter.filter(&las->point)) continue;
+
+      if (inserted[las->current_point]) continue;
 
       // Coordinates of the current point
       PointXYZ P(p->get_x(),p->get_y(),p->get_z());
@@ -321,6 +322,7 @@ bool LASRpdt::process(LAS*& las)
         if (d->delaunayInsertion(Vec2(P.x-xmin, P.y-ymin), tri_index))
         {
           index_map.push_back(las->current_point);
+          inserted[las->current_point] = true;
           count++;
         }
       }
