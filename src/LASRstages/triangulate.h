@@ -17,13 +17,14 @@ namespace delaunator
 class LASRtriangulate : public StageVector
 {
 public:
-  LASRtriangulate(double xmin, double ymin, double xmax, double ymax, double trim, std::string use_attribute);
+  LASRtriangulate();
   bool process(LAS*& las) override;
   bool interpolate(std::vector<double>& res, const Raster* raster = nullptr);
   bool contour(std::vector<Edge>& edges) const;
   double need_buffer() const override { return 20.0; }
   void clear(bool last) override;
   bool write() override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "triangulate"; }
 
   // multi-threading

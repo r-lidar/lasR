@@ -11,6 +11,7 @@
 // STL
 #include <string>
 #include <map>
+#include <list>
 
 // LASlib
 #include "laszip.hpp"
@@ -27,6 +28,9 @@
 #include "CRS.h"
 #include "error.h"
 #include "print.h"
+
+// JSON parser
+#include "nlohmann/json.hpp"
 
 class Stage
 {
@@ -55,6 +59,7 @@ public:
   virtual bool need_points() const { return true; };
 
   virtual std::string get_name() const = 0;
+  virtual bool set_parameters(const nlohmann::json&) { return true; };
 
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
   void set_ncpu_concurrent_files(int ncpu) { this->ncpu_concurrent_files = ncpu; }
@@ -90,6 +95,8 @@ public:
 
 protected:
   void set_connection(Stage* stage);
+  Stage* search_connection(const std::list<std::unique_ptr<Stage>>&, const std::string& uid);
+  virtual bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uid) { return true; };
 
 protected:
   int ncpu;
@@ -166,5 +173,38 @@ public:
 protected:
   Vector vector;
 };
+
+template <typename T>
+std::vector<T> get_vector(const nlohmann::json& element)
+{
+  std::vector<T> result;
+
+  if (element.is_array())
+  {
+    for (const auto& item : element)
+    {
+      result.push_back(item.get<T>());
+    }
+  }
+  else if (element.is_null()) // Handle the case where the element is null
+  {
+    // No action needed; result is already an empty vector
+  }
+  else
+  {
+    result.push_back(element.get<T>());
+  }
+
+  return result;
+}
+
+#ifdef USING_R
+static SEXP string_address_to_sexp(const std::string& addr)
+{
+  uintptr_t ptr = strtoull(addr.c_str(), NULL, 16);
+  SEXP s = (SEXP)ptr;
+  return s;
+}
+#endif
 
 #endif

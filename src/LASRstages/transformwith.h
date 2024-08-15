@@ -8,8 +8,10 @@ class LASRtriangulate;
 class LASRtransformwith: public Stage
 {
 public:
-  LASRtransformwith(double xmin, double ymin, double xmax, double ymax, Stage* algorithm, std::string op, std::string attribute);
+  LASRtransformwith() = default;
   bool process(LAS*& las) override;
+  bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "transform_with"; }
   bool is_parallelized() const override { return true; };
 

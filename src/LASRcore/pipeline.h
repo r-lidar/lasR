@@ -81,28 +81,4 @@ private:
   std::list<std::unique_ptr<Stage>> pipeline;
 };
 
-template <typename T>
-std::vector<T> get_vector(const nlohmann::json& element)
-{
-  std::vector<T> result;
-
-  if (element.is_array())
-  {
-    for (const auto& item : element)
-    {
-      result.push_back(item.get<T>());
-    }
-  }
-  else if (element.is_null()) // Handle the case where the element is null
-  {
-    // No action needed; result is already an empty vector
-  }
-  else
-  {
-    result.push_back(element.get<T>());
-  }
-
-  return result;
-}
-
 #endif

@@ -3,42 +3,47 @@
 #include "Grouper.h"
 #include "openmp.h"
 
-LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods, float default_value)
+LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax)
 {
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
   this->ymax = ymax;
-  this->ofile = ofile;
-  this->window = (window > res) ? (window-res)/2 : 0;
-  raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
-
-  if (!metric_engine.parse(methods))
-  {
-    throw last_error;
-  }
-
-  metric_engine.set_default_value(default_value);
-
-  for (int j = 0 ; j < metric_engine.size() ; j++)
-    raster.set_band_name(methods[j], j);
-
-  this->streamable = metric_engine.is_streamable();
 }
 
-LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, Stage* algorithm)
+bool LASRrasterize::set_parameters(const nlohmann::json& stage)
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->ofile = ofile;
-  this->window = 0;
-  this->streamable = false;
+  double res = stage.at("res");
 
-  set_connection(algorithm);
+  if (connections.size() == 0)
+  {
+    std::vector<std::string> methods = get_vector<std::string>(stage["method"]);
 
-  raster = Raster(xmin, ymin, xmax, ymax, res, 1);
+    window = stage.value("window", res);
+    window = (window > res) ? (window-res)/2 : 0;
+    raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
+
+    if (!metric_engine.parse(methods))
+    {
+      return false;
+    }
+
+    float default_value = stage.value("default_value", NA_F32_RASTER);
+    metric_engine.set_default_value(default_value);
+
+    for (int j = 0 ; j < metric_engine.size() ; j++)
+      raster.set_band_name(methods[j], j);
+
+    streamable = metric_engine.is_streamable();
+  }
+  else
+  {
+    window = 0;
+    streamable = false;
+    raster = Raster(xmin, ymin, xmax, ymax, res, 1);
+  }
+
+  return true;
 }
 
 bool LASRrasterize::process(LASpoint*& p)
@@ -182,6 +187,25 @@ bool LASRrasterize::process(LAS*& las)
   }
 
   progress->done();
+
+  return true;
+}
+
+bool LASRrasterize::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  Stage* s = search_connection(pipeline, uid);
+
+  if (s == nullptr) return false;
+
+  LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(s);
+
+  if (p)
+    set_connection(p);
+  else
+  {
+    last_error = "Incompatible stage combination for 'rasterize'"; // # nocov
+    return false; // # nocov
+  }
 
   return true;
 }

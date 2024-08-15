@@ -3,17 +3,9 @@
 
 
 
-LASRsor::LASRsor(double xmin, double ymin, double xmax, double ymax, int k, int m, int classification)
+LASRsor::LASRsor()
 {
-  if (k < 2) throw std::string("Impossible to compute standard deviation with less than 2-nearest neighbors.");
 
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->k = k;
-  this->m = m;
-  this->classification = classification;
 }
 
 bool LASRsor::process(LAS*& las)
@@ -68,6 +60,21 @@ bool LASRsor::process(LAS*& las)
       las->point.set_classification(classification);
       las->update_point();
     }
+  }
+
+  return true;
+}
+
+bool LASRsor::set_parameters(const nlohmann::json& stage)
+{
+  k = stage.value("k", 10);
+  m = stage.value("m", 3);
+  classification = stage.value("class", 18);
+
+  if (k < 2)
+  {
+    last_error = "Impossible to compute standard deviation with less than 2-nearest neighbors.";
+    return false;
   }
 
   return true;

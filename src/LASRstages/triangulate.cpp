@@ -9,21 +9,23 @@
 
 #include "delaunator/delaunator.hpp"
 
-LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double ymax, double trim, std::string use_attribute)
+LASRtriangulate::LASRtriangulate()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-
-  this->keep_large = trim < 0;
-  this->trim = trim*trim;
-  this->npoints = 0;
-  this->las = nullptr;
-  this->d = nullptr;
-  this->use_attribute = use_attribute;
-
+  npoints = 0;
+  las = nullptr;
+  d = nullptr;
   vector.set_geometry_type(wkbMultiPolygon25D);
+}
+
+bool LASRtriangulate::set_parameters(const nlohmann::json& stage)
+{
+  double max_edge = stage.at("max_edge");
+  use_attribute = stage.at("use_attribute");
+
+  keep_large = max_edge < 0;
+  trim = max_edge*max_edge;
+
+  return true;
 }
 
 bool LASRtriangulate::process(LAS*& las)

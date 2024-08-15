@@ -3,47 +3,24 @@
 
 #include <chrono>
 
-LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, Stage* algorithm)
+LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax)
 {
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
   this->ymax = ymax;
-
-  this->ws = ws;
-  this->min_height = min_height;
-
-  this->use_raster = true;
-  this->record_attributes = false;
-
-  this->use_attribute = "Z";
-
-  set_connection(algorithm);
-
-  counter = std::make_shared<unsigned int>(0);
-  unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
-
-  vector = Vector(xmin, ymin, xmax, ymax);
-  vector.set_geometry_type(wkbPoint25D);
+  this->use_raster = false;
+  this->counter = std::make_shared<unsigned int>(0);
+  this->unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
 }
 
-LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax, double ws, double min_height, std::string use_attribute, bool record_attributes)
+bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
+  ws = stage.at("ws");
+  min_height = stage.value("min_height", 2);
 
-  this->ws = ws;
-  this->min_height = min_height;
-
-  this->use_raster = false;
-  this->record_attributes = record_attributes;
-
-  this->use_attribute = use_attribute;
-
-  counter = std::make_shared<unsigned int>(0);
-  unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
+  use_attribute = stage.value("use_attribute", "Z");
+  record_attributes = stage.value("record_attributes", false);
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
@@ -56,6 +33,10 @@ LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double
     vector.add_field("Classification", OFTInteger);
     vector.add_field("ScanAngle", OFTReal);
   }
+
+  if (connections.size() > 0) use_raster = true;
+
+  return true;
 }
 
 bool LASRlocalmaximum::process()
@@ -241,4 +222,24 @@ bool LASRlocalmaximum::write()
 void LASRlocalmaximum::clear(bool last)
 {
   lm.clear();
+}
+
+bool LASRlocalmaximum::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  Stage* s = search_connection(pipeline, uid);
+
+  if (s == nullptr) return false;
+
+  StageRaster* p = dynamic_cast<StageRaster*>(s);
+  if (p)
+  {
+    set_connection(p);
+  }
+  else
+  {
+    last_error = "Incompatible stage combination for local_maximum"; // # nocov
+    return false; // # nocov
+  }
+
+  return true;
 }

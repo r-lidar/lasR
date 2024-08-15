@@ -9,9 +9,10 @@
 class LASRcallback : public Stage
 {
 public:
-  LASRcallback(double xmin, double ymin, double xmax, double ymax, std::string select, SEXP fun, SEXP args, bool modify, bool drop_buffer);
+  LASRcallback();
   bool process(LAS*& las) override;
   SEXP to_R() override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "callback";  }
   bool use_rcapi() const override { return true; };
 

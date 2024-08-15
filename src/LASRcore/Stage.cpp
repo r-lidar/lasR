@@ -87,6 +87,17 @@ void Stage::set_connection(Stage* stage)
   if (stage) connections[stage->get_uid()] = stage;
 }
 
+Stage* Stage::search_connection(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
+  if (it == pipeline.end())
+  {
+    last_error = "Cannot find stage with uid " + uid;
+    return nullptr;
+  }
+  return it->get();
+}
+
 void Stage::update_connection(Stage* stage)
 {
   if (!stage) return;

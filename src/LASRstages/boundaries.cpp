@@ -5,15 +5,12 @@
 #include <unordered_map>
 #include <algorithm>
 
-LASRboundaries::LASRboundaries(double xmin, double ymin, double xmax, double ymax, Stage* algorithm)
+LASRboundaries::LASRboundaries(double xmin, double ymin, double xmax, double ymax)
 {
   this->xmin = xmin;
   this->ymin = ymin;
   this->xmax = xmax;
   this->ymax = ymax;
-  this->ofile = ofile;
-
-  set_connection(algorithm);
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPolygon);
@@ -130,4 +127,23 @@ bool LASRboundaries::write()
 bool LASRboundaries::need_points() const
 {
   return !connections.empty();
+}
+
+bool LASRboundaries::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  Stage* s = search_connection(pipeline, uid);
+
+  if (s == nullptr) return false;
+
+  LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(s);
+
+  if (p)
+    set_connection(p);
+  else
+  {
+    last_error = "Incompatible stage combination for 'hull'"; // # nocov
+    return false; // # nocov
+  }
+
+  return true;
 }

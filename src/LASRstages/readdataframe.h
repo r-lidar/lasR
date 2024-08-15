@@ -10,7 +10,7 @@ class LASheader;
 class LASRdataframereader: public Stage
 {
 public:
-  LASRdataframereader(double xmin, double ymin, double xmax, double ymax, const SEXP dataframe, const std::vector<double>& accuracy, const std::string& wkt);
+  LASRdataframereader(double xmin, double ymin, double xmax, double ymax);
   LASRdataframereader(const LASRdataframereader& other);
   bool set_chunk(const Chunk& chunk) override;
   bool process(LASheader*& header) override;
@@ -18,6 +18,7 @@ public:
   bool process(LAS*& las) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "reader_dataframe"; }
   bool use_rcapi() const override { return true; };
 

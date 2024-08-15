@@ -6,9 +6,10 @@
 class LASRsor: public Stage
 {
 public:
-  LASRsor(double xmin, double ymin, double xmax, double ymax, int k, int m, int classification);
+  LASRsor();
   bool process(LAS*& las) override;
   double need_buffer() const override { return 10; };
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "sor"; };
 
   // multi-threading

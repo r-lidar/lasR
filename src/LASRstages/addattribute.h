@@ -6,8 +6,9 @@
 class LASRaddattribute: public Stage
 {
 public:
-  LASRaddattribute(std::string data_type, std::string name, std::string description, double scale = 1, double offset = 0);
+  LASRaddattribute();
   bool process(LAS*& las) override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "add_extrabytes"; };
 
   // multi-threading

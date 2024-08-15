@@ -2,6 +2,12 @@
 
 #include "GridPartition.h"
 
+bool LASRsort::set_parameters(const nlohmann::json& stage)
+{
+  spatial = stage.value("spatial", true);
+  return true;
+}
+
 bool LASRsort::process(LAS*& las)
 {
   auto start_time = std::chrono::high_resolution_clock::now();

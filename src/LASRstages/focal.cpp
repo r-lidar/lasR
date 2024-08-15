@@ -3,19 +3,18 @@
 #include <algorithm>
 #include <numeric>
 
-LASRfocal::LASRfocal(float size, const std::string& method, Stage* stage)
+bool LASRfocal::set_parameters(const nlohmann::json& stage)
 {
-  set_connection(stage);
-  this->size = size;
+  size = stage.at("size");
 
-  // Initialize the output raster from input raster
-  StageRaster* p = dynamic_cast<StageRaster*>(stage);
-  if (p)
-    raster = Raster(p->get_raster());
-  else
-    throw std::string("Invalid connection with stage ") + stage->get_uid();
+  if (size < 0)
+  {
+    last_error = "size must be positive";
+    return false;
+  }
 
-  // Select the operation based on the string
+  std::string method = stage.value("fun", "mean");
+
   if (method == "mean")
     operation = mean;
   else if (method == "median")
@@ -27,7 +26,15 @@ LASRfocal::LASRfocal(float size, const std::string& method, Stage* stage)
   else if (method == "max")
     operation = max;
   else
-    throw std::string("Unknown operation: ") + method;
+  {
+    last_error = std::string("Unknown operation: ") + method;
+    return false;
+  }
+
+  auto it = connections.begin();
+  StageRaster* p = dynamic_cast<StageRaster*>(it->second);
+  raster = Raster(p->get_raster());
+  return true;
 }
 
 bool LASRfocal::process()
@@ -83,4 +90,23 @@ float LASRfocal::min(std::vector<float>& vals)
 float LASRfocal::max(std::vector<float>& vals)
 {
   return *std::max_element(vals.begin(), vals.end());
+}
+
+bool LASRfocal::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  Stage* s = search_connection(pipeline, uid);
+
+  if (s == nullptr) return false;
+
+  StageRaster* p = dynamic_cast<StageRaster*>(s);
+
+  if (p)
+    set_connection(p);
+  else
+  {
+    last_error = "Incompatible stage combination for 'focal'"; // # nocov
+    return false; // # nocov
+  }
+
+  return true;
 }

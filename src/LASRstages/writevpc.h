@@ -6,8 +6,9 @@
 class LASRvpcwriter: public Stage
 {
 public:
-  LASRvpcwriter(bool absolute_path = false, bool use_gpstime = false);
+  LASRvpcwriter() = default;
   bool process(LAScatalog*& p) override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "write_vpc"; }
   bool need_points() const override { return false; }
   bool is_streamable() const override { return true; }

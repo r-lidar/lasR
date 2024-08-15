@@ -7,13 +7,15 @@
 class LASRboundaries : public StageVector
 {
 public:
-  LASRboundaries(double xmin, double ymin, double xmax, double ymax, Stage* algorithm);
+  LASRboundaries(double xmin, double ymin, double xmax, double ymax);
   bool process(LASheader*& header) override;
   bool process(LAS*& las) override;
   void clear(bool last) override;
   bool write() override;
   bool need_points() const override;
   bool is_streamable() const override { return true; }
+  bool set_parameters(const nlohmann::json&) override { return true; };
+  bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;
   std::string get_name() const override { return "hulls"; }
   bool is_parallelized() const override { return true; };
 

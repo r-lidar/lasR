@@ -6,7 +6,8 @@
 class LASRnothing : public Stage
 {
 public:
-  LASRnothing(bool read, bool stream, bool loop);
+  LASRnothing();
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "nothing"; };
   bool process(LAS*& las) override;
   bool is_streamable() const override { return streamable; };

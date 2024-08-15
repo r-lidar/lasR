@@ -6,9 +6,11 @@
 class LASRfocal: public StageRaster
 {
 public:
-  LASRfocal(float size, const std::string& method, Stage* algorithm);
+  LASRfocal() = default;
   bool process() override;
   double need_buffer() const override { return size; };
+  bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "focal"; }
 
   // multi-threading

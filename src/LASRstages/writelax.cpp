@@ -7,11 +7,23 @@
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
 
+LASRlaxwriter::LASRlaxwriter(bool onthefly)
+{
+  this->onthefly = onthefly;
+}
+
 LASRlaxwriter::LASRlaxwriter(bool embedded, bool overwrite, bool onthefly)
 {
   this->embedded = embedded;
   this->overwrite = overwrite;
   this->onthefly = onthefly;
+}
+
+bool LASRlaxwriter::set_parameters(const nlohmann::json& stage)
+{
+  embedded = stage.value("embedded", false);
+  overwrite = stage.value("overwrite", false);
+  return true;
 }
 
 bool LASRlaxwriter::process(LAScatalog*& ctg)

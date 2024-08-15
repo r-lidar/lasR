@@ -19,26 +19,8 @@
 #define PI 3.14159265358979323846
 #endif
 
-LASRsvd::LASRsvd(int k, double r, std::string features)
+LASRsvd::LASRsvd()
 {
-  this->k = k;
-  this->r = r;
-
-  record_eigen_values = true;
-  record_coefficients = true;
-
-  if (k == 0 && r > 0) mode = PURERADIUS;
-  else if (k > 0 && r == 0) mode = PUREKNN;
-  else if (k > 0 && r > 0) mode = KNNRADIUS;
-  else throw "Internal error: invalid argument k or r"; // # nocov
-
-  if (mode == PUREKNN) this->r = F64_MAX;
-
-  // Parse feature = "*"
-  std::string all = "CEapslocein";
-  size_t pos = features.find('*');
-  if (pos != std::string::npos) features = all;
-
   ft_C = false;
   ft_E = false;
   ft_a = false;
@@ -50,24 +32,53 @@ LASRsvd::LASRsvd(int k, double r, std::string features)
   ft_e = false;
   ft_i = false;
   ft_n = false;
+}
+
+bool LASRsvd::set_parameters(const nlohmann::json& stage)
+{
+  k = stage.at("k");
+  r = stage.value("r", 0);
+  std::string features = stage.value("features", "");
+
+  record_eigen_values = true;
+  record_coefficients = true;
+
+  if (k == 0 && r > 0) mode = PURERADIUS;
+  else if (k > 0 && r == 0) mode = PUREKNN;
+  else if (k > 0 && r > 0) mode = KNNRADIUS;
+  else
+  {
+    last_error = "internal error: invalid argument k or r"; // # nocov
+    return false;
+  }
+
+  if (mode == PUREKNN) r = F64_MAX;
+
+  // Parse feature = "*"
+  std::string all = "CEapslocein";
+  size_t pos = features.find('*');
+  if (pos != std::string::npos) features = all;
+
   for(const char& c : features)
   {
     switch(c)
     {
-      case 'C': ft_C = true; break;
-      case 'E': ft_E = true; break;
-      case 'a': ft_a = true; break;
-      case 'p': ft_p = true; break;
-      case 's': ft_s = true; break;
-      case 'l': ft_l = true; break;
-      case 'o': ft_o = true; break;
-      case 'c': ft_c = true; break;
-      case 'e': ft_e = true; break;
-      case 'i': ft_i = true; break;
-      case 'n': ft_n = true; break;
-      default: warning("Option '%c' not supported\n", c); break;
+    case 'C': ft_C = true; break;
+    case 'E': ft_E = true; break;
+    case 'a': ft_a = true; break;
+    case 'p': ft_p = true; break;
+    case 's': ft_s = true; break;
+    case 'l': ft_l = true; break;
+    case 'o': ft_o = true; break;
+    case 'c': ft_c = true; break;
+    case 'e': ft_e = true; break;
+    case 'i': ft_i = true; break;
+    case 'n': ft_n = true; break;
+    default: warning("Option '%c' not supported\n", c); break;
     }
   }
+
+  return true;
 }
 
 bool LASRsvd::process(LAS*& las)
