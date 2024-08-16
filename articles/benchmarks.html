@@ -76,6 +76,11 @@ Roussel</h4>
 
     
     
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+The user <a href="https://github.com/ptompalski" class="external-link"><span class="citation">@ptompalski</span></a> independently produced a more
+comprehensive set of benchmarks based on more data and pipelines, using
+a more powerful computer with more cores. <a href="https://ptompalski.github.io/LidarSpeedTests/" class="external-link">See his report</a>.
+</blockquote>
 <p>This vignette presents benchmarks for various tasks using
 <code>lidR</code> and <code>lasR</code>. The x-axis represents the time
 spent on the task, while the y-axis represents the memory used for the
@@ -98,15 +103,13 @@ file)</li>
 <strong>CPU:</strong> Intel Core i7-1355U (13th generation Intel
 Core)</li>
 </ul>
-<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
-In the following the term <code>1 core</code> refers to the processing
-of one LAS/LAZ file at a time sequentially. But some algorithm such as
-the local maximum filter are internally parallelized using half of the
-available cores. The term <code>4 cores</code> refers to the fact that 4
-files are processed simultaneously. In <code>lidR</code> this is done
-using the package <code>future</code>. In <code>lasR</code> this is
-natively supported.
-</blockquote>
+<p>In the following the term <code>1 core</code> refers to the
+processing of one LAS/LAZ file at a time sequentially. But some
+algorithm such as the local maximum filter are internally parallelized
+using half of the available cores. The term <code>4 cores</code> refers
+to the fact that 4 files are processed simultaneously. In
+<code>lidR</code> this is done using the package <code>future</code>. In
+<code>lasR</code> this is natively supported.</p>
 <div class="section level2">
 <h2 id="canopy-height-model">Canopy Height Model<a class="anchor" aria-label="anchor" href="#canopy-height-model"></a>
 </h2>
