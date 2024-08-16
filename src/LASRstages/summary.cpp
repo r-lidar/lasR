@@ -3,24 +3,26 @@
 
 #include <iterator>
 
-LASRsummary::LASRsummary(double xmin, double ymin, double xmax, double ymax, double zwbin, double iwbin, const std::vector<std::string>& metrics)
+LASRsummary::LASRsummary()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  //this->ofile = ofile;
-
-  this->zwbin = zwbin;
-  this->iwbin = iwbin;
-
   npoints = 0;
   nsingle = 0;
   nwithheld = 0;
   nsynthetic = 0;
   //npoints_per_sdf = {0,0};
+}
 
-  if (!metrics_engine.parse(metrics, false)) throw last_error;
+bool LASRsummary::set_parameters(const nlohmann::json& stage)
+{
+  zwbin = stage.value("zwbin", 2.0);
+  iwbin = stage.value("iwbin", 50.0);
+
+  std::vector<std::string> metrics;
+  if (stage.contains("metrics")) metrics = get_vector<std::string>(stage.at("metrics"));
+
+  if (!metrics_engine.parse(metrics, false)) return false;
+
+  return true;
 }
 
 bool LASRsummary::process(LASpoint*& p)

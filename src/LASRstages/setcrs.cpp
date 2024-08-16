@@ -5,14 +5,15 @@ LASRsetcrs::LASRsetcrs()
   crs = CRS();
 }
 
-LASRsetcrs::LASRsetcrs(int epsg)
+bool LASRsetcrs::set_parameters(const nlohmann::json& stage)
 {
-  crs = CRS(epsg, true);
-}
+  int epsg = stage.value("epsg", 0);
+  std::string wkt = stage.value("wkt", "");
 
-LASRsetcrs::LASRsetcrs(const std::string& wkt)
-{
-  crs = CRS(wkt, true);
+  if (epsg > 0) crs = CRS(epsg, true);
+  else if (wkt.size() > 0) crs = CRS(wkt, true);
+
+  return true;
 }
 
 bool LASRsetcrs::process(LASheader*& header)

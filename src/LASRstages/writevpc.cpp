@@ -1,9 +1,10 @@
 #include "writevpc.h"
 
-LASRvpcwriter::LASRvpcwriter(bool absolute_path, bool use_gpstime)
+bool LASRvpcwriter::set_parameters(const nlohmann::json& stage)
 {
-  this->absolute_path = absolute_path;
-  this->use_gpstime = use_gpstime;
+  absolute_path = stage.value("absolute", false);
+  use_gpstime = stage.value("use_gpstime", false);
+  return true;
 }
 
 bool LASRvpcwriter::process(LAScatalog*& catalog)

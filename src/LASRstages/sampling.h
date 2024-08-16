@@ -29,9 +29,10 @@ public:
 class LASRsamplingpoisson : public LASRsampling
 {
 public:
-  LASRsamplingpoisson(double xmin, double ymin, double xmax, double ymax, double distance, int shuffle_size);
+  LASRsamplingpoisson() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return distance; }
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "poisson_sampling"; }
 
   // multi-threading
@@ -46,9 +47,10 @@ private:
 class LASRsamplingvoxels : public LASRsampling
 {
 public:
-  LASRsamplingvoxels(double xmin, double ymin, double xmax, double ymax, double res, int shuffle_size);
+  LASRsamplingvoxels() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; }
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "voxel_sampling"; }
 
   // multi-threading
@@ -63,9 +65,10 @@ private:
 class LASRsamplingpixels : public LASRsampling
 {
 public:
-  LASRsamplingpixels(double xmin, double ymin, double xmax, double ymax, double res, int shuffle_size);
+  LASRsamplingpixels() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; }
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "pixel_sampling"; }
 
   // multi-threading

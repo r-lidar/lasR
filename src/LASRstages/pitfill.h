@@ -6,9 +6,11 @@
 class LASRpitfill: public StageRaster
 {
 public:
-  LASRpitfill(double xmin, double ymin, double xmax, double ymax, int lap_size, float thr_lap, float thr_spk, int med_size, float dil_radius, Stage* algorithm);
+  LASRpitfill() = default;
   bool process() override;
   double need_buffer() const override;
+  bool set_parameters(const nlohmann::json&) override;
+  bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;
   std::string get_name() const override { return "pit_fill"; }
 
   // multi-threading

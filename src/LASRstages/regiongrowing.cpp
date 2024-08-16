@@ -12,25 +12,26 @@ static double taketime()
   return (double)(clock())/CLOCKS_PER_SEC;
 }
 
-
-LASRregiongrowing::LASRregiongrowing(double xmin, double ymin, double xmax, double ymax, double th_seed, double th_crown, double th_tree, double DIST, Stage* algorithm_input_rasters, Stage* algorithm_input_seeds)
+bool LASRregiongrowing::set_parameters(const nlohmann::json& stage)
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->th_seed = th_seed;
-  this->th_crown = th_crown;
-  this->th_tree = th_tree;
-  this->DIST = DIST*DIST;
+  // Parameters were mixed. This need to be fixed
+  th_tree = stage.value("th_tree", 2.0);
+  th_seed = stage.value("th_seed", 0.45);
+  th_crown = stage.value("th_cr", 0.55);
+  double max_cr = stage.value("max_cr", 20.0);
+  DIST  = max_cr*max_cr;
 
-  set_connection(algorithm_input_rasters);
-  set_connection(algorithm_input_seeds);
+  for (auto elem : connections)
+  {
+    StageRaster* rst = dynamic_cast<StageRaster*>(elem.second);
+    if (rst)
+    {
+      raster = Raster(rst->get_raster());
+      break;
+    }
+  }
 
-  // Initialize the output raster from input raster
-  LASRlocalmaximum* lmf = dynamic_cast<LASRlocalmaximum*>(algorithm_input_seeds);
-  StageRaster*  rst = dynamic_cast<StageRaster*>(algorithm_input_rasters);
-  if (lmf && rst)  raster = Raster(rst->get_raster());
+  return true;
 }
 
 bool LASRregiongrowing::process(LAS*& las)
@@ -163,6 +164,28 @@ bool LASRregiongrowing::process(LAS*& las)
   progress->done();
 
   if (verbose) print("region growing took %.2g sec\n", taketime()-ti);
+
+  return true;
+}
+
+bool LASRregiongrowing::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  Stage* s = search_connection(pipeline, uid);
+
+  if (s == nullptr) return false;
+
+  LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(s);
+  StageRaster* q = dynamic_cast<StageRaster*>(s);
+
+  if (p)
+    set_connection(p);
+  else if(q)
+    set_connection(q);
+  else
+  {
+    last_error = "Incompatible stage combination for 'region_growning'"; // # nocov
+    return false; // # nocov
+  }
 
   return true;
 }

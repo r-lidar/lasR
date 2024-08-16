@@ -11,7 +11,7 @@ class LASheader;
 class LASRlaswriter: public StageWriter
 {
 public:
-  LASRlaswriter(double xmin, double ymin, double xmax, double ymax, bool keep_buffer);
+  LASRlaswriter();
   ~LASRlaswriter();
   void set_header(LASheader*& header) override;
   bool set_input_file_name(const std::string& file) override;
@@ -20,6 +20,7 @@ public:
   bool process(LAS*& las) override;
   bool is_streamable() const override { return true; };
   void clear(bool last) override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "write_las"; }
 
   // multi-threading

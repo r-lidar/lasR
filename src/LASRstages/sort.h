@@ -6,8 +6,9 @@
 class LASRsort : public Stage
 {
 public:
-  LASRsort(bool spatial) : spatial(spatial) { };
+  LASRsort() : spatial(false) { };
   bool process(LAS*& las) override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "optimize"; };
 
   // multi-threading

@@ -15,7 +15,8 @@ SEXP is_indexed(SEXP);
 SEXP get_address(SEXP);
 int available_threads();
 bool has_omp_support();
-
+unsigned long long getAvailableRAM();
+unsigned long long getTotalRAM();
 
 extern "C" SEXP C_process(SEXP args, SEXP async) { return process(args, async); }
 extern "C" SEXP C_lasfilterusage() { return lasfilterusage(); }
@@ -25,6 +26,8 @@ extern "C" SEXP C_available_threads() { return Rf_ScalarInteger(available_thread
 extern "C" SEXP C_has_omp_support() { return Rf_ScalarLogical(has_omp_support()); }
 extern "C" SEXP C_is_indexed(SEXP file) { return is_indexed(file); }
 extern "C" SEXP C_address(SEXP x) { return get_address(x); }
+extern "C" SEXP C_get_available_ram() { return Rf_ScalarInteger((int)getAvailableRAM()); }
+extern "C" SEXP C_get_total_ram() { return Rf_ScalarInteger((int)getTotalRAM()); }
 
 static const R_CallMethodDef CallEntries[] = {
   {"C_lasfilterusage", (DL_FUNC) &C_lasfilterusage, 0},
@@ -35,6 +38,8 @@ static const R_CallMethodDef CallEntries[] = {
   {"C_has_omp_support", (DL_FUNC) &C_has_omp_support, 0},
   {"C_is_indexed", (DL_FUNC) &C_is_indexed, 1},
   {"C_address", (DL_FUNC) &C_address, 1},
+  {"C_get_available_ram", (DL_FUNC) &C_get_available_ram, 0},
+  {"C_get_total_ram", (DL_FUNC) &C_get_total_ram, 0},
   {NULL, NULL, 0}
 };
 

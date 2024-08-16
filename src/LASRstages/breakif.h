@@ -20,7 +20,8 @@ protected:
 class LASRbreakoutsidebbox : public LASRbreak
 {
 public:
-  LASRbreakoutsidebbox(double xmin, double ymin, double xmax, double ymax);
+  LASRbreakoutsidebbox();
+  bool set_parameters(const nlohmann::json&) override;
   bool set_chunk(const Chunk& chunk) override;
   LASRbreakoutsidebbox* clone() const override { return new LASRbreakoutsidebbox(*this); };
 };
@@ -28,7 +29,8 @@ public:
 class LASRbreakbeforechunk : public LASRbreak
 {
 public:
-  LASRbreakbeforechunk(int index) { this->index = index; };
+  LASRbreakbeforechunk() { };
+  bool set_parameters(const nlohmann::json&) override;
   bool set_chunk(const Chunk& chunk) override;
   LASRbreakbeforechunk* clone() const override { return new LASRbreakbeforechunk(*this); };
 

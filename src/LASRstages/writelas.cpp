@@ -2,15 +2,16 @@
 
 #include "laswriter.hpp"
 
-LASRlaswriter::LASRlaswriter(double xmin, double ymin, double xmax, double ymax, bool keep_buffer)
+LASRlaswriter::LASRlaswriter()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->keep_buffer = keep_buffer;
   laswriter = nullptr;
   lasheader = nullptr;
+}
+
+bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
+{
+  keep_buffer = stage.value("keep_buffer", false);
+  return true;
 }
 
 LASRlaswriter::~LASRlaswriter()

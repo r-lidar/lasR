@@ -13,13 +13,12 @@ test_that("growing region works",
   trees = u[[3]]
   id1 = sort(na.omit(as.numeric(unique(trees[]))))
   id2 = 1:nrow(ttops)-1
-  polygons = terra::as.polygons(trees)
 
   expect_equal(id1, id2)
 
   skip_on_os("mac")
 
-  expect_equal(sum(terra::expanse(polygons)), 6418, tolerance = 1e-4)
+  expect_equal(sum(!is.na(trees[])), 6244)
 })
 
 test_that("growing region works with multiple files",

@@ -3,15 +3,22 @@
 
 #ifdef USING_R
 
-LASRcallback::LASRcallback(double xmin, double ymin, double xmax, double ymax, std::string select, SEXP fun, SEXP args, bool modify, bool drop_buffer)
+LASRcallback::LASRcallback()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->fun = fun;
-  this->args = args;
-  this->ans = R_NilValue;
+  ans = R_NilValue;
+  ans = PROTECT(Rf_allocVector(VECSXP, 0)); nsexpprotected++;
+}
+
+bool LASRcallback::set_parameters(const nlohmann::json& stage)
+{
+  select = stage.at("expose");
+  modify = !stage.at("no_las_update");
+  drop_buffer = stage.at("drop_buffer");
+
+  std::string address_fun_str = stage.at("fun");
+  std::string address_args_str = stage.at("args");
+  fun = string_address_to_sexp(address_fun_str);
+  args = string_address_to_sexp(address_args_str);
 
   // Parse select = "*"
   std::string all = "xyzitrndecskwoaupRGBNCbE";
@@ -30,11 +37,9 @@ LASRcallback::LASRcallback(double xmin, double ymin, double xmax, double ymax, s
     }
   }
 
-  this->select = parsed;
-  this->modify = modify;
-  this->drop_buffer = drop_buffer;
+  select = parsed;
 
-  ans = PROTECT(Rf_allocVector(VECSXP, 0)); nsexpprotected++;
+  return true;
 }
 
 bool LASRcallback::process(LAS*& las)

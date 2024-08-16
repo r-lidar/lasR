@@ -198,7 +198,27 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 
 #' Classify noise points
 #'
-#' Classify points using Isolated Voxel Filter. The stage identifies points that have only a few other
+#' Classify points using the Statistical Outliers Removal (SOR) methods first described in the PCL
+#' library and also implemented in CloudCompare (see references). For each point, it computes the mean
+#' distance to all its k-nearest neighbors. The points that are farther than the average distance
+#' plus a number of times (multiplier) the standard deviation are considered noise.
+#'
+#' @param k	numeric. The number of neighbours
+#' @param m numeric. Multiplier. The maximum distance will be: ⁠avg distance + m * std deviation⁠
+#' @param class integer. The class to assign to the points that match the condition.
+#'
+#' @template return-pointcloud
+#'
+#' @export
+classify_with_sor = function(k = 8, m = 6, class = 18L)
+{
+  ans <- list(algoname = "classify_with_sor", k = k, m = m, class = class)
+  set_lasr_class(ans)
+}
+
+#' Classify noise points
+#'
+#' Classify points using Isolated Voxel Filter (IVF). The stage identifies points that have only a few other
 #' points in their surrounding 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification.
 #' Used with class 18, it classifies points as noise. This stage modifies the point cloud in the pipeline
 #' but does not produce any output.
@@ -330,6 +350,60 @@ delete_points = function(filter = "")
   stopifnot(filter != "")
   ans = list(algoname = "filter", filter = filter)
   set_lasr_class(ans)
+}
+
+# ===== F =====
+
+#' Select highest or lowest points
+#'
+#' Select and retained only highest or lowest points per grid cell
+#'
+#' @param res numeric. The resolution of the grid
+#' @param operator string. Can be min or max to retain lowest or highest points
+#' @template param-filter
+#' @md
+#' @export
+filter_with_grid = function(res, operator = "min", filter = "")
+{
+  operator = match.arg(operator, c("min", "max"))
+  ans <- list(algoname = "filter_grid", res = res, operator = operator, filter = filter)
+  set_lasr_class(ans)
+}
+
+#' Calculate focal ("moving window") values for each cell of a raster
+#'
+#' Calculate focal ("moving window") values for each cell of a raster using various functions. NAs
+#' are always omitted; thus, this stage effectively acts as an NA filler. The window is always circular.
+#' The edges are handled by adjusting the window.
+#'
+#' @param raster LASRalgorithm. A stage that produces a raster.
+#' @param size numeric. The window size **in the units of the point cloud**, not in pixels. For example, 2 means 2 meters
+#' or 2 feet, not 2 pixels.
+#' @param fun string. Function to apply. Supported functions are 'mean', 'median', 'min', 'max', 'sum'.
+#' @template param-ofile
+#' @template return-raster
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package = "lasR")
+#'
+#' chm = rasterize(2, "zmax")
+#' chm2 = lasR:::focal(chm, 8, fun = "mean")
+#' chm3 = lasR:::focal(chm, 8, fun = "max")
+#' pipeline <- reader_las() + chm + chm2 + chm2
+#' ans = exec(pipeline, on = f)
+#'
+#' terra::plot(ans[[1]])
+#' terra::plot(ans[[2]])
+#' terra::plot(ans[[3]])
+#' @export
+focal = function(raster, size, fun = "mean", ofile = temptif())
+{
+  raster = get_stage(raster)
+  if (!methods::is(raster, "LASRraster")) stop("'raster' must be a raster stage")  # nocov
+
+  stopifnot(size > 0)
+
+  ans = list(algoname = "focal",  connect = raster[["uid"]], size = size, fun = fun, output = ofile)
+  set_lasr_class(ans, raster = TRUE)
 }
 
 # ===== H =====

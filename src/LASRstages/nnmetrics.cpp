@@ -3,37 +3,34 @@
 #include "openmp.h"
 #include "error.h"
 
-#include <vector>
-#include <iostream>
-
 #define PUREKNN 0
 #define KNNRADIUS 1
 #define PURERADIUS 2
 
-LASRnnmetrics::LASRnnmetrics(double xmin, double ymin, double xmax, double ymax, int k, double r, const std::vector<std::string>& methods, Stage* algorithm)
+bool LASRnnmetrics::set_parameters(const nlohmann::json& stage)
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-
-  this->k = k;
-  this->r = r;
+  k = stage.at("k");
+  r = stage.at("r");
+  std::vector<std::string> methods = ::get_vector<std::string>(stage["metrics"]);
 
   if (k == 0 && r > 0) mode = PURERADIUS;
   else if (k > 0 && r == 0) mode = PUREKNN;
   else if (k > 0 && r > 0) mode = KNNRADIUS;
-  else throw "Internal error: invalid argument k or r"; // # nocov
+  else
+  {
+    last_error = "Internal error: invalid argument k or r"; // # nocov
+    return false;
+  }
 
   if (mode == PUREKNN) this->r = F64_MAX;
 
-  if (!metrics.parse(methods)) throw last_error;
+  if (!metrics.parse(methods)) return false;
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
   for (const auto& attr : methods) vector.add_field(attr, OFTReal);
 
-  set_connection(algorithm);
+  return true;
 }
 
 bool LASRnnmetrics::process(LAS*& las)
@@ -124,6 +121,25 @@ bool LASRnnmetrics::write()
 
     (*progress)++;
     progress->show();
+  }
+
+  return true;
+}
+
+bool LASRnnmetrics::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  Stage* s = search_connection(pipeline, uid);
+
+  if (s == nullptr) return false;
+
+  LASRlocalmaximum* p = dynamic_cast<LASRlocalmaximum*>(s);
+
+  if (p)
+    set_connection(p);
+  else
+  {
+    last_error = "Incompatible stage combination for 'neighborhood_metrics'"; // # nocov
+    return false; // # nocov
   }
 
   return true;
