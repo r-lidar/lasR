@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.10.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,6 +44,15 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.10.0" id="lasr-0100">lasR 0.10.0<a class="anchor" aria-label="anchor" href="#lasr-0100"></a></h2>
+<ul><li>New: new stage <code><a href="../reference/classify_with_sor.html">classify_with_sor()</a></code> to classify outliers with statistical outlier removal.</li>
+<li>New: new stage <code><a href="../reference/focal.html">focal()</a></code> to post-process rasters in the pipeline.</li>
+<li>New: new stage <code><a href="../reference/filter_with_grid.html">filter_with_grid()</a></code> to keep the lowest or highest point per cell of a grid.</li>
+<li>Change: <a href="https://github.com/r-lidar/lasR/issues/79" class="external-link">#79</a> raster produced on a subset of data have the minimal possible extent instead of the full extent of the point cloud.</li>
+<li>Fix: numerous inaccuracies in numeric parameters interpreted as integers. For example, in <code>geometry_feature</code>, <code>r = 5</code> was equal to 5 but <code>r = 4.5</code> was equal to 4.</li>
+<li>Fix: some parameters in <code><a href="../reference/region_growing.html">region_growing()</a></code> for individual tree segmentation were inverted.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.3" id="lasr-093">lasR 0.9.3<a class="anchor" aria-label="anchor" href="#lasr-093"></a></h2>
 <ul><li>Fix: Filters based on return number, number of returns, or classification (e.g., <code>-keep_last</code>, <code>-keep_class 128</code>) are now functional with LAS 1.4.</li>
