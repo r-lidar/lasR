@@ -6,7 +6,7 @@
 class LASRlaxwriter: public Stage
 {
 public:
-  LASRlaxwriter(bool onthefly);
+  LASRlaxwriter();
   LASRlaxwriter(bool embedded, bool overwrite, bool onthefly);
   bool process(LAScatalog*& ctg) override;
   bool set_chunk(const Chunk& chunk) override;

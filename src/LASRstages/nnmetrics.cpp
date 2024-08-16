@@ -7,14 +7,6 @@
 #define KNNRADIUS 1
 #define PURERADIUS 2
 
-LASRnnmetrics::LASRnnmetrics(double xmin, double ymin, double xmax, double ymax)
-{
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-}
-
 bool LASRnnmetrics::set_parameters(const nlohmann::json& stage)
 {
   k = stage.at("k");

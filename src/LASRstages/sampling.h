@@ -29,7 +29,7 @@ public:
 class LASRsamplingpoisson : public LASRsampling
 {
 public:
-  LASRsamplingpoisson();
+  LASRsamplingpoisson() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return distance; }
   bool set_parameters(const nlohmann::json&) override;
@@ -47,7 +47,7 @@ private:
 class LASRsamplingvoxels : public LASRsampling
 {
 public:
-  LASRsamplingvoxels();
+  LASRsamplingvoxels() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; }
   bool set_parameters(const nlohmann::json&) override;
@@ -65,7 +65,7 @@ private:
 class LASRsamplingpixels : public LASRsampling
 {
 public:
-  LASRsamplingpixels();
+  LASRsamplingpixels() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; }
   bool set_parameters(const nlohmann::json&) override;

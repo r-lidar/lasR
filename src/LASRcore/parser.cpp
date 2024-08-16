@@ -76,24 +76,37 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
   pipeline.clear();
 
   // Create a map of type names to functions that create instances
-  std::unordered_map<std::string, std::function<std::unique_ptr<Stage>()>> factory_map = {
-    {"add_extrabytes", create_instance<LASRaddattribute>},
-    {"add_rgb", create_instance<LASRaddrgb>},
-    {"classify_with_csf", create_instance<LASRcsf>},
-    {"classify_with_ivf", create_instance<LASRivf>},
-    {"classify_with_sor", create_instance<LASRsor>},
-    {"filter", create_instance<LASRfilter>},
-    {"nothing", create_instance<LASRnothing>},
-    {"sampling_pixel", create_instance<LASRsamplingpixels>},
-    {"sampling_poisson", create_instance<LASRsamplingpoisson>},
-    {"sampling_voxel", create_instance<LASRsamplingvoxels>},
-    {"set_crs", create_instance<LASRsetcrs>},
-    {"sort", create_instance<LASRsort>},
-    {"summarise", create_instance<LASRsummary>},
-    {"svd", create_instance<LASRsvd>},
-    {"triangulate", create_instance<LASRtriangulate>},
-    {"write_las", create_instance<LASRlaswriter>},
-    {"write_vpc", create_instance<LASRvpcwriter>}
+  std::unordered_map<std::string, std::function<std::unique_ptr<Stage>()>> factory_map =
+  {
+    {"add_extrabytes",       create_instance<LASRaddattribute>},
+    {"add_rgb",              create_instance<LASRaddrgb>},
+    {"classify_with_csf",    create_instance<LASRcsf>},
+    {"classify_with_ivf",    create_instance<LASRivf>},
+    {"classify_with_sor",    create_instance<LASRsor>},
+    {"filter",               create_instance<LASRfilter>},
+    {"focal",                create_instance<LASRfocal>},
+    {"hulls",                create_instance<LASRboundaries>},
+    {"load_raster",          create_instance<LASRloadraster>},
+    {"local_maximum",        create_instance<LASRlocalmaximum>},
+    {"neighborhood_metrics", create_instance<LASRnnmetrics>},
+    {"nothing",              create_instance<LASRnothing>},
+    {"pit_fill",             create_instance<LASRpitfill>},
+    {"rasterize",            create_instance<LASRrasterize>},
+    {"sampling_pixel",       create_instance<LASRsamplingpixels>},
+    {"sampling_poisson",     create_instance<LASRsamplingpoisson>},
+    {"sampling_voxel",       create_instance<LASRsamplingvoxels>},
+    {"set_crs",              create_instance<LASRsetcrs>},
+    {"sort",                 create_instance<LASRsort>},
+    {"summarise",            create_instance<LASRsummary>},
+    {"svd",                  create_instance<LASRsvd>},
+    {"transform_with",       create_instance<LASRtransformwith>},
+    {"triangulate",          create_instance<LASRtriangulate>},
+    {"write_las",            create_instance<LASRlaswriter>},
+    {"write_vpc",            create_instance<LASRvpcwriter>}
+    #ifdef USING_R
+    ,{"aggregate",           create_instance<LASRaggregate>},
+    {"callback",             create_instance<LASRcallback>}
+    #endif
   };
 
   try
@@ -178,57 +191,6 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         }
         #endif
       }
-      else if (name == "focal")
-      {
-        std::string uid = stage.at("connect");
-        auto v = std::make_unique<LASRfocal>();
-        bool b = v->connect(pipeline, uid);
-        if (!b) return false;
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "hulls")
-      {
-        auto v = std::make_unique<LASRboundaries>(xmin, ymin, xmax, ymax);
-        if (stage.contains("connect"))
-        {
-          std::string uid = stage.at("connect");
-          bool b = v->connect(pipeline, uid);
-          if (!b) return false;
-        }
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "load_raster")
-      {
-        auto v = std::make_unique<LASRloadraster>(xmin, ymin, xmax, ymax);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "local_maximum")
-      {
-        auto v = std::make_unique<LASRlocalmaximum>(xmin, ymin, xmax, ymax);
-        if (stage.contains("connect"))
-        {
-          std::string uid = stage.at("connect");
-          bool b = v->connect(pipeline, uid);
-          if (!b) return false;
-        }
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "neighborhood_metrics")
-      {
-        std::string uid = stage.at("connect");
-        auto v = std::make_unique<LASRnnmetrics>(xmin, ymin, xmax, ymax);
-        bool b = v->connect(pipeline, uid);
-        if (!b) return false;
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "pit_fill")
-      {
-        std::string uid = stage.at("connect");
-        auto v = std::make_unique<LASRpitfill>();
-        bool b = v->connect(pipeline, uid);
-        if (!b) return false;
-        pipeline.push_back(std::move(v));
-      }
       else if (name.substr(0,6) == "reader")
       {
         if (reader)
@@ -247,26 +209,23 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         #ifdef USING_R
         if (name == "reader_dataframe")
         {
-          std::string address_dataframe_str = stage.at("dataframe");
-          SEXP dataframe = (SEXP)string_address_to_sexp(address_dataframe_str);
-
-          auto v = std::make_unique<LASRdataframereader>(xmin, ymin, xmax, ymax);
+          auto v = std::make_unique<LASRdataframereader>();
           pipeline.push_back(std::move(v));
         }
         #endif
 
         if (catalog != nullptr)
         {
+          double temp_xmin = std::numeric_limits<double>::max();
+          double temp_ymin = std::numeric_limits<double>::max();
+          double temp_xmax = std::numeric_limits<double>::lowest();
+          double temp_ymax = std::numeric_limits<double>::lowest();
+
           // Special treatment of the reader to find the potential queries in the catalog
           // If we have query we also recompute the bounding box in order to create outputs
           // with the minimal bounding box
           if (stage.contains("xcenter"))
           {
-            xmin = std::numeric_limits<double>::max();
-            ymin = std::numeric_limits<double>::max();
-            xmax = std::numeric_limits<double>::lowest();
-            ymax = std::numeric_limits<double>::lowest();
-
             std::vector<double> xcenter = get_vector<double>(stage["xcenter"]);
             std::vector<double> ycenter = get_vector<double>(stage["ycenter"]);
             std::vector<double> radius = get_vector<double>(stage["radius"]);
@@ -279,20 +238,20 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
 
               catalog->add_query(x, y, r);
 
-              xmin = MIN(xmin, x-r);
-              ymin = MIN(ymin, y-r);
-              xmax = MAX(xmax, x+r);
-              ymax = MAX(ymax, y+r);
+              temp_xmin = MIN(temp_xmin, x-r);
+              temp_ymin = MIN(temp_ymin, y-r);
+              temp_xmax = MAX(temp_xmax, x+r);
+              temp_ymax = MAX(temp_ymax, y+r);
             }
+
+            xmin = MAX(xmin, temp_xmin);
+            ymin = MAX(ymin, temp_ymin);
+            xmax = MIN(xmax, temp_xmax);
+            ymax = MIN(ymax, temp_ymax);
           }
 
           if (stage.contains("xmin"))
           {
-            xmin = std::numeric_limits<double>::max();
-            ymin = std::numeric_limits<double>::max();
-            xmax = std::numeric_limits<double>::lowest();
-            ymax = std::numeric_limits<double>::lowest();
-
             std::vector<double> bbxmin = get_vector<double>(stage["xmin"]);
             std::vector<double> bbymin = get_vector<double>(stage["ymin"]);
             std::vector<double> bbxmax = get_vector<double>(stage["xmax"]);
@@ -302,24 +261,18 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
             {
               catalog->add_query(bbxmin[j], bbymin[j], bbxmax[j], bbymax[j]);
 
-              xmin = MIN(xmin, bbxmin[j]);
-              ymin = MIN(ymin, bbymin[j]);
-              xmax = MAX(xmax, bbxmax[j]);
-              ymax = MAX(ymax, bbymax[j]);
+              temp_xmin = MIN(temp_xmin, bbxmin[j]);
+              temp_ymin = MIN(temp_ymin, bbymin[j]);
+              temp_xmax = MAX(temp_xmax, bbxmax[j]);
+              temp_ymax = MAX(temp_ymax, bbymax[j]);
             }
+
+            xmin = MAX(xmin, temp_xmin);
+            ymin = MAX(ymin, temp_ymin);
+            xmax = MIN(xmax, temp_xmax);
+            ymax = MIN(ymax, temp_ymax);
           }
         }
-      }
-      else if (name == "rasterize")
-      {
-        auto v = std::make_unique<LASRrasterize>(xmin, ymin, xmax, ymax);
-        if (stage.contains("connect"))
-        {
-          std::string uid = stage.at("connect");
-          bool b = v->connect(pipeline, uid);
-          if (!b) return false;
-        }
-        pipeline.push_back(std::move(v));
       }
       else if (name  == "region_growing")
       {
@@ -351,32 +304,12 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           return false;
         }
       }
-      else if (name == "transform_with")
-      {
-        std::string uid = stage.at("connect");
-        auto v = std::make_unique<LASRtransformwith>();
-        bool b = v->connect(pipeline, uid);
-        if (!b) return false;
-        pipeline.push_back(std::move(v));
-      }
       else if (name == "write_lax")
       {
         indexer = true;
-        auto v = std::make_unique<LASRlaxwriter>(false);
+        auto v = std::make_unique<LASRlaxwriter>();
         pipeline.push_back(std::move(v));
       }
-      #ifdef USING_R
-      else if (name == "aggregate")
-      {
-        auto v = std::make_unique<LASRaggregate>(xmin, ymin, xmax, ymax);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name  == "callback")
-      {
-        auto v = std::make_unique<LASRcallback>();
-        pipeline.push_back(std::move(v));
-      }
-      #endif
       else
       {
         last_error = "Unsupported stage: " + std::string(name.c_str()); // # nocov
@@ -386,7 +319,18 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       if (pipeline.size() > 0)
       {
         auto& it = pipeline.back();
+
         it->set_uid(uid);
+        it->set_ncpu(ncpu);
+        it->set_verbose(verbose);
+        it->set_extent(xmin, ymin, xmax, ymax);
+
+        if (stage.contains("connect"))
+        {
+          std::string uid = stage.at("connect");
+          bool b = it->connect(pipeline, uid);
+          if (!b) return false;
+        }
 
         if (!it->set_parameters(stage))
         {
@@ -404,12 +348,6 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     }
 
     parsed = true;
-
-    for (auto&& stage : pipeline)
-    {
-      stage->set_ncpu(ncpu);
-      stage->set_verbose(verbose);
-    }
 
     // If catalog == nullptr we did not build a catalog and thus
     // it means that we do not have access to the files. The pipeline is parsed
@@ -467,7 +405,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         it++;
       }
 
-      // Write lax is the very first algorithm. Even before read_las. It is called
+      // Write lax is the very first stage. Even before read_las. It is called
       // only if needed.
       if (!catalog->check_spatial_index() && !indexer)
       {

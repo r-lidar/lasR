@@ -10,7 +10,7 @@ class LASheader;
 class LASRdataframereader: public Stage
 {
 public:
-  LASRdataframereader(double xmin, double ymin, double xmax, double ymax);
+  LASRdataframereader() = default;
   LASRdataframereader(const LASRdataframereader& other);
   bool set_chunk(const Chunk& chunk) override;
   bool process(LASheader*& header) override;

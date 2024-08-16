@@ -8,7 +8,7 @@
 class LASRrasterize : public StageRaster
 {
 public:
-  LASRrasterize(double xmin, double ymin, double xmax, double ymax);
+  LASRrasterize() = default;
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };

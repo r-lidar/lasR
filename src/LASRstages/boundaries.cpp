@@ -5,15 +5,11 @@
 #include <unordered_map>
 #include <algorithm>
 
-LASRboundaries::LASRboundaries(double xmin, double ymin, double xmax, double ymax)
+bool LASRboundaries::set_parameters(const nlohmann::json& stage)
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPolygon);
+  return true;
 }
 
 bool LASRboundaries::process(LASheader*& header)

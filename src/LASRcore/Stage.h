@@ -58,6 +58,7 @@ public:
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
   virtual bool set_parameters(const nlohmann::json&) { return true; };
+  virtual bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uid) { return true; };
   //virtual void convert_units() { return; };
 
   virtual std::string get_name() const = 0;
@@ -69,6 +70,7 @@ public:
   void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
+  void set_extent(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
   void reset_filter() { lasfilter.reset(); };
 
   std::string get_uid() const { return uid; };
@@ -97,7 +99,6 @@ public:
 protected:
   void set_connection(Stage* stage);
   Stage* search_connection(const std::list<std::unique_ptr<Stage>>&, const std::string& uid);
-  virtual bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uid) { return true; };
 
   double convert_units(double) const;
 

@@ -3,12 +3,8 @@
 
 #include <chrono>
 
-LASRlocalmaximum::LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax)
+LASRlocalmaximum::LASRlocalmaximum()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
   this->use_raster = false;
   this->counter = std::make_shared<unsigned int>(0);
   this->unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();

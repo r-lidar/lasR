@@ -7,9 +7,11 @@
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
 
-LASRlaxwriter::LASRlaxwriter(bool onthefly)
+LASRlaxwriter::LASRlaxwriter()
 {
-  this->onthefly = onthefly;
+  embedded = false;
+  onthefly = false;
+  overwrite = false;
 }
 
 LASRlaxwriter::LASRlaxwriter(bool embedded, bool overwrite, bool onthefly)

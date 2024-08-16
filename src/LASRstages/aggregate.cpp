@@ -2,13 +2,9 @@
 
 #ifdef USING_R
 
-LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax)
+LASRaggregate::LASRaggregate()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->expected_type = ANYSXP;
+  expected_type = ANYSXP;
 }
 
 bool LASRaggregate::set_parameters(const nlohmann::json& stage)

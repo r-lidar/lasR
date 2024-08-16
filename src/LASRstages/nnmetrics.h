@@ -7,7 +7,7 @@
 class LASRnnmetrics : public StageVector
 {
 public:
-  LASRnnmetrics(double xmin, double ymin, double xmax, double ymax);
+  LASRnnmetrics() = default;
   bool process(LAS*& las) override;
   bool write() override;
   bool set_parameters(const nlohmann::json&) override;

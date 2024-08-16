@@ -15,11 +15,6 @@
  */
 
 // POISSON SAMPLING
-
-LASRsamplingpoisson::LASRsamplingpoisson()
-{
-}
-
 bool LASRsamplingpoisson::set_parameters(const nlohmann::json& stage)
 {
   distance = stage.at("distance");
@@ -217,11 +212,6 @@ bool LASRsamplingpoisson::process(LAS*& las)
 }
 
 // VOXEL
-
-LASRsamplingvoxels::LASRsamplingvoxels()
-{
-}
-
 bool LASRsamplingvoxels::set_parameters(const nlohmann::json& stage)
 {
   res = stage.at("res");
@@ -335,15 +325,6 @@ bool LASRsamplingvoxels::process(LAS*& las)
 }
 
 // PIXEL
-
-LASRsamplingpixels::LASRsamplingpixels()
-{
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-}
-
 bool LASRsamplingpixels::set_parameters(const nlohmann::json& stage)
 {
   res = stage.at("res");

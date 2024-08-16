@@ -12,7 +12,7 @@
 class LASRlocalmaximum : public StageVector
 {
 public:
-  LASRlocalmaximum(double xmin, double ymin, double xmax, double ymax);
+  LASRlocalmaximum();
   bool process() override;
   bool process(LAS*& las) override;
   bool write() override;

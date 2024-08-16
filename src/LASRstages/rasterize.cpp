@@ -3,14 +3,6 @@
 #include "Grouper.h"
 #include "openmp.h"
 
-LASRrasterize::LASRrasterize(double xmin, double ymin, double xmax, double ymax)
-{
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-}
-
 bool LASRrasterize::set_parameters(const nlohmann::json& stage)
 {
   double res = stage.at("res");
