@@ -120,6 +120,13 @@ bool Stage::is_valid_pointer(void* p) const
   return true;
 }
 
+double Stage::convert_units(double x) const
+{
+  double u = crs.get_linear_units();
+  return x*u;
+}
+
+
 /* ==============
  *  WRITER
  *  ============= */

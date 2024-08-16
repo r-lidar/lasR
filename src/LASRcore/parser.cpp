@@ -52,6 +52,12 @@ static SEXP get_element(SEXP list, const char *str)
 }
 #endif
 
+template <typename T>
+static std::unique_ptr<Stage> create_instance()
+{
+  return std::make_unique<T>();
+}
+
 bool Pipeline::parse(const nlohmann::json& json, bool progress)
 {
   int num_stages = json.size();
@@ -69,6 +75,27 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
   parsed = false;
   pipeline.clear();
 
+  // Create a map of type names to functions that create instances
+  std::unordered_map<std::string, std::function<std::unique_ptr<Stage>()>> factory_map = {
+    {"add_extrabytes", create_instance<LASRaddattribute>},
+    {"add_rgb", create_instance<LASRaddrgb>},
+    {"classify_with_csf", create_instance<LASRcsf>},
+    {"classify_with_ivf", create_instance<LASRivf>},
+    {"classify_with_sor", create_instance<LASRsor>},
+    {"filter", create_instance<LASRfilter>},
+    {"nothing", create_instance<LASRnothing>},
+    {"sampling_pixel", create_instance<LASRsamplingpixels>},
+    {"sampling_poisson", create_instance<LASRsamplingpoisson>},
+    {"sampling_voxel", create_instance<LASRsamplingvoxels>},
+    {"set_crs", create_instance<LASRsetcrs>},
+    {"sort", create_instance<LASRsort>},
+    {"summarise", create_instance<LASRsummary>},
+    {"svd", create_instance<LASRsvd>},
+    {"triangulate", create_instance<LASRtriangulate>},
+    {"write_las", create_instance<LASRlaswriter>},
+    {"write_vpc", create_instance<LASRvpcwriter>}
+  };
+
   try
   {
     for (auto& [key, stage] : json.items())
@@ -76,15 +103,10 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       std::string name = stage.at("algoname");
       std::string uid = stage.value("uid", "xxx-xxx");
 
-      if (name == "add_extrabytes")
+      auto iter = factory_map.find(name);
+      if (iter != factory_map.end())
       {
-        auto v = std::make_unique<LASRaddattribute>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "add_rgb")
-      {
-        auto v = std::make_unique<LASRaddrgb>();
-        pipeline.push_back(std::move(v));
+        pipeline.push_back(iter->second());
       }
       else if (name == "build_catalog")
       {
@@ -156,26 +178,6 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         }
         #endif
       }
-      else if (name == "classify_with_csf")
-      {
-        auto v = std::make_unique<LASRcsf>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "classify_with_ivf")
-      {
-        auto v = std::make_unique<LASRivf>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "classify_with_sor")
-      {
-        auto v = std::make_unique<LASRsor>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "filter")
-      {
-        auto v = std::make_unique<LASRfilter>();
-        pipeline.push_back(std::move(v));
-      }
       else if (name == "focal")
       {
         std::string uid = stage.at("connect");
@@ -217,11 +219,6 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         auto v = std::make_unique<LASRnnmetrics>(xmin, ymin, xmax, ymax);
         bool b = v->connect(pipeline, uid);
         if (!b) return false;
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "nothing")
-      {
-        auto v = std::make_unique<LASRnothing>();
         pipeline.push_back(std::move(v));
       }
       else if (name == "pit_fill")
@@ -334,31 +331,6 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         if (!b1 || !b2) return false;
         pipeline.push_back(std::move(v));
       }
-      else if (name  == "sampling_pixel")
-      {
-        auto v = std::make_unique<LASRsamplingpixels>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name  == "sampling_poisson")
-      {
-        auto v = std::make_unique<LASRsamplingpoisson>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name  == "sampling_voxel")
-      {
-        auto v = std::make_unique<LASRsamplingvoxels>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name  == "set_crs")
-      {
-        auto v = std::make_unique<LASRsetcrs>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "sort")
-      {
-        auto v = std::make_unique<LASRsort>();
-        pipeline.push_back(std::move(v));
-      }
       else if (name == "stop_if")
       {
         std::string condition = stage.at("condition");
@@ -379,16 +351,6 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           return false;
         }
       }
-      else if (name == "summarise")
-      {
-        auto v = std::make_unique<LASRsummary>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name  == "svd")
-      {
-        auto v = std::make_unique<LASRsvd>();
-        pipeline.push_back(std::move(v));
-      }
       else if (name == "transform_with")
       {
         std::string uid = stage.at("connect");
@@ -397,25 +359,10 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         if (!b) return false;
         pipeline.push_back(std::move(v));
       }
-      else if (name == "triangulate")
-      {
-        auto v = std::make_unique<LASRtriangulate>();
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "write_las")
-      {
-        auto v = std::make_unique<LASRlaswriter>();
-        pipeline.push_back(std::move(v));
-      }
       else if (name == "write_lax")
       {
         indexer = true;
         auto v = std::make_unique<LASRlaxwriter>(false);
-        pipeline.push_back(std::move(v));
-      }
-      else if (name == "write_vpc")
-      {
-        auto v = std::make_unique<LASRvpcwriter>();
         pipeline.push_back(std::move(v));
       }
       #ifdef USING_R

@@ -57,9 +57,10 @@ public:
   virtual bool use_rcapi() const { return false; };
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
+  virtual bool set_parameters(const nlohmann::json&) { return true; };
+  //virtual void convert_units() { return; };
 
   virtual std::string get_name() const = 0;
-  virtual bool set_parameters(const nlohmann::json&) { return true; };
 
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
   void set_ncpu_concurrent_files(int ncpu) { this->ncpu_concurrent_files = ncpu; }
@@ -97,6 +98,10 @@ protected:
   void set_connection(Stage* stage);
   Stage* search_connection(const std::list<std::unique_ptr<Stage>>&, const std::string& uid);
   virtual bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uid) { return true; };
+
+  double convert_units(double) const;
+
+
 
 protected:
   int ncpu;
