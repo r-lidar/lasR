@@ -1,13 +1,6 @@
 #include "sor.h"
 #include "Grid.h"
 
-
-
-LASRsor::LASRsor()
-{
-
-}
-
 bool LASRsor::process(LAS*& las)
 {
   progress->reset();

@@ -6,7 +6,7 @@
 class LASRsor: public Stage
 {
 public:
-  LASRsor();
+  LASRsor() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return 10; };
   bool set_parameters(const nlohmann::json&) override;

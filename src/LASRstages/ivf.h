@@ -6,7 +6,7 @@
 class LASRivf: public Stage
 {
 public:
-  LASRivf();
+  LASRivf() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; };
   bool set_parameters(const nlohmann::json&) override;

@@ -3,10 +3,6 @@
 
 #include <unordered_map>
 
-LASRivf::LASRivf()
-{
-}
-
 bool LASRivf::process(LAS*& las)
 {
   // Stores for a given voxel the number of point in its 27 voxels neighborhood
