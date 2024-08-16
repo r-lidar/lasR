@@ -205,12 +205,7 @@ std::vector<T> get_vector(const nlohmann::json& element)
 }
 
 #ifdef USING_R
-static SEXP string_address_to_sexp(const std::string& addr)
-{
-  uintptr_t ptr = strtoull(addr.c_str(), NULL, 16);
-  SEXP s = (SEXP)ptr;
-  return s;
-}
+SEXP string_address_to_sexp(const std::string& addr);
 #endif
 
 #endif

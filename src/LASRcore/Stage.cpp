@@ -368,3 +368,12 @@ void StageVector::set_crs(const CRS& crs)
   }
 }*/
 
+#ifdef USING_R
+SEXP string_address_to_sexp(const std::string& addr)
+{
+  uintptr_t ptr = strtoull(addr.c_str(), NULL, 16);
+  SEXP s = (SEXP)ptr;
+  return s;
+}
+#endif
+
