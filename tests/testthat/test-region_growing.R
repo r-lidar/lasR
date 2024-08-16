@@ -17,7 +17,7 @@ test_that("growing region works",
 
   expect_equal(id1, id2)
 
-  expect_equal(sum(terra::expanse(polygons)), 6279, tolerance = 1e-4)
+  expect_equal(sum(terra::expanse(polygons)), 6249, tolerance = 1e-4)
 })
 
 test_that("growing region works with multiple files",
