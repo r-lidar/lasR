@@ -15,11 +15,13 @@ static double taketime()
 bool LASRregiongrowing::set_parameters(const nlohmann::json& stage)
 {
   // Parameters were mixed. This need to be fixed
-  th_tree = stage.value("th_cr", 2);
+  th_tree = stage.value("th_cr", 2.0);
   th_seed = stage.value("th_tree", 0.45);
   th_crown = stage.value("th_seed", 0.55);
-  double max_cr = stage.value("max_cr", 20);
+  double max_cr = stage.value("max_cr", 20.0);
   DIST  = max_cr*max_cr;
+
+  print("th_tree = %.2lf, th_seed = %.2lf, th_crown = %.2lf, max_cr = %.2lf\n", th_tree, th_seed, th_crown, max_cr);
 
   for (auto elem : connections)
   {

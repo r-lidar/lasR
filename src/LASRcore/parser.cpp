@@ -130,8 +130,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         // This is the buffer provided by the user. The actual buffer may be larger
         // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
         // stage tells us 50.
-        buffer = stage.value("buffer", 0);
-        chunk_size = stage.value("chunk", 0);
+        buffer = stage.value("buffer", 0.0);
+        chunk_size = stage.value("chunk", 0.0);
 
         // No element 'dataframe'? We are processing some files. Otherwise with have a compatibility layer
         // with lidR to process LAS objects

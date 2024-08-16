@@ -13,7 +13,7 @@ LASRlocalmaximum::LASRlocalmaximum()
 bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
 {
   ws = stage.at("ws");
-  min_height = stage.value("min_height", 2);
+  min_height = stage.value("min_height", 2.0);
 
   use_attribute = stage.value("use_attribute", "Z");
   record_attributes = stage.value("record_attributes", false);

@@ -124,7 +124,7 @@ bool LASRivf::process(LAS*& las)
 
 bool LASRivf::set_parameters(const nlohmann::json& stage)
 {
-  res = stage.value("res", 5);
+  res = stage.value("res", 5.0);
   n = stage.value("n", 6);
   classification = stage.value("class", 18);
   force_map = stage.value("force_map", false);

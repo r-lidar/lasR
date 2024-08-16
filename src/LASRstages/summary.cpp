@@ -14,8 +14,8 @@ LASRsummary::LASRsummary()
 
 bool LASRsummary::set_parameters(const nlohmann::json& stage)
 {
-  zwbin = stage.value("zwbin", 2);
-  iwbin = stage.value("iwbin", 50);
+  zwbin = stage.value("zwbin", 2.0);
+  iwbin = stage.value("iwbin", 50.0);
 
   std::vector<std::string> metrics;
   if (stage.contains("metrics")) metrics = get_vector<std::string>(stage.at("metrics"));

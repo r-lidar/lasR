@@ -37,7 +37,7 @@ LASRsvd::LASRsvd()
 bool LASRsvd::set_parameters(const nlohmann::json& stage)
 {
   k = stage.at("k");
-  r = stage.value("r", 0);
+  r = stage.value("r", 0.0);
   std::string features = stage.value("features", "");
 
   record_eigen_values = true;
