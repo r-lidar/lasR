@@ -1,10 +1,11 @@
 # lasR 0.10.0
 
-- New: new stage `classify_with_sor()` to classify outlier with statistical outlier removal.
+- New: new stage `classify_with_sor()` to classify outliers with statistical outlier removal.
 - New: new stage `focal()` to post-process rasters in the pipeline.
-- New: new stage `filter_with_grid()` to keep the lowest or highest point per cell of a grid
-- Change: #79 raster produced on a subset of data have the minimal possible extent instead of the full extent of the point cloud
-- Fix: numerous inaccuracies in numeric parameters interpreted as integers. For example in `geometry_feature`: `r = 5` was equal to 5 but `r = 4.5` was equal to 4.
+- New: new stage `filter_with_grid()` to keep the lowest or highest point per cell of a grid.
+- Change: #79 raster produced on a subset of data have the minimal possible extent instead of the full extent of the point cloud.
+- Fix: numerous inaccuracies in numeric parameters interpreted as integers. For example, in `geometry_feature`, `r = 5` was equal to 5 but `r = 4.5` was equal to 4.
+- Fix: some parameters in `region_growing()` for individual tree segmentation were inverted.
 
 # lasR 0.9.3
 
