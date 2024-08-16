@@ -84,6 +84,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"classify_with_ivf",    create_instance<LASRivf>},
     {"classify_with_sor",    create_instance<LASRsor>},
     {"filter",               create_instance<LASRfilter>},
+    {"filter_grid",          create_instance<LASRfiltergrid>},
     {"focal",                create_instance<LASRfocal>},
     {"hulls",                create_instance<LASRboundaries>},
     {"load_raster",          create_instance<LASRloadraster>},

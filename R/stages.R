@@ -354,6 +354,22 @@ delete_points = function(filter = "")
 
 # ===== F =====
 
+#' Select highest or lowest points
+#'
+#' Select and retained only highest or lowest points per grid cell
+#'
+#' @param res numeric. The resolution of the grid
+#' @param operator string. Can be min or max to retain lowest or highest points
+#' @template param-filter
+#' @md
+#' @export
+filter_with_grid = function(res, operator = "min", filter = "")
+{
+  operator = match.arg(operator, c("min", "max"))
+  ans <- list(algoname = "filter_grid", res = res, operator = operator, filter = filter)
+  set_lasr_class(ans)
+}
+
 #' Calculate focal ("moving window") values for each cell of a raster
 #'
 #' Calculate focal ("moving window") values for each cell of a raster using various functions. NAs

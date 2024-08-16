@@ -2,6 +2,7 @@
 
 - New: new stage `classify_with_sor()` to classify outlier with statistical outlier removal.
 - New: new stage `focal()` to post-process rasters in the pipeline.
+- New: new stage `filter_with_grid()` to keep the lowest or highest point per cell of a grid
 - Change: #79 raster produced on a subset of data have the minimal possible extent instead of the full extent of the point cloud
 
 # lasR 0.9.3
