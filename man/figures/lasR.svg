@@ -8,9 +8,9 @@
    version="1.1"
    sodipodi:docname="lasR.svg"
    inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
-   inkscape:export-filename="/home/jr/R packages/r-lidar/lasR/man/figures/lasR.png"
-   inkscape:export-xdpi="462"
-   inkscape:export-ydpi="462"
+   inkscape:export-filename="/home/jr/R packages/r-lidar/lasR/man/figures/lasR800x924.png"
+   inkscape:export-xdpi="461.5"
+   inkscape:export-ydpi="461.5"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -32,7 +32,7 @@
      id="namedview7641"
      showgrid="false"
      inkscape:zoom="2.4583334"
-     inkscape:cx="0"
+     inkscape:cx="0.40677965"
      inkscape:cy="184.27118"
      inkscape:window-x="1920"
      inkscape:window-y="81"
@@ -40585,7 +40585,7 @@
      inkscape:randomized="0"
      d="M 83.12966,187.66087 3.7153648,141.78321 3.7394372,50.069582 83.177805,4.2336152 162.5921,50.111276 162.56803,141.8249 Z" /><g
      id="g23763"
-     transform="translate(-85.008076,10.66574)"><path
+     transform="matrix(0.76697358,0,0,0.76697358,-38.334976,22.987119)"><path
        style="clip-rule:evenodd;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.613358;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 224.32398,66.599411 c 13.37961,2.139977 22.4315,2.786909 26.28564,2.190337 -3.48129,-2.824032 -8.44885,-5.210321 -12.13448,-6.493854 -3.79896,-4.393585 -11.33746,-6.142626 -16.47966,-5.100885 -0.46261,-0.132034 -5.14511,-10.515874 -5.90019,-11.937897 -0.64144,-1.20864 -2.85469,-1.538239 -5.51636,-1.916262 l -5.2715,11.023607 -5.61196,-0.762827 -4.04233,-8.634801 -2.15934,-0.01647 -0.32522,8.197122 c -1.40846,0.163025 -2.22584,0.636924 -2.71233,1.788425 l -5.79107,-5.253901 -2.15967,-0.01647 2.34562,10.065862 -10.05005,4.492368 c 0,0 2.28816,1.346807 3.50099,1.448818 0.86742,0.07328 8.67967,-2.101561 13.0597,-3.346034 1.00687,0.433871 2.37724,0.726669 3.43997,1.003649 l -11.5644,7.982056 c 0,0 4.17633,1.575363 6.12875,1.277078 1.36876,-0.208542 13.45709,-3.539402 20.56656,-5.513127 2.68199,0.645642 5.00403,1.197341 6.38958,1.519517 2.06121,0.47971 3.16687,0.329921 4.7219,-0.333152 0.47197,-0.201116 2.51541,-1.291926 3.27985,-1.66317 z"
        id="path33"
