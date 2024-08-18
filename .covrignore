@@ -2,3 +2,4 @@ src/vendor/LASlib/
 src/vendor/LASzip/
 src/vendor/nlohmann/
 src/vendor/armadillo/
+src/vendor/csf/
