@@ -3,18 +3,6 @@
 
 #include <unordered_map>
 
-LASRivf::LASRivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification, bool force_map)
-{
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->res = res;
-  this->n = n;
-  this->classification = classification;
-  this->force_map = force_map;
-}
-
 bool LASRivf::process(LAS*& las)
 {
   // Stores for a given voxel the number of point in its 27 voxels neighborhood
@@ -127,5 +115,14 @@ bool LASRivf::process(LAS*& las)
     if (progress->interrupted()) break;
   }
 
+  return true;
+}
+
+bool LASRivf::set_parameters(const nlohmann::json& stage)
+{
+  res = stage.value("res", 5.0);
+  n = stage.value("n", 6);
+  classification = stage.value("class", 18);
+  force_map = stage.value("force_map", false);
   return true;
 }

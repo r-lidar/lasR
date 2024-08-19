@@ -13,6 +13,8 @@ Stage::Stage()
   verbose = false;
   circular = false;
   progress = nullptr;
+  ncpu = 1;
+  ncpu_concurrent_files = 1;
 
   #ifdef USING_R
   nsexpprotected = 0;
@@ -22,6 +24,7 @@ Stage::Stage()
 Stage::Stage(const Stage& other)
 {
   ncpu = other.ncpu;
+  ncpu_concurrent_files = other.ncpu_concurrent_files;
   xmin = other.xmin;
   ymin = other.ymin;
   xmax = other.xmax;
@@ -84,6 +87,17 @@ void Stage::set_connection(Stage* stage)
   if (stage) connections[stage->get_uid()] = stage;
 }
 
+Stage* Stage::search_connection(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  auto it = std::find_if(pipeline.begin(), pipeline.end(), [&uid](const std::unique_ptr<Stage>& obj) { return obj->get_uid() == uid; });
+  if (it == pipeline.end())
+  {
+    last_error = "Cannot find stage with uid " + uid;
+    return nullptr;
+  }
+  return it->get();
+}
+
 void Stage::update_connection(Stage* stage)
 {
   if (!stage) return;
@@ -105,6 +119,13 @@ bool Stage::is_valid_pointer(void* p) const
 
   return true;
 }
+
+double Stage::convert_units(double x) const
+{
+  double u = crs.get_linear_units();
+  return x*u;
+}
+
 
 /* ==============
  *  WRITER
@@ -346,4 +367,13 @@ void StageVector::set_crs(const CRS& crs)
     vector.close();
   }
 }*/
+
+#ifdef USING_R
+SEXP string_address_to_sexp(const std::string& addr)
+{
+  uintptr_t ptr = strtoull(addr.c_str(), NULL, 16);
+  SEXP s = (SEXP)ptr;
+  return s;
+}
+#endif
 

@@ -4,29 +4,6 @@
 
 #include <algorithm>
 
-LASRdataframereader::LASRdataframereader(double xmin, double ymin, double xmax, double ymax, const SEXP dataframe, const std::vector<double>& accuracy, const std::string& wkt)
-{
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->dataframe = dataframe;
-  this->wkt = wkt;
-  scale[0] = accuracy[0];
-  scale[1] = accuracy[1];
-  scale[2] = accuracy[2];
-  offset[0] = xmin;
-  offset[1] = ymin;
-  offset[2] = 0;
-  has_gps = false;
-  has_nir = false;
-  has_rgb = false;
-  is_extended = false;
-  current_point = 0;
-  num_extrabytes = 0;
-  npoints = Rf_length(VECTOR_ELT(dataframe, 0));
-}
-
 LASRdataframereader::LASRdataframereader(const LASRdataframereader& other) : Stage(other)
 {
   xmin = other.xmin;
@@ -48,6 +25,31 @@ LASRdataframereader::LASRdataframereader(const LASRdataframereader& other) : Sta
   current_point = other.current_point;
   num_extrabytes = other.num_extrabytes;
   npoints = other.npoints;
+}
+
+bool LASRdataframereader::set_parameters(const nlohmann::json& stage)
+{
+  std::string address_dataframe_str = stage.at("dataframe");
+  dataframe = (SEXP)string_address_to_sexp(address_dataframe_str);
+
+  std::vector<double> accuracy = stage.at("accuracy");
+  scale[0] = accuracy[0];
+  scale[1] = accuracy[1];
+  scale[2] = accuracy[2];
+  offset[0] = xmin;
+  offset[1] = ymin;
+  offset[2] = 0;
+  has_gps = false;
+  has_nir = false;
+  has_rgb = false;
+  is_extended = false;
+  current_point = 0;
+  num_extrabytes = 0;
+  npoints = Rf_length(VECTOR_ELT(dataframe, 0));
+
+  wkt = stage.at("crs");
+
+  return true;
 }
 
 bool LASRdataframereader::set_chunk(const Chunk& chunk)

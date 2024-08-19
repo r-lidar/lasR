@@ -1,0 +1,120 @@
+    .connectors {
+      display: flex;
+      gap: 4%;
+    }
+
+    .iconnectors,
+    .oconnectors {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .iconnectors {
+      justify-content: flex-start;
+    }
+
+    .oconnectors {
+      justify-content: flex-start;
+      text-align: right;
+    }
+
+    .iconnectors p,
+    .oconnectors p {
+      margin: 0;
+      margin-bottom: 8px;
+      font-size: inherit;
+      font-family: inherit;
+      color: inherit;
+    }
+
+    .oconnectors p {
+      margin-right: 10px;
+    }
+
+    .oconnectors span {
+      margin-right: 5px;
+    }
+
+    .iconnectors span {
+      margin-left: 20px;
+    }
+
+    hr {
+      border: none;
+      height: 2px;
+      background-color: #ccc;
+      margin: 10px 0;
+    }
+
+    .category {
+      line-height: 50px;
+      border-bottom: 1px solid var(--border-color);
+      padding-left: 20px;
+    }
+
+    .subcategory {
+      display: none;
+    }
+
+    .toggle-btn {
+      cursor: pointer;
+    }
+
+    .json-content {
+      font-size: 10px;
+      /* Adjust font size as needed */
+      width: 400px;
+      max-height: 500px;
+      /* Set maximum height */
+      overflow: auto;
+      /* Add scroll if content overflows */
+      background-color: #f5f5f5;
+      /* Light background color */
+      padding: 10px;
+      /* Padding for better readability */
+      border: 1px solid #ddd;
+      /* Border for visual separation */
+      white-space: pre-wrap;
+      /* Preserve white space and wrap long lines */
+      line-height: 1.5;
+      /* Adjust line height for better readability */
+      text-align: left;
+    }
+
+    pre {
+      outline: 1px solid #ccc;
+      padding: 5px;
+      margin: 5px;
+    }
+
+    .string {
+      color: green;
+    }
+
+    .number {
+      color: darkorange;
+    }
+
+    .boolean {
+      color: blue;
+    }
+
+    .null {
+      color: magenta;
+    }
+
+    .key {
+      color: red;
+    }
+
+
+    .parameters p {
+      margin: 5px 0;
+    }
+
+    .parameters input, .parameters select {
+      font-size: 12px;
+      padding: 0 2 0 2px;
+      margin: 0 5px;
+    }

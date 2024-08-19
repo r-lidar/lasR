@@ -44,6 +44,7 @@ public:
   bool need_points() const;
   bool set_chunk(const Chunk& chunk);
   void set_ncpu(int ncpu);
+  void set_ncpu_concurrent_files(int ncpu);
   void set_verbose(bool verbose);
   void sort();
   void show_profiling(const std::string& path);
@@ -69,6 +70,7 @@ private:
   bool parallelizable;
   bool read_payload;
   double buffer;
+  double chunk_size;
   std::vector<int> order;
 
   LAS* las;                             // owned by this
@@ -78,23 +80,5 @@ private:
 
   std::list<std::unique_ptr<Stage>> pipeline;
 };
-
-template <typename T>
-std::vector<T> get_vector(const nlohmann::json& element)
-{
-  std::vector<T> result;
-  if (element.is_array())
-  {
-    for (const auto& item : element)
-    {
-      result.push_back(item.get<T>());
-    }
-  }
-  else
-  {
-    result.push_back(element.get<T>());
-  }
-  return result;
-}
 
 #endif

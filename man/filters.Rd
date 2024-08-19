@@ -7,6 +7,7 @@
 \alias{keep_first}
 \alias{drop_first}
 \alias{keep_ground}
+\alias{keep_ground_and_water}
 \alias{drop_ground}
 \alias{keep_noise}
 \alias{drop_noise}
@@ -29,6 +30,8 @@ keep_first()
 drop_first()
 
 keep_ground()
+
+keep_ground_and_water()
 
 drop_ground()
 

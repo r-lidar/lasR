@@ -16,6 +16,7 @@ Raster::Raster() : Grid(), GDALdataset()
   extent[3] = this->ymax;
 
   buffer = 0;
+  circular = false;
 
   GDALdataset::set_raster(0, 0, 0, 0, 0);
   nodata  = NA_F32_RASTER;
@@ -32,6 +33,7 @@ Raster::Raster(double xmin, double ymin, double xmax, double ymax, double res, i
   extent[3] = this->ymax;
 
   buffer = 0;
+  circular = false;
 
   GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
   set_nbands(layers);
@@ -49,6 +51,7 @@ Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset()
 
   GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
   buffer = raster.buffer;
+  circular = raster.circular;
   set_nbands(raster.nBands);
   band_names = raster.band_names;
   nodata = raster.nodata;
@@ -156,9 +159,23 @@ bool Raster::set_nbands(int nbands)
   return true;
 }
 
+bool Raster::copy_data(const Raster& other)
+{
+ if (ncells != other.ncells || nBands != other. nBands)
+ {
+   last_error = "Internal error: incompatible raster for copy. Please report.";
+   return false;
+ }
+
+  data.resize(ncells*nBands);
+  std::copy(other.data.begin(), other.data.end(), data.begin());
+  return true;
+}
+
 void Raster::set_chunk(const Chunk& chunk)
 {
   buffer = std::ceil(chunk.buffer/xres); // buffer in pixel
+  circular = chunk.shape == ShapeType::CIRCLE;
 
   //print("Chunk %.1lf %.1lf %.1lf %.1lf (+%.1lf m)\n", chunk.xmin, chunk.xmax, chunk.ymin, chunk.ymax, chunk.buffer);
 
@@ -185,6 +202,57 @@ void Raster::set_chunk(const Chunk& chunk)
   data.clear();
   data.resize(nBands*ncells);
   std::fill(data.begin(), data.end(), nodata);
+}
+
+bool Raster::focal(float size, float (*operation)(std::vector<float>&))
+{
+  int psize = std::ceil(size/xres); // pixel size of the windows
+
+  float square_radius = std::pow(size/2.0, 2);
+  if (square_radius < xres/2) square_radius = std::pow(xres/2, 2);
+
+  // The new vector of data
+  std::vector<float> ans(data.size(), nodata);
+
+  // Temporary vector allocated to store raster values of the current windows
+  std::vector<float> vals;
+  vals.reserve(128);
+
+  // Apply the focal on all the bands
+  for (int band = 1; band <= nBands; band++)
+  {
+    for (int cell = 0; cell < ncells; cell++)
+    {
+      float center_val = get_value(cell, band);
+      int center_row = row_from_cell(cell);
+      int center_col = col_from_cell(cell);
+
+      for (int row = std::max(0, center_row - psize); row < std::min(nrows, center_row + psize); row++)
+      {
+        for (int col = std::max(0, center_col - psize); col < std::min(ncols, center_col + psize); col++)
+        {
+          float val = (*this)(row, col, band);
+          if (val == nodata) continue;
+
+          // Circular windows
+          float square_dist = std::pow((row - center_row)*yres, 2) + std::pow((col - center_col)*xres, 2);
+          if (square_dist <= square_radius)
+            vals.push_back(val);
+        }
+      }
+
+      if (!vals.empty())
+      {
+        ans[(band - 1) * ncells + cell] = operation(vals);
+      }
+
+      vals.clear();
+    }
+  }
+
+  std::swap(data, ans);
+
+  return true;
 }
 
 bool Raster::get_chunk(const Chunk& chunk, int band_index)
@@ -305,8 +373,23 @@ bool Raster::write()
         for (int col = buffer ; col < ncols - buffer ; ++col)
         {
           int originalIndex = row * ncols + col + (i-1)*ncells;
-          int modifiedIndex = (row - buffer) * ncols_no_buffer + (col - buffer);
-          data_no_buffer[modifiedIndex] = data[originalIndex];
+
+          int new_row = (row - buffer);
+          int new_col = (col - buffer);
+          int modifiedIndex = new_row * ncols_no_buffer + new_col;
+
+          float val = data[originalIndex];
+
+          // Remove the buffer but the query is circular
+          if (circular)
+          {
+            float centerx = (float)ncols_no_buffer/2;
+            float centery = (float)nrows_no_buffer/2;
+            float distance = std::sqrt((new_col - centerx) * (new_col - centerx) + (new_row - centery) * (new_row - centery));
+            if (distance > buffer) val = NA_F32_RASTER;
+          }
+
+          data_no_buffer[modifiedIndex] = val;
         }
       }
 

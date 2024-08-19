@@ -21,14 +21,19 @@
 #include "openmp.h"
 #include "error.h"
 #include "print.h"
+
 #include "pipeline.h"
 #include "LAScatalog.h"
-#include "openmp.h"
+
+#include "DrawflowParser.h"
+#include "nlohmann/json.hpp"
 
 #ifdef USING_R
-SEXP process(SEXP sexp_config_file)
+SEXP process(SEXP sexp_config_file, SEXP sexp_async_communication_file)
 {
   std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
+  std::string async_communication_file = std::string(CHAR(STRING_ELT(sexp_async_communication_file, 0)));
+
 #else
 bool process(const std::string& config_file)
 {
@@ -49,18 +54,53 @@ bool process(const std::string& config_file)
   nlohmann::json json;
   fjson >> json;
 
+  // The json file is maybe a file produce by Drawflow. It must be converted into something
+  // understandable by lasR
+  if (json.contains("drawflow"))
+  {
+    try
+    {
+      json = DrawflowParser::parse(json);
+    }
+    catch (std::exception& e)
+    {
+      #ifdef USING_R
+        return make_R_error(e.what());
+      #else
+        eprint(e.what());
+        return false;
+      #endif
+    }
+  }
+
   // The JSON file is made of the processing options and the pipeline
   nlohmann::json processing_options = json["processing"];
   nlohmann::json json_pipeline = json["pipeline"];
 
   // Parse the processing options
   std::vector<int> ncpu = get_vector<int>(processing_options["ncores"]);
-  if (ncpu.size() == 0) ncpu.push_back(1);
+  if (ncpu.size() == 0) ncpu.push_back(std::ceil((float)omp_get_num_threads()/2));
   std::string strategy = processing_options.value("strategy", "concurrent-points");
-  bool progrss = processing_options.value("progress", false);
+  bool progrss = processing_options.value("progress", true);
+  progrss = progrss && async_communication_file.empty();
   bool verbose = processing_options.value("verbose", false);
   double chunk_size = processing_options.value("chunk", 0);
   std::string fprofiling = processing_options.value("profiling", "");
+
+  // build_catalog() has been added at R level because there are some subtleties to handle LAS and LAScatalog
+  // object from lidR. If build_catalog is missing, add it because we are using an API that is not R
+  if (json_pipeline.empty() || json_pipeline[0]["algoname"] != "build_catalog")
+  {
+    nlohmann::json build_catalog = {
+      {"algoname", "build_catalog"},
+      {"files", processing_options["files"]},
+      {"buffer", processing_options.value("buffer", 0)},
+      {"uid", "6275696c645f636174616c6f67"},
+      {"output", ""},
+      {"filter", ""}
+    };
+    json_pipeline.insert(json_pipeline.begin(), build_catalog);
+  }
 
   // Check some multithreading stuff
   if (ncpu[0] > available_threads())
@@ -100,11 +140,6 @@ bool process(const std::string& config_file)
 
     LAScatalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
 
-    if (!lascatalog->set_chunk_size(chunk_size))
-    {
-      throw last_error;
-    }
-
     int n = lascatalog->get_number_chunks();
 
     // Check some multi-threading stuff
@@ -132,6 +167,7 @@ bool process(const std::string& config_file)
 
     pipeline.set_verbose(verbose);
     pipeline.set_ncpu(ncpu_inner_loops);
+    pipeline.set_ncpu_concurrent_files(ncpu_outer_loop);
 
     if (verbose)
     {
@@ -154,6 +190,7 @@ bool process(const std::string& config_file)
     progress.set_display(progrss);
     progress.set_ncpu(ncpu_outer_loop);
     progress.create_subprocess();
+    progress.set_async_message_file(async_communication_file);
 
     pipeline.set_progress(&progress);
 

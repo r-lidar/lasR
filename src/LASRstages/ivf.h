@@ -6,9 +6,10 @@
 class LASRivf: public Stage
 {
 public:
-  LASRivf(double xmin, double ymin, double xmax, double ymax, double res, int n, int classification, bool force_map);
+  LASRivf() = default;
   bool process(LAS*& las) override;
   double need_buffer() const override { return res; };
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "ivf"; };
 
   // multi-threading

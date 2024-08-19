@@ -44,6 +44,10 @@ keep_ground = function() { keep_class(2L) }
 
 #' @rdname filters
 #' @export
+keep_ground_and_water = function() { keep_class(c(2L, 9L)) }
+
+#' @rdname filters
+#' @export
 drop_ground = function() { drop_class(2L) }
 
 #' @rdname filters

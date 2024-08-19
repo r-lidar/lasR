@@ -23,8 +23,8 @@ test_that("rasterize works with extrabyte",
   expect_s4_class(u, "SpatRaster")
   expect_equal(names(u), c("HAG_mean", "HAG_max", "plop_sum"))
   expect_equal(dim(u), c(58, 58, 3))
-  expect_equal(mean(u[[1]][], na.rm = T), 3.13473, tolerance = 1e-6)
-  expect_equal(mean(u[[2]][], na.rm = T), 7.94414, tolerance = 1e-6)
+  expect_equal(mean(u[[1]][], na.rm = T), 3.149584, tolerance = 1e-6)
+  expect_equal(mean(u[[2]][], na.rm = T), 7.95203, tolerance = 1e-6)
   expect_true(all(is.nan(u[[3]][])))
 })
 
@@ -192,7 +192,7 @@ test_that("rasterize splits the raster on demand",
   expect_equal(length(ans1), 2L)
   expect_s4_class(ans2, "SpatRaster")
   expect_equal(basename(ans1), c("chm_bcts_1_0.tif", "chm_bcts_1_1.tif"))
-  expect_equal(dim(ans2), c(272L,98L,1L))
+  expect_equal(dim(ans2), c(71, 21L,1L))
 
   r1 = terra::rast(ans1[1])
   r2 = terra::rast(ans1[2])

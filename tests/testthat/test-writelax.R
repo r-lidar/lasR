@@ -31,7 +31,7 @@ test_that("write lax works on-the-fly",
   indexed = lasR:::is_indexed(f)
   expect_equal(indexed, c(T,T,F,T))
 
-  file.remove(f)
+  unlink(tmpdir, recursive = T)
 
   sink(NULL)
 })
@@ -66,7 +66,35 @@ test_that("write lax works before anything else (not on-the-fly)",
   ans = sf::st_read(vpc, quiet = TRUE)
   expect_true(all(ans$pc.indexed == "true"))
 
-  file.remove(f)
+  unlink(tmpdir, recursive = T)
+
+  sink(NULL)
+})
+
+
+test_that("write lax works by chunk",
+{
+  tmpdir = paste0(tempdir(), "/testlax")
+  if (!dir.exists(tmpdir)) dir.create(tmpdir)
+
+  sink(tempfile())
+
+  # create a datset without lax
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  z = file.copy(f, tmpdir)
+  f = list.files(tmpdir, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+
+  indexed = lasR:::is_indexed(f)
+  expect_equal(indexed, FALSE)
+
+  # between two tiles with a buffer
+  pipeline = lasR:::nothing(TRUE)
+  ans = exec(pipeline, on = f, chunk = 100)
+
+  indexed = lasR:::is_indexed(f)
+  expect_equal(indexed, T)
+
+  unlink(tmpdir, recursive = T)
 
   sink(NULL)
 })

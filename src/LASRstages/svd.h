@@ -6,8 +6,9 @@
 class LASRsvd : public Stage
 {
 public:
-  LASRsvd(int k, double r, std::string features);
+  LASRsvd();
   bool process(LAS*& las) override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "svd"; }
   bool is_parallelized() const override { return true; }
   LASRsvd* clone() const override { return new LASRsvd(*this); };

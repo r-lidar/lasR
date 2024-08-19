@@ -2,23 +2,30 @@
 
 #ifdef USING_R
 
-LASRaggregate::LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, int nmetrics, double window, SEXP call, SEXP env)
+LASRaggregate::LASRaggregate()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->call = call;
-  this->env = env;
-  this->window = (window > res) ? (window-res)/2 : 0;
-  this->expected_type = ANYSXP;
+  expected_type = ANYSXP;
+}
+
+bool LASRaggregate::set_parameters(const nlohmann::json& stage)
+{
+  std::string address_call_str = stage.at("call");
+  std::string address_env_str = stage.at("env");
+  call = string_address_to_sexp(address_call_str);
+  env = string_address_to_sexp(address_env_str);
+
+  double res = stage.at("res");
+  window = stage.at("window");
+  window = (window > res) ? (window-res)/2 : 0;
 
   // This is the expected number of metrics. We need to know it to be able to create
   // the appropriate number of layers in the raster. We need to record it to check, in
   // in each pixel, if the user-defined function returns the proper number of metrics
-  this->nmetrics = nmetrics;
+  nmetrics = stage.at("nmetrics");
 
   raster = Raster(xmin, ymin, xmax, ymax, res, nmetrics);
+
+  return true;
 }
 
 bool LASRaggregate::process(LAS*& las)

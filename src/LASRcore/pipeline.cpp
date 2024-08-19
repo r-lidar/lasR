@@ -17,6 +17,7 @@ Pipeline::Pipeline()
   streamable = true;
   read_payload = false;
   buffer = 0;
+  chunk_size = 0;
 
   header = nullptr;
   point = nullptr;
@@ -35,6 +36,7 @@ Pipeline::Pipeline(const Pipeline& other)
   streamable = other.streamable;
   read_payload = other.read_payload;
   buffer = other.buffer;
+  chunk_size = other.chunk_size;
   profiler = other.profiler;
 
   header = nullptr;
@@ -177,6 +179,8 @@ bool Pipeline::run_streamed()
       last_error = "in '" + stage->get_name() + "' while writing the output: " + last_error;
       return false;
     }
+
+    stage->reset_filter();
   }
 
   return true;
@@ -265,6 +269,11 @@ bool Pipeline::run_loaded()
     profiler.insert(stage->get_name());
   }
 
+  for (auto&& stage : pipeline)
+  {
+    stage->reset_filter();
+  }
+
   return true;
 }
 
@@ -328,6 +337,12 @@ void Pipeline::set_ncpu(int ncpu)
   this->ncpu = ncpu;
   for (auto&& stage : pipeline) stage->set_ncpu(ncpu);
 }
+
+void Pipeline::set_ncpu_concurrent_files(int ncpu)
+{
+  for (auto&& stage : pipeline) stage->set_ncpu_concurrent_files(ncpu);
+}
+
 
 void Pipeline::set_verbose(bool verbose)
 {

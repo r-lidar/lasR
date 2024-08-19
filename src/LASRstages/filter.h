@@ -15,4 +15,21 @@ public:
   LASRfilter* clone() const override { return new LASRfilter(*this); };
 };
 
+class LASRfiltergrid : public Stage
+{
+public:
+  bool process(LAS*& las) override;
+  double need_buffer() const override { return res; };
+  bool set_parameters(const nlohmann::json&) override;
+  std::string get_name() const override { return "grid filter"; };
+
+  // multi-threading
+  LASRfiltergrid* clone() const override { return new LASRfiltergrid(*this); };
+
+private:
+  enum operators {MIN, MAX};
+  double res;
+  int op;
+};
+
 #endif

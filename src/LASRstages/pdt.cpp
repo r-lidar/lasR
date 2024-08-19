@@ -8,20 +8,25 @@
 #include <algorithm>
 #include <cmath>
 
-LASRpdt::LASRpdt(double distance, double angle, double res, double min_size, double offset, int classification)
+LASRpdt::LASRpdt()
 {
   this->las = nullptr;
   this->d = nullptr;
 
-  this->seed_resolution_search = res;
-  this->max_iteration_angle = angle;
-  this->max_terrain_angle = 75;
-  this->max_iteration_distance = distance;
-  this->min_triangle_size = min_size*min_size;
-  this->offset = offset;
-  this->classification = classification;
-
   vector.set_geometry_type(wkbMultiPolygon25D);
+}
+
+bool LASRpdt::set_parameters(const nlohmann::json& stage)
+{
+  max_iteration_distance = stage.value("distance", 1);
+  max_iteration_angle = stage.value("angle", 15);
+  seed_resolution_search = stage.value("res", 50);
+  double min_size = stage.value("min_size", 0.1);
+  min_triangle_size = min_size*min_size;
+  offset = stage.value("offset", 0.05);
+  classification = stage.value("class", 2);
+
+  return true;
 }
 
 bool LASRpdt::process(LAS*& las)

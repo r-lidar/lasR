@@ -7,11 +7,25 @@
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
 
+LASRlaxwriter::LASRlaxwriter()
+{
+  embedded = false;
+  onthefly = false;
+  overwrite = false;
+}
+
 LASRlaxwriter::LASRlaxwriter(bool embedded, bool overwrite, bool onthefly)
 {
   this->embedded = embedded;
   this->overwrite = overwrite;
   this->onthefly = onthefly;
+}
+
+bool LASRlaxwriter::set_parameters(const nlohmann::json& stage)
+{
+  embedded = stage.value("embedded", false);
+  overwrite = stage.value("overwrite", false);
+  return true;
 }
 
 bool LASRlaxwriter::process(LAScatalog*& ctg)
@@ -21,15 +35,34 @@ bool LASRlaxwriter::process(LAScatalog*& ctg)
   bool success = true;
   const auto& files = ctg->get_files();
 
-  #pragma omp parallel for num_threads(ncpu)
+  Progress progress;
+  Progress* current = this->progress;
+  progress.set_prefix("Pre-processing");
+  progress.set_total(files.size());
+  progress.set_display(current->get_display());
+  progress.set_ncpu(ncpu_concurrent_files);
+  progress.create_subprocess();
+  this->progress = &progress;
+
+  #pragma omp parallel for num_threads(ncpu_concurrent_files)
   for (size_t i = 0 ; i < files.size() ; i++)
   {
     if (!success) continue;
     std::string file = files[i].string();
     if (!write_lax(file)) success = false;
+
+    #pragma omp critical
+    {
+      progress.update(i, true);
+      progress.show();
+    }
   }
 
   ctg->set_all_indexed();
+
+  progress.done();
+  progress.done(true);
+  this->progress = current;
 
   return success;
 }
@@ -107,12 +140,14 @@ bool LASRlaxwriter::write_lax(const std::string& file)
 
   lasquadtree->setup(lasreader->header.min_x, lasreader->header.max_x, lasreader->header.min_y, lasreader->header.max_y, t);
 
+  uint64_t n = MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records);
+
   LASindex lasindex;
   lasindex.prepare(lasquadtree, 1000);
 
   progress->reset();
   progress->set_prefix("Write LAX");
-  progress->set_total(lasreader->header.number_of_point_records);
+  progress->set_total(n);
 
   while (lasreader->read_point())
   {

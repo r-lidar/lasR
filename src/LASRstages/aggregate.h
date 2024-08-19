@@ -9,10 +9,11 @@
 class LASRaggregate: public StageRaster
 {
 public:
-  LASRaggregate(double xmin, double ymin, double xmax, double ymax, double res, int nmetrics, double window, SEXP call, SEXP env);
+  LASRaggregate();
   bool process(LAS*& las) override;
   void clear(bool last) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "aggregate"; };
   bool use_rcapi() const override { return true; };
 

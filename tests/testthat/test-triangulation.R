@@ -40,6 +40,22 @@ test_that("triangulate works with intensity",
 })
 
 
+test_that("interpolation fails with 0 points",
+{
+  f <- system.file("extdata", "Topography.las", package="lasR")
+  mesh  = triangulate(50, filter = "-keep_class 24")
+  trans = transform_with(mesh)
+  rr = rasterize(2, mesh)
+
+  expect_error(exec(mesh + trans, on = f), NA)
+
+  ans = exec(mesh + rr, on = f)
+
+  expect_s4_class(ans, "SpatRaster")
+  expect_equal(dim(ans), c(144L, 144L, 1L))
+  expect_true(all(is.na(ans[])))
+})
+
 #test_that("triangulate fails with 0 points (#25)",
 #{
 #  f <- system.file("extdata", "las14_pdrf6.laz", package="lasR")

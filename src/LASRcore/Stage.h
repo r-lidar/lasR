@@ -11,6 +11,7 @@
 // STL
 #include <string>
 #include <map>
+#include <list>
 
 // LASlib
 #include "laszip.hpp"
@@ -27,6 +28,9 @@
 #include "CRS.h"
 #include "error.h"
 #include "print.h"
+
+// JSON parser
+#include "nlohmann/json.hpp"
 
 class Stage
 {
@@ -53,15 +57,22 @@ public:
   virtual bool use_rcapi() const { return false; };
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
+  virtual bool set_parameters(const nlohmann::json&) { return true; };
+  virtual bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uid) { return true; };
+  //virtual void convert_units() { return; };
 
   virtual std::string get_name() const = 0;
 
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
+  void set_ncpu_concurrent_files(int ncpu) { this->ncpu_concurrent_files = ncpu; }
   void set_verbose(bool verbose) { this->verbose = verbose; };
   void set_uid(std::string s) { uid = s; };
   void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
+  void set_extent(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
+  void reset_filter() { lasfilter.reset(); };
+
   std::string get_uid() const { return uid; };
   const std::map<std::string, Stage*>& get_connection() { return connections; };
   CRS get_crs() const { return crs; };
@@ -87,9 +98,15 @@ public:
 
 protected:
   void set_connection(Stage* stage);
+  Stage* search_connection(const std::list<std::unique_ptr<Stage>>&, const std::string& uid);
+
+  double convert_units(double) const;
+
+
 
 protected:
   int ncpu;
+  int ncpu_concurrent_files;
   double xmin;
   double ymin;
   double xmax;
@@ -162,5 +179,33 @@ public:
 protected:
   Vector vector;
 };
+
+template <typename T>
+std::vector<T> get_vector(const nlohmann::json& element)
+{
+  std::vector<T> result;
+
+  if (element.is_array())
+  {
+    for (const auto& item : element)
+    {
+      result.push_back(item.get<T>());
+    }
+  }
+  else if (element.is_null()) // Handle the case where the element is null
+  {
+    // No action needed; result is already an empty vector
+  }
+  else
+  {
+    result.push_back(element.get<T>());
+  }
+
+  return result;
+}
+
+#ifdef USING_R
+SEXP string_address_to_sexp(const std::string& addr);
+#endif
 
 #endif

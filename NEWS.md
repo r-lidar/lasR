@@ -1,9 +1,54 @@
+# lasR 0.10.0
+
+- New: new stage `classify_with_sor()` to classify outliers with statistical outlier removal.
+- New: new stage `focal()` to post-process rasters in the pipeline.
+- New: new stage `filter_with_grid()` to keep the lowest or highest point per cell of a grid.
+- Change: #79 raster produced on a subset of data have the minimal possible extent instead of the full extent of the point cloud.
+- Fix: numerous inaccuracies in numeric parameters interpreted as integers. For example, in `geometry_feature`, `r = 5` was equal to 5 but `r = 4.5` was equal to 4.
+- Fix: some parameters in `region_growing()` for individual tree segmentation were inverted.
+
+# lasR 0.9.3
+
+- Fix: Filters based on return number, number of returns, or classification (e.g., `-keep_last`, `-keep_class 128`) are now functional with LAS 1.4.
+- Enhancement: Prevent the possibility of writing a file with the `.copc.las` extension; `.copc` is automatically discarded.
+- New: The `classify_with_csf()` stage has gained a `filter` argument.
+
+# lasR 0.9.2
+
+- Fix #81: Added a warning if the Delaunay triangulation was not computed (fewer than 3 points).
+- Fix #81: Read files with multiple Extra Bytes definitions.
+- Fix #80: Circular buffers are properly removed from raster.
+- Fix #83: Aborted the pipeline initialization in `load_raster()` if the raster does not have an extent that overlaps with the point cloud.
+- Fix #88: `sort()` now handles duplicated gpstime properly.
+
+# lasR 0.9.1
+
+- Fix: Better handle datasets with overlapping tiles and non-duplicated points.
+- Fix: Trigger lax indexation for a single file when processing by chunks.
+- Fix: `local_maximum()` could return multiple too-close local maximum points if two close points have the exact same Z coordinates and the exact same X or Y coordinates (but not both X and Y; duplicated points were properly handled). This particularly affected `local_maximum_raster()`, where two pixels can easily have the same Z and the same X or Y.
+- Fix: `region_growing()` the `th_tree` argument was not properly respected.
+- Fix: `transform_with` with a TIN won't fail if there is no TIN. Instead all points will be removed.
+- Fix: possible edge artifacts were possible for some filter
+- Fix: #78 WGS84 VPC bounding box
+- Enhance: Progress estimation display when indexing a single file.
+
+# lasR 0.9.0
+
+- Internal: internal changes to support visual programming. See the [lasRui project](https://github.com/r-lidar/lasRui).
+- `exec()` accepts the path to a json file produced by a UI (non documented)
+- New: filter `keep_ground_and_water()`
+- Change: `normalize` uses `keep_ground_and_water()`
+- Fix: #73 `triangulation` fails with < 3 points
+
 # lasR 0.8.0
 
 - New: stage `sort_points()` to optimize compression.
 - New: protection against overwriting processed files while processing
 - Fix: messages and warnings are thread safe. A pipeline that printed message on the console could crash. This is expected to be safe now.
 - Fix: #70
+- Fix: #71 `write_lax()` is 2x faster when used as a single stage
+- Fix: progress bar of `write_lax()` for LAS 1.4.
+- Fix: #74 `write_lax()` is now parallelized
 
 # lasR 0.7.2
 

@@ -7,9 +7,11 @@
 class LASRnnmetrics : public StageVector
 {
 public:
-  LASRnnmetrics(double xmin, double ymin, double xmax, double ymax, int k, double r, const std::vector<std::string>& methods, Stage* algorithm);
+  LASRnnmetrics() = default;
   bool process(LAS*& las) override;
   bool write() override;
+  bool set_parameters(const nlohmann::json&) override;
+  bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;
   std::string get_name() const override { return "neighborhood_metrics"; }
   bool is_parallelized() const override { return true; }
   LASRnnmetrics* clone() const override { return new LASRnnmetrics(*this); };

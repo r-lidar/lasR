@@ -15,11 +15,11 @@ already has a spatial index. If TRUE, it forces the creation of a new one. \code
 with \code{lax} files.}
 }
 \description{
-Creates a .lax file for each \code{.las} or \code{.laz} file. A .lax file contains spatial indexing information.
-Spatial indexing drastically speeds up tile buffering and spatial queries. In lasR, it is mandatory
-to have spatially indexed point clouds, either using .lax files or .copc.laz files. If the processed file
-collection is not spatially indexed, a \code{write_lax()} file will automatically be added at the beginning
-of the pipeline (see Details).
+Creates a .lax file for each \code{.las} or \code{.laz} file of the processed datase. A .lax file contains spatial
+indexing information. Spatial indexing drastically speeds up tile buffering and spatial queries.
+In lasR, it is mandatory to have spatially indexed point clouds, either using .lax files or .copc.laz
+files. If the processed file collection is not spatially indexed, a \code{write_lax()} file will automatically
+be added at the beginning of the pipeline (see Details).
 }
 \details{
 When this stage is added automatically by \code{lasR}, it is placed at the beginning of the pipeline, and las/laz

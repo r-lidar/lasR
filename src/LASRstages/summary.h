@@ -11,10 +11,11 @@
 class LASRsummary: public Stage
 {
 public:
-  LASRsummary(double xmin, double ymin, double xmax, double ymax, double zwbin, double iwbin, const std::vector<std::string>& methods);
+  LASRsummary();
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   bool is_streamable() const override { return !metrics_engine.active(); }
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "summary"; }
 
   // multi-threading

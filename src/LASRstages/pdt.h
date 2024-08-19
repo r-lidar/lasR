@@ -11,11 +11,12 @@ class Raster;
 class LASRpdt : public StageVector
 {
 public:
-  LASRpdt(double distance, double angle, double res, double min_size, double offset, int classification);
+  LASRpdt();
   bool process(LAS*& las) override;
   double need_buffer() const override { return 30.0; }
   void clear(bool last) override;
   bool write() override;
+  bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "pdt"; }
 
   // multi-threading

@@ -11,7 +11,9 @@ classify_with_csf(
   rigidness = 1L,
   iterations = 500L,
   time_step = 0.65,
-  class = 2L
+  ...,
+  class = 2L,
+  filter = "-keep_last"
 )
 }
 \arguments{
@@ -33,7 +35,15 @@ there is no need to change this value.}
 \item{time_step}{scalar. Time step when simulating the cloth under gravity. The default value
 is 0.65. Usually, there is no need to change this value. It is suitable for most cases.}
 
+\item{...}{Unused}
+
 \item{class}{integer. The classification to attribute to the points. Usually 2 for ground points.}
+
+\item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
+interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
+For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+\link{filters}.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.

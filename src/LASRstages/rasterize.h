@@ -8,13 +8,14 @@
 class LASRrasterize : public StageRaster
 {
 public:
-  LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, double window, const std::vector<std::string>& methods, float default_value);
-  LASRrasterize(double xmin, double ymin, double xmax, double ymax, double res, Stage* algorithm);
+  LASRrasterize() = default;
   bool process(LASpoint*& p) override;
   bool process(LAS*& las) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
   bool is_streamable() const override { return streamable; };
   bool is_parallelized() const override { return !streamable; };
+  bool set_parameters(const nlohmann::json&) override;
+  bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;
   std::string get_name() const override { return "rasterize"; };
 
   // multi-threading

@@ -2,19 +2,16 @@
 #include "triangulate.h"
 #include "NA.h"
 
-LASRtransformwith::LASRtransformwith(double xmin, double ymin, double xmax, double ymax, Stage* algorithm, std::string op, std::string attribute)
+bool LASRtransformwith::set_parameters(const nlohmann::json& stage)
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-  this->attribute = attribute;
-
-  set_connection(algorithm);
+  std::string op = stage.value("operator", "-");
+  attribute = stage.value("store_in_attribute", "");
 
   this->op = SUB;
   if (op == "-") this->op = SUB;
   if (op == "+") this->op = ADD;
+
+  return true;
 }
 
 bool LASRtransformwith::process(LAS*& las)
@@ -74,7 +71,8 @@ bool LASRtransformwith::process(LAS*& las)
 
   if (triangulation != nullptr)
   {
-    triangulation->interpolate(hag, nullptr);
+    if (!triangulation->interpolate(hag, nullptr))
+      return false;
   }
   else
   {
@@ -118,7 +116,31 @@ bool LASRtransformwith::process(LAS*& las)
 
   las->update_header();
 
+  if (deleted == hag.size()) warning("No Delaunay triangulation. All points were discarded\n");
+
   //if (deleted) warning("%u points outside delaunay triangulation were discarded\n", deleted);
+
+  return true;
+}
+
+bool LASRtransformwith::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  Stage* s = search_connection(pipeline, uid);
+
+  if (s == nullptr) return false;
+
+  LASRtriangulate* p = dynamic_cast<LASRtriangulate*>(s);
+  StageRaster* q = dynamic_cast<StageRaster*>(s);
+
+  if (p)
+    set_connection(p);
+  else if(q)
+    set_connection(q);
+  else
+  {
+    last_error = "Incompatible stage combination for 'transform_with'"; // # nocov
+    return false; // # nocov
+  }
 
   return true;
 }

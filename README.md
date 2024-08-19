@@ -1,4 +1,4 @@
-lasR <img src="https://raw.githubusercontent.com/r-lidar/lasR/master/man/figures/logo200x231.png" align="right"/>
+lasR <img src="https://github.com/r-lidar/lasR/blob/main/man/figures/lasR200x231.png?raw=true" align="right"/>
 ======================================================================================================
 
 ![license](https://img.shields.io/badge/Licence-GPL--3-blue.svg)
@@ -8,9 +8,13 @@ lasR <img src="https://raw.githubusercontent.com/r-lidar/lasR/master/man/figures
 
 R Package for Fast Airborne LiDAR Data Processing
 
-The `lasR` package (pronounce laser) **does not** intent to supersede the `lidR` package, but is designed to be much more efficient than `lidR` for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages. `lidR` intends to be a tool box to make data exploration and innovation easy. `lasR` on another hand focuses on production, being optimized for memory and speed and makes no trade off with other aspects of the development.
+The `lasR` package (pronounced "laser") is an extremely fast software capable of creating and applying complex processing pipelines on terabytes of airborne lidar data. It can read and write `.las` and `.laz` files, compute metrics using an area-based approach, compute digital canopy models, segment individual trees, thin point data, process a collection of tiles using multicore processing, and provides other tools to process terabytes of lidar data in a **production context**.
 
-:book: Read [the tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) to start with `lasR`
+- 📖 Read [the tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) to start with `lasR`
+- 💻 Install `lasR` from R with: `install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')`
+- 💵 [Sponsor `lasR`](https://github.com/sponsors/Jean-Romain)
+
+`lasR` **does not** intent to supersede the [`lidR`](https://github.com/r-lidar/lidR) package, but is designed to be much more efficient than `lidR` for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages (see [details](https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr)).
 
 ## Installation
 
@@ -37,17 +41,19 @@ The following benchmark compares how much time and RAM memory it takes for `lasR
 ## Main differences with `lidR`
 
 - Introduces the concept of pipelines, that is missing in `lidR`, to chain multiple operations on a point cloud optimally.
+- Has more powerfull algorithm
 - Is written exclusively in C/C++ without a single line of R. The R code is only an API to a standalone C++ software.
 - Does not load the point cloud into a `data.frame`. The point cloud is stored in a C++ structure that is not exposed to users.
 - Has only 1 strong dependencies to `gdal`. But if `sf` and  `terra` are installed the experience is better.
+- `lidR` intends to be a tool box to make data exploration and innovation easy. `lasR` on another hand focuses on production, being optimized for memory and speed and makes no trade off with other aspects of the development.
 
 More details in the corresponding [vignette](https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr)
 
 ## About
 
-`lasR` is developed at [Laval University](https://www.ulaval.ca/en).
+`lasR` is developed openly by [r-lidar](https://www.r-lidar.com/).
 
-<img src="https://upload.wikimedia.org/wikipedia/fr/b/bf/Universit%C3%A9_Laval_logo_et_texte.svg" width="300">
+The development of the `lidR` package was made possible in the past thanks to the financial support of the [Laval University](https://www.ulaval.ca/en).
 
 ## Copyright Information
 

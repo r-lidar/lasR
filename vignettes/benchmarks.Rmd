@@ -24,6 +24,11 @@ kernel = Sys.info()[2]
 all = FALSE
 ```
 
+<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
+The user [@ptompalski](https://github.com/ptompalski) independently produced a more comprehensive set of benchmarks based on more data and pipelines, using a more powerful computer with more cores. [See his report](https://ptompalski.github.io/LidarSpeedTests/).
+</blockquote>
+
+
 This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The x-axis represents the time spent on the task, while the y-axis represents the memory used for the task. The benchmarks are re-run for every version of `lidR` and `lasR`.
 
 - **Number of files:** 9 (spatially indexed with `.lax` files)
@@ -33,9 +38,7 @@ This vignette presents benchmarks for various tasks using `lidR` and `lasR`. The
 - **OS:** Linux
 - **CPU:** Intel Core i7-1355U (13th generation Intel Core) 
   
-<blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
 In the following the term `1 core` refers to the processing of one LAS/LAZ file at a time sequentially. But some algorithm such as the local maximum filter are internally parallelized using half of the available cores.  The term `4 cores` refers to the fact that 4 files are processed simultaneously. In `lidR` this is done using the package `future`. In `lasR` this is natively supported.
-</blockquote>
 
 ## Canopy Height Model
 

@@ -1,20 +1,8 @@
 #include "csf.h"
 #include "csf/CSF.h"
 
-LASRcsf::LASRcsf(double xmin, double ymin, double xmax, double ymax, bool slope_smooth, float class_threshold, float cloth_resolution, int rigidness, int iterations, float time_step, int classificiation)
+LASRcsf::LASRcsf()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-
-  this->slope_smooth = slope_smooth;
-  this->class_threshold = class_threshold;
-  this->cloth_resolution = cloth_resolution;
-  this->rigidness = rigidness;
-  this->iterations = iterations;
-  this->time_step = time_step;
-  this->classification = classificiation;
 }
 
 bool LASRcsf::process(LAS*& las)
@@ -28,6 +16,8 @@ bool LASRcsf::process(LAS*& las)
 
   while(las->read_point())
   {
+    if (lasfilter.filter(&las->point)) continue;
+
     csf::Point p;
     p.x = las->point.get_x();
     p.y = las->point.get_y();
@@ -57,6 +47,8 @@ bool LASRcsf::process(LAS*& las)
   int k = 0;
   while(las->read_point())
   {
+    if (lasfilter.filter(&las->point)) continue;
+
     if (i == ground[k])
     {
       k++;
@@ -68,6 +60,19 @@ bool LASRcsf::process(LAS*& las)
     }
     i++;
   }
+
+  return true;
+}
+
+bool LASRcsf::set_parameters(const nlohmann::json& stage)
+{
+  slope_smooth = stage.value("slope_smooth", false);
+  class_threshold = stage.value("class_threshold", 0.5);
+  cloth_resolution = stage.value("cloth_resolution", 0.5);
+  rigidness = stage.value("rigidness", 1);
+  iterations = stage.value("iterations", 500);
+  time_step = stage.value("time_step", 0.65);
+  classification = stage.value("class", 2);
 
   return true;
 }

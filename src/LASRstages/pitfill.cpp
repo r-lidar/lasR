@@ -1,24 +1,19 @@
 #include "pitfill.h"
 #include "geophoton/chm_prep.h"
 
-LASRpitfill::LASRpitfill(double xmin, double ymin, double xmax, double ymax, int lap_size, float thr_lap, float thr_spk, int med_size, float dil_radius, Stage* algorithm)
+bool LASRpitfill::set_parameters(const nlohmann::json& stage)
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
+  lap_size = stage.value("lap_size", 3);
+  thr_lap = stage.value("thr_lap", 0.1f);
+  thr_spk = stage.value("thr_spk", -0.1f);
+  med_size = stage.value("med_size", 3);
+  dil_radius = stage.value("dil_radius", 0);
 
-  set_connection(algorithm);
+  auto it = connections.begin();
+  StageRaster* p = dynamic_cast<StageRaster*>(it->second);
+  raster = Raster(p->get_raster());
 
-  this->lap_size = lap_size;
-  this->thr_lap = thr_lap;
-  this->thr_spk = thr_spk;
-  this->med_size = med_size;
-  this->dil_radius = dil_radius;
-
-  // Initialize the output raster from input raster
-  StageRaster* p = dynamic_cast<StageRaster*>(algorithm);
-  if (p) raster = Raster(p->get_raster());
+  return true;
 }
 
 bool LASRpitfill::process()
@@ -75,4 +70,23 @@ double LASRpitfill::need_buffer() const
 {
   int buff = MAX3(lap_size, med_size, dil_radius);
   return buff*raster.get_xres();
+}
+
+bool LASRpitfill::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
+{
+  Stage* s = search_connection(pipeline, uid);
+
+  if (s == nullptr) return false;
+
+  StageRaster* p = dynamic_cast<StageRaster*>(s);
+
+  if (p)
+    set_connection(p);
+  else
+  {
+    last_error = "Incompatible stage combination for 'transform_with'"; // # nocov
+    return false; // # nocov
+  }
+
+  return true;
 }

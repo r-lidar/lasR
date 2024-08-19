@@ -9,21 +9,23 @@
 
 #include "delaunator/delaunator.hpp"
 
-LASRtriangulate::LASRtriangulate(double xmin, double ymin, double xmax, double ymax, double trim, std::string use_attribute)
+LASRtriangulate::LASRtriangulate()
 {
-  this->xmin = xmin;
-  this->ymin = ymin;
-  this->xmax = xmax;
-  this->ymax = ymax;
-
-  this->keep_large = trim < 0;
-  this->trim = trim*trim;
-  this->npoints = 0;
-  this->las = nullptr;
-  this->d = nullptr;
-  this->use_attribute = use_attribute;
-
+  npoints = 0;
+  las = nullptr;
+  d = nullptr;
   vector.set_geometry_type(wkbMultiPolygon25D);
+}
+
+bool LASRtriangulate::set_parameters(const nlohmann::json& stage)
+{
+  double max_edge = stage.at("max_edge");
+  use_attribute = stage.at("use_attribute");
+
+  keep_large = max_edge < 0;
+  trim = max_edge*max_edge;
+
+  return true;
 }
 
 bool LASRtriangulate::process(LAS*& las)
@@ -40,6 +42,8 @@ bool LASRtriangulate::process(LAS*& las)
       return false;
     }
   }
+
+  this->las = las;
 
   progress->reset();
   progress->set_prefix("Delaunay triangulation");
@@ -62,13 +66,10 @@ bool LASRtriangulate::process(LAS*& las)
     }
   }
 
-  if (coords.size() < 3)
-  {
-    //last_error = "impossible to construct a Delaunay triangulation with " + std::to_string(coords.size()) + " points";
-    return true;
-  }
+  // Does not fail because contour can work with d == nullptr
+  // However 'interpolate' will handle the case and fail
+  if (coords.size() < 3) return true;
 
-  this->las = las;
   d = new delaunator::Delaunator(coords);
 
   progress->done();
@@ -82,6 +83,7 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
   res.resize(n);
   std::fill(res.begin(), res.end(), NA_F64);
 
+  if (d == nullptr) return true;
   if (res.size() == 0) return true; // Fix #40
 
   LAStransform* lastransform = nullptr;
@@ -95,12 +97,6 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
       last_error = std::string(buffer);
       return false;
     }
-  }
-
-  if (d == nullptr)
-  {
-    last_error = "internal error: nullptr to Delaunator"; // # nocov
-    return false; // # nocov
   }
 
   progress->reset();
