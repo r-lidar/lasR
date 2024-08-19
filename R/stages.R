@@ -280,10 +280,10 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' Ground Point Classification
 #'
 #' Classify ground points using a modified version of the Progressive TIN
-#' densification method by Axelsson (2000) (see references). The approach involves iteratively c
-#' onstructing a triangulated surface model (TIN) to classify ground points (see details). **This
+#' densification method by Axelsson (2000) (see references). The approach involves iteratively
+#' constructing a triangulated surface model (TIN) to classify ground points (see details). **This
 #' algorithm is robust and much more robust than the CSF in \link{classify_with_csf} and should be
-#' preferred**. It is also robust to low noise points.
+#' preferred**.
 #'
 #' The method begins by identifying local low points, assuming at least one ground-level point exists
 #' within any X meters area. Initially, the triangles of the TIN model are mostly below the ground
@@ -325,7 +325,7 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' Axelsson, P. (2000). DEM Generation from Laser Scanner Data Using adaptive TIN Models. International
 #' Archives of Photogrammetry and Remote Sensing, 33(B4), 110–117. https://doi.org/10.1016/j.isprsjprs.2005.10.005
 #'
-#' @export
+#' @noRd
 #' @md
 #'
 #' @examples
