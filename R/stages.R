@@ -325,7 +325,7 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' Axelsson, P. (2000). DEM Generation from Laser Scanner Data Using adaptive TIN Models. International
 #' Archives of Photogrammetry and Remote Sensing, 33(B4), 110–117. https://doi.org/10.1016/j.isprsjprs.2005.10.005
 #'
-#' @noRd
+#' @export
 #' @md
 #'
 #' @examples
