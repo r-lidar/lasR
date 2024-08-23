@@ -70,8 +70,8 @@ test_that("poisson sampling works",
 
   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
 
-  expect_equal(ans$summary$npoints, 4136L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 3153, `2` = 758, `3` = 193, `4` = 30, `5` = 2))
+  expect_equal(ans$summary$npoints, 4669L)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 3596, `2` = 785, `3` = 238, `4` = 48, `5` = 1, `6` = 1))
 })
 
 test_that("poisson sampling respect filter",

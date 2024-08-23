@@ -991,7 +991,7 @@ sampling_pixel = function(res = 2, filter = "", ...)
 #' @rdname sampling
 sampling_poisson = function(distance = 2, filter = "", ...)
 {
-  shuffle_size = 1000
+  shuffle_size = 0
   p = list(...)
   if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
 
