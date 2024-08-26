@@ -153,9 +153,9 @@ bool LAS::add_point(const LASpoint& p)
   return true;
 }
 
-bool LAS::seek(int pos)
+bool LAS::seek(size_t pos)
 {
-  if (pos < 0 || pos >= npoints)
+  if (pos >= npoints)
   {
     last_error = "seek out of bounds"; // # nocov
     return false; // # nocov
@@ -169,13 +169,19 @@ bool LAS::seek(int pos)
 }
 
 // Thread safe and fast
-void LAS::get_xyz(int pos, double* xyz) const
+bool LAS::get_xyz(size_t pos, double* xyz) const
 {
+  if (pos >= npoints)
+  {
+    last_error = "seek out of bounds"; // # nocov
+    return false; // # nocov
+  }
+
   unsigned char* buf = buffer + pos * point.total_point_size;
   xyz[0] = get_x(buf);
   xyz[1] = get_y(buf);
   xyz[2] = get_z(buf);
-  return;
+  return true;
 }
 
 bool LAS::read_point(bool include_withhelded)
@@ -533,11 +539,12 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
 }
 
 // Thread safe
-bool LAS::get_point(int pos, PointLAS& pt, LASfilter* const lasfilter, LAStransform* const lastransform) const
+bool LAS::get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter, LAStransform* const lastransform) const
 {
   LASpoint p;
   p.init(point.quantizer, point.num_items, point.items, point.attributer);
   p.copy_from(buffer + pos * p.total_point_size);
+
   if (p.get_withheld_flag() != 0) return false;
   if (lastransform) lastransform->transform(&p);
   if (lasfilter && lasfilter->filter(&p)) return false;
