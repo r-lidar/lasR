@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.10.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.10.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,11 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.10.1" id="lasr-0101">lasR 0.10.1<a class="anchor" aria-label="anchor" href="#lasr-0101"></a></h2>
+<ul><li>Fix <a href="https://github.com/r-lidar/lasR/issues/91" class="external-link">#91</a>: Resolved a critical memory addressing issue when handling very large point clouds.</li>
+<li>Fix: Improved pipeline efficiency by preventing the reading of buffer tiles in pipelines using <code>stop_if()</code> before <code><a href="../reference/reader_las.html">reader_las()</a></code>. Previously, the buffer was being read even when points were meant to be skipped, leading to unnecessary processing time (a few seconds per skipped file).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.10.0" id="lasr-0100">lasR 0.10.0<a class="anchor" aria-label="anchor" href="#lasr-0100"></a></h2>
 <ul><li>New: new stage <code><a href="../reference/classify_with_sor.html">classify_with_sor()</a></code> to classify outliers with statistical outlier removal.</li>
