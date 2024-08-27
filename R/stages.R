@@ -451,7 +451,45 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
   set_lasr_class(ans, vector = TRUE)
 }
 
+# ==== I ======
+
+#' Print Information about the Point Cloud
+#'
+#' This function prints useful information about LAS/LAZ files, including the file version, size,
+#' bounding box, CRS, and more. When called without parameters, it returns a pipeline stage. For
+#' convenience, it can also be called with the path to a file for immediate execution, which is likely
+#' the most common use case (see examples).
+#'
+#' @param f string (optional) Path to a LAS/LAZ file.
+#'
+#' @return nothing. The stage is used for its side effect of printing
+#'
+#' @export
+#' @examples
+#' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+#'
+#' # Return a pipeline stage
+#' exec(info(), on = f)
+#'
+#' # Convenient user-friendly usage
+#' info(f)
+info = function(f)
+{
+  if (missing(f))
+  {
+    ans <- list(algoname = "info")
+    return(set_lasr_class(ans))
+  }
+  else
+  {
+    exec(info(), on = f)
+    return(invisible())
+  }
+}
+
+
 # ===== L =====
+
 #' Load a raster for later use
 #'
 #' Load a raster from a disk file for later use. For example, load a DTM to feed the \link{transform_with}

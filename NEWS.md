@@ -1,3 +1,7 @@
+# lasR 0.11.0
+
+- New: new stage `info()` to print useful informations about a file.
+
 # lasR 0.10.1
 
 - Fix #91: Resolved a critical memory addressing issue when handling very large point clouds.

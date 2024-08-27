@@ -10,6 +10,7 @@
 #include "csf.h"
 #include "filter.h"
 #include "focal.h"
+#include "info.h"
 #include "ivf.h"
 #include "loadraster.h"
 #include "localmaximum.h"
@@ -87,6 +88,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"filter_grid",          create_instance<LASRfiltergrid>},
     {"focal",                create_instance<LASRfocal>},
     {"hulls",                create_instance<LASRboundaries>},
+    {"info",                 create_instance<LASRinfo>},
     {"load_raster",          create_instance<LASRloadraster>},
     {"local_maximum",        create_instance<LASRlocalmaximum>},
     {"neighborhood_metrics", create_instance<LASRnnmetrics>},
