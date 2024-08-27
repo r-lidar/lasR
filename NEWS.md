@@ -1,6 +1,13 @@
 # lasR 0.11.0
 
 - New: new stage `info()` to print useful informations about a file.
+- New command line utility for linux. Users can now call simple pipeline from the terminal. First use `lasR:::install_cmd_tools()` then it is possible to use commands like:
+  ```bash
+  lasr info -i path/to/file.las
+  lasr help
+  lasr chm -i path/to/folder -o path/to/chm.tif -res 1 -ncore 4
+  lasr dtm -i path/to/folder -o path/to/chm.tif -res 1 -ncore 4
+  ```
 
 # lasR 0.10.1
 
