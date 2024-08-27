@@ -1,3 +1,8 @@
+# lasR 0.10.1
+
+- Fix #91: Resolved a critical memory addressing issue when handling very large point clouds.
+- Fix: Improved pipeline efficiency by preventing the reading of buffer tiles in pipelines using `stop_if()` before `reader_las()`. Previously, the buffer was being read even when points were meant to be skipped, leading to unnecessary processing time (a few seconds per skipped file).
+
 # lasR 0.10.0
 
 - New: new stage `classify_with_sor()` to classify outliers with statistical outlier removal.

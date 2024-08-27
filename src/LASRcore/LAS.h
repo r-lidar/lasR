@@ -26,7 +26,7 @@ public:
   bool add_attribute(int data_type, const std::string& name, const std::string& description, double scale = 1, double offset = 0, bool mem_realloc = true);
   bool add_point(const LASpoint& p);
   bool add_rgb();
-  bool seek(int pos);
+  bool seek(size_t pos);
   bool read_point(bool include_withhelded = false);
   void set_file(const std::string& file) { this->file = file; };
   void update_point();
@@ -40,8 +40,8 @@ public:
   bool sort(const std::vector<int>& order);
 
   // Thread safe queries
-  void get_xyz(int pos, double* xyz) const;
-  bool get_point(int pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
+  bool get_xyz(size_t pos, double* xyz) const;
+  bool get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
   bool query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
   bool knn(const double* x, int k, double radius_max, std::vector<PointLAS>& res, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;

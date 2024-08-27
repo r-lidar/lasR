@@ -31,6 +31,6 @@ bool LASRbreakbeforechunk::set_parameters(const nlohmann::json& stage)
 
 bool LASRbreakbeforechunk::set_chunk(const Chunk& chunk)
 {
-  if (chunk.id < index) state = true;
+  if (chunk.id < index-1) state = true;
   return true;
 }
