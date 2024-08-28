@@ -1,7 +1,7 @@
 # lasR 0.11.0
 
 - New: new stage `info()` to print useful informations about a file.
-- New command line utility for Linux and Windows. Users can now call simple pipeline from the terminal. First use `install_cmd_tools()` then it is possible to use commands like:
+- New command line utility. Users can now call simple pipeline from the terminal. First use `install_cmd_tools()` then it is possible to use commands like:
   ```bash
   lasr info -i path/to/file.las
   lasr help

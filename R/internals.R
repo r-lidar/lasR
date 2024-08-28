@@ -44,8 +44,8 @@ get_symbols = function(call)
 
 #' Use some lasR features from a terminal
 #'
-#' Install the required files to be able to run some simple lasR commands from a terminal on Windows
-#' and Linux. Working in a terminal is easier for simple tasks but it is not possible to build
+#' Install the required files to be able to run some simple lasR commands from a terminal.
+#' Working in a terminal is easier for simple tasks but it is not possible to build
 #' complex pipelines this way. Examples of some possible commands:
 #' ```
 #' lasr help
@@ -106,7 +106,11 @@ For more details see https://www.eukhost.com/kb/how-to-add-to-the-path-on-window
     return(invisible())
   }
 
-  if (os == "osx") stop("MacOS not supported")
+  if (os == "osx") {
+    cmd = paste("ln -s", f, "/usr/local/bin/lasr")
+    system(cmd)
+    return(invisible())
+  }
 
   stop("We failed to detect your OS")
 }

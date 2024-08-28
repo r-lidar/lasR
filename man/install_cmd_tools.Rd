@@ -7,8 +7,8 @@
 install_cmd_tools()
 }
 \description{
-Install the required files to be able to run some simple lasR commands from a terminal on Windows
-and Linux. Working in a terminal is easier for simple tasks but it is not possible to build
+Install the required files to be able to run some simple lasR commands from a terminal.
+Working in a terminal is easier for simple tasks but it is not possible to build
 complex pipelines this way. Examples of some possible commands:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{lasr help
