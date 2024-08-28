@@ -17,9 +17,9 @@ static std::string human_readable(uint64_t value, const std::vector<std::string>
     unitIndex++;
   }
 
-  std::ostringstream oss;
-  oss << std::fixed << std::setprecision(2) << displayValue << " " << units[unitIndex];
-  return oss.str();
+  char buffer[32];
+  snprintf(buffer, 32, "%.2f %s", displayValue, units[unitIndex].c_str());
+  return std::string(buffer);
 }
 
 
