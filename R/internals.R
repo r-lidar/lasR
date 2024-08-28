@@ -41,6 +41,21 @@ get_symbols = function(call)
 }
 
 # nocov start
+
+#' Use some lasR features from a terminal
+#'
+#' Install the required files to be able to run some simple lasR commands from a terminal on Windows
+#' and Linux. Working in a terminal is easier for simple tasks but it is not possible to build
+#' complex pipelines this way. Examples of some possible commands:
+#' ```
+#' lasr help
+#' lasr info -i /path/to/file.las
+#' lasr chm -i /path/to/folder -o /path/to/chm.tif -res 1 -ncores 8
+#' lasr dtm -i /path/to/folder -o /path/to/dtm.tif -res 0.5 -ncores 8
+#' ````
+#'
+#' @export
+#' @md
 install_cmd_tools = function()
 {
   get_os <- function(){
@@ -59,27 +74,34 @@ install_cmd_tools = function()
     tolower(os)
   }
 
-  f <- system.file("lasr.R", package = "lasR")
-  d <- system.file("", package = "lasR")
+  f <-  normalizePath(system.file("lasr.R", package = "lasR"))
+  d <-  normalizePath(system.file("", package = "lasR"))
 
-  if (o == "linux") {
+  os = get_os()
+
+  if (os == "linux") {
     cmd = paste("ln -s", f, "~/.local/bin/lasr")
     system(cmd)
     return(invisible())
   }
 
   if (os == "windows") {
+    Rscript = Sys.which("Rscript")
+    if (Rscript == "") stop("Cannot find the path to Rscript.exe")
     bat = substr(f, 1, nchar(f)-1)
     batch_file_path = paste0(bat, "bat")
-    batch_content <- c("@echo off", paste("Rscript", f, "%*"))
+    batch_content <- c("@echo off", paste0('"',Rscript, '" "', f, '" ', "%*"))
     writeLines(batch_content, con = batch_file_path)
 
     cat("To run the 'lasr' command from anywhere in the Command Prompt, you need to add its location to your system's PATH:
 
-  1. Right-click on This PC or My Computer and select Properties.
-  2. Click on Advanced system settings and then Environment Variables.
-  3. In the System variables section, find the Path variable, select it, and click Edit.
-  4. Add this path:", d)
+  1. In the windows search bar type: 'env'
+  2. Click on: Edit the system environment variables
+  2. Go to the 'Advanced' tab and click on 'Environment variables'
+  3. Click on 'Path' and edit the settings.
+  4. Add this path:", d, "
+
+For more details see https://www.eukhost.com/kb/how-to-add-to-the-path-on-windows-10-and-windows-11/")
 
     return(invisible())
   }
