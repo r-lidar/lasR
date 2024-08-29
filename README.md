@@ -64,6 +64,14 @@ For more details, see the relevant [vignette](https://r-lidar.github.io/lasR/art
 
 The initial development of `lasR` was made possible through the financial support of [Laval University](https://www.ulaval.ca/en). To continue the development of this free software, we now offer consulting, programming, and training services. For more information, please visit [our website](https://www.r-lidar.com/).
 
+## Install dependencies on GNU/Linux
+
+```
+sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
+sudo apt-get update
+sudo apt-get install libgdal-dev libgeos-dev libproj-dev
+```
+
 ## Copyright Information
 
 `lasR` is free and open source and relies on other free and open source tools.
