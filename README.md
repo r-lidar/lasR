@@ -34,7 +34,7 @@ library(lasR)
 
 ## Example
 
-Here is a simple example of how to classify outliers before to produce a Digital Surface Model (DSM) and a Digital Terrain Model (DTM) from a folder containing airborne LiDAR point clouds. For more example see the  [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
+Here is a simple example of how to classify outliers before to produce a Digital Surface Model (DSM) and a Digital Terrain Model (DTM) from a folder containing airborne LiDAR point clouds. For more examples see the  [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
 
 ```r
 library(lasR)
