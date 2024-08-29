@@ -65,59 +65,68 @@
 <div class="page-header"><h1 id="lasr-">lasR <img src="https://github.com/r-lidar/lasR/blob/main/man/figures/lasR200x231.png?raw=true" align="right"><a class="anchor" aria-label="anchor" href="#lasr-"></a>
 </h1></div>
 <p><img src="https://img.shields.io/badge/Licence-GPL--3-blue.svg" alt="license"><img src="https://img.shields.io/badge/Lifecycle-Maturing-339999" alt="Lifecycle:Maturing"><a href="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/r-lidar/lasR?branch=main" class="external-link"><img src="https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></p>
-<p>R Package for Fast Airborne LiDAR Data Processing</p>
-<p>The <code>lasR</code> package (pronounced “laser”) is an extremely fast software capable of creating and applying complex processing pipelines on terabytes of airborne lidar data. It can read and write <code>.las</code> and <code>.laz</code> files, compute metrics using an area-based approach, compute digital canopy models, segment individual trees, thin point data, process a collection of tiles using multicore processing, and provides other tools to process terabytes of lidar data in a <strong>production context</strong>.</p>
+<p><strong>R Package for Fast Airborne LiDAR Data Processing</strong></p>
+<p>The <code>lasR</code> package (pronounced “laser”) is a highly efficient software designed for professional use, enabling the creation and execution of complex processing pipelines on terabytes of airborne LiDAR data. It can read and write <code>.las</code> and <code>.laz</code> files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, thin point data, and handle collections of tiles with multicore processing. <code>lasR</code> offers a range of tools to process massive volumes of LiDAR data efficiently in a <strong>production environment</strong>.</p>
 <ul>
-<li>📖 Read <a href="https://r-lidar.github.io/lasR/articles/tutorial.html" class="external-link">the tutorial</a> to start with <code>lasR</code>
-</li>
-<li>💻 Install <code>lasR</code> from R with: <code>install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')</code>
-</li>
-<li>💵 <a href="https://github.com/sponsors/Jean-Romain" class="external-link">Sponsor <code>lasR</code></a>
-</li>
+<li>📖 Start with the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html" class="external-link">tutorial</a> to learn how to use <code>lasR</code>.</li>
+<li>💻 Install <code>lasR</code> in R with: <code>install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')</code>.</li>
+<li>💵 <a href="https://github.com/sponsors/Jean-Romain" class="external-link">Sponsor <code>lasR</code></a>. It is free and open source, but requires time and effort to develop and maintain.</li>
 </ul>
-<p><code>lasR</code> <strong>does not</strong> intent to supersede the <a href="https://github.com/r-lidar/lidR" class="external-link"><code>lidR</code></a> package, but is designed to be much more efficient than <code>lidR</code> for common tasks like the production of CHM, DTM, tree detection and segmentation on large coverages (see <a href="https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr" class="external-link">details</a>).</p>
+<p><code>lasR</code> <strong>is not intended</strong> to replace the <a href="https://github.com/r-lidar/lidR" class="external-link"><code>lidR</code></a> package. While <code>lidR</code> is tailored for academic research, <code>lasR</code> focuses on production scenarios, offering significantly higher efficiency for common tasks on large datasets. For more details, see the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html" class="external-link">comparison</a>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>There is currently no plan for releasing <code>lasR</code> on CRAN. <code>lasR</code> is hosted on <code>r-universe</code>:</p>
+<p>There are no current plans to release <code>lasR</code> on CRAN. Instead, it is hosted on <code>r-universe</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'lasR'</span>, repos <span class="op">=</span> <span class="st">'https://r-lidar.r-universe.dev'</span><span class="op">)</span></span></code></pre></div>
-<p>Users can’t rely on the CRAN versioning system and RStudio update button to get the latest version of <code>lasR</code>. When loading <code>lasR</code> with <code><a href="https://github.com/r-lidar/lasR" class="external-link">library(lasR)</a></code>, an internal routine checks for the latest version and prints a message if a new version is available. Updates are more frequent this way.</p>
+<p>Since <code>lasR</code> is not available on CRAN, users cannot rely on the CRAN versioning system or the RStudio update button to get the latest version. Instead, when <code>lasR</code> is loaded with <code><a href="https://github.com/r-lidar/lasR" class="external-link">library(lasR)</a></code>, an internal routine checks for the latest version and notifies the user if an update is available. This approach allows for more frequent updates, ensuring users have access to the newest features and bug fixes without waiting for a formal release cycle.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lasR" class="external-link">lasR</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; lasR 0.1.3 is now available. You are using 0.1.1</span></span>
 <span><span class="co">#&gt; install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="benchmark">Benchmark<a class="anchor" aria-label="anchor" href="#benchmark"></a>
+<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
-<p>The following benchmark compares how much time and RAM memory it takes for <code>lasR</code> and <code>lidR</code> to produce a DTM, a CHM, and a raster with two metrics derived from Z and intensity. The test was performed on 120 million points stored in 4 LAZ files. More details in the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html" class="external-link">benchmark</a> vignette.</p>
-<p><img src="reference/figures/readme_benchmark.png" style="display: block; margin: auto;"></p>
+<p>Here is a simple example of how to classify outliers before to produce a Digital Surface Model (DSM) and a Digital Terrain Model (DTM) from a folder containing airborne LiDAR point clouds. For more example see the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html" class="external-link">tutorial</a>.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lasR" class="external-link">lasR</a></span><span class="op">)</span></span>
+<span><span class="va">folder</span> <span class="op">=</span> <span class="st">"/folder/of/laz/tiles/"</span></span>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="reference/classify_with_ivf.html">classify_with_ivf</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/chm.html">chm</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/dtm.html">dtm</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">folder</span>, ncores <span class="op">=</span> <span class="fl">16</span>, progress <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="main-differences-with-lidr">Main differences with <code>lidR</code>
+<h2 id="main-differences-with-lidr">Main Differences with <code>lidR</code>
 <a class="anchor" aria-label="anchor" href="#main-differences-with-lidr"></a>
 </h2>
+<p>The following benchmark compares the time and RAM usage of <code>lasR</code> and <code>lidR</code> for producing a Digital Terrain Model (DTM), a Canopy Height Model (CHM), and a raster containing two metrics derived from elevation (Z) and intensity. The test was conducted on 120 million points stored in 4 LAZ files. For more details, check out the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html" class="external-link">benchmark vignette</a>.</p>
+<p><img src="reference/figures/readme_benchmark.png" style="display: block; margin: auto;"></p>
 <ul>
-<li>Introduces the concept of pipelines, that is missing in <code>lidR</code>, to chain multiple operations on a point cloud optimally.</li>
-<li>Has more powerfull algorithm</li>
-<li>Is written exclusively in C/C++ without a single line of R. The R code is only an API to a standalone C++ software.</li>
-<li>Does not load the point cloud into a <code>data.frame</code>. The point cloud is stored in a C++ structure that is not exposed to users.</li>
-<li>Has only 1 strong dependencies to <code>gdal</code>. But if <code>sf</code> and <code>terra</code> are installed the experience is better.</li>
 <li>
-<code>lidR</code> intends to be a tool box to make data exploration and innovation easy. <code>lasR</code> on another hand focuses on production, being optimized for memory and speed and makes no trade off with other aspects of the development.</li>
+<strong>Pipelines</strong>: <code>lasR</code> introduces pipelines to optimally chain multiple operations on a point cloud, a feature not available in <code>lidR</code>.</li>
+<li>
+<strong>Algorithm Efficiency</strong>: <code>lasR</code> uses more powerful algorithms designed for speed and efficiency.</li>
+<li>
+<strong>Language and Performance</strong>: Entirely written in C/C++, <code>lasR</code> has no R code except for the API interface. This makes it highly optimized for performance.</li>
+<li>
+<strong>Memory Usage</strong>: Unlike <code>lidR</code>, which loads the point cloud into an R <code>data.frame</code>, <code>lasR</code> stores point clouds in a C++ structure that is not exposed to the user, minimizing memory usage.</li>
+<li>
+<strong>Dependencies</strong>: <code>lasR</code> has a single strong dependency on <code>gdal</code>. If <code>sf</code> and <code>terra</code> are installed, the user experience is enhanced, but they are not mandatory.</li>
+<li>
+<strong>Target Audience</strong>: <code>lidR</code> serves as a toolbox for data exploration and innovation, making it ideal for research. In contrast, <code>lasR</code> is optimized for production, with a focus on speed and memory efficiency, without compromising on these aspects.</li>
 </ul>
-<p>More details in the corresponding <a href="https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr" class="external-link">vignette</a></p>
+<p>For more details, see the relevant <a href="https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr" class="external-link">vignette</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="about">About<a class="anchor" aria-label="anchor" href="#about"></a>
 </h2>
 <p><code>lasR</code> is developed openly by <a href="https://www.r-lidar.com/" class="external-link">r-lidar</a>.</p>
-<p>The development of the <code>lidR</code> package was made possible in the past thanks to the financial support of the <a href="https://www.ulaval.ca/en" class="external-link">Laval University</a>.</p>
+<p>The initial development of <code>lasR</code> was made possible through the financial support of <a href="https://www.ulaval.ca/en" class="external-link">Laval University</a>. To continue the development of this free software, we now offer consulting, programming, and training services. For more information, please visit <a href="https://www.r-lidar.com/" class="external-link">our website</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="copyright-information">Copyright Information<a class="anchor" aria-label="anchor" href="#copyright-information"></a>
 </h2>
+<p><code>lasR</code> is free and open source and relies on other free and open source tools.</p>
 <ul>
 <li>For <code>lasR</code>:
 <ul>
