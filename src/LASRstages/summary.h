@@ -28,6 +28,8 @@ public:
   SEXP to_R() override;
   #endif
 
+  nlohmann::json to_json() const override;
+
 private:
   void merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2);
 

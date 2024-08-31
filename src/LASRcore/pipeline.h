@@ -54,6 +54,7 @@ public:
 #ifdef USING_R
   SEXP to_R();
 #endif
+  nlohmann::json to_json();
 
   Profiler profiler;
 

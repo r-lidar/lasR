@@ -84,6 +84,8 @@ public:
   virtual SEXP to_R();
   #endif
 
+  virtual nlohmann::json to_json() const;
+
   // For multi-threading when processing several files in parallel.
   // Each stage MUST have a clone() method to create a copy of itself sharing or not the resources.
   // Each stage CAN have a merge() method to merge the output computed in each thread.
@@ -101,8 +103,6 @@ protected:
   Stage* search_connection(const std::list<std::unique_ptr<Stage>>&, const std::string& uid);
 
   double convert_units(double) const;
-
-
 
 protected:
   int ncpu;
@@ -138,6 +138,8 @@ public:
   #ifdef USING_R
   SEXP to_R() override;
   #endif
+
+  nlohmann::json to_json() const override;
 
 protected:
   bool merged;

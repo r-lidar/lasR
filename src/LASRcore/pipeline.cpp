@@ -498,6 +498,20 @@ SEXP Pipeline::to_R()
 }
 #endif
 
+nlohmann::json Pipeline::to_json()
+{
+  nlohmann::json ans;
+
+  for (auto&& stage : pipeline)
+  {
+    nlohmann::json res = stage->to_json();
+    if (!res.is_null()) ans.push_back(res);
+  }
+
+  return ans;
+}
+
+
 /*void Pipeline::show()
 {
   // # nocov start

@@ -82,6 +82,13 @@ SEXP Stage::to_R()
 }
 #endif
 
+nlohmann::json Stage::to_json() const
+{
+  nlohmann::json ans;
+  if (ofile.empty()) return ans;
+  return {{get_name(), ofile}};
+}
+
 void Stage::set_connection(Stage* stage)
 {
   if (stage) connections[stage->get_uid()] = stage;
@@ -185,6 +192,14 @@ SEXP StageWriter::to_R()
   return R_string_vector;
 }
 #endif
+
+nlohmann::json StageWriter::to_json() const
+{
+  nlohmann::json ans;
+  if (written.empty()) return ans;
+  for (size_t i = 0; i < written.size(); i++) ans.push_back(written[i]);
+  return {{get_name(), ans}};
+}
 
 
 /* ==============

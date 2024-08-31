@@ -82,7 +82,9 @@ bool process(const std::string& config_file)
   if (ncpu.size() == 0) ncpu.push_back(std::ceil((float)omp_get_num_threads()/2));
   std::string strategy = processing_options.value("strategy", "concurrent-points");
   bool progrss = processing_options.value("progress", true);
+  #ifdef USING_R
   progrss = progrss && async_communication_file.empty();
+  #endif
   bool verbose = processing_options.value("verbose", false);
   double chunk_size = processing_options.value("chunk", 0);
   std::string fprofiling = processing_options.value("profiling", "");
@@ -190,7 +192,9 @@ bool process(const std::string& config_file)
     progress.set_display(progrss);
     progress.set_ncpu(ncpu_outer_loop);
     progress.create_subprocess();
+    #ifdef USING_R
     progress.set_async_message_file(async_communication_file);
+    #endif
 
     pipeline.set_progress(&progress);
 
@@ -311,11 +315,31 @@ bool process(const std::string& config_file)
 
     pipeline.profiler.write(fprofiling);
 
-#ifdef USING_R
-    return pipeline.to_R();
-#else
-    return true;
-#endif
+    #ifdef USING_R
+        return pipeline.to_R();
+    #else
+        nlohmann::json ans =  pipeline.to_json();
+        std::cout << ans.dump(4) << std::endl;
+        return true;
+
+        std::string filename = "/tmp/lasr_pipeline.json";
+        std::ofstream file(filename);
+        if (!file.is_open())
+        {
+          last_error= "Error: Could not open the file for writing: " + filename;
+          throw last_error;
+        }
+
+        file << ans.dump(4);
+        file.close();  // Close the file
+        if (!file.good())
+        {
+          last_error = "Error: Writing to the file failed.";
+          throw last_error;
+        }
+
+        return true;
+    #endif
   }
   catch (std::string e)
   {

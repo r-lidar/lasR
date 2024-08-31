@@ -298,5 +298,48 @@ SEXP LASRsummary::to_R()
 
 #endif
 
+nlohmann::json LASRsummary::to_json() const
+{
+  nlohmann::json ans;
+
+  bool use_metrics = metrics_engine.active();
+
+  // Add basic stats
+  ans["npoints"] = npoints;
+  ans["nsingle"] = nsingle;
+  ans["nwithheld"] = nwithheld;
+  ans["nsynthetic"] = nsynthetic;
+
+  // Convert maps to JSON objects
+  ans["npoints_per_return"] = nlohmann::json(npoints_per_return);
+  ans["npoints_per_class"] = nlohmann::json(npoints_per_class);
+
+  // Convert zhistogram and ihistogram to JSON arrays
+  ans["z_histogram"] = nlohmann::json::array();
+  for (const auto& [key, value] : zhistogram) {
+    ans["z_histogram"].push_back({{"bin", key}, {"count", value}});
+  }
+
+  ans["i_histogram"] = nlohmann::json::array();
+  for (const auto& [key, value] : ihistogram) {
+    ans["i_histogram"].push_back({{"bin", key}, {"count", value}});
+  }
+
+  // Add CRS details (mocking crs.get_wkt() and crs.get_epsg())
+  ans["crs"]["wkt"] = crs.get_wkt(); // Replace with actual WKT value
+  ans["crs"]["epsg"] = crs.get_epsg(); // Replace with actual EPSG code
+
+  // Add metrics if active
+  if (use_metrics) {
+    nlohmann::json metricsJson;
+    for (const auto& [metricName, values] : metrics) {
+      metricsJson[metricName] = values;
+    }
+    ans["metrics"] = metricsJson;
+  }
+
+  return ans;
+}
+
 
 
