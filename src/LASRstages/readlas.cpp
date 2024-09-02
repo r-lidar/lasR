@@ -28,7 +28,7 @@ LASRlasreader::~LASRlasreader()
   lasheader = nullptr;
 }
 
-bool LASRlasreader::set_chunk(const Chunk& chunk)
+bool LASRlasreader::set_chunk(Chunk& chunk)
 {
   if (lasreader)
   {

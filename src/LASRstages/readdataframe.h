@@ -12,7 +12,7 @@ class LASRdataframereader: public Stage
 public:
   LASRdataframereader() = default;
   LASRdataframereader(const LASRdataframereader& other);
-  bool set_chunk(const Chunk& chunk) override;
+  bool set_chunk(Chunk& chunk) override;
   bool process(LASheader*& header) override;
   bool process(LASpoint*& point) override;
   bool process(LAS*& las) override;

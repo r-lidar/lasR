@@ -161,7 +161,7 @@ bool LASRinfo::process(LASheader*& h)
   return true;
 }
 
-bool LASRinfo::set_chunk(const Chunk& chunk)
+bool LASRinfo::set_chunk(Chunk& chunk)
 {
   ifile = chunk.main_files[0];
   return true;

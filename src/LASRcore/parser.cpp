@@ -12,6 +12,7 @@
 #include "focal.h"
 #include "info.h"
 #include "ivf.h"
+#include "loadmatrix.h"
 #include "loadraster.h"
 #include "localmaximum.h"
 #include "nnmetrics.h"
@@ -89,6 +90,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"focal",                create_instance<LASRfocal>},
     {"hulls",                create_instance<LASRboundaries>},
     {"info",                 create_instance<LASRinfo>},
+    {"load_matrix",          create_instance<LASRloadmatrix>},
     {"load_raster",          create_instance<LASRloadraster>},
     {"local_maximum",        create_instance<LASRlocalmaximum>},
     {"neighborhood_metrics", create_instance<LASRnnmetrics>},
@@ -340,6 +342,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           last_error = "Invalid parameters in stage " + it->get_name() + ": " + last_error;
           return false;
         }
+
+        it->get_extent(xmin, ymin, xmax, ymax);
 
         // If we intend to actually process the point cloud we check that a reader stage is present if needed
         if (catalog != nullptr && it->need_points() && !reader)

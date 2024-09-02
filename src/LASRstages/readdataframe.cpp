@@ -52,7 +52,7 @@ bool LASRdataframereader::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRdataframereader::set_chunk(const Chunk& chunk)
+bool LASRdataframereader::set_chunk(Chunk& chunk)
 {
   const char* tmp = filter.c_str();
   int n = strlen(tmp)+1;

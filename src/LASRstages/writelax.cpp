@@ -67,7 +67,7 @@ bool LASRlaxwriter::process(LAScatalog*& ctg)
   return success;
 }
 
-bool LASRlaxwriter::set_chunk(const Chunk& chunk)
+bool LASRlaxwriter::set_chunk(Chunk& chunk)
 {
   if (!onthefly) return true;
 

@@ -8,6 +8,7 @@
   lasr chm -i path/to/folder -o path/to/chm.tif -res 1 -ncore 4
   lasr dtm -i path/to/folder -o path/to/chm.tif -res 0.5 -ncore 4
   ```
+- New: `transform_with()` supports a 4x4 Affine Transformation Matrix in order to translate and rotate the point cloud.
 
 # lasR 0.10.1
 

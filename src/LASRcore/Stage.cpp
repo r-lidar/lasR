@@ -55,7 +55,7 @@ Stage::~Stage()
   #endif
 }
 
-bool Stage::set_chunk(const Chunk& chunk)
+bool Stage::set_chunk(Chunk& chunk)
 {
   set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
   if (chunk.shape == ShapeType::CIRCLE) circular = true;
@@ -221,7 +221,7 @@ StageRaster::~StageRaster()
 
 }
 
-bool StageRaster::set_chunk(const Chunk& chunk)
+bool StageRaster::set_chunk(Chunk& chunk)
 {
   Stage::set_chunk(chunk);
 
@@ -316,7 +316,7 @@ StageVector::~StageVector()
 
 }
 
-bool StageVector::set_chunk(const Chunk& chunk)
+bool StageVector::set_chunk(Chunk& chunk)
 {
   Stage::set_chunk(chunk);
 
@@ -382,6 +382,109 @@ void StageVector::set_crs(const CRS& crs)
     vector.close();
   }
 }*/
+
+/* ==============
+ *  MATRIX
+ * ============= */
+
+StageMatrix::StageMatrix()
+{
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      matrix[i][j] = 0;
+    }
+  }
+}
+
+StageMatrix::StageMatrix(const StageMatrix& other)
+{
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      matrix[i][j] = other.matrix[i][j];
+    }
+  }
+}
+
+void StageMatrix::transform(double& x, double& y, double& z)
+{
+  double xt,yt,zt;
+  double point[4];
+  double tpoint[4];
+
+  point[0] = x;
+  point[1] = y;
+  point[2] = z;
+  point[3] = 1;
+
+  tpoint[0] = 0;
+  tpoint[1] = 0;
+  tpoint[2] = 0;
+  tpoint[3] = 0;
+
+  for (int i = 0; i < 4; ++i)
+  {
+    for (int j = 0; j < 4; ++j)
+    {
+      tpoint[i] += matrix[i][j] * point[j];
+    }
+  }
+
+  x = tpoint[0];
+  y = tpoint[1];
+  z = tpoint[2];
+}
+
+void StageMatrix::merge(const Stage* other)
+{
+  const StageMatrix* o = dynamic_cast<const StageMatrix*>(other);
+
+  for (int i = 0; i < 4; ++i)
+  {
+    for (int j = 0; j < 4; ++j)
+    {
+      matrix[i][j] = o->matrix[i][j];
+    }
+  }
+}
+
+#ifdef USING_R
+SEXP StageMatrix::to_R()
+{
+  SEXP H = PROTECT(Rf_allocVector(REALSXP, 16)); nsexpprotected++;
+
+  double* Hptr = REAL(H);
+  for (int i = 0; i < 4; ++i)
+  {
+    for (int j = 0; j < 4; ++j)
+    {
+      Hptr[i + 4 * j] = matrix[i][j];
+    }
+  }
+
+  SEXP dim = PROTECT(Rf_allocVector(INTSXP, 2)); nsexpprotected++;
+  INTEGER(dim)[0] = 4;
+  INTEGER(dim)[1] = 4;
+  Rf_setAttrib(H, R_DimSymbol, dim);
+
+  return H;
+}
+#endif
+
+nlohmann::json StageMatrix::to_json() const
+{
+  nlohmann::json j_matrix = nlohmann::json::array();
+
+  for (int i = 0; i < 4; ++i)
+  {
+    nlohmann::json row = nlohmann::json::array();
+    for (int j = 0; j < 4; ++j)
+    {
+      row.push_back(matrix[i][j]);
+    }
+    j_matrix.push_back(row);
+  }
+  return j_matrix;
+}
 
 #ifdef USING_R
 SEXP string_address_to_sexp(const std::string& addr)

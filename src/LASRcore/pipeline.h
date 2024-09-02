@@ -42,7 +42,7 @@ public:
   bool use_rcapi() const;
   double need_buffer();
   bool need_points() const;
-  bool set_chunk(const Chunk& chunk);
+  bool set_chunk(Chunk& chunk);
   void set_ncpu(int ncpu);
   void set_ncpu_concurrent_files(int ncpu);
   void set_verbose(bool verbose);

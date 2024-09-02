@@ -15,7 +15,7 @@ public:
   bool process(LASheader*& header) override;
   bool process(LASpoint*& point) override;
   bool process(LAS*& las) override;
-  bool set_chunk(const Chunk& chunk) override;
+  bool set_chunk(Chunk& chunk) override;
   void clear(bool last = false) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };

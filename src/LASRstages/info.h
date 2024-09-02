@@ -12,7 +12,7 @@ class LASRinfo: public Stage
 {
 public:
   LASRinfo() = default;
-  bool set_chunk(const Chunk& chunk) override;
+  bool set_chunk(Chunk& chunk) override;
   bool process(LASheader*& header) override;
   bool is_streamable() const override { return true; }
   std::string get_name() const override { return "info"; }

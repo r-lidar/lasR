@@ -64,3 +64,56 @@ test_that("tw can normalize with extrabyte",
   expect_error(exec(pipeline, on = olas), "no extrabyte attribute 'PP' found")
 })
 
+test_that("tw can translate with a matrix ",
+{
+  m = matrix(c(1,0,0,-500000,
+               0,1,0,-500000,
+               0,0,1,150,
+               0,0,0,1), 4, 4, byrow = TRUE)
+
+  f <- system.file("extdata", "Megaplot.las", package="lasR")
+
+  olas = templas()
+  pipeline <- reader_las() + transform_with(m) + summarise() + write_las(olas)
+  ans = exec(pipeline, on = f)
+
+  expect_equal(ans$summary$npoints, 81590)
+})
+
+test_that("tw can rotate with a matrix ",
+{
+  a = pi/4
+  m = matrix(c(cos(a),-sin(a),0,0,
+               sin(a),cos(a),0,0,
+               0,0,1,100,
+               0,0,0,1), 4, 4, byrow = TRUE)
+
+  f <- system.file("extdata", "Megaplot.las", package="lasR")
+
+  olas = templas()
+  pipeline <- reader_las() + transform_with(m) + summarise() + write_las(olas)
+  ans = exec(pipeline, on = f)
+
+  expect_equal(ans$summary$npoints, 81590)
+})
+
+test_that("tw fails with non orthogonal matrix",
+{
+  f <- system.file("extdata", "Example.las", package="lasR")
+
+  m = matrix(c(8,0,0,-500000,
+               0,1,0,-500000,
+               0,0,1,150,
+               0,0,0,1), 4, 4, byrow = TRUE)
+
+  pipeline <- transform_with(m)
+  expect_error(exec(pipeline, on = f), "the matrix is not orthogonal")
+
+  m = matrix(c(1,0,1,-500000,
+               0,1,0,-500000,
+               0,0,1,150,
+               0,0,0,1), 4, 4, byrow = TRUE)
+
+  pipeline <- transform_with(m)
+  expect_error(exec(pipeline, on = f), "the matrix is not orthogonal")
+})

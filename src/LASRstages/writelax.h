@@ -9,7 +9,7 @@ public:
   LASRlaxwriter();
   LASRlaxwriter(bool embedded, bool overwrite, bool onthefly);
   bool process(LAScatalog*& ctg) override;
-  bool set_chunk(const Chunk& chunk) override;
+  bool set_chunk(Chunk& chunk) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
   bool set_parameters(const nlohmann::json&) override;

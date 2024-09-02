@@ -293,7 +293,7 @@ void Pipeline::merge(const Pipeline& other)
   }
 }
 
-bool Pipeline::set_chunk(const Chunk& chunk)
+bool Pipeline::set_chunk(Chunk& chunk)
 {
   order.push_back(chunk.id);
 

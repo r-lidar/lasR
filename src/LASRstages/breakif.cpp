@@ -15,7 +15,7 @@ bool LASRbreakoutsidebbox::set_parameters(const nlohmann::json& stage)
 }
 
 
-bool LASRbreakoutsidebbox::set_chunk(const Chunk& chunk)
+bool LASRbreakoutsidebbox::set_chunk(Chunk& chunk)
 {
   if (chunk.xmax < xmin || xmax < chunk.xmin) state = true;
   if (chunk.ymax < ymin || ymax < chunk.ymin) state = true;
@@ -29,7 +29,7 @@ bool LASRbreakbeforechunk::set_parameters(const nlohmann::json& stage)
 }
 
 
-bool LASRbreakbeforechunk::set_chunk(const Chunk& chunk)
+bool LASRbreakbeforechunk::set_chunk(Chunk& chunk)
 {
   if (chunk.id < index-1) state = true;
   return true;

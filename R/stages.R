@@ -518,6 +518,16 @@ load_raster = function(file, band = 1L)
   set_lasr_class(ans, raster = TRUE)
 }
 
+load_matrix = function(matrix)
+{
+  if (!is.matrix(matrix)) stop("'matrix' is not a matrix")
+  if (dim(matrix)[1] != 4) stop("'matrix' is not a 4x4 matrix")
+  if (dim(matrix)[2] != 4) stop("'matrix' is not a 4x4 matrix")
+
+  ans <- list(algoname = "load_matrix", matrix = as.numeric(t(matrix)))
+  set_lasr_class(ans, matrix = TRUE)
+}
+
 #' Local Maximum
 #'
 #' The Local Maximum stage identifies points that are locally maximum. The window size is
@@ -1176,22 +1186,31 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
   set_lasr_class(ans, vector = TRUE)
 }
 
-#' Transform a point cloud using another stage
+#' Transform a Point Cloud Using Another Stage
 #'
-#' This stage uses another stage that produced a Delaunay triangulation or a raster and performs an
-#' operation to modify the point cloud. This can typically be used to build a normalization stage
-#' This stage modifies the point cloud in the pipeline but does not produce any output.
+#' This stage uses another stage to modify the point cloud in the pipeline. When used with a Delaunay
+#' triangulation or a raster, it performs an operation to modify the Z coordinate of the point cloud.
+#' This can typically be used to build a normalization stage. When used with a 4x4 Rotation-Translation Matrix,
+#' it multiplies the coordinates of the points to apply the rigid transformation described by the matrix.
+#' This stage modifies the point cloud in the pipeline but does not produce any output.\cr
+#' **Warning:** `lasR` uses bounding boxes oriented along the XY axes of each processed chunk to manage
+#' data location and the buffer properly. Transforming the point cloud with a rotation matrix affects
+#' its bounding box and how `lasR` handles the buffer. When used with a matrix that has a rotational
+#' component, it is not safe to add stages after the transformation unless the user is certain that
+#' there is no buffer involved.
 #'
-#' @param stage LASRpipeline. A stage that produces a triangulation or a raster.
-#' @param operator string. '-' and '+' are supported.
-#' @param store_in_attribute string. Use an extra bytes attribute to store the result.
+#' @param stage A stage that produces a triangulation, raster, or Rotation-Translation Matrix (RTM),
+#' sometimes also referred to as an "Affine Transformation Matrix". Can also be a 4x4 RTM matrix.
+#' @param operator A string. '-' and '+' are supported (only with a triangulation or a raster).
+#' @param store_in_attribute A string. Use an extra byte attribute to store the result (only with
+#' a triangulation or a raster).
 #'
 #' @template return-pointcloud
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #'
-#' # There is a normalize pipeline in lasR but let's create one almost equivalent
+#' # There is a normalization pipeline in lasR, but let's create one almost equivalent
 #' mesh  <- triangulate(filter = keep_ground())
 #' trans <- transform_with(mesh)
 #' pipeline <- mesh + trans + write_las()
@@ -1201,16 +1220,30 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' \link{triangulate}
 #' \link{write_las}
 #' @export
+#' @md
+
 transform_with = function(stage, operator = "-", store_in_attribute = "")
 {
-  stage = get_stage(stage)
+  use_matrix = FALSE
+  if (is.matrix(stage))
+  {
+    use_matrix = TRUE
+    stage <- load_matrix(stage)
+  }
+
+  s <- get_stage(stage)
 
   # Valid stage are all raster stages or triangulate
-  if (stage$algoname != "triangulate" && !methods::is(stage, "LASRraster"))
-      stop("the stage must be a triangulation or a raster stage")
+  if (s$algoname != "triangulate" && !methods::is(s, "LASRraster") && !methods::is(s, "LASRmatrix"))
+      stop("The stage must be a triangulation or a raster stage or a matrix stage.")
 
-  ans <- list(algoname = "transform_with", connect = stage[["uid"]], operator = operator, store_in_attribute = store_in_attribute)
-  set_lasr_class(ans)
+  ans <- list(algoname = "transform_with", connect = s[["uid"]], operator = operator, store_in_attribute = store_in_attribute)
+  ans <- set_lasr_class(ans)
+
+  if (use_matrix)
+    ans = stage + ans
+
+  return(ans)
 }
 
 # ===== W ====
@@ -1313,7 +1346,7 @@ generate_uid <- function(size = 8)
   paste(sample(c(letters[1:6], as.character(0:8)), size, replace = TRUE), collapse = "")
 }
 
-set_lasr_class = function(x, raster = FALSE, vector = FALSE)
+set_lasr_class = function(x, raster = FALSE, vector = FALSE, matrix = FALSE)
 {
   x[["uid"]] = generate_uid()
 
@@ -1328,6 +1361,7 @@ set_lasr_class = function(x, raster = FALSE, vector = FALSE)
   cl <- c("LASRalgorithm", "list")
   if (raster) cl <- c(cl, "LASRraster")
   if (vector) cl <- c(cl, "LASRvector")
+  if (matrix) cl <- c(cl, "LASRmatrix")
 
   class(x) <- cl
   x <- list(x)
