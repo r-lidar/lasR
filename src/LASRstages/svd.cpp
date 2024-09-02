@@ -9,7 +9,7 @@
 #include <vector>
 #include <iostream>
 
-#include "armadillo/armadillo"
+#include "Eigen/Dense"
 
 #define PUREKNN 0
 #define KNNRADIUS 1
@@ -152,19 +152,29 @@ bool LASRsvd::process(LAS*& las)
         las->knn(xyz, k, r, pts, &lasfilter);
     }
 
-    arma::mat A(pts.size(), 3);
-    arma::mat coeff;  // Principle component matrix
-    arma::mat score;
-    arma::vec latent; // Eigenvalues in descending order
+    Eigen::MatrixXd A(pts.size(), 3);
+    Eigen::MatrixXd coeff; // Principal component matrix
+    Eigen::VectorXd latent; // Eigenvalues in descending order
 
-    for (unsigned int k = 0 ; k < pts.size() ; k++)
+    // Fill the matrix A with points
+    for (size_t k = 0; k < pts.size(); ++k)
     {
-      A(k,0) = pts[k].x;
-      A(k,1) = pts[k].y;
-      A(k,2) = pts[k].z;
+      A(k, 0) = pts[k].x;
+      A(k, 1) = pts[k].y;
+      A(k, 2) = pts[k].z;
     }
 
-    arma::princomp(coeff, score, latent, A);
+    // Compute the mean
+    Eigen::VectorXd mean = A.colwise().mean();
+    Eigen::MatrixXd centered = A.rowwise() - mean.transpose();
+
+    // Compute the covariance matrix
+    Eigen::MatrixXd covariance = (centered.transpose() * centered) / double(pts.size() - 1);
+
+    // Perform eigen decomposition
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(covariance);
+    coeff = eigensolver.eigenvectors().rowwise().reverse(); // Eigen vectors are sorted by increasing eigenvalue, so reverse to get descending order
+    latent = eigensolver.eigenvalues().reverse(); // Eigen values are sorted by increasing order, so reverse to get descending order
 
     double eigen_sum = (latent[0]+latent[1]+latent[2]);
     double eigen_largest = latent[0]; // /eigen_sum; ??

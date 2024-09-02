@@ -1,0 +1,116 @@
+Files: src/vendor/LASlib/* src/vendor/LASzip/*
+(c) 2007-2017, rapidlasso GmbH - fast tools to catch reality
+Licence: LGPL
+
+Files: src/vendor/delaunator/*
+(c) 2018 Volodymyr Bilonenko. https://github.com/delfrrr/delaunator-cpp
+Licence: MIT
+
+Files: src/vendor/geophoton/*
+(c) 2008-2023 Benoît St-Onge - https://github.com/Geophoton-inc/chm_prep
+Licence: GPL-3
+
+Files: src/vendor/csf/*
+(c) 2017 State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University
+Licence: Apache
+
+Files: src/vendor/nlohmann/*
+Lohmann, N. (2023). JSON for Modern C++ (Version 3.11.3) [Computer software]. https://github.com/nlohmann
+Licence: MIT
+
+Files: src/vendor/Eigen/* src/vendor/unsupported/Eigen/*
+Copyright: 2006 - 2012  Gael Guennebaud, Benoit Jacob
+License: MPL-2
+
+Files: unsupported/Eigen/FFT unsupported/Eigen/src/FFT/ei_fftw_impl.h unsupported/Eigen/src/FFT/ei_kissfft_impl.h
+Copyright: 2003 - 2009  Mark Borgerding
+License: MPL-2
+
+Files: src/vendor/Eigen/src/SuperLUSupport/SuperLUSupport.h
+Copyright: 1994  Xerox Corporation
+License:
+   THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+   EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+
+Files: src/vendor/unsupported/Eigen/src/IterativeSolvers/IterationController.h
+Copyright: 1997 - 2001 Andrew Lumsdaine and Lie-Quan Lee
+License:
+   This file is part of the Iterative Template Library
+
+   You should have received a copy of the License Agreement for the
+   Iterative Template Library along with the software;  see the
+   file LICENSE.
+
+   Permission to modify the code and to distribute modified code is
+   granted, provided the text of this NOTICE is retained, a notice that
+   the code was modified is included with the above COPYRIGHT NOTICE and
+   with the COPYRIGHT NOTICE in the LICENSE file, and that the LICENSE
+   file is distributed with the modified code.
+
+   LICENSOR MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED.
+   By way of example, but not limitation, Licensor MAKES NO
+   REPRESENTATIONS OR WARRANTIES OF MERCHANTABILITY OR FITNESS FOR ANY
+   PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE COMPONENTS
+   OR DOCUMENTATION WILL NOT INFRINGE ANY PATENTS, COPYRIGHTS, TRADEMARKS
+   OR OTHER RIGHTS.
+
+Files: src/vendor/unsupported/Eigen/Splines src/vendor/unsupported/Eigen/src/Splines/SplineFitting.h src/vendor/unsupported/Eigen/src/Splines/SplineFwd.h src/vendor/unsupported/Eigen/src/Splines/Spline.h src/vendor/Eigen/src/Geometry/Umeyama.h src/vendor/Eigen/src/StlSupport/details.h src/vendor/Eigen/src/StlSupport/StdDeque.h src/vendor/Eigen/src/StlSupport/StdList.h src/vendor/Eigen/src/StlSupport/StdVector.h src/vendor/Eigen/StdDeque src/vendor/Eigen/StdList src/vendor/Eigen/StdVector src/vendor/Eigen/src/Core/DenseStorage.h src/vendor/Eigen/src/Core/util/Memory.h src/vendor/Eigen/src/Geometry/Transform.h
+Copyright: 2009 - 2011 Hauke Heibel <hauke.heibel@gmail.com>
+License: MPL-2
+
+Files: src/vendor/Eigen/src/LU/arch/Inverse_SSE.h src/vendor/Eigen/src/Cholesky/LLT_MKL.h src/vendor/Eigen/src/Core/Assign_MKL.h src/vendor/Eigen/src/Core/products/GeneralMatrixMatrix_MKL.h src/vendor/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_MKL.h src/vendor/Eigen/src/Core/products/GeneralMatrixVector_MKL.h src/vendor/Eigen/src/Core/products/SelfadjointMatrixMatrix_MKL.h src/vendor/Eigen/src/Core/products/SelfadjointMatrixVector_MKL.h src/vendor/Eigen/src/Core/products/TriangularMatrixMatrix_MKL.h src/vendor/Eigen/src/Core/products/TriangularMatrixVector_MKL.h src/vendor/Eigen/src/Core/products/TriangularSolverMatrix_MKL.h src/vendor/Eigen/src/Core/util/MKL_support.h src/vendor/Eigen/src/Eigenvalues/ComplexSchur_MKL.h src/vendor/Eigen/src/Eigenvalues/RealSchur_MKL.h src/vendor/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_MKL.h src/vendor/Eigen/src/LU/PartialPivLU_MKL.h src/vendor/Eigen/src/PardisoSupport/PardisoSupport.h src/vendor/Eigen/src/QR/ColPivHouseholderQR_MKL.h src/vendor/Eigen/src/QR/HouseholderQR_MKL.h src/vendor/Eigen/src/SVD/JacobiSVD_MKL.h
+Copyright: 2001 Intel Corporation
+License:
+   Permition is granted to use, copy, distribute and prepare derivative works
+   of this library for any purpose and without fee, provided, that the above
+   copyright notice and this statement appear in all copies.
+   Intel makes no representations about the suitability of this software for
+   any purpose, and specifically disclaims all warranties.
+
+Files: src/vendor/unsupported/Eigen/src/IterativeSolvers/ConstrainedConjGrad.h
+Copyright: 2002 - 2007 Yves Renard
+License: LPGL-2.1
+
+Files: src/vendor/Eigen/src/OrderingMethods/Amd.h
+Copyright: 2006 Timothy A. Davis
+License: LGPL-2.1
+
+Files: src/vendor/Eigen/src/Core/arch/SSE/MathFunctions.h
+Copyright: 2007 Julien Pommier
+License: MPL-2
+
+Files: src/vendor/Eigen/src/Core/Assign.h
+Copyright: 2007 Michael Olbrich
+License: MPL-2
+
+Files: src/vendor/unsupported/Eigen/src/Skyline/SkylineMatrixBase.h src/vendor/unsupported/Eigen/src/Skyline/SkylineMatrix.h src/vendor/unsupported/Eigen/src/Skyline/SkylineProduct.h src/vendor/unsupported/Eigen/src/Skyline/SkylineStorage.h src/vendor/unsupported/Eigen/src/Skyline/SkylineInplaceLU.h src/vendor/unsupported/Eigen/src/Skyline/SkylineUtil.h
+Copyright: 2008 - 2009 Guillaume Saupin <guillaume.saupin@cea.fr>;
+License: MPL-2
+
+Files: src/vendor/Eigen/src/Core/arch/AltiVec/PacketMath.h src/vendor/Eigen/src/Core/arch/NEON/PacketMath.h
+Copyright: 2008 Konstantinos Margaritis
+License: MPL-2
+
+Files: src/vendor/unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h src/vendor/unsupported/Eigen/src/MatrixFunction.h src/vendor/unsupported/Eigen/MatrixFunctions src/vendor/unsupported/Eigen/src/MatrixFunctions/MatrixFunctionAtomic.h src/vendor/Eigen/src/Eigenvalues/ComplexEigenSolver.h src/vendor/Eigen/src/Eigenvalues/ComplexSchur.h src/vendor/Eigen/src/Eigenvalues/EigenSolver.h src/vendor/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h src/vendor/Eigen/src/Eigenvalues/HessenbergDecomposition.h src/vendor/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h src/vendor/Eigen/src/Eigenvalues/RealSchur.h src/vendor/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h src/vendor/Eigen/src/Eigenvalues/Tridiagonalization.h src/vendor/unsupported/Eigen/src/MatrixFunctions/StemFunction.h src/vendor/unsupported/Eigen/src/MatrixFunctions/MatrixLogarithm.h src/vendor/unsupported/Eigen/src/MatrixFunctions/MatrixSquareRoot.h
+Copyright: 2009 - 2010 Jitse Niesen <jitse@maths.leeds.ac.uk>
+License: MPL-2
+
+Files: src/vendor/Eigen/src/Eigenvalues/ComplexEigenSolver.h src/vendor/Eigen/src/Eigenvalues/ComplexSchur.h
+Copyright: 2009 Claire Maurice
+License: MPL-2
+
+Files: src/vendor/unsupported/Eigen/BVH src/vendor/unsupported/Eigen/src/BVH/BVAlgorithms.h src/vendor/unsupported/Eigen/src/BVH/KdBVH.h
+Copyright: 2009 Ilya Baran <ibaran@mit.edu>
+License: MPL-2
+
+Files: src/vendor/Eigen/src/Cholesky/LDLT.h
+Copyright: 2009 Keir Mierle <mierle@gmail.com>
+License: MPL-2
+
+Files: src/vendor/Eigen/src/Geometry/Quaternion.h
+Copyright: 2009 Mathieu Gautier <mathieu.gautier@cea.fr>
+License: MPL-2
+
+Files: src/vendor/Eigen/src/Geometry/arch/Geometry_SSE.h src/vendor/unsupported/Eigen/src/MoreVectorization/MathFunctions.h
+Copyright: 2009 Rohit Garg <rpg.314@gmail.com>
+License: MPL-2

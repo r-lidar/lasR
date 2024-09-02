@@ -59,26 +59,24 @@ The development of the `lidR` package was made possible in the past thanks to th
 
 - For `lasR`:
   - © 2023-2024 Jean-Romain Roussel
-  - Provided under GPL-3 license.
+  - Licence: GPL-3
 - For `LASlib` and `LASzip`:
   - © 2007-2021 Martin Isenburg - <http://rapidlasso.com>
-  - Provided under LGPL license and modified to be R-compliant by
-    Jean-Romain Roussel.
+  - Licence: LGPL  (modified to be R-compliant by Jean-Romain Roussel)
 - For `chm_prep`:
   - © 2008-2023 Benoît St-Onge - [Geophoton-inc/chm_prep](https://github.com/Geophoton-inc/chm_prep)
-  - Provided under GPL-3 license.
+  - Licence: GPL-3
 - For `json` parser:
   - Lohmann, N. (2023). JSON for Modern C++ (Version 3.11.3) [Computer software]. https://github.com/nlohmann
-  - Provided under MIT license
+  - Licence: MIT
 - For `delaunator`:
   - © 2018 Volodymyr Bilonenko. [delfrrr/delaunator-cpp](https://github.com/delfrrr/delaunator-cpp)
-  - Provided under MIT license
-- For `Armadillo`:
-  - © 2008-2024 Conrad Sanderson (https://conradsanderson.id.au)
-  - © 2008-2016 National ICT Australia (NICTA)
-  - © 2017-2024 Data61 / CSIRO
-  - Provided under Apache license
+  - Licence: MIT
+- For `Eigen`:
+  - Guennebaud, Gaël and Jacob, Benoît and others
+  - Eigen: A C++ linear algebra library http://eigen.tuxfamily.org
+  - Licence: MPL2
 - For `Cloth Simulation Filter (CSF)`
   - © 2017 State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University
-  - Provided under Apache License
+  - Licence: Apache
   - W. Zhang, J. Qi, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data Filtering Method Based on Cloth Simulation,” Remote Sens., vol. 8, no. 6, p. 501, 2016.
