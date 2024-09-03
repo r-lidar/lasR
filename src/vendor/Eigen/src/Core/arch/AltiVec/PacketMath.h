@@ -529,18 +529,13 @@ EIGEN_ALWAYS_INLINE Packet pload_ignore(const __UNPACK_TYPE__(Packet) * from) {
   EIGEN_UNUSED_VARIABLE(from);
   EIGEN_DEBUG_ALIGNED_LOAD
   // Ignore partial input memory initialized
-#if !EIGEN_COMP_LLVM
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
+
 #ifdef EIGEN_VECTORIZE_VSX
   return vec_xl(0, const_cast<__UNPACK_TYPE__(Packet)*>(from));
 #else
   return vec_ld(0, from);
 #endif
-#if !EIGEN_COMP_LLVM
-#pragma GCC diagnostic pop
-#endif
+
 }
 
 template <>
