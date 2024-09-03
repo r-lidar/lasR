@@ -11,15 +11,21 @@ Example: lasr chm -i /path/to/folder/ -o /path/to/chm.tif -res 1 -ncores 4
 Possible commands and arguments:
   help
   info
+  index
+    -embedded
+    -overwrite
+  vpc
+    -absolute
+    -gps
   chm
-    -res (defaul 1)
+    -res 0.5 (default 1)
     -o /output/file.tif
   dtm
-    -res (defaul 1)
+    -res 0.5 (default 1)
     -o /output/file.tif
   denoise
-    -res (defaul 5)
-    -n (default 6)
+    -res 4 (default 5)
+    -n 5 (default 6)
     -o /output/*.laz
 General available options
    -ncores 4
@@ -46,7 +52,7 @@ is_set_flag <- function(args, name) {
   }
 }
 
-available_commands <- c("help", "info", "chm")
+available_commands <- c("help", "info", "index", "vpc", "chm", "dtm", "denoise")
 
 input <- get_param(args, "-i", NA_character_)
 output <- get_param(args, "-o", NA_character_)
@@ -64,6 +70,15 @@ if (cmd == "help") {
 } else if (cmd == "info") {
   progress <- FALSE
   pipeline <- lasR::info()
+} else if (cmd == "index") {
+  embedded <- is_set_flag(args, "-embedded")
+  overwrite <- is_set_flag(args, "-overwrite")
+  pipeline = lasR::write_lax(embedded, overwrite)
+} else if (cmd == "vpc") {
+  progress <- FALSE
+  absolute <- is_set_flag(args, "-absolute")
+  gps <- is_set_flag(args, "-gps")
+  pipeline <- lasR::write_vpc()
 } else if (cmd == "chm") {
   res <- as.numeric(get_param(args, "-res", 1))
   pipeline <- lasR::rasterize(res, "max", ofile = output)
