@@ -24,10 +24,10 @@ bool LASRivf::process(LAS*& las)
   rymax = ROUNDANY(rymax + 0.5 * res, res);
   rzmax = ROUNDANY(rzmax + 0.5 * res, res);
 
-  size_t length = (rxmax - rxmin) / res;
-  size_t width  = (rymax - rymin) / res;
-  size_t height = (rzmax - rzmin) / res;
-  size_t nvoxels = length*width*height;
+  int length = (rxmax - rxmin) / res;
+  int width  = (rymax - rymin) / res;
+  int height = (rzmax - rzmin) / res;
+  size_t nvoxels = (size_t)length*(size_t)width*(size_t)height;
 
   if (!force_map && nvoxels < INT_MAX/sizeof(int)) // 256 MB
   {

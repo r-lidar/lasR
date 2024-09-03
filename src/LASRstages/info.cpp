@@ -75,7 +75,7 @@ bool LASRinfo::process(LASheader*& h)
 
   int nextrabytes = 0;
   const char* name_table[10] = { "unsigned char", "char", "unsigned short", "short", "unsigned long", "long", "unsigned long long", "long long", "float", "double" };
-  for (int i = 0 ; i < h->number_of_variable_length_records ; i++)
+  for (unsigned int i = 0 ; i < h->number_of_extended_variable_length_records ; i++)
   {
     LASvlr vlr = h->vlrs[i];
 

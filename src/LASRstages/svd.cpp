@@ -133,7 +133,7 @@ bool LASRsvd::process(LAS*& las)
   bool main_thread = omp_get_thread_num() == 0;
 
   #pragma omp parallel for num_threads(ncpu)
-  for (int i = 0 ; i < las->npoints ; i++)
+  for (size_t i = 0 ; i < las->npoints ; i++)
   {
     if (progress->interrupted()) continue;
 

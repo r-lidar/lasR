@@ -57,7 +57,7 @@ bool LASRnnmetrics::process(LAS*& las)
   lm.resize(maxima.size());
 
   #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
-  for (int i = 0 ; i < maxima.size() ; i++)
+  for (size_t i = 0 ; i < maxima.size() ; i++)
   {
     if (progress->interrupted()) continue;
 
