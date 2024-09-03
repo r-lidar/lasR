@@ -11,7 +11,7 @@ Example: lasr chm -i /path/to/folder/ -o /path/to/chm.tif -res 1 -ncores 4
 Possible commands and arguments:
   help
   info
-  index
+  lax
     -embedded
     -overwrite
   vpc
@@ -52,7 +52,7 @@ is_set_flag <- function(args, name) {
   }
 }
 
-available_commands <- c("help", "info", "index", "vpc", "chm", "dtm", "denoise")
+available_commands <- c("help", "info", "lax", "vpc", "chm", "dtm", "denoise")
 
 input <- get_param(args, "-i", NA_character_)
 output <- get_param(args, "-o", NA_character_)
@@ -70,7 +70,7 @@ if (cmd == "help") {
 } else if (cmd == "info") {
   progress <- FALSE
   pipeline <- lasR::info()
-} else if (cmd == "index") {
+} else if (cmd == "lax") {
   embedded <- is_set_flag(args, "-embedded")
   overwrite <- is_set_flag(args, "-overwrite")
   pipeline = lasR::write_lax(embedded, overwrite)

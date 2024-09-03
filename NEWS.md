@@ -4,11 +4,14 @@
 - New command line utility. Users can now call simple pipeline from the terminal. First use `install_cmd_tools()` then it is possible to use commands like:
   ```bash
   lasr info -i path/to/file.las
+  lasr vpc -i path/to/folder 
+  lasr lax -i path/to/folder -ncores 8
   lasr help
   lasr chm -i path/to/folder -o path/to/chm.tif -res 1 -ncore 4
   lasr dtm -i path/to/folder -o path/to/chm.tif -res 0.5 -ncore 4
   ```
 - New: `transform_with()` supports a 4x4 Affine Transformation Matrix in order to translate and rotate the point cloud.
+- Change: the `Eigen` library replaces the `Armadillo` library for linear algebra. This may affect the sign of some vectors in `geometry_feature()`.
 
 # lasR 0.10.1
 
