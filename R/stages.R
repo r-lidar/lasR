@@ -701,7 +701,6 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #' rasterize(10, c("max", "count", "i_mean", "z_p95"))
 #' rasterize(10, c("z_max", "c_count", "intensity_mean", "p95"))
 #' ```
-#' \cr
 #' If `operators` is an R user-defined expression, the function should return either a vector of numbers
 #' or a `list` containing atomic numbers. To assign a band name to the raster, the vector or the `list`
 #' must be named accordingly. The following are valid operators:

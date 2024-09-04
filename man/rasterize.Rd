@@ -49,7 +49,6 @@ Below are some examples of valid calls:
 rasterize(10, c("z_max", "c_count", "intensity_mean", "p95"))
 }\if{html}{\out{</div>}}
 
-\cr
 If \code{operators} is an R user-defined expression, the function should return either a vector of numbers
 or a \code{list} containing atomic numbers. To assign a band name to the raster, the vector or the \code{list}
 must be named accordingly. The following are valid operators:
