@@ -110,8 +110,7 @@ other format supported by GDAL.</p>
 Below are some examples of valid calls:</p>
 <p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rasterize</span>(<span class="dv">10</span>, <span class="fu">c</span>(<span class="st">"max"</span>, <span class="st">"count"</span>, <span class="st">"i_mean"</span>, <span class="st">"z_p95"</span>))</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">rasterize</span>(<span class="dv">10</span>, <span class="fu">c</span>(<span class="st">"z_max"</span>, <span class="st">"c_count"</span>, <span class="st">"intensity_mean"</span>, <span class="st">"p95"</span>))</span></code></pre><p></p></div>
-<p><br>
-If <code>operators</code> is an R user-defined expression, the function should return either a vector of numbers
+<p>If <code>operators</code> is an R user-defined expression, the function should return either a vector of numbers
 or a <code>list</code> containing atomic numbers. To assign a band name to the raster, the vector or the <code>list</code>
 must be named accordingly. The following are valid operators:</p>
 <p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>f <span class="ot">=</span> <span class="cf">function</span>(x) { <span class="fu">return</span>(<span class="fu">mean</span>(x)) }</span>
@@ -155,23 +154,23 @@ in this case.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 1, 1  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1ec924887309.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1ec924887309 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e90479c20d.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1e90479c20d </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 30, 30, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 10, 10  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273350, 273650, 5274350, 5274650  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1ec92481a4b9.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1ec92481a4b9 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e9063439807.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1e9063439807 </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 144, 144, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 2, 2  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273356, 273644, 5274356, 5274644  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1ec962d28769.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e901501f138.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> name        : max </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Demonstration of buffered rasterization</span></span></span>
