@@ -176,7 +176,10 @@ bool LASRlocalmaximum::write()
 {
   if (ofile.empty()) return true;
 
-  int dupfid= 0;
+  auto start_time = std::chrono::high_resolution_clock::now();
+
+  int dupfid = 0;
+
   progress->reset();
   progress->set_total(lm.size());
   progress->set_prefix("Write local maxima on disk");
@@ -211,6 +214,16 @@ bool LASRlocalmaximum::write()
 
   if (dupfid)
     print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
+
+  if (verbose)
+  {
+    // # nocov start
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    float second = (float)duration.count()/1000.0f;
+    print("  Local Maximum write took %.2f sec.\n", second);
+    // # nocov end
+  }
 
   return true;
 }
