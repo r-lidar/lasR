@@ -178,42 +178,19 @@ bool LASRlocalmaximum::write()
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  int dupfid = 0;
-
-  progress->reset();
-  progress->set_total(lm.size());
-  progress->set_prefix("Write local maxima on disk");
-
   if (lm.size() == 0) return true;
 
-  for (const auto& p : lm)
+  bool success;
+  #pragma omp critical (write_localmax)
   {
-    bool success;
-    #pragma omp critical (write_localmax)
-    {
-      success = vector.write(p, record_attributes);
-    }
-
-    if (!success)
-    {
-      // /!\ TODO: not thread safe
-      if (last_error_code != GDALdataset::DUPFID)
-      {
-        return false;
-      }
-      else
-      {
-        dupfid++;
-        last_error_code = 0;
-      }
-    }
-
-    (*progress)++;
-    progress->show();
+    success = vector.write(lm, record_attributes);
   }
 
-  if (dupfid)
-    print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
+  if (!success)
+    return false;
+
+  int dupfid = vector.get_dupfid();
+  if (dupfid) print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
 
   if (verbose)
   {
