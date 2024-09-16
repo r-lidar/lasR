@@ -1,6 +1,6 @@
 # lasR 0.10.2
 
-Fix: The `local_maximum` function previously experienced significant delays when writing points to disk, taking up to 2 seconds on Linux and up to 30 seconds on Windows. This issue severely hindered parallelization capabilities. The new fix dramatically reduces the write time to around 0.1 seconds, greatly improving performance.
+Fix: The `local_maximum` function previously experienced significant delays when writing points to disk, taking up to 2 seconds on Linux and up to 30 seconds on Windows. This issue severely hindered parallelization capabilities. The new fix dramatically reduces the write time to around 0.1 seconds, greatly improving overall performance.
 
 # lasR 0.10.1
 
