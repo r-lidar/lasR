@@ -10,20 +10,20 @@ print_help <- function() {
 Example: lasr chm -i /path/to/folder/ -o /path/to/chm.tif -res 1 -ncores 4
 Possible commands and arguments:
   help
-  info
-  lax
+  info: display info about the file
+  lax: write lax files from a collection of la[s|z] files
     -embedded
     -overwrite
-  vpc
+  vpc: write vpc file from a collection of la[s|z] files
     -absolute
     -gps
-  chm
+  chm: compute a canopy height model
     -res 0.5 (default 1)
     -o /output/file.tif
-  dtm
+  dtm: compute a digital terrain model
     -res 0.5 (default 1)
     -o /output/file.tif
-  denoise
+  denoise: remove noise points
     -res 4 (default 5)
     -n 5 (default 6)
     -o /output/*.laz
@@ -52,7 +52,7 @@ is_set_flag <- function(args, name) {
   }
 }
 
-available_commands <- c("help", "info", "lax", "vpc", "chm", "dtm", "denoise")
+available_commands <- c("help", "info", "lax", "vpc", "chm", "dtm", "denoise", "sampling_tls")
 
 input <- get_param(args, "-i", NA_character_)
 output <- get_param(args, "-o", NA_character_)
@@ -88,12 +88,19 @@ if (cmd == "help") {
   dtm <- lasR::rasterize(res, tin)
   pipeline <- tri + dtm
 } else if (cmd == "denoise") {
-  res <- get_param(args, "res", 5)
-  n <- get_param(args, "n", 6)
+  res <- as.numeric(get_param(args, "-res", 5))
+  n <- as.numeric(get_param(args, "n", 6))
   noise <- lasR::classify_with_ivf(res, n)
   write <- lasR::write_las(output, filter = lasR::drop_noise())
   pipeline <- noise + write
+} else if (cmd == "sampling_tls") {
+  res <- as.numeric(get_param(args, "-res", 1))
+  sample <- lasR::sampling_voxel(res)
+  sample$sampling_voxel$shuffle_size = 0
+  write <- lasR::write_las(output)
+  pipeline <- sample + write
 }
+
 
 ans <- lasR::exec(pipeline, on = input, progress = progress, ncores = ncores, noread = TRUE)
 if (!is.null(ans)) print(ans)
