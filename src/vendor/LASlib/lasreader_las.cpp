@@ -1286,37 +1286,41 @@ BOOL LASreaderLAS::open(ByteStreamIn* stream, BOOL peek_only, U32 decompress_sel
           }
           else if (strcmp(header.evlrs[i].user_id, "copc") == 0)
           {
-            if (header.evlrs[i].data)
+            if (!header.evlrs[i].data)
             {
-              if (header.evlrs[i].record_id == 1000) // COPC EPT hierarchy
-              {
-                if (header.vlr_copc_info)
-                {
-                  // COPC offsets values are relative to the beginning of the file. We need to compute
-                  // an extra offset relative to the beginning of this evlr payload
-                  U64 offset_to_first_copc_entry = 60 + header.start_of_first_extended_variable_length_record;
-                  for (j = 0; j < i; j++) { offset_to_first_copc_entry += 60 + header.evlrs[j].record_length_after_header; }
-
-                  if (!EPToctree::set_vlr_entries(header.evlrs[i].data, offset_to_first_copc_entry, header))
-                  {
-                    eprint( "WARNING: invalid COPC EPT hierarchy (not specification-conform).\n");
-					          delete header.vlr_copc_info;
-                    header.vlr_copc_info = 0;
-                  }
-                }
-                else
-                {
-                  eprint( "WARNING: no COPC VLR info before COPC EPT hierarchy EVLR (not specification-conform).\n");
-                }
-              }
-              else
-              {
-                eprint( "WARNING: unknown COPC EVLR (not specification-conform).\n");
-              }
+              warning( "WARNING: no payload for COPC EVLR (not specification-conform).\n");
+              continue;
             }
-            else
+
+            if (header.evlrs[i].record_id != 1000) // COPC EPT hierarchy
             {
-              eprint( "WARNING: no payload for COPC EVLR (not specification-conform).\n");
+              warning( "WARNING: unknown COPC EVLR (not specification-conform).\n");
+              continue;
+            }
+
+            if (header.vlr_copc_entries)
+            {
+              warning( "WARNING: multiple copc hierachy EVLRs not supported.\n");
+              continue;
+            }
+
+            if (!header.vlr_copc_info)
+            {
+              warning( "WARNING: no COPC VLR info before COPC EPT hierarchy EVLR (not specification-conform).\n");
+              continue;
+            }
+
+
+            // COPC offsets values are relative to the beginning of the file. We need to compute
+            // an extra offset relative to the beginning of this evlr payload
+            U64 offset_to_first_copc_entry = 60 + header.start_of_first_extended_variable_length_record;
+            for (j = 0; j < i; j++) { offset_to_first_copc_entry += 60 + header.evlrs[j].record_length_after_header; }
+
+            if (!EPToctree::set_vlr_entries(header.evlrs[i].data, offset_to_first_copc_entry, header))
+            {
+              eprint( "WARNING: invalid COPC EPT hierarchy (not specification-conform).\n");
+              delete header.vlr_copc_info;
+              header.vlr_copc_info = 0;
             }
           }
         }
