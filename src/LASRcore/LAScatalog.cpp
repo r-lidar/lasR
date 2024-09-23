@@ -796,7 +796,7 @@ bool LAScatalog::check_spatial_index()
   bool multi_files = get_number_files() > 1;
   bool use_buffer = get_buffer() > 0;
   bool no_index = get_number_indexed_files() != get_number_files();
-  bool has_queries = queries.size() > 0;
+  bool has_queries = queries.size() > 1;
   return !((multi_files && use_buffer && no_index) || (has_queries && no_index));
 }
 
