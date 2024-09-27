@@ -147,6 +147,12 @@ void LASRlaswriter::set_header(LASheader*& header)
   lasheader = header;
 }
 
+bool LASRlaswriter::set_chunk(Chunk& chunk)
+{
+  if (chunk.buffer == 0) keep_buffer = true;
+  return true;
+}
+
 void LASRlaswriter::clear(bool last)
 {
   if (!merged || last)

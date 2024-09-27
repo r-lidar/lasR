@@ -33,12 +33,22 @@ there is no buffer involved.
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 
-# There is a normalization pipeline in lasR, but let's create one almost equivalent
+# with a triangulation
 mesh  <- triangulate(filter = keep_ground())
 trans <- transform_with(mesh)
 pipeline <- mesh + trans + write_las()
 ans <- exec(pipeline, on = f)
 
+# with a matrix
+a = 20 * pi / 180
+m <- matrix(c(
+  cos(a), -sin(a), 0, 1000,
+  sin(a), cos(a), 0, 0,
+  0, 0, 1, 0,
+  0, 0, 0, 1), nrow = 4, byrow = TRUE)
+
+pipeline = transform_with(m) + write_las()
+exec(pipeline, on = f)
 }
 \seealso{
 \link{triangulate}

@@ -94,7 +94,15 @@ test_that("tw can rotate with a matrix ",
   pipeline <- reader_las() + transform_with(m) + summarise() + write_las(olas)
   ans = exec(pipeline, on = f)
 
+  las = read_las(ans$write_las)
+  xrange = range(las$X)
+  yrange = range(las$Y)
+  zrange = range(las$Z)
+
   expect_equal(ans$summary$npoints, 81590)
+  expect_equal(xrange, c(-3064063.75, -3063738.72))
+  expect_equal(yrange, c(4032305.31, 4032629.32))
+  expect_equal(zrange, c(100.00, 129.97))
 })
 
 test_that("tw fails with non orthogonal matrix",

@@ -518,6 +518,30 @@ load_raster = function(file, band = 1L)
   set_lasr_class(ans, raster = TRUE)
 }
 
+#' Load a matrix for later use
+#'
+#' Load a matrix for later use. For example, load a matrix to feed the \link{transform_with}
+#' stage
+#'
+#' @param matrix a 4x4 matrix typically a Rotation-Translation Matrix (RTM)
+#'
+#' @examples
+#' a = 20 * pi / 180
+#' m <- matrix(c(
+#'   cos(a), -sin(a), 0, 1000,
+#'   sin(a), cos(a), 0, 0,
+#'   0, 0, 1, 0,
+#'   0, 0, 0, 1), nrow = 4, byrow = TRUE)
+#'
+#' mat = load_matrix(m)
+#' trans = transform_with(mat)
+#' write = write_las(tempfile(fileext = ".las"))
+#' pipeline = mat + trans + write
+#'
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#'
+#' exec(pipeline, on = f)
+#' @noRd
 load_matrix = function(matrix)
 {
   if (!is.matrix(matrix)) stop("'matrix' is not a matrix")
@@ -1209,12 +1233,22 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #'
-#' # There is a normalization pipeline in lasR, but let's create one almost equivalent
+#' # with a triangulation
 #' mesh  <- triangulate(filter = keep_ground())
 #' trans <- transform_with(mesh)
 #' pipeline <- mesh + trans + write_las()
 #' ans <- exec(pipeline, on = f)
 #'
+#' # with a matrix
+#' a = 20 * pi / 180
+#' m <- matrix(c(
+#'   cos(a), -sin(a), 0, 1000,
+#'   sin(a), cos(a), 0, 0,
+#'   0, 0, 1, 0,
+#'   0, 0, 0, 1), nrow = 4, byrow = TRUE)
+#'
+#' pipeline = transform_with(m) + write_las()
+#' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
 #' \link{write_las}
