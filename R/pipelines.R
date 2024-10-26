@@ -1,13 +1,12 @@
-#' Normalize the point cloud
+#' Height Above Ground (HAG)
 #'
-#' Normalize the point cloud using \link{triangulate} and \link{transform_with}. It triangulates the
-#' ground points and then applies `transform_with` to linearly interpolate the elevation of each point
-#' within each triangle.
-#'
-#' @param extrabytes bool. If FALSE the coordinate Z of the point cloud is modified and becomes the
-#' height above ground (HAG). If TRUE the coordinate Z is not modified and a new extrabytes attribute
-#' named 'HAG' is added to the point cloud.
-#'
+#' Normalize the point cloud using \link{triangulate} and \link{transform_with}. This process involves
+#' triangulating the ground points and then using `transform_with` to linearly interpolate the elevation
+#' for each point within the corresponding triangles. The `normalize()` function modifies the Z elevation
+#' values, effectively flattening the topography and normalizing the point cloud based on Height Above Ground (HAG).
+#' In contrast, the `hag()` function records the HAG in an extrabyte attribute named 'HAG', while preserving
+#' the original Z coordinates (Height Above Sea Level).
+
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' pipeline <- reader_las() + normalize() + write_las()
@@ -17,24 +16,23 @@
 #' \link{transform_with}
 #' @export
 #' @md
-normalize = function(extrabytes = FALSE)
+#' @rdname hag
+normalize = function()
 {
   tri <- triangulate(filter = keep_ground_and_water())
-  pipeline <- tri
-
-  if (extrabytes)
-  {
-    extra <- add_extrabytes("int", "HAG", "Height Above Ground")
-    trans <- transform_with(tri, store_in_attribute = "HAG")
-    pipeline <- pipeline + extra + trans
-  }
-  else
-  {
-    trans <- transform_with(tri)
-    pipeline <- pipeline + trans
-  }
-
+  trans <- transform_with(tri, store_in_attribute = "HAG")
+  pipeline <- tri + trans
   return(pipeline)
+}
+
+#' @rdname hag
+#' @export
+hag = function()
+{
+  tri <- triangulate(filter = keep_ground_and_water())
+  extra <- add_extrabytes("int", "HAG", "Height Above Ground")
+  trans <- transform_with(tri, store_in_attribute = "HAG")
+  pipeline <- tri + extra + trans
 }
 
 

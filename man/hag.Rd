@@ -2,19 +2,19 @@
 % Please edit documentation in R/pipelines.R
 \name{normalize}
 \alias{normalize}
-\title{Normalize the point cloud}
+\alias{hag}
+\title{Height Above Ground}
 \usage{
-normalize(extrabytes = FALSE)
-}
-\arguments{
-\item{extrabytes}{bool. If FALSE the coordinate Z of the point cloud is modified and becomes the
-height above ground (HAG). If TRUE the coordinate Z is not modified and a new extrabytes attribute
-named 'HAG' is added to the point cloud.}
+normalize()
+
+hag()
 }
 \description{
 Normalize the point cloud using \link{triangulate} and \link{transform_with}. It triangulates the
 ground points and then applies \code{transform_with} to linearly interpolate the elevation of each point
-within each triangle.
+within each triangle. \code{normalize()} modifies the Z elevation and record the Height Above Ground (HAG)
+effectively flattening the topography and normalizing the point cloud. \code{hag()} in another hand record
+the HAG in an extrabytes attributes names 'HAD' and preserves the original Height Above See Z coordinates
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
