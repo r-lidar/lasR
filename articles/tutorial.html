@@ -235,8 +235,8 @@ result is not discarded.</p>
 <span><span class="co">#&gt; resolution  : 1, 1  (x, y)</span></span>
 <span><span class="co">#&gt; extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span></span>
 <span><span class="co">#&gt; coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span></span>
-<span><span class="co">#&gt; source      : file239260def31.tif </span></span>
-<span><span class="co">#&gt; name        : file239260def31</span></span></code></pre></div>
+<span><span class="co">#&gt; source      : file23522edce057.tif </span></span>
+<span><span class="co">#&gt; name        : file23522edce057</span></span></code></pre></div>
 <p>Here, <code><a href="../reference/exec.html">exec()</a></code> returns a only one <code>SpatRaster</code>
 because <code><a href="../reference/triangulate.html">triangulate()</a></code> returns nothing (<code>NULL</code>).
 Therefore, the pipeline contains two stages, but only one returns
@@ -374,8 +374,8 @@ normalized point cloud with the suffix <code>_normalized</code>.</p>
 <span><span class="va">pipeline</span> <span class="op">=</span>  <span class="va">write1</span> <span class="op">+</span> <span class="va">del</span> <span class="op">+</span> <span class="va">norm</span> <span class="op">+</span> <span class="va">write2</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt;  - write_las : /tmp/RtmpcD0z4c/bcts_1_ground.laz /tmp/RtmpcD0z4c/bcts_2_ground.laz </span></span>
-<span><span class="co">#&gt;  - write_las.1 : /tmp/RtmpcD0z4c/bcts_1_normalized.laz /tmp/RtmpcD0z4c/bcts_2_normalized.laz</span></span></code></pre></div>
+<span><span class="co">#&gt;  - write_las : /tmp/Rtmpa1x1t2/bcts_1_ground.laz /tmp/Rtmpa1x1t2/bcts_2_ground.laz </span></span>
+<span><span class="co">#&gt;  - write_las.1 : /tmp/Rtmpa1x1t2/bcts_1_normalized.laz /tmp/Rtmpa1x1t2/bcts_2_normalized.laz</span></span></code></pre></div>
 <p>It is crucial to include a wildcard <code>*</code> in the file path;
 otherwise, a single large file will be created. This behavior may be
 intentional. Let’s consider creating a file merge pipeline. In the
@@ -388,7 +388,7 @@ forming a merge pipeline.</p>
 <span><span class="va">merge</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/write_las.html">write_las</a></span><span class="op">(</span><span class="va">ofile</span><span class="op">)</span></span>
 <span><span class="va">ans</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">merge</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span>
 <span><span class="va">ans</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpcD0z4c/dataset_merged.laz"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/Rtmpa1x1t2/dataset_merged.laz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="local-maximum">Local maximum<a class="anchor" aria-label="anchor" href="#local-maximum"></a>
@@ -737,7 +737,7 @@ tutorial. Among others:</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer>
