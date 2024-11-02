@@ -25,6 +25,7 @@
 <url><loc>/reference/filters.html</loc></url>
 <url><loc>/reference/focal.html</loc></url>
 <url><loc>/reference/geometry_features.html</loc></url>
+<url><loc>/reference/hag.html</loc></url>
 <url><loc>/reference/hulls.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/lasR-package.html</loc></url>
@@ -32,7 +33,6 @@
 <url><loc>/reference/local_maximum.html</loc></url>
 <url><loc>/reference/metric_engine.html</loc></url>
 <url><loc>/reference/multithreading.html</loc></url>
-<url><loc>/reference/normalize.html</loc></url>
 <url><loc>/reference/pit_fill.html</loc></url>
 <url><loc>/reference/rasterize.html</loc></url>
 <url><loc>/reference/reader_las.html</loc></url>

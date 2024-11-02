@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.10.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.10.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,10 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.10.3" id="lasr-0103">lasR 0.10.3<a class="anchor" aria-label="anchor" href="#lasr-0103"></a></h2>
+<p>Change: <code><a href="../reference/hag.html">normalize()</a></code> loose its argument <code>extrabytes</code> in favor of a new function <code><a href="../reference/hag.html">hag()</a></code> that is equivalent to <code>normalize(TRUE)</code> New: add stages <code><a href="../reference/delete_points.html">delete_noise()</a></code>, <code><a href="../reference/delete_points.html">delete_ground()</a></code></p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.10.2" id="lasr-0102">lasR 0.10.2<a class="anchor" aria-label="anchor" href="#lasr-0102"></a></h2>
 <p>Fix: The <code>local_maximum</code> function previously experienced significant delays when writing points to disk, taking up to 2 seconds on Linux and up to 30 seconds on Windows. This issue severely hindered parallelization capabilities. The new fix dramatically reduces the write time to around 0.1 seconds, greatly improving overall performance.</p>
