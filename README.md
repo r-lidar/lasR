@@ -8,7 +8,7 @@ lasR <img src="https://github.com/r-lidar/lasR/blob/main/man/figures/lasR200x231
 
 **R Package for Fast Airborne LiDAR Data Processing**
 
-The `lasR` package (pronounced "laser") is an highly efficient R package designed to provide a platforn to share an efficient implementation of the tools designed with the [`lidR`](https://github.com/r-lidar/lidR) package, enabling the creation and execution of complex processing pipelines on massive lidar data. It can read and write `.las` and `.laz` files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, thin point data, and handle collections of tiles with multicore processing. `lasR` offers a range of tools to process massive volumes of lidar data efficiently in a production environment after the R&D phase with `lidR`.
+The `lasR` package (pronounced "laser") is an R package designed to provide a platform to share efficient implementation of tools designed with the [`lidR`](https://github.com/r-lidar/lidR) package. It enables the creation and execution of complex processing pipelines on massive lidar data. It can read and write `.las` and `.laz` files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, thin point data, and process collections of files using multicore processing. `lasR` offers a range of tools to process massive volumes of lidar data efficiently in a production environment after the R&D phase with `lidR`.
 
 - 📖 Start with the [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) to learn how to use `lasR`.
 - 💻 Install `lasR` in R with: `install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')`.

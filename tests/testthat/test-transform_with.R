@@ -48,7 +48,7 @@ test_that("tw can normalize with extrabyte",
   f <- system.file("extdata", "Topography.las", package="lasR")
 
   olas = templas()
-  pipeline <- reader_las() + normalize(extrabytes = TRUE) + write_las(olas)
+  pipeline <- reader_las() + hag() + write_las(olas)
   ans = exec(pipeline, on = f) |> suppressWarnings()
 
   del = triangulate(use_attribute = "HAG")

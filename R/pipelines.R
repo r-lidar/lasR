@@ -20,7 +20,7 @@
 normalize = function()
 {
   tri <- triangulate(filter = keep_ground_and_water())
-  trans <- transform_with(tri, store_in_attribute = "HAG")
+  trans <- transform_with(tri)
   pipeline <- tri + trans
   return(pipeline)
 }
