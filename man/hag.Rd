@@ -3,18 +3,19 @@
 \name{normalize}
 \alias{normalize}
 \alias{hag}
-\title{Height Above Ground}
+\title{Height Above Ground (HAG)}
 \usage{
 normalize()
 
 hag()
 }
 \description{
-Normalize the point cloud using \link{triangulate} and \link{transform_with}. It triangulates the
-ground points and then applies \code{transform_with} to linearly interpolate the elevation of each point
-within each triangle. \code{normalize()} modifies the Z elevation and record the Height Above Ground (HAG)
-effectively flattening the topography and normalizing the point cloud. \code{hag()} in another hand record
-the HAG in an extrabytes attributes names 'HAD' and preserves the original Height Above See Z coordinates
+Normalize the point cloud using \link{triangulate} and \link{transform_with}. This process involves
+triangulating the ground points and then using \code{transform_with} to linearly interpolate the elevation
+for each point within the corresponding triangles. The \code{normalize()} function modifies the Z elevation
+values, effectively flattening the topography and normalizing the point cloud based on Height Above Ground (HAG).
+In contrast, the \code{hag()} function records the HAG in an extrabyte attribute named 'HAG', while preserving
+the original Z coordinates (Height Above Sea Level).
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")

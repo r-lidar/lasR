@@ -8,13 +8,13 @@ lasR <img src="https://github.com/r-lidar/lasR/blob/main/man/figures/lasR200x231
 
 **R Package for Fast Airborne LiDAR Data Processing**
 
-The `lasR` package (pronounced "laser") is a highly efficient software designed for professional use, enabling the creation and execution of complex processing pipelines on terabytes of airborne LiDAR data. It can read and write `.las` and `.laz` files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, thin point data, and handle collections of tiles with multicore processing. `lasR` offers a range of tools to process massive volumes of LiDAR data efficiently in a **production environment**.
+The `lasR` package (pronounced "laser") is an highly efficient R package designed to provide a platforn to share an efficient implementation of the tools designed with the [`lidR`](https://github.com/r-lidar/lidR) package, enabling the creation and execution of complex processing pipelines on massive lidar data. It can read and write `.las` and `.laz` files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, thin point data, and handle collections of tiles with multicore processing. `lasR` offers a range of tools to process massive volumes of lidar data efficiently in a production environment after the R&D phase with `lidR`.
 
 - 📖 Start with the [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) to learn how to use `lasR`.
 - 💻 Install `lasR` in R with: `install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')`.
 - 💵 [Sponsor `lasR`](https://github.com/sponsors/Jean-Romain). It is free and open source, but requires time and effort to develop and maintain.
 
-`lasR` **is not intended** to replace the [`lidR`](https://github.com/r-lidar/lidR) package. While `lidR` is tailored for academic research, `lasR` focuses on production scenarios, offering significantly higher efficiency for common tasks on large datasets. For more details, see the [comparison](https://r-lidar.github.io/lasR/articles/benchmarks.html).
+`lasR` **is not intended** to replace the [`lidR`](https://github.com/r-lidar/lidR) package. While `lidR` is tailored for academic research, `lasR` focuses on production scenarios, offering significantly higher efficiency compared to `lidR`. For more details, see the [comparison](https://r-lidar.github.io/lasR/articles/benchmarks.html).
 
 ## Installation
 
@@ -39,7 +39,7 @@ Here is a simple example of how to classify outliers before to produce a Digital
 ```r
 library(lasR)
 folder = "/folder/of/laz/tiles/"
-pipeline = classify_with_ivf() + chm(1) + dtm(1)
+pipeline = classify_with_sor() + delete_noise() + chm(1) + dtm(1)
 exec(pipeline, on = folder, ncores = 16, progress = T)
 ```
 
@@ -54,23 +54,8 @@ The following benchmark compares the time and RAM usage of `lasR` and `lidR` for
 - **Language and Performance**: Entirely written in C/C++, `lasR` has no R code except for the API interface. This makes it highly optimized for performance.
 - **Memory Usage**: Unlike `lidR`, which loads the point cloud into an R `data.frame`, `lasR` stores point clouds in a C++ structure that is not exposed to the user, minimizing memory usage.
 - **Dependencies**: `lasR` has a single strong dependency on `gdal`. If `sf` and `terra` are installed, the user experience is enhanced, but they are not mandatory.
-- **Target Audience**: `lidR` serves as a toolbox for data exploration and innovation, making it ideal for research. In contrast, `lasR` is optimized for production, with a focus on speed and memory efficiency, without compromising on these aspects.
 
 For more details, see the relevant [vignette](https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr).
-
-## About
-
-`lasR` is developed openly by [r-lidar](https://www.r-lidar.com/).
-
-The initial development of `lasR` was made possible through the financial support of [Laval University](https://www.ulaval.ca/en). To continue the development of this free software, we now offer consulting, programming, and training services. For more information, please visit [our website](https://www.r-lidar.com/).
-
-## Install dependencies on GNU/Linux
-
-```
-sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
-sudo apt-get update
-sudo apt-get install libgdal-dev libgeos-dev libproj-dev
-```
 
 ## Copyright Information
 
@@ -101,3 +86,18 @@ sudo apt-get install libgdal-dev libgeos-dev libproj-dev
   - © 2017 State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University
   - Provided under Apache License
   - W. Zhang, J. Qi, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data Filtering Method Based on Cloth Simulation,” Remote Sens., vol. 8, no. 6, p. 501, 2016.
+
+## About
+
+`lasR` is developed openly by [r-lidar](https://www.r-lidar.com/).
+
+The initial development of `lasR` was made possible through the financial support of [Laval University](https://www.ulaval.ca/en). To continue the development of this free software, we now offer consulting, programming, and training services. For more information, please visit [our website](https://www.r-lidar.com/).
+
+## Install dependencies on GNU/Linux
+
+```
+sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
+sudo apt-get update
+sudo apt-get install libgdal-dev libgeos-dev libproj-dev
+```
+

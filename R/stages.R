@@ -352,6 +352,20 @@ delete_points = function(filter = "")
   set_lasr_class(ans)
 }
 
+#' @export
+#' @rdname delete_points
+delete_noise = function()
+{
+  delete_points(drop_noise())
+}
+
+#' @export
+#' @rdname delete_points
+delete_ground = function()
+{
+  delete_points(drop_ground())
+}
+
 # ===== F =====
 
 #' Select highest or lowest points

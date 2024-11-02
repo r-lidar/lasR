@@ -1,6 +1,7 @@
 # lasR 0.10.3
 
 Change: `normalize()` loose its argument `extrabytes` in favor of a new function `hag()` that is equivalent to `normalize(TRUE)`
+New: add stages `delete_noise()`, `delete_ground()`
 
 # lasR 0.10.2
 
