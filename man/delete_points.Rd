@@ -2,9 +2,15 @@
 % Please edit documentation in R/stages.R
 \name{delete_points}
 \alias{delete_points}
+\alias{delete_noise}
+\alias{delete_ground}
 \title{Filter and delete points}
 \usage{
 delete_points(filter = "")
+
+delete_noise()
+
+delete_ground()
 }
 \arguments{
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of

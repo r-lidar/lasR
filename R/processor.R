@@ -201,7 +201,7 @@ read_as_common_r_object = function(ans)
         }
         else if (ext %in% c("bna", "csv", "e00", "fgb", "gdb", "geojson", "gml", "gmt", "gpkg", "gps", "gpx", "gtm", "gxt", "jml", "kml", "map", "mdb", "nc", "ods", "osm", "pbf", "shp", "sqlite", "vdv", "xls", "xlsx"))
         {
-          return(vreader(x))
+          return(vreader(x, as_tibble = FALSE))
         }
         else if (ext %in% c("las", "laz"))
         {

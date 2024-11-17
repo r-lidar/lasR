@@ -13,6 +13,15 @@
 - New: `transform_with()` supports a 4x4 Affine Transformation Matrix in order to translate and rotate the point cloud.
 - Change: the `Eigen` library replaces the `Armadillo` library for linear algebra. This may affect the sign of some vectors in `geometry_feature()`.
 
+# lasR 0.10.3
+
+Change: `normalize()` loose its argument `extrabytes` in favor of a new function `hag()` that is equivalent to `normalize(TRUE)`
+New: add stages `delete_noise()`, `delete_ground()`
+
+# lasR 0.10.2
+
+Fix: The `local_maximum` function previously experienced significant delays when writing points to disk, taking up to 2 seconds on Linux and up to 30 seconds on Windows. This issue severely hindered parallelization capabilities. The new fix dramatically reduces the write time to around 0.1 seconds, greatly improving overall performance.
+
 # lasR 0.10.1
 
 - Fix #91: Resolved a critical memory addressing issue when handling very large point clouds.

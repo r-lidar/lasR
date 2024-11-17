@@ -176,41 +176,31 @@ bool LASRlocalmaximum::write()
 {
   if (ofile.empty()) return true;
 
-  int dupfid= 0;
-  progress->reset();
-  progress->set_total(lm.size());
-  progress->set_prefix("Write local maxima on disk");
+  auto start_time = std::chrono::high_resolution_clock::now();
 
   if (lm.size() == 0) return true;
 
-  for (const auto& p : lm)
+  bool success;
+  #pragma omp critical (write_localmax)
   {
-    bool success;
-    #pragma omp critical (write_localmax)
-    {
-      success = vector.write(p, record_attributes);
-    }
-
-    if (!success)
-    {
-      // /!\ TODO: not thread safe
-      if (last_error_code != GDALdataset::DUPFID)
-      {
-        return false;
-      }
-      else
-      {
-        dupfid++;
-        last_error_code = 0;
-      }
-    }
-
-    (*progress)++;
-    progress->show();
+    success = vector.write(lm, record_attributes);
   }
 
-  if (dupfid)
-    print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
+  if (!success)
+    return false;
+
+  int dupfid = vector.get_dupfid();
+  if (dupfid) print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
+
+  if (verbose)
+  {
+    // # nocov start
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    float second = (float)duration.count()/1000.0f;
+    print("  Local Maximum write took %.2f sec.\n", second);
+    // # nocov end
+  }
 
   return true;
 }

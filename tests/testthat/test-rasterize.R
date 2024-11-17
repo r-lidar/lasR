@@ -16,7 +16,7 @@ test_that("rasterize streamed works",
 test_that("rasterize works with extrabyte",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
-  norm = normalize(TRUE)
+  norm = hag()
   met = rasterize(5, c("HAG_mean", "HAG_max", "plop_sum"))
   u = exec(norm+met, on = f)
 

@@ -8,6 +8,7 @@ Vector::Vector() : GDALdataset()
 {
   writetype = UNDEFINED;
   nattr = 0;
+  dupfid = 0;
   extent[0] = 0;
   extent[1] = 0;
   extent[2] = 0;
@@ -19,6 +20,7 @@ Vector::Vector(double xmin, double ymin, double xmax, double ymax, int nattr) : 
 {
   writetype = UNDEFINED;
   this->nattr = nattr;
+  dupfid = 0;
   extent[0] = xmin;
   extent[1] = ymin;
   extent[2] = xmax;
@@ -33,6 +35,7 @@ Vector::Vector(const Vector& vector, const Chunk& chunk) : GDALdataset()
   extent[2] = chunk.xmax;
   extent[3] = chunk.ymax;
 
+  dupfid = 0;
   nattr = vector.nattr;
   eGType = vector.eGType;
   dType = vector.dType;
@@ -57,7 +60,7 @@ bool Vector::create_file()
   return true;
 }
 
-bool Vector::write(const PointLAS& p, bool write_attributes)
+bool Vector::write(const std::vector<PointLAS>& batch, bool write_attributes)
 {
   if (!dataset)
   {
@@ -71,53 +74,99 @@ bool Vector::write(const PointLAS& p, bool write_attributes)
     return false; // # nocov
   }
 
-  // Write only points inside the bounding box
-  if (p.x < extent[0] || p.x > extent[2] || p.y < extent[1] || p.y > extent[3])
-  {
-    return true;
-  }
+  dupfid = 0;
 
-  // Check if a feature with the same FID already exists. This should not happened
-  OGRFeature* existingFeature = layer->GetFeature(p.FID);
-  if (existingFeature)
-  {
-    char buffer[256];
-    snprintf(buffer, sizeof(buffer), "trying to insert a point with FID = %u that is already in the database. This may be due to overlapping tiles. Point skipped.", p.FID);
-    last_error = std::string(buffer);
-    last_error_code = DUPFID;
-    OGRFeature::DestroyFeature(existingFeature);  // Release the existing feature
-    return false;
-  }
-
-  OGRFeature* feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
-  OGRPoint point;
-  point.setX(p.x);
-  point.setY(p.y);
-  point.setZ(p.z);
-  feature->SetGeometry(&point);
-  feature->SetFID(p.FID);
-
-  if (write_attributes)
-  {
-    feature->SetField("Intensity", p.intensity);
-    feature->SetField("gpstime", p.gps_time);
-    feature->SetField("ReturnNumber", p.return_number);
-    feature->SetField("Classification", p.classification);
-    feature->SetField("ScanAngle", p.scan_angle);
-  }
-
-  if (layer->CreateFeature(feature) != OGRERR_NONE)
+  // Start a transaction to batch the writing process
+  if (layer->StartTransaction() != OGRERR_NONE)
   {
     // # nocov start
+    int error_code = CPLGetLastErrorNo();
+    const char* error_msg = CPLGetLastErrorMsg();
     char buffer[512];
-    snprintf(buffer, sizeof(buffer), "error %d while writing point %u (%.2lf %.2lf). %s", CPLGetLastErrorNo(),  p.FID, p.x, p.y, CPLGetLastErrorMsg());
+    snprintf(buffer, sizeof(buffer), "Unable to start transaction for batch write. GDAL Error %d: %s", error_code, error_msg);
     last_error = std::string(buffer);
-    OGRFeature::DestroyFeature(feature);
     return false;
     // # nocov end
   }
 
-  OGRFeature::DestroyFeature(feature);
+  bool success = true;
+  for (const auto& p : batch)
+  {
+    // Write only points inside the bounding box
+    if (p.x < extent[0] || p.x > extent[2] || p.y < extent[1] || p.y > extent[3])
+      continue;
+
+    // Check if a feature with the same FID already exists. This should not happen
+    OGRFeature* existingFeature = layer->GetFeature(p.FID);
+    if (existingFeature)
+    {
+      dupfid++;
+      OGRFeature::DestroyFeature(existingFeature);
+      continue;
+    }
+
+    OGRFeature* feature = OGRFeature::CreateFeature(layer->GetLayerDefn());
+    OGRPoint point;
+    point.setX(p.x);
+    point.setY(p.y);
+    point.setZ(p.z);
+    feature->SetGeometry(&point);
+    feature->SetFID(p.FID);
+
+    if (write_attributes)
+    {
+      feature->SetField("Intensity", p.intensity);
+      feature->SetField("gpstime", p.gps_time);
+      feature->SetField("ReturnNumber", p.return_number);
+      feature->SetField("Classification", p.classification);
+      feature->SetField("ScanAngle", p.scan_angle);
+    }
+
+    if (layer->CreateFeature(feature) != OGRERR_NONE)
+    {
+      // # nocov start
+      char buffer[512];
+      snprintf(buffer, sizeof(buffer), "error %d while writing point %u (%.2lf %.2lf). %s", CPLGetLastErrorNo(),  p.FID, p.x, p.y, CPLGetLastErrorMsg());
+      last_error = std::string(buffer);
+      OGRFeature::DestroyFeature(feature);
+      success = false;
+      break;
+      // # nocov end
+    }
+
+    OGRFeature::DestroyFeature(feature);
+  }
+
+  // Commit the transaction if successful, otherwise roll back
+  if (success)
+  {
+    if (layer->CommitTransaction() != OGRERR_NONE)
+    {
+      // # nocov start
+      int error_code = CPLGetLastErrorNo();
+      const char* error_msg = CPLGetLastErrorMsg();
+      char buffer[512];
+      snprintf(buffer, sizeof(buffer), "Unable to commit transaction for batch write. GDAL Error %d: %s", error_code, error_msg);
+      last_error = std::string(buffer);
+      return false;
+      // # nocov end
+    }
+  }
+  else
+  {
+    if (layer->RollbackTransaction() != OGRERR_NONE)
+    {
+      // # nocov start
+      int error_code = CPLGetLastErrorNo();
+      const char* error_msg = CPLGetLastErrorMsg();
+      char buffer[512];
+      snprintf(buffer, sizeof(buffer), "Unable to rollback transaction. GDAL Error %d: %s",  error_code, error_msg);
+      last_error = std::string(buffer);
+      return false;
+      // # nocov end
+    }
+  }
+
   return true;
 }
 
