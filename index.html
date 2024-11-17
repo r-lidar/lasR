@@ -8,8 +8,8 @@
 <title>Fast and Pipeable Airborne LiDAR Data Tools • lasR</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Fast and Pipeable Airborne LiDAR Data Tools">
 <meta name="description" content="Fast and pipeable airborne lidar processing tools. Read/write las and laz files, computation of metrics in area based approach, point filtering, normalization, individual tree segmentation and other manipulations in a powerful and versatile processing chain.">
 <meta property="og:description" content="Fast and pipeable airborne lidar processing tools. Read/write las and laz files, computation of metrics in area based approach, point filtering, normalization, individual tree segmentation and other manipulations in a powerful and versatile processing chain.">
@@ -68,11 +68,11 @@
 <p><strong>R Package for Fast Airborne LiDAR Data Processing</strong></p>
 <p>The <code>lasR</code> package (pronounced “laser”) is an R package designed to provide a platform to share efficient implementation of tools designed with the <a href="https://github.com/r-lidar/lidR" class="external-link"><code>lidR</code></a> package. It enables the creation and execution of complex processing pipelines on massive lidar data. It can read and write <code>.las</code> and <code>.laz</code> files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, thin point data, and process collections of files using multicore processing. <code>lasR</code> offers a range of tools to process massive volumes of lidar data efficiently in a production environment after the R&amp;D phase with <code>lidR</code>.</p>
 <ul>
-<li>📖 Start with the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html" class="external-link">tutorial</a> to learn how to use <code>lasR</code>.</li>
+<li>📖 Start with the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html">tutorial</a> to learn how to use <code>lasR</code>.</li>
 <li>💻 Install <code>lasR</code> in R with: <code>install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')</code>.</li>
 <li>💵 <a href="https://github.com/sponsors/Jean-Romain" class="external-link">Sponsor <code>lasR</code></a>. It is free and open source, but requires time and effort to develop and maintain.</li>
 </ul>
-<p><code>lasR</code> <strong>is not intended</strong> to replace the <a href="https://github.com/r-lidar/lidR" class="external-link"><code>lidR</code></a> package. While <code>lidR</code> is tailored for academic research, <code>lasR</code> focuses on production scenarios, offering significantly higher efficiency compared to <code>lidR</code>. For more details, see the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html" class="external-link">comparison</a>.</p>
+<p><code>lasR</code> <strong>is not intended</strong> to replace the <a href="https://github.com/r-lidar/lidR" class="external-link"><code>lidR</code></a> package. While <code>lidR</code> is tailored for academic research, <code>lasR</code> focuses on production scenarios, offering significantly higher efficiency compared to <code>lidR</code>. For more details, see the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html">comparison</a>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -88,7 +88,7 @@
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
-<p>Here is a simple example of how to classify outliers before to produce a Digital Surface Model (DSM) and a Digital Terrain Model (DTM) from a folder containing airborne LiDAR point clouds. For more examples see the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html" class="external-link">tutorial</a>.</p>
+<p>Here is a simple example of how to classify outliers before to produce a Digital Surface Model (DSM) and a Digital Terrain Model (DTM) from a folder containing airborne LiDAR point clouds. For more examples see the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html">tutorial</a>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lasR" class="external-link">lasR</a></span><span class="op">)</span></span>
 <span><span class="va">folder</span> <span class="op">=</span> <span class="st">"/folder/of/laz/tiles/"</span></span>
@@ -99,7 +99,7 @@
 <h2 id="main-differences-with-lidr">Main Differences with <code>lidR</code>
 <a class="anchor" aria-label="anchor" href="#main-differences-with-lidr"></a>
 </h2>
-<p>The following benchmark compares the time and RAM usage of <code>lasR</code> and <code>lidR</code> for producing a Digital Terrain Model (DTM), a Canopy Height Model (CHM), and a raster containing two metrics derived from elevation (Z) and intensity. The test was conducted on 120 million points stored in 4 LAZ files. For more details, check out the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html" class="external-link">benchmark vignette</a>.</p>
+<p>The following benchmark compares the time and RAM usage of <code>lasR</code> and <code>lidR</code> for producing a Digital Terrain Model (DTM), a Canopy Height Model (CHM), and a raster containing two metrics derived from elevation (Z) and intensity. The test was conducted on 120 million points stored in 4 LAZ files. For more details, check out the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html">benchmark vignette</a>.</p>
 <p><img src="reference/figures/readme_benchmark.png" style="display: block; margin: auto;"></p>
 <ul>
 <li>
@@ -113,7 +113,7 @@
 <li>
 <strong>Dependencies</strong>: <code>lasR</code> has a single strong dependency on <code>gdal</code>. If <code>sf</code> and <code>terra</code> are installed, the user experience is enhanced, but they are not mandatory.</li>
 </ul>
-<p>For more details, see the relevant <a href="https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr" class="external-link">vignette</a>.</p>
+<p>For more details, see the relevant <a href="https://r-lidar.github.io/lasR/articles/why.html#main-differences-between-lasr-and-lidr">vignette</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="copyright-information">Copyright Information<a class="anchor" aria-label="anchor" href="#copyright-information"></a>
