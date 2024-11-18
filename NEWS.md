@@ -12,7 +12,8 @@
   ```
 - New: `transform_with()` supports a 4x4 Affine Transformation Matrix in order to translate and rotate the point cloud.
 - Change: the `Eigen` library replaces the `Armadillo` library for linear algebra. This may affect the sign of some vectors in `geometry_feature()`.
-
+- New: the `filter` argument available in many stages now accepts programming style strings such as `Z < 3`, `Classification == 2`, `UserData == 0`, `Intensity > 100`, `Classification %in% 2 3 4`, `Classification %out% 0 1 2`. This should now be the preferred way to assign filters. In particular it allows to perform filtering on extrabytes attributes by name: e.g. `Amplitude > 10`.
+ 
 # lasR 0.10.3
 
 Change: `normalize()` loose its argument `extrabytes` in favor of a new function `hag()` that is equivalent to `normalize(TRUE)`

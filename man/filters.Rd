@@ -16,10 +16,9 @@
 \alias{keep_z_below}
 \alias{drop_z_below}
 \alias{drop_duplicates}
-\alias{filter_usage}
 \alias{print.laslibfilter}
 \alias{+.laslibfilter}
-\title{Point filters}
+\title{Point Filters}
 \usage{
 keep_class(x)
 
@@ -49,8 +48,6 @@ drop_z_below(x)
 
 drop_duplicates()
 
-filter_usage()
-
 \method{print}{laslibfilter}(x, ...)
 
 \method{+}{laslibfilter}(e1, e2)
@@ -63,17 +60,31 @@ filter_usage()
 \item{e1, e2}{lasR objects.}
 }
 \description{
-lasR uses LASlib/LASzip, the library developed by Martin Isenburg to read and write LAS/LAZ files.
-Thus, the flags that are available in \code{LAStools} are also available in \code{lasR}.
-Filters are strings to put in the \code{filter} arguments of the \code{lasR} algorithms. The list of available
-strings is accessible with \code{filter_usage}. For convenience, the most useful filters have an associated
-function that returns the corresponding string.
+Filters are strings used in the \code{filter} argument of \code{lasR} stages to process only the points of
+interest. Filters follow the format 'Attribute condition value(s)', e.g., \code{Z > 2}, \code{Intensity < 155},
+\code{Classification == 2}, or \code{ReturnNumber == 1}. The available conditions include \code{>}, \code{<}, \code{>=}, \code{<=},
+\code{==}, \code{!=}, \code{\%in\%}, \verb{\%out\%}, and \verb{\%between\%}. The supported attributes are \code{X}, \code{Y}, \code{Z}, \code{Intensity},
+\code{gpstime}, \code{UserData}, \code{ReturnNumber}, \code{ScanAngle}, and \code{PointSourceID}. Variations in attribute naming
+conventions are allowed. For example, \code{z < 2} and \code{Z < 2} are equivalent, as are \code{gps_time},
+\code{GPStime}, \code{time}, and \code{t}, which are all interpreted as \code{gpstime}. Any unrecognized attribute name
+is treated as an extra attribute. For instance, if the point cloud includes an attribute named
+\code{Amplitude}, a filter like \code{Amplitude < 255} is valid.\cr
+Note that filters never fail. If a filter references an attribute not present in the point cloud
+(e.g., \code{Intensity} in a point cloud without intensity data), the attribute is treated as if it
+has a value of 0. This behavior can impact conditions like \code{Intensity > 50}.\cr
+For convenience, the most commonly used filters have corresponding helper functions that return
+the appropriate filter string. Points that satisfy the specified condition \strong{are retained} for
+processing, while others are ignored for the current stage.
+}
+\details{
+Internally, \code{lasR} uses the open-source libraries
+\href{https://github.com/LAStools/LAStools}{LASlib and LASzip}, developed by Martin Isenburg, to read
+and write LAS/LAZ files. Consequently, the flags available in \code{LAStools} are also accessible in \code{lasR}.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-filter_usage()
 gnd = keep_class(c(2,9))
 reader_las(gnd)
 triangulate(filter = keep_ground())
-rasterize(1, "max", filter = "-drop_z_below 5")
+rasterize(1, "max", filter = "Z > 5")
 }

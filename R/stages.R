@@ -1400,6 +1400,8 @@ set_lasr_class = function(x, raster = FALSE, vector = FALSE, matrix = FALSE)
   if (is.null(x[["output"]])) x[["output"]] = ""
   if (is.null(x[["filter"]])) x[["filter"]] = ""
 
+  validate_filter(x[["filter"]])
+
   x <- Filter(Negate(is.null), x)
 
   x[["output"]] = normalizePath(x[["output"]], mustWork = FALSE)

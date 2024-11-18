@@ -14,9 +14,8 @@ as many others (see \link{metric_engine}). If \code{NULL} nothing is computed. I
 metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples).}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
-interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processed.
-The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
 }
 \description{

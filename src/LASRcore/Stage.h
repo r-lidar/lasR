@@ -112,6 +112,7 @@ public:
   void set_ncpu_concurrent_files(int ncpu) { this->ncpu_concurrent_files = ncpu; }
   void set_verbose(bool verbose) { this->verbose = verbose; };
   void set_uid(std::string s) { uid = s; };
+  void set_filter(std::vector<std::string> f);
   void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };

@@ -1,4 +1,5 @@
 #include "Stage.h"
+#include "FilterParser.h"
 
 /* ==============
  *  VIRTUAL
@@ -60,6 +61,24 @@ bool Stage::set_chunk(Chunk& chunk)
   set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
   if (chunk.shape == ShapeType::CIRCLE) circular = true;
   return true;
+}
+
+void Stage::set_filter(std::vector<std::string> f)
+{
+  // Parse each condition into a LASlib filter flag
+  FilterParser fp;
+  for (auto i = 0 ; i < f.size() ; i++)
+    f[i] = fp.parse(f[i]);
+
+  // Join the flags into a LASlib parsable string
+  std::string filter;
+  for (size_t i = 0; i < f.size(); ++i)
+  {
+    if (i != 0) filter += " ";
+    filter += f[i];
+  }
+
+  set_filter(filter);
 }
 
 void Stage::set_filter(const std::string& f)

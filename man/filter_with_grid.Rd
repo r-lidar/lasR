@@ -12,9 +12,8 @@ filter_with_grid(res, operator = "min", filter = "")
 \item{operator}{string. Can be min or max to retain lowest or highest points}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
-interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processed.
-The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
 }
 \description{

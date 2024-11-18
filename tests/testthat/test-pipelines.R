@@ -80,9 +80,8 @@ test_that("processor does not fails without reader",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
 
-  #expect_error(exec(hulls(), on = f), "The pipeline must have a readers stage")
-  expect_error(exec(local_maximum(10) + reader_las(f), on = f),  "not preceded by a reader stage")
-  expect_error(exec(hulls() + reader_las(f), on = f),  "A 'reader' stage is missing or is at an incorrect position in the pipeline")
+  expect_error(exec(local_maximum(10) + reader_las(), on = f),  "not preceded by a reader stage")
+  expect_error(exec(hulls() + reader_las(), on = f),  "A 'reader' stage is missing or is at an incorrect position in the pipeline")
 })
 
 test_that("delete point memory reallocation works",

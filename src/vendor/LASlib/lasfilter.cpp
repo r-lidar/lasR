@@ -427,6 +427,7 @@ private:
   I32 above_Z;
 };
 
+
 class LAScriterionKeepFirstReturn : public LAScriterion
 {
 public:
@@ -773,12 +774,12 @@ class LAScriterionKeepIntensity : public LAScriterion
 {
 public:
   inline const CHAR* name() const { return "keep_intensity"; };
-  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s %d %d ", name(), below_intensity, above_intensity); };
+  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s %d %d ", name(), below_intensity, above_return_number); };
   inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_INTENSITY; };
-  inline BOOL filter(const LASpoint* point) { return (point->get_intensity() < below_intensity) || (point->get_intensity() > above_intensity); };
-  LAScriterionKeepIntensity(U16 below_intensity, U16 above_intensity) { this->below_intensity = below_intensity; this->above_intensity = above_intensity; };
+  inline BOOL filter(const LASpoint* point) { return (point->get_intensity() < below_intensity) || (point->get_intensity() > above_return_number); };
+  LAScriterionKeepIntensity(U16 below_intensity, U16 above_return_number) { this->below_intensity = below_intensity; this->above_return_number = above_return_number; };
 private:
-  U16 below_intensity, above_intensity;
+  U16 below_intensity, above_return_number;
 };
 
 class LAScriterionKeepIntensityBelow : public LAScriterion
@@ -1330,46 +1331,6 @@ private:
   F32 fraction;
 };
 
-class LAScriterionDropDuplicates : public LAScriterion
-{
-  typedef std::array<I32,3> Triplet;
-
-public:
-  inline const CHAR* name() const { return "drop_duplicate"; };
-  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY | LASZIP_DECOMPRESS_SELECTIVE_Z; };
-  inline BOOL filter(const LASpoint* point)
-  {
-    Triplet key = {point->get_Z(), point->get_Y(), point->get_Z()};
-    return !registry.insert(key).second;
-  };
-  void reset()
-  {
-    registry.clear();
-  };
-  LAScriterionDropDuplicates()
-  {
-  };
-  ~LAScriterionDropDuplicates(){ reset(); };
-
-private:
-  struct ArrayCompare
-  {
-    bool operator()(const Triplet& a, const Triplet& b) const
-    {
-      if (a[0] < b[0]) return true;
-      if (a[0] > b[0]) return false;
-
-      if (a[1] < b[1]) return true;
-      if (a[1] > b[1]) return false;
-
-      return a[2] < b[2];
-    }
-  };
-
-  std::set<Triplet, ArrayCompare> registry;
-};
-
 class LAScriterionThinWithGrid : public LAScriterion
 {
 public:
@@ -1653,6 +1614,242 @@ private:
   my_I64_set times;
 };
 
+// ===== Additional criterion for lasR =====
+
+#include <functional>
+
+class LASRcriterion : public LAScriterion
+{
+public:
+  LASRcriterion() { accessor = nullptr; attribute_index = -1; attribute_name = 0; }
+  ~LASRcriterion() { if (attribute_name) free(attribute_name); }
+
+
+  LASRcriterion(const char* attribute_name) : LASRcriterion()
+  {
+    this->attribute_name = strdup(attribute_name);
+
+    // Assign the accessor function based on attribute_name
+    if (strcmp(attribute_name, "x") == 0)  accessor = [](const LASpoint* point) { return static_cast<double>(point->get_x()); };
+    else if (strcmp(attribute_name, "y") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_y()); };
+    else if (strcmp(attribute_name, "z") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_z()); };
+    else if (strcmp(attribute_name, "intensity") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_intensity()); };
+    else if (strcmp(attribute_name, "return") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_return_number()); };
+    else if (strcmp(attribute_name, "class") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_classification()); };
+    else if (strcmp(attribute_name, "psid") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_point_source_ID()); };
+    else if (strcmp(attribute_name, "gpstime") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_gps_time()); };
+    else if (strcmp(attribute_name, "angle") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_scan_angle()); };
+    else if (strcmp(attribute_name, "userdata") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_user_data()); };
+    else
+      accessor = [this](const LASpoint* point)
+      {
+        if (this->attribute_index == -1)
+        {
+          this->attribute_index = point->attributer->get_attribute_index(this->attribute_name);
+          warning("No attribute '%s' for this point cloud. Returning 0 for this attribute may affect the filter\n", this->attribute_name);
+          if (this->attribute_index == -1)  this->attribute_index = -2;
+        }
+
+        if (this->attribute_index == -2)
+        {
+          return 0.0;
+        }
+
+        return static_cast<double>(point->get_attribute_as_float(this->attribute_index));
+      };
+  };
+
+  inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_ALL; };
+
+protected:
+  std::function<double(const LASpoint*)> accessor;
+  char* attribute_name;
+  I32 attribute_index;
+};
+
+
+
+class LASRcriterionKeepBelow : public LASRcriterion
+{
+public:
+  LASRcriterionKeepBelow(const char* attribute_name, double threshold) : LASRcriterion(attribute_name) { this->threshold = threshold; }
+  inline const CHAR* name() const { return "keep_below"; }
+  inline I32 get_command(char* string) const  {  return snprintf(string, 256, "-%s %.2f ", name(), threshold); }
+  inline BOOL filter(const LASpoint* point) { return accessor(point) >= threshold; }
+private:
+  double threshold;
+};
+
+class LASRcriterionKeepBelowEqual : public LASRcriterion
+{
+public:
+  LASRcriterionKeepBelowEqual(const char* attribute_name, double threshold) : LASRcriterion(attribute_name) { this->threshold = threshold; }
+  inline const CHAR* name() const { return "keep_beloweq"; }
+  inline I32 get_command(char* string) const  {  return snprintf(string, 256, "-%s %.2f ", name(), threshold); }
+  inline BOOL filter(const LASpoint* point) { return accessor(point) > threshold; }
+private:
+  double threshold;
+};
+
+class LASRcriterionKeepAbove : public LASRcriterion
+{
+public:
+  LASRcriterionKeepAbove(const char* attribute_name, double threshold) : LASRcriterion(attribute_name) { this->threshold = threshold; }
+  inline const CHAR* name() const { return "keep_above"; }
+  inline I32 get_command(char* string) const  {  return snprintf(string, 256, "-%s %.2f ", name(), threshold); }
+  inline BOOL filter(const LASpoint* point) { return accessor(point) <= threshold; }
+private:
+  double threshold;
+};
+
+class LASRcriterionKeepAboveEqual : public LASRcriterion
+{
+public:
+  LASRcriterionKeepAboveEqual(const char* attribute_name, double threshold) : LASRcriterion(attribute_name) { this->threshold = threshold; }
+  inline const CHAR* name() const { return "keep_aboveeg"; }
+  inline I32 get_command(char* string) const  {  return snprintf(string, 256, "-%s %.2f ", name(), threshold); }
+  inline BOOL filter(const LASpoint* point) { return accessor(point) < threshold; }
+private:
+  double threshold;
+};
+
+class LASRcriterionKeepBetween : public LASRcriterion
+{
+public:
+  LASRcriterionKeepBetween(const char* attribute_name, double below, double above) : LASRcriterion(attribute_name)
+  {
+    if (below > above)
+    {
+      this->below = above;
+      this->above = below;
+    }
+    else
+    {
+      this->below = below;
+      this->above = above;
+    }
+  }
+  inline const CHAR* name() const { return "keep_between"; }
+  inline I32 get_command(char* string) const  { return snprintf(string, 256, "-%s %.2f %.2f ", name(), below, above); }
+  inline BOOL filter(const LASpoint* point) { double v = accessor(point); return (v < below) || (v >= above);  }
+private:
+  double below;
+  double above;
+};
+
+class LASRcriterionKeepEqual : public LASRcriterion
+{
+public:
+  LASRcriterionKeepEqual(const char* attribute_name, double value) : LASRcriterion(attribute_name) { this->value = value; }
+  inline const CHAR* name() const { return "keep_above"; }
+  inline I32 get_command(char* string) const  {  return snprintf(string, 256, "-%s %.2f ", name(), value); }
+  inline BOOL filter(const LASpoint* point) { return accessor(point) != value; }
+private:
+  double value;
+};
+
+class LASRcriterionKeepDifferent : public LASRcriterion
+{
+public:
+  LASRcriterionKeepDifferent(const char* attribute_name, double value) : LASRcriterion(attribute_name) { this->value = value; }
+  inline const CHAR* name() const { return "keep_different"; }
+  inline I32 get_command(char* string) const  { return snprintf(string, 256, "-%s %.2f", name(), value); }
+  inline BOOL filter(const LASpoint* point) { return accessor(point) == value; }
+private:
+  double value;
+};
+
+class LASRcriterionKeepIn : public LASRcriterion
+{
+public:
+  LASRcriterionKeepIn(const char* attribute_name, double* values, int size) : LASRcriterion(attribute_name)
+  {
+    memcpy(this->values, values, 64 *sizeof(double));
+    this->size = size;
+  }
+  inline const CHAR* name() const { return "keep_in"; }
+  inline I32 get_command(char* string) const  { return snprintf(string, 256, "-%s", name()); }
+  inline BOOL filter(const LASpoint* point)
+  {
+    double v = accessor(point);
+    for (int i = 0 ; i < size ; i++)
+    {
+      if (values[i] == v)
+        return false;
+    }
+    return true;
+  }
+private:
+  double values[64];
+  int size;
+};
+
+class LASRcriterionKeepOut : public LASRcriterion
+{
+public:
+  LASRcriterionKeepOut(const char* attribute_name, double* values, int size) : LASRcriterion(attribute_name)
+  {
+    memcpy(this->values, values, 64 *sizeof(double));
+    this->size = size;
+  }
+  inline const CHAR* name() const { return "keep_out"; }
+  inline I32 get_command(char* string) const  { return snprintf(string, 256, "-%s", name()); }
+  inline BOOL filter(const LASpoint* point)
+  {
+    double v = accessor(point);
+    for (int i = 0 ; i < size ; i++)
+    {
+      if (values[i] == v)
+        return true;
+    }
+    return false;
+  }
+private:
+  double values[64];
+  int size;
+};
+
+class LAScriterionDropDuplicates : public LAScriterion
+{
+  typedef std::array<I32,3> Triplet;
+
+public:
+  inline const CHAR* name() const { return "drop_duplicate"; };
+  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
+  inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY | LASZIP_DECOMPRESS_SELECTIVE_Z; };
+  inline BOOL filter(const LASpoint* point)
+  {
+    Triplet key = {point->get_Z(), point->get_Y(), point->get_Z()};
+    return !registry.insert(key).second;
+  };
+  void reset()
+  {
+    registry.clear();
+  };
+  LAScriterionDropDuplicates()
+  {
+  };
+  ~LAScriterionDropDuplicates(){ reset(); };
+
+private:
+  struct ArrayCompare
+  {
+    bool operator()(const Triplet& a, const Triplet& b) const
+    {
+      if (a[0] < b[0]) return true;
+      if (a[0] > b[0]) return false;
+
+      if (a[1] < b[1]) return true;
+      if (a[1] > b[1]) return false;
+
+      return a[2] < b[2];
+    }
+  };
+
+  std::set<Triplet, ArrayCompare> registry;
+};
+
+
 void LASfilter::clean()
 {
   U32 i;
@@ -1691,6 +1888,12 @@ void LASfilter::usage() const
   print("  -drop_xyz 620000 4830000 100 621000 4831000 200 (min_x min_y min_z max_x max_y max_z)\n");
   print("  -drop_duplicates\n");
   print("Filter points based on their return numbering.\n");
+  print("  -keep_return_below 3\n");
+  print("  -keep_return_above 2\n");
+  print("  -keep_return_between 1 2\n");
+  print("  -drop_return_below 2\n");
+  print("  -drop_return_above 1\n");
+  print("  -drop_return_between 3 2\n");
   print("  -keep_first -first_only -drop_first\n");
   print("  -keep_last -last_only -drop_last\n");
   print("  -keep_second_last -drop_second_last\n");
@@ -1795,6 +1998,211 @@ BOOL LASfilter::parse(int argc, char* argv[])
     {
       usage();
       return TRUE;
+    }
+    // Additional criterion added for lasR
+    else if (strncmp(argv[i],"-lasr_", 6) == 0)
+    {
+      const char* prefix = "-lasr";
+      size_t prefix_length = strlen(prefix);
+      size_t len = strlen(argv[i]);
+
+      // Find the underscores after the prefix
+      const char* first_underscore = strchr(argv[i] + prefix_length, '_');
+      if (!first_underscore)
+      {
+        eprint("ERROR: '%s' invalid format\n", argv[i]);
+        return FALSE;
+      }
+
+      const char* second_underscore = strchr(first_underscore + 1, '_');
+      if (!second_underscore)
+      {
+        eprint("ERROR: '%s' invalid format\n", argv[i]);
+        return FALSE;
+      }
+
+      char operator_name[256];
+      char attribute_name[256];
+
+      // Extract the first word (between prefix and first underscore)
+      size_t len_operator_name = second_underscore - first_underscore - 1;
+      strncpy(operator_name, first_underscore + 1, len_operator_name);
+      operator_name[len_operator_name] = '\0';
+
+      // Extract the second word (between second underscore and space)
+      size_t len_attribute_name = len - (second_underscore - argv[i]) - 1;
+      strncpy(attribute_name, second_underscore + 1, len_attribute_name);
+      attribute_name[len_attribute_name] = '\0';
+
+      //printf("%s %s\n", operator_name, attribute_name);
+
+      if (strcmp(attribute_name, "above") == 0)
+      {
+        if ((i+1) >= argc)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
+          return FALSE;
+        }
+        F64 v;
+        if (sscanf(argv[i+1], "%lf", &v) != 1)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
+          return FALSE;
+        }
+
+        add_criterion(new LASRcriterionKeepAbove(operator_name, v));
+        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
+      }
+      else if (strcmp(attribute_name, "below") == 0)
+      {
+        if ((i+1) >= argc)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
+          return FALSE;
+        }
+        F64 v;
+        if (sscanf(argv[i+1], "%lf", &v) != 1)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
+          return FALSE;
+        }
+
+        add_criterion(new LASRcriterionKeepBelow(operator_name, v));
+        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
+      }
+      else if (strcmp(attribute_name,"aboveeq") == 0)
+      {
+        if ((i+1) >= argc)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
+          return FALSE;
+        }
+        F64 v;
+        if (sscanf(argv[i+1], "%lf", &v) != 1)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
+          return FALSE;
+        }
+
+        add_criterion(new LASRcriterionKeepAboveEqual(operator_name, v));
+        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
+      }
+      else if (strcmp(attribute_name, "beloweq") == 0)
+      {
+        if ((i+1) >= argc)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
+          return FALSE;
+        }
+        F64 v;
+        if (sscanf(argv[i+1], "%lf", &v) != 1)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
+          return FALSE;
+        }
+
+        add_criterion(new LASRcriterionKeepBelowEqual(operator_name, v));
+        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
+      }
+      else if (strcmp(attribute_name,"equal") == 0)
+      {
+        if ((i+1) >= argc)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
+          return FALSE;
+        }
+        F64 v;
+        if (sscanf(argv[i+1], "%lf", &v) != 1)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
+          return FALSE;
+        }
+
+        add_criterion(new LASRcriterionKeepEqual(operator_name, v));
+        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
+      }
+      else if (strcmp(attribute_name, "different") == 0)
+      {
+        if ((i+1) >= argc)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
+          return FALSE;
+        }
+        F64 v;
+        if (sscanf(argv[i+1], "%lf", &v) != 1)
+        {
+          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
+          return FALSE;
+        }
+
+        add_criterion(new LASRcriterionKeepDifferent(operator_name, v));
+        *argv[i]='\0';
+      }
+      else if (strcmp(attribute_name, "between") == 0)
+      {
+        if ((i+2) >= argc)
+        {
+          eprint("ERROR: '%s' needs 2 arguments: min_z max_z\n", argv[i]);
+          return FALSE;
+        }
+        F64 min;
+        if (sscanf(argv[i+1], "%lf", &min) != 1)
+        {
+          eprint("ERROR: '%s' needs 2 arguments: min_z max_z but '%s' is no valid min_z\n", argv[i], argv[i+1]);
+          return FALSE;
+        }
+        F64 max;
+        if (sscanf(argv[i+2], "%lf", &max) != 1)
+        {
+          eprint("ERROR: '%s' needs 2 arguments: min_z max_z but '%s' is no valid max_z\n", argv[i], argv[i+2]);
+          return FALSE;
+        }
+
+        add_criterion(new LASRcriterionKeepBetween(operator_name, min, max));
+        *argv[i]='\0'; *argv[i+1]='\0'; *argv[i+2]='\0'; i+=2;
+      }
+      else if (strcmp(attribute_name, "in") == 0 || strcmp(attribute_name, "out") == 0)
+      {
+        if ((i+1) >= argc)
+        {
+          eprint("ERROR: '%s' needs at least 1 argument: values\n", argv[i]);
+          return FALSE;
+        }
+
+        int i_in = i;
+        int j = 0;
+        *argv[i]='\0';
+        i+=1;
+        F64 v;
+        F64 values[64];
+        do
+        {
+          if (sscanf(argv[i], "%lf", &v) != 1)
+          {
+            eprint("ERROR: '%s' needs at least 1 argument: values but '%s' is no valid value\n", argv[i_in], argv[i]);
+            return FALSE;
+          }
+
+          if (j > 63)
+          {
+            eprint("ERROR: '%s' cannot have more than 64 arguments\n", argv[i_in], argv[i]);
+            return FALSE;
+          }
+
+          values[j] = v;
+          *argv[i]='\0';
+          i+=1;
+          j+=1;
+        } while ((i < argc) && ('0' <= *argv[i]) && (*argv[i] <= '9'));
+        i-=1;
+
+        if (strcmp(attribute_name, "in") == 0)
+          add_criterion(new LASRcriterionKeepIn(operator_name, values, j+1));
+        else
+          add_criterion(new LASRcriterionKeepOut(operator_name, values, j+1));
+
+        *argv[i]='\0';
+      }
     }
     else if (strncmp(argv[i],"-keep_", 6) == 0)
     {

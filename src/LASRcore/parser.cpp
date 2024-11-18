@@ -389,7 +389,29 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           continue;
         }
 
-        std::string filter = stage.value("filter", "");
+        std::vector<std::string> filters;
+        if (stage.contains("filter"))
+        {
+          if (stage["filter"].is_array())
+          {
+            // If 'filter' is an array of strings, iterate over the array
+            for (const auto& item : stage["filter"])
+            {
+              if (item.is_string()) {
+                filters.push_back(item.get<std::string>());
+              }
+            }
+          }
+          else
+          {
+            filters.push_back(stage["filter"].get<std::string>());
+          }
+        }
+        else
+        {
+          filters.push_back("");
+        }
+
         std::string output = stage.value("output", "");
 
         if (catalog->file_exists(output))
@@ -403,7 +425,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         const auto p = it->get();
         p->set_crs(current_crs);
         current_crs = p->get_crs();
-        p->set_filter(filter);
+        p->set_filter(filters);
 
         // Create empty files that will be filled later during the processing
         if (!p->set_output_file(output)) return false;
