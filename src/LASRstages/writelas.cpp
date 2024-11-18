@@ -149,6 +149,7 @@ void LASRlaswriter::set_header(LASheader*& header)
 
 bool LASRlaswriter::set_chunk(Chunk& chunk)
 {
+  Stage::set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
   if (chunk.buffer == 0) keep_buffer = true;
   return true;
 }
