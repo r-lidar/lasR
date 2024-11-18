@@ -86,7 +86,7 @@ void Stage::set_filter(const std::string& f)
   filter = f;
   std::string cpy = f;
   char* s = const_cast<char*>(cpy.c_str());
-  lasfilter.parse(s);
+  if (!lasfilter.parse(s)) throw std::string("Invalid filter detected");
 }
 
 #ifdef USING_R

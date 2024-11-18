@@ -46,7 +46,7 @@ test_that("Various filter tests",
   expect_equal(test("Intensity %out% 107 113")$npoints, 28L)
 })
 
-test_that("Various filter tests with extra attribute",
+test_that("Various filter tests with extra attributes",
 {
   test = function(filter)
   {
@@ -60,6 +60,19 @@ test_that("Various filter tests with extra attribute",
   expect_equal(test("Plop > 0")$npoints, 0L)
 })
 
+test_that("Filters errors",
+{
+  test = function(filter)
+  {
+    f <- system.file("extdata", "Example.las", package = "lasR")
+    exec(reader_las(filter) + summarise(), on = f)
+  }
+
+  expect_error(test("Z > 976 546")$npoints)
+  expect_error(test("3 == 4")$npoints)
+  #expect_error(test("-keep_z_above 234 345"))
+  expect_error(test(paste0("UserData %in% ", paste(1:65, collapse = " "))))
+})
 
 test_that("rasterize works with a filter (#29)",
 {

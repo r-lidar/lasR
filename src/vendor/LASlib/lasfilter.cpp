@@ -2185,7 +2185,7 @@ BOOL LASfilter::parse(int argc, char* argv[])
 
           if (j > 63)
           {
-            eprint("ERROR: '%s' cannot have more than 64 arguments\n", argv[i_in], argv[i]);
+            eprint("ERROR: operator 'in' and 'out' cannot have more than 64 arguments\n");
             return FALSE;
           }
 
@@ -4901,7 +4901,7 @@ BOOL LASfilter::parse(CHAR* string)
 {
   int p = 0;
   int argc = 1;
-  char* argv[64];
+  char* argv[256];
   I32 len = (I32)strlen(string);
 
   while (p < len)
