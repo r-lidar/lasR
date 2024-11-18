@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.10.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.11.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,22 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.11.0" id="lasr-0110">lasR 0.11.0<a class="anchor" aria-label="anchor" href="#lasr-0110"></a></h2>
+<ul><li><p>New: new stage <code><a href="../reference/info.html">info()</a></code> to print useful informations about a file.</p></li>
+<li>
+<p>New command line utility. Users can now call simple pipeline from the terminal. First use <code><a href="../reference/install_cmd_tools.html">install_cmd_tools()</a></code> then it is possible to use commands like:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="ex">lasr</span> info <span class="at">-i</span> path/to/file.las</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="ex">lasr</span> vpc <span class="at">-i</span> path/to/folder </span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="ex">lasr</span> lax <span class="at">-i</span> path/to/folder <span class="at">-ncores</span> 8</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="ex">lasr</span> help</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="ex">lasr</span> chm <span class="at">-i</span> path/to/folder <span class="at">-o</span> path/to/chm.tif <span class="at">-res</span> 1 <span class="at">-ncore</span> 4</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="ex">lasr</span> dtm <span class="at">-i</span> path/to/folder <span class="at">-o</span> path/to/chm.tif <span class="at">-res</span> 0.5 <span class="at">-ncore</span> 4</span></code></pre></div>
+</li>
+<li><p>New: <code><a href="../reference/transform_with.html">transform_with()</a></code> supports a 4x4 Affine Transformation Matrix in order to translate and rotate the point cloud.</p></li>
+<li><p>Change: the <code>Eigen</code> library replaces the <code>Armadillo</code> library for linear algebra. This may affect the sign of some vectors in <code>geometry_feature()</code>.</p></li>
+<li><p>New: the <code>filter</code> argument available in many stages now accepts programming style strings such as <code>Z &lt; 3</code>, <code>Classification == 2</code>, <code>UserData == 0</code>, <code>Intensity &gt; 100</code>, <code>Classification %in% 2 3 4</code>, <code>Classification %out% 0 1 2</code>. This should now be the preferred way to assign filters. In particular it allows to perform filtering on extrabytes attributes by name: e.g. <code>Amplitude &gt; 10</code>.</p></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.10.3" id="lasr-0103">lasR 0.10.3<a class="anchor" aria-label="anchor" href="#lasr-0103"></a></h2>
 <p>Change: <code><a href="../reference/hag.html">normalize()</a></code> loose its argument <code>extrabytes</code> in favor of a new function <code><a href="../reference/hag.html">hag()</a></code> that is equivalent to <code>normalize(TRUE)</code> New: add stages <code><a href="../reference/delete_points.html">delete_noise()</a></code>, <code><a href="../reference/delete_points.html">delete_ground()</a></code></p>
@@ -329,27 +345,27 @@
 <h2 class="pkg-version" data-toc-text="0.3.0" id="lasr-030">lasR 0.3.0<a class="anchor" aria-label="anchor" href="#lasr-030"></a></h2>
 <ul><li>
 <p>Change: <code>processor()</code> and <code>reader()</code> are deprecated and are replaced by <code><a href="../reference/exec.html">exec()</a></code> and <code><a href="../reference/reader_las.html">reader_las()</a></code>. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the <code>LAScatalog</code> processing options and this was not possible with the previous syntax.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">lidR</span><span class="fu">::</span><span class="fu">readLAScatalog</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li>
 <p>New: the processor is now able to process by chunk like <code>lidR</code></p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">file</span>, chunk <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li><p>New: stage <code><a href="../reference/delete_points.html">delete_points()</a></code> to remove some points in the pipeline.</p></li>
 <li>
 <p>New: it is now possible to write the following:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dtm</span> <span class="op">=</span> <span class="fu"><a href="../reference/dtm.html">dtm</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">dtm</span> <span class="op">+</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">dtm</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li>
 <p>New: it is not possible to omit the reader stage. It automatically adds a default reader</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </li>
