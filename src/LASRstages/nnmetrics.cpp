@@ -53,6 +53,7 @@ bool LASRnnmetrics::process(LAS*& las)
   progress->set_total(maxima.size());
   progress->set_prefix("neighborhood_metrics");
   progress->show();
+  progress->set_ncpu(ncpu);
 
   lm.resize(maxima.size());
 

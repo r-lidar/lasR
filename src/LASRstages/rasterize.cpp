@@ -143,6 +143,7 @@ bool LASRrasterize::process(LAS*& las)
   progress->reset();
   progress->set_total(n);
   progress->set_prefix("Rasterization");
+  progress->set_ncpu(ncpu);
 
   // The next for loop is at the level 2 of a nested parallel region. Printing the progress bar
   // is not thread safe. We first check that we are in outer thread 0

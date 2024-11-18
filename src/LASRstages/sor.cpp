@@ -6,6 +6,7 @@ bool LASRsor::process(LAS*& las)
   progress->reset();
   progress->set_total(las->npoints);
   progress->set_prefix("Statistical outlier");
+  progress->set_ncpu(ncpu);
 
   int n = 0; // online variance
   double m0 = 0.0; // online mean
