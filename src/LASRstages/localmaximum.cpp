@@ -66,18 +66,7 @@ bool LASRlocalmaximum::process(LAS*& las)
     return false; // # nocov
   }
 
-  LAStransform* lastransform = nullptr;
-  if (use_attribute != "Z")
-  {
-    lastransform = las->make_z_transformer(use_attribute);
-    if (lastransform == nullptr)
-    {
-      char buffer[64];
-      snprintf(buffer, sizeof(buffer), "no extrabyte attribute '%s' found", use_attribute.c_str());
-      last_error = std::string(buffer);
-      return false;
-    }
-  }
+  AttributeAccessor accessor(use_attribute);
 
   progress->reset();
   progress->set_total(las->npoints);
@@ -112,13 +101,13 @@ bool LASRlocalmaximum::process(LAS*& las)
       }
     }
 
-    if (!las->get_point(i, pp, &lasfilter, lastransform)) { status[i] = NLM; } // The point was either filtered or withhelded
+    if (!las->get_point(i, pp, &lasfilter, &accessor)) { status[i] = NLM; } // The point was either filtered or withhelded
     if (pp.z < min_height) { status[i] = NLM; }
     if (status[i] == NLM) continue;
 
     Circle windows(pp.x, pp.y, hws);
     std::vector<PointLAS> points;
-    las->query(&windows, points, &lasfilter, lastransform);
+    las->query(&windows, points, &lasfilter, &accessor);
 
     // It seems there is a data race here but no. In the worst case updating status[pt.FID]
     // is non-synchronized with other iterations and it will simply prevent skipping one computation early
@@ -155,8 +144,6 @@ bool LASRlocalmaximum::process(LAS*& las)
       }
     }
   }
-
-  if (lastransform) delete lastransform;
 
   progress->done();
 

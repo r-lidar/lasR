@@ -576,9 +576,7 @@ load_matrix = function(matrix)
 #' the input data (usually meters).
 #' @param min_height numeric. Minimum height of a local maximum. Threshold below which a point cannot be a
 #' local maximum. Default is 2.
-#' @param use_attribute character. By default the local maximum is performed on the coordinate Z. Can also be
-#' the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity' but there is
-#' probably no use case for that one.
+#' @template param-attribute
 #' @param raster LASRalgorithm. A stage that produces a raster.
 #' @param record_attributes The coordinates XYZ of points corresponding to the local maxima are recorded.
 #' It is also possible to record the attributes of theses points such as the intensity, return number, scan
@@ -1040,7 +1038,11 @@ set_crs = function(x)
 #'
 #' @param res numeric. pixel/voxel resolution
 #' @param distance numeric. Minimum distance between points for poisson sampling.
+#' @param method string can be "random" to retain one random point or "highest" or "lowest" to retain
+#' the highest and lowest points respectively. For lowest and highest users can use the argument `use_attribute`
+#' to select the highest intensity or highest Z, or highest gpstime or any other attributes.
 #' @param ... unused
+#' @template param-attribute
 #' @template param-filter
 #' @template return-pointcloud
 #' @examples
@@ -1071,13 +1073,13 @@ sampling_voxel = function(res = 2, filter = "", ...)
 
 #' @export
 #' @rdname sampling
-sampling_pixel = function(res = 2, filter = "", ...)
+sampling_pixel = function(res = 2, filter = "", method = "random", use_attribute = "Z", ...)
 {
   shuffle_size = .Machine$integer.max
   p = list(...)
   if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
 
-  ans <- list(algoname = "sampling_pixel", res = res, filter = filter, shuffle_size = shuffle_size)
+  ans <- list(algoname = "sampling_pixel", res = res, filter = filter, use_attribute = use_attribute, shuffle_size = shuffle_size)
   set_lasr_class(ans)
 }
 
@@ -1200,16 +1202,14 @@ summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 
 #' Delaunay triangulation
 #'
-#' Delaunay triangulation. Can be used to build a DTM, a CHM, normalize a point cloud, or any other
+#' 2.5D Delaunay triangulation. Can be used to build a DTM, a CHM, normalize a point cloud, or any other
 #' application. This stage is typically used as an intermediate process without an output file.
 #' This stage does not modify the point cloud.
 #'
 #' @param max_edge numeric. Maximum edge length of a triangle in the Delaunay triangulation. If a
 #' triangle has an edge length greater than this value, it will be removed. If max_edge = 0, no trimming
 #' is done (see examples).
-#' @param use_attribute character. By default the triangulation is performed on the coordinate Z. Can also be
-#' the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity'.
-#'
+#' @template param-attribute
 #' @template param-filter
 #' @template param-ofile
 #'
@@ -1219,7 +1219,7 @@ summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader_las()
 #' tri1 <- triangulate(25, filter = keep_ground(), ofile = tempgpkg())
-#' filter <- "-keep_last -keep_random_fraction 0.1"
+#' filter <- "-keep_random_fraction 0.1"
 #' tri2 <- triangulate(filter = filter, ofile = tempgpkg())
 #' pipeline <- read + tri1 + tri2
 #' ans <- exec(pipeline, on = f)

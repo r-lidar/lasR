@@ -58,10 +58,10 @@ test_that("tw can normalize with extrabyte",
 
   expect_true(all(as.numeric(na.omit(as.numeric(ans[]))) == 0))
 
-  del = triangulate(use_attribute = "PP")
-  dtm = rasterize(2, del)
-  pipeline <- reader_las(filter = keep_ground()) + del + dtm
-  expect_error(exec(pipeline, on = olas), "no extrabyte attribute 'PP' found")
+  #del = triangulate(use_attribute = "PP")
+  #dtm = rasterize(2, del)
+  #pipeline <- reader_las(filter = keep_ground()) + del + dtm
+  #expect_error(exec(pipeline, on = olas), "no extrabyte attribute 'PP' found")
 })
 
 test_that("tw can translate with a matrix ",

@@ -6,7 +6,6 @@
 
 #include "lasdefinitions.hpp"
 #include "lasfilter.hpp"
-#include "lastransform.hpp"
 #include "lasutility.hpp"
 
 #include <algorithm>
@@ -380,7 +379,7 @@ void LAS::update_header()
 }
 
 // Thread safe
-bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter, LAStransform* const lastransform) const
+bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter, AttributeAccessor* const accessor) const
 {
   LASpoint p;
   p.init(point.quantizer, point.num_items, point.items, point.attributer);
@@ -402,10 +401,9 @@ bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter
 
       if (p.get_withheld_flag() == 0 && shape->contains(p.get_x(), p.get_y()))
       {
-        if (lastransform) lastransform->transform(&p);
-
         PointLAS pl(&p);
         pl.FID = i;
+        if (accessor) pl.z = (*accessor)(&p);
         addr.push_back(std::move(pl));
       }
     }
@@ -415,7 +413,7 @@ bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter
 }
 
 // Thread safe
-bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter, LAStransform* const lastransform) const
+bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter, AttributeAccessor* const accessor) const
 {
   LASpoint p;
   p.init(point.quantizer, point.num_items, point.items, point.attributer);
@@ -434,10 +432,9 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
 
       if (p.get_withheld_flag() == 0)
       {
-        if (lastransform) lastransform->transform(&p);
-
         PointLAS pl(&p);
         pl.FID = i;
+        if (accessor) pl.z = (*accessor)(&p);
         addr.push_back(std::move(pl));
       }
     }
@@ -447,7 +444,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
 }
 
 // Thread safe
-bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>& res,  LASfilter* const lasfilter, LAStransform* const lastransform) const
+bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>& res,  LASfilter* const lasfilter, AttributeAccessor* const accessor) const
 {
   double x = xyz[0];
   double y = xyz[1];
@@ -516,10 +513,10 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
       if (lasfilter && lasfilter->filter(&p)) continue;
       if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
       if (p.get_withheld_flag() != 0) continue;
-      if (lastransform) lastransform->transform(&p);
 
       PointLAS pl(&p);
       pl.FID = i;
+      if (accessor) pl.z = (*accessor)(&p);
       res.push_back(std::move(pl));
     }
   }
@@ -539,16 +536,16 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
 }
 
 // Thread safe
-bool LAS::get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter, LAStransform* const lastransform) const
+bool LAS::get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter, AttributeAccessor * const accessor) const
 {
   LASpoint p;
   p.init(point.quantizer, point.num_items, point.items, point.attributer);
   p.copy_from(buffer + pos * p.total_point_size);
 
   if (p.get_withheld_flag() != 0) return false;
-  if (lastransform) lastransform->transform(&p);
   if (lasfilter && lasfilter->filter(&p)) return false;
   pt.copy(&p);
+  if (accessor) pt.z = (*accessor)(&p);
   return true;
 }
 
@@ -812,28 +809,6 @@ bool LAS::realloc_point_and_buffer()
   point.init(header, header->point_data_format, header->point_data_record_length, header);
 
   return true;
-}
-
-LAStransform* LAS::make_z_transformer(const std::string& use_attribute) const
-{
-  if (use_attribute == "Intensity")
-  {
-    char buffer[] = "-copy_intensity_into_z";
-    LAStransform* lastransform = new LAStransform();
-    lastransform->parse(buffer);
-    return lastransform;
-  }
-  else
-  {
-    int attr_index = header->get_attribute_index(use_attribute.c_str());
-    if (attr_index == -1) return nullptr;
-
-    char buffer[64];
-    snprintf(buffer, sizeof(buffer), "-copy_attribute_into_z %d", attr_index);
-    LAStransform* lastransform = new LAStransform();
-    lastransform->parse(buffer);
-    return lastransform;
-  }
 }
 
 int LAS::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)

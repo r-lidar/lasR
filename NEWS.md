@@ -1,13 +1,10 @@
-# lasR 0.11.1
+# lasR 0.12.0
 
 - Fix: In sampling stages, the filter argument previously discarded all points that did not pass the test. The updated behavior processes only the points that pass the test while leaving others untouched. For example:  
   ```r
   sampling_poisson(1, filter = keep_ground())
   ```
   Previously, this filtered the point cloud to retain only Poisson-sampled ground points. Now, it correctly Poisson-samples the ground points while preserving all other points.
-
-# lasR 0.11.0
-
 - New: Added a new stage, `info()`, to print useful information about a file.  
 - New: Command-line utility introduced. Users can now execute simple pipelines from the terminal. First, use `install_cmd_tools()`, then commands like these become available:  
   ```bash
@@ -21,7 +18,9 @@
 - New: `transform_with()` now supports a 4x4 Affine Transformation Matrix to translate and rotate the point cloud.  
 - Change: The `Eigen` library has replaced the `Armadillo` library for linear algebra. This change may affect the sign of some vectors in `geometry_feature()`.  
 - New: The `filter` argument, available in many stages, now accepts programming-style strings such as `Z < 3`, `Classification == 2`, `UserData == 0`, `Intensity > 100`, `Classification %in% 2 3 4`, and `Classification %out% 0 1 2`. This approach is now the preferred way to assign filters, allowing filtering on extrabyte attributes by name, e.g., `Amplitude > 10`.  
-- Change: `transform_with` a raster (typically normalization) now performs bilinear interpolation.  
+- Change: `transform_with()` a raster (typically normalization) now performs bilinear interpolation.
+- New: stages that have a `use_attribute` argument now accept any attribute including extrabytes attribute.
+- New: `sampling_pixel()` gained an argument `method` and `use_attribute` to retain specific points of interest.
  
 # lasR 0.10.3
 

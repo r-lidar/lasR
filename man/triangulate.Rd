@@ -21,8 +21,11 @@ then the stage will not store the result on disk and will return nothing. It wil
 hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 
-\item{use_attribute}{character. By default the triangulation is performed on the coordinate Z. Can also be
-the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity'.}
+\item{use_attribute}{character. Specifies the attribute to use for the operation, with "Z" (the coordinate) as the default.
+Alternatively, this can be the name of any other attribute, such as "Intensity", "gpstime", "ReturnNumber", or "HAG", if it exists.
+Note: The function does not fail if the specified attribute does not exist in the point cloud.
+For example, if "Intensity" is requested but not present, or "HAG" is specified but unavailable,
+the internal engine will return 0 for the missing attribute.}
 }
 \value{
 This stage produces a vector. The path provided to `ofile` is expected to be `.gpkg` or
@@ -30,7 +33,7 @@ any other format supported by GDAL. Vector stages may produce geometries with Z 
 Thus, it is discouraged to store them in formats with no 3D support, such as shapefiles.
 }
 \description{
-Delaunay triangulation. Can be used to build a DTM, a CHM, normalize a point cloud, or any other
+2.5D Delaunay triangulation. Can be used to build a DTM, a CHM, normalize a point cloud, or any other
 application. This stage is typically used as an intermediate process without an output file.
 This stage does not modify the point cloud.
 }
@@ -38,7 +41,7 @@ This stage does not modify the point cloud.
 f <- system.file("extdata", "Topography.las", package="lasR")
 read <- reader_las()
 tri1 <- triangulate(25, filter = keep_ground(), ofile = tempgpkg())
-filter <- "-keep_last -keep_random_fraction 0.1"
+filter <- "-keep_random_fraction 0.1"
 tri2 <- triangulate(filter = filter, ofile = tempgpkg())
 pipeline <- read + tri1 + tri2
 ans <- exec(pipeline, on = f)

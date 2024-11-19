@@ -67,6 +67,8 @@ class LASRsamplingpixels : public LASRsampling
 public:
   LASRsamplingpixels() = default;
   bool process(LAS*& las) override;
+  bool random(LAS*& las);
+  bool highest(LAS*& las, bool high = true);
   double need_buffer() const override { return res; }
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "pixel_sampling"; }
@@ -77,6 +79,8 @@ public:
 
 private:
   double res;
+  std::string method;
+  std::string use_attribute;
   int shuffle_size;
 };
 

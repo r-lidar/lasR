@@ -1,5 +1,7 @@
 #include "sampling.h"
 #include "Grid.h"
+#include "Accessors.h"
+#include "omp.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -323,11 +325,22 @@ bool LASRsamplingvoxels::process(LAS*& las)
 bool LASRsamplingpixels::set_parameters(const nlohmann::json& stage)
 {
   res = stage.at("res");
+  method = stage.value("method", "random");
+  use_attribute = stage.value("use_attribute", "Z");
   shuffle_size = stage.value("shuffle_size", 10000);
   return true;
 }
 
 bool LASRsamplingpixels::process(LAS*& las)
+{
+  print("%s\n", method.c_str());
+  if (method == "random") return random(las);
+  if (method == "highest") return highest(las);
+  if (method == "lowest") return highest(las, false);
+  return true;
+}
+
+bool LASRsamplingpixels::random(LAS*& las)
 {
   std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
@@ -359,11 +372,7 @@ bool LASRsamplingpixels::process(LAS*& las)
   {
     las->seek(i);
     if (las->point.get_withheld_flag() != 0) continue;
-    if (lasfilter.filter(&las->point))
-    {
-      //las->remove_point();
-      continue;
-    }
+    if (lasfilter.filter(&las->point)) continue;
 
     // Pixel of this point
     int key = grid.cell_from_xy(las->point.get_x(), las->point.get_y());
@@ -404,6 +413,78 @@ bool LASRsamplingpixels::process(LAS*& las)
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
   double ratio = (double)n/(double)las->npoints;
+  if (ratio > 1/3)
+  {
+    if (!las->delete_withheld()) return false;
+    if (verbose) print(" memory layout reallocated\n");
+  }
+
+  return true;
+}
+
+bool LASRsamplingpixels::highest(LAS*& las, bool high)
+{
+  int n = las->npoints;
+
+  std::vector<std::pair<int, double>> registry;
+
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
+  Grid grid(rxmin, rymin, rxmax, rymax, res);
+
+  size_t npixels = grid.get_ncells();
+  if (npixels < INT_MAX) // Cells numbers are stored has int
+  {
+    registry.resize(npixels);
+
+    if (high)
+      std::fill(registry.begin(), registry.end(), std::make_pair(0, -std::numeric_limits<double>::infinity()));
+    else
+      std::fill(registry.begin(), registry.end(), std::make_pair(0, std::numeric_limits<double>::infinity()));
+  }
+  else
+  {
+    last_error = "Too many cells";
+    return false;
+  }
+
+  AttributeAccessor accessor(use_attribute);
+
+  while (las->read_point())
+  {
+    if (lasfilter.filter(&las->point)) continue;
+
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    double z = accessor(&las->point);
+    int cell = grid.cell_from_xy(x,y);
+
+    if ((high && registry[cell].second < z) || (!high && registry[cell].second > z))
+      registry[cell] = {las->current_point, z};
+  }
+
+  while (las->read_point())
+  {
+    if (lasfilter.filter(&las->point)) continue;
+
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    int cell = grid.cell_from_xy(x,y);
+
+    if (registry[cell].first != las->current_point)
+      las->remove_point();
+  }
+
+  las->update_header();
+
+  if (verbose) print(" sampling retained %d points\n", las->npoints);
+
+  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
+  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
+  // actually remove the points. This will save some computation later.
+  double ratio = (double)las->npoints/(double)n;
   if (ratio > 1/3)
   {
     if (!las->delete_withheld()) return false;

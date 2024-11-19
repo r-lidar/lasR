@@ -1,57 +1,17 @@
 #include "lasfilter.hpp"
+
+#include "Accessors.h"
+
 #include <functional>
 #include <set>
 
-class LASRcriterion : public LAScriterion
+class LASRcriterion : public LAScriterion, public AttributeAccessor
 {
 public:
-  LASRcriterion() { accessor = nullptr; attribute_index = -1; attribute_name = 0; }
-  ~LASRcriterion() { if (attribute_name) free(attribute_name); }
-
-
-  LASRcriterion(const char* attribute_name) : LASRcriterion()
-  {
-    this->attribute_name = strdup(attribute_name);
-
-    // Assign the accessor function based on attribute_name
-    if (strcmp(attribute_name, "x") == 0)  accessor = [](const LASpoint* point) { return static_cast<double>(point->get_x()); };
-    else if (strcmp(attribute_name, "y") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_y()); };
-    else if (strcmp(attribute_name, "z") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_z()); };
-    else if (strcmp(attribute_name, "intensity") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_intensity()); };
-    else if (strcmp(attribute_name, "return") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_return_number()); };
-    else if (strcmp(attribute_name, "class") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_classification()); };
-    else if (strcmp(attribute_name, "psid") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_point_source_ID()); };
-    else if (strcmp(attribute_name, "gpstime") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_gps_time()); };
-    else if (strcmp(attribute_name, "angle") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_scan_angle()); };
-    else if (strcmp(attribute_name, "userdata") == 0) accessor = [](const LASpoint* point) { return static_cast<double>(point->get_user_data()); };
-    else
-      accessor = [this](const LASpoint* point)
-      {
-        if (this->attribute_index == -1)
-        {
-          this->attribute_index = point->attributer->get_attribute_index(this->attribute_name);
-          warning("No attribute '%s' for this point cloud. Returning 0 for this attribute may affect the filter\n", this->attribute_name);
-          if (this->attribute_index == -1)  this->attribute_index = -2;
-        }
-
-        if (this->attribute_index == -2)
-        {
-          return 0.0;
-        }
-
-        return static_cast<double>(point->get_attribute_as_float(this->attribute_index));
-      };
-  };
-
+  LASRcriterion() : AttributeAccessor() {};
+  LASRcriterion(const char* attribute_name) : AttributeAccessor(attribute_name) {};
   inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_ALL; };
-
-protected:
-  std::function<double(const LASpoint*)> accessor;
-  char* attribute_name;
-  I32 attribute_index;
 };
-
-
 
 class LASRcriterionKeepBelow : public LASRcriterion
 {

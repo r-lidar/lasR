@@ -1,18 +1,5 @@
-#include  "FilterParser.h"
-
-std::string FilterParser::map_attribute(const std::string& attribute) const
-{
-  for (const auto& [standardName, aliases] : attributeMapping)
-  {
-    if (std::find(aliases.begin(), aliases.end(), attribute) != aliases.end())
-    {
-      return standardName;
-    }
-  }
-
-  return attribute;
-}
-
+#include "FilterParser.h"
+#include "AttributeMapping.h"
 
 std::string FilterParser::parse(const std::string& condition) const
 {

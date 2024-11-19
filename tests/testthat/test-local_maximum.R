@@ -45,14 +45,14 @@ test_that("local maximum works with extra bytes",
   expect_equal(length(z), 7L)
 })
 
-test_that("local maximum fails with missing extra bytes",
-{
-  f <- system.file("extdata", "extra_byte.las", package="lasR")
+#test_that("local maximum fails with missing extra bytes",
+#{
+#  f <- system.file("extdata", "extra_byte.las", package="lasR")
+#
+#  lmf = local_maximum(3, use_attribute = "Foo")
 
-  lmf = local_maximum(3, use_attribute = "Foo")
-
-  expect_error(suppressWarnings(exec(lmf, on = f)), "no extrabyte attribute 'Foo' found")
-})
+#  expect_error(suppressWarnings(exec(lmf, on = f)), "no extrabyte attribute 'Foo' found")
+#})
 
 test_that("local maximum works with a raster",
 {
