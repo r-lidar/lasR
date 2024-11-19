@@ -21,15 +21,21 @@ This stage transforms the point cloud in the pipeline. It consequently returns n
 \description{
 This stage uses another stage to modify the point cloud in the pipeline. When used with a Delaunay
 triangulation or a raster, it performs an operation to modify the Z coordinate of the point cloud.
-This can typically be used to build a normalization stage. When used with a 4x4 Rotation-Translation Matrix,
-it multiplies the coordinates of the points to apply the rigid transformation described by the matrix.
-This stage modifies the point cloud in the pipeline but does not produce any output.\cr
+The interpolation method is linear in the triangle mesh and bilinear in the raster. This can typically
+be used to build a normalization stage.\cr
+When used with a 4x4 Rotation-Translation Matrix, it multiplies the coordinates of the points to apply
+the rigid transformation described by the matrix. This stage modifies the point cloud in the pipeline
+but does not produce any output.
+}
+\section{RTM Matriz}{
+
 \strong{Warning:} \code{lasR} uses bounding boxes oriented along the XY axes of each processed chunk to manage
 data location and the buffer properly. Transforming the point cloud with a rotation matrix affects
 its bounding box and how \code{lasR} handles the buffer. When used with a matrix that has a rotational
 component, it is not safe to add stages after the transformation unless the user is certain that
 there is no buffer involved.
 }
+
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 

@@ -12,6 +12,7 @@ public:
   Raster(double xmin, double ymin, double xmax, double ymax, double res, int layers = 1);
   Raster(const Raster& raster);
   Raster(const Raster& raster, const Chunk& chunk);
+  bool is_na(float x) const { return std::isnan(x) || x == nodata; }
   bool read_file();
   void set_value(double x, double y, float value, int layer = 1);
   void set_value(int cell, float value, int layer = 1);
@@ -22,6 +23,7 @@ public:
   float get_nodata() const { return nodata; };
   float get_value(double x, double y, int layer = 1) const;
   float get_value(int cell, int layer = 1) const;
+  float get_value_bilinear(double x, double y, int layer = 1) const;
   bool get_chunk(const Chunk& chunk, int band_index);
   const std::vector<float>& get_data() const { return data; };
   bool copy_data(const Raster& raster);
