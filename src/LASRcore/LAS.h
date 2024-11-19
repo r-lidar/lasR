@@ -8,6 +8,7 @@
 #include "Interval.h"
 #include "Shape.h"
 #include "PointLAS.h"
+#include "Accessors.h"
 
 #include <vector>
 #include <string>
@@ -15,7 +16,6 @@
 class GridPartition;
 class Raster;
 class LASfilter;
-class LAStransform;
 
 class LAS
 {
@@ -41,10 +41,10 @@ public:
 
   // Thread safe queries
   bool get_xyz(size_t pos, double* xyz) const;
-  bool get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
-  bool query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
-  bool query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
-  bool knn(const double* x, int k, double radius_max, std::vector<PointLAS>& res, LASfilter* const lasfilter = nullptr, LAStransform* const lastransform = nullptr) const;
+  bool get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, AttributeAccessor * const accessor = nullptr) const;
+  bool query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
+  bool query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
+  bool knn(const double* x, int k, double radius_max, std::vector<PointLAS>& res, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
 
   // Spatial queries
   void set_inside(Shape* shape);
@@ -53,7 +53,6 @@ public:
   void set_intervals_to_read(const std::vector<Interval>& intervals);
 
   // Tools
-  LAStransform* make_z_transformer(const std::string& use_attribute) const;
   static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
   static int get_header_size(int minor_version);
   static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir);

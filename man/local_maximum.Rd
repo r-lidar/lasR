@@ -39,9 +39,11 @@ then the stage will not store the result on disk and will return nothing. It wil
 hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 
-\item{use_attribute}{character. By default the local maximum is performed on the coordinate Z. Can also be
-the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity' but there is
-probably no use case for that one.}
+\item{use_attribute}{character. Specifies the attribute to use for the operation, with "Z" (the coordinate) as the default.
+Alternatively, this can be the name of any other attribute, such as "Intensity", "gpstime", "ReturnNumber", or "HAG", if it exists.
+Note: The function does not fail if the specified attribute does not exist in the point cloud.
+For example, if "Intensity" is requested but not present, or "HAG" is specified but unavailable,
+the internal engine will return 0 for the missing attribute.}
 
 \item{record_attributes}{The coordinates XYZ of points corresponding to the local maxima are recorded.
 It is also possible to record the attributes of theses points such as the intensity, return number, scan

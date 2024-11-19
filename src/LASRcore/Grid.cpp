@@ -174,7 +174,7 @@ int Grid::cell_from_xy(double x, double y) const
   int row = std::floor((ymax - y) / yres);
   if (y == ymin) row = nrows-1;
   if (x == xmax) col = ncols-1;
-  return row * ncols + col;
+  return cell_from_row_col(row, col);
 }
 
 void Grid::get_cells(double xmin, double ymin, double xmax, double ymax, std::vector<int>& cells) const

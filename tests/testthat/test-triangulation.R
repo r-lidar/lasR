@@ -26,7 +26,6 @@ test_that("triangulate works with multiple files",
   #plot(u)
 })
 
-
 test_that("triangulate works with intensity",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
@@ -37,6 +36,18 @@ test_that("triangulate works with intensity",
   u = exec(read + tri + rast, on = f)
 
   expect_equal(range(u$rasterize[], na.rm = T), c(165.72, 2368.14), tolerance = 0.01)
+})
+
+test_that("triangulate works with gpstime",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+
+  read = reader_las(filter = "-keep_class 2 -drop_random_fraction 0.5")
+  tri = triangulate(15, use_attribute = "gpstime", ofile = tempgpkg())
+  rast = rasterize(5, tri)
+  u = exec(read + tri + rast, on = f)
+
+  expect_equal(range(u$rasterize[], na.rm = T), c(220367376.0, 220367392.0), tolerance = 0.01)
 })
 
 
