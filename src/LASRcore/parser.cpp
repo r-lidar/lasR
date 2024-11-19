@@ -371,7 +371,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
 
       num_stages--;
       catalog->set_buffer(need_buffer()); // We parsed the pipeline so we know if we need a buffer
-      catalog->build_index(); // The catalog is built, we have the bbox of all the LAS files. We can build a spatial index
+      //catalog->build_index(); // The catalog is built, we have the bbox of all the LAS files. We can build a spatial index
       if (!catalog->set_chunk_size(chunk_size)) return false;
 
       // We iterate over all the stage again to assign the filter, the crs and the output file.
