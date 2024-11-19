@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.11.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.12.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,17 +46,14 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.11.1" id="lasr-0111">lasR 0.11.1<a class="anchor" aria-label="anchor" href="#lasr-0111"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.12.0" id="lasr-0120">lasR 0.12.0<a class="anchor" aria-label="anchor" href="#lasr-0120"></a></h2>
 <ul><li>
 <p>Fix: In sampling stages, the filter argument previously discarded all points that did not pass the test. The updated behavior processes only the points that pass the test while leaving others untouched. For example:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sampling.html">sampling_poisson</a></span><span class="op">(</span><span class="fl">1</span>, filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Previously, this filtered the point cloud to retain only Poisson-sampled ground points. Now, it correctly Poisson-samples the ground points while preserving all other points.</p>
 </li>
-</ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.11.0" id="lasr-0110">lasR 0.11.0<a class="anchor" aria-label="anchor" href="#lasr-0110"></a></h2>
-<ul><li><p>New: Added a new stage, <code><a href="../reference/info.html">info()</a></code>, to print useful information about a file.<br></p></li>
+<li><p>New: Added a new stage, <code><a href="../reference/info.html">info()</a></code>, to print useful information about a file.<br></p></li>
 <li>
 <p>New: Command-line utility introduced. Users can now execute simple pipelines from the terminal. First, use <code><a href="../reference/install_cmd_tools.html">install_cmd_tools()</a></code>, then commands like these become available:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">lasr</span> info <span class="at">-i</span> path/to/file.las</span>
@@ -69,7 +66,9 @@
 <li><p>New: <code><a href="../reference/transform_with.html">transform_with()</a></code> now supports a 4x4 Affine Transformation Matrix to translate and rotate the point cloud.<br></p></li>
 <li><p>Change: The <code>Eigen</code> library has replaced the <code>Armadillo</code> library for linear algebra. This change may affect the sign of some vectors in <code>geometry_feature()</code>.<br></p></li>
 <li><p>New: The <code>filter</code> argument, available in many stages, now accepts programming-style strings such as <code>Z &lt; 3</code>, <code>Classification == 2</code>, <code>UserData == 0</code>, <code>Intensity &gt; 100</code>, <code>Classification %in% 2 3 4</code>, and <code>Classification %out% 0 1 2</code>. This approach is now the preferred way to assign filters, allowing filtering on extrabyte attributes by name, e.g., <code>Amplitude &gt; 10</code>.<br></p></li>
-<li><p>Change: <code>transform_with</code> a raster (typically normalization) now performs bilinear interpolation.</p></li>
+<li><p>Change: <code><a href="../reference/transform_with.html">transform_with()</a></code> a raster (typically normalization) now performs bilinear interpolation.</p></li>
+<li><p>New: stages that have a <code>use_attribute</code> argument now accept any attribute including extrabytes attribute.</p></li>
+<li><p>New: <code><a href="../reference/sampling.html">sampling_pixel()</a></code> gained an argument <code>method</code> and <code>use_attribute</code> to retain specific points of interest.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.10.3" id="lasr-0103">lasR 0.10.3<a class="anchor" aria-label="anchor" href="#lasr-0103"></a></h2>
