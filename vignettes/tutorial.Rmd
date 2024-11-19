@@ -97,7 +97,7 @@ f <- system.file("extdata", "Topography.las", package="lasR")
 ```
 
 ```{r triangulate1}
-pipeline = reader_las() + triangulate(filter = keep_ground())
+pipeline = reader_las() + triangulate(filter = "Classification == 2")
 ans = exec(pipeline, on = f)
 ans
 ```
@@ -113,7 +113,7 @@ par(mar = c(2, 2, 1, 1))
 plot(ans, axes = T, lwd = 0.5)
 ```
 
-We can also triangulate the first returns. This produce a meshed Digital Surface Model.
+Notice the use of `keep_ground()` which is a shortcut for `"Classification == 2"`. We can also triangulate the first returns. This produce a meshed Digital Surface Model.
 
 ```r
 read = reader_las()
@@ -141,7 +141,6 @@ Using `triangulate()` without any other stage in the pipeline is usually not ver
 2. Rasterize with predefined operators. The operators are optimized internally, making the operations as fast as possible.
 3. Rasterize by injecting a user-defined R expression. This is equivalent to `pixel_metrics()` from the package `lidR`. Any user-defined function can be mapped, making it extremely versatile but slower.
 
-
 With these variations, users can build a CHM, a DTM, a predictive model, or anything else. 
 
 ### Rasterize - triangulation
@@ -157,17 +156,17 @@ ans = exec(pipeline, on = f)
 ans
 ```
 
-Here, `exec()` returns a only one `SpatRaster` because `triangulate()` returns nothing (`NULL`). Therefore, the pipeline contains two stages, but only one returns something.
+Here, `exec()` returns only one `SpatRaster` because `triangulate()` returns nothing (`NULL`). Therefore, the pipeline contains two stages, but only one returns something.
 
 ```{r plotdtm, fig.height=3.5}
 terra::plot(ans, col = gray.colors(25,0,1), mar = c(1, 1, 1, 3))
 ```
 
-Notice that, contrary to the `lidR` package, there is usually no high-level function with names like `rasterize_terrain()`. Instead, `lasR` is made up of low-level functions that are more versatile but also more challenging to use. 
+Notice that, contrary to the `lidR` package, there is usually no high-level function with names like `rasterize_terrain()`. Instead, `lasR` is made up of low-level atomic stages that are more versatile but also more challenging to use. 
 
 ### Rasterize - internal metrics
 
-Internal metrics are strings with a format `attribute_function`. `attribute` is an attribute of the point cloud such as `z`, `classification`, or `intensity`. `function` is an available metrics function such as `mean`, `max`, or `sd`. The following are exemples of valid metric strings: `z_max`, `i_mean`, `intensity_mean`, `classification_mode`, `z_sd`. Readers can refer to the official documentation to discover all the possible combinations.
+Internal metrics are strings with a format `attribute_function`. `attribute` is an attribute of the point cloud such as `z`, `classification`, or `intensity`. `function` is an available metrics function such as `mean`, `max`, or `sd`. The following are examples of valid metric strings: `z_max`, `i_mean`, `intensity_mean`, `classification_mode`, `z_sd`. Readers can refer to the official documentation to discover all the possible combinations.
 
 Let's build two CHMs: one based on the highest point per pixel with a resolution of 2 meters, and the second based on the triangulation of the first returns with a resolution of 50 cm.
 
@@ -202,7 +201,7 @@ The `lasR` package introduced the concept of a buffered area-based approach to e
 
 ## Transform with
 
-Another way to use a Delaunay triangulation is to transform the point cloud. Users can add or subtract the triangulation from the point cloud, effectively normalizing it. Unlike the `lidR` package, there is no high-level function with names like `normalize_points()`. Instead, `lasR` is composed of low-level functions that offer more versatility.
+Another way to use a Delaunay triangulation is to transform the point cloud. Users can add or subtract the triangulation from the point cloud, effectively normalizing it. Unlike the `lidR` package, there is no high-level function with names like `normalize_points()`. Instead, `lasR` is composed of low-level atomic stages that offer more versatility.
 
 Let's normalize the point cloud using a triangulation of the ground points (meshed DTM).
 
@@ -225,9 +224,8 @@ For convenience this pipeline is pre-recorded in the package under the name `nor
 </blockquote>
 
 <blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
-`transform_with()` can also transform with a raster. This is not presented in this tutorial.
+`transform_with()` can also transform with a raster and a rotation matrix. This is not presented in this tutorial.
 </blockquote>
-
 
 To obtain a meaningful output, it is necessary to chain another stage. Here the point cloud has been modified but then, it is discarded because we did nothing with it. For instance, we can compute a Canopy Height Model (CHM) on the normalized point cloud. In the following pipeline, the first rasterization (`chm1`) is applied before normalization, while the second rasterization occurs after `transform_with()`, thus being applied to the transformed point cloud.
 
