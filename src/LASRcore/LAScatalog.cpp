@@ -6,7 +6,6 @@
 
 // LASlib
 #include "lasreader.hpp"
-#include "laskdtree.hpp"
 
 // STL
 #include <iostream>
@@ -439,7 +438,7 @@ void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bo
   if (this->xmax < xmax) this->xmax = xmax;
   if (this->ymax < ymax) this->ymax = ymax;
 
-  laskdtree->add(xmin, ymin, xmax, ymax);
+  laskdtree.add(xmin, ymin, xmax, ymax);
   this->indexed.push_back(indexed);
   this->noprocess.push_back(noprocess);
 }
@@ -569,12 +568,6 @@ bool LAScatalog::set_chunk_size(double size)
       return false;
     }
 
-    if (!laskdtree->was_built())
-    {
-      last_error = "internal error: laskdtree not built"; // # nocov
-      return false; // # nocov
-    }
-
     chunk_size = size;
 
     Grid grid(xmin, ymin, xmax, ymax, chunk_size);
@@ -584,8 +577,7 @@ bool LAScatalog::set_chunk_size(double size)
       double y = grid.y_from_cell(i);
       double hsize = size/2;
 
-      laskdtree->overlap(x-hsize, y-hsize, x+hsize, y+hsize);
-      if (laskdtree->has_overlaps())
+      if (laskdtree.has_overlap(x-hsize, y-hsize, x+hsize, y+hsize))
         add_query(x-hsize, y-hsize, x+hsize, y+hsize);
     }
   }
@@ -601,27 +593,17 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
     return false; // # nocov
   }
 
-  if (!laskdtree->was_built())
-  {
-    last_error = "internal error: spatial index of tile not built"; // # nocov
-    return false; // # nocov
-  }
-
   bool success = false;
 
-  // Critical section because laskdtree->overlap is not thread safe
-  #pragma omp critical(getchunk)
+  if (queries.size() == 0)
   {
-    if (queries.size() == 0)
-    {
-      success = get_chunk_regular(i, chunk);
-      chunk.process = !noprocess[i];
-    }
-    else
-    {
-      success = get_chunk_with_query(i, chunk);
-      chunk.process = true;
-    }
+    success = get_chunk_regular(i, chunk);
+    chunk.process = !noprocess[i];
+  }
+  else
+  {
+    success = get_chunk_with_query(i, chunk);
+    chunk.process = true;
   }
 
   chunk.id = i;
@@ -665,17 +647,13 @@ bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
   chunk.buffer = buffer;
 
   // Perform a query to find the files that encompass the buffered region
-  unsigned int index;
-  laskdtree->overlap(bb.xmin() - buffer, bb.ymin() - buffer, bb.xmax() + buffer, bb.ymax() + buffer);
-  if (laskdtree->has_overlaps())
+  std::vector<int> indexes = laskdtree.get_overlaps(bb.xmin() - buffer, bb.ymin() - buffer, bb.xmax() + buffer, bb.ymax() + buffer);
+  for (auto index : indexes)
   {
-    while (laskdtree->get_overlap(index))
+    std::string file = files[index].string();
+    if (chunk.main_files[0] != file)
     {
-      std::string file = files[index].string();
-      if (chunk.main_files[0] != file)
-      {
-        chunk.neighbour_files.push_back(file);
-      }
+      chunk.neighbour_files.push_back(file);
     }
   }
 
@@ -684,12 +662,6 @@ bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
 
 bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
 {
-  if (!laskdtree->was_built())
-  {
-    last_error = "internal error: laskdtree not built"; // # nocov
-    return false; // # nocov
-  }
-
   unsigned int index;
   chunk.clear();
 
@@ -704,8 +676,8 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   double epsilon = 1e-8;
 
   // Search if there is a match
-  laskdtree->overlap(minx - buffer, miny - buffer,  maxx + buffer, maxy + buffer);
-  if (!laskdtree->has_overlaps())
+  std::vector<int> indexes = laskdtree.get_overlaps(minx - buffer, miny - buffer,  maxx + buffer, maxy + buffer);
+  if (indexes.empty())
   {
     char buff[64];
     snprintf(buff, sizeof(buff), "cannot find any file in [%.1lf, %.1lf %.1lf, %.1lf]", minx, miny,  maxx, maxy);
@@ -742,16 +714,16 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   }
 
   // There are likely multiple files that intersect the query. If there is only one it is easy. We can exit.
-  if (laskdtree->get_num_overlaps() == 1)
+  if (indexes.size() == 1)
   {
-    laskdtree->get_overlap(index);
+    int index = indexes[0];
     chunk.main_files.push_back(files[index].string());
     chunk.name = files[index].stem().string() + "_" + std::to_string(i);
     return true;
   }
 
   // There are multiple files. All the files are part of the main
-  while (laskdtree->get_overlap(index))
+  for (auto index : indexes)
   {
     chunk.main_files.push_back(files[index].string());
     if (chunk.name.empty()) chunk.name = files[index].stem().string() + "_" + std::to_string(i);
@@ -759,18 +731,18 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
 
   // We search the file that contains the centroid of the query to assign a name to the query
   // If we can't find it we have already assigned a name anyway.
-  laskdtree->overlap(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
-  if (laskdtree->has_overlaps())
+  indexes = laskdtree.get_overlaps(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
+  if (!indexes.empty())
   {
-    laskdtree->get_overlap(index);
+    int index = indexes[0];
     chunk.name = files[index].stem().string() + "_" + std::to_string(i);
   }
 
   // We perform a query again with buffered shape to get the other files in the buffer
   if (chunk.buffer > 0)
   {
-    laskdtree->overlap(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
-    while (laskdtree->get_overlap(index))
+    indexes = laskdtree.get_overlaps(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
+    for (auto index : indexes)
     {
       std::string file = files[index].string();
 
@@ -784,11 +756,6 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   }
 
   return true;
-}
-
-void LAScatalog::build_index()
-{
-  if (!laskdtree->was_built()) laskdtree->build();
 }
 
 bool LAScatalog::check_spatial_index()
@@ -846,10 +813,6 @@ void LAScatalog::clear()
   bboxes.clear();
   files.clear();
 
-  if (laskdtree) delete laskdtree;
-  laskdtree = new LASkdtreeRectangles;
-  laskdtree->init();
-
   for (auto p : queries) delete p;
   queries.clear();
 }
@@ -892,12 +855,41 @@ PathType LAScatalog::parse_path(const std::string& path)
 
 LAScatalog::LAScatalog()
 {
-  laskdtree = 0;
   clear();
 }
 
 LAScatalog::~LAScatalog()
 {
-  if (laskdtree) delete laskdtree;
   for (auto p : queries) delete p;
+}
+
+void LAScatalogIndex::add(double xmin, double ymin, double xmax, double ymax)
+{
+  bboxes.emplace_back(xmin, ymin, xmax, ymax);
+}
+
+bool LAScatalogIndex::has_overlap(double xmin, double ymin, double xmax, double ymax) const
+{
+  for (const auto& bbox : bboxes)
+  {
+    if (!(xmax < bbox.xmin() || xmin > bbox.xmax() || ymax < bbox.ymin() || ymin > bbox.ymax()))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::vector<int> LAScatalogIndex::get_overlaps(double xmin, double ymin, double xmax, double ymax) const
+{
+  std::vector<int> overlaps;
+  for (int i = 0; i < bboxes.size(); ++i)
+  {
+    const auto& bbox = bboxes[i];
+    if (!(xmax < bbox.xmin() || xmin > bbox.xmax() || ymax < bbox.ymin() || ymin > bbox.ymax()))
+    {
+      overlaps.push_back(i);
+    }
+  }
+  return overlaps;
 }

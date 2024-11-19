@@ -18,6 +18,18 @@ class LASkdtreeRectangles;
 
 enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE};
 
+class LAScatalogIndex
+{
+private:
+  std::vector<Rectangle> bboxes;
+
+public:
+  void add(double xmin, double ymin, double xmax, double ymax);
+  bool has_overlap(double xmin, double ymin, double xmax, double ymax) const;
+  std::vector<int> get_overlaps(double xmin, double ymin, double xmax, double ymax) const;
+};
+
+
 class LAScatalog
 {
 public:
@@ -44,7 +56,6 @@ public:
   CRS get_crs() const { return crs; };
   const std::vector<std::filesystem::path>& get_files() const;
   bool check_spatial_index();
-  void build_index();
   void set_all_indexed();
   void clear();
   bool file_exists(std::string& file);
@@ -104,7 +115,7 @@ private:
   std::vector<std::pair<double, double>> zlim;
 
   // queries, partial read
-  LASkdtreeRectangles* laskdtree;
+  LAScatalogIndex laskdtree;
   std::vector<Shape*> queries;
 };
 
