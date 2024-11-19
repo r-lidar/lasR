@@ -1,7 +1,7 @@
 #include "sampling.h"
 #include "Grid.h"
 #include "Accessors.h"
-#include "omp.h"
+#include "openmp.h"
 
 #include <unordered_map>
 #include <unordered_set>
