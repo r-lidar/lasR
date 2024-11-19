@@ -6,7 +6,7 @@ This directory contains third-party open source libraries and tools that are ess
 
 1. **Eigen**: Linear Algebra. https://eigen.tuxfamily.org/index.php?title=Main_Page
 2. **LASlib/LASzip**: Read and write LAS/LAZ files. https://github.com/LAStools/LAStools
-3. **csf**: cloth surface filter. https://github.com/jianboqi/CSF
+3. **csf**: Cloth Simulation Filter. https://github.com/jianboqi/CSF
 4. **delaunator**: Delaunay triangulation. https://github.com/delfrrr/delaunator-cpp
 5. **geophoton**: chm enhamcement. https://github.com/Geophoton-inc/chm_prep
 
