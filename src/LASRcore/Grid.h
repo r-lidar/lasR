@@ -64,6 +64,7 @@ public:
   inline double get_yres() const { return yres; }
 
   std::vector<int> get_adjacent_cells(int cell, Contiguity n = QUEEN) const;
+  std::vector<int> four_local_neighbours(double x, double y) const ;
   //std::vector<int> get_cells_dissagregated(int cell, int factor, float drop_buffer = 0) const;
   //std::vector<int> get_cells_dissagregated(const std::vector<int>& cells, int factor, float drop_buffer = 0) const;
   void get_cells(double xmin, double ymin, double xmax, double ymax, std::vector<int>& cell) const;

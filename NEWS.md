@@ -1,7 +1,7 @@
 # lasR 0.11.0
 
-- New: new stage `info()` to print useful informations about a file.
-- New command line utility. Users can now call simple pipeline from the terminal. First use `install_cmd_tools()` then it is possible to use commands like:
+- New: Added a new stage, `info()`, to print useful information about a file.  
+- New: Command-line utility introduced. Users can now execute simple pipelines from the terminal. First, use `install_cmd_tools()`, then commands like these become available:  
   ```bash
   lasr info -i path/to/file.las
   lasr vpc -i path/to/folder 
@@ -10,9 +10,10 @@
   lasr chm -i path/to/folder -o path/to/chm.tif -res 1 -ncore 4
   lasr dtm -i path/to/folder -o path/to/chm.tif -res 0.5 -ncore 4
   ```
-- New: `transform_with()` supports a 4x4 Affine Transformation Matrix in order to translate and rotate the point cloud.
-- Change: the `Eigen` library replaces the `Armadillo` library for linear algebra. This may affect the sign of some vectors in `geometry_feature()`.
-- New: the `filter` argument available in many stages now accepts programming style strings such as `Z < 3`, `Classification == 2`, `UserData == 0`, `Intensity > 100`, `Classification %in% 2 3 4`, `Classification %out% 0 1 2`. This should now be the preferred way to assign filters. In particular it allows to perform filtering on extrabytes attributes by name: e.g. `Amplitude > 10`.
+- New: `transform_with()` now supports a 4x4 Affine Transformation Matrix to translate and rotate the point cloud.  
+- Change: The `Eigen` library has replaced the `Armadillo` library for linear algebra. This change may affect the sign of some vectors in `geometry_feature()`.  
+- New: The `filter` argument, available in many stages, now accepts programming-style strings such as `Z < 3`, `Classification == 2`, `UserData == 0`, `Intensity > 100`, `Classification %in% 2 3 4`, and `Classification %out% 0 1 2`. This approach is now the preferred way to assign filters, allowing filtering on extrabyte attributes by name, e.g., `Amplitude > 10`.  
+- Change: `transform_with` a raster (typically normalization) now performs bilinear interpolation.  
  
 # lasR 0.10.3
 

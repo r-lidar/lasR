@@ -40,7 +40,7 @@ test_that("tw can normalize with a raster",
   pipeline = reader_las(filter = keep_ground()) + callback(function(data) { return(data$Z) }, expose = "z")
   u = exec(pipeline, on = g)
   expect_equal(mean(u), 0, tolerance = 0.01)
-  expect_equal(sd(u), 0.138, tolerance = 0.003)
+  expect_equal(sd(u), 0.116, tolerance = 0.003)
 })
 
 test_that("tw can normalize with extrabyte",

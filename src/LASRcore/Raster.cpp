@@ -126,6 +126,84 @@ float Raster::get_value(int cell, int layer) const
     return nodata;
 }
 
+float Raster::get_value_bilinear(double x, double y, int layer) const
+{
+  // Get the column and row indices
+  int cell = cell_from_xy(x, y);
+  int col = col_from_cell(cell);
+  int row = row_from_cell(cell);
+
+  if (cell== -1) return nodata;
+
+  auto neighbours = four_local_neighbours(x, y);
+  int pos = neighbours[4]; // The 5th element tells us in which of the four the points belong
+
+  // Get the values of the four corner cells
+  float v11 = get_value(neighbours[0], layer);
+  float v12 = get_value(neighbours[1], layer);
+  float v21 = get_value(neighbours[2], layer);
+  float v22 = get_value(neighbours[3], layer);
+
+  // Check for NAs
+  bool n1 = is_na(v11);
+  bool n2 = is_na(v12);
+  bool n3 = is_na(v21);
+  bool n4 = is_na(v22);
+
+  // Initialize weights and interpolated value
+  double weight_sum = 0.0;
+  double v_interpolated = 0.0;
+
+  // Compute fractional distances from the pixel where the point belong
+  double x_cell_center = x_from_col(col);
+  double y_cell_center = y_from_row(row);
+  double x_frac = std::abs(x - x_cell_center) / xres;
+  double y_frac = std::abs(y_cell_center - y) / yres;
+
+  // The reference is  the pixel(2,1) (neighbors[2]). See https://seadas.gsfc.nasa.gov/help-8.1.0/general/overview/ResamplingMethods.html
+  // thus our reference if not correct. Invert the fraction.
+  if (pos == 0)      { x_frac = x_frac  ; y_frac = y_frac;  }
+  else if (pos == 1) { x_frac = 1-x_frac; y_frac = y_frac;  }
+  else if (pos == 2) { x_frac = x_frac  ; y_frac = 1-y_frac;  }
+  else if (pos == 3) { x_frac = 1-x_frac; y_frac = 1-y_frac; }
+
+  // Accumulate contributions from valid neighbors
+  if (!n1)
+  {
+    double w = (1 - x_frac) * (1 - y_frac);
+    v_interpolated += v11 * w;
+    weight_sum += w;
+  }
+  if (!n2)
+  {
+    double w = x_frac * (1 - y_frac);
+    v_interpolated += v12 * w;
+    weight_sum += w;
+  }
+  if (!n3)
+  {
+    double w = (1 - x_frac) * y_frac;
+    v_interpolated += v21 * w;
+    weight_sum += w;
+  }
+  if (!n4)
+  {
+    double w = x_frac * y_frac;
+    v_interpolated += v22 * w;
+    weight_sum += w;
+  }
+
+  // Normalize if weights exist
+  if (weight_sum > 0.0)
+  {
+    v_interpolated /= weight_sum;
+    return static_cast<float>(v_interpolated);
+  }
+
+  // Return nodata if all neighbors are invalid
+  return nodata;
+}
+
 void Raster::set_value(double x, double y, float value, int layer)
 {
   int cell = cell_from_xy(x,y);

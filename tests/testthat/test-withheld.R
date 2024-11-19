@@ -46,12 +46,12 @@ test_that("stages are skipping withhelded points (2) (batch)", {
   read <- reader_las()
   filter <- delete_points(keep_z_below(10))
   dtm = dtm()
-  pipeline <- read + filter + local_maximum(5) + dtm + transform_with(dtm[[2]]) + summarise()
+  pipeline <- read + filter + local_maximum(5) + dtm + transform_with(dtm[[2]]) + lasR::summarise()
 
   set_parallel_strategy(sequential())
-  ans = exec(pipeline, on = f) |> suppressWarnings()
+  ans = exec(pipeline, on = f)
 
-  expect_equal(ans$summary$npoints, 25215L)
+  expect_equal(ans$summary$npoints, 25347L)
   expect_equal(nrow(ans$local_maximum), 1516L)
 })
 

@@ -1227,9 +1227,13 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #'
 #' This stage uses another stage to modify the point cloud in the pipeline. When used with a Delaunay
 #' triangulation or a raster, it performs an operation to modify the Z coordinate of the point cloud.
-#' This can typically be used to build a normalization stage. When used with a 4x4 Rotation-Translation Matrix,
-#' it multiplies the coordinates of the points to apply the rigid transformation described by the matrix.
-#' This stage modifies the point cloud in the pipeline but does not produce any output.\cr
+#' The interpolation method is linear in the triangle mesh and bilinear in the raster. This can typically
+#' be used to build a normalization stage.\cr
+#' When used with a 4x4 Rotation-Translation Matrix, it multiplies the coordinates of the points to apply
+#' the rigid transformation described by the matrix. This stage modifies the point cloud in the pipeline
+#' but does not produce any output.
+#'
+#' @section RTM Matriz:
 #' **Warning:** `lasR` uses bounding boxes oriented along the XY axes of each processed chunk to manage
 #' data location and the buffer properly. Transforming the point cloud with a rotation matrix affects
 #' its bounding box and how `lasR` handles the buffer. When used with a matrix that has a rotational
@@ -1268,7 +1272,6 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' \link{write_las}
 #' @export
 #' @md
-
 transform_with = function(stage, operator = "-", store_in_attribute = "")
 {
   use_matrix = FALSE
