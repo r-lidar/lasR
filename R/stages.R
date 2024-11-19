@@ -1034,7 +1034,9 @@ set_crs = function(x)
 #' Sample the point cloud
 #'
 #' Sample the point cloud, keeping one random point per pixel or per voxel or perform a poisson sampling.
-#' This stages modify the point cloud in the pipeline but do not produce any output.
+#' This stages modify the point cloud in the pipeline but do not produce any output. When used with a
+#' 'filter' argument, only points that match the criteria are subsampled. Other point are kept as is
+#' in the point cloud.
 #'
 #' @param res numeric. pixel/voxel resolution
 #' @param distance numeric. Minimum distance between points for poisson sampling.
@@ -1043,11 +1045,18 @@ set_crs = function(x)
 #' @template return-pointcloud
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
+#'
 #' read <- reader_las()
-#' vox <- sampling_voxel(5)
+#' vox <- sampling_voxel(5) # sample 1 random points per voxel
 #' write <- write_las()
 #' pipeline <- read + vox + write
-#' exec(pipeline, on = f)
+#' ans = exec(pipeline, on = f)
+#'
+#' # Only ground points are poisson sampled. Other point are kept
+#' vox <- sampling_poisson(10, filter = "Classification == 2")
+#' write <- write_las()
+#' pipeline <- read + vox + write
+#' ans = exec(pipeline, on = f)
 #' @export
 #' @rdname sampling
 sampling_voxel = function(res = 2, filter = "", ...)
