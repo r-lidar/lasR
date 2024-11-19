@@ -7,6 +7,7 @@
 #include "lasdefinitions.hpp"
 #include "lasfilter.hpp"
 #include "lasutility.hpp"
+#include "lasreader.hpp"
 
 #include <algorithm>
 
@@ -37,6 +38,9 @@ LAS::LAS(LASheader* header)
   // it is a matter of item in the compressor
   delete header->laszip;
   header->laszip = 0;
+
+  lasreader = nullptr;
+  lasreadopener = nullptr;
 }
 
 LAS::LAS(const Raster& raster)
@@ -102,10 +106,28 @@ LAS::LAS(const Raster& raster)
   }
 
   header->number_of_point_records = npoints;
+
+  lasreader = nullptr;
+  lasreadopener = nullptr;
 }
 
 LAS::~LAS()
 {
+  if (lasreader)
+  {
+    lasreader->close();
+    delete lasreader;
+    lasreader = nullptr;
+  }
+
+  if (lasreadopener)
+  {
+    delete lasreadopener;
+    lasreadopener = nullptr;
+  }
+
+  header = nullptr;
+
   if (buffer) free(buffer);
   if (own_header) delete header;
   clean_index();

@@ -11,12 +11,11 @@ class LASRlasreader: public Stage
 {
 public:
   LASRlasreader();
-  ~LASRlasreader();
+  ~LASRlasreader() {};
   bool process(LASheader*& header) override;
   bool process(LASpoint*& point) override;
   bool process(LAS*& las) override;
   bool set_chunk(Chunk& chunk) override;
-  void clear(bool last = false) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "reader_las"; }

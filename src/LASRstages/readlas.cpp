@@ -9,25 +9,6 @@ LASRlasreader::LASRlasreader()
   lasheader = nullptr;
 }
 
-LASRlasreader::~LASRlasreader()
-{
-  // This happens when an error occurs in the pipeline otherwise
-  // the reader and opener are close in clear()
-  if (lasreader)
-  {
-    lasreader->close();
-    delete lasreader;
-    lasreader = nullptr;
-  }
-
-  if (lasreadopener)
-  {
-    delete lasreadopener;
-  }
-
-  lasheader = nullptr;
-}
-
 bool LASRlasreader::set_chunk(Chunk& chunk)
 {
   if (lasreader)
@@ -145,18 +126,11 @@ bool LASRlasreader::process(LAS*& las)
 
   if (verbose) print(" Number of point read %d\n", las->npoints);
 
-  return true;
-}
-
-void LASRlasreader::clear(bool last)
-{
-  // It is not possible to delete the reader and header here because the header
-  // might be used later in the pipeline, typically by write_las. Instead set_chunk
-  // handle the memory and the destructor terminate to free memory on last chunk.
-  /*lasreader->close();
-  delete lasreader;
-  delete lasreadopener;
+  // Transfer ownership
+  las->lasreadopener = lasreadopener;
+  las->lasreader = lasreader;
   lasreadopener = nullptr;
   lasreader = nullptr;
-  lasheader = nullptr;*/
+
+  return true;
 }

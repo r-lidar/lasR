@@ -16,6 +16,8 @@
 class GridPartition;
 class Raster;
 class LASfilter;
+class LASreader;
+class LASreadOpener;
 
 class LAS
 {
@@ -77,6 +79,12 @@ public:
   LASpoint point;
   size_t npoints;
   size_t current_point;
+
+  // This part is extremely tricky because lasreadopener own lasreader. If lasreadopener is destructed
+  // it invalidate lasreader and thus header. We need header as long as this object exist. Consequently
+  // we must also own lasreadopener and lasreader
+  LASreadOpener* lasreadopener;
+  LASreader* lasreader;
   LASheader* header;
 
 private:
