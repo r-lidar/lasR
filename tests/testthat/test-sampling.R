@@ -24,8 +24,8 @@ test_that("voxel sampling respect filter",
 
   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
 
-  expect_equal(ans$summary$npoints, 7668L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 7668L))
+  expect_equal(ans$summary$npoints, 27533L)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 7668, `2` = 15828, `3` = 3569, `4` = 451, `5` = 16, `6` = 1))
 })
 
 
@@ -55,8 +55,8 @@ test_that("pixel sampling respect filter",
 
   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
 
-  expect_equal(ans$summary$npoints, 3042L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 3042L))
+  expect_equal(ans$summary$npoints, 22907)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 3042, `2` = 15828, `3` = 3569, `4` = 451, `5` = 16, `6` = 1))
 })
 
 test_that("poisson sampling works",
@@ -85,7 +85,7 @@ test_that("poisson sampling respect filter",
 
   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
 
-  expect_equal(ans$summary$npoints, 4416)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 4416))
+  expect_equal(ans$summary$npoints, 24281L)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 4416, `2` = 15828, `3` = 3569, `4` = 451, `5` = 16, `6` = 1))
 })
 

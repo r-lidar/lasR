@@ -1,3 +1,11 @@
+# lasR 0.11.1
+
+- Fix: In sampling stages, the filter argument previously discarded all points that did not pass the test. The updated behavior processes only the points that pass the test while leaving others untouched. For example:  
+  ```r
+  sampling_poisson(1, filter = keep_ground())
+  ```
+  Previously, this filtered the point cloud to retain only Poisson-sampled ground points. Now, it correctly Poisson-samples the ground points while preserving all other points.
+
 # lasR 0.11.0
 
 - New: Added a new stage, `info()`, to print useful information about a file.  

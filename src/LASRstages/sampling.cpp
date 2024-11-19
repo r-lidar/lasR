@@ -73,7 +73,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
     if (las->point.get_withheld_flag() != 0) continue;
     if (lasfilter.filter(&las->point))
     {
-      las->remove_point();
+      //las->remove_point();
       continue;
     }
 
@@ -264,7 +264,7 @@ bool LASRsamplingvoxels::process(LAS*& las)
     if (las->point.get_withheld_flag() != 0) continue;
     if (lasfilter.filter(&las->point))
     {
-      las->remove_point();
+      //las->remove_point();
       continue;
     }
 
@@ -361,7 +361,7 @@ bool LASRsamplingpixels::process(LAS*& las)
     if (las->point.get_withheld_flag() != 0) continue;
     if (lasfilter.filter(&las->point))
     {
-      las->remove_point();
+      //las->remove_point();
       continue;
     }
 
