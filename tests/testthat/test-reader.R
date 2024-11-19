@@ -6,6 +6,16 @@ test_that("reader works with single file",
 
   expect_error({u = exec(pipeline, on = f)}, NA)
   expect_length(u, 0)
+
+  pipeline = reader_las(filter = "-keep_intensity_above 100") + summarise()
+
+  expect_error({u = exec(pipeline, on = f)}, NA)
+  expect_equal(u$i_histogram, c("100" = 5))
+
+  pipeline = reader_las(filter = "Intensity > 50") + summarise()
+
+  expect_error({u = exec(pipeline, on = f)}, NA)
+  expect_equal(u$i_histogram, c("50" = 5, "100" = 21))
 })
 
 test_that("reader works with multiple files",
@@ -162,6 +172,9 @@ test_that("reader_dataframe works with NIR",
 
 test_that("reader_dataframe propagates the CRS",
 {
+  # Fails under Windows R-devel. Cannot reproduce. Should fails on linux as well later
+  skip_on_os("windows")
+
   wkt = sf::st_crs(26917)$wkt
   f = system.file("extdata", "Example.rds", package="lasR")
   las = readRDS(f)

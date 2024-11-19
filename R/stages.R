@@ -1038,8 +1038,8 @@ set_crs = function(x)
 #'
 #' @param res numeric. pixel/voxel resolution
 #' @param distance numeric. Minimum distance between points for poisson sampling.
-#' @param method string can be "random" to retain one random point or "highest" or "lowest" to retain
-#' the highest and lowest points respectively. For lowest and highest users can use the argument `use_attribute`
+#' @param method string can be "random" to retain one random point or "min" or "max" to retain
+#' the highest and lowest points respectively. For min and max users can use the argument `use_attribute`
 #' to select the highest intensity or highest Z, or highest gpstime or any other attributes.
 #' @param ... unused
 #' @template param-attribute
@@ -1075,11 +1075,13 @@ sampling_voxel = function(res = 2, filter = "", ...)
 #' @rdname sampling
 sampling_pixel = function(res = 2, filter = "", method = "random", use_attribute = "Z", ...)
 {
+  method = match.arg(method, c("random", "max", "min"))
+
   shuffle_size = .Machine$integer.max
   p = list(...)
   if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
 
-  ans <- list(algoname = "sampling_pixel", res = res, filter = filter, use_attribute = use_attribute, shuffle_size = shuffle_size)
+  ans <- list(algoname = "sampling_pixel", res = res, filter = filter, method = method, use_attribute = use_attribute, shuffle_size = shuffle_size)
   set_lasr_class(ans)
 }
 

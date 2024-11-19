@@ -328,15 +328,21 @@ bool LASRsamplingpixels::set_parameters(const nlohmann::json& stage)
   method = stage.value("method", "random");
   use_attribute = stage.value("use_attribute", "Z");
   shuffle_size = stage.value("shuffle_size", 10000);
+
+  if (method != "random" && method != "min" && method != "max")
+  {
+    last_error = "Invalid method " + method;
+    return false;
+  }
+
   return true;
 }
 
 bool LASRsamplingpixels::process(LAS*& las)
 {
-  print("%s\n", method.c_str());
   if (method == "random") return random(las);
-  if (method == "highest") return highest(las);
-  if (method == "lowest") return highest(las, false);
+  if (method == "max") return highest(las);
+  if (method == "min") return highest(las, false);
   return true;
 }
 

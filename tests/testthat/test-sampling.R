@@ -59,6 +59,31 @@ test_that("pixel sampling respect filter",
   expect_equal(ans$summary$npoints_per_return, c(`1` = 3042, `2` = 15828, `3` = 3569, `4` = 451, `5` = 16, `6` = 1))
 })
 
+test_that("pixel sampling using max intensity",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+
+  vox = sampling_pixel(50, method = "max", use_attribute = "Intensity")
+  pipeline = vox + summarise()
+  ans = exec(pipeline, on = f)
+
+  expect_equal(ans$npoints, 36L)
+  expect_equal(ans$i_histogram[1], c(`1500` = 17))
+  expect_equal(ans$i_histogram[20], c(`2450` = 1))
+
+  f = system.file("extdata", "Topography.las", package="lasR")
+  vox = sampling_pixel(50, method = "min", use_attribute = "Intensity")
+  pipeline = vox + summarise()
+  ans = exec(pipeline, on = f)
+
+  expect_equal(ans$npoints, 36L)
+  expect_equal(ans$i_histogram[1], c(`50` = 18))
+  expect_equal(ans$i_histogram[2], c(`100` = 18))
+
+  expect_error(sampling_pixel(50, method = "plop", use_attribute = "Intensity"))
+})
+
+
 test_that("poisson sampling works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")

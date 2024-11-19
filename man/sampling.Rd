@@ -28,8 +28,8 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 
 \item{...}{unused}
 
-\item{method}{string can be "random" to retain one random point or "highest" or "lowest" to retain
-the highest and lowest points respectively. For lowest and highest users can use the argument `use_attribute`
+\item{method}{string can be "random" to retain one random point or "min" or "max" to retain
+the highest and lowest points respectively. For min and max users can use the argument `use_attribute`
 to select the highest intensity or highest Z, or highest gpstime or any other attributes.}
 
 \item{use_attribute}{character. Specifies the attribute to use for the operation, with "Z" (the coordinate) as the default.
