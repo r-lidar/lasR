@@ -108,15 +108,15 @@ exec = function(pipeline, on, with = NULL, ...)
       on <- on$filename
     }
 
-    if (methods::is(on, "externalptr"))
+    if (methods::is(on, "lasrcloud"))
     {
       pipeline[[1]]$files = NULL
-      pipeline[[1]]$externalptr = on
+      pipeline[[1]]$externalptr = on[[1]]
       pipeline[[1]]$type = "externalptr"
 
       ind = get_reader_index(pipeline)
       pipeline[[ind]]$algoname = "reader_externalptr"
-      pipeline[[ind]]$externalptr = on
+      pipeline[[ind]]$externalptr = on[[1]]
 
       on_is_valid = TRUE
     }

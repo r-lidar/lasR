@@ -5,6 +5,7 @@ read_las = function(file)
   xptr <- list(algoname = "xptr")
   xptr = set_lasr_class(xptr)
   ans = exec(xptr, on = f, noread = T)
+  ans = list(ans)
   class(ans) = "lasrcloud"
   return(ans)
 }
@@ -19,7 +20,6 @@ read_las = function(file)
 #' @method print lasrcloud
 print.lasrcloud <- function(x, ...)
 {
-  class(ans) = "externalptr"
   pipeline = info()
   exec(pipeline, on = x, noread = T)
 }
