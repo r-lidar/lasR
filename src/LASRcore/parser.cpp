@@ -204,10 +204,10 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           std::string address_ptr = stage.at("externalptr");
           SEXP sexplas = string_address_to_sexp(address_ptr);
           las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
-          double xmin = las->header->min_x;
-          double ymin = las->header->min_y;
-          double xmax = las->header->max_x;
-          double ymax = las->header->max_y;
+          xmin = las->header->min_x;
+          ymin = las->header->min_y;
+          xmax = las->header->max_x;
+          ymax = las->header->max_y;
           int n = las->npoints;
           CRS crs;
 
