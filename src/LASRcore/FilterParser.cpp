@@ -1,6 +1,9 @@
 #include "FilterParser.h"
 #include "AttributeMapping.h"
 
+#include <numeric>
+#include <stdexcept>
+
 std::string FilterParser::parse(const std::string& condition) const
 {
   if (condition.empty() || condition[0] == '-')
@@ -8,62 +11,96 @@ std::string FilterParser::parse(const std::string& condition) const
     return condition; // Already a flag, return as-is
   }
 
-  for (const auto& [type, pattern] : patterns)
+  static const std::vector<std::string> operators = {"%between%", "%in%", "%out%", "==", "!=", ">=", "<=", ">", "<"};
+
+  // Find the operator in the condition
+  std::string op;
+  size_t opPos = std::string::npos;
+  for (const auto& candidate : operators)
   {
-    std::smatch match;
-
-    if (std::regex_match(condition, match, pattern))
+    opPos = condition.find(candidate);
+    if (opPos != std::string::npos)
     {
-      std::string attribute = map_attribute(match[1].str());
-      std::string value1 = match[2].str();
-      std::string value2 = match.size() > 3 ? match[3].str() : "";
-
-      if (type == "above")
-        return "-lasr_" + attribute + "_above " + value1;
-      if (type == "aboveeq")
-        return "-lasr_" + attribute + "_aboveeq " + value1;
-      else if (type == "lower")
-        return "-lasr_" + attribute + "_below " + value1;
-      if (type == "lowereq")
-        return "-lasr_" + attribute + "_beloweq " + value1;
-      else if (type == "between")
-        return "-lasr_" + attribute + "_between " + value1 + " " + value2;
-      else if (type == "equal")
-        return "-lasr_" + attribute + "_equal " + value1;
-      else if (type == "different")
-        return "-lasr_" + attribute + "_different " + value1;
-      else if (type == "in" || type == "out")
-      {
-        size_t start = 0;
-        size_t end = value1.find(' ');
-        std::string values;
-
-        while (end != std::string::npos)
-        {
-          if (!values.empty())
-          {
-            values += " ";  // Add space between values
-          }
-          values += value1.substr(start, end - start);
-          start = end + 1;
-          end = value1.find(' ', start);
-        }
-
-        // Add the last value after the last space
-        if (start < value1.length())
-        {
-          if (!values.empty()) values += " ";
-          values += value1.substr(start);
-        }
-
-        // Return the flag with the values
-        if (type == "in")
-          return "-lasr_" + attribute + "_in " + values;
-        else
-          return "-lasr_" + attribute + "_out " + values;
-      }
+      op = candidate;
+      break;
     }
   }
 
-  throw std::invalid_argument("Condition not recognized: " + condition);
+  if (op.empty())
+  {
+    throw std::invalid_argument("Invalid condition: no operator found");
+  }
+
+  // Extract left-hand side (LHS), operator, and right-hand side (RHS)
+  std::string lhs = trim(condition.substr(0, opPos));
+  std::string rhs = trim(condition.substr(opPos + op.length()));
+
+  // Process based on the operator
+  if (op == "==")
+  {
+    return "-lasr_" + lhs + "_equal " + rhs;
+  }
+  else if (op == "!=")
+  {
+    return "-lasr_" + lhs + "_different " + rhs;
+  }
+  else if (op == ">")
+  {
+    return "-lasr_" + lhs + "_above " + rhs;
+  }
+  else if (op == "<")
+  {
+    return "-lasr_" + lhs + "_below " + rhs;
+  }
+  else if (op == ">=")
+  {
+    return "-lasr_" + lhs + "_aboveeq " + rhs;
+  }
+  else if (op == "<=")
+  {
+    return "-lasr_" + lhs + "_beloweq " + rhs;
+  }
+  else if (op == "%in%")
+  {
+    std::vector<std::string> values = split(rhs, ' ');
+    return "-lasr_" + lhs + "_in " + std::accumulate(std::next(values.begin()), values.end(), values[0], [](std::string a, std::string b) { return a + " " + b; });
+  }
+  else if (op == "%out%")
+  {
+    std::vector<std::string> values = split(rhs, ' ');
+    return "-lasr_" + lhs + "_out " + std::accumulate(std::next(values.begin()), values.end(), values[0], [](std::string a, std::string b) { return a + " " + b; });
+  }
+  else if (op == "%between%")
+  {
+    // Expect two values for "between"
+    std::vector<std::string> values = split(rhs, ' ');
+    if (values.size() != 2) throw std::invalid_argument("Invalid condition: %between% must have two values");
+    return "-lasr_" + lhs + "_between " + values[0] + " " + values[1] ;
+  }
+
+  throw std::invalid_argument("Invalid condition: unsupported operator");
+}
+
+std::vector<std::string> FilterParser::split(const std::string& str, char delimiter) const
+{
+  std::vector<std::string> tokens;
+  size_t start = 0;
+  size_t end = 0;
+
+  while ((end = str.find(delimiter, start)) != std::string::npos)
+  {
+    tokens.push_back(trim(str.substr(start, end - start)));
+    start = end + 1;
+  }
+
+  tokens.push_back(trim(str.substr(start)));
+
+  return tokens;
+}
+
+std::string FilterParser::trim(const std::string& str) const
+{
+  size_t start = str.find_first_not_of(" \t");
+  size_t end = str.find_last_not_of(" \t");
+  return (start == std::string::npos) ? "" : str.substr(start, end - start + 1);
 }

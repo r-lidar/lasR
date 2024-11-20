@@ -1,3 +1,7 @@
+# lasR 0.12.1
+
+- Fix: critical bug on windows #96
+
 # lasR 0.12.0
 
 - Fix: In sampling stages, the filter argument previously discarded all points that did not pass the test. The updated behavior processes only the points that pass the test while leaving others untouched. For example:  
