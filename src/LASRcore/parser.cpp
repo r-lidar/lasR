@@ -204,6 +204,11 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           std::string address_ptr = stage.at("externalptr");
           SEXP sexplas = string_address_to_sexp(address_ptr);
           las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
+          if (las == nullptr)
+          {
+            last_error = "invalid external pointer";
+            return false;
+          }
           xmin = las->header->min_x;
           ymin = las->header->min_y;
           xmax = las->header->max_x;
@@ -278,6 +283,11 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           std::string address_ptr = stage.at("externalptr");
           SEXP sexplas = string_address_to_sexp(address_ptr);
           las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
+          if (las == nullptr)
+          {
+            last_error = "invalid external pointer";
+            return false;
+          }
           auto v = std::make_unique<LASRreaderxptr>(las);
           pipeline.push_back(std::move(v));
           point_cloud_ownership_transfered = true;
