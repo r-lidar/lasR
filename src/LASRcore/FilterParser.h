@@ -3,22 +3,12 @@
 
 #include <string>
 #include <vector>
-#include <regex>
 
 class FilterParser
 {
 private:
-  const std::vector<std::pair<std::string, std::regex>> patterns = {
-    {"above", std::regex(R"(^([A-Za-z_]+)\s*>\s*([0-9.]+)$)")},
-    {"lower", std::regex(R"(^([A-Za-z_]+)\s*<\s*([0-9.]+)$)")},
-    {"aboveeq", std::regex(R"(^([A-Za-z_]+)\s*>=\s*([0-9.]+)$)")},
-    {"lowereq", std::regex(R"(^([A-Za-z_]+)\s*<=\s*([0-9.]+)$)")},
-    {"equal", std::regex(R"(^([A-Za-z_]+)\s*==\s*([0-9.]+)$)")},
-    {"different", std::regex(R"(^([A-Za-z_]+)\s*!=\s*([0-9.]+)$)")},
-    {"in", std::regex(R"(^([A-Za-z_]+)\s*%in%\s*([0-9.]+(?:\s+[0-9.]+)*)$)")},
-    {"out", std::regex(R"(^([A-Za-z_]+)\s*%out%\s*([0-9.]+(?:\s+[0-9.]+)*)$)")},
-    {"between", std::regex(R"(^([A-Za-z_]+)\s*%between%\s*([0-9.]+)\s+([0-9.]+)$)")}
-  };
+  std::string trim(const std::string& str) const;
+  std::vector<std::string> split(const std::string& str, char delimiter) const;
 
 public:
   FilterParser() = default;
