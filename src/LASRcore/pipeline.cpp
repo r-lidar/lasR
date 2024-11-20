@@ -23,6 +23,8 @@ Pipeline::Pipeline()
   point = nullptr;
   las = nullptr;
   catalog = nullptr;
+
+  point_cloud_ownership_transfered = false;
 }
 
 // The copy constructor is used for multi-threading. It creates a copy of the pipeline
@@ -44,6 +46,8 @@ Pipeline::Pipeline(const Pipeline& other)
   las = nullptr;
 
   catalog = other.catalog;
+
+  point_cloud_ownership_transfered = other.point_cloud_ownership_transfered;
 
   for (const auto& stage : other.pipeline)
   {
@@ -473,7 +477,8 @@ void Pipeline::clear(bool last)
 
 void Pipeline::clean()
 {
-  delete las;
+  if (!point_cloud_ownership_transfered)
+    delete las;
   header = nullptr;
   point = nullptr;
   las = nullptr;

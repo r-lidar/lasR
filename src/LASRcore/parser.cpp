@@ -43,6 +43,7 @@
 #include "aggregate.h"
 #include "callback.h"
 #include "readdataframe.h"
+#include "xptr.h"
 
 static SEXP get_element(SEXP list, const char *str)
 {
@@ -110,7 +111,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"write_vpc",            create_instance<LASRvpcwriter>}
     #ifdef USING_R
     ,{"aggregate",           create_instance<LASRaggregate>},
-    {"callback",             create_instance<LASRcallback>}
+    {"callback",             create_instance<LASRcallback>},
+    {"xptr",                 create_instance<LASRxptr>}
     #endif
   };
 
@@ -125,6 +127,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       if (iter != factory_map.end())
       {
         pipeline.push_back(iter->second());
+
+        if (name == "xptr") point_cloud_ownership_transfered = true;
       }
       else if (name == "build_catalog")
       {
@@ -136,10 +140,11 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         // stage tells us 50.
         buffer = stage.value("buffer", 0.0);
         chunk_size = stage.value("chunk", 0.0);
+        std::string type = stage.value("type", "files");
 
-        // No element 'dataframe'? We are processing some files. Otherwise with have a compatibility layer
+        // We are processing some files. Otherwise with have a compatibility layer
         // with lidR to process LAS objects
-        if (!stage.contains("dataframe"))
+        if (type == "files")
         {
           std::vector<std::string> files = get_vector<std::string>(stage["files"]);
 
@@ -167,7 +172,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           ymax = catalog->get_ymax();
         }
         #ifdef USING_R
-        else
+        else if (type == "dataframe")
         {
           std::string address_dataframe_str = stage.at("dataframe");
           SEXP dataframe = string_address_to_sexp(address_dataframe_str);
@@ -194,7 +199,57 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
           catalog->set_crs(CRS(wkt));
         }
+        else if (type == "externalptr")
+        {
+          std::string address_ptr = stage.at("externalptr");
+          SEXP sexplas = string_address_to_sexp(address_ptr);
+          las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
+          double xmin = las->header->min_x;
+          double ymin = las->header->min_y;
+          double xmax = las->header->max_x;
+          double ymax = las->header->max_y;
+          int n = las->npoints;
+          CRS crs;
+
+          if (las->header->vlr_geo_keys)
+          {
+            int epsg = 0;
+            for (int j = 0; j < las->header->vlr_geo_keys->number_of_keys; j++)
+            {
+              if (las->header->vlr_geo_key_entries[j].key_id == 3072)
+              {
+                epsg = las->header->vlr_geo_key_entries[j].value_offset;
+                crs = CRS(epsg);
+                break;
+              }
+            }
+          }
+
+          if (las->header->vlr_geo_ogc_wkt)
+          {
+            for (unsigned int j = 0; j < las->header->number_of_variable_length_records; j++)
+            {
+              if (las->header->vlrs[j].record_id == 2112)
+              {
+                char* data = (char*)las->header->vlrs[j].data;
+                int len = strnlen(data, las->header->vlrs[j].record_length_after_header);
+                std::string wkt(data, len);
+                crs = CRS(wkt);
+                break;
+              }
+            }
+          }
+
+          catalog = std::make_shared<LAScatalog>();
+          catalog->add_bbox(xmin, ymin, xmax, ymax, n);
+          catalog->set_crs(crs);
+        }
         #endif
+        else
+        {
+          last_error = "Internal error: bad build_catalog stage";
+          return false;
+        }
       }
       else if (name.substr(0,6) == "reader")
       {
@@ -216,6 +271,16 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         {
           auto v = std::make_unique<LASRdataframereader>();
           pipeline.push_back(std::move(v));
+        }
+
+        if (name == "reader_externalptr")
+        {
+          std::string address_ptr = stage.at("externalptr");
+          SEXP sexplas = string_address_to_sexp(address_ptr);
+          las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
+          auto v = std::make_unique<LASRreaderxptr>(las);
+          pipeline.push_back(std::move(v));
+          point_cloud_ownership_transfered = true;
         }
         #endif
 

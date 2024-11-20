@@ -28,9 +28,19 @@ bool LASRinfo::process(LASheader*& h)
   const std::vector<std::string> numberUnits = {"", "thousands", "millions", "billions", "trillions"};
   const std::vector<std::string> byteUnits = {"B", "kB", "MB", "GB", "TB"};
 
-  bool compressed = h->laszip != nullptr;
+  bool compressed = false;
   uint64_t npoints = MAX(h->number_of_point_records, h->extended_number_of_point_records);
-  uint64_t fsize = std::filesystem::file_size(ifile);
+  uint64_t fsize = npoints*h->point_data_record_length;
+
+  std::string filePath = ifile;
+  bool fileExist = std::filesystem::exists(filePath);
+
+  if (fileExist)
+  {
+    bool compressed = h->laszip != nullptr;
+    uint64_t fsize = std::filesystem::file_size(ifile);
+  }
+
 
   if (compressed)
     print("LAS v%d.%d format %d\n", h->version_major, h->version_minor, h->point_data_format);
@@ -47,35 +57,39 @@ bool LASRinfo::process(LASheader*& h)
   }
   print("\n");
 
-  print("Extent       : %.3lf %.3lf %3lf %.3lf (xmin, xmax, ymin, ymax)\n", h->min_x, h->max_x, h->min_y, h->max_y);
+  print("Extent       : %.2lf %.2lf %.2lf %.2lf (xmin, xmax, ymin, ymax)\n", h->min_x, h->max_x, h->min_y, h->max_y);
   print("Points       : %s\n", human_readable(npoints, numberUnits).c_str());
   print("Coord. ref.  : %s\n", crs.get_crs().GetName());
-  print("Spatial index: ");
 
-  const char* file = ifile.c_str();
-  LASreadOpener lasreadopener;
-  lasreadopener.set_file_name(file);
-  LASreader* lasreader = lasreadopener.open();
-  if (lasreader)
+  if (fileExist)
   {
-    if (lasreader->get_copcindex())
-      print("COPC");
-    else if (lasreader->get_index())
-      print("LAX");
+    print("Spatial index: ");
+
+    const char* file = ifile.c_str();
+    LASreadOpener lasreadopener;
+    lasreadopener.set_file_name(file);
+    LASreader* lasreader = lasreadopener.open();
+    if (lasreader)
+    {
+      if (lasreader->get_copcindex())
+        print("COPC");
+      else if (lasreader->get_index())
+        print("LAX");
+      else
+        print("none supported");
+    }
     else
-      print("none supported");
+    {
+      print("failure");
+    }
+    print("\n");
   }
-  else
-  {
-    print("failure");
-  }
-  print("\n");
 
-  print("Extrabytes   :\n");
+  print("Extra attribute   :\n");
 
   int nextrabytes = 0;
   const char* name_table[10] = { "unsigned char", "char", "unsigned short", "short", "unsigned long", "long", "unsigned long long", "long long", "float", "double" };
-  for (unsigned int i = 0 ; i < h->number_of_extended_variable_length_records ; i++)
+  for (unsigned int i = 0 ; i < h->number_of_variable_length_records ; i++)
   {
     LASvlr vlr = h->vlrs[i];
 
@@ -89,7 +103,7 @@ bool LASRinfo::process(LASheader*& h)
     else
       print(" (no description)\n", vlr.description);
 
-    for (int j = 0; j < vlr.record_length_after_header; j += 192)
+    for (int j = 0; j < vlr.record_length_after_header ; j += 192)
     {
       int type = ((I32)(vlr.data[j+2])-1)%10;
       int dim = ((I32)(vlr.data[j+2])-1)/10+1;
@@ -157,6 +171,8 @@ bool LASRinfo::process(LASheader*& h)
       print("\n");
     }
   }
+
+  if (nextrabytes == 0) print(" none\n");
 
   return true;
 }

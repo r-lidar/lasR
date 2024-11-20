@@ -51,6 +51,8 @@ print.LASRalgorithm = function(x, ...)
         cat(utils::capture.output(print(x[[name]])), "\n")
       else if (is.function(x[[name]]))
         cat("<function>\n")
+      else if (methods::is(x[[name]], "externalptr"))
+        cat("<externalptr>\n")
       else if (is.list(x[[name]]))
         cat(names(x[[name]]), "\n")
       else
