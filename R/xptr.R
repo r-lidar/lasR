@@ -23,3 +23,16 @@ print.lasrcloud <- function(x, ...)
   pipeline = info()
   exec(pipeline, on = x, noread = T)
 }
+
+#' Plot Method for 'lasrcloud' Objects
+#'
+#' This function defines a custom plot method for objects of class 'lasrcloud'.
+#'
+#' @param x An object of class 'lasrcloud'.
+#' @param ... Additional arguments (not used).
+#' @export
+#' @method plot lasrcloud
+plot.lasrcloud <- function(x, ...)
+{
+  total = .Call(`C_plot_pointcloud`, x[[1]])
+}
