@@ -9,6 +9,7 @@
 #include "Shape.h"
 #include "PointLAS.h"
 #include "Accessors.h"
+#include "PointSchema.h"
 
 #include <vector>
 #include <string>
@@ -16,17 +17,16 @@
 class GridPartition;
 class Raster;
 class LASfilter;
-class LASreader;
-class LASreadOpener;
+class LASheader;
 
 class LAS
 {
 public:
-  LAS(LASheader* header);
+  LAS(Header* header);
   LAS(const Raster& raster);
   ~LAS();
-  bool add_attribute(int data_type, const std::string& name, const std::string& description, double scale = 1, double offset = 0, bool mem_realloc = true);
-  bool add_point(const LASpoint& p);
+  bool add_attribute(AttributeType data_type, const std::string& name, const std::string& description, double scale = 1, double offset = 0, bool mem_realloc = true);
+  bool add_point(const Point& p);
   bool add_rgb();
   bool seek(size_t pos);
   bool read_point(bool include_withhelded = false);
@@ -68,12 +68,18 @@ private:
   U64 get_true_number_of_points() const;
 
   // Access to point attributes without copying the whole point
+  inline double get_x(int i) const;
+  inline double get_y(int i) const;
+  inline double get_z(int i) const;
   inline double get_x(const unsigned char* buf) const;
   inline double get_y(const unsigned char* buf) const;
   inline double get_z(const unsigned char* buf) const;
   inline double get_gpstime(const unsigned char* buf) const;
   inline unsigned char get_scanner_channel(const unsigned char* buf) const;
   inline unsigned char get_return_number(const unsigned char* buf) const;
+
+public:
+  Point p;
 
 public:
   LASpoint point;
@@ -83,12 +89,12 @@ public:
   // This part is extremely tricky because lasreadopener own lasreader. If lasreadopener is destructed
   // it invalidate lasreader and thus header. We need header as long as this object exist. Consequently
   // we must also own lasreadopener and lasreader
-  LASreadOpener* lasreadopener;
-  LASreader* lasreader;
+  Header* newheader;
   LASheader* header;
 
 private:
   unsigned char* buffer;
+  unsigned char* buffer2;
   size_t capacity; // capacity of the buffer in bytes
   int next_point;
 
@@ -104,7 +110,6 @@ private:
   std::string file;
 
 public:
-  enum attribute_type { UNDOC = 0, UCHAR = 1, CHAR = 2, USHORT = 3, SHORT = 4, ULONG = 5, LONG = 6, ULONGLONG = 7, LONGLONG = 8, FLOAT = 9, DOUBLE = 10};
   enum attributes{X, Y, Z, I, T, RN, NOR, SDF, EoF, CLASS, SYNT, KEYP, WITH, OVER, UD, SA, PSID, R, G, B, NIR, CHAN, BUFF};
 };
 

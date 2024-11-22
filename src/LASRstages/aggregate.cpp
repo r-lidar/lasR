@@ -88,7 +88,7 @@ bool LASRaggregate::process(LAS*& las)
     if (name >= 100) // Extra bytes
     {
       LASattribute attr = las->header->attributes[name-100];
-      if (attr.data_type < LAS::FLOAT)
+      if (attr.data_type < AttributeType::FLOAT)
       {
         if (attr.has_scale() || attr.has_offset())
           type = REALSXP;

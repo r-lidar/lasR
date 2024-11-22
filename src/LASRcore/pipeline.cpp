@@ -477,8 +477,7 @@ void Pipeline::clear(bool last)
 
 void Pipeline::clean()
 {
-  if (!point_cloud_ownership_transfered)
-    delete las;
+  if (!point_cloud_ownership_transfered) delete las;
   header = nullptr;
   point = nullptr;
   las = nullptr;

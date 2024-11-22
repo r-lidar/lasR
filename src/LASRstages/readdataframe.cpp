@@ -163,9 +163,9 @@ bool LASRdataframereader::process(LASheader*& header)
   {
     if (col_names[i] >= 100)
     {
-      int data_type = LAS::LONG;
+      int data_type = AttributeType::INT32;
       SEXP vector = VECTOR_ELT(dataframe, i);
-      if (TYPEOF(vector) == REALSXP) data_type = LAS::DOUBLE;
+      if (TYPEOF(vector) == REALSXP) data_type = AttributeType::DOUBLE;
       const char* name = CHAR(STRING_ELT(names_attr, i));
       LASattribute lasattribute(data_type-1, name, name);
       lasheader.add_attribute(lasattribute);
@@ -310,13 +310,13 @@ bool LASRdataframereader::process(LASpoint*& point)
 bool LASRdataframereader::process(LAS*& las)
 {
   if (las != nullptr) { delete las; las = nullptr; }
-  if (las == nullptr) las = new LAS(&lasheader);
+  //if (las == nullptr) las = new LAS(&lasheader);
 
   LASpoint* p = nullptr;
   while (process(p))
   {
     if (p == nullptr) break;
-    las->add_point(*p);
+    //las->add_point(*p);
   }
   return true;
 }

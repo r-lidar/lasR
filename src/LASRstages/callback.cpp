@@ -125,7 +125,7 @@ bool LASRcallback::process(LAS*& las)
     if (name >= 100) // Extra bytes
     {
       LASattribute attr = las->header->attributes[name-100];
-      if (attr.data_type < LAS::FLOAT)
+      if (attr.data_type < AttributeType::FLOAT)
       {
         if (attr.has_scale() || attr.has_offset())
           type = REALSXP;
@@ -384,7 +384,7 @@ bool LASRcallback::process(LAS*& las)
 
             if (type ==  INTSXP)
             {
-              if (attr.data_type == LAS::FLOAT || attr.data_type == LAS::DOUBLE)
+              if (attr.data_type == AttributeType::FLOAT || attr.data_type == AttributeType::DOUBLE)
               {
                 char buffer[64];
                 snprintf(buffer, sizeof(buffer), "%s is expected to be numeric", attr.name);
@@ -457,11 +457,11 @@ bool LASRcallback::process(LAS*& las)
 
               switch(attr.data_type)
               {
-              case LAS::UCHAR:  { U8 u  = U8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::CHAR:   { I8 u  = I8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::USHORT: { U16 u = U16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::SHORT:  { I16 u = I16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::LONG:   { I32 u = I32_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::UINT8:  { U8 u  = U8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::INT8:   { I8 u  = I8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::UINT16: { U16 u = U16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::INT16:  { I16 u = I16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::INT32:   { I32 u = I32_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
               }
             }
             else if (type ==  REALSXP)
@@ -471,13 +471,13 @@ bool LASRcallback::process(LAS*& las)
 
               switch(attr.data_type)
               {
-              case LAS::UCHAR:  { U8  u = U8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::CHAR:   { I8  u = I8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::USHORT: { U16 u = U16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::SHORT:  { I16 u = I16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::LONG:   { I32 u = I32_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::FLOAT:  { F32 u = (F32)val; las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::DOUBLE: { F64 u = (F64)val; las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::UINT8:  { U8  u = U8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::INT8:   { I8  u = I8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::UINT16: { U16 u = U16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::INT16:  { I16 u = I16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::INT32:   { I32 u = I32_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::FLOAT:  { F32 u = (F32)val; las->point.set_attribute(attr_index, (U8*)&u); break; }
+              case AttributeType::DOUBLE: { F64 u = (F64)val; las->point.set_attribute(attr_index, (U8*)&u); break; }
               }
             }
 

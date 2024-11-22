@@ -105,17 +105,79 @@ bool LASRlasreader::process(LASpoint*& point)
 
 bool LASRlasreader::process(LAS*& las)
 {
+  Header* header = new Header;
+  header->min_x = lasreader->header.min_x;
+  header->max_x = lasreader->header.max_x;
+  header->min_y = lasreader->header.min_y;
+  header->max_y = lasreader->header.max_y;
+  header->min_z = lasreader->header.min_z;
+  header->max_z = lasreader->header.max_z;
+  header->number_of_point_records = MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records);
+
+  header->schema.add_attribute("x", AttributeType::INT32, lasheader->x_scale_factor, lasheader->x_offset);
+  header->schema.add_attribute("y", AttributeType::INT32, lasheader->y_scale_factor, lasheader->y_offset);
+  header->schema.add_attribute("z", AttributeType::INT32, lasheader->z_scale_factor, lasheader->z_offset);
+  header->schema.add_attribute("f", AttributeType::UINT8, lasheader->z_scale_factor, lasheader->z_offset); // custom lasR flags
+  header->schema.add_attribute("i", AttributeType::INT32);
+
+  /*header.schema.add_attribute("r", AttributeType::UINT8);
+  header->schema.add_attribute("n", AttributeType::UINT8);
+  header->schema.add_attribute("c", AttributeType::UINT8);
+  header->schema.add_attribute("a", AttributeType::INT16);
+  header->schema.add_attribute("u", AttributeType::UINT8);
+  header->schema.add_attribute("p", 2);
+
+  if (lasreader->header.point_data_formatader. == 1)
+  {
+    header->schema.add_attribute("t", 8);
+  }
+
+  if (lasreader->header.point_data_formatader. == 2)
+  {
+    header->schema.add_attribute("R", 2);
+    header->schema.add_attribute("G", 2);
+    header->schema.add_attribute("B", 2);
+  }
+
+  if (lasreader->header.point_data_formatader. == 3)
+  {
+    header->schema.add_attribute("t", 8);
+    header->schema.add_attribute("R", 2);
+    header->schema.add_attribute("G", 2);
+    header->schema.add_attribute("B", 2);
+  }
+
+  if (lasreader->header.point_data_formatader. == 4)
+  {
+    header->schema.add_attribute("t", 8);
+  }
+
+  if (lasreader->header.point_data_formatader. == 5)
+  {
+    header->schema.add_attribute("t", 8);
+    header->schema.add_attribute("R", 2);
+    header->schema.add_attribute("G", 2);
+    header->schema.add_attribute("B", 2);
+  }*/
+
   if (las != nullptr) { delete las; las = nullptr; }
-  if (las == nullptr) las = new LAS(lasheader);
+  if (las == nullptr) las = new LAS(header);
 
   progress->reset();
   progress->set_total(lasreader->npoints);
   progress->set_prefix("read_las");
 
+  Point p(&header->schema);
+  AttributeWriter set_intensity("i", &header->schema);
+
   while (lasreader->read_point())
   {
     if (progress->interrupted()) break;
-    if (!las->add_point(lasreader->point)) return false;
+    p.set_x(lasreader->point.get_x());
+    p.set_y(lasreader->point.get_y());
+    p.set_z(lasreader->point.get_z());
+    set_intensity(&p, lasreader->point.get_intensity());
+    if (!las->add_point(p)) return false;
     progress->update(lasreader->p_count);
     progress->show();
   }
@@ -126,11 +188,27 @@ bool LASRlasreader::process(LAS*& las)
 
   if (verbose) print(" Number of point read %d\n", las->npoints);
 
-  // Transfer ownership
-  las->lasreadopener = lasreadopener;
-  las->lasreader = lasreader;
-  lasreadopener = nullptr;
-  lasreader = nullptr;
+  //delete lasreadopener;
+  //lasreadopener = nullptr;
+  //lasreader->close();
+  //delete lasreader;
+  //lasreader = nullptr;
 
   return true;
+}
+
+LASRlasreader::~LASRlasreader()
+{
+  if (lasreadopener)
+  {
+    delete lasreadopener;
+    lasreadopener = nullptr;
+  }
+
+  if (lasreader)
+  {
+    lasreader->close();
+    delete lasreader;
+    lasreader = nullptr;
+  }
 }

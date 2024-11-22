@@ -131,13 +131,13 @@ bool LASRtransformwith::process(LAS*& las)
 
     data_type = las->header->attributes[attr_index].data_type;
 
-    if (data_type != LAS::LONG && data_type != LAS::DOUBLE)
+    if (data_type != AttributeType::INT32 && data_type != AttributeType::DOUBLE)
     {
       last_error = "the extrabyte attribute must be of type 'int' or 'double'";
       return false;
     }
 
-    if (data_type == LAS::LONG)
+    if (data_type == AttributeType::INT32)
     {
       scale = las->point.quantizer->z_scale_factor;
       //offset = las->point.quantizer->z_offset;

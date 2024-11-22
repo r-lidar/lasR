@@ -11,7 +11,7 @@ class LASRlasreader: public Stage
 {
 public:
   LASRlasreader();
-  ~LASRlasreader() {};
+  ~LASRlasreader();
   bool process(LASheader*& header) override;
   bool process(LASpoint*& point) override;
   bool process(LAS*& las) override;

@@ -18,12 +18,31 @@ bool LASRnothing::set_parameters(const nlohmann::json& stage)
 
 bool LASRnothing::process(LAS*& las)
 {
+  las->newheader->schema.dump();
+  print("Number of points %lu\n", las->npoints);
+
+  AttributeReader get_intensity("i", &las->newheader->schema);
+  AttributeWriter set_intensity("i", &las->newheader->schema);
+
   if (!loop) return true;
 
   int i = 0;
   while(las->read_point())
   {
+    printf("%d | %.2lf %.2lf %.2lf %d\n", i, las->p.get_x(), las->p.get_y(), las->p.get_z(), (int)get_intensity(&las->p));
+    set_intensity(&las->p, 0);
     i++;
+    if (i > 10) break;
+  }
+
+  las->seek(0);
+
+  i = 0;
+  while(las->read_point())
+  {
+    printf("%d | %.2lf %.2lf %.2lf %d\n", i, las->p.get_x(), las->p.get_y(), las->p.get_z(), (int)get_intensity(&las->p));
+    i++;
+    if (i > 10) break;
   }
 
   return true;

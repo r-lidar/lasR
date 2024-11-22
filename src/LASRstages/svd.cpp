@@ -87,37 +87,37 @@ bool LASRsvd::process(LAS*& las)
 
   if (ft_C)
   {
-    las->add_attribute(LAS::FLOAT, "coeff00", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff01", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff02", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff10", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff11", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff12", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff20", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff21", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff22", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff00", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff01", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff02", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff10", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff11", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff12", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff20", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff21", "Principal component coefficient", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "coeff22", "Principal component coefficient", 1, 0, false);
   }
 
   if (ft_E)
   {
-    las->add_attribute(LAS::FLOAT, "lambda1", "Eigen value 1", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "lambda2", "Eigen value 2", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "lambda3", "Eigen value 3", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "lambda1", "Eigen value 1", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "lambda2", "Eigen value 2", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "lambda3", "Eigen value 3", 1, 0, false);
   }
 
-  if (ft_a) las->add_attribute(LAS::FLOAT, "anisotropy", "anisotropy", 1, 0, false);
-  if (ft_p) las->add_attribute(LAS::FLOAT, "planarity", "planarity", 1, 0, false);
-  if (ft_s) las->add_attribute(LAS::FLOAT, "sphericity", "sphericity", 1, 0, false);
-  if (ft_l) las->add_attribute(LAS::FLOAT, "linearity", "linearity", 1, 0, false);
-  if (ft_o) las->add_attribute(LAS::FLOAT, "omnivariance", "omnivariance", 1, 0, false);
-  if (ft_c) las->add_attribute(LAS::FLOAT, "curvature", "curvature", 1, 0, false);
-  if (ft_e) las->add_attribute(LAS::FLOAT, "eigensum", "sum of eigen values", 1, 0, false);
-  if (ft_i) las->add_attribute(LAS::FLOAT, "angle", "azimutal angle (degree)", 1, 0, false);
+  if (ft_a) las->add_attribute(AttributeType::FLOAT, "anisotropy", "anisotropy", 1, 0, false);
+  if (ft_p) las->add_attribute(AttributeType::FLOAT, "planarity", "planarity", 1, 0, false);
+  if (ft_s) las->add_attribute(AttributeType::FLOAT, "sphericity", "sphericity", 1, 0, false);
+  if (ft_l) las->add_attribute(AttributeType::FLOAT, "linearity", "linearity", 1, 0, false);
+  if (ft_o) las->add_attribute(AttributeType::FLOAT, "omnivariance", "omnivariance", 1, 0, false);
+  if (ft_c) las->add_attribute(AttributeType::FLOAT, "curvature", "curvature", 1, 0, false);
+  if (ft_e) las->add_attribute(AttributeType::FLOAT, "eigensum", "sum of eigen values", 1, 0, false);
+  if (ft_i) las->add_attribute(AttributeType::FLOAT, "angle", "azimutal angle (degree)", 1, 0, false);
   if (ft_n)
   {
-    las->add_attribute(LAS::FLOAT, "normalX", "x component of normal vector", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "normalY", "y component of normal vector", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "normalZ", "z component of normal vector", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "normalX", "x component of normal vector", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "normalY", "y component of normal vector", 1, 0, false);
+    las->add_attribute(AttributeType::FLOAT, "normalZ", "z component of normal vector", 1, 0, false);
   }
 
   las->realloc_point_and_buffer();
