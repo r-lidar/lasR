@@ -21,16 +21,19 @@ bool LASRnothing::process(LAS*& las)
   las->newheader->schema.dump();
   print("Number of points %lu\n", las->npoints);
 
-  AttributeReader get_intensity("i", &las->newheader->schema);
-  AttributeWriter set_intensity("i", &las->newheader->schema);
+  AttributeReader get_intensity("i");
+  AttributeWriter set_intensity("i");
 
   if (!loop) return true;
+
+  PointFilter filter;
+  filter.add_condition("Intensity > 1000");
 
   int i = 0;
   while(las->read_point())
   {
     printf("%d | %.2lf %.2lf %.2lf %d\n", i, las->p.get_x(), las->p.get_y(), las->p.get_z(), (int)get_intensity(&las->p));
-    set_intensity(&las->p, 0);
+    if (filter.filter(&las->p))  set_intensity(&las->p, 0);
     i++;
     if (i > 10) break;
   }

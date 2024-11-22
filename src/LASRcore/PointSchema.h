@@ -182,20 +182,34 @@ struct Point
     if (own_data && data) delete[] data;
     data = nullptr;
   }
-
+  int get_X() const {
+    const auto& attr = schema->attributes[0];
+    int X = *((int*)(data + attr.offset));
+    return X;
+  }
+  int get_Y() const {
+    const auto& attr = schema->attributes[1];
+    int Y = *((int*)(data + attr.offset));
+    return Y;
+  }
+  int get_Z() const {
+    const auto& attr = schema->attributes[2];
+    int Z = *((int*)(data + attr.offset));
+    return Z;
+  }
   double get_x() const {
     const auto& attr = schema->attributes[0];
-    unsigned int X = *((unsigned int*)(data + attr.offset));
+    int X = *((int*)(data + attr.offset));
     return attr.scale_factor * X + attr.value_offset;
   }
   double get_y() const {
     const auto& attr = schema->attributes[1];
-    unsigned int Y = *((unsigned int*)(data + attr.offset));
+    int Y = *((int*)(data + attr.offset));
     return attr.scale_factor * Y + attr.value_offset;
   }
   double get_z() const {
     const auto& attr = schema->attributes[2];
-    unsigned int Z = *((unsigned int*)(data + attr.offset));
+    int Z = *((int*)(data + attr.offset));
     return attr.scale_factor * Z + attr.value_offset;
   }
   bool get_withheld() const {
@@ -207,19 +221,19 @@ struct Point
     const auto& attr = schema->attributes[0];
     unsigned char* pointer = data + attr.offset;
     double scaled_value = (value - attr.value_offset) / attr.scale_factor;
-    *reinterpret_cast<unsigned int*>(pointer) = static_cast<unsigned int>(scaled_value);
+    *reinterpret_cast<int*>(pointer) = static_cast<int>(scaled_value);
   }
   void set_y(double value) {
     const auto& attr = schema->attributes[1];
     unsigned char* pointer = data + attr.offset;
     double scaled_value = (value - attr.value_offset) / attr.scale_factor;
-    *reinterpret_cast<unsigned int*>(pointer) = static_cast<unsigned int>(scaled_value);
+    *reinterpret_cast<int*>(pointer) = static_cast< int>(scaled_value);
   }
   void set_z(double value) {
     const auto& attr = schema->attributes[2];
     unsigned char* pointer = data + attr.offset;
     double scaled_value = (value - attr.value_offset) / attr.scale_factor;
-    *reinterpret_cast<unsigned int*>(pointer) = static_cast<unsigned int>(scaled_value);
+    *reinterpret_cast<int*>(pointer) = static_cast<int>(scaled_value);
   }
   void set_withheld(bool value) {
     auto& attr = schema->attributes[3];

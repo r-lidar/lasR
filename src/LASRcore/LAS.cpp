@@ -397,7 +397,8 @@ void LAS::update_header()
 // Thread safe
 bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter) const
 {
-  Point p(&newheader->schema);
+  Point p;
+  p.set_schema(&newheader->schema);
 
   addr.clear();
 
@@ -427,7 +428,8 @@ bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter*
 // Thread safe
 bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter, AttributeAccessor* const accessor) const
 {
-  Point p(&newheader->schema);
+  Point p;
+  p.set_schema(&newheader->schema);
 
   addr.clear();
 

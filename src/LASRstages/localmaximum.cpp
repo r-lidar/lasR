@@ -66,7 +66,11 @@ bool LASRlocalmaximum::process(LAS*& las)
     return false; // # nocov
   }
 
-  AttributeAccessor accessor(use_attribute);
+  AttributeReader accessor(use_attribute);
+  AttributeReader get_intensity("i");
+  AttributeReader get_angle("a");
+  AttributeReader get_return("r");
+  AttributeReader get_number("i");
 
   progress->reset();
   progress->set_total(las->npoints);
@@ -89,7 +93,8 @@ bool LASRlocalmaximum::process(LAS*& las)
   {
     if (progress->interrupted()) continue;
 
-    PointLAS pp;
+    Point pp;
+    pp.set_schema(&las->newheader->schema);
 
     if (main_thread)
     {
@@ -101,21 +106,22 @@ bool LASRlocalmaximum::process(LAS*& las)
       }
     }
 
-    if (!las->get_point(i, pp, &lasfilter, &accessor)) { status[i] = NLM; } // The point was either filtered or withhelded
-    if (pp.z < min_height) { status[i] = NLM; }
+    if (!las->get_point(i, &pp, &pointfilter)) { status[i] = NLM; } // The point was either filtered or withhelded
+    if (pp.get_z() < min_height) { status[i] = NLM; }
     if (status[i] == NLM) continue;
 
-    Circle windows(pp.x, pp.y, hws);
-    std::vector<PointLAS> points;
-    las->query(&windows, points, &lasfilter, &accessor);
+    Circle windows(pp.get_x(), pp.get_y(), hws);
+    std::vector<Point> points;
+    las->query(&windows, points, &pointfilter);
 
     // It seems there is a data race here but no. In the worst case updating status[pt.FID]
     // is non-synchronized with other iterations and it will simply prevent skipping one computation early
     for (auto& pt : points)
     {
-      if (pt.z == pp.z && (pt.x != pp.x || pt.y != pp.y) && status[pt.FID] == LMX) status[i] = NLM; // Handle duplicated height for different points
-      if (pt.z > pp.z) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
-      if (pt.z < pp.z) status[pt.FID] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
+      int fid = las->get_index(&pt);
+      if (pt.get_z() == pp.get_z() && (pt.get_x() != pp.get_x() || pt.get_y() != pp.get_y()) && status[fid] == LMX) status[i] = NLM; // Handle duplicated height for different points
+      if (pt.get_z() > pp.get_z()) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
+      if (pt.get_z() < pp.get_z()) status[fid] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
     }
 
     if (status[i] == UKN) status[i] = LMX; // If the status is still unknown it is a local max
@@ -127,18 +133,27 @@ bool LASRlocalmaximum::process(LAS*& las)
         // If the point is in the buffer we must guarantee it will be assigned the same ID the next
         // time we meet it. FID is a 64 bit geographic ID that is guaranteed to be unique. But we need
         // a 32 bit ID so we have a correspondence table.
-        uint64_t FID = ((uint64_t)las->point.quantizer->get_X(pp.x) << 32) | (uint64_t)(las->point.quantizer->get_Y(pp.y));
+        uint64_t FID = ((uint64_t)pp.get_X() << 32) | (uint64_t)(pp.get_Y());
         auto it = unicity_table->find(FID);
+
+        PointLAS plas;
+        plas.x = pp.get_x();
+        plas.y = pp.get_y();
+        plas.z = pp.get_z();
+        plas.intensity = get_intensity(&pp);
+        plas.return_number = get_return(&pp);
+        plas.scan_angle = get_angle(&pp);
+        plas.number_of_returns = get_number(&pp);
         if (it == unicity_table->end())
         {
           (*unicity_table)[FID] = *counter;
-          lm.push_back(std::move(pp));
+          lm.push_back(plas);
           lm.back().FID = *counter;
           (*counter)++;
         }
         else
         {
-          lm.push_back(std::move(pp));
+          lm.push_back(plas);
           lm.back().FID = it->second;
         }
       }
