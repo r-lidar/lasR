@@ -1,5 +1,4 @@
 #include "Stage.h"
-#include "FilterParser.h"
 
 /* ==============
  *  VIRTUAL
@@ -37,12 +36,7 @@ Stage::Stage(const Stage& other)
   progress = other.progress;
   connections = other.connections;
   crs = other.crs;
-
-  // Special treatment for LASfilter which is why we need a copy constructor
-  // LASfilter is full of pointer, pointer on pointers without copy constructor.
-  // We are better to build a new one for each copy.
-  lasfilter = LASfilter();
-  set_filter(other.filter);
+  filter = other.filter;
 
   #ifdef USING_R
   nsexpprotected = 0;
@@ -63,31 +57,18 @@ bool Stage::set_chunk(Chunk& chunk)
   return true;
 }
 
-void Stage::set_filter(std::vector<std::string> f)
+void Stage::set_filter(const std::vector<std::string>& f)
 {
-  // Parse each condition into a LASlib filter flag
-  FilterParser fp;
-  for (auto i = 0 ; i < f.size() ; i++)
-    f[i] = fp.parse(f[i]);
-
-  // Join the flags into a LASlib parsable string
-  std::string filter;
-  for (size_t i = 0; i < f.size(); ++i)
-  {
-    if (i != 0) filter += " ";
-    filter += f[i];
-  }
-
-  set_filter(filter);
+  for (auto c : f) pointfilter.add_condition(c);
 }
 
-void Stage::set_filter(const std::string& f)
+/*void Stage::set_filter(const std::string& f)
 {
   filter = f;
   std::string cpy = f;
   char* s = const_cast<char*>(cpy.c_str());
   if (!lasfilter.parse(s)) throw std::string("Invalid filter detected");
-}
+}*/
 
 #ifdef USING_R
 SEXP Stage::to_R()

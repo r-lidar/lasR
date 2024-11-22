@@ -1,5 +1,5 @@
-#ifndef HEADER_H
-#define HEADER_H
+#ifndef POINTSCHEMA_H
+#define POINTSCHEMA_H
 
 #include "CRS.h"
 
@@ -7,16 +7,43 @@
 #include <vector>
 #include <cstdint>
 #include <functional>
+#include <unordered_map>
+#include <algorithm>
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <functional>
-#include <cstdint>
+static const std::unordered_map<std::string, std::vector<std::string>> attribute_map = {
+  {"z", {"Z", "z"}},
+  {"i", {"Intensity", "intensity", "i"}},
+  {"r", {"return", "Return", "ReturnNumber", "return_number", "r"}},
+  {"n", {"NumberOfReturn", "NumberReturn", "numberofreturn", "n"}},
+  {"c", {"Classification", "classification", "class", "c"}},
+  {"t", {"gpstime", "gps_time", "GPStime", "t", "time", "gps"}},
+  //s
+  //k
+  //w
+  {"u", {"UserData", "userdata", "user_data", "ud", "u"}},
+  {"p", {"PointSourceID", "point_source", "point_source_id", "pointsourceid", "psid", "p"}},
+  //e
+  //d
+  {"a", {"angle", "Angle", "ScanAngle", "ScanAngleRank", "scan_angle", "a"}},
+  {"R", {"R", "Red", "red"}},
+  {"G", {"G", "Green", "green"}},
+  {"B", {"B", "Blue", "blue"}},
+  {"N", {"N", "NIR", "nir"}},
+};
 
-#include <iostream>
-#include <vector>
-#include <string>
+static std::string map_attribute(const std::string& attribute)
+{
+  for (const auto& [standard_name, aliases] : attribute_map)
+  {
+    if (std::find(aliases.begin(), aliases.end(), attribute) != aliases.end())
+    {
+      return standard_name;
+    }
+  }
+
+  return attribute;
+}
+
 
 enum AttributeType {
   NOTYPE = -1,
@@ -208,119 +235,31 @@ struct Point
 class AttributeReader
 {
 public:
-  AttributeReader() : accessor(nullptr), attribute(nullptr) {}
+  AttributeReader() : accessor(nullptr), attribute(nullptr), init(false) {}
+  AttributeReader(const std::string& name);
+  AttributeReader(const std::string& name, const AttributeSchema* schema);
+  double operator()(Point* point);
 
-  AttributeReader(const std::string& name, const AttributeSchema* schema) : accessor(nullptr), attribute(nullptr)
-  {
-    for (const auto& attr : schema->attributes)
-    {
-      if (attr.name == name)
-      {
-        attribute = &attr;
-        if (attribute->type > 8) throw std::runtime_error("Unsupported type for attribute.");
-        break;
-      }
-    }
-
-    accessor = [this](const Point* point)
-    {
-      if (this->attribute == nullptr)
-      {
-        return 0.0;
-      }
-
-      unsigned char* pointer = point->data + attribute->offset;
-      double cast_value = 0;
-
-      // Cast value based on the type
-      switch (attribute->type)
-      {
-      case 0: cast_value = (double)(*reinterpret_cast<uint8_t*>(pointer)); break;
-      case 1: cast_value = (double)(*reinterpret_cast<int8_t*>(pointer)); break;
-      case 2: cast_value = (double)(*reinterpret_cast<uint16_t*>(pointer)); break;
-      case 3: cast_value = (double)(*reinterpret_cast<int16_t*>(pointer)); break;
-      case 4: cast_value = (double)(*reinterpret_cast<uint32_t*>(pointer)); break;
-      case 5: cast_value = (double)(*reinterpret_cast<int32_t*>(pointer)); break;
-      case 6: cast_value = (double)(*reinterpret_cast<uint64_t*>(pointer)); break;
-      case 7: cast_value = (double)(*reinterpret_cast<int64_t*>(pointer)); break;
-      case 8: cast_value = (double)(*reinterpret_cast<float*>(pointer)); break;
-      case 9: cast_value = (double)(*reinterpret_cast<double*>(pointer)); break;
-      }
-
-      return attribute->value_offset + attribute->scale_factor * cast_value;
-    };
-  }
-
-  double operator()(Point* point)
-  {
-    if (!accessor) {
-      throw std::runtime_error("Accessor not initialized.");
-    }
-    return accessor(point);
-  }
-
-private:
+protected:
   std::function<double(const Point*)> accessor; // Cached accessor function
+  std::string name;
+  bool init;
   const Attribute* attribute;                   // Cached attribute function
 };
 
 class AttributeWriter
 {
 public:
-  AttributeWriter() : accessor(nullptr), attribute(nullptr) {}
+  AttributeWriter() : accessor(nullptr), attribute(nullptr), init(false) {}
+  AttributeWriter(const std::string& name);
+  AttributeWriter(const std::string& name, AttributeSchema* schema);
+  void operator()(Point* point, double value);
 
-  AttributeWriter(const std::string& name, AttributeSchema* schema) : accessor(nullptr), attribute(nullptr)
-  {
-    for (auto& attr : schema->attributes)
-    {
-      if (attr.name == name)
-      {
-        attribute = &attr;
-        if (attribute->type > 8) throw std::runtime_error("Unsupported type for attribute.");
-        break;
-      }
-    }
-
-    accessor = [this](Point* point, double value)
-    {
-      if (this->attribute == nullptr)
-      {
-        return;
-      }
-
-      unsigned char* pointer = point->data + attribute->offset;
-
-      // Scale the value and apply the offset
-      double scaled_value = (value - attribute->value_offset) / attribute->scale_factor;
-
-      // Write the value based on the attribute's type
-      switch (attribute->type)
-      {
-      case 0: *reinterpret_cast<uint8_t*>(pointer) = static_cast<uint8_t>(scaled_value); break;
-      case 1: *reinterpret_cast<int8_t*>(pointer) = static_cast<int8_t>(scaled_value); break;
-      case 2: *reinterpret_cast<uint16_t*>(pointer) = static_cast<uint16_t>(scaled_value); break;
-      case 3: *reinterpret_cast<int16_t*>(pointer) = static_cast<int16_t>(scaled_value); break;
-      case 4: *reinterpret_cast<uint32_t*>(pointer) = static_cast<uint32_t>(scaled_value); break;
-      case 5: *reinterpret_cast<int32_t*>(pointer) = static_cast<int32_t>(scaled_value); break;
-      case 6: *reinterpret_cast<uint64_t*>(pointer) = static_cast<uint64_t>(scaled_value); break;
-      case 7: *reinterpret_cast<int64_t*>(pointer) = static_cast<int64_t>(scaled_value); break;
-      case 8: *reinterpret_cast<float*>(pointer) = scaled_value; break;
-      case 9: *reinterpret_cast<double*>(pointer) = scaled_value; break;
-      }
-    };
-  }
-
-  void operator()(Point* point, double value)
-  {
-    if (!accessor) {
-      throw std::runtime_error("Accessor not initialized.");
-    }
-    accessor(point, value);
-  }
-
-private:
+protected:
   std::function<void(Point*, double)> accessor;  // Cached accessor function for setting value
-  Attribute* attribute;                          // Cached attribute function
+  std::string name;
+  bool init;
+  const Attribute* attribute;  // Cached attribute function
 };
 
 

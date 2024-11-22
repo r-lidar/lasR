@@ -395,6 +395,36 @@ void LAS::update_header()
 }
 
 // Thread safe
+bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter) const
+{
+  Point p(&newheader->schema);
+
+  addr.clear();
+
+  std::vector<Interval> intervals;
+  index->query(shape->xmin(), shape->ymin(), shape->xmax(), shape->ymax(), intervals);
+
+  if (intervals.size() == 0) return false;
+
+  for (const auto& interval : intervals)
+  {
+    for (int i = interval.start ; i <= interval.end ; i++)
+    {
+      p.data = buffer + i * newheader->schema.total_point_size;
+
+      if (filter && filter->filter(&p)) continue;
+
+      if (!p.get_withheld() && shape->contains(p.get_x(), p.get_y()))
+      {
+         addr.push_back(p);
+      }
+    }
+  }
+
+  return addr.size() > 0;
+}
+
+// Thread safe
 bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter, AttributeAccessor* const accessor) const
 {
   Point p(&newheader->schema);
@@ -420,6 +450,32 @@ bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter
         pl.FID = i;
         if (accessor) pl.z = (*accessor)(&p);
         addr.push_back(std::move(pl));*/
+      }
+    }
+  }
+
+  return addr.size() > 0;
+}
+
+bool LAS::query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter) const
+{
+  Point p(&newheader->schema);
+
+  addr.clear();
+
+  if (intervals.size() == 0) return false;
+
+  for (const auto& interval : intervals)
+  {
+    for (int i = interval.start ; i <= interval.end ; i++)
+    {
+      p.data = buffer + i * newheader->schema.total_point_size;
+
+      if (filter && filter->filter(&p)) continue;
+
+      if (!p.get_withheld())
+      {
+         addr.push_back(p);
       }
     }
   }
@@ -547,6 +603,17 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
 
   return true;
 }
+
+bool LAS::get_point(size_t pos, Point* p, PointFilter* const filter) const
+{
+  p->data = buffer + pos * newheader->schema.total_point_size;
+  if (p->get_withheld()) return false;
+  if (filter && filter->filter(p)) return false;
+  //pt.copy(&p);
+  //if (accessor) pt.z = (*accessor)(&p);
+  return true;
+}
+
 
 // Thread safe
 bool LAS::get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter, AttributeAccessor * const accessor) const

@@ -6,7 +6,7 @@
 
 #include "laspoint.hpp"
 
-#include "AttributeMapping.h"
+#include "PointSchema.h"
 
 class AttributeAccessor
 {
