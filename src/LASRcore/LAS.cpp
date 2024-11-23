@@ -256,12 +256,12 @@ bool LAS::read_point(bool include_withhelded)
     {
       if (shape->contains(point.get_x(), point.get_y()))
       {
-        if (include_withhelded || !p.get_withheld()) return true;
+        if (include_withhelded || !p.get_deleted()) return true;
       }
     }
     else
     {
-      if (include_withhelded || !p.get_withheld()) return true;
+      if (include_withhelded || !p.get_deleted()) return true;
     }
   } while (true);
 
@@ -279,7 +279,21 @@ void LAS::remove_point()
   update_point();*/
 }
 
-bool LAS::delete_withheld()
+void LAS::delete_point(Point* p)
+{
+  if (p == nullptr)
+  {
+    this->p.set_deleted();
+    npoints--;
+  }
+  else
+  {
+    p->set_deleted();
+    if (!p->own_data) npoints--;
+  }
+}
+
+bool LAS::delete_deleted()
 {
   clean_index();
   index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, 2);
@@ -288,7 +302,7 @@ bool LAS::delete_withheld()
   for (int i = 0 ; i < npoints ; i++)
   {
     seek(i);
-    if (p.get_withheld())
+    if (p.get_deleted())
     {
       p.data = buffer + j * newheader->schema.total_point_size;
       index->insert(p.get_x(), p.get_y());
@@ -415,7 +429,7 @@ bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter*
 
       if (filter && filter->filter(&p)) continue;
 
-      if (!p.get_withheld() && shape->contains(p.get_x(), p.get_y()))
+      if (!p.get_deleted() && shape->contains(p.get_x(), p.get_y()))
       {
          addr.push_back(p);
       }
@@ -446,7 +460,7 @@ bool LAS::query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter
 
       //if (lasfilter && lasfilter->filter(&p)) continue;
 
-      if (!p.get_withheld() && shape->contains(p.get_x(), p.get_y()))
+      if (!p.get_deleted() && shape->contains(p.get_x(), p.get_y()))
       {
         /*PointLAS pl(&p);
         pl.FID = i;
@@ -475,7 +489,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<Point>& addr
 
       if (filter && filter->filter(&p)) continue;
 
-      if (!p.get_withheld())
+      if (!p.get_deleted())
       {
          addr.push_back(p);
       }
@@ -502,7 +516,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
 
       //if (lasfilter && lasfilter->filter(&p)) continue;
 
-      if (!p.get_withheld())
+      if (!p.get_deleted())
       {
         /*PointLAS pl(&p);
         pl.FID = i;
@@ -516,6 +530,97 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<PointLAS>& a
 }
 
 // Thread safe
+bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter) const
+{
+  double x = xyz.get_x();
+  double y = xyz.get_y();
+  double z = xyz.get_z();
+
+  Point p;
+  p.set_schema(&newheader->schema);
+
+  double area = (newheader->max_x-newheader->min_x)*(newheader->max_y-newheader->min_y);
+  double density = get_true_number_of_points() / area;
+  double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
+
+  int n = 0;
+  std::vector<Interval> intervals;
+  if (radius < radius_max)
+  {
+    // While we do not have k points or we did not reached the max radius search we increment the radius
+    while (n < k && n < npoints && radius <= radius_max)
+    {
+      intervals.clear();
+      index->query(x-radius, y-radius, x+radius, y+radius, intervals);
+
+      // In lasR we query intervals not points so we need to count the number of points in the interval
+      n = 0; for (const auto& interval : intervals) n += interval.end - interval.start + 1;
+
+      // If we have more than k points we may not have the knn because of the filter and withhelded points
+      // we need to fetch the points to actually count them
+      if (n >= k)
+      {
+        n = 0;
+        Sphere s(x,y,z, radius);
+        for (const auto& interval : intervals)
+        {
+          for (int i = interval.start ; i <= interval.end ; i++)
+          {
+            p.data = buffer + i * newheader->schema.total_point_size;
+            if (p.get_deleted()) continue;
+            //if (lasfilter && lasfilter->filter(&p)) continue;
+            if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
+            n++;
+          }
+        }
+      }
+
+      // After fetching the point
+      if (n < k) radius *= 1.5;
+    }
+  }
+
+  // We incremented the radius until we get k points. If the radius is bigger than the max radius we use radius = max radius
+  // and we may not have k points.
+  if (radius >= radius_max) radius = radius_max;
+
+  // We perform the query for real
+  intervals.clear();
+  index->query(x-radius, y-radius, x+radius, y+radius, intervals);
+
+  res.clear();
+  Sphere s(x,y,z, radius);
+  for (const auto& interval : intervals)
+  {
+    for (int i = interval.start ; i <= interval.end ; i++)
+    {
+      p. data = buffer + i * newheader->schema.total_point_size;
+
+      //if (lasfilter && lasfilter->filter(&p)) continue;
+      if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
+      if (p.get_deleted()) continue;
+
+      /*PointLAS pl(&p);
+       pl.FID = i;
+       if (accessor) pl.z = (*accessor)(&p);
+       res.push_back(std::move(pl));*/
+    }
+  }
+
+  // We sort the query by distance to (x,y)
+  std::sort(res.begin(), res.end(), [x,y,z](const Point& a, const Point& b)
+  {
+    double distA = (a.get_x() - x)*(a.get_x() - x) + (a.get_y() - y)*(a.get_y() - y) + (a.get_z() - z)*(a.get_z() - z);
+    double distB = (b.get_x() - x)*(b.get_x() - x) + (b.get_y() - y)*(b.get_y() - y) + (b.get_z() - z)*(b.get_z() - z);
+    return distA < distB;
+  });
+
+  // We keep the k first results into the result
+  if ((size_t)k < res.size()) res.resize(k);
+
+  return true;
+}
+
 bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>& res,  LASfilter* const lasfilter, AttributeAccessor* const accessor) const
 {
   double x = xyz[0];
@@ -552,7 +657,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
           for (int i = interval.start ; i <= interval.end ; i++)
           {
             p.data = buffer + i * newheader->schema.total_point_size;
-            if (p.get_withheld()) continue;
+            if (p.get_deleted()) continue;
             //if (lasfilter && lasfilter->filter(&p)) continue;
             if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
             n++;
@@ -583,7 +688,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
 
       //if (lasfilter && lasfilter->filter(&p)) continue;
       if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
-      if (p.get_withheld()) continue;
+      if (p.get_deleted()) continue;
 
       /*PointLAS pl(&p);
       pl.FID = i;
@@ -609,7 +714,7 @@ bool LAS::knn(const double* xyz, int k, double radius_max, std::vector<PointLAS>
 bool LAS::get_point(size_t pos, Point* p, PointFilter* const filter) const
 {
   p->data = buffer + pos * newheader->schema.total_point_size;
-  if (p->get_withheld()) return false;
+  if (p->get_deleted()) return false;
   if (filter && filter->filter(p)) return false;
   //pt.copy(&p);
   //if (accessor) pt.z = (*accessor)(&p);
@@ -624,7 +729,7 @@ bool LAS::get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter, Attrib
 
   p.data = buffer + pos * newheader->schema.total_point_size;
 
-  if (p.get_withheld()) return false;
+  if (p.get_deleted()) return false;
   //if (lasfilter && lasfilter->filter(&p)) return false;
   //pt.copy(&p);
   //if (accessor) pt.z = (*accessor)(&p);

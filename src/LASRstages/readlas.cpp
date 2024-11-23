@@ -118,7 +118,9 @@ bool LASRlasreader::process(LAS*& las)
   header->schema.add_attribute("y", AttributeType::INT32, lasheader->y_scale_factor, lasheader->y_offset);
   header->schema.add_attribute("z", AttributeType::INT32, lasheader->z_scale_factor, lasheader->z_offset);
   header->schema.add_attribute("f", AttributeType::UINT8, lasheader->z_scale_factor, lasheader->z_offset); // custom lasR flags
-  header->schema.add_attribute("i", AttributeType::INT32);
+  header->schema.add_attribute("i", AttributeType::UINT16);
+  header->schema.add_attribute("c", AttributeType::UINT8);
+
 
   /*header.schema.add_attribute("r", AttributeType::UINT8);
   header->schema.add_attribute("n", AttributeType::UINT8);
@@ -169,6 +171,7 @@ bool LASRlasreader::process(LAS*& las)
 
   Point p(&header->schema);
   AttributeWriter set_intensity("i", &header->schema);
+  AttributeWriter set_classification("c", &header->schema);
 
   while (lasreader->read_point())
   {
@@ -177,6 +180,7 @@ bool LASRlasreader::process(LAS*& las)
     p.set_y(lasreader->point.get_y());
     p.set_z(lasreader->point.get_z());
     set_intensity(&p, lasreader->point.get_intensity());
+    set_classification(&p, lasreader->point.get_classification());
     if (!las->add_point(p)) return false;
     progress->update(lasreader->p_count);
     progress->show();

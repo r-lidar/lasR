@@ -38,7 +38,8 @@ public:
   bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
   bool realloc_point_and_buffer();
-  bool delete_withheld();
+  void delete_point(Point* p = nullptr);
+  bool delete_deleted();
   bool sort();
   bool sort(const std::vector<int>& order);
 
@@ -51,6 +52,7 @@ public:
   bool get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, AttributeAccessor * const accessor = nullptr) const;
   bool query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
+  bool knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter) const;
   bool knn(const double* x, int k, double radius_max, std::vector<PointLAS>& res, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
 
   int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/newheader->schema.total_point_size); }

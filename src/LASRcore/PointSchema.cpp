@@ -1,21 +1,51 @@
 #include "PointSchema.h"
 
+void AttributeSchema::add_attribute(const std::string& name, AttributeType type, double scale_factor, double value_offset, const std::string& description)
+{
+  size_t size;
+  switch (type) {
+  case UINT8:
+  case INT8:
+    size = 1; break;
+  case UINT16:
+  case INT16:
+    size = 2; break;
+  case UINT32:
+  case INT32:
+  case UINT64:
+    size = 4; break;
+  case INT64:
+  case DOUBLE:
+    size = 8; break;
+  default:
+    size = 0; // Invalid type, handle error if needed
+  }
+
+  attributes.push_back({name, total_point_size, size, type, scale_factor, value_offset, description});
+  total_point_size += size;
+}
+
+const Attribute* AttributeSchema::find_attribute(const std::string& name) const
+{
+  for (auto& attribute : attributes)
+  {
+    if (attribute.name == name)
+    {
+      return &attribute;
+    }
+  }
+
+  return nullptr;
+}
+
 AttributeReader::AttributeReader(const std::string& name) : attribute(nullptr), init(false), name(name)
 {
   accessor = [this](const Point* point)
   {
     if (!this->init)
     {
-      for (const auto& attr : point->schema->attributes)
-      {
-        if (attr.name == this->name)
-        {
-          attribute = &attr;
-          if (attribute->type > AttributeType::DOUBLE) throw std::runtime_error("Unsupported type for attribute.");
-          break;
-        }
-      }
-
+      attribute = point->schema->find_attribute(this->name);
+      init = true;
       this->init = true;
     }
 
@@ -48,32 +78,14 @@ AttributeReader::AttributeReader(const std::string& name) : attribute(nullptr), 
 
 AttributeReader::AttributeReader(const std::string& name, const AttributeSchema* schema) : accessor(nullptr), attribute(nullptr), name(name)
 {
-  for (const auto& attr : schema->attributes)
-  {
-    if (attr.name == name)
-    {
-      attribute = &attr;
-      if (attribute->type > AttributeType::DOUBLE) throw std::runtime_error("Unsupported type for attribute.");
-      break;
-    }
-  }
-
+  attribute = schema->find_attribute(name);
   init = true;
 
   accessor = [this](const Point* point)
   {
     if (!this->init)
     {
-      for (const auto& attr : point->schema->attributes)
-      {
-        if (attr.name == this->name)
-        {
-          attribute = &attr;
-          if (attribute->type > AttributeType::DOUBLE) throw std::runtime_error("Unsupported type for attribute.");
-          break;
-        }
-      }
-
+      attribute = point->schema->find_attribute(this->name);
       this->init = true;
     }
 
@@ -116,16 +128,7 @@ AttributeWriter::AttributeWriter(const std::string& name) : accessor(nullptr), a
   {
     if (!this->init)
     {
-      for (const auto& attr : point->schema->attributes)
-      {
-        if (attr.name == this->name)
-        {
-          attribute = &attr;
-          if (attribute->type > AttributeType::DOUBLE) throw std::runtime_error("Unsupported type for attribute.");
-          break;
-        }
-      }
-
+      attribute = point->schema->find_attribute(this->name);
       this->init = true;
     }
 
@@ -158,16 +161,7 @@ AttributeWriter::AttributeWriter(const std::string& name) : accessor(nullptr), a
 
 AttributeWriter::AttributeWriter(const std::string& name, AttributeSchema* schema) : accessor(nullptr), attribute(nullptr)
 {
-  for (auto& attr : schema->attributes)
-  {
-    if (attr.name == name)
-    {
-      attribute = &attr;
-      if (attribute->type > 8) throw std::runtime_error("Unsupported type for attribute.");
-      break;
-    }
-  }
-
+  attribute = schema->find_attribute(name);
   init = true;
 
   accessor = [this](Point* point, double value)

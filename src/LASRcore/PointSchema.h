@@ -76,30 +76,8 @@ struct AttributeSchema
   std::vector<Attribute> attributes;
   size_t total_point_size;
 
-  void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, std::string description = "")
-  {
-    size_t size;
-    switch (type) {
-    case UINT8:
-    case INT8:
-      size = 1; break;
-    case UINT16:
-    case INT16:
-      size = 2; break;
-    case UINT32:
-    case INT32:
-    case UINT64:
-      size = 4; break;
-    case INT64:
-    case DOUBLE:
-      size = 8; break;
-    default:
-      size = 0; // Invalid type, handle error if needed
-    }
-
-    attributes.push_back({name, total_point_size, size, type, scale_factor, value_offset, description});
-    total_point_size += size;
-  }
+  const Attribute* find_attribute(const std::string&) const;
+  void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
 
   void dump()
   {
@@ -182,60 +160,75 @@ struct Point
     if (own_data && data) delete[] data;
     data = nullptr;
   }
-  int get_X() const {
+  inline int get_X() const {
     const auto& attr = schema->attributes[0];
     int X = *((int*)(data + attr.offset));
     return X;
   }
-  int get_Y() const {
+  inline int get_Y() const {
     const auto& attr = schema->attributes[1];
     int Y = *((int*)(data + attr.offset));
     return Y;
   }
-  int get_Z() const {
+  inline int get_Z() const {
     const auto& attr = schema->attributes[2];
     int Z = *((int*)(data + attr.offset));
     return Z;
   }
-  double get_x() const {
+  inline double get_x() const {
     const auto& attr = schema->attributes[0];
     int X = *((int*)(data + attr.offset));
     return attr.scale_factor * X + attr.value_offset;
   }
-  double get_y() const {
+  inline double get_y() const {
     const auto& attr = schema->attributes[1];
     int Y = *((int*)(data + attr.offset));
     return attr.scale_factor * Y + attr.value_offset;
   }
-  double get_z() const {
+  inline double get_z() const {
     const auto& attr = schema->attributes[2];
     int Z = *((int*)(data + attr.offset));
     return attr.scale_factor * Z + attr.value_offset;
   }
-  bool get_withheld() const {
+  inline bool get_deleted() const {
     const auto& attr = schema->attributes[3];
     unsigned int flag = *((unsigned int*)(data + attr.offset));
     return ((flag & (1 << 0)) == 0) ? false : true;
   }
-  void set_x(double value) {
+  inline void set_X(int value) {
+    const auto& attr = schema->attributes[0];
+    unsigned char* pointer = data + attr.offset;
+    *reinterpret_cast<int*>(pointer) = static_cast< int>(value);
+  }
+  inline void set_Y(int value) {
+    const auto& attr = schema->attributes[1];
+    unsigned char* pointer = data + attr.offset;
+    *reinterpret_cast<int*>(pointer) = static_cast< int>(value);
+  }
+  inline void set_Z(int value) {
+    const auto& attr = schema->attributes[2];
+    unsigned char* pointer = data + attr.offset;
+    *reinterpret_cast<int*>(pointer) = static_cast< int>(value);
+  }
+  inline void set_x(double value) {
     const auto& attr = schema->attributes[0];
     unsigned char* pointer = data + attr.offset;
     double scaled_value = (value - attr.value_offset) / attr.scale_factor;
     *reinterpret_cast<int*>(pointer) = static_cast<int>(scaled_value);
   }
-  void set_y(double value) {
+  inline void set_y(double value) {
     const auto& attr = schema->attributes[1];
     unsigned char* pointer = data + attr.offset;
     double scaled_value = (value - attr.value_offset) / attr.scale_factor;
     *reinterpret_cast<int*>(pointer) = static_cast< int>(scaled_value);
   }
-  void set_z(double value) {
+  inline void set_z(double value) {
     const auto& attr = schema->attributes[2];
     unsigned char* pointer = data + attr.offset;
     double scaled_value = (value - attr.value_offset) / attr.scale_factor;
     *reinterpret_cast<int*>(pointer) = static_cast<int>(scaled_value);
   }
-  void set_withheld(bool value) {
+  inline void set_deleted(bool value = true) {
     auto& attr = schema->attributes[3];
     unsigned int& flag = *((unsigned int*)(data + attr.offset));
     if (value) {
@@ -252,13 +245,15 @@ public:
   AttributeReader() : accessor(nullptr), attribute(nullptr), init(false) {}
   AttributeReader(const std::string& name);
   AttributeReader(const std::string& name, const AttributeSchema* schema);
+  bool exist() { return attribute != nullptr; };
   double operator()(Point* point);
+
+  std::string name;
+  const Attribute* attribute;                   // Cached attribute function
 
 protected:
   std::function<double(const Point*)> accessor; // Cached accessor function
-  std::string name;
   bool init;
-  const Attribute* attribute;                   // Cached attribute function
 };
 
 class AttributeWriter
@@ -267,13 +262,15 @@ public:
   AttributeWriter() : accessor(nullptr), attribute(nullptr), init(false) {}
   AttributeWriter(const std::string& name);
   AttributeWriter(const std::string& name, AttributeSchema* schema);
+  bool exist() { return attribute != nullptr; };
   void operator()(Point* point, double value);
+
+  std::string name;
+  const Attribute* attribute;  // Cached attribute function
 
 protected:
   std::function<void(Point*, double)> accessor;  // Cached accessor function for setting value
-  std::string name;
   bool init;
-  const Attribute* attribute;  // Cached attribute function
 };
 
 
