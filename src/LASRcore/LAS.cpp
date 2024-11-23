@@ -534,16 +534,13 @@ bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& re
   {
     for (int i = interval.start ; i <= interval.end ; i++)
     {
-      p. data = buffer + i * newheader->schema.total_point_size;
+      p.data = buffer + i * newheader->schema.total_point_size;
 
       //if (lasfilter && lasfilter->filter(&p)) continue;
       if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
       if (p.get_deleted()) continue;
 
-      /*PointLAS pl(&p);
-       pl.FID = i;
-       if (accessor) pl.z = (*accessor)(&p);
-       res.push_back(std::move(pl));*/
+      res.push_back(p);
     }
   }
 
