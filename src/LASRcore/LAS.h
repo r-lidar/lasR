@@ -48,12 +48,7 @@ public:
   bool get_point(size_t pos, Point* p, PointFilter* const filter = nullptr) const;
   bool query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
-
-  bool get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, AttributeAccessor * const accessor = nullptr) const;
-  bool query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
-  bool query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
-  bool knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter) const;
-  bool knn(const double* x, int k, double radius_max, std::vector<PointLAS>& res, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
+  bool knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
 
   int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/newheader->schema.total_point_size); }
 

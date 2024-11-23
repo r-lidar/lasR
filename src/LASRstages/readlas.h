@@ -24,6 +24,8 @@ public:
   LASRlasreader* clone() const override { return new LASRlasreader(*this); };
 
 private:
+  Header* header; // not ownwe
+  std::vector<AttributeWriter> extrabytes;
   LASreadOpener* lasreadopener;
   LASreader* lasreader;
   LASheader* lasheader;

@@ -89,12 +89,67 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
 
 bool LASRlasreader::process(Header*& header)
 {
-  header->min_x = this->lasheader->min_x;
-  header->min_y = this->lasheader->min_y;
-  header->min_z = this->lasheader->min_z;
-  header->max_x = this->lasheader->max_x;
-  header->max_y = this->lasheader->max_y;
-  header->max_z = this->lasheader->max_z;
+  header = new Header;
+  header->min_x = lasreader->header.min_x;
+  header->max_x = lasreader->header.max_x;
+  header->min_y = lasreader->header.min_y;
+  header->max_y = lasreader->header.max_y;
+  header->min_z = lasreader->header.min_z;
+  header->max_z = lasreader->header.max_z;
+  header->number_of_point_records = MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records);
+
+  header->schema.add_attribute("X", AttributeType::INT32, lasheader->x_scale_factor, lasheader->x_offset, "X coordinate");
+  header->schema.add_attribute("Y", AttributeType::INT32, lasheader->y_scale_factor, lasheader->y_offset, "Y coordinate");
+  header->schema.add_attribute("Z", AttributeType::INT32, lasheader->z_scale_factor, lasheader->z_offset, "Z coordinate");
+  header->schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
+  header->schema.add_attribute("Intensity", AttributeType::UINT16, 1, 0, "Pulse return magnitude");
+  header->schema.add_attribute("ReturnNumber", AttributeType::UINT8, 1, 0, "Pulse return number for a given output pulse");
+  header->schema.add_attribute("NumberOfReturns", AttributeType::UINT8, 1, 0, "Total number of returns for a given pulse");
+  header->schema.add_attribute("Classification", AttributeType::UINT8, 1, 0, "The 'class' attributes of a point");
+  header->schema.add_attribute("UserData", AttributeType::UINT8, 1, 0, "Used at the user’s discretion");
+  header->schema.add_attribute("PointSourceID", AttributeType::INT16, 1, 0, "Source from which this point originated");
+
+  if (lasreader->point.extended_point_type)
+    header->schema.add_attribute("ScanAngle", AttributeType::FLOAT, 1, 0, "Angle at which the laser point was output");
+  else
+    header->schema.add_attribute("ScanAngle", AttributeType::INT8, 1, 0, "Rounded angle at which the laser point was output");
+
+  if (lasreader->point.have_gps_time)
+  {
+    header->schema.add_attribute("gpstime", AttributeType::DOUBLE, 1, 0, "Time tag value at which the point was observed");
+    header->schema.add_attribute("ScannerChannel", AttributeType::UINT8, 1, 0, "Channel (scanner head) of a multi-channel system");
+  }
+
+  if (lasreader->point.have_rgb)
+  {
+    header->schema.add_attribute("R", AttributeType::UINT16, 1, 0, "Red image channel");
+    header->schema.add_attribute("G", AttributeType::UINT16, 1, 0, "Green image channel");
+    header->schema.add_attribute("B", AttributeType::UINT16, 1, 0, "Blue image channel");
+  }
+
+  if (lasreader->point.have_nir)
+  {
+    header->schema.add_attribute("NIR", AttributeType::UINT16, 1, 0, "Near infrared channel value");
+  }
+
+  for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
+  {
+    std::string name(lasreader->header.attributes[i].name);
+    std::string description(lasreader->header.attributes[i].description);
+    AttributeType type = static_cast<AttributeType>(lasreader->header.attributes[i].data_type);
+    double scale = lasreader->header.attributes[i].scale[0];
+    double offset = lasreader->header.attributes[i].offset[0];
+    header->schema.add_attribute(name, type, scale, offset, description);
+  }
+
+  for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
+  {
+    std::string name(lasreader->header.attributes[i].name);
+    extrabytes.push_back(AttributeWriter(name, &header->schema));
+  }
+
+  this->header = header;
+
   return true;
 }
 
@@ -127,63 +182,6 @@ bool LASRlasreader::process(LASpoint*& point)
 
 bool LASRlasreader::process(LAS*& las)
 {
-  Header* header = new Header;
-  header->min_x = lasreader->header.min_x;
-  header->max_x = lasreader->header.max_x;
-  header->min_y = lasreader->header.min_y;
-  header->max_y = lasreader->header.max_y;
-  header->min_z = lasreader->header.min_z;
-  header->max_z = lasreader->header.max_z;
-  header->number_of_point_records = MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records);
-
-  header->schema.add_attribute("x", AttributeType::INT32, lasheader->x_scale_factor, lasheader->x_offset);
-  header->schema.add_attribute("y", AttributeType::INT32, lasheader->y_scale_factor, lasheader->y_offset);
-  header->schema.add_attribute("z", AttributeType::INT32, lasheader->z_scale_factor, lasheader->z_offset);
-  header->schema.add_attribute("f", AttributeType::UINT8, lasheader->z_scale_factor, lasheader->z_offset); // custom lasR flags
-  header->schema.add_attribute("i", AttributeType::UINT16);
-  header->schema.add_attribute("c", AttributeType::UINT8);
-
-
-  /*header.schema.add_attribute("r", AttributeType::UINT8);
-  header->schema.add_attribute("n", AttributeType::UINT8);
-  header->schema.add_attribute("c", AttributeType::UINT8);
-  header->schema.add_attribute("a", AttributeType::INT16);
-  header->schema.add_attribute("u", AttributeType::UINT8);
-  header->schema.add_attribute("p", 2);
-
-  if (lasreader->header.point_data_formatader. == 1)
-  {
-    header->schema.add_attribute("t", 8);
-  }
-
-  if (lasreader->header.point_data_formatader. == 2)
-  {
-    header->schema.add_attribute("R", 2);
-    header->schema.add_attribute("G", 2);
-    header->schema.add_attribute("B", 2);
-  }
-
-  if (lasreader->header.point_data_formatader. == 3)
-  {
-    header->schema.add_attribute("t", 8);
-    header->schema.add_attribute("R", 2);
-    header->schema.add_attribute("G", 2);
-    header->schema.add_attribute("B", 2);
-  }
-
-  if (lasreader->header.point_data_formatader. == 4)
-  {
-    header->schema.add_attribute("t", 8);
-  }
-
-  if (lasreader->header.point_data_formatader. == 5)
-  {
-    header->schema.add_attribute("t", 8);
-    header->schema.add_attribute("R", 2);
-    header->schema.add_attribute("G", 2);
-    header->schema.add_attribute("B", 2);
-  }*/
-
   if (las != nullptr) { delete las; las = nullptr; }
   if (las == nullptr) las = new LAS(header);
 
@@ -192,17 +190,43 @@ bool LASRlasreader::process(LAS*& las)
   progress->set_prefix("read_las");
 
   Point p(&header->schema);
-  AttributeWriter set_intensity("i", &header->schema);
-  AttributeWriter set_classification("c", &header->schema);
+  AttributeWriter set_intensity("Intensity", &header->schema);
+  AttributeWriter set_return("ReturnNumber", &header->schema);
+  AttributeWriter set_number("NumberOfReturns", &header->schema);
+  AttributeWriter set_classification("Classification", &header->schema);
+  AttributeWriter set_userdata("UserData", &header->schema);
+  AttributeWriter set_psid("PointSourceID", &header->schema);
+  AttributeWriter set_angle("ScanAngle", &header->schema);
+  AttributeWriter set_time("gpstime", &header->schema);
+  AttributeWriter set_channel("ScannerChannel", &header->schema);
+  AttributeWriter set_red("R", &header->schema);
+  AttributeWriter set_green("G", &header->schema);
+  AttributeWriter set_blue("B", &header->schema);
+  AttributeWriter set_nir("NIR", &header->schema);
 
   while (lasreader->read_point())
   {
     if (progress->interrupted()) break;
+
     p.set_x(lasreader->point.get_x());
     p.set_y(lasreader->point.get_y());
     p.set_z(lasreader->point.get_z());
     set_intensity(&p, lasreader->point.get_intensity());
+    set_return(&p, lasreader->point.get_return_number());
+    set_number(&p, lasreader->point.get_number_of_returns());
     set_classification(&p, lasreader->point.get_classification());
+    set_userdata(&p, lasreader->point.get_user_data());
+    set_psid(&p, lasreader->point.get_point_source_ID());
+    set_angle(&p, lasreader->point.get_scan_angle());
+    set_time(&p, lasreader->point.get_gps_time());
+    set_channel(&p, lasreader->point.get_extended_scanner_channel());
+    set_red(&p, lasreader->point.get_R());
+    set_green(&p, lasreader->point.get_G());
+    set_blue(&p, lasreader->point.get_B());
+    set_nir(&p, lasreader->point.get_NIR());
+    for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
+      extrabytes[i](&p, lasreader->point.get_attribute_as_float(i));
+
     if (!las->add_point(p)) return false;
     progress->update(lasreader->p_count);
     progress->show();

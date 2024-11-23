@@ -11,24 +11,24 @@
 #include <algorithm>
 
 static const std::unordered_map<std::string, std::vector<std::string>> attribute_map = {
-  {"z", {"Z", "z"}},
-  {"i", {"Intensity", "intensity", "i"}},
-  {"r", {"return", "Return", "ReturnNumber", "return_number", "r"}},
-  {"n", {"NumberOfReturn", "NumberReturn", "numberofreturn", "n"}},
-  {"c", {"Classification", "classification", "class", "c"}},
-  {"t", {"gpstime", "gps_time", "GPStime", "t", "time", "gps"}},
+  {"Z", {"Z", "z"}},
+  {"Intensity", {"Intensity", "intensity", "i"}},
+  {"ReturnNumber", {"return", "Return", "ReturnNumber", "return_number", "r"}},
+  {"NumberOfReturns", {"NumberOfReturns", "NumberReturns", "numberofreturns", "n"}},
+  {"Classification", {"Classification", "classification", "class", "c"}},
+  {"gpstime", {"gpstime", "gps_time", "GPStime", "t", "time", "gps"}},
   //s
   //k
   //w
-  {"u", {"UserData", "userdata", "user_data", "ud", "u"}},
-  {"p", {"PointSourceID", "point_source", "point_source_id", "pointsourceid", "psid", "p"}},
+  {"UserData", {"UserData", "userdata", "user_data", "ud", "u"}},
+  {"PointSourceID", {"PointSourceID", "point_source", "point_source_id", "pointsourceid", "psid", "p"}},
   //e
   //d
-  {"a", {"angle", "Angle", "ScanAngle", "ScanAngleRank", "scan_angle", "a"}},
+  {"ScanAngle", {"angle", "Angle", "ScanAngle", "ScanAngleRank", "scan_angle", "a"}},
   {"R", {"R", "Red", "red"}},
   {"G", {"G", "Green", "green"}},
   {"B", {"B", "Blue", "blue"}},
-  {"N", {"N", "NIR", "nir"}},
+  {"NIR", {"N", "NIR", "nir"}},
 };
 
 static std::string map_attribute(const std::string& attribute)
@@ -61,6 +61,7 @@ enum AttributeType {
 struct Attribute
 {
   Attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
+  void dump(bool verbose = false) const;
   std::string name;       // Attribute name
   size_t offset;          // Offset in the byte array
   size_t size;            // Size of the attribute in bytes
@@ -79,18 +80,7 @@ struct AttributeSchema
   const Attribute* find_attribute(const std::string&) const;
   void add_attribute(const Attribute& attribute);
   void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
-
-  void dump(bool verbose = false)
-  {
-    for (const auto& attr : attributes)
-    {
-      if (verbose)
-        printf("Attribute: %-12s | Offset: %-2zu | Size: %-1zu | Type: %-1d | Scale Factor: %-5.2f | Offset: %-5.2f\n", attr.name.c_str(), attr.offset, attr.size, attr.type, attr.scale_factor, attr.value_offset);
-      else
-        printf("Attribute: %-12s\n", attr.name.c_str());
-
-    }
-  }
+  void dump(bool verbose = false) const;
 };
 
 struct Point
@@ -244,6 +234,31 @@ struct Point
   }
 };
 
+class AttributeHandler
+{
+public:
+  // Constructors
+  AttributeHandler(const std::string& name);
+  AttributeHandler(const std::string& name, AttributeSchema* schema);
+  AttributeHandler(const AttributeHandler& other);
+
+  // Destructor
+  ~AttributeHandler() = default;
+
+  // Overloaded operators for reading and writing
+  double operator()(const Point* point) const;
+  void operator()(Point* point, double value);
+
+public:
+  std::string name;
+  const Attribute* attribute;
+  bool init;
+  std::function<double(const Point*)> readAccessor;
+  std::function<void(Point*, double)> writeAccessor;
+
+  void initialize(const Point* point);
+};
+
 class AttributeReader
 {
 public:
@@ -251,10 +266,10 @@ public:
   AttributeReader(const std::string& name);
   AttributeReader(const std::string& name, const AttributeSchema* schema);
   bool exist() { return attribute != nullptr; };
-  double operator()(Point* point);
+  double operator()(const Point* point);
 
   std::string name;
-  const Attribute* attribute;                   // Cached attribute function
+  const Attribute* attribute;                   // Cached attribute schema
 
 protected:
   std::function<double(const Point*)> accessor; // Cached accessor function

@@ -22,6 +22,7 @@ public:
   LASRrasterize* clone() const override { return new LASRrasterize(*this); };
 
 private:
+  std::vector<std::string> methods;
   bool streamable;
   double window;
   MetricManager metric_engine;

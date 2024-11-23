@@ -69,9 +69,9 @@ bool LASRlaswriter::process(LASpoint*& p)
     offsets[0] = p->quantizer->x_offset;
     offsets[1] = p->quantizer->y_offset;
     offsets[2] = p->quantizer->z_offset;
-    scales[0] = p->quantizer->x_scale_factor;
-    scales[1] = p->quantizer->y_scale_factor;
-    scales[2] = p->quantizer->z_scale_factor;
+    scales[0]  = p->quantizer->x_scale_factor;
+    scales[1]  = p->quantizer->y_scale_factor;
+    scales[2]  = p->quantizer->z_scale_factor;
 
     if (!laswriter)
     {
@@ -144,7 +144,32 @@ bool LASRlaswriter::process(LAS*& las)
 
 void LASRlaswriter::set_header(Header*& header)
 {
+  int version_minor = 2;
+
+  bool has_gps = header->schema.find_attribute("gpstime") != nullptr;
+  bool has_rgb = header->schema.find_attribute("R") != nullptr;
+  bool has_nir = header->schema.find_attribute("NIR") != nullptr;
+
   lasheader = new LASheader();
+  lasheader->file_source_ID       = 0;
+  lasheader->version_major        = 1;
+  lasheader->version_minor        = version_minor;
+  lasheader->header_size          = LAS::get_header_size(version_minor);
+  lasheader->offset_to_point_data = LAS::get_header_size(version_minor);
+  lasheader->file_creation_year   = 0;
+  lasheader->file_creation_day    = 0;
+  lasheader->point_data_format    = LAS::guess_point_data_format(has_gps, has_rgb, has_nir);
+  lasheader->x_scale_factor       = header->schema.attributes[0].scale_factor;
+  lasheader->y_scale_factor       = header->schema.attributes[1].scale_factor;
+  lasheader->z_scale_factor       = header->schema.attributes[2].scale_factor;
+  lasheader->x_offset             = header->schema.attributes[0].offset;
+  lasheader->y_offset             = header->schema.attributes[1].offset;
+  lasheader->z_offset             = header->schema.attributes[2].offset;
+  lasheader->number_of_point_records = 0;
+  lasheader->min_x                = xmin;
+  lasheader->min_y                = ymin;
+  lasheader->max_x                = xmax;
+  lasheader->max_y                = ymax;
 }
 
 bool LASRlaswriter::set_chunk(Chunk& chunk)

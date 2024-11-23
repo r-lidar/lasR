@@ -6,22 +6,21 @@
 #include <functional>
 #include <unordered_map>
 
-#include "PointLAS.h"
+#include "PointSchema.h"
 
-using PointCollection = std::vector<PointLAS>;
-using PointAttributeAccessor = std::function<double(const PointLAS&)>;
-using MetricComputation = std::function<float(PointAttributeAccessor, const PointCollection&, float)>;
+using PointCollection = std::vector<Point>;
+using MetricComputation = std::function<float(AttributeHandler&, const PointCollection&, float)>;
 
 class MetricCalculator
 {
 public:
-  MetricCalculator(MetricComputation computation, PointAttributeAccessor accessor, float param) : computation(computation), accessor(accessor), param(param) {}
-  float compute(const PointCollection& points) const { return computation(accessor, points, param); }
+  MetricCalculator(MetricComputation computation, AttributeHandler& accessor, float param) : computation(computation), accessor(accessor), param(param) {}
+  float compute(const PointCollection& points) { return computation(accessor, points, param); }
   void set_param(float x) { param = x; }
 
 private:
   MetricComputation computation;
-  PointAttributeAccessor accessor;
+  AttributeHandler accessor;
   float param;
 };
 
@@ -33,7 +32,7 @@ public:
   bool parse(const std::vector<std::string>& names, bool support_streamable = true);
   int size() const;
   bool active() const;
-  float get_metric(int index, const PointCollection& points) const;
+  float get_metric(int index, const PointCollection& points);
   float get_metric(int index, float x, float y) const;
   const std::string& get_name(int index) { return names[index]; }
   float get_default_value() const { return default_value; }
@@ -50,17 +49,17 @@ private:
   float pcount(float x, float y) const;
 
   // Non-streamable metrics
-  float min(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float max(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float mean(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float median(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float sd(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float cv(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float sum(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float percentile(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float above(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float count(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
-  float mode(PointAttributeAccessor accessor, const PointCollection& points, float param) const;
+  float min(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float max(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float mean(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float median(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float sd(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float cv(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float sum(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float percentile(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float above(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float count(AttributeHandler& accessor, const PointCollection& points, float param) const;
+  float mode(AttributeHandler& accessor, const PointCollection& points, float param) const;
 
   float default_value;
   std::vector<std::string> names;
@@ -75,7 +74,7 @@ private:
   std::vector<MetricCalculator> regular_operators;
 
   // Map of string to attribute accessors
-  std::unordered_map<std::string, PointAttributeAccessor> attribute_functions = {
+  /*std::unordered_map<std::string, AttributeHandler> attribute_functions = {
     {"x", [](const PointLAS& p) { return p.x; }},
     {"y", [](const PointLAS& p) { return p.y; }},
     {"z", [](const PointLAS& p) { return p.z; }},
@@ -119,21 +118,21 @@ private:
     {"blue", [](const PointLAS& p) { return p.B; }},
     {"nir", [](const PointLAS& p) { return p.NIR; }}
     // # nocov end
-  };
+  };*/
 
   // Map of string to metric functions
   std::unordered_map<std::string, MetricComputation> metric_functions = {
-    {"max", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return max(accessor, points, param); }},
-    {"min", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return min(accessor, points, param); }},
-    {"mean", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return mean(accessor, points, param); }},
-    {"median", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return median(accessor, points, param); }},
-    {"sd", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return sd(accessor, points, param); }},
-    {"cv", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return cv(accessor, points, param); }},
-    {"sum", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return sum(accessor, points, param); }},
-    {"above", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return above(accessor, points, param); }},
-    {"mode", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return mode(accessor, points, param); }},
-    {"count", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return count(accessor, points, param); }},
-    {"p", [this](PointAttributeAccessor accessor, const PointCollection& points, float param) { return percentile(accessor, points, param); }}
+    {"max", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return max(accessor, points, param); }},
+    {"min", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return min(accessor, points, param); }},
+    {"mean", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return mean(accessor, points, param); }},
+    {"median", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return median(accessor, points, param); }},
+    {"sd", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return sd(accessor, points, param); }},
+    {"cv", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return cv(accessor, points, param); }},
+    {"sum", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return sum(accessor, points, param); }},
+    {"above", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return above(accessor, points, param); }},
+    {"mode", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return mode(accessor, points, param); }},
+    {"count", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return count(accessor, points, param); }},
+    {"p", [this](AttributeHandler& accessor, const PointCollection& points, float param) { return percentile(accessor, points, param); }}
   };
 };
 
