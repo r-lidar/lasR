@@ -61,6 +61,7 @@ enum AttributeType {
 
 struct Attribute
 {
+  Attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
   std::string name;       // Attribute name
   size_t offset;          // Offset in the byte array
   size_t size;            // Size of the attribute in bytes
@@ -77,13 +78,18 @@ struct AttributeSchema
   size_t total_point_size;
 
   const Attribute* find_attribute(const std::string&) const;
+  void add_attribute(const Attribute& attribute);
   void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
 
-  void dump()
+  void dump(bool verbose = false)
   {
     for (const auto& attr : attributes)
     {
-      printf("Attribute Name: %-10s | Offset: %-2zu | Size: %-1zu | Type: %-1d | Scale Factor: %-5.2f | Offset: %-5.2f\n", attr.name.c_str(), attr.offset, attr.size, attr.type, attr.scale_factor, attr.value_offset);
+      if (verbose)
+        printf("Attribute: %-12s | Offset: %-2zu | Size: %-1zu | Type: %-1d | Scale Factor: %-5.2f | Offset: %-5.2f\n", attr.name.c_str(), attr.offset, attr.size, attr.type, attr.scale_factor, attr.value_offset);
+      else
+        printf("Attribute: %-12s\n", attr.name.c_str());
+
     }
   }
 };

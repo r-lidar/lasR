@@ -1,9 +1,14 @@
 #include "PointSchema.h"
 
-void AttributeSchema::add_attribute(const std::string& name, AttributeType type, double scale_factor, double value_offset, const std::string& description)
+Attribute::Attribute(const std::string& name, AttributeType type, double scale_factor, double value_offset, const std::string& description)
 {
-  size_t size;
-  switch (type) {
+  this->name = name;
+  this->type = type;
+  this->scale_factor = scale_factor;
+  this->value_offset = value_offset;
+  this->description = description;
+  switch (type)
+  {
   case UINT8:
   case INT8:
     size = 1; break;
@@ -18,11 +23,21 @@ void AttributeSchema::add_attribute(const std::string& name, AttributeType type,
   case DOUBLE:
     size = 8; break;
   default:
-    size = 0; // Invalid type, handle error if needed
+    size = 0;
   }
+}
 
-  attributes.push_back({name, total_point_size, size, type, scale_factor, value_offset, description});
-  total_point_size += size;
+void AttributeSchema::add_attribute(const Attribute& attribute)
+{
+  attributes.push_back(attribute);
+  attributes.back().offset = total_point_size;
+  total_point_size += attribute.size;
+}
+
+void AttributeSchema::add_attribute(const std::string& name, AttributeType type, double scale_factor, double value_offset, const std::string& description)
+{
+  Attribute attr(name, type, scale_factor, value_offset, description);
+  add_attribute(attr);
 }
 
 const Attribute* AttributeSchema::find_attribute(const std::string& name) const

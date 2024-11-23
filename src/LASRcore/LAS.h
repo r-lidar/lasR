@@ -26,7 +26,8 @@ public:
   LAS(Header* header);
   LAS(const Raster& raster);
   ~LAS();
-  bool add_attribute(AttributeType data_type, const std::string& name, const std::string& description, double scale = 1, double offset = 0, bool mem_realloc = true);
+  bool add_attribute(const Attribute&);
+  bool add_attributes(const std::vector<Attribute>&);
   bool add_point(const Point& p);
   bool add_rgb();
   bool seek(size_t pos);
@@ -37,7 +38,6 @@ public:
   void update_header();
   bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
-  bool realloc_point_and_buffer();
   void delete_point(Point* p = nullptr);
   bool delete_deleted();
   bool sort();

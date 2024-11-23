@@ -6,7 +6,8 @@ LASRaddattribute::LASRaddattribute()
 
 bool LASRaddattribute::process(LAS*& las)
 {
-  return las->add_attribute(data_type, name, description, scale, offset);
+  Attribute attr(name, data_type, scale, offset, description);
+  return las->add_attribute(attr);
 }
 
 bool LASRaddattribute::set_parameters(const nlohmann::json& stage)

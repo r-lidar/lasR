@@ -750,86 +750,53 @@ void LAS::set_intervals_to_read(const std::vector<Interval>& intervals)
   intervals_to_read = intervals;
 }
 
-bool LAS::add_attribute(AttributeType type, const std::string& name, const std::string& description, double scale, double offset, bool mem_realloc)
+bool LAS::add_attribute(const Attribute& attribute)
 {
-  /*data_type--;
-  bool has_scale = scale != 1;
-  bool has_offset = offset != 0;*/
-  //bool has_no_data = false;
-  //bool has_min = false;
-  //bool has_max = false;
-  //double min = 0;
-  //double max = 0;
-  //double no_data = -99999.0;
+  size_t previous_size = newheader->schema.total_point_size;
+  size_t new_size = previous_size + attribute.size;
+  size_t new_capacity = get_true_number_of_points() * new_size;
 
-  newheader->schema.add_attribute(name, type, scale, offset);
+  newheader->schema.add_attribute(attribute);
 
-  /*if (has_no_data)
+  if (new_capacity > capacity)
   {
-    switch(data_type)
-    {
-    case UCHAR:     attribute.set_no_data(U8_CLAMP(U8_QUANTIZE(no_data))); break;
-    case CHAR:      attribute.set_no_data(I8_CLAMP(I8_QUANTIZE(no_data))); break;
-    case USHORT:    attribute.set_no_data(U16_CLAMP(U16_QUANTIZE(no_data))); break;
-    case SHORT:     attribute.set_no_data(I16_CLAMP(I16_QUANTIZE(no_data))); break;
-    case ULONG:     attribute.set_no_data(U32_CLAMP(U32_QUANTIZE(no_data))); break;
-    case LONG:      attribute.set_no_data(I32_CLAMP(I32_QUANTIZE(no_data))); break;
-    case ULONGLONG: attribute.set_no_data(U64_QUANTIZE(no_data)); break;
-    case LONGLONG:  attribute.set_no_data(I64_QUANTIZE(no_data)); break;
-    case FLOAT:     attribute.set_no_data((float)(no_data)); break;
-    case DOUBLE:    attribute.set_no_data(no_data); break;
-    }
+    capacity = new_capacity;
+    if (!realloc_buffer()) return false;
   }
 
-  if(has_min)
+  for (int i = get_true_number_of_points()-1 ; i >= 0 ; --i)
   {
-    switch(data_type)
-    {
-    case UCHAR:     attribute.set_min(U8_CLAMP(U8_QUANTIZE(min))); break;
-    case CHAR:      attribute.set_min(I8_CLAMP(I8_QUANTIZE(min))); break;
-    case USHORT:    attribute.set_min(U16_CLAMP(U16_QUANTIZE(min))); break;
-    case SHORT:     attribute.set_min(I16_CLAMP(I16_QUANTIZE(min))); break;
-    case ULONG:     attribute.set_min(U32_CLAMP(U32_QUANTIZE(min))); break;
-    case LONG:      attribute.set_min(I32_CLAMP(I32_QUANTIZE(min))); break;
-    case ULONGLONG: attribute.set_min(U64_QUANTIZE(min)); break;
-    case LONGLONG:  attribute.set_min(I64_QUANTIZE(min)); break;
-    case FLOAT:     attribute.set_min((float)(min)); break;
-    case DOUBLE:    attribute.set_min(min); break;
-    }
+    memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
   }
 
-  // set max value if option set
-  if(has_max)
+  return true;
+}
+
+bool LAS::add_attributes(const std::vector<Attribute>& attributes)
+{
+  size_t previous_size = newheader->schema.total_point_size;
+  size_t new_size = previous_size;
+
+  for (const auto& attribute : attributes)
   {
-    switch(data_type)
-    {
-    case UCHAR: attribute.set_max(U8_CLAMP(U8_QUANTIZE(max))); break;
-    case CHAR: attribute.set_max(I8_CLAMP(I8_QUANTIZE(max))); break;
-    case USHORT: attribute.set_max(U16_CLAMP(U16_QUANTIZE(max))); break;
-    case SHORT: attribute.set_max(I16_CLAMP(I16_QUANTIZE(max))); break;
-    case ULONG: attribute.set_max(U32_CLAMP(U32_QUANTIZE(max))); break;
-    case LONG: attribute.set_max(I32_CLAMP(I32_QUANTIZE(max))); break;
-    case ULONGLONG: attribute.set_max(U64_QUANTIZE(max)); break;
-    case LONGLONG: attribute.set_max(I64_QUANTIZE(max)); break;
-    case FLOAT: attribute.set_max((float)(max)); break;
-    case DOUBLE: attribute.set_max(max); break;
-    }
-  }*/
+    new_size += attribute.size;
+    newheader->schema.add_attribute(attribute);
+  }
 
-  /*int attr_index = newheader->add_attribute(attribute);
-  if (attr_index == -1)
+  size_t new_capacity = get_true_number_of_points() * new_size;
+
+  if (new_capacity > capacity)
   {
-    last_error = "LASlib internal error: add_attribute failed"; // # nocov
-    return false; // # nocov
-  }*/
+    capacity = new_capacity;
+    if (!realloc_buffer()) return false;
+  }
 
-  //newheader->update_extra_bytes_vlr();
-  //newheader->point_data_record_length += attribute.get_size();
+  for (int i = get_true_number_of_points()-1 ; i >= 0 ; --i)
+  {
+    memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
+  }
 
-  if (mem_realloc)
-    return realloc_point_and_buffer();
-  else
-    return true;
+  return true;
 }
 
 /*void LAS::set_index(bool index)
@@ -852,7 +819,8 @@ bool LAS::add_rgb()
   newheader->add_attribute("R", AttributeType::INT16, 0, 0);
   newheader->add_attribute("G", AttributeType::INT16, 0, 0);
   newheader->add_attribute("B", AttributeType::INT16, 0, 0);
-  return realloc_point_and_buffer();
+  return false;
+  //return realloc_point_and_buffer();
 }
 
 void LAS::clean_index()
@@ -951,12 +919,9 @@ bool LAS::realloc_buffer()
   return true;
 }
 
-bool LAS::realloc_point_and_buffer()
+/*bool LAS::realloc_point_and_buffer()
 {
-  /*LASpoint new_point;
-  new_point.init(newheader, newheader->point_data_format, newheader->point_data_record_length, newheader);
-
-  size_t new_capacity = npoints * new_newheader->schema.total_point_size;
+  size_t new_capacity = npoints * newheader->schema.total_point_size;
   if (new_capacity > capacity)
   {
     capacity = new_capacity;
@@ -971,10 +936,10 @@ bool LAS::realloc_point_and_buffer()
   }
 
   point = LASpoint();
-  point.init(newheader, newheader->point_data_format, newheader->point_data_record_length, newheader);*/
+  point.init(newheader, newheader->point_data_format, newheader->point_data_record_length, newheader);
 
   return false;
-}
+}*/
 
 int LAS::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)
 {
