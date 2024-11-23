@@ -12,6 +12,7 @@ LASRlasreader::LASRlasreader()
   returnnumber = AttributeHandler("ReturnNumber");
   numberofreturns = AttributeHandler("NumberOfReturns");
   userdata = AttributeHandler("UserData");
+  classification = AttributeHandler("Classification");
   psid = AttributeHandler("PointSourceID");
   scanangle = AttributeHandler("ScanAngle");
   gpstime = AttributeHandler("gpstime");
@@ -168,11 +169,16 @@ bool LASRlasreader::process(Header*& header)
 
 bool LASRlasreader::process(Point*& point)
 {
+  if (point == nullptr)
+  {
+    point = new Point(&header->schema);
+  }
+
   if (lasreader->read_point())
   {
-    point->set_x(lasreader->point.get_x());
-    point->set_y(lasreader->point.get_y());
-    point->set_z(lasreader->point.get_z());
+    point->set_X(lasreader->point.get_X());
+    point->set_Y(lasreader->point.get_Y());
+    point->set_Z(lasreader->point.get_Z());
     intensity(point, lasreader->point.get_intensity());
     returnnumber(point, lasreader->point.get_return_number());
     numberofreturns(point, lasreader->point.get_number_of_returns());
@@ -227,9 +233,9 @@ bool LASRlasreader::process(LAS*& las)
   {
     if (progress->interrupted()) break;
 
-    p.set_x(lasreader->point.get_x());
-    p.set_y(lasreader->point.get_y());
-    p.set_z(lasreader->point.get_z());
+    p.set_X(lasreader->point.get_X());
+    p.set_Y(lasreader->point.get_Y());
+    p.set_Z(lasreader->point.get_Z());
     intensity(&p, lasreader->point.get_intensity());
     returnnumber(&p, lasreader->point.get_return_number());
     numberofreturns(&p, lasreader->point.get_number_of_returns());
