@@ -84,7 +84,7 @@ class ConditionKeepIn : public Condition
 public:
   ConditionKeepIn(const std::string& attribute_name, double* values, int size) : Condition(attribute_name)
   {
-    memcpy(this->values, values, 64 *sizeof(double));
+    memcpy(this->values, values, size*sizeof(double));
     this->size = size;
   }
   inline bool filter(const Point* point)
@@ -107,7 +107,7 @@ class ConditionKeepOut : public Condition
 public:
   ConditionKeepOut(const std::string& attribute_name, double* values, int size) : Condition(attribute_name)
   {
-    memcpy(this->values, values, 64 *sizeof(double));
+    memcpy(this->values, values, size*sizeof(double));
     this->size = size;
   }
   inline bool filter(const Point* point)
@@ -125,30 +125,32 @@ private:
   int size;
 };
 
-bool PointFilter::filter(const Point* point) {
-  for (const auto condition : conditions) {
+bool PointFilter::filter(const Point* point)
+{
+  for (const auto condition : conditions)
+  {
     if (condition->filter(point))
       return TRUE; // point was filtered
   }
   return FALSE; // point survived
 }
 
-void PointFilter::reset() {
-  for (const auto condition : conditions)
-    condition->reset();
-}
-
-PointFilter::~PointFilter() {
+PointFilter::~PointFilter()
+{
   for (auto condition : conditions) delete condition;
 }
 
-void PointFilter::add_condition(Condition* condition) {
-  conditions.push_back(condition);
+void PointFilter::add_condition(Condition* condition)
+{
+  if (condition != nullptr)
+    conditions.push_back(condition);
 }
 
-void PointFilter::add_condition(const std::string& x) {
+void PointFilter::add_condition(const std::string& x)
+{
   FilterParser fp;
-  conditions.push_back(fp.parse(x));
+  auto condition = fp.parse(x);
+  add_condition(condition);
 }
 
 Condition* FilterParser::parse(const std::string& condition) const

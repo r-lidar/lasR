@@ -12,7 +12,6 @@ public:
   Condition() : AttributeHandler() {};
   Condition(const std::string& attribute_name) : AttributeHandler(attribute_name) {};
   virtual bool filter(const Point* point) = 0;
-  virtual void reset(){};
   virtual ~Condition(){};
 };
 
@@ -34,7 +33,6 @@ public:
   bool filter(const Point* point);
   void add_condition(const std::string& x);
   void add_condition(Condition* condition);
-  void reset();
 
   PointFilter() = default;
   ~PointFilter();

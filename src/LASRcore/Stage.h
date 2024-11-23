@@ -111,7 +111,7 @@ public:
   //void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
-  void reset_filter() { pointfilter.reset(); };
+  void reset_filter() { };
 
   std::string get_uid() const { return uid; };
   const std::map<std::string, Stage*>& get_connection() { return connections; };
@@ -157,7 +157,7 @@ protected:
   std::string ifile;
   std::string ofile;
   std::string uid;
-  std::string filter;
+  std::vector<std::string> filters;
   PointFilter pointfilter;
   Progress* progress;
   std::map<std::string, Stage*> connections;

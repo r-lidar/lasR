@@ -67,15 +67,15 @@ TriangleXYZ::TriangleXYZ(const Point& a, const Point& b, const Point& c)
 {
   A.x = a.get_x();
   A.y = a.get_y();
-  A.x = a.get_z();
+  A.z = a.get_z();
 
   B.x = b.get_x();
   B.y = b.get_y();
-  B.x = b.get_z();
+  B.z = b.get_z();
 
   C.x = c.get_x();
   C.y = c.get_y();
-  C.x = c.get_z();
+  C.z = c.get_z();
 }
 
 TriangleXYZ::TriangleXYZ(const PointXYZ& A, const PointXYZ& B, const PointXYZ& C)

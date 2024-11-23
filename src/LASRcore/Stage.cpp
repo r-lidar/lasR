@@ -36,7 +36,7 @@ Stage::Stage(const Stage& other)
   progress = other.progress;
   connections = other.connections;
   crs = other.crs;
-  filter = other.filter;
+  set_filter(other.filters);
 
   #ifdef USING_R
   nsexpprotected = 0;
@@ -59,6 +59,7 @@ bool Stage::set_chunk(Chunk& chunk)
 
 void Stage::set_filter(const std::vector<std::string>& f)
 {
+  filters = f;
   for (auto c : f) pointfilter.add_condition(c);
 }
 

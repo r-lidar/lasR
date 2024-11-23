@@ -2,6 +2,7 @@
 #define POINTSCHEMA_H
 
 #include "CRS.h"
+#include "print.h"
 
 #include <string>
 #include <vector>
@@ -93,6 +94,7 @@ struct Point
   Point(AttributeSchema* schema) : data(new unsigned char[schema->total_point_size]), schema(schema), own_data(true) {  memset(data, 0, schema->total_point_size); }
   Point(unsigned char* ptr, const AttributeSchema* schema) : data(ptr), schema(schema), own_data(false) {}
   ~Point() {if (own_data && data) { delete[] data; data = nullptr; }; }
+  void dump() const { print("%.2lf %.2lf %.2lf\n", get_x(), get_y(), get_z()); };
 
   Point(const Point& other) : data(other.own_data ? new unsigned char[other.schema->total_point_size] : other.data), schema(other.schema), own_data(other.own_data)
   {
