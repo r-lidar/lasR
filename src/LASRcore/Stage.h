@@ -80,7 +80,7 @@ public:
   Stage(const Stage& other); // copy constructor is for multi-threading
   virtual ~Stage() = 0;
   virtual bool process() { return true; };
-  virtual bool process(LASheader*& header) { return true; };
+  virtual bool process(Header*& header) { return true; };
   virtual bool process(LASpoint*& p) { return true; };
   virtual bool process(LAS*& las) { return true; };
   virtual bool process(LAScatalog*& las) { return true; };
@@ -90,7 +90,7 @@ public:
   virtual void set_crs(const CRS& crs) { this->crs = crs; };
   virtual bool set_output_file(const std::string& file) { ofile = file; return true; };
   virtual bool set_input_file_name(const std::string& file) { return true; };
-  virtual void set_header(LASheader*& header) { return; };
+  virtual void set_header(Header*& header) { return; };
   virtual bool set_chunk(Chunk& chunk);
   virtual bool set_parameters(const nlohmann::json&) { return true; };
   virtual bool is_streamable() const { return false; };

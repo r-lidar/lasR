@@ -87,9 +87,14 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   return true;
 }
 
-bool LASRlasreader::process(LASheader*& header)
+bool LASRlasreader::process(Header*& header)
 {
-  header = this->lasheader;
+  header->min_x = this->lasheader->min_x;
+  header->min_y = this->lasheader->min_y;
+  header->min_z = this->lasheader->min_z;
+  header->max_x = this->lasheader->max_x;
+  header->max_y = this->lasheader->max_y;
+  header->max_z = this->lasheader->max_z;
   return true;
 }
 
@@ -102,6 +107,23 @@ bool LASRlasreader::process(LASpoint*& point)
 
   return true;
 }
+
+/*
+ *   if (header->vlr_lasoriginal)
+ {
+ xmin = header->vlr_lasoriginal->min_x;
+ ymin = header->vlr_lasoriginal->min_y;
+ xmax = header->vlr_lasoriginal->max_x;
+ ymax = header->vlr_lasoriginal->max_y;
+ }
+ else
+ {
+ xmin = header->min_x;
+ ymin = header->min_y;
+ xmax = header->max_x;
+ ymax = header->max_y;
+ }
+ */
 
 bool LASRlasreader::process(LAS*& las)
 {

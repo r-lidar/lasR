@@ -13,7 +13,7 @@ public:
   LASRdataframereader() = default;
   LASRdataframereader(const LASRdataframereader& other);
   bool set_chunk(Chunk& chunk) override;
-  bool process(LASheader*& header) override;
+  bool process(Header*& header) override;
   bool process(LASpoint*& point) override;
   bool process(LAS*& las) override;
   bool need_points() const override { return false; };
@@ -43,7 +43,6 @@ private:
   std::string wkt;
   SEXP dataframe;
 
-  LASheader lasheader;
   LASpoint laspoint;
 
   enum attributes{X, Y, Z, I, T, RN, NOR, SDF, EoF, CLASS, SYNT, KEYP, WITH, OVER, UD, SA, SAR, PSID, R, G, B, NIR, CHAN, BUFF};

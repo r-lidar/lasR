@@ -143,7 +143,6 @@ bool Pipeline::run_streamed()
       // There is no point to read
       uint64_t npoints = 0;
       npoints += header->number_of_point_records;
-      npoints += header->extended_number_of_point_records;
       if (npoints == 0) break;
 
       // Some stages need the header to get initialized (write_las is the only one)
@@ -238,7 +237,6 @@ bool Pipeline::run_loaded()
     // There is no point to read
     uint64_t npoints = 0;
     npoints += header->number_of_point_records;
-    npoints += header->extended_number_of_point_records;
     if (npoints == 0)
     {
       order.pop_back();

@@ -12,7 +12,7 @@ class LASRlasreader: public Stage
 public:
   LASRlasreader();
   ~LASRlasreader();
-  bool process(LASheader*& header) override;
+  bool process(Header*& header) override;
   bool process(LASpoint*& point) override;
   bool process(LAS*& las) override;
   bool set_chunk(Chunk& chunk) override;

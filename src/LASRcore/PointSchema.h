@@ -44,7 +44,6 @@ static std::string map_attribute(const std::string& attribute)
   return attribute;
 }
 
-
 enum AttributeType {
   NOTYPE = -1,
   UINT8 = 0,
@@ -293,9 +292,9 @@ public:
   AttributeSchema schema;
   CRS crs;
 
-  void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0)
+  void add_attribute(const Attribute& attr)
   {
-    schema.add_attribute(name, type, scale_factor, value_offset);
+    schema.add_attribute(attr);
   }
 };
 

@@ -816,11 +816,11 @@ void LAS::set_index(float res)
 
 bool LAS::add_rgb()
 {
-  newheader->add_attribute("R", AttributeType::INT16, 0, 0);
-  newheader->add_attribute("G", AttributeType::INT16, 0, 0);
-  newheader->add_attribute("B", AttributeType::INT16, 0, 0);
-  return false;
-  //return realloc_point_and_buffer();
+  Attribute R("R", AttributeType::INT16, 0, 0);
+  Attribute G("G", AttributeType::INT16, 0, 0);
+  Attribute B("B", AttributeType::INT16, 0, 0);
+  add_attributes({R,G,B});
+  return true;
 }
 
 void LAS::clean_index()

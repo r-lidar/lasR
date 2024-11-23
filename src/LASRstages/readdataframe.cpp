@@ -71,7 +71,7 @@ bool LASRdataframereader::set_chunk(Chunk& chunk)
   return true;
 }
 
-bool LASRdataframereader::process(LASheader*& header)
+bool LASRdataframereader::process(Header*& header)
 {
   if (header != nullptr) return true;
 
@@ -137,7 +137,7 @@ bool LASRdataframereader::process(LASheader*& header)
   int version_minor = 2;
   if (is_extended) version_minor = 4;
 
-  lasheader.file_source_ID       = 0;
+  /*lasheader.file_source_ID       = 0;
   lasheader.version_major        = 1;
   lasheader.version_minor        = version_minor;
   lasheader.header_size          = LAS::get_header_size(version_minor);
@@ -150,46 +150,30 @@ bool LASRdataframereader::process(LASheader*& header)
   lasheader.z_scale_factor       = scale[2];
   lasheader.x_offset             = offset[0];
   lasheader.y_offset             = offset[1];
-  lasheader.z_offset             = offset[2];
-  lasheader.number_of_point_records = npoints;
-  lasheader.min_x                = xmin;
-  lasheader.min_y                = ymin;
-  lasheader.max_x                = xmax;
-  lasheader.max_y                = ymax;
-  lasheader.point_data_record_length = LAS::get_point_data_record_length(lasheader.point_data_format, num_extrabytes);
+  lasheader.z_offset             = offset[2];*/
+  header->number_of_point_records = npoints;
+  header->min_x                = xmin;
+  header->min_y                = ymin;
+  header->max_x                = xmax;
+  header->max_y                = ymax;
 
   // Add extrabytes
   for (int i = 0; i <  Rf_length(dataframe); i++)
   {
-    if (col_names[i] >= 100)
-    {
-      int data_type = AttributeType::INT32;
-      SEXP vector = VECTOR_ELT(dataframe, i);
-      if (TYPEOF(vector) == REALSXP) data_type = AttributeType::DOUBLE;
-      const char* name = CHAR(STRING_ELT(names_attr, i));
-      LASattribute lasattribute(data_type-1, name, name);
-      lasheader.add_attribute(lasattribute);
-      lasheader.update_extra_bytes_vlr();
-      lasheader.point_data_record_length += lasattribute.get_size();
-    }
+    AttributeType data_type = AttributeType::INT32;
+    SEXP vector = VECTOR_ELT(dataframe, i);
+    if (TYPEOF(vector) == REALSXP) data_type = AttributeType::DOUBLE;
+    const char* name = CHAR(STRING_ELT(names_attr, i));
+    std::string sname(name);
+    Attribute attribute(sname, data_type, 1, 0);
+    header->add_attribute(attribute);
   }
 
   //lasheader.set_global_encoding_bit(0); // GPS Time Type
   //lasheader.set_global_encoding_bit(1); // Waveform Data Packets Internal
   //lasheader.set_global_encoding_bit(2); // Waveform Data Packets External
   //lasheader.set_global_encoding_bit(3); // Synthetic Return Numbers
-  if (!wkt.empty())
-  {
-    lasheader.set_global_encoding_bit(4); // WKT
-    lasheader.set_geo_ogc_wkt(1, wkt.c_str());
-  }
-  //lasheader.set_global_encoding_bit(5); // Aggregate Model
-
-  strcpy(lasheader.generating_software, "lasR R package");
-
-  laspoint.init(&lasheader, lasheader.point_data_format, lasheader.point_data_record_length, &lasheader);
-
-  header = &lasheader;
+  header->crs = CRS(wkt);
   return true;
 }
 

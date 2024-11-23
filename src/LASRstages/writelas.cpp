@@ -142,9 +142,9 @@ bool LASRlaswriter::process(LAS*& las)
   return true;
 }
 
-void LASRlaswriter::set_header(LASheader*& header)
+void LASRlaswriter::set_header(Header*& header)
 {
-  lasheader = header;
+  lasheader = new LASheader();
 }
 
 bool LASRlaswriter::set_chunk(Chunk& chunk)
