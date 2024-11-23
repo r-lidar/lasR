@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <limits>
 
 #include "pipeline.h"
 #include "LAScatalog.h"
@@ -183,10 +184,10 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           // This is not checked at R level. Anyway get_element() will throw an exception
           SEXP X = get_element(dataframe, "X");
           SEXP Y = get_element(dataframe, "Y");
-          xmin = F64_MAX;
-          ymin = F64_MAX;
-          xmax = F64_MIN;
-          ymax = F64_MIN;
+          xmin = std::numeric_limits<double>::max();
+          ymin = std::numeric_limits<double>::max();
+          xmax = -std::numeric_limits<double>::max();
+          ymax = -std::numeric_limits<double>::max();
           for (int k = 0 ; k < Rf_length(X) ; ++k)
           {
             if (REAL(X)[k] < xmin) xmin = REAL(X)[k];
@@ -209,41 +210,12 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
             last_error = "invalid external pointer";
             return false;
           }
-          xmin = las->header->min_x;
-          ymin = las->header->min_y;
-          xmax = las->header->max_x;
-          ymax = las->header->max_y;
+          xmin = las->newheader->min_x;
+          ymin = las->newheader->min_y;
+          xmax = las->newheader->max_x;
+          ymax = las->newheader->max_y;
           int n = las->npoints;
-          CRS crs;
-
-          if (las->header->vlr_geo_keys)
-          {
-            int epsg = 0;
-            for (int j = 0; j < las->header->vlr_geo_keys->number_of_keys; j++)
-            {
-              if (las->header->vlr_geo_key_entries[j].key_id == 3072)
-              {
-                epsg = las->header->vlr_geo_key_entries[j].value_offset;
-                crs = CRS(epsg);
-                break;
-              }
-            }
-          }
-
-          if (las->header->vlr_geo_ogc_wkt)
-          {
-            for (unsigned int j = 0; j < las->header->number_of_variable_length_records; j++)
-            {
-              if (las->header->vlrs[j].record_id == 2112)
-              {
-                char* data = (char*)las->header->vlrs[j].data;
-                int len = strnlen(data, las->header->vlrs[j].record_length_after_header);
-                std::string wkt(data, len);
-                crs = CRS(wkt);
-                break;
-              }
-            }
-          }
+          CRS crs = las->newheader->crs;
 
           catalog = std::make_shared<LAScatalog>();
           catalog->add_bbox(xmin, ymin, xmax, ymax, n);

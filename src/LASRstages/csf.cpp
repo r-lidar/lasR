@@ -50,7 +50,7 @@ bool LASRcsf::process(LAS*& las)
     if (i == ground[k])
     {
       k++;
-      if (las->point.classification != 9) set_and_get_classification(&las->p, classification);
+      if (set_and_get_classification(&las->p) != 9) set_and_get_classification(&las->p, classification);
     }
     i++;
   }

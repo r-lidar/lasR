@@ -232,6 +232,25 @@ struct Point
       flag &= ~(1 << 0); // Clear the 0th bit to 0
     }
   }
+  inline bool inside_buffer(const double min_x, const double min_y, const double max_x, const double max_y, const bool circle = false)
+  {
+    double x = get_x();
+    if (x < min_x || x > max_x) return true;
+    double y = get_y();
+    if (y < min_y || y > max_y) return true;
+
+    if (circle)
+    {
+      double r2 = (max_x-min_x)/2;
+      double center_x = (max_x+min_x)/2;
+      double center_y = (max_y+min_y)/2;
+      double dx = center_x - get_x();
+      double dy = center_y - get_y();
+      return ((dx*dx+dy*dy) > r2*r2);
+    }
+
+    return false;
+  }
 };
 
 class AttributeHandler

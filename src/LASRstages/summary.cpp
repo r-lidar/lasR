@@ -10,6 +10,11 @@ LASRsummary::LASRsummary()
   nwithheld = 0;
   nsynthetic = 0;
   //npoints_per_sdf = {0,0};
+
+  get_intensity = AttributeHandler("Intensity");
+  get_returnnumber = AttributeHandler("ReturnNumber");
+  get_classification = AttributeHandler("Classification");
+  get_number_of_returns = AttributeHandler("NumberOfReturns");
 }
 
 bool LASRsummary::set_parameters(const nlohmann::json& stage)
@@ -25,23 +30,22 @@ bool LASRsummary::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsummary::process(LASpoint*& p)
+bool LASRsummary::process(Point*& p)
 {
-  if (p->get_withheld_flag() != 0) return true;
-  if (lasfilter.filter(p)) return true;
+  if (p->get_deleted()) return true;
+  if (pointfilter.filter(p)) return true;
   if (p->inside_buffer(xmin, ymin, xmax, ymax, circular)) return true; // avoid counting buffer points
 
   npoints++;
-  npoints_per_return[p->get_return_number()]++;
-  npoints_per_class[p->get_classification()]++;
+  npoints_per_return[get_returnnumber(p)]++;
+  npoints_per_class[get_classification(p)]++;
 
-  if (p->get_number_of_returns() == 1) nsingle++;
-  if (p->get_withheld_flag() == 1) nwithheld++;
+  if (get_number_of_returns(p) == 1) nsingle++;
 
   //(p->get_scan_direction_flag() == 0) ? npoints_per_sdf.first++ : npoints_per_sdf.second++;
 
   int z = (int) std::round(p->get_z() / zwbin ) * zwbin;
-  int i = (int) std::round(p->get_intensity() / iwbin) * iwbin;
+  int i = (int) std::round(get_intensity(p) / iwbin) * iwbin;
   (zhistogram.find(z) == zhistogram.end()) ?  zhistogram[z] = 1 : zhistogram[z]++;
   (ihistogram.find(i) == ihistogram.end()) ?  ihistogram[i] = 1 : ihistogram[i]++;
 
@@ -52,10 +56,10 @@ bool LASRsummary::process(LASpoint*& p)
 
 bool LASRsummary::process(LAS*& las)
 {
-  LASpoint* p;
+  Point* p;
   while (las->read_point())
   {
-    p = &las->point;
+    p = &las->p;
     process(p);
   }
 

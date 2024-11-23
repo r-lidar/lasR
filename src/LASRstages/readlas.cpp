@@ -7,6 +7,19 @@ LASRlasreader::LASRlasreader()
   lasreadopener = nullptr;
   lasreader = nullptr;
   lasheader = nullptr;
+
+  intensity = AttributeHandler("Intensity");
+  returnnumber = AttributeHandler("ReturnNumber");
+  numberofreturns = AttributeHandler("NumberOfReturns");
+  userdata = AttributeHandler("UserData");
+  psid = AttributeHandler("PointSourceID");
+  scanangle = AttributeHandler("ScanAngle");
+  gpstime = AttributeHandler("gpstime");
+  scannerchannel = AttributeHandler("ScannerChannel");
+  red = AttributeHandler("R");
+  green = AttributeHandler("G");
+  blue = AttributeHandler("B");
+  nir = AttributeHandler("NIR");
 }
 
 bool LASRlasreader::set_chunk(Chunk& chunk)
@@ -153,10 +166,29 @@ bool LASRlasreader::process(Header*& header)
   return true;
 }
 
-bool LASRlasreader::process(LASpoint*& point)
+bool LASRlasreader::process(Point*& point)
 {
   if (lasreader->read_point())
-    point = &lasreader->point;
+  {
+    point->set_x(lasreader->point.get_x());
+    point->set_y(lasreader->point.get_y());
+    point->set_z(lasreader->point.get_z());
+    intensity(point, lasreader->point.get_intensity());
+    returnnumber(point, lasreader->point.get_return_number());
+    numberofreturns(point, lasreader->point.get_number_of_returns());
+    classification(point, lasreader->point.get_classification());
+    userdata(point, lasreader->point.get_user_data());
+    psid(point, lasreader->point.get_point_source_ID());
+    scanangle(point, lasreader->point.get_scan_angle());
+    gpstime(point, lasreader->point.get_gps_time());
+    scannerchannel(point, lasreader->point.get_extended_scanner_channel());
+    red(point, lasreader->point.get_R());
+    green(point, lasreader->point.get_G());
+    blue(point, lasreader->point.get_B());
+    nir(point, lasreader->point.get_NIR());
+    for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
+      extrabytes[i](point, lasreader->point.get_attribute_as_float(i));
+  }
   else
     point = nullptr;
 
@@ -190,19 +222,6 @@ bool LASRlasreader::process(LAS*& las)
   progress->set_prefix("read_las");
 
   Point p(&header->schema);
-  AttributeHandler set_intensity("Intensity");
-  AttributeHandler set_return("ReturnNumber");
-  AttributeHandler set_number("NumberOfReturns");
-  AttributeHandler set_classification("Classification");
-  AttributeHandler set_userdata("UserData");
-  AttributeHandler set_psid("PointSourceID");
-  AttributeHandler set_angle("ScanAngle");
-  AttributeHandler set_time("gpstime");
-  AttributeHandler set_channel("ScannerChannel");
-  AttributeHandler set_red("R");
-  AttributeHandler set_green("G");
-  AttributeHandler set_blue("B");
-  AttributeHandler set_nir("NIR");
 
   while (lasreader->read_point())
   {
@@ -211,19 +230,19 @@ bool LASRlasreader::process(LAS*& las)
     p.set_x(lasreader->point.get_x());
     p.set_y(lasreader->point.get_y());
     p.set_z(lasreader->point.get_z());
-    set_intensity(&p, lasreader->point.get_intensity());
-    set_return(&p, lasreader->point.get_return_number());
-    set_number(&p, lasreader->point.get_number_of_returns());
-    set_classification(&p, lasreader->point.get_classification());
-    set_userdata(&p, lasreader->point.get_user_data());
-    set_psid(&p, lasreader->point.get_point_source_ID());
-    set_angle(&p, lasreader->point.get_scan_angle());
-    set_time(&p, lasreader->point.get_gps_time());
-    set_channel(&p, lasreader->point.get_extended_scanner_channel());
-    set_red(&p, lasreader->point.get_R());
-    set_green(&p, lasreader->point.get_G());
-    set_blue(&p, lasreader->point.get_B());
-    set_nir(&p, lasreader->point.get_NIR());
+    intensity(&p, lasreader->point.get_intensity());
+    returnnumber(&p, lasreader->point.get_return_number());
+    numberofreturns(&p, lasreader->point.get_number_of_returns());
+    classification(&p, lasreader->point.get_classification());
+    userdata(&p, lasreader->point.get_user_data());
+    psid(&p, lasreader->point.get_point_source_ID());
+    scanangle(&p, lasreader->point.get_scan_angle());
+    gpstime(&p, lasreader->point.get_gps_time());
+    scannerchannel(&p, lasreader->point.get_extended_scanner_channel());
+    red(&p, lasreader->point.get_R());
+    green(&p, lasreader->point.get_G());
+    blue(&p, lasreader->point.get_B());
+    nir(&p, lasreader->point.get_NIR());
     for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
       extrabytes[i](&p, lasreader->point.get_attribute_as_float(i));
 

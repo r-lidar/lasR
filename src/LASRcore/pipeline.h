@@ -75,7 +75,7 @@ private:
   std::vector<int> order;
 
   LAS* las;                             // owned by this
-  LASpoint* point;
+  Point* point;
   Header* header;                       // owned by las
   std::shared_ptr<LAScatalog> catalog;  // owned by this and shared in cloned pipelines
   bool point_cloud_ownership_transfered;

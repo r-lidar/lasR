@@ -1,14 +1,8 @@
 #ifndef LASF_H
 #define LASF_H
 
-#include "laszip.hpp"
-#include "laspoint.hpp"
-#include "lasdefinitions.hpp"
-
 #include "Interval.h"
 #include "Shape.h"
-#include "PointLAS.h"
-#include "Accessors.h"
 #include "PointSchema.h"
 #include "PointFilter.h"
 
@@ -44,7 +38,7 @@ public:
   bool sort(const std::vector<int>& order);
 
   // Thread safe queries
-  bool get_xyz(size_t pos, double* xyz) const;
+  //bool get_xyz(size_t pos, double* xyz) const;
   bool get_point(size_t pos, Point* p, PointFilter* const filter = nullptr) const;
   bool query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
@@ -69,10 +63,10 @@ private:
   void clean_query();
   bool alloc_buffer();
   bool realloc_buffer();
-  U64 get_true_number_of_points() const;
+  uint64_t get_true_number_of_points() const;
 
   // Access to point attributes without copying the whole point
-  inline double get_x(int i) const;
+  /*inline double get_x(int i) const;
   inline double get_y(int i) const;
   inline double get_z(int i) const;
   inline double get_x(const unsigned char* buf) const;
@@ -80,13 +74,12 @@ private:
   inline double get_z(const unsigned char* buf) const;
   inline double get_gpstime(const unsigned char* buf) const;
   inline unsigned char get_scanner_channel(const unsigned char* buf) const;
-  inline unsigned char get_return_number(const unsigned char* buf) const;
+  inline unsigned char get_return_number(const unsigned char* buf) const;*/
 
 public:
   Point p;
 
 public:
-  LASpoint point;
   size_t npoints;
   size_t current_point;
 
@@ -94,7 +87,6 @@ public:
   // it invalidate lasreader and thus header. We need header as long as this object exist. Consequently
   // we must also own lasreadopener and lasreader
   Header* newheader;
-  LASheader* header;
 
 private:
   unsigned char* buffer;

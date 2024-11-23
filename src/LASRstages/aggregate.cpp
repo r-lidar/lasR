@@ -34,8 +34,8 @@ bool LASRaggregate::process(LAS*& las)
   std::vector<int> cells;
   while (las->read_point(true)) // Need to include withheld points to do not mess grouper indexes
   {
-    double x = las->point.get_x();
-    double y = las->point.get_y();
+    double x = las->p.get_x();
+    double y = las->p.get_y();
 
     if (window)
       raster.get_cells(x-window,y-window, x+window,y+window, cells);
@@ -46,8 +46,10 @@ bool LASRaggregate::process(LAS*& las)
     cells.clear();
   }
 
+  return false;
+
   // LAS format
-  bool extended = (las->header->version_minor >= 4) && (las->header->point_data_format >= 6);
+  /*bool extended = (las->header->version_minor >= 4) && (las->header->point_data_format >= 6);
   bool has_gps = las->point.have_gps_time;
   bool has_rgb = las->point.have_rgb;
   bool has_nir = las->point.have_nir;
@@ -168,7 +170,7 @@ bool LASRaggregate::process(LAS*& las)
     int j = 0;
     while (las->read_point())
     {
-      if (lasfilter.filter(&las->point)) continue;
+      if (pointfilter.filter(&las->p)) continue;
 
       for (int i = 0 ; i < Rf_length(list) ; i++)
       {
@@ -176,7 +178,7 @@ bool LASRaggregate::process(LAS*& las)
 
         switch (names[i])
         {
-          case X:     REAL(vector)[j] = las->point.get_x(); break;
+          /*case X:     REAL(vector)[j] = las->point.get_x(); break;
           case Y:     REAL(vector)[j] = las->point.get_y(); break;
           case Z:     REAL(vector)[j] = las->point.get_z(); break;
           case I:     INTEGER(vector)[j] = las->point.get_intensity(); break;
@@ -206,7 +208,7 @@ bool LASRaggregate::process(LAS*& las)
               INTEGER(vector)[j] = (int)las->point.get_attribute_as_float(attr_index);
             else
               REAL(vector)[j] = las->point.get_attribute_as_float(attr_index);
-          }
+          }/
         }
       }
 
@@ -247,6 +249,7 @@ bool LASRaggregate::process(LAS*& las)
       break;
     }*/
 
+    /*
     // The output is a list: check if each element is atomic otherwise exit
     if (TYPEOF(res) == VECSXP)
     {
@@ -359,7 +362,7 @@ bool LASRaggregate::process(LAS*& las)
 
   } // end omp critical
 
-  return (error == 0);
+  return (error == 0);*/
 }
 
 void LASRaggregate::clear(bool last)

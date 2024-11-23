@@ -5,6 +5,7 @@
 
 class LASwriter;
 class LASheader;
+class LASpoint;
 //class LASindex;
 //class LASquadtree;
 
@@ -17,7 +18,7 @@ public:
   void set_header(Header*& header) override;
   bool set_input_file_name(const std::string& file) override;
   bool set_output_file(const std::string& file) override;
-  bool process(LASpoint*& p) override;
+  bool process(Point*& p) override;
   bool process(LAS*& las) override;
   bool is_streamable() const override { return true; };
   void clear(bool last) override;
@@ -32,11 +33,25 @@ private:
   void clean_copc_ext(std::string& path);
 
 private:
+  AttributeHandler intensity;
+  AttributeHandler returnnumber;
+  AttributeHandler numberofreturns;
+  AttributeHandler userdata;
+  AttributeHandler psid;
+  AttributeHandler classification;
+  AttributeHandler scanangle;
+  AttributeHandler gpstime;
+  AttributeHandler scannerchannel;
+  AttributeHandler red;
+  AttributeHandler green;
+  AttributeHandler blue;
+  AttributeHandler nir;
+
   bool keep_buffer;
+  LASpoint* point;
   LASwriter* laswriter;
   LASheader* lasheader;
-  double scales[3];
-  double offsets[3];
+  std::vector<AttributeHandler> core_accessors;
 };
 
 #endif

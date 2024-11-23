@@ -54,7 +54,7 @@ bool LASRdataframereader::set_parameters(const nlohmann::json& stage)
 
 bool LASRdataframereader::set_chunk(Chunk& chunk)
 {
-  const char* tmp = filter.c_str();
+  /*const char* tmp = filter.c_str();
   int n = strlen(tmp)+1;
   char* filtercpy = (char*)malloc(n); memcpy(filtercpy, tmp, n);
 
@@ -67,7 +67,7 @@ bool LASRdataframereader::set_chunk(Chunk& chunk)
     lasfilter.addClipCircle((chunk.xmin+chunk.xmax)/2, (chunk.ymin+chunk.ymax)/2,  (chunk.xmax-chunk.xmin)/2 + chunk.buffer + EPSILON);
   else
     lasfilter.addClipBox(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, F64_MIN, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON, F64_MAX);
-
+  */
   return true;
 }
 
@@ -177,11 +177,13 @@ bool LASRdataframereader::process(Header*& header)
   return true;
 }
 
-bool LASRdataframereader::process(LASpoint*& point)
+bool LASRdataframereader::process(Point*& point)
 {
+  return false;
+  /*
   if (point == nullptr)
   {
-    point = &laspoint;
+    //point = &laspoint;
   }
 
   if (current_point >= npoints)
@@ -253,7 +255,7 @@ bool LASRdataframereader::process(LASpoint*& point)
             case LAS::USHORT: { U16 u = U16_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::SHORT:  { I16 u = I16_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::LONG:   { I32 u = I32_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            }*/
+            }/
           }
           else if (type ==  REALSXP)
           {
@@ -273,7 +275,7 @@ bool LASRdataframereader::process(LASpoint*& point)
             case LAS::LONG:   { I32 u = I32_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::FLOAT:  { F32 u = (F32)val; laspoint.set_attribute(attr_index, (U8*)&u); break; }
             case LAS::DOUBLE: { F64 u = (F64)val; laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            }*/
+            }/
           }
 
           break;
@@ -283,12 +285,12 @@ bool LASRdataframereader::process(LASpoint*& point)
 
     current_point++;
 
-    if (!lasfilter.filter(&laspoint))
+    if (!pointfilter.filter(point))
       return true;
   }
 
   point = nullptr;
-  return true;
+  return true;*/
 }
 
 bool LASRdataframereader::process(LAS*& las)
@@ -296,7 +298,7 @@ bool LASRdataframereader::process(LAS*& las)
   if (las != nullptr) { delete las; las = nullptr; }
   //if (las == nullptr) las = new LAS(&lasheader);
 
-  LASpoint* p = nullptr;
+  Point* p = nullptr;
   while (process(p))
   {
     if (p == nullptr) break;

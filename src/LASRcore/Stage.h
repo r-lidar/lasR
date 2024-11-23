@@ -13,12 +13,6 @@
 #include <map>
 #include <list>
 
-// LASlib
-#include "laszip.hpp"
-#include "laspoint.hpp"
-#include "lasfilter.hpp"
-#include "lastransform.hpp"
-
 // lasR
 #include "LAS.h"
 #include "LAScatalog.h"
@@ -81,7 +75,7 @@ public:
   virtual ~Stage() = 0;
   virtual bool process() { return true; };
   virtual bool process(Header*& header) { return true; };
-  virtual bool process(LASpoint*& p) { return true; };
+  virtual bool process(Point*& p) { return true; };
   virtual bool process(LAS*& las) { return true; };
   virtual bool process(LAScatalog*& las) { return true; };
   virtual bool break_pipeline() { return false; };
@@ -117,7 +111,7 @@ public:
   //void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
-  void reset_filter() { lasfilter.reset(); };
+  void reset_filter() { pointfilter.reset(); };
 
   std::string get_uid() const { return uid; };
   const std::map<std::string, Stage*>& get_connection() { return connections; };
@@ -164,7 +158,6 @@ protected:
   std::string ofile;
   std::string uid;
   std::string filter;
-  LASfilter lasfilter;
   PointFilter pointfilter;
   Progress* progress;
   std::map<std::string, Stage*> connections;

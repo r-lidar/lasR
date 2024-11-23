@@ -52,7 +52,7 @@ bool LASRsvd::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
-  if (mode == PUREKNN) r = F64_MAX;
+  if (mode == PUREKNN) r = std::numeric_limits<double>::max();
 
   // Parse feature = "*"
   std::string all = "CEapslocein";

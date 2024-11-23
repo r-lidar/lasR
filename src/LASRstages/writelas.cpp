@@ -6,6 +6,21 @@ LASRlaswriter::LASRlaswriter()
 {
   laswriter = nullptr;
   lasheader = nullptr;
+  point = nullptr;
+
+  intensity = AttributeHandler("Intensity");
+  returnnumber = AttributeHandler("ReturnNumber");
+  numberofreturns = AttributeHandler("NumberOfReturns");
+  userdata = AttributeHandler("UserData");
+  psid = AttributeHandler("PointSourceID");
+  classification = AttributeHandler("Classification");
+  scanangle = AttributeHandler("ScanAngle");
+  gpstime = AttributeHandler("gpstime");
+  scannerchannel = AttributeHandler("ScannerChannel");
+  red = AttributeHandler("R");
+  green = AttributeHandler("G");
+  blue = AttributeHandler("B");
+  nir = AttributeHandler("NIR");
 }
 
 bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
@@ -24,6 +39,12 @@ LASRlaswriter::~LASRlaswriter()
     delete laswriter;
     laswriter = nullptr;
     // # nocov end
+  }
+
+  if (lasheader)
+  {
+    delete lasheader;
+    lasheader = nullptr;
   }
 }
 
@@ -55,9 +76,9 @@ bool LASRlaswriter::set_output_file(const std::string& file)
   return true;
 }
 
-bool LASRlaswriter::process(LASpoint*& p)
+bool LASRlaswriter::process(Point*& p)
 {
-  if (p->get_withheld_flag() != 0) return true;
+  if (p->get_deleted()) return true;
 
   // No writer initialized? Create a writer.
   if (!laswriter)
@@ -65,13 +86,6 @@ bool LASRlaswriter::process(LASpoint*& p)
     LASwriteOpener laswriteopener;
     laswriteopener.set_file_name(ofile.c_str());
     laswriter = laswriteopener.open(lasheader);
-
-    offsets[0] = p->quantizer->x_offset;
-    offsets[1] = p->quantizer->y_offset;
-    offsets[2] = p->quantizer->z_offset;
-    scales[0]  = p->quantizer->x_scale_factor;
-    scales[1]  = p->quantizer->y_scale_factor;
-    scales[2]  = p->quantizer->z_scale_factor;
 
     if (!laswriter)
     {
@@ -85,12 +99,12 @@ bool LASRlaswriter::process(LASpoint*& p)
   //  If the point in not in the buffer we can write it
   if (keep_buffer || !p->inside_buffer(xmin, ymin, xmax, ymax, circular))
   {
-    if (!lasfilter.filter(p))
+    if (!pointfilter.filter(p))
     {
       //print("Before %d %d %d \n", p->get_X(), p->get_Y(), p->get_Z());
 
       // If we write in a merged file the points may come from different file formats
-      if (merged)
+      /*if (merged)
       {
         if (p->quantizer->x_offset != offsets[0] || p->quantizer->x_scale_factor != scales[0])
         {
@@ -109,11 +123,25 @@ bool LASRlaswriter::process(LASpoint*& p)
           double coordinate = (p->get_z() - offsets[2])/scales[2];
           p->set_Z(I32_QUANTIZE(coordinate));
         }
-      }
+      }*/
+      point->set_x(p->get_x());
+      point->set_y(p->get_y());
+      point->set_z(p->get_z());
+      point->set_return_number(returnnumber(p));
+      point->set_number_of_returns(numberofreturns(p));
+      point->set_user_data(userdata(p));
+      point->set_point_source_ID(psid(p));
+      point->set_classification(classification(p));
+      point->set_scan_angle(scanangle(p));
+      point->set_gps_time(gpstime(p));
+      point->set_extended_scanner_channel(scannerchannel(p));
+      point->set_R(red(p));
+      point->set_G(green(p));
+      point->set_B(blue(p));
+      point->set_NIR(nir(p));
 
-      //print("After %d %d %d \n\n", p->get_X(), p->get_Y(), p->get_Z());
-      laswriter->write_point(p);
-      laswriter->update_inventory(p);
+      laswriter->write_point(point);
+      laswriter->update_inventory(point);
     }
   }
 
@@ -126,10 +154,10 @@ bool LASRlaswriter::process(LAS*& las)
   progress->set_prefix("Write LAS");
   progress->set_total(las->npoints);
 
-  LASpoint* p;
+  Point* p;
   while (las->read_point())
   {
-    p = &las->point;
+    p = &las->p;
     if (!process(p))
       return false; // # nocov
 
@@ -170,6 +198,9 @@ void LASRlaswriter::set_header(Header*& header)
   lasheader->min_y                = ymin;
   lasheader->max_x                = xmax;
   lasheader->max_y                = ymax;
+
+  point = new LASpoint;
+  point->init(lasheader, lasheader->point_data_format, lasheader->point_data_record_length, lasheader);
 }
 
 bool LASRlaswriter::set_chunk(Chunk& chunk)

@@ -184,7 +184,7 @@ bool LAS::seek(size_t pos)
 }
 
 // Thread safe and fast
-bool LAS::get_xyz(size_t pos, double* xyz) const
+/*bool LAS::get_xyz(size_t pos, double* xyz) const
 {
   if (pos >= npoints)
   {
@@ -197,7 +197,7 @@ bool LAS::get_xyz(size_t pos, double* xyz) const
   xyz[1] = get_y(buf);
   xyz[2] = get_z(buf);
   return true;
-}
+}*/
 
 bool LAS::read_point(bool include_withhelded)
 {
@@ -254,7 +254,7 @@ bool LAS::read_point(bool include_withhelded)
 
     if (shape)
     {
-      if (shape->contains(point.get_x(), point.get_y()))
+      if (shape->contains(p.get_x(), p.get_y()))
       {
         if (include_withhelded || !p.get_deleted()) return true;
       }
@@ -354,10 +354,13 @@ static int compare_buffers_nogps(const void *a, const void *b)
 
 bool LAS::sort()
 {
-  if (point.have_gps_time && point.is_extended_point_type())
+  const Attribute* gpstime = p.schema->find_attribute("gpstime");
+  bool have_gpstime = gpstime != nullptr;
+
+  return false;
+
+  if (have_gpstime)
     qsort((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers);
-  else if (point.have_gps_time)
-    qsort((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_nochannel);
   else
     qsort((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_nogps);
 
@@ -678,7 +681,7 @@ void LAS::reindex()
 {
   clean_index();
   index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, 2);
-  while (read_point()) index->insert(point.get_x(), point.get_y());
+  while (read_point()) index->insert(p.get_x(), p.get_y());
 }
 
 bool LAS::is_attribute_loadable(int index)
@@ -686,7 +689,7 @@ bool LAS::is_attribute_loadable(int index)
   if (index < 0) return false;
   //if (newheader->number_attributes-1 < index) return false;
 
-  int data_type = point.attributer->attributes[index].data_type;
+  AttributeType data_type = p.schema->attributes[index].type;
 
   if (data_type == AttributeType::INT64 || data_type == AttributeType::UINT64)
   {
@@ -850,7 +853,7 @@ U64 LAS::get_true_number_of_points() const
   return newheader->number_of_point_records;
 }
 
-double LAS::get_x(int i) const { unsigned int X = *(buffer + i * newheader->schema.total_point_size + 0); return point.quantizer->get_x(X); };
+/*double LAS::get_x(int i) const { unsigned int X = *(buffer + i * newheader->schema.total_point_size + 0); return point.quantizer->get_x(X); };
 double LAS::get_y(int i) const { unsigned int Y = *(buffer + i * newheader->schema.total_point_size + 4); return point.quantizer->get_y(Y); };
 double LAS::get_z(int i) const { unsigned int Z = *(buffer + i * newheader->schema.total_point_size + 8); return point.quantizer->get_z(Z); };
 
@@ -860,3 +863,4 @@ double LAS::get_z(const unsigned char* buf) const { unsigned int Z = *((unsigned
 double LAS::get_gpstime(const unsigned char* buf) const { if (point.is_extended_point_type()) return *((const double*)&buf[22]); else return *((const double*)&buf[20]); };
 unsigned char LAS::get_scanner_channel(const unsigned char* buf) const { if (point.is_extended_point_type()) return (buf[15] >> 4) & 0x03; else return 0; };
 unsigned char LAS::get_return_number(const unsigned char* buf) const { return buf[14] & 0x0F; };
+*/

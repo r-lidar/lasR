@@ -38,11 +38,11 @@ bool LASRrasterize::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRrasterize::process(LASpoint*& p)
+bool LASRrasterize::process(Point*& p)
 {
   if (!metric_engine.is_streamable())  return true;
-  if (p->get_withheld_flag() != 0) return true;
-  if (lasfilter.filter(p)) return true;
+  if (p->get_deleted() != 0) return true;
+  if (pointfilter.filter(p)) return true;
 
   double x = p->get_x();
   double y = p->get_y();
@@ -73,10 +73,10 @@ bool LASRrasterize::process(LAS*& las)
   // but we are in a non streamble pipeline. We can call streamable code
   if (streamable)
   {
-    LASpoint* p;
+    Point* p;
     while (las->read_point())
     {
-      p = &las->point;
+      p = &las->p;
       if (!process(p))
         return false; // # nocov
     }

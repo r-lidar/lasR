@@ -44,6 +44,9 @@ bool LASRcallback::set_parameters(const nlohmann::json& stage)
 
 bool LASRcallback::process(LAS*& las)
 {
+  return false;
+
+  /*
   // LAS format
   bool extended = (las->header->version_minor >= 4) && (las->header->point_data_format >= 6);
   bool has_gps = las->point.have_gps_time;
@@ -499,7 +502,7 @@ bool LASRcallback::process(LAS*& las)
 
   las->update_header();
 
-  return error == 0;
+  return error == 0;*/
 }
 
 void LASRcallback::merge(const Stage* other)

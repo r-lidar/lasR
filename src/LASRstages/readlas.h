@@ -13,7 +13,7 @@ public:
   LASRlasreader();
   ~LASRlasreader();
   bool process(Header*& header) override;
-  bool process(LASpoint*& point) override;
+  bool process(Point*& point) override;
   bool process(LAS*& las) override;
   bool set_chunk(Chunk& chunk) override;
   bool need_points() const override { return false; };
@@ -25,7 +25,22 @@ public:
 
 private:
   Header* header; // not ownwed
+
+  AttributeHandler intensity;
+  AttributeHandler returnnumber;
+  AttributeHandler numberofreturns;
+  AttributeHandler userdata;
+  AttributeHandler psid;
+  AttributeHandler classification;
+  AttributeHandler scanangle;
+  AttributeHandler gpstime;
+  AttributeHandler scannerchannel;
+  AttributeHandler red;
+  AttributeHandler green;
+  AttributeHandler blue;
+  AttributeHandler nir;
   std::vector<AttributeHandler> extrabytes;
+
   LASreadOpener* lasreadopener;
   LASreader* lasreader;
   LASheader* lasheader;

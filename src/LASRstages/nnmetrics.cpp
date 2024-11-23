@@ -22,7 +22,7 @@ bool LASRnnmetrics::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
-  if (mode == PUREKNN) this->r = F64_MAX;
+  if (mode == PUREKNN) this->r = std::numeric_limits<double>::max();
 
   if (!metrics.parse(methods)) return false;
 

@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 
+#include "laszip.hpp"
 #include "laspoint.hpp"
 
 #include "PointSchema.h"
