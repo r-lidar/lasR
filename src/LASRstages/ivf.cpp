@@ -84,7 +84,7 @@ bool LASRivf::process(LAS*& las)
     if (progress->interrupted()) break;
   }
 
-  AttributeWriter set_classification("c");
+  AttributeHandler set_and_get_classification("Classification");
 
   // Loop again through each point.
   // Check if the number of points in its neighbourhood is above the threshold
@@ -109,7 +109,7 @@ bool LASRivf::process(LAS*& las)
 
     if (count < n)
     {
-      set_classification(&las->p, classification);
+      set_and_get_classification(&las->p, classification);
     }
 
     progress->update(las->current_point + las->npoints);

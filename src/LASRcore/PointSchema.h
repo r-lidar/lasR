@@ -238,6 +238,7 @@ class AttributeHandler
 {
 public:
   // Constructors
+  AttributeHandler();
   AttributeHandler(const std::string& name);
   AttributeHandler(const std::string& name, AttributeSchema* schema);
   AttributeHandler(const AttributeHandler& other);
@@ -248,8 +249,9 @@ public:
   // Overloaded operators for reading and writing
   double operator()(const Point* point) const;
   void operator()(Point* point, double value);
+  bool exist() { return attribute != nullptr; }
 
-public:
+protected:
   std::string name;
   const Attribute* attribute;
   bool init;
@@ -258,41 +260,6 @@ public:
 
   void initialize(const Point* point);
 };
-
-class AttributeReader
-{
-public:
-  AttributeReader() : accessor(nullptr), attribute(nullptr), init(false) {}
-  AttributeReader(const std::string& name);
-  AttributeReader(const std::string& name, const AttributeSchema* schema);
-  bool exist() { return attribute != nullptr; };
-  double operator()(const Point* point);
-
-  std::string name;
-  const Attribute* attribute;                   // Cached attribute schema
-
-protected:
-  std::function<double(const Point*)> accessor; // Cached accessor function
-  bool init;
-};
-
-class AttributeWriter
-{
-public:
-  AttributeWriter() : accessor(nullptr), attribute(nullptr), init(false) {}
-  AttributeWriter(const std::string& name);
-  AttributeWriter(const std::string& name, AttributeSchema* schema);
-  bool exist() { return attribute != nullptr; };
-  void operator()(Point* point, double value);
-
-  std::string name;
-  const Attribute* attribute;  // Cached attribute function
-
-protected:
-  std::function<void(Point*, double)> accessor;  // Cached accessor function for setting value
-  bool init;
-};
-
 
 class Header
 {

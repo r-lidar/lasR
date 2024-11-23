@@ -62,7 +62,7 @@ bool LASRtriangulate::process(LAS*& las)
 
 bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster)
 {
-  AttributeReader accessor(use_attribute);
+  AttributeHandler accessor(use_attribute);
 
   int n = (raster == nullptr) ? las->npoints : raster->get_ncells();
   res.resize(n);
@@ -240,7 +240,7 @@ bool LASRtriangulate::write()
 {
   if (ofile.empty()) return true;
 
-  AttributeReader accessor(use_attribute);
+  AttributeHandler accessor(use_attribute);
 
   progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Write triangulation");

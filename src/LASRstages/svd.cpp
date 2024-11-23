@@ -84,7 +84,7 @@ bool LASRsvd::set_parameters(const nlohmann::json& stage)
 bool LASRsvd::process(LAS*& las)
 {
   std::vector<Attribute> attributes;
-  std::vector<AttributeWriter> writers;
+  std::vector<AttributeHandler> writers;
 
   if (ft_C)
   {
@@ -129,32 +129,32 @@ bool LASRsvd::process(LAS*& las)
   progress->set_ncpu(ncpu);
   progress->show();
 
-  AttributeWriter set_coeff00("coeff00");
-  AttributeWriter set_coeff01("coeff01");
-  AttributeWriter set_coeff02("coeff02");
-  AttributeWriter set_coeff10("coeff10");
-  AttributeWriter set_coeff11("coeff11");
-  AttributeWriter set_coeff12("coeff12");
-  AttributeWriter set_coeff20("coeff20");
-  AttributeWriter set_coeff21("coeff21");
-  AttributeWriter set_coeff22("coeff22");
+  AttributeHandler set_coeff00("coeff00");
+  AttributeHandler set_coeff01("coeff01");
+  AttributeHandler set_coeff02("coeff02");
+  AttributeHandler set_coeff10("coeff10");
+  AttributeHandler set_coeff11("coeff11");
+  AttributeHandler set_coeff12("coeff12");
+  AttributeHandler set_coeff20("coeff20");
+  AttributeHandler set_coeff21("coeff21");
+  AttributeHandler set_coeff22("coeff22");
 
-  AttributeWriter set_lambda1("lambda1");
-  AttributeWriter set_lambda2("lambda2");
-  AttributeWriter set_lambda3("lambda3");
+  AttributeHandler set_lambda1("lambda1");
+  AttributeHandler set_lambda2("lambda2");
+  AttributeHandler set_lambda3("lambda3");
 
-  AttributeWriter set_anisotropy("anisotropy");
-  AttributeWriter set_planarity("planarity");
-  AttributeWriter set_sphericity("sphericity");
-  AttributeWriter set_linearity("linearity");
-  AttributeWriter set_omnivariance("omnivariance");
-  AttributeWriter set_curvature("curvature");
-  AttributeWriter set_eigensum("eigensum");
-  AttributeWriter set_angle("angle");
+  AttributeHandler set_anisotropy("anisotropy");
+  AttributeHandler set_planarity("planarity");
+  AttributeHandler set_sphericity("sphericity");
+  AttributeHandler set_linearity("linearity");
+  AttributeHandler set_omnivariance("omnivariance");
+  AttributeHandler set_curvature("curvature");
+  AttributeHandler set_eigensum("eigensum");
+  AttributeHandler set_angle("angle");
 
-  AttributeWriter set_normalX("normalX");
-  AttributeWriter set_normalY("normalY");
-  AttributeWriter set_normalZ("normalZ");
+  AttributeHandler set_normalX("normalX");
+  AttributeHandler set_normalY("normalY");
+  AttributeHandler set_normalZ("normalZ");
 
 
   // The next for loop is at the level a nested parallel region. Printing the progress bar

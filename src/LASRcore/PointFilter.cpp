@@ -7,7 +7,7 @@ class ConditionKeepBelow : public Condition
 {
 public:
   ConditionKeepBelow(const std::string& attribute_name, double threshold) : Condition(attribute_name) { this->threshold = threshold; }
-  inline bool filter(const Point* point) { return accessor(point) >= threshold; }
+  inline bool filter(const Point* point) { return readAccessor(point) >= threshold; }
 private:
   double threshold;
 };
@@ -16,7 +16,7 @@ class ConditionKeepBelowEqual : public Condition
 {
 public:
   ConditionKeepBelowEqual(const std::string& attribute_name, double threshold) : Condition(attribute_name) { this->threshold = threshold; }
-  inline bool filter(const Point* point) { return accessor(point) > threshold; }
+  inline bool filter(const Point* point) { return readAccessor(point) > threshold; }
 private:
   double threshold;
 };
@@ -25,7 +25,7 @@ class ConditionKeepAbove : public Condition
 {
 public:
   ConditionKeepAbove(const std::string& attribute_name, double threshold) : Condition(attribute_name) { this->threshold = threshold; }
-  inline bool filter(const Point* point) { return accessor(point) <= threshold; }
+  inline bool filter(const Point* point) { return readAccessor(point) <= threshold; }
 private:
   double threshold;
 };
@@ -34,7 +34,7 @@ class ConditionKeepAboveEqual : public Condition
 {
 public:
   ConditionKeepAboveEqual(const std::string& attribute_name, double threshold) : Condition(attribute_name) { this->threshold = threshold; }
-  inline bool filter(const Point* point) { return accessor(point) < threshold; }
+  inline bool filter(const Point* point) { return readAccessor(point) < threshold; }
 private:
   double threshold;
 };
@@ -55,7 +55,7 @@ public:
       this->above = above;
     }
   }
-  inline bool filter(const Point* point) { double v = accessor(point); return (v < below) || (v >= above);  }
+  inline bool filter(const Point* point) { double v = readAccessor(point); return (v < below) || (v >= above);  }
 private:
   double below;
   double above;
@@ -65,7 +65,7 @@ class ConditionKeepEqual : public Condition
 {
 public:
   ConditionKeepEqual(const std::string& attribute_name, double value) : Condition(attribute_name) { this->value = value; }
-  inline bool filter(const Point* point) { return accessor(point) != value; }
+  inline bool filter(const Point* point) { return readAccessor(point) != value; }
 private:
   double value;
 };
@@ -74,7 +74,7 @@ class ConditionKeepDifferent : public Condition
 {
 public:
   ConditionKeepDifferent(const std::string& attribute_name, double value) : Condition(attribute_name) { this->value = value; }
-  inline bool filter(const Point* point) { return accessor(point) == value; }
+  inline bool filter(const Point* point) { return readAccessor(point) == value; }
 private:
   double value;
 };
@@ -89,7 +89,7 @@ public:
   }
   inline bool filter(const Point* point)
   {
-    double v = accessor(point);
+    double v = readAccessor(point);
     for (int i = 0 ; i < size ; i++)
     {
       if (values[i] == v)
@@ -112,7 +112,7 @@ public:
   }
   inline bool filter(const Point* point)
   {
-    double v = accessor(point);
+    double v = readAccessor(point);
     for (int i = 0 ; i < size ; i++)
     {
       if (values[i] == v)

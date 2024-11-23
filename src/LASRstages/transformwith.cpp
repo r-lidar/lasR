@@ -113,28 +113,26 @@ bool LASRtransformwith::process(LAS*& las)
     return false; // # nocov
   }
 
-  AttributeReader get_value("z");
-  AttributeWriter set_value("z");
+  AttributeHandler set_and_get_value("Z");
 
 
   if (!attribute.empty())
   {
-    get_value = AttributeReader(attribute);
-    set_value = AttributeWriter(attribute);
+    set_and_get_value = AttributeHandler(attribute, &las->newheader->schema);
 
-    if (!get_value.exist())
+    if (!set_and_get_value.exist())
     {
       last_error = "invalid attribute";
       return false;
     }
 
-    AttributeType data_type = get_value.attribute->type;
+    /*AttributeType data_type = set_and_get_value.attribute->type;
 
     if (data_type != AttributeType::INT32 && data_type != AttributeType::DOUBLE)
     {
       last_error = "the attribute attribute must be of type 'int' or 'double'";
       return false;
-    }
+    }*/
   }
 
   // With a triangulation or a raster we are only updating Z
@@ -179,7 +177,7 @@ bool LASRtransformwith::process(LAS*& las)
       default: last_error = "internal error, invalid operator"; return false; break; // # nocov
       }
 
-      set_value(&las->p, z);
+      set_and_get_value(&las->p, z);
     }
 
     las->update_header();

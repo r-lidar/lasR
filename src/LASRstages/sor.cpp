@@ -46,7 +46,7 @@ bool LASRsor::process(LAS*& las)
   double dmean = m0;
   double dstd = std::sqrt(m2/(n-1));
 
-  AttributeWriter set_classification("c");
+  AttributeHandler set_classification("Classification");
 
   while (las->read_point())
   {

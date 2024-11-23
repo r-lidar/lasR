@@ -6,11 +6,11 @@
 #include <string>
 #include <vector>
 
-class Condition : public AttributeReader
+class Condition : public AttributeHandler
 {
 public:
-  Condition() : AttributeReader() {};
-  Condition(const std::string& attribute_name) : AttributeReader(attribute_name) {};
+  Condition() : AttributeHandler() {};
+  Condition(const std::string& attribute_name) : AttributeHandler(attribute_name) {};
   virtual bool filter(const Point* point) = 0;
   virtual void reset(){};
   virtual ~Condition(){};

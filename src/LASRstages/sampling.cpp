@@ -456,7 +456,7 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
     return false;
   }
 
-  AttributeReader accessor(use_attribute);
+  AttributeHandler accessor(use_attribute);
 
   while (las->read_point())
   {

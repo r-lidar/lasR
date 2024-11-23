@@ -145,7 +145,7 @@ bool LASRlasreader::process(Header*& header)
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
   {
     std::string name(lasreader->header.attributes[i].name);
-    extrabytes.push_back(AttributeWriter(name, &header->schema));
+    extrabytes.push_back(AttributeHandler(name));
   }
 
   this->header = header;
@@ -190,19 +190,19 @@ bool LASRlasreader::process(LAS*& las)
   progress->set_prefix("read_las");
 
   Point p(&header->schema);
-  AttributeWriter set_intensity("Intensity", &header->schema);
-  AttributeWriter set_return("ReturnNumber", &header->schema);
-  AttributeWriter set_number("NumberOfReturns", &header->schema);
-  AttributeWriter set_classification("Classification", &header->schema);
-  AttributeWriter set_userdata("UserData", &header->schema);
-  AttributeWriter set_psid("PointSourceID", &header->schema);
-  AttributeWriter set_angle("ScanAngle", &header->schema);
-  AttributeWriter set_time("gpstime", &header->schema);
-  AttributeWriter set_channel("ScannerChannel", &header->schema);
-  AttributeWriter set_red("R", &header->schema);
-  AttributeWriter set_green("G", &header->schema);
-  AttributeWriter set_blue("B", &header->schema);
-  AttributeWriter set_nir("NIR", &header->schema);
+  AttributeHandler set_intensity("Intensity");
+  AttributeHandler set_return("ReturnNumber");
+  AttributeHandler set_number("NumberOfReturns");
+  AttributeHandler set_classification("Classification");
+  AttributeHandler set_userdata("UserData");
+  AttributeHandler set_psid("PointSourceID");
+  AttributeHandler set_angle("ScanAngle");
+  AttributeHandler set_time("gpstime");
+  AttributeHandler set_channel("ScannerChannel");
+  AttributeHandler set_red("R");
+  AttributeHandler set_green("G");
+  AttributeHandler set_blue("B");
+  AttributeHandler set_nir("NIR");
 
   while (lasreader->read_point())
   {

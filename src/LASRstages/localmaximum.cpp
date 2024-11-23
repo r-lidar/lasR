@@ -66,11 +66,11 @@ bool LASRlocalmaximum::process(LAS*& las)
     return false; // # nocov
   }
 
-  AttributeReader accessor(use_attribute);
-  AttributeReader get_intensity("i");
-  AttributeReader get_angle("a");
-  AttributeReader get_return("r");
-  AttributeReader get_number("i");
+  AttributeHandler accessor(use_attribute);
+  AttributeHandler get_intensity("Intensity");
+  AttributeHandler get_angle("Angle");
+  AttributeHandler get_return("ReturnNumber");
+  AttributeHandler get_number("NumberOfReturns");
 
   progress->reset();
   progress->set_total(las->npoints);
