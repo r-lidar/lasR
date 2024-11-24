@@ -49,6 +49,7 @@ std::string LASlibFilterParserExtension::parse(const std::string& condition) con
 
   // Extract left-hand side (LHS), operator, and right-hand side (RHS)
   std::string lhs = trim(condition.substr(0, opPos));
+  lhs = map_attribute(lhs);
   std::string rhs = trim(condition.substr(opPos + op.length()));
 
   // Process based on the operator

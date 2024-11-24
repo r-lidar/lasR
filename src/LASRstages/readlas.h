@@ -40,6 +40,7 @@ private:
   AttributeHandler blue;
   AttributeHandler nir;
   std::vector<AttributeHandler> extrabytes;
+  void reset_accessor();
 
   LASreadOpener* lasreadopener;
   LASreader* lasreader;

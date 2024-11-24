@@ -7,7 +7,7 @@ class ConditionKeepBelow : public Condition
 {
 public:
   ConditionKeepBelow(const std::string& attribute_name, double threshold) : Condition(attribute_name) { this->threshold = threshold; }
-  inline bool filter(const Point* point) { return readAccessor(point) >= threshold; }
+  inline bool filter(const Point* point) { return read(point) >= threshold; }
 private:
   double threshold;
 };
@@ -16,7 +16,7 @@ class ConditionKeepBelowEqual : public Condition
 {
 public:
   ConditionKeepBelowEqual(const std::string& attribute_name, double threshold) : Condition(attribute_name) { this->threshold = threshold; }
-  inline bool filter(const Point* point) { return readAccessor(point) > threshold; }
+  inline bool filter(const Point* point) { return read(point) > threshold; }
 private:
   double threshold;
 };
@@ -25,7 +25,7 @@ class ConditionKeepAbove : public Condition
 {
 public:
   ConditionKeepAbove(const std::string& attribute_name, double threshold) : Condition(attribute_name) { this->threshold = threshold; }
-  inline bool filter(const Point* point) { return readAccessor(point) <= threshold; }
+  inline bool filter(const Point* point) { return read(point) <= threshold; }
 private:
   double threshold;
 };
@@ -34,7 +34,7 @@ class ConditionKeepAboveEqual : public Condition
 {
 public:
   ConditionKeepAboveEqual(const std::string& attribute_name, double threshold) : Condition(attribute_name) { this->threshold = threshold; }
-  inline bool filter(const Point* point) { return readAccessor(point) < threshold; }
+  inline bool filter(const Point* point) { return read(point) < threshold; }
 private:
   double threshold;
 };
@@ -55,7 +55,7 @@ public:
       this->above = above;
     }
   }
-  inline bool filter(const Point* point) { double v = readAccessor(point); return (v < below) || (v >= above);  }
+  inline bool filter(const Point* point) { double v = read(point); return (v < below) || (v >= above);  }
 private:
   double below;
   double above;
@@ -65,7 +65,7 @@ class ConditionKeepEqual : public Condition
 {
 public:
   ConditionKeepEqual(const std::string& attribute_name, double value) : Condition(attribute_name) { this->value = value; }
-  inline bool filter(const Point* point) { return readAccessor(point) != value; }
+  inline bool filter(const Point* point) { return read(point) != value; }
 private:
   double value;
 };
@@ -74,7 +74,7 @@ class ConditionKeepDifferent : public Condition
 {
 public:
   ConditionKeepDifferent(const std::string& attribute_name, double value) : Condition(attribute_name) { this->value = value; }
-  inline bool filter(const Point* point) { return readAccessor(point) == value; }
+  inline bool filter(const Point* point) { return read(point) == value; }
 private:
   double value;
 };
@@ -84,12 +84,12 @@ class ConditionKeepIn : public Condition
 public:
   ConditionKeepIn(const std::string& attribute_name, double* values, int size) : Condition(attribute_name)
   {
-    memcpy(this->values, values, size*sizeof(double));
+    memcpy(this->values, values, 64 *sizeof(double));
     this->size = size;
   }
   inline bool filter(const Point* point)
   {
-    double v = readAccessor(point);
+    double v = read(point);
     for (int i = 0 ; i < size ; i++)
     {
       if (values[i] == v)
@@ -107,12 +107,12 @@ class ConditionKeepOut : public Condition
 public:
   ConditionKeepOut(const std::string& attribute_name, double* values, int size) : Condition(attribute_name)
   {
-    memcpy(this->values, values, size*sizeof(double));
+    memcpy(this->values, values, 64 *sizeof(double));
     this->size = size;
   }
   inline bool filter(const Point* point)
   {
-    double v = readAccessor(point);
+    double v = read(point);
     for (int i = 0 ; i < size ; i++)
     {
       if (values[i] == v)
@@ -125,32 +125,25 @@ private:
   int size;
 };
 
-bool PointFilter::filter(const Point* point)
-{
-  for (const auto condition : conditions)
-  {
+bool PointFilter::filter(const Point* point) {
+  for (const auto condition : conditions) {
     if (condition->filter(point))
       return TRUE; // point was filtered
   }
   return FALSE; // point survived
 }
 
-PointFilter::~PointFilter()
-{
+PointFilter::~PointFilter() {
   for (auto condition : conditions) delete condition;
 }
 
-void PointFilter::add_condition(Condition* condition)
-{
-  if (condition != nullptr)
-    conditions.push_back(condition);
+void PointFilter::add_condition(Condition* condition) {
+  conditions.push_back(condition);
 }
 
-void PointFilter::add_condition(const std::string& x)
-{
+void PointFilter::add_condition(const std::string& x) {
   FilterParser fp;
-  auto condition = fp.parse(x);
-  add_condition(condition);
+  conditions.push_back(fp.parse(x));
 }
 
 Condition* FilterParser::parse(const std::string& condition) const

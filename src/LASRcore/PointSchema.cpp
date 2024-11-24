@@ -59,97 +59,92 @@ const Attribute* AttributeSchema::find_attribute(const std::string& name) const
   return nullptr;
 }
 
+int AttributeSchema::get_attribute_index(const std::string& name) const
+{
+  int i = 0;
+  for (auto& attribute : attributes)
+  {
+    if (attribute.name == name)
+      return i;
+
+    i++;
+  }
+
+  return -1;
+}
+
 void AttributeSchema::dump(bool verbose) const
 {
   for (const auto& attr : attributes) attr.dump(verbose);
 }
 
-AttributeHandler::AttributeHandler()
+AttributeHandler::AttributeHandler() : name(""), attribute(nullptr), init(false) {}
+AttributeHandler::AttributeHandler(const std::string& name) : name(name), attribute(nullptr), init(false) {}
+AttributeHandler::AttributeHandler(const std::string& name, AttributeSchema* schema) : name(name), attribute(schema->find_attribute(name)), init(true)
 {
-  attribute = nullptr;
-  init = false;
-  readAccessor = nullptr;
-  writeAccessor = nullptr;
-}
-
-AttributeHandler::AttributeHandler(const std::string& name) : name(name), attribute(nullptr), init(false)
-{
-  readAccessor = [this](const Point* point) -> double
-  {
-    if (!init) this->initialize(point);
-    if (!attribute) return 0.0;
-
-    unsigned char* pointer = point->data + attribute->offset;
-    double cast_value = 0;
-    switch (attribute->type) {
-    case 0: cast_value = static_cast<double>(*reinterpret_cast<uint8_t*>(pointer)); break;
-    case 1: cast_value = static_cast<double>(*reinterpret_cast<int8_t*>(pointer)); break;
-    case 2: cast_value = static_cast<double>(*reinterpret_cast<uint16_t*>(pointer)); break;
-    case 3: cast_value = static_cast<double>(*reinterpret_cast<int16_t*>(pointer)); break;
-    case 4: cast_value = static_cast<double>(*reinterpret_cast<uint32_t*>(pointer)); break;
-    case 5: cast_value = static_cast<double>(*reinterpret_cast<int32_t*>(pointer)); break;
-    case 6: cast_value = static_cast<double>(*reinterpret_cast<uint64_t*>(pointer)); break;
-    case 7: cast_value = static_cast<double>(*reinterpret_cast<int64_t*>(pointer)); break;
-    case 8: cast_value = static_cast<double>(*reinterpret_cast<float*>(pointer)); break;
-    case 9: cast_value = static_cast<double>(*reinterpret_cast<double*>(pointer)); break;
-    default: return 0.0;
-    }
-    return attribute->value_offset + attribute->scale_factor * cast_value;
-  };
-
-  writeAccessor = [this](Point* point, double value)
-  {
-    if (!init) this->initialize(point);
-    if (!attribute) return;
-
-    unsigned char* pointer = point->data + attribute->offset;
-    double scaled_value = (value - attribute->value_offset) / attribute->scale_factor;
-
-    switch (attribute->type) {
-    case 0: *reinterpret_cast<uint8_t*>(pointer) = static_cast<uint8_t>(scaled_value); break;
-    case 1: *reinterpret_cast<int8_t*>(pointer) = static_cast<int8_t>(scaled_value); break;
-    case 2: *reinterpret_cast<uint16_t*>(pointer) = static_cast<uint16_t>(scaled_value); break;
-    case 3: *reinterpret_cast<int16_t*>(pointer) = static_cast<int16_t>(scaled_value); break;
-    case 4: *reinterpret_cast<uint32_t*>(pointer) = static_cast<uint32_t>(scaled_value); break;
-    case 5: *reinterpret_cast<int32_t*>(pointer) = static_cast<int32_t>(scaled_value); break;
-    case 6: *reinterpret_cast<uint64_t*>(pointer) = static_cast<uint64_t>(scaled_value); break;
-    case 7: *reinterpret_cast<int64_t*>(pointer) = static_cast<int64_t>(scaled_value); break;
-    case 8: *reinterpret_cast<float*>(pointer) = static_cast<float>(scaled_value); break;
-    case 9: *reinterpret_cast<double*>(pointer) = scaled_value; break;
-    default: return;
-    }
-  };
-}
-
-AttributeHandler::AttributeHandler(const std::string& name, AttributeSchema* schema)
-{
-  *this = AttributeHandler(name);
-  attribute = schema->find_attribute(name);
   if (!attribute) throw std::runtime_error("Attribute not found in schema");
-  init = true;
 }
 
-AttributeHandler::AttributeHandler(const AttributeHandler& other) : AttributeHandler(other.name)
-{
-  attribute = other.attribute;
-  init = other.init;
-}
-
-double AttributeHandler::operator()(const Point* point) const
-{
-  return readAccessor(point);
-}
-
-void AttributeHandler::operator()(Point* point, double value)
-{
-  writeAccessor(point, value);
-}
-
-void AttributeHandler::initialize(const Point* point)
+double AttributeHandler::read(const Point* point)
 {
   if (!init)
   {
     attribute = point->schema->find_attribute(name);
     init = true;
   }
+  if (!attribute) return 0.0;
+
+  unsigned char* pointer = point->data + attribute->offset;
+  double cast_value = 0;
+  switch (attribute->type) {
+  case 0: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
+  case 1: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
+  case 2: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
+  case 3: cast_value = static_cast<double>(*reinterpret_cast<const int16_t*>(pointer)); break;
+  case 4: cast_value = static_cast<double>(*reinterpret_cast<const uint32_t*>(pointer)); break;
+  case 5: cast_value = static_cast<double>(*reinterpret_cast<const int32_t*>(pointer)); break;
+  case 6: cast_value = static_cast<double>(*reinterpret_cast<const uint64_t*>(pointer)); break;
+  case 7: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
+  case 8: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
+  case 9: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
+  default: return 0.0;
+  }
+  return attribute->value_offset + attribute->scale_factor * cast_value;
+}
+
+void AttributeHandler::write(Point* point, double value)
+{
+  if (!init)
+  {
+    attribute = point->schema->find_attribute(name);
+    init = true;
+  }
+  if (!attribute) return;
+
+  unsigned char* pointer = point->data + attribute->offset;
+  double scaled_value = (value - attribute->value_offset) / attribute->scale_factor;
+
+  switch (attribute->type) {
+  case 0: *reinterpret_cast<uint8_t*>(pointer) = static_cast<uint8_t>(scaled_value); break;
+  case 1: *reinterpret_cast<int8_t*>(pointer) = static_cast<int8_t>(scaled_value); break;
+  case 2: *reinterpret_cast<uint16_t*>(pointer) = static_cast<uint16_t>(scaled_value); break;
+  case 3: *reinterpret_cast<int16_t*>(pointer) = static_cast<int16_t>(scaled_value); break;
+  case 4: *reinterpret_cast<uint32_t*>(pointer) = static_cast<uint32_t>(scaled_value); break;
+  case 5: *reinterpret_cast<int32_t*>(pointer) = static_cast<int32_t>(scaled_value); break;
+  case 6: *reinterpret_cast<uint64_t*>(pointer) = static_cast<uint64_t>(scaled_value); break;
+  case 7: *reinterpret_cast<int64_t*>(pointer) = static_cast<int64_t>(scaled_value); break;
+  case 8: *reinterpret_cast<float*>(pointer) = static_cast<float>(scaled_value); break;
+  case 9: *reinterpret_cast<double*>(pointer) = scaled_value; break;
+  default: return;
+  }
+}
+
+double AttributeHandler::operator()(const Point* point)
+{
+  return read(point);
+}
+
+void AttributeHandler::operator()(Point* point, double value)
+{
+  write(point, value);
 }

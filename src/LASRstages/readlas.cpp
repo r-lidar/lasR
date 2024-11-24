@@ -9,20 +9,7 @@ LASRlasreader::LASRlasreader()
   lasreadopener = nullptr;
   lasreader = nullptr;
   lasheader = nullptr;
-
-  intensity = AttributeHandler("Intensity");
-  returnnumber = AttributeHandler("ReturnNumber");
-  numberofreturns = AttributeHandler("NumberOfReturns");
-  userdata = AttributeHandler("UserData");
-  classification = AttributeHandler("Classification");
-  psid = AttributeHandler("PointSourceID");
-  scanangle = AttributeHandler("ScanAngle");
-  gpstime = AttributeHandler("gpstime");
-  scannerchannel = AttributeHandler("ScannerChannel");
-  red = AttributeHandler("R");
-  green = AttributeHandler("G");
-  blue = AttributeHandler("B");
-  nir = AttributeHandler("NIR");
+  reset_accessor();
 }
 
 bool LASRlasreader::set_chunk(Chunk& chunk)
@@ -57,7 +44,7 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   lasreadopener->parse_str(filtercpy);
   lasreadopener->set_copc_stream_ordered_by_chunk();
 
-  //free(filtercpy);
+  free(filtercpy);
 
   // In theory if buffer = 0 we should not have neighbor files on a properly tiled dataset. If the files
   // overlap this could arise but the neighbor file won't be read because buffer = 0 does allows to instantiate
@@ -104,11 +91,15 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
     lasheader->vlr_lasoriginal->max_y = chunk.ymax;
   }
 
+  reset_accessor();
+
   return true;
 }
 
 bool LASRlasreader::process(Header*& header)
 {
+  if (header != nullptr) return true;
+
   header = new Header;
   header->min_x = lasreader->header.min_x;
   header->max_x = lasreader->header.max_x;
@@ -162,6 +153,7 @@ bool LASRlasreader::process(Header*& header)
     header->schema.add_attribute(name, type, scale, offset, description);
   }
 
+  reset_accessor();
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
   {
     std::string name(lasreader->header.attributes[i].name);
@@ -182,6 +174,7 @@ bool LASRlasreader::process(Point*& point)
 
   if (lasreader->read_point())
   {
+    point->zero();
     point->set_X(lasreader->point.get_X());
     point->set_Y(lasreader->point.get_Y());
     point->set_Z(lasreader->point.get_Z());
@@ -202,7 +195,13 @@ bool LASRlasreader::process(Point*& point)
       extrabytes[i](point, lasreader->point.get_attribute_as_float(i));
   }
   else
+  {
+    delete point;
     point = nullptr;
+
+    delete header;
+    header = nullptr;
+  }
 
   return true;
 }
@@ -292,4 +291,22 @@ LASRlasreader::~LASRlasreader()
     delete lasreader;
     lasreader = nullptr;
   }
+}
+
+void LASRlasreader::reset_accessor()
+{
+  intensity = AttributeHandler("Intensity");
+  returnnumber = AttributeHandler("ReturnNumber");
+  numberofreturns = AttributeHandler("NumberOfReturns");
+  userdata = AttributeHandler("UserData");
+  classification = AttributeHandler("Classification");
+  psid = AttributeHandler("PointSourceID");
+  scanangle = AttributeHandler("ScanAngle");
+  gpstime = AttributeHandler("gpstime");
+  scannerchannel = AttributeHandler("ScannerChannel");
+  red = AttributeHandler("R");
+  green = AttributeHandler("G");
+  blue = AttributeHandler("B");
+  nir = AttributeHandler("NIR");
+  extrabytes.clear();
 }

@@ -80,7 +80,9 @@ struct AttributeSchema
   std::vector<Attribute> attributes;
   size_t total_point_size;
 
-  const Attribute* find_attribute(const std::string&) const;
+  const Attribute* find_attribute(const std::string& s) const;
+  bool has_attribute(const std::string& s) const { return find_attribute(s) != nullptr; };
+  int get_attribute_index(const std::string& s) const;
   void add_attribute(const Attribute& attribute);
   void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
   void dump(bool verbose = false) const;
@@ -93,7 +95,7 @@ struct Point
   const AttributeSchema* schema;       // Reference to the attribute schema
 
   Point() : data(nullptr), schema(nullptr), own_data(false) {}
-  Point(AttributeSchema* schema) : data(new unsigned char[schema->total_point_size]), schema(schema), own_data(true) {  memset(data, 0, schema->total_point_size); }
+  Point(AttributeSchema* schema) : data(new unsigned char[schema->total_point_size]), schema(schema), own_data(true) {  zero(); }
   Point(unsigned char* ptr, const AttributeSchema* schema) : data(ptr), schema(schema), own_data(false) {}
   ~Point() {if (own_data && data) { delete[] data; data = nullptr; }; }
   void dump() const { print("%.2lf %.2lf %.2lf\n", get_x(), get_y(), get_z()); };
@@ -242,6 +244,9 @@ struct Point
       flag &= ~(1 << 0); // Clear the 0th bit to 0
     }
   }
+  inline void zero() {
+    memset(data, 0, schema->total_point_size);
+  }
   inline bool inside_buffer(const double min_x, const double min_y, const double max_x, const double max_y, const bool circle = false)
   {
     double x = get_x();
@@ -263,20 +268,15 @@ struct Point
   }
 };
 
-class AttributeHandler
-{
+class AttributeHandler {
 public:
-  // Constructors
   AttributeHandler();
   AttributeHandler(const std::string& name);
   AttributeHandler(const std::string& name, AttributeSchema* schema);
-  AttributeHandler(const AttributeHandler& other);
-
-  // Destructor
   ~AttributeHandler() = default;
 
   // Overloaded operators for reading and writing
-  double operator()(const Point* point) const;
+  double operator()(const Point* point);
   void operator()(Point* point, double value);
   bool exist() { return attribute != nullptr; }
 
@@ -284,11 +284,11 @@ protected:
   std::string name;
   const Attribute* attribute;
   bool init;
-  std::function<double(const Point*)> readAccessor;
-  std::function<void(Point*, double)> writeAccessor;
 
-  void initialize(const Point* point);
+  double read(const Point* point);
+  void write(Point* point, double value);
 };
+
 
 class Header
 {

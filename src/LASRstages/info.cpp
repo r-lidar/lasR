@@ -22,7 +22,6 @@ static std::string human_readable(uint64_t value, const std::vector<std::string>
   return std::string(buffer);
 }
 
-
 bool LASRinfo::process(Header*& h)
 {
   const std::vector<std::string> numberUnits = {"", "thousands", "millions", "billions", "trillions"};

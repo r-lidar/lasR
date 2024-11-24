@@ -18,8 +18,6 @@ bool LASRnothing::set_parameters(const nlohmann::json& stage)
 
 bool LASRnothing::process(LAS*& las)
 {
-  las->newheader->schema.dump();
-
   if (!loop) return true;
 
   int i = 0;

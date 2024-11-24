@@ -46,6 +46,8 @@ private:
   AttributeHandler green;
   AttributeHandler blue;
   AttributeHandler nir;
+  std::vector<AttributeHandler> extrabytes;
+  void reset_accessor();
 
   bool keep_buffer;
   LASpoint* point;

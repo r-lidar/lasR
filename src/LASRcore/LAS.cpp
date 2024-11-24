@@ -14,7 +14,6 @@
 LAS::LAS(Header* newheader)
 {
   this->newheader = newheader;
-  this->own_header = false;
 
   // Point cloud storage
   buffer = NULL;
@@ -46,8 +45,6 @@ LAS::LAS(Header* newheader)
 
 LAS::LAS(const Raster& raster)
 {
-  own_header = true;
-
   // Point cloud storage
   buffer = NULL;
   npoints = 0;
@@ -58,8 +55,8 @@ LAS::LAS(const Raster& raster)
   read_started = false;
 
   // Convert the raster to a LAS
-  /*newheader = new Header;
-  newheader->file_source_ID       = 0;
+  newheader = new Header;
+  /*newheader->file_source_ID       = 0;
   newheader->version_major        = 1;
   newheader->version_minor        = 2;
   newheader->header_size          = 227;
@@ -284,12 +281,12 @@ void LAS::delete_point(Point* p)
   if (p == nullptr)
   {
     this->p.set_deleted();
-    npoints--;
+    newheader->number_of_point_records--;
   }
   else
   {
     p->set_deleted();
-    if (!p->own_data) npoints--;
+    if (!p->own_data) newheader->number_of_point_records--;
   }
 }
 

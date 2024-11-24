@@ -2685,7 +2685,7 @@ BOOL LASreadOpener::parse_str(CHAR* string)
 {
   int p = 0;
   int argc = 1;
-  char* argv[64];
+  char* argv[512];
   int len = strlen(string);
 
   while (p < len)

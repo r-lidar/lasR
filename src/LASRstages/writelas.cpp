@@ -14,20 +14,7 @@ LASRlaswriter::LASRlaswriter()
   laswriter = nullptr;
   lasheader = nullptr;
   point = nullptr;
-
-  intensity = AttributeHandler("Intensity");
-  returnnumber = AttributeHandler("ReturnNumber");
-  numberofreturns = AttributeHandler("NumberOfReturns");
-  userdata = AttributeHandler("UserData");
-  psid = AttributeHandler("PointSourceID");
-  classification = AttributeHandler("Classification");
-  scanangle = AttributeHandler("ScanAngle");
-  gpstime = AttributeHandler("gpstime");
-  scannerchannel = AttributeHandler("ScannerChannel");
-  red = AttributeHandler("R");
-  green = AttributeHandler("G");
-  blue = AttributeHandler("B");
-  nir = AttributeHandler("NIR");
+  reset_accessor();
 }
 
 bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
@@ -153,8 +140,7 @@ bool LASRlaswriter::process(Point*& p)
         if (lascoreattributes.count(attribute.name) == 0)
         {
           //attribute.dump(true);
-          print("LASpoint n attr = %d\n", point->attributer->number_attributes);
-          point->set_attribute_as_float(i, p->get_attribute_as_double(i));
+          //point->set_attribute_as_float(i, p->get_attribute_as_double(i));
         }
         i++;
       }
@@ -219,16 +205,17 @@ void LASRlaswriter::set_header(Header*& header)
   lasheader->max_x                = xmax;
   lasheader->max_y                = ymax;
 
+  reset_accessor();
 
   for (auto attribute : header->schema.attributes)
   {
     if (lascoreattributes.count(attribute.name) == 0)
     {
       //attribute.dump(true);
-      LASattribute attr(attribute.type, attribute.name.c_str(), attribute.description.c_str());
+      /*LASattribute attr(attribute.type, attribute.name.c_str(), attribute.description.c_str());
       attr.set_scale(attribute.scale_factor);
       attr.set_offset(attribute.offset);
-      lasheader->add_attribute(attr);
+      lasheader->add_attribute(attr);*/
     }
   }
 
@@ -268,3 +255,22 @@ void LASRlaswriter::clean_copc_ext(std::string& path)
     path.erase(path.size() - suffix.size(), toRemove.size()); // Remove .copc
   }
 }
+
+void LASRlaswriter::reset_accessor()
+{
+  intensity = AttributeHandler("Intensity");
+  returnnumber = AttributeHandler("ReturnNumber");
+  numberofreturns = AttributeHandler("NumberOfReturns");
+  userdata = AttributeHandler("UserData");
+  classification = AttributeHandler("Classification");
+  psid = AttributeHandler("PointSourceID");
+  scanangle = AttributeHandler("ScanAngle");
+  gpstime = AttributeHandler("gpstime");
+  scannerchannel = AttributeHandler("ScannerChannel");
+  red = AttributeHandler("R");
+  green = AttributeHandler("G");
+  blue = AttributeHandler("B");
+  nir = AttributeHandler("NIR");
+  extrabytes.clear();
+}
+
