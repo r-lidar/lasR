@@ -1614,18 +1614,15 @@ private:
   my_I64_set times;
 };
 
-// Additionnal filter difined by lasR#include "lasfilter.hpp"
+// Additionnal filter defined by lasR#include "lasfilter.hpp"
 
-#include "Accessors.h"
+#include "lasaccessor.hpp"
 
-#include <functional>
-#include <set>
-
-class LASRcriterion : public LAScriterion, public AttributeAccessor
+class LASRcriterion : public LAScriterion, public LASaccessor
 {
 public:
-  LASRcriterion() : AttributeAccessor() {};
-  LASRcriterion(const char* attribute_name) : AttributeAccessor(attribute_name) {};
+  LASRcriterion() : LASaccessor() {};
+  LASRcriterion(const char* attribute_name) : LASaccessor(attribute_name) {};
   inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_ALL; };
 };
 
@@ -1992,8 +1989,6 @@ BOOL LASfilter::parse(int argc, char* argv[])
       size_t len_attribute_name = len - (second_underscore - argv[i]) - 1;
       strncpy(attribute_name, second_underscore + 1, len_attribute_name);
       attribute_name[len_attribute_name] = '\0';
-
-      //printf("%s %s\n", operator_name, attribute_name);
 
       if (strcmp(attribute_name, "above") == 0)
       {

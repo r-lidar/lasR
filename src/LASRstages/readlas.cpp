@@ -1,6 +1,8 @@
 #include "readlas.h"
+#include "LASlibextension.hpp"
 
 #include "lasreader.hpp"
+
 
 LASRlasreader::LASRlasreader()
 {
@@ -38,7 +40,11 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
     lasreadopener = nullptr;
   }
 
-  const char* tmp = filter.c_str();
+  LASlibFilterParserExtension parser;
+  for (auto& s : filters) s = parser.parse(s);
+  std::string sfilter = std::accumulate(filters.begin(), filters.end(), std::string(" "));
+
+  const char* tmp = sfilter.c_str();
   int n = strlen(tmp)+1;
   char* filtercpy = (char*)malloc(n); memcpy(filtercpy, tmp, n);
 
@@ -51,7 +57,7 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   lasreadopener->parse_str(filtercpy);
   lasreadopener->set_copc_stream_ordered_by_chunk();
 
-  free(filtercpy);
+  //free(filtercpy);
 
   // In theory if buffer = 0 we should not have neighbor files on a properly tiled dataset. If the files
   // overlap this could arise but the neighbor file won't be read because buffer = 0 does allows to instantiate

@@ -1,6 +1,5 @@
 #include "sampling.h"
 #include "Grid.h"
-#include "Accessors.h"
 #include "openmp.h"
 
 #include <unordered_map>

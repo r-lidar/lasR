@@ -2,6 +2,13 @@
 
 #include "laswriter.hpp"
 
+static const std::set<std::string> lascoreattributes = {
+  "X", "Y", "Z", "Intensity", "ReturnNumber",
+  "NumberOfReturns", "ScanDirectionFlag", "EdgeOfFlightLine",
+  "Classification", "UserData", "ScanAngleRank", "PointSourceID",
+  "gpstime", "ScannerChannel", "ScanAngle", "flags"
+};
+
 LASRlaswriter::LASRlaswriter()
 {
   laswriter = nullptr;
@@ -140,6 +147,18 @@ bool LASRlaswriter::process(Point*& p)
       point->set_B(blue(p));
       point->set_NIR(nir(p));
 
+      int i = 0;
+      for (auto attribute : p->schema->attributes)
+      {
+        if (lascoreattributes.count(attribute.name) == 0)
+        {
+          //attribute.dump(true);
+          print("LASpoint n attr = %d\n", point->attributer->number_attributes);
+          point->set_attribute_as_float(i, p->get_attribute_as_double(i));
+        }
+        i++;
+      }
+
       laswriter->write_point(point);
       laswriter->update_inventory(point);
     }
@@ -187,6 +206,7 @@ void LASRlaswriter::set_header(Header*& header)
   lasheader->file_creation_year   = 0;
   lasheader->file_creation_day    = 0;
   lasheader->point_data_format    = LAS::guess_point_data_format(has_gps, has_rgb, has_nir);
+  lasheader->point_data_record_length = LAS::get_point_data_record_length(lasheader->point_data_format);
   lasheader->x_scale_factor       = header->schema.attributes[0].scale_factor;
   lasheader->y_scale_factor       = header->schema.attributes[1].scale_factor;
   lasheader->z_scale_factor       = header->schema.attributes[2].scale_factor;
@@ -198,6 +218,19 @@ void LASRlaswriter::set_header(Header*& header)
   lasheader->min_y                = ymin;
   lasheader->max_x                = xmax;
   lasheader->max_y                = ymax;
+
+
+  for (auto attribute : header->schema.attributes)
+  {
+    if (lascoreattributes.count(attribute.name) == 0)
+    {
+      //attribute.dump(true);
+      LASattribute attr(attribute.type, attribute.name.c_str(), attribute.description.c_str());
+      attr.set_scale(attribute.scale_factor);
+      attr.set_offset(attribute.offset);
+      lasheader->add_attribute(attr);
+    }
+  }
 
   point = new LASpoint;
   point->init(lasheader, lasheader->point_data_format, lasheader->point_data_record_length, lasheader);

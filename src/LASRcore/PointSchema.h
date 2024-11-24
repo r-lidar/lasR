@@ -12,6 +12,8 @@
 #include <algorithm>
 
 static const std::unordered_map<std::string, std::vector<std::string>> attribute_map = {
+  {"X", {"X", "x"}},
+  {"Y", {"Y", "y"}},
   {"Z", {"Z", "z"}},
   {"Intensity", {"Intensity", "intensity", "i"}},
   {"ReturnNumber", {"return", "Return", "ReturnNumber", "return_number", "r"}},
@@ -224,6 +226,12 @@ struct Point
     unsigned char* pointer = data + attr.offset;
     double scaled_value = (value - attr.value_offset) / attr.scale_factor;
     *reinterpret_cast<int*>(pointer) = static_cast<int>(scaled_value);
+  }
+  inline double get_attribute_as_double(int index)
+  {
+    const auto& attr = schema->attributes[index];
+    int Z = *((int*)(data + attr.offset));
+    return attr.scale_factor * Z + attr.value_offset;
   }
   inline void set_deleted(bool value = true) {
     auto& attr = schema->attributes[3];
