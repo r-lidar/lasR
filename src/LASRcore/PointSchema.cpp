@@ -130,16 +130,16 @@ void AttributeHandler::write(Point* point, double value)
   double scaled_value = (value - attribute->value_offset) / attribute->scale_factor;
 
   switch (attribute->type) {
-  case 0: *reinterpret_cast<uint8_t*>(pointer) = static_cast<uint8_t>(scaled_value); break;
-  case 1: *reinterpret_cast<int8_t*>(pointer) = static_cast<int8_t>(scaled_value); break;
-  case 2: *reinterpret_cast<uint16_t*>(pointer) = static_cast<uint16_t>(scaled_value); break;
-  case 3: *reinterpret_cast<int16_t*>(pointer) = static_cast<int16_t>(scaled_value); break;
-  case 4: *reinterpret_cast<uint32_t*>(pointer) = static_cast<uint32_t>(scaled_value); break;
-  case 5: *reinterpret_cast<int32_t*>(pointer) = static_cast<int32_t>(scaled_value); break;
-  case 6: *reinterpret_cast<uint64_t*>(pointer) = static_cast<uint64_t>(scaled_value); break;
-  case 7: *reinterpret_cast<int64_t*>(pointer) = static_cast<int64_t>(scaled_value); break;
-  case 8: *reinterpret_cast<float*>(pointer) = static_cast<float>(scaled_value); break;
-  case 9: *reinterpret_cast<double*>(pointer) = scaled_value; break;
+  case UINT8: *reinterpret_cast<uint8_t*>(pointer) = static_cast<uint8_t>(scaled_value); break;
+  case INT8: *reinterpret_cast<int8_t*>(pointer) = static_cast<int8_t>(scaled_value); break;
+  case UINT16: *reinterpret_cast<uint16_t*>(pointer) = static_cast<uint16_t>(scaled_value); break;
+  case INT16: *reinterpret_cast<int16_t*>(pointer) = static_cast<int16_t>(scaled_value); break;
+  case UINT32: *reinterpret_cast<uint32_t*>(pointer) = static_cast<uint32_t>(scaled_value); break;
+  case INT32: *reinterpret_cast<int32_t*>(pointer) = static_cast<int32_t>(scaled_value); break;
+  case UINT64: *reinterpret_cast<uint64_t*>(pointer) = static_cast<uint64_t>(scaled_value); break;
+  case INT64: *reinterpret_cast<int64_t*>(pointer) = static_cast<int64_t>(scaled_value); break;
+  case FLOAT: *reinterpret_cast<float*>(pointer) = static_cast<float>(scaled_value); break;
+  case DOUBLE: *reinterpret_cast<double*>(pointer) = scaled_value; break;
   default: return;
   }
 }

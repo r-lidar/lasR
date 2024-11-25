@@ -22,6 +22,7 @@ test_that("add rgb works with extra bytes",
 
   expect_true(all(c("Amplitude", "Pulse width", "R", "G", "B") %in% names(las)))
   expect_equal(sum(las$R), 0L)
+  expect_equal(mean(las$gpstime), 152900)
   expect_equal(sum(las$Amplitude), 596.24)
   expect_equal(sum(las$Intensity), 6552)
 

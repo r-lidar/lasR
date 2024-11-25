@@ -80,10 +80,6 @@ bool LASRlaswriter::process(Point*& p)
     LASwriteOpener laswriteopener;
     laswriteopener.set_file_name(ofile.c_str());
     laswriter = laswriteopener.open(lasheader);
-    print("laswrite with n attr %d\n", lasheader->number_attributes);
-    print("point with n attr %d\n", point->attributer->number_attributes);
-
-
 
     if (!laswriter)
     {

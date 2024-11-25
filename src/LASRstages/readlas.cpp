@@ -121,14 +121,18 @@ bool LASRlasreader::process(Header*& header)
   header->schema.add_attribute("PointSourceID", AttributeType::INT16, 1, 0, "Source from which this point originated");
 
   if (lasreader->point.extended_point_type)
+  {
     header->schema.add_attribute("ScanAngle", AttributeType::FLOAT, 1, 0, "Angle at which the laser point was output");
+    header->schema.add_attribute("ScannerChannel", AttributeType::UINT8, 1, 0, "Channel (scanner head) of a multi-channel system");
+  }
   else
+  {
     header->schema.add_attribute("ScanAngle", AttributeType::INT8, 1, 0, "Rounded angle at which the laser point was output");
+  }
 
   if (lasreader->point.have_gps_time)
   {
     header->schema.add_attribute("gpstime", AttributeType::DOUBLE, 1, 0, "Time tag value at which the point was observed");
-    header->schema.add_attribute("ScannerChannel", AttributeType::UINT8, 1, 0, "Channel (scanner head) of a multi-channel system");
   }
 
   if (lasreader->point.have_rgb)
