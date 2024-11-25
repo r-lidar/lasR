@@ -645,9 +645,9 @@ void LAS::set_index(float res)
 
 bool LAS::add_rgb()
 {
-  Attribute R("R", AttributeType::INT16, 0, 0);
-  Attribute G("G", AttributeType::INT16, 0, 0);
-  Attribute B("B", AttributeType::INT16, 0, 0);
+  Attribute R("R", AttributeType::INT16, 0, 0, "Red channel");
+  Attribute G("G", AttributeType::INT16, 0, 0, "Green channel");
+  Attribute B("B", AttributeType::INT16, 0, 0, "Blue channe");
   add_attributes({R,G,B});
   return true;
 }

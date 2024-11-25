@@ -34,11 +34,11 @@ bool LASRinfo::process(Header*& h)
   std::string filePath = ifile;
   bool fileExist = std::filesystem::exists(filePath);
 
-  print("Size    : %s\n", human_readable(fsize, byteUnits).c_str());
+  print("Size         : %s\n", human_readable(fsize, byteUnits).c_str());
   print("Extent       : %.2lf %.2lf %.2lf %.2lf (xmin, xmax, ymin, ymax)\n", h->min_x, h->max_x, h->min_y, h->max_y);
   print("Points       : %s\n", human_readable(npoints, numberUnits).c_str());
   print("Coord. ref.  : %s\n", crs.get_crs().GetName());
-  print("Schema:\n"); h->schema.dump();
+  print("Schema       :\n"); h->schema.dump();
 
   return true;
 }

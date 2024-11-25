@@ -137,13 +137,17 @@ PointFilter::~PointFilter() {
   for (auto condition : conditions) delete condition;
 }
 
-void PointFilter::add_condition(Condition* condition) {
+void PointFilter::add_condition(Condition* condition)
+{
+  if (condition == nullptr) return;
   conditions.push_back(condition);
 }
 
-void PointFilter::add_condition(const std::string& x) {
+void PointFilter::add_condition(const std::string& x)
+{
   FilterParser fp;
-  conditions.push_back(fp.parse(x));
+  Condition* cond = fp.parse(x);
+  add_condition(cond);
 }
 
 Condition* FilterParser::parse(const std::string& condition) const

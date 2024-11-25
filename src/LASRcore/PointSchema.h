@@ -76,7 +76,7 @@ struct Attribute
 
 struct AttributeSchema
 {
-  AttributeSchema() { total_point_size = 0; }
+  AttributeSchema() { total_point_size = 0; attributes.reserve(100); }
   std::vector<Attribute> attributes;
   size_t total_point_size;
 
@@ -293,6 +293,7 @@ protected:
 class Header
 {
 public:
+
   double max_x;
   double min_x;
   double max_y;

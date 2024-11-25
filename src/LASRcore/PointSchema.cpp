@@ -37,6 +37,11 @@ void Attribute::dump(bool verbose) const
 
 void AttributeSchema::add_attribute(const Attribute& attribute)
 {
+  if (attributes.size() >= attributes.capacity())
+  {
+    // Avoid reallocation and pointer invalidation in other objects with pointer to the attributes
+    std::runtime_error("Too many attributes for this point cloud");
+  }
   attributes.push_back(attribute);
   attributes.back().offset = total_point_size;
   total_point_size += attribute.size;
