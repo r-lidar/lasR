@@ -48,17 +48,17 @@ static std::string map_attribute(const std::string& attribute)
 }
 
 enum AttributeType {
-  NOTYPE = -1,
-  UINT8 = 0,
-  INT8 = 1,
-  UINT16 = 2,
-  INT16 = 3,
-  UINT32 = 4,
-  INT32 = 5,
-  UINT64 = 6,
-  INT64 = 7,
-  FLOAT = 8,
-  DOUBLE = 9
+  NOTYPE = 0,
+  UINT8 = 1,
+  INT8 = 2,
+  UINT16 = 3,
+  INT16 = 4,
+  UINT32 = 5,
+  INT32 = 6,
+  UINT64 = 7,
+  INT64 = 8,
+  FLOAT = 9,
+  DOUBLE = 10
 };
 
 struct Attribute
@@ -232,8 +232,22 @@ struct Point
   inline double get_attribute_as_double(int index)
   {
     const auto& attr = schema->attributes[index];
-    int Z = *((int*)(data + attr.offset));
-    return attr.scale_factor * Z + attr.value_offset;
+    unsigned char* pointer = data + attr.offset;
+    double cast_value = 0;
+    switch (attr.type) {
+    case UINT8: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
+    case INT8: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
+    case UINT16: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
+    case INT16: cast_value = static_cast<double>(*reinterpret_cast<const int16_t*>(pointer)); break;
+    case UINT32: cast_value = static_cast<double>(*reinterpret_cast<const uint32_t*>(pointer)); break;
+    case INT32: cast_value = static_cast<double>(*reinterpret_cast<const int32_t*>(pointer)); break;
+    case UINT64: cast_value = static_cast<double>(*reinterpret_cast<const uint64_t*>(pointer)); break;
+    case INT64: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
+    case FLOAT: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
+    case DOUBLE: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
+    default: return 0.0;
+    }
+    return attr.value_offset + attr.scale_factor * cast_value;
   }
   inline void set_deleted(bool value = true) {
     auto& attr = schema->attributes[3];

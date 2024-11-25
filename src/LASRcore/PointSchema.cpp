@@ -102,16 +102,16 @@ double AttributeHandler::read(const Point* point)
   unsigned char* pointer = point->data + attribute->offset;
   double cast_value = 0;
   switch (attribute->type) {
-  case 0: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
-  case 1: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
-  case 2: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
-  case 3: cast_value = static_cast<double>(*reinterpret_cast<const int16_t*>(pointer)); break;
-  case 4: cast_value = static_cast<double>(*reinterpret_cast<const uint32_t*>(pointer)); break;
-  case 5: cast_value = static_cast<double>(*reinterpret_cast<const int32_t*>(pointer)); break;
-  case 6: cast_value = static_cast<double>(*reinterpret_cast<const uint64_t*>(pointer)); break;
-  case 7: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
-  case 8: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
-  case 9: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
+  case UINT8: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
+  case INT8: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
+  case UINT16: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
+  case INT16: cast_value = static_cast<double>(*reinterpret_cast<const int16_t*>(pointer)); break;
+  case UINT32: cast_value = static_cast<double>(*reinterpret_cast<const uint32_t*>(pointer)); break;
+  case INT32: cast_value = static_cast<double>(*reinterpret_cast<const int32_t*>(pointer)); break;
+  case UINT64: cast_value = static_cast<double>(*reinterpret_cast<const uint64_t*>(pointer)); break;
+  case INT64: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
+  case FLOAT: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
+  case DOUBLE: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
   default: return 0.0;
   }
   return attribute->value_offset + attribute->scale_factor * cast_value;

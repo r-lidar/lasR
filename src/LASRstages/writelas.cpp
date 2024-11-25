@@ -6,7 +6,7 @@ static const std::set<std::string> lascoreattributes = {
   "X", "Y", "Z", "Intensity", "ReturnNumber",
   "NumberOfReturns", "ScanDirectionFlag", "EdgeOfFlightLine",
   "Classification", "UserData", "ScanAngleRank", "PointSourceID",
-  "gpstime", "ScannerChannel", "ScanAngle", "flags"
+  "gpstime", "ScannerChannel", "ScanAngle", "R", "G", "B", "flags"
 };
 
 LASRlaswriter::LASRlaswriter()
@@ -80,6 +80,10 @@ bool LASRlaswriter::process(Point*& p)
     LASwriteOpener laswriteopener;
     laswriteopener.set_file_name(ofile.c_str());
     laswriter = laswriteopener.open(lasheader);
+    print("laswrite with n attr %d\n", lasheader->number_attributes);
+    print("point with n attr %d\n", point->attributer->number_attributes);
+
+
 
     if (!laswriter)
     {
@@ -121,6 +125,7 @@ bool LASRlaswriter::process(Point*& p)
       point->set_x(p->get_x());
       point->set_y(p->get_y());
       point->set_z(p->get_z());
+      point->set_intensity(intensity(p));
       point->set_return_number(returnnumber(p));
       point->set_number_of_returns(numberofreturns(p));
       point->set_user_data(userdata(p));
@@ -139,10 +144,9 @@ bool LASRlaswriter::process(Point*& p)
       {
         if (lascoreattributes.count(attribute.name) == 0)
         {
-          //attribute.dump(true);
-          //point->set_attribute_as_float(i, p->get_attribute_as_double(i));
+          point->set_attribute(i, p->data + attribute.offset);
+          i++;
         }
-        i++;
       }
 
       laswriter->write_point(point);
@@ -207,17 +211,22 @@ void LASRlaswriter::set_header(Header*& header)
 
   reset_accessor();
 
+  int num_extrabytes = 0;
   for (auto attribute : header->schema.attributes)
   {
     if (lascoreattributes.count(attribute.name) == 0)
     {
-      //attribute.dump(true);
-      /*LASattribute attr(attribute.type, attribute.name.c_str(), attribute.description.c_str());
+      attribute.dump(true);
+      LASattribute attr(attribute.type-1, attribute.name.c_str(), attribute.description.c_str());
       attr.set_scale(attribute.scale_factor);
-      attr.set_offset(attribute.offset);
-      lasheader->add_attribute(attr);*/
+      attr.set_offset(attribute.value_offset);
+      lasheader->add_attribute(attr);
+      num_extrabytes++;
     }
   }
+
+  lasheader->update_extra_bytes_vlr();
+  lasheader->point_data_record_length += lasheader->get_attributes_size();
 
   point = new LASpoint;
   point->init(lasheader, lasheader->point_data_format, lasheader->point_data_record_length, lasheader);
