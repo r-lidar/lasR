@@ -21,7 +21,7 @@ bool LASRcallback::set_parameters(const nlohmann::json& stage)
   args = string_address_to_sexp(address_args_str);
 
   // Parse select = "*"
-  std::string all = "xyzitrndecskwoaupRGBNCbE";
+  std::string all = "xyzitrndecskwoaupRGBNCb0123456789";
   size_t pos = select.find('*');
   if (pos != std::string::npos) select = all;
 
@@ -54,9 +54,35 @@ bool LASRcallback::process(LAS*& las)
   std::vector<Attribute> attributes;
   for(char c : select)
   {
-    // need to manage 0-9 and E
-    std::string name(1, c);
-    name = map_attribute(name);
+    std::string name;
+
+    // Handle extrabytes in a (not elegant) backward compatible way
+    if (c >= '0' && c <= '9')
+    {
+      int i = c - '0';
+      int j = 0;
+      for (auto attribute : las->newheader->schema.attributes)
+      {
+        if (lascoreattributes.count(attribute.name) == 0)
+        {
+          if (j == i)
+          {
+            name = attribute.name;
+            break;
+          }
+          else
+          {
+            j++;
+          }
+        }
+      }
+    }
+    else
+    {
+      name = std::string(1, c);
+      name = map_attribute(name);
+    }
+
     int index = las->newheader->schema.get_attribute_index(name);
     if (index < 0) continue;
     name = las->newheader->schema.attributes[index].name;
@@ -76,7 +102,7 @@ bool LASRcallback::process(LAS*& las)
   for (int i = 0 ; i < nattr ; i++)
   {
     std::string name = names[i];
-    int type = (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].offset != 0) ? REALSXP : INTSXP;
+    int type = (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0) ? REALSXP : INTSXP;
 
     SEXP v = PROTECT(Rf_allocVector(type, las->newheader->number_of_point_records)); nsexpprotected++;
     SET_VECTOR_ELT(data_frame, i, v);
@@ -104,7 +130,7 @@ bool LASRcallback::process(LAS*& las)
     {
       SEXP vector = VECTOR_ELT(data_frame, i);
 
-      if (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].offset != 0)
+      if (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0)
         REAL(vector)[j] = accessors[i](&las->p);
       else
         INTEGER(vector)[j] = (int)accessors[i](&las->p);

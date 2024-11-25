@@ -2,13 +2,6 @@
 
 #include "laswriter.hpp"
 
-static const std::set<std::string> lascoreattributes = {
-  "X", "Y", "Z", "Intensity", "ReturnNumber",
-  "NumberOfReturns", "ScanDirectionFlag", "EdgeOfFlightLine",
-  "Classification", "UserData", "ScanAngleRank", "PointSourceID",
-  "gpstime", "ScannerChannel", "ScanAngle", "R", "G", "B", "flags"
-};
-
 LASRlaswriter::LASRlaswriter()
 {
   laswriter = nullptr;

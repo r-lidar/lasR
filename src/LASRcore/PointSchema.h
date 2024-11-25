@@ -8,8 +8,16 @@
 #include <vector>
 #include <cstdint>
 #include <functional>
+#include <set>
 #include <unordered_map>
 #include <algorithm>
+
+static const std::set<std::string> lascoreattributes = {
+  "X", "Y", "Z", "Intensity", "ReturnNumber",
+  "NumberOfReturns", "ScanDirectionFlag", "EdgeOfFlightLine",
+  "Classification", "UserData", "ScanAngleRank", "PointSourceID",
+  "gpstime", "ScannerChannel", "ScanAngle", "R", "G", "B", "flags"
+};
 
 static const std::unordered_map<std::string, std::vector<std::string>> attribute_map = {
   {"X", {"X", "x"}},
