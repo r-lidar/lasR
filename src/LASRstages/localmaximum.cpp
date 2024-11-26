@@ -107,7 +107,7 @@ bool LASRlocalmaximum::process(LAS*& las)
     }
 
     if (!las->get_point(i, &pp, &pointfilter)) { status[i] = NLM; } // The point was either filtered or withhelded
-    if (pp.get_z() < min_height) { status[i] = NLM; }
+    if (accessor(&pp) < min_height) { status[i] = NLM; }
     if (status[i] == NLM) continue;
 
     Circle windows(pp.get_x(), pp.get_y(), hws);
@@ -119,9 +119,9 @@ bool LASRlocalmaximum::process(LAS*& las)
     for (auto& pt : points)
     {
       int fid = las->get_index(&pt);
-      if (pt.get_z() == pp.get_z() && (pt.get_x() != pp.get_x() || pt.get_y() != pp.get_y()) && status[fid] == LMX) status[i] = NLM; // Handle duplicated height for different points
-      if (pt.get_z() > pp.get_z()) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
-      if (pt.get_z() < pp.get_z()) status[fid] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
+      if (accessor(&pt) == accessor(&pp) && (pt.get_x() != pp.get_x() || pt.get_y() != pp.get_y()) && status[fid] == LMX) status[i] = NLM; // Handle duplicated height for different points
+      if (accessor(&pt) > accessor(&pp)) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
+      if (accessor(&pt) < accessor(&pp)) status[fid] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
     }
 
     if (status[i] == UKN) status[i] = LMX; // If the status is still unknown it is a local max
