@@ -33,6 +33,12 @@ LASRlaswriter::~LASRlaswriter()
     delete lasheader;
     lasheader = nullptr;
   }
+
+  if (point)
+  {
+    delete point;
+    point = nullptr;
+  }
 }
 
 bool LASRlaswriter::set_input_file_name(const std::string& file)
@@ -170,6 +176,8 @@ bool LASRlaswriter::process(LAS*& las)
 
 void LASRlaswriter::set_header(Header*& header)
 {
+  if (lasheader) return;
+
   int version_minor = 2;
 
   bool has_gps = header->schema.find_attribute("gpstime") != nullptr;
@@ -216,9 +224,9 @@ void LASRlaswriter::set_header(Header*& header)
   lasheader->update_extra_bytes_vlr();
   lasheader->point_data_record_length += lasheader->get_attributes_size();
 
-  if (!header->crs.get_wkt().empty())
+  if (!crs.get_wkt().empty())
   {
-    std::string wkt = header->crs.get_wkt();
+    std::string wkt = crs.get_wkt();
     lasheader->set_global_encoding_bit(4);
     lasheader->set_geo_ogc_wkt(wkt.size(), wkt.c_str(), false);
   }
