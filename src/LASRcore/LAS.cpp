@@ -75,9 +75,10 @@ LAS::LAS(const Raster& raster)
   newheader->min_y                = raster.get_ymin()-raster.get_yres()/2;
   newheader->max_x                = raster.get_xmax()+raster.get_xres()/2;
   newheader->max_y                = raster.get_ymax()-raster.get_yres()/2;
-  newheader->schema.add_attribute("x", AttributeType::INT32, 0.001, raster.get_full_extent()[0]);
-  newheader->schema.add_attribute("y", AttributeType::INT32, 0.001, raster.get_full_extent()[1]);
-  newheader->schema.add_attribute("x", AttributeType::INT32, 0.001, 0);
+  newheader->schema.add_attribute("X", AttributeType::INT32, 0.001, raster.get_full_extent()[0]);
+  newheader->schema.add_attribute("Y", AttributeType::INT32, 0.001, raster.get_full_extent()[1]);
+  newheader->schema.add_attribute("Z", AttributeType::INT32, 0.001, 0);
+  newheader->schema.add_attribute("Flags", AttributeType::INT8);
 
   // For spatial indexing
   current_interval = 0;
@@ -87,13 +88,11 @@ LAS::LAS(const Raster& raster)
 
   p = Point(&newheader->schema);
 
-  float nodata = raster.get_nodata();
-
   for (int i = 0 ; i < raster.get_ncells() ; i++)
   {
     float z = raster.get_value(i);
 
-    if (std::isnan(z) || z == nodata) continue;
+    if (raster.is_na(z)) continue;
 
     double x = raster.x_from_cell(i);
     double y = raster.y_from_cell(i);
