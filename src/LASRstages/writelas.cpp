@@ -205,7 +205,6 @@ void LASRlaswriter::set_header(Header*& header)
   {
     if (lascoreattributes.count(attribute.name) == 0)
     {
-      attribute.dump(true);
       LASattribute attr(attribute.type-1, attribute.name.c_str(), attribute.description.c_str());
       attr.set_scale(attribute.scale_factor);
       attr.set_offset(attribute.value_offset);
@@ -216,6 +215,13 @@ void LASRlaswriter::set_header(Header*& header)
 
   lasheader->update_extra_bytes_vlr();
   lasheader->point_data_record_length += lasheader->get_attributes_size();
+
+  if (!header->crs.get_wkt().empty())
+  {
+    std::string wkt = header->crs.get_wkt();
+    lasheader->set_global_encoding_bit(4);
+    lasheader->set_geo_ogc_wkt(wkt.size(), wkt.c_str(), false);
+  }
 
   point = new LASpoint;
   point->init(lasheader, lasheader->point_data_format, lasheader->point_data_record_length, lasheader);
