@@ -84,7 +84,7 @@ class ConditionKeepIn : public Condition
 public:
   ConditionKeepIn(const std::string& attribute_name, double* values, int size) : Condition(attribute_name)
   {
-    memcpy(this->values, values, 64 *sizeof(double));
+    memcpy(this->values, values, size*sizeof(double));
     this->size = size;
   }
   inline bool filter(const Point* point)
@@ -107,7 +107,7 @@ class ConditionKeepOut : public Condition
 public:
   ConditionKeepOut(const std::string& attribute_name, double* values, int size) : Condition(attribute_name)
   {
-    memcpy(this->values, values, 64 *sizeof(double));
+    memcpy(this->values, values, size*sizeof(double));
     this->size = size;
   }
   inline bool filter(const Point* point)

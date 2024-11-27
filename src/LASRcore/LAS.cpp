@@ -109,11 +109,12 @@ LAS::LAS(const Raster& raster)
 
 LAS::~LAS()
 {
-  if (newheader)
+  // The heade is own by reader_las
+  /*if (newheader)
   {
     delete newheader;
     newheader = nullptr;
-  }
+  }*/
 
   if (buffer)
   {
