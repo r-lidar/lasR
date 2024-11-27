@@ -49,7 +49,7 @@ bool LASRsummary::process(Point*& p)
   (zhistogram.find(z) == zhistogram.end()) ?  zhistogram[z] = 1 : zhistogram[z]++;
   (ihistogram.find(i) == ihistogram.end()) ?  ihistogram[i] = 1 : ihistogram[i]++;
 
-  //if (metrics_engine.active())  cloud.push_back(PointLAS(p));
+  if (metrics_engine.active())  cloud.push_back(*p);
 
   return true;
 }

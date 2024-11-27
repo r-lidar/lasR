@@ -47,11 +47,13 @@ bool LASRcallback::process(LAS*& las)
   int error = 0;
 
   int withheld_index = -1; // for backward compatibility
+  int buffered_index = -1; // for backward compatibility
 
   // List all selected attributes by index
   std::vector<std::string> names;
   std::vector<AttributeHandler> accessors;
   std::vector<Attribute> attributes;
+  int k = 0;
   for(char c : select)
   {
     std::string name;
@@ -77,6 +79,15 @@ bool LASRcallback::process(LAS*& las)
         }
       }
     }
+    // Backward compatibility
+    else if (c == 'b')
+    {
+      name = "Buffer";
+      buffered_index = k;
+      names.push_back(name);
+      accessors.push_back(AttributeHandler(name));
+      attributes.push_back(Attribute(name, AttributeType::NOTYPE));
+    }
     else
     {
       name = std::string(1, c);
@@ -89,6 +100,8 @@ bool LASRcallback::process(LAS*& las)
     names.push_back(name);
     accessors.push_back(AttributeHandler(name));
     attributes.push_back(las->newheader->schema.attributes[index]);
+
+    k++;
   }
 
   int nattr = names.size(); // Number of attribute to expose
@@ -123,17 +136,32 @@ bool LASRcallback::process(LAS*& las)
   int j = 0;
   while (las->read_point())
   {
-    bool buffer = las->p.inside_buffer(xmin, ymin, xmax, ymax, circular);
+    bool buffer = las->p.get_buffered();
     if (drop_buffer && buffer) continue;
 
     for (int i = 0 ; i < nattr ; i++)
     {
+      double value;
+      bool use_realsexp;
+
       SEXP vector = VECTOR_ELT(data_frame, i);
 
-      if (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0)
-        REAL(vector)[j] = accessors[i](&las->p);
+      if (i != buffered_index)
+      {
+        use_realsexp = attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0;
+        value = accessors[i](&las->p);
+      }
       else
-        INTEGER(vector)[j] = (int)accessors[i](&las->p);
+      {
+        use_realsexp = false;
+        value = (double)las->p.get_buffered();
+      }
+
+
+      if (use_realsexp)
+        REAL(vector)[j] = value;
+      else
+        INTEGER(vector)[j] = (int)value;
     }
 
     j++;
@@ -219,6 +247,10 @@ bool LASRcallback::process(LAS*& las)
         {
           withheld_index = i;
         }
+        else if (name == "Buffer")
+        {
+          buffered_index = i;
+        }
         else if (!las->newheader->schema.has_attribute(name))
         {
           last_error = "non supported column '" + name +"'";
@@ -260,6 +292,21 @@ bool LASRcallback::process(LAS*& las)
              val = (double)INTEGER(vector)[i];
 
             las->p.set_deleted(val > 0);
+            continue;
+          }
+
+          // Backward compatibility
+          if (j == buffered_index)
+          {
+            double val;
+            if (type == REALSXP)
+              val = REAL(vector)[i];
+            else if (type == LGLSXP)
+              val = (double)LOGICAL(vector)[i];
+            else
+              val = (double)INTEGER(vector)[i];
+
+            las->p.set_buffered(val > 0);
             continue;
           }
 

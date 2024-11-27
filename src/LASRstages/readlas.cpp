@@ -9,11 +9,14 @@ LASRlasreader::LASRlasreader()
   lasreadopener = nullptr;
   lasreader = nullptr;
   lasheader = nullptr;
+  header = nullptr;
   reset_accessor();
 }
 
 bool LASRlasreader::set_chunk(Chunk& chunk)
 {
+  Stage::set_chunk(chunk);
+
   // New chunk -> new reader for a new file. We can delete the previous reader and build a new one
   if (lasreader)
   {
@@ -57,9 +60,7 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str());
   for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
 
-  if (chunk.shape == ShapeType::RECTANGLE)
-    lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
-  else if (chunk.shape == ShapeType::CIRCLE)
+  if (circular)
     lasreadopener->set_inside_circle((chunk.xmin+chunk.xmax)/2, (chunk.ymin+chunk.ymax)/2,  (chunk.xmax-chunk.xmin)/2 + chunk.buffer + EPSILON);
   else
     lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
@@ -176,9 +177,9 @@ bool LASRlasreader::process(Header*& header)
 bool LASRlasreader::process(Point*& point)
 {
   if (point == nullptr)
-  {
     point = new Point(&header->schema);
-  }
+  else
+    point->zero();
 
   if (lasreader->read_point())
   {
@@ -201,6 +202,9 @@ bool LASRlasreader::process(Point*& point)
     nir(point, lasreader->point.get_NIR());
     for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
       extrabytes[i](point, lasreader->point.get_attribute_as_float(i));
+
+    if (point->inside_buffer(xmin, ymin, ymax, ymax, circular))
+      point->set_buffered();
   }
   else
   {
@@ -228,6 +232,7 @@ bool LASRlasreader::process(LAS*& las)
   {
     if (progress->interrupted()) break;
 
+    p.zero();
     p.set_X(lasreader->point.get_X());
     p.set_Y(lasreader->point.get_Y());
     p.set_Z(lasreader->point.get_Z());
@@ -246,6 +251,9 @@ bool LASRlasreader::process(LAS*& las)
     nir(&p, lasreader->point.get_NIR());
     for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
       extrabytes[i](&p, lasreader->point.get_attribute_as_float(i));
+
+    if (p.inside_buffer(xmin, ymin, xmax, ymax, circular))
+      p.set_buffered();
 
     if (!las->add_point(p)) return false;
     progress->update(lasreader->p_count);

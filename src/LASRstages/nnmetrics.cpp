@@ -72,8 +72,7 @@ bool LASRnnmetrics::process(LAS*& las)
     }
     else
     {
-      Point pt;
-      pt.set_schema(&las->newheader->schema);
+      Point pt(&las->newheader->schema);
       pt.set_x(p.x);
       pt.set_y(p.y);
       pt.set_z(p.z);

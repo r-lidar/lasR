@@ -84,9 +84,9 @@ void AttributeSchema::dump(bool verbose) const
   for (const auto& attr : attributes) attr.dump(verbose);
 }
 
-AttributeHandler::AttributeHandler() : name(""), attribute(nullptr), init(false) {}
-AttributeHandler::AttributeHandler(const std::string& name) : name(name), attribute(nullptr), init(false) {}
-AttributeHandler::AttributeHandler(const std::string& name, AttributeSchema* schema) : name(name), attribute(schema->find_attribute(name)), init(true)
+AttributeHandler::AttributeHandler(double default_value) : name(""), attribute(nullptr), init(false), default_value(default_value) {}
+AttributeHandler::AttributeHandler(const std::string& name, double default_value) : name(name), attribute(nullptr), init(false), default_value(default_value) {}
+AttributeHandler::AttributeHandler(const std::string& name, AttributeSchema* schema, double default_value) : name(name), attribute(schema->find_attribute(name)), init(true), default_value(default_value)
 {
   if (!attribute) throw std::runtime_error("Attribute not found in schema");
 }
@@ -98,7 +98,7 @@ double AttributeHandler::read(const Point* point)
     attribute = point->schema->find_attribute(name);
     init = true;
   }
-  if (!attribute) return 0.0;
+  if (!attribute) return default_value;
 
   unsigned char* pointer = point->data + attribute->offset;
   double cast_value = 0;
@@ -113,7 +113,7 @@ double AttributeHandler::read(const Point* point)
   case INT64: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
   case FLOAT: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
   case DOUBLE: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
-  default: return 0.0;
+  default: return default_value;
   }
   return attribute->value_offset + attribute->scale_factor * cast_value;
 }

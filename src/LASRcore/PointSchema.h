@@ -199,10 +199,16 @@ struct Point
     int Z = *((int*)(data + attr.offset));
     return attr.scale_factor * Z + attr.value_offset;
   }
-  inline bool get_deleted() const {
+  inline bool get_flag(int i) const {
     const auto& attr = schema->attributes[3];
     unsigned int flag = *((unsigned int*)(data + attr.offset));
-    return ((flag & (1 << 0)) == 0) ? false : true;
+    return ((flag & (1 << i)) == 0) ? false : true;
+  }
+  inline bool get_deleted() const {
+    return get_flag(0);
+  }
+  inline bool get_buffered() const {
+    return get_flag(1);
   }
   inline void set_X(int value) {
     const auto& attr = schema->attributes[0];
@@ -257,14 +263,20 @@ struct Point
     }
     return attr.value_offset + attr.scale_factor * cast_value;
   }
-  inline void set_deleted(bool value = true) {
+  inline void set_flag(int i, bool value = true) {
     auto& attr = schema->attributes[3];
     unsigned int& flag = *((unsigned int*)(data + attr.offset));
     if (value) {
-      flag |= (1 << 0); // Set the 0th bit to 1
+      flag |= (1 << i); // Set the ith bit to 1
     } else {
-      flag &= ~(1 << 0); // Clear the 0th bit to 0
+      flag &= ~(1 << i); // Clear the ith bit to 0
     }
+  }
+  inline void set_deleted(bool value = true) {
+    set_flag(0, value);
+  }
+  inline void set_buffered(bool value = true) {
+    set_flag(1, value);
   }
   inline void zero() {
     memset(data, 0, schema->total_point_size);
@@ -292,9 +304,9 @@ struct Point
 
 class AttributeHandler {
 public:
-  AttributeHandler();
-  AttributeHandler(const std::string& name);
-  AttributeHandler(const std::string& name, AttributeSchema* schema);
+  AttributeHandler(double default_value = 0);
+  AttributeHandler(const std::string& name, double default_value = 0);
+  AttributeHandler(const std::string& name, AttributeSchema* schema, double default_value = 0);
   ~AttributeHandler() = default;
 
   // Overloaded operators for reading and writing
@@ -306,6 +318,7 @@ protected:
   std::string name;
   const Attribute* attribute;
   bool init;
+  double default_value;
 
   double read(const Point* point);
   void write(Point* point, double value);

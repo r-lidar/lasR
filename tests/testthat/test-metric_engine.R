@@ -22,7 +22,6 @@ test_that("metric_engine works",
 
 test_that("metric_engine works with extrabyte",
 {
-  skip("Not implemented")
 
   f <- system.file("extdata", "extra_byte.las", package="lasR")
   p = summarise(metrics = c("Amplitude_mean", "Pulse width_max"))
@@ -40,6 +39,12 @@ test_that("metric_engine works with non existing extrabyte",
   ans = exec(p, on = f, noread = T)
   m = ans$metrics
 
-  expect_true(is.nan(m$plop_sum))
-  expect_true(is.nan(m$plop_sd))
+  expect_true(m$plop_sum, 0)
+  expect_true(m$plop_sd, 0)
+})
+
+test_that("metric_engine with summarise with multiple file",
+{
+  # I'm sure it does not work. It must be fixed.
+  expect_true(FALSE)
 })
