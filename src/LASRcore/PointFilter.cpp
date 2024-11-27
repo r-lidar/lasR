@@ -125,6 +125,35 @@ private:
   int size;
 };
 
+class ConditionKeepInside : public Condition
+{
+public:
+  ConditionKeepInside(double xmin, double ymin, double xmax, double ymax, bool circle = false) : Condition(""), xmin(xmin), ymin(ymin), xmax(xmax), ymax(ymax), circle(circle) { }
+  inline bool filter(const Point* point)
+  {
+    double x = point->get_x();
+    if (x < xmin || x > xmax) return true;
+    double y = point->get_y();
+    if (y < ymin || y > ymax) return true;
+
+    if (circle)
+    {
+      double r2 = (xmax-xmin)/2;
+      double center_x = (xmax+xmin)/2;
+      double center_y = (ymax+ymin)/2;
+      double dx = center_x - x;
+      double dy = center_y - y;
+      return ((dx*dx+dy*dy) > r2*r2);
+    }
+
+    return false;
+  }
+private:
+  double xmin, ymin, xmax, ymax;
+  bool circle;
+};
+
+
 bool PointFilter::filter(const Point* point) {
   for (const auto condition : conditions) {
     if (condition->filter(point))
@@ -148,6 +177,11 @@ void PointFilter::add_condition(const std::string& x)
   FilterParser fp;
   Condition* cond = fp.parse(x);
   add_condition(cond);
+}
+
+void PointFilter::add_clip(double xmin, double ymin, double xmax, double ymax, bool circle)
+{
+  add_condition(new ConditionKeepInside(xmin, ymin, xmax, ymax, circle));
 }
 
 Condition* FilterParser::parse(const std::string& condition) const

@@ -21,6 +21,7 @@ public:
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "reader_dataframe"; }
   bool use_rcapi() const override { return true; };
+  void clear(bool) override;
 
   // multi-threading
   LASRdataframereader* clone() const override { return new LASRdataframereader(*this); };
@@ -30,18 +31,14 @@ private:
 
 
 private:
-  bool has_gps;
-  bool has_rgb;
-  bool has_nir;
-  bool is_extended;
   int current_point;
-  int num_extrabytes;
   int npoints;
   double scale[3];
   double offset[3];
-  std::vector<int> col_names;
+  std::vector<AttributeHandler> accessors;
   std::string wkt;
   SEXP dataframe;
+  Header* header;
 
   Point point;
 
