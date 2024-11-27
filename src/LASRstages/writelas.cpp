@@ -71,6 +71,9 @@ bool LASRlaswriter::set_output_file(const std::string& file)
 
 bool LASRlaswriter::process(Point*& p)
 {
+  // In streaming mode the point is owned by reader_las. Desallocating it stops the pipeline
+  if (p == nullptr) return true;
+
   if (p->get_deleted()) return true;
 
   // No writer initialized? Create a writer.
@@ -176,6 +179,10 @@ bool LASRlaswriter::process(LAS*& las)
 
 void LASRlaswriter::set_header(Header*& header)
 {
+  // We are receiving a new header because a reader start reading a new file
+
+  // If we still have a LASheader this means that we are merging multiple files
+  // We don't need to create a new LASheader.
   if (lasheader) return;
 
   int version_minor = 2;
@@ -244,6 +251,10 @@ bool LASRlaswriter::set_chunk(Chunk& chunk)
 
 void LASRlaswriter::clear(bool last)
 {
+  // In clear we are testing:
+  // - is it the last call to clear? If yes we can clear everything
+  // - are we writing in merge mode? If yes we need to keep the LASwriter. Otherwise we can clean
+  //   a new writer will be created at next iteration
   if (!merged || last)
   {
     if (laswriter)
@@ -253,7 +264,21 @@ void LASRlaswriter::clear(bool last)
       delete laswriter;
       laswriter = nullptr;
     }
+
+    if (point)
+    {
+      delete point;
+      point = nullptr;
+    }
+
+    if (lasheader)
+    {
+      delete lasheader;
+      lasheader = nullptr;
+    }
   }
+
+  reset_accessor();
 }
 
 void LASRlaswriter::clean_copc_ext(std::string& path)

@@ -14,6 +14,7 @@ LASRlasreader::LASRlasreader()
 
 bool LASRlasreader::set_chunk(Chunk& chunk)
 {
+  // New chunk -> new reader for a new file. We can delete the previous reader and build a new one
   if (lasreader)
   {
     lasreader->close();
@@ -27,6 +28,7 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
     lasreadopener = nullptr;
   }
 
+  // Create a reader
   LASlibFilterParserExtension parser;
   for (auto& s : filters) s = parser.parse(s);
   std::string sfilter = std::accumulate(filters.begin(), filters.end(), std::string(" "));
@@ -81,7 +83,7 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   lasheader = &lasreader->header;
 
   // We did not use LASreaderBuffered so we build a LASvlr_lasoriginal by hand.
-  if (chunk.buffer > 0)
+  /*if (chunk.buffer > 0)
   {
     lasheader->set_lasoriginal();
     memset((void*)lasheader->vlr_lasoriginal, 0, sizeof(LASvlr_lasoriginal));
@@ -89,15 +91,16 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
     lasheader->vlr_lasoriginal->min_y = chunk.ymin;
     lasheader->vlr_lasoriginal->max_x = chunk.xmax;
     lasheader->vlr_lasoriginal->max_y = chunk.ymax;
-  }
-
-  reset_accessor();
+  }*/
 
   return true;
 }
 
 bool LASRlasreader::process(Header*& header)
 {
+  // LASRlasreader is responsible for populating the header.
+  // It is called first before LASRlasreader::process(Point) (streaming) or LASRlasreader::process(LAS) (in memory)
+  // If the point is null then we create one Header. This object own the Header
   if (header != nullptr) return true;
 
   header = new Header;
@@ -169,6 +172,7 @@ bool LASRlasreader::process(Header*& header)
   return true;
 }
 
+// Streaming mode
 bool LASRlasreader::process(Point*& point)
 {
   if (point == nullptr)
@@ -200,33 +204,15 @@ bool LASRlasreader::process(Point*& point)
   }
   else
   {
+    // In streaming mode this triggers a stop
     delete point;
     point = nullptr;
-
-    delete header;
-    header = nullptr;
   }
 
   return true;
 }
 
-/*
- *   if (header->vlr_lasoriginal)
- {
- xmin = header->vlr_lasoriginal->min_x;
- ymin = header->vlr_lasoriginal->min_y;
- xmax = header->vlr_lasoriginal->max_x;
- ymax = header->vlr_lasoriginal->max_y;
- }
- else
- {
- xmin = header->min_x;
- ymin = header->min_y;
- xmax = header->max_x;
- ymax = header->max_y;
- }
- */
-
+// In memory mode
 bool LASRlasreader::process(LAS*& las)
 {
   if (las != nullptr) { delete las; las = nullptr; }
@@ -313,4 +299,14 @@ void LASRlasreader::reset_accessor()
   blue = AttributeHandler("B");
   nir = AttributeHandler("NIR");
   extrabytes.clear();
+}
+
+void LASRlasreader::clear(bool)
+{
+  // Called at the end of the pipeline. We can delete the header
+  if (header)
+  {
+    delete header;
+    header = nullptr;
+  }
 }
