@@ -39,8 +39,8 @@ test_that("metric_engine works with non existing extrabyte",
   ans = exec(p, on = f, noread = T)
   m = ans$metrics
 
-  expect_true(m$plop_sum, 0)
-  expect_true(m$plop_sd, 0)
+  expect_equal(m$plop_sum, 0)
+  expect_equal(m$plop_sd, 0)
 })
 
 test_that("metric_engine with summarise with multiple file",

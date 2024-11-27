@@ -408,32 +408,22 @@ StageMatrix::StageMatrix(const StageMatrix& other)
 
 void StageMatrix::transform(double& x, double& y, double& z)
 {
-  double xt,yt,zt;
-  double point[4];
-  double tpoint[4];
-
-  point[0] = x;
-  point[1] = y;
-  point[2] = z;
-  point[3] = 1;
-
-  tpoint[0] = 0;
-  tpoint[1] = 0;
-  tpoint[2] = 0;
-  tpoint[3] = 0;
+  double point[4] = {x, y, z, 1}; // Homogeneous coordinates
+  double tpoint[4] = {0, 0, 0, 0}; // Transformed coordinates
 
   for (int i = 0; i < 4; ++i)
   {
     for (int j = 0; j < 4; ++j)
     {
-      tpoint[i] += matrix[i][j] * point[j];
+      tpoint[i] += matrix[i][j] * point[j]; // Matrix-vector multiplication
     }
   }
 
-  x = tpoint[0];
-  y = tpoint[1];
-  z = tpoint[2];
+  x = tpoint[0]; // Update x
+  y = tpoint[1]; // Update y
+  z = tpoint[2]; // Update z
 }
+
 
 void StageMatrix::merge(const Stage* other)
 {

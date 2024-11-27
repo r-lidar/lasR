@@ -102,7 +102,11 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
     id = index_map[d->triangles[i+2]];
     las->get_point(id, &C);
 
-    TriangleXYZ triangle(A, B, C);
+    PointXYZ a(A.get_x(), A.get_y(), accessor(&A));
+    PointXYZ b(B.get_x(), B.get_y(), accessor(&B));
+    PointXYZ c(C.get_x(), C.get_y(), accessor(&C));
+
+    TriangleXYZ triangle(a, b, c);
 
     // Interpolate in this triangle if the longest edge fulfill requirements
     bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;

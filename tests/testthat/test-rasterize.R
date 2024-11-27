@@ -23,8 +23,8 @@ test_that("rasterize works with extrabyte",
   expect_s4_class(u, "SpatRaster")
   expect_equal(names(u), c("HAG_mean", "HAG_max", "plop_sum"))
   expect_equal(dim(u), c(58, 58, 3))
-  expect_equal(mean(u[[1]][], na.rm = T), 3.13122, tolerance = 1e-6)
-  expect_equal(mean(u[[2]][], na.rm = T), 7.957237, tolerance = 1e-6)
+  expect_equal(mean(u[[1]][], na.rm = T), 3.149584, tolerance = 1e-6)
+  expect_equal(mean(u[[2]][], na.rm = T), 7.952026, tolerance = 1e-6)
   expect_equal(mean(u[[3]][], na.rm = T), 0)
 })
 
