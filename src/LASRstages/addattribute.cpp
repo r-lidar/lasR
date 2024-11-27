@@ -15,8 +15,8 @@ bool LASRaddattribute::set_parameters(const nlohmann::json& stage)
   std::string type = stage.at("data_type");
   name = stage.at("name");
   description = stage.at("description");
-  scale = stage.value("scale", 1);
-  offset = stage.value("offset", 0);
+  scale = stage.value("scale", 1.0);
+  offset = stage.value("offset", 0.0);
   data_type = AttributeType::NOTYPE;
 
   if (type == "uchar")       data_type = AttributeType::UINT8;
