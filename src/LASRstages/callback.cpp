@@ -21,7 +21,7 @@ bool LASRcallback::set_parameters(const nlohmann::json& stage)
   args = string_address_to_sexp(address_args_str);
 
   // Parse select = "*"
-  std::string all = "xyzitrndecskwoaupRGBNCb0123456789";
+  std::string all = "xyzitrndecskwoaupRGBNCbE";
   size_t pos = select.find('*');
   if (pos != std::string::npos) select = all;
 
@@ -76,6 +76,20 @@ bool LASRcallback::process(LAS*& las)
           {
             j++;
           }
+        }
+      }
+    }
+    // Handle extrabytes in a (not elegant) backward compatible way
+    else if (c == 'E')
+    {
+      for (auto attribute : las->newheader->schema.attributes)
+      {
+        if (lascoreattributes.count(attribute.name) == 0)
+        {
+          name = attribute.name;
+          names.push_back(name);
+          accessors.push_back(AttributeHandler(name));
+          attributes.push_back(attribute);
         }
       }
     }
