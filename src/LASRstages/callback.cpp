@@ -104,7 +104,7 @@ bool LASRcallback::process(LAS*& las)
     std::string name = names[i];
     int type = (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0) ? REALSXP : INTSXP;
 
-    SEXP v = PROTECT(Rf_allocVector(type, las->newheader->number_of_point_records)); nsexpprotected++;
+    SEXP v = PROTECT(Rf_allocVector(type, las->npoints)); nsexpprotected++;
     SET_VECTOR_ELT(data_frame, i, v);
   }
 
@@ -141,14 +141,14 @@ bool LASRcallback::process(LAS*& las)
 
   // All the points were not exposed
   // Set the correct length to R's vectors
-  /*if (j != las->npoints)
+  if (j != las->npoints)
   {
     for (int i = 0 ; i < nattr ; i++)
     {
       SEXP vector = VECTOR_ELT(data_frame, i);
       SETLENGTH(vector, j);
     }
-  }*/
+  }
 
   // Create a data.frame with R attributes
   SEXP bbox = PROTECT(Rf_allocVector(REALSXP, 4)); nsexpprotected++;
@@ -182,7 +182,7 @@ bool LASRcallback::process(LAS*& las)
   }
 
   // If modify = false or res is not a data.frame we can already push the result and return
-  if (!error &&  (!modify || (TYPEOF(res) != VECSXP) || Rf_length(VECTOR_ELT(res, 0)) != las->newheader->number_of_point_records))
+  if (!error &&  (!modify || (TYPEOF(res) != VECSXP) || Rf_length(VECTOR_ELT(res, 0)) != las->npoints))
   {
     UNPROTECT(nsexpprotected); // unprotect all the vectors (ncols) + 5 objects created in this function;
     nsexpprotected = 0;
