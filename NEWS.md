@@ -1,6 +1,26 @@
 # lasR 0.13.0
 
-- New: capacity to pre-read a point cloud in R using an external pointer.
+`lasR 0.13.0` is a massive rewritting of the internal engine to conform to third party libraries licences. I'm expecting users to find some bugs in a close future. Yet, all the unit tests are passing.
+
+### Breaking chnages
+
+ - It is not longer possible to use `LASlib` filters such as `-drop_z_above 5` in the stages (except the reader stage). User must use conditional commands introduced in 0.12.0 such as `"Z > 5"`
+ - The reader no longer read the bit flags from the LAS/LAS files that are never used anyway.
+ - `sort_points()` not longer sorts by gpstime and return number. It performs a spatial sort only. The parameter spatial have been removed
+ - `classify_with_csf()` no longer uses last return only
+ - Probably other changes but I changes thousands of lines of code...
+ 
+ ### News 
+ 
+- New: capacity to pre-read a point cloud in R using an external pointer. See `read_cloud()`.
+- New: stages can be applied one by one to a point cloud loaded in memory
+
+  ```r
+  f <- system.file("extdata", "Topography.las", package="lasR")
+  las <- read_cloud(f)
+  u = exec(chm(5), on = las)
+  ```
+
 
 # lasR 0.12.1
 

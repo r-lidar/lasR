@@ -1,4 +1,17 @@
-read_las = function(file)
+#' Read a point cloud in memory
+#'
+#' Read a point cloud in memory. The point cloud is stored in a C++ data structure
+#' and is not exposed to users
+#'
+#' @param file a file containing a point cloud. Currently only LAS and LAZ files are supported
+#' @export
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#' las <- read_cloud(f)
+#' las
+#' u = exec(chm(5), on = las)
+#' u
+read_cloud = function(file)
 {
   stopifnot(all(file.exists(file)), length(file) == 1, is.character(file))
   file = normalizePath(file)
