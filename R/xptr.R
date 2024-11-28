@@ -44,7 +44,7 @@ print.lasrcloud <- function(x, ...)
 #'
 #' @param x An object of class 'lasrcloud'.
 #' @param ... Additional arguments (not used).
-#' @export
+# @export
 #' @method plot lasrcloud
 #' @examples
 #' \dontrun{
@@ -53,7 +53,8 @@ print.lasrcloud <- function(x, ...)
 #' las
 #' plot(las)
 #' }
+#' @noRd
 plot.lasrcloud <- function(x, ...)
 {
-  total = .Call(`C_plot_pointcloud`, x[[1]])
+  #total = .Call(`C_plot_pointcloud`, x[[1]])
 }
