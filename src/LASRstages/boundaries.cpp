@@ -20,10 +20,10 @@ bool LASRboundaries::process(Header*& header)
 
   double xmin, ymin, xmax, ymax;
 
-  xmin = header->min_x;
-  ymin = header->min_y;
-  xmax = header->max_x;
-  ymax = header->max_y;
+  xmin = header->min_x + buffer;
+  ymin = header->min_y + buffer;
+  xmax = header->max_x - buffer;
+  ymax = header->max_y - buffer;
 
   PolygonXY bbox;
   bbox.push_back({xmin, ymin});

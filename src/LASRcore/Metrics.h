@@ -17,6 +17,7 @@ public:
   MetricCalculator(MetricComputation computation, AttributeHandler& accessor, float param) : computation(computation), accessor(accessor), param(param) {}
   float compute(const PointCollection& points) { return computation(accessor, points, param); }
   void set_param(float x) { param = x; }
+  void reset() { accessor.reset(); };
 
 private:
   MetricComputation computation;
@@ -38,6 +39,7 @@ public:
   float get_default_value() const { return default_value; }
   void set_default_value(float val) { default_value = val; }
   bool is_streamable() const { return streamable; }
+  void reset();
 
 private:
   double percentile(const std::vector<double>& x, float p) const;

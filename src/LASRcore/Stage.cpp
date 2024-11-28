@@ -54,13 +54,17 @@ bool Stage::set_chunk(Chunk& chunk)
 {
   set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
   if (chunk.shape == ShapeType::CIRCLE) circular = true;
+  buffer = chunk.buffer;
   return true;
 }
 
 void Stage::set_filter(const std::vector<std::string>& f)
 {
   filters = f;
-  for (auto c : f) pointfilter.add_condition(c);
+
+  for (auto c : f)
+    pointfilter.add_condition(c);
+
 }
 
 /*void Stage::set_filter(const std::string& f)

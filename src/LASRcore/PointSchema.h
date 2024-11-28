@@ -313,6 +313,7 @@ public:
   double operator()(const Point* point);
   void operator()(Point* point, double value);
   bool exist() { return attribute != nullptr; }
+  void reset() { init = false; attribute = nullptr; };
 
 protected:
   std::string name;

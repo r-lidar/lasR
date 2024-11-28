@@ -9,7 +9,6 @@ LASRsummary::LASRsummary()
   nsingle = 0;
   nwithheld = 0;
   nsynthetic = 0;
-  //npoints_per_sdf = {0,0};
 
   get_intensity = AttributeHandler("Intensity");
   get_returnnumber = AttributeHandler("ReturnNumber");
@@ -56,6 +55,9 @@ bool LASRsummary::process(Point*& p)
 
 bool LASRsummary::process(LAS*& las)
 {
+  reset_accessors();
+  metrics_engine.reset();
+
   Point* p;
   while (las->read_point())
   {
@@ -345,5 +347,11 @@ nlohmann::json LASRsummary::to_json() const
   return ans;
 }
 
-
+void LASRsummary::reset_accessors()
+{
+  get_intensity.reset();
+  get_returnnumber.reset();
+  get_classification.reset();
+  get_number_of_returns.reset();
+}
 

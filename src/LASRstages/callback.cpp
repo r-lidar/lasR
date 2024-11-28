@@ -92,6 +92,7 @@ bool LASRcallback::process(LAS*& las)
           attributes.push_back(attribute);
         }
       }
+      continue;
     }
     // Backward compatibility
     else if (c == 'b')

@@ -82,47 +82,43 @@ private:
 class ConditionKeepIn : public Condition
 {
 public:
-  ConditionKeepIn(const std::string& attribute_name, double* values, int size) : Condition(attribute_name)
+  ConditionKeepIn(const std::string& attribute_name, const std::vector<double>& values) : Condition(attribute_name)
   {
-    memcpy(this->values, values, size*sizeof(double));
-    this->size = size;
+    this->values = values;
   }
   inline bool filter(const Point* point)
   {
     double v = read(point);
-    for (int i = 0 ; i < size ; i++)
+    for (const auto val : values)
     {
-      if (values[i] == v)
+      if (val == v)
         return false;
     }
     return true;
   }
 private:
-  double values[64];
-  int size;
+  std::vector<double> values;
 };
 
 class ConditionKeepOut : public Condition
 {
 public:
-  ConditionKeepOut(const std::string& attribute_name, double* values, int size) : Condition(attribute_name)
+  ConditionKeepOut(const std::string& attribute_name, const std::vector<double>& values) : Condition(attribute_name)
   {
-    memcpy(this->values, values, size*sizeof(double));
-    this->size = size;
+    this->values = values;
   }
   inline bool filter(const Point* point)
   {
     double v = read(point);
-    for (int i = 0 ; i < size ; i++)
+    for (const auto val : values)
     {
-      if (values[i] == v)
+      if (val == v)
         return true;
     }
     return false;
   }
 private:
-  double values[64];
-  int size;
+  std::vector<double> values;
 };
 
 class ConditionKeepInside : public Condition
@@ -186,10 +182,11 @@ void PointFilter::add_clip(double xmin, double ymin, double xmax, double ymax, b
 
 Condition* FilterParser::parse(const std::string& condition) const
 {
-  if (condition.empty() || condition[0] == '-')
-  {
-    return nullptr; // Already a flag, return as-is
-  }
+  if (condition.empty())
+    return nullptr;
+
+  if (condition[0] == '-')
+    return nullptr;
 
   static const std::vector<std::string> operators = {"%between%", "%in%", "%out%", "==", "!=", ">=", "<=", ">", "<"};
 
@@ -246,14 +243,14 @@ Condition* FilterParser::parse(const std::string& condition) const
     std::vector<std::string> values = split(rhs, ' ');
     std::vector<double> doubles; doubles.reserve(values.size());
     std::transform(values.begin(), values.end(), std::back_inserter(doubles), [](const std::string& val) { return std::stod(val); });
-    return new ConditionKeepIn(lhs, &doubles[0], doubles.size());
+    return new ConditionKeepIn(lhs, doubles);
   }
   else if (op == "%out%")
   {
     std::vector<std::string> values = split(rhs, ' ');
     std::vector<double> doubles; doubles.reserve(values.size());
     std::transform(values.begin(), values.end(), std::back_inserter(doubles), [](const std::string& val) { return std::stod(val); });
-    return new ConditionKeepOut(lhs, &doubles[0], doubles.size());
+    return new ConditionKeepOut(lhs, doubles);
   }
   else if (op == "%between%")
   {

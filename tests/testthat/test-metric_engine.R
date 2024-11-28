@@ -45,6 +45,14 @@ test_that("metric_engine works with non existing extrabyte",
 
 test_that("metric_engine with summarise with multiple file",
 {
-  # I'm sure it does not work. It must be fixed.
-  expect_true(FALSE)
+  f = paste0(system.file(package="lasR"), "/extdata/bcts/")
+  f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+  f = f[1:2]
+  p = summarise(metrics = c("x_min", "y_min", "count", "i_mean"))
+  ans = exec(p, on = f, noread = T)
+  m = ans$metrics
+
+  expect_equal(m$count, c(531662, 823945))
+  expect_equal(m$x_min, c(885022.375, 885024.062))
+  expect_equal(m$y_min, c(629157.188, 629400.0))
 })

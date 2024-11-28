@@ -38,6 +38,7 @@ private:
   AttributeHandler get_returnnumber;
   AttributeHandler get_classification;
   AttributeHandler get_number_of_returns;
+  void reset_accessors();
 
   uint64_t npoints;
   uint64_t nsingle;

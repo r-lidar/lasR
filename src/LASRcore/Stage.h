@@ -95,7 +95,6 @@ public:
   virtual bool need_points() const { return true; };
   virtual void get_extent(double& xmin, double& ymin, double& xmax, double& ymax) { return; };
 
-
   virtual bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uid) { return true; };
 
   //virtual void convert_units() { return; };
@@ -151,6 +150,7 @@ protected:
   double ymin;
   double xmax;
   double ymax;
+  double buffer;
   bool circular;
   bool verbose;
   CRS crs;

@@ -274,6 +274,13 @@ bool MetricManager::active() const
   return size() > 0;
 }
 
+
+void MetricManager::reset()
+{
+  for(auto& op : regular_operators)
+    op.reset();
+}
+
 float MetricManager::string_to_float(const std::string& s) const
 {
   try

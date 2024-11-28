@@ -342,7 +342,9 @@ static int compare_buffers_nogps(const void *a, const void *b)
 bool LAS::sort()
 {
   const Attribute* gpstime = p.schema->find_attribute("gpstime");
+  const Attribute* returnnumber = p.schema->find_attribute("ReturnNumber");
   bool have_gpstime = gpstime != nullptr;
+  bool have_returnnumber = returnnumber != nullptr;
 
   return false;
 

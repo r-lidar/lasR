@@ -134,7 +134,7 @@ test_that("callback exposes everything",
 {
   las = read_las(f, expose = "*")
 
-  expect_equal(dim(las), c(62, 19))
+  expect_equal(dim(las), c(62, 14))
 })
 
 test_that("callback coverage",

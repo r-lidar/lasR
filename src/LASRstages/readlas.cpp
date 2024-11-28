@@ -11,7 +11,20 @@ LASRlasreader::LASRlasreader()
   lasheader = nullptr;
   header = nullptr;
   streaming = true;
-  reset_accessor();
+
+  intensity = AttributeHandler("Intensity");
+  returnnumber = AttributeHandler("ReturnNumber");
+  numberofreturns = AttributeHandler("NumberOfReturns");
+  userdata = AttributeHandler("UserData");
+  classification = AttributeHandler("Classification");
+  psid = AttributeHandler("PointSourceID");
+  scanangle = AttributeHandler("ScanAngle");
+  gpstime = AttributeHandler("gpstime");
+  scannerchannel = AttributeHandler("ScannerChannel");
+  red = AttributeHandler("R");
+  green = AttributeHandler("G");
+  blue = AttributeHandler("B");
+  nir = AttributeHandler("NIR");
 }
 
 bool LASRlasreader::set_chunk(Chunk& chunk)
@@ -296,19 +309,19 @@ LASRlasreader::~LASRlasreader()
 
 void LASRlasreader::reset_accessor()
 {
-  intensity = AttributeHandler("Intensity");
-  returnnumber = AttributeHandler("ReturnNumber");
-  numberofreturns = AttributeHandler("NumberOfReturns");
-  userdata = AttributeHandler("UserData");
-  classification = AttributeHandler("Classification");
-  psid = AttributeHandler("PointSourceID");
-  scanangle = AttributeHandler("ScanAngle");
-  gpstime = AttributeHandler("gpstime");
-  scannerchannel = AttributeHandler("ScannerChannel");
-  red = AttributeHandler("R");
-  green = AttributeHandler("G");
-  blue = AttributeHandler("B");
-  nir = AttributeHandler("NIR");
+  intensity.reset();
+  returnnumber.reset();
+  numberofreturns.reset();
+  userdata.reset();
+  classification.reset();
+  psid.reset();
+  scanangle.reset();
+  gpstime.reset();
+  scannerchannel.reset();
+  red.reset();
+  green.reset();
+  blue.reset();
+  nir.reset();
   extrabytes.clear();
 }
 
