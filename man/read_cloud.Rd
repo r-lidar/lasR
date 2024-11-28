@@ -4,10 +4,12 @@
 \alias{read_cloud}
 \title{Read a point cloud in memory}
 \usage{
-read_cloud(file)
+read_cloud(file, progress = TRUE)
 }
 \arguments{
 \item{file}{a file containing a point cloud. Currently only LAS and LAZ files are supported}
+
+\item{progress}{boolean progress bar}
 }
 \description{
 Read a point cloud in memory. The point cloud is stored in a C++ data structure
