@@ -44,72 +44,82 @@ bool LASRcallback::set_parameters(const nlohmann::json& stage)
 
 bool LASRcallback::process(LAS*& las)
 {
-  // LAS format
-  bool extended = (las->header->version_minor >= 4) && (las->header->point_data_format >= 6);
-  bool has_gps = las->point.have_gps_time;
-  bool has_rgb = las->point.have_rgb;
-  bool has_nir = las->point.have_nir;
+  int error = 0;
 
-  // List all existing attributes
-  std::vector<int> names;
-  for(const char& c : select)
+  int withheld_index = -1; // for backward compatibility
+  int buffered_index = -1; // for backward compatibility
+
+  // List all selected attributes by index
+  std::vector<std::string> names;
+  std::vector<AttributeHandler> accessors;
+  std::vector<Attribute> attributes;
+  int k = 0;
+  for(char c : select)
   {
-    switch(c)
-    {
-      case 'x': names.push_back(X); break;
-      case 'y': names.push_back(Y); break;
-      case 'z': names.push_back(Z); break;
-      case 'i': names.push_back(I); break;
-      case 't': if (has_gps) names.push_back(T); break;
-      case 'r': names.push_back(RN); break;
-      case 'n': names.push_back(NOR); break;
-      case 'd': names.push_back(SDF); break;
-      case 'e': names.push_back(EoF); break;
-      case 'c': names.push_back(CLASS); break;
-      case 's': names.push_back(SYNT); break;
-      case 'k': names.push_back(KEYP); break;
-      case 'w': names.push_back(WITH); break;
-      case 'o': if (extended) { names.push_back(OVER); } break;
-      case 'a': names.push_back(SA); break;
-      case 'u': names.push_back(UD); break;
-      case 'p': names.push_back(PSID); break;
-      case 'R': if (has_rgb) { names.push_back(R); } break;
-      case 'G': if (has_rgb) { names.push_back(G); } break;
-      case 'B': if (has_rgb) { names.push_back(B);} break;
-      case 'N': if (has_nir) { names.push_back(NIR); } break;
-      case 'C': if (extended) { names.push_back(CHAN); } break;
-      case 'b': names.push_back(BUFF) ; break;
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-      {
-        int index = c - '0';
-        if (las->is_attribute_loadable(index)) names.push_back(100 + index);
-        break;
-      }
-      case 'E':
-      {
-        for (int index = 0 ; index < las->header->number_attributes ; index++)
-        {
-          if (las->is_attribute_loadable(index)) names.push_back(100 + index);
-        }
-        break;
-      }
+    std::string name;
 
-      default: warning("Flag '%c' does not correspond to an existing attribute", c);
+    // Handle extrabytes in a (not elegant) backward compatible way
+    if (c >= '0' && c <= '9')
+    {
+      int i = c - '0';
+      int j = 0;
+      for (auto attribute : las->newheader->schema.attributes)
+      {
+        if (lascoreattributes.count(attribute.name) == 0)
+        {
+          if (j == i)
+          {
+            name = attribute.name;
+            break;
+          }
+          else
+          {
+            j++;
+          }
+        }
+      }
     }
+    // Handle extrabytes in a (not elegant) backward compatible way
+    else if (c == 'E')
+    {
+      for (auto attribute : las->newheader->schema.attributes)
+      {
+        if (lascoreattributes.count(attribute.name) == 0)
+        {
+          name = attribute.name;
+          names.push_back(name);
+          accessors.push_back(AttributeHandler(name));
+          attributes.push_back(attribute);
+        }
+      }
+      continue;
+    }
+    // Backward compatibility
+    else if (c == 'b')
+    {
+      name = "Buffer";
+      buffered_index = k;
+      names.push_back(name);
+      accessors.push_back(AttributeHandler(name));
+      attributes.push_back(Attribute(name, AttributeType::NOTYPE));
+    }
+    else
+    {
+      name = std::string(1, c);
+      name = map_attribute(name);
+    }
+
+    int index = las->newheader->schema.get_attribute_index(name);
+    if (index < 0) continue;
+    name = las->newheader->schema.attributes[index].name;
+    names.push_back(name);
+    accessors.push_back(AttributeHandler(name));
+    attributes.push_back(las->newheader->schema.attributes[index]);
+
+    k++;
   }
 
   int nattr = names.size(); // Number of attribute to expose
-
-  int error = 0;
 
   #pragma omp critical (RAPI)
   {
@@ -119,28 +129,8 @@ bool LASRcallback::process(LAS*& las)
   // Populate the list by allocating vectors to store lidar data.
   for (int i = 0 ; i < nattr ; i++)
   {
-    int type;
-    int name = names[i];
-
-    if (name >= 100) // Extra bytes
-    {
-      LASattribute attr = las->header->attributes[name-100];
-      if (attr.data_type < LAS::FLOAT)
-      {
-        if (attr.has_scale() || attr.has_offset())
-          type = REALSXP;
-        else
-          type = INTSXP;
-      }
-      else
-        type = REALSXP;
-    }
-    else if (name == X || name == Y || name == Z || name == SA || name == T)
-      type = REALSXP;
-    else if (name == SDF ||  name ==  SYNT || name == KEYP || name == WITH || name== OVER || name == BUFF)
-      type = LGLSXP;
-    else
-      type = INTSXP;
+    std::string name = names[i];
+    int type = (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0) ? REALSXP : INTSXP;
 
     SEXP v = PROTECT(Rf_allocVector(type, las->npoints)); nsexpprotected++;
     SET_VECTOR_ELT(data_frame, i, v);
@@ -150,33 +140,8 @@ bool LASRcallback::process(LAS*& las)
   SEXP list_names = PROTECT(Rf_allocVector(STRSXP, nattr)); nsexpprotected++;
   for (int i = 0; i < nattr; i++)
   {
-    switch (names[i])
-    {
-    case X:     SET_STRING_ELT(list_names, i, Rf_mkChar("X")); break;
-    case Y:     SET_STRING_ELT(list_names, i, Rf_mkChar("Y")); break;
-    case Z:     SET_STRING_ELT(list_names, i, Rf_mkChar("Z")); break;
-    case I:     SET_STRING_ELT(list_names, i, Rf_mkChar("Intensity")); break;
-    case T:     SET_STRING_ELT(list_names, i, Rf_mkChar("gpstime")); break;
-    case RN:    SET_STRING_ELT(list_names, i, Rf_mkChar("ReturnNumber")); break;
-    case NOR:   SET_STRING_ELT(list_names, i, Rf_mkChar("NumberOfReturns")); break;
-    case SDF:   SET_STRING_ELT(list_names, i, Rf_mkChar("ScanDirectionFlag")); break;
-    case EoF:   SET_STRING_ELT(list_names, i, Rf_mkChar("EdgeOfFlightline")); break;
-    case CLASS: SET_STRING_ELT(list_names, i, Rf_mkChar("Classification")); break;
-    case SYNT:  SET_STRING_ELT(list_names, i, Rf_mkChar("Synthetic")); break;
-    case KEYP:  SET_STRING_ELT(list_names, i, Rf_mkChar("Keypoint")); break;
-    case WITH:  SET_STRING_ELT(list_names, i, Rf_mkChar("Withheld")); break;
-    case OVER:  SET_STRING_ELT(list_names, i, Rf_mkChar("Overlap")); break;
-    case UD:    SET_STRING_ELT(list_names, i, Rf_mkChar("UserData")); break;
-    case PSID:  SET_STRING_ELT(list_names, i, Rf_mkChar("PointSourceID")); break;
-    case SA:    SET_STRING_ELT(list_names, i, Rf_mkChar("ScanAngle")); break;
-    case R:     SET_STRING_ELT(list_names, i, Rf_mkChar("R")); break;
-    case G:     SET_STRING_ELT(list_names, i, Rf_mkChar("G")); break;
-    case B:     SET_STRING_ELT(list_names, i, Rf_mkChar("B")); break;
-    case NIR:   SET_STRING_ELT(list_names, i, Rf_mkChar("NIR")); break;
-    case CHAN:  SET_STRING_ELT(list_names, i, Rf_mkChar("Channel")); break;
-    case BUFF:  SET_STRING_ELT(list_names, i, Rf_mkChar("Buffer")); break;
-    default:    SET_STRING_ELT(list_names, i, Rf_mkChar(las->header->attributes[names[i]-100].name)); break;
-    }
+    std::string name = names[i];
+    SET_STRING_ELT(list_names, i, Rf_mkChar(name.c_str()));
   }
 
   // Protecting the data.frame, protects its content
@@ -186,48 +151,32 @@ bool LASRcallback::process(LAS*& las)
   int j = 0;
   while (las->read_point())
   {
-    bool buffer = las->point.inside_buffer(xmin, ymin, xmax, ymax, circular);
+    bool buffer = las->p.get_buffered();
     if (drop_buffer && buffer) continue;
 
     for (int i = 0 ; i < nattr ; i++)
     {
+      double value;
+      bool use_realsexp;
+
       SEXP vector = VECTOR_ELT(data_frame, i);
 
-      switch (names[i])
+      if (i != buffered_index)
       {
-        case X:     REAL(vector)[j] = las->point.get_x(); break;
-        case Y:     REAL(vector)[j] = las->point.get_y(); break;
-        case Z:     REAL(vector)[j] = las->point.get_z(); break;
-        case I:     INTEGER(vector)[j] = las->point.get_intensity(); break;
-        case T:     REAL(vector)[j] = las->point.get_gps_time(); break;
-        case RN:    INTEGER(vector)[j] = (extended) ? (int)las->point.get_extended_return_number() : las->point.get_return_number(); break;
-        case NOR:   INTEGER(vector)[j] = las->point.get_number_of_returns(); break;
-        case SDF:   INTEGER(vector)[j] = las->point.get_scan_direction_flag(); break;
-        case EoF:   INTEGER(vector)[j] = las->point.get_edge_of_flight_line(); break;
-        case CLASS: INTEGER(vector)[j] = (extended) ? las->point.get_extended_classification() : las->point.get_classification(); break;
-        case SYNT:  LOGICAL(vector)[j] = las->point.get_synthetic_flag(); break;
-        case KEYP:  LOGICAL(vector)[j] = las->point.get_keypoint_flag(); break;
-        case WITH:  LOGICAL(vector)[j] = las->point.get_withheld_flag(); break;
-        case OVER:  LOGICAL(vector)[j] = las->point.get_extended_overlap_flag(); break;
-        case UD:    INTEGER(vector)[j] = las->point.get_user_data(); break;
-        case PSID:  INTEGER(vector)[j] = las->point.get_point_source_ID(); break;
-        case SA:    REAL(vector)[j] = (extended) ? las->point.get_extended_scan_angle() : las->point.get_scan_angle_rank(); break;
-        case R:     INTEGER(vector)[j] = las->point.get_R(); break;
-        case G:     INTEGER(vector)[j] = las->point.get_G(); break;
-        case B:     INTEGER(vector)[j] = las->point.get_B(); break;
-        case NIR:   INTEGER(vector)[j] = las->point.get_NIR(); break;
-        case CHAN:  INTEGER(vector)[j] = las->point.get_extended_scanner_channel(); break;
-        case BUFF:  LOGICAL(vector)[j] = buffer; break;
-        default: // extra bytes
-        {
-          int attr_index = names[i]-100;
-
-          if (TYPEOF(vector) == INTSXP)
-            INTEGER(vector)[j] = (int)las->point.get_attribute_as_float(attr_index);
-          else
-            REAL(vector)[j] = las->point.get_attribute_as_float(attr_index);
-        }
+        use_realsexp = attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0;
+        value = accessors[i](&las->p);
       }
+      else
+      {
+        use_realsexp = false;
+        value = (double)las->p.get_buffered();
+      }
+
+
+      if (use_realsexp)
+        REAL(vector)[j] = value;
+      else
+        INTEGER(vector)[j] = (int)value;
     }
 
     j++;
@@ -304,103 +253,29 @@ bool LASRcallback::process(LAS*& las)
 
     if (!error)
     {
-      // Check the name and find to which LAS attributes it coresponds
-      for (int i = 0; i <  Rf_length(res); i++)
+      // Check the name and find to which LAS attributes it corresponds
+      accessors.clear();
+      for (int i = 0; i < Rf_length(res); i++)
       {
-        std::string sname(CHAR(STRING_ELT(names_attr, i)));
-        if (sname == "X") col_names[i] = attributes::X;
-        else if (sname == "Y") col_names[i] = attributes::Y;
-        else if (sname == "Z") col_names[i] = attributes::Z;
-        else if (sname == "Intensity") col_names[i] = attributes::I;
-        else if (sname == "gpstime") col_names[i] = attributes::T;
-        else if (sname == "ReturnNumber") col_names[i] = attributes::RN;
-        else if (sname == "NumberOfReturns") col_names[i] = attributes::NOR;
-        else if (sname == "ScanDirectionFlag") col_names[i] = attributes::SDF;
-        else if (sname == "EdgeOfFlightline") col_names[i] = attributes::EoF;
-        else if (sname == "Classification") col_names[i] = attributes::CLASS;
-        else if (sname == "Synthetic") col_names[i] = attributes::SYNT;
-        else if (sname == "Keypoint") col_names[i] = attributes::KEYP;
-        else if (sname == "Withheld") col_names[i] = attributes::WITH;
-        else if (sname == "Overlap") col_names[i] = attributes::OVER;
-        else if (sname == "ScanAngle") col_names[i] = attributes::SA;
-        else if (sname == "UserData") col_names[i] = attributes::UD;
-        else if (sname == "PointSourceID") col_names[i] = attributes::PSID;
-        else if (sname == "Red") col_names[i] = attributes::R;
-        else if (sname == "Blue") col_names[i] = attributes::G;
-        else if (sname == "Green") col_names[i] = attributes::B;
-        else if (sname == "NIR") col_names[i] = attributes::NIR;
-        else if (sname == "Channel") col_names[i] = attributes::CHAN;
-        else if (sname == "Buffer") col_names[i] = attributes::BUFF;
-        else if (las->header->get_attribute_index(sname.c_str()) != -1) col_names[i] = las->header->get_attribute_index(sname.c_str()) + 100;
-        else
+        std::string name(CHAR(STRING_ELT(names_attr, i)));
+        if (name == "Withheld")
         {
-          last_error = "non supported column '" + sname +"'";
+          withheld_index = i;
+        }
+        else if (name == "Buffer")
+        {
+          buffered_index = i;
+        }
+        else if (!las->newheader->schema.has_attribute(name))
+        {
+          last_error = "non supported column '" + name +"'";
           UNPROTECT(nsexpprotected);
           nsexpprotected = 0;
           error = 1;
           break;
         }
-      }
-    }
 
-    if (!error)
-    {
-      // for each element of the list check the TYPE is correct before to update some points
-      for (int j = 0 ; j < Rf_length(res) ; j++)
-      {
-        SEXP vector = VECTOR_ELT(res, j);
-        int type = TYPEOF(vector);
-
-        switch(col_names[j])
-        {
-        case attributes::X: if (type != REALSXP) { last_error = "X is expected to be numeric"; error = 1; } break;
-          case attributes::Y: if (type != REALSXP) { last_error = "Y is expected to be numeric"; error = 1; } break;
-          case attributes::Z: if (type != REALSXP) { last_error = "Z is expected to be numeric"; error = 1; } break;
-          case attributes::I: if (type != INTSXP) { last_error = "Intensity is expected to be integer"; error = 1; } break;
-          case attributes::T: if (type != REALSXP) { last_error = "gpstime is expected to be numeric"; error = 1; } break;
-          case attributes::RN: if (type != INTSXP) { last_error = "ReturnNumber is expected to be integer"; error = 1; } break;
-          case attributes::NOR: if (type != INTSXP) { last_error = "NumberOfReturns is expected to be integer"; error = 1; } break;
-          case attributes::SDF: if (type != LGLSXP) { last_error = "ScanDirectionFlag is expected to be logical"; error = 1; } break;
-          case attributes::EoF: if (type != INTSXP) { last_error = "EdgeOfFlightline is expected to be logical"; error = 1; } break;
-          case attributes::CLASS: if (type != INTSXP) { last_error = "Classification is expected to be integer"; error = 1; } break;
-          case attributes::SYNT: if (type != LGLSXP) { last_error = "Synthetic is expected to be logical"; error = 1; } break;
-          case attributes::KEYP: if (type != LGLSXP) { last_error = "Keypoint is expected to be logical"; error = 1; } break;
-          case attributes::WITH: if (type != LGLSXP) { last_error = "Withheld is expected to be logical"; error = 1; } break;
-          case attributes::OVER: if (type != LGLSXP) { last_error = "Overlap is expected to be logical"; error = 1; } break;
-          case attributes::SA: if (type != REALSXP) { last_error = "ScanAngle is expected to be numeric"; error = 1; } break;
-          case attributes::UD: if (type != INTSXP) { last_error = "UserData is expected to be integer"; error = 1; } break;
-          case attributes::PSID: if (type != INTSXP) { last_error = "PointSourceID is expected to be integer"; error = 1; } break;
-          case attributes::R: if (type != INTSXP) { last_error = "R is expected to be integer"; error = 1; } break;
-          case attributes::G: if (type != INTSXP) { last_error = "G is expected to be integer"; error = 1; } break;
-          case attributes::B: if (type != INTSXP) { last_error = "B is expected to be integer"; error = 1; } break;
-          case attributes::NIR: if (type != INTSXP) { last_error = "NIR is expected to be integer"; error = 1; } break;
-          case attributes::CHAN: if (type != INTSXP) { last_error = "Channel is expected to be integer"; error = 1; } break;
-          case attributes::BUFF: break;
-          case -1: break;
-          default: //exra bytes
-          {
-            int attr_index = col_names[j]-100;
-            LASattribute attr = las->point.attributer->attributes[attr_index];
-
-            if (type ==  INTSXP)
-            {
-              if (attr.data_type == LAS::FLOAT || attr.data_type == LAS::DOUBLE)
-              {
-                char buffer[64];
-                snprintf(buffer, sizeof(buffer), "%s is expected to be numeric", attr.name);
-                last_error = std::string(buffer);
-                error = 1;
-              }
-            }
-
-            break;
-          }
-        }
-
-        if (error)
-        {
-          UNPROTECT(nsexpprotected); nsexpprotected = 0;
-        }
+        accessors.push_back(name);
       }
     }
 
@@ -409,7 +284,7 @@ bool LASRcallback::process(LAS*& las)
       // Update the LAS
       while (las->read_point())
       {
-        bool buffer = las->point.inside_buffer(xmin, ymin, xmax, ymax, circular);
+        bool buffer = las->p.inside_buffer(xmin, ymin, xmax, ymax, circular);
         if (drop_buffer && buffer) continue;
 
         int i = las->current_point;
@@ -420,70 +295,42 @@ bool LASRcallback::process(LAS*& las)
           SEXP vector = VECTOR_ELT(res, j);
           int type = TYPEOF(vector);
 
-          switch(col_names[j])
+          // Backward compatibility
+          if (j == withheld_index)
           {
-          case attributes::X: las->point.set_x(REAL(vector)[i]); break;
-          case attributes::Y: las->point.set_y(REAL(vector)[i]); break;
-          case attributes::Z: las->point.set_z(REAL(vector)[i]); break;
-          case attributes::I: las->point.set_intensity(INTEGER(vector)[i]); break;
-          case attributes::T: las->point.set_gps_time(REAL(vector)[i]); break;
-          case attributes::RN: las->point.set_return_number(INTEGER(vector)[i]); break;
-          case attributes::NOR: las->point.set_number_of_returns(INTEGER(vector)[i]); break;
-          case attributes::SDF: las->point.set_scan_direction_flag(LOGICAL(vector)[i]); break;
-          case attributes::EoF: las->point.set_edge_of_flight_line(INTEGER(vector)[i]); break;
-          case attributes::CLASS: las->point.set_classification(INTEGER(vector)[i]); break;
-          case attributes::SYNT: las->point.set_synthetic_flag(LOGICAL(vector)[i]); break;
-          case attributes::KEYP: las->point.set_keypoint_flag(LOGICAL(vector)[i]); break;
-          case attributes::WITH: las->point.set_withheld_flag(LOGICAL(vector)[i]); break;
-          case attributes::OVER: las->point.set_extended_overlap_flag(LOGICAL(vector)[i]); break;
-          case attributes::SA: las->point.set_scan_angle(REAL(vector)[i]); break;
-          case attributes::UD: las->point.set_user_data(INTEGER(vector)[i]); break;
-          case attributes::PSID: las->point.set_point_source_ID(INTEGER(vector)[i]); break;
-          case attributes::R: las->point.set_R(INTEGER(vector)[i]); break;
-          case attributes::G: las->point.set_G(INTEGER(vector)[i]); break;
-          case attributes::B: las->point.set_B(INTEGER(vector)[i]); break;
-          case attributes::NIR: las->point.set_NIR(INTEGER(vector)[i]); break;
-          case attributes::CHAN: las->point.set_extended_scanner_channel(INTEGER(vector)[i]); break;
-          case attributes::BUFF: break;
-          case -1: break;
-          default: //exra bytes
+            double val;
+            if (type == REALSXP)
+             val = REAL(vector)[i];
+            else if (type == LGLSXP)
+             val = (double)LOGICAL(vector)[i];
+            else
+             val = (double)INTEGER(vector)[i];
+
+            las->p.set_deleted(val > 0);
+            continue;
+          }
+
+          // Backward compatibility
+          if (j == buffered_index)
           {
-            int attr_index = col_names[j]-100;
-            LASattribute attr = las->point.attributer->attributes[attr_index];
+            double val;
+            if (type == REALSXP)
+              val = REAL(vector)[i];
+            else if (type == LGLSXP)
+              val = (double)LOGICAL(vector)[i];
+            else
+              val = (double)INTEGER(vector)[i];
 
-            if (type ==  INTSXP)
-            {
-              int val = INTEGER(vector)[i];
-
-              switch(attr.data_type)
-              {
-              case LAS::UCHAR:  { U8 u  = U8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::CHAR:   { I8 u  = I8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::USHORT: { U16 u = U16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::SHORT:  { I16 u = I16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::LONG:   { I32 u = I32_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              }
-            }
-            else if (type ==  REALSXP)
-            {
-              double val = REAL(vector)[i];
-              val = (val - attr.offset[0])/attr.scale[0];
-
-              switch(attr.data_type)
-              {
-              case LAS::UCHAR:  { U8  u = U8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::CHAR:   { I8  u = I8_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::USHORT: { U16 u = U16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::SHORT:  { I16 u = I16_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::LONG:   { I32 u = I32_CLAMP(val); las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::FLOAT:  { F32 u = (F32)val; las->point.set_attribute(attr_index, (U8*)&u); break; }
-              case LAS::DOUBLE: { F64 u = (F64)val; las->point.set_attribute(attr_index, (U8*)&u); break; }
-              }
-            }
-
-            break;
+            las->p.set_buffered(val > 0);
+            continue;
           }
-          }
+
+          if (type == REALSXP)
+            accessors[j](&las->p, REAL(vector)[i]);
+          else if (type == LGLSXP)
+            accessors[j](&las->p, (double)LOGICAL(vector)[i]);
+          else
+            accessors[j](&las->p, (double)INTEGER(vector)[i]);
         }
 
         las->update_point();

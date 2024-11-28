@@ -12,7 +12,7 @@ class LASRsummary: public Stage
 {
 public:
   LASRsummary();
-  bool process(LASpoint*& p) override;
+  bool process(Point*& p) override;
   bool process(LAS*& las) override;
   bool is_streamable() const override { return !metrics_engine.active(); }
   bool set_parameters(const nlohmann::json&) override;
@@ -34,6 +34,12 @@ private:
   void merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2);
 
 private:
+  AttributeHandler get_intensity;
+  AttributeHandler get_returnnumber;
+  AttributeHandler get_classification;
+  AttributeHandler get_number_of_returns;
+  void reset_accessors();
+
   uint64_t npoints;
   uint64_t nsingle;
   uint64_t nwithheld;

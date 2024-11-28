@@ -6,7 +6,7 @@
 class LASRfilter : public Stage
 {
 public:
-  bool process(LASpoint*& p) override;
+  bool process(Point*& p) override;
   bool process(LAS*& las) override;
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "filter"; };

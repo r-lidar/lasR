@@ -54,7 +54,7 @@ test_that("triangulate works with gpstime",
 test_that("interpolation fails with 0 points",
 {
   f <- system.file("extdata", "Topography.las", package="lasR")
-  mesh  = triangulate(50, filter = "-keep_class 24")
+  mesh  = triangulate(50, filter = keep_class(24))
   trans = transform_with(mesh)
   rr = rasterize(2, mesh)
 

@@ -12,11 +12,9 @@
 #include <vector>
 #include <filesystem>
 
-class LASheader;
-class LASreadOpener;
-class LASkdtreeRectangles;
-
 enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE};
+
+class Header;
 
 class LAScatalogIndex
 {
@@ -75,7 +73,7 @@ private:
   void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess = false);
   void add_wkt(const std::string& wkt);
   void add_epsg(int epsg);
-  void add_crs(const LASheader* header);
+  void add_crs(const Header* header);
   bool get_chunk_regular(int index, Chunk& chunk) const;
   bool get_chunk_with_query(int index, Chunk& chunk) const;
   PathType parse_path(const std::string& path);

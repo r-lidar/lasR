@@ -13,7 +13,7 @@ classify_with_csf(
   time_step = 0.65,
   ...,
   class = 2L,
-  filter = "-keep_last"
+  filter = ""
 )
 }
 \arguments{

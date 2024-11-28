@@ -15,7 +15,7 @@ public:
   LASRaddattribute* clone() const override { return new LASRaddattribute(*this); };
 
 private:
-  int data_type;
+  AttributeType data_type;
   double scale;
   double offset;
   std::string name;

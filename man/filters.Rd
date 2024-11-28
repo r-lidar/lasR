@@ -61,25 +61,17 @@ drop_duplicates()
 }
 \description{
 Filters are strings used in the \code{filter} argument of \code{lasR} stages to process only the points of
-interest. Filters follow the format 'Attribute condition value(s)', e.g., \code{Z > 2}, \code{Intensity < 155},
-\code{Classification == 2}, or \code{ReturnNumber == 1}. The available conditions include \code{>}, \code{<}, \code{>=}, \code{<=},
-\code{==}, \code{!=}, \code{\%in\%}, \verb{\%out\%}, and \verb{\%between\%}. The supported attributes are \code{X}, \code{Y}, \code{Z}, \code{Intensity},
-\code{gpstime}, \code{UserData}, \code{ReturnNumber}, \code{ScanAngle}, and \code{PointSourceID}. Variations in attribute naming
-conventions are allowed. For example, \code{z < 2} and \code{Z < 2} are equivalent, as are \code{gps_time},
-\code{GPStime}, \code{time}, and \code{t}, which are all interpreted as \code{gpstime}. Any unrecognized attribute name
-is treated as an extra attribute. For instance, if the point cloud includes an attribute named
-\code{Amplitude}, a filter like \code{Amplitude < 255} is valid.\cr
+interest. Filters follow the format 'Attribute condition value(s)', e.g.: \code{Z > 2}, \code{Intensity < 155},
+\code{Classification == 2}, or \code{ReturnNumber == 1}. \cr
+The available conditions include \code{>}, \code{<}, \code{>=}, \code{<=}, \code{==}, \code{!=}, \code{\%in\%}, \verb{\%out\%}, and \verb{\%between\%}.
+The supported attributes are any names of the attributes of the point cloud such as \code{X}, \code{Y}, \code{Z}, \code{Intensity},
+\code{gpstime}, \code{UserData}, \code{ReturnNumber}, \code{ScanAngle}, \code{Amplitude} and so on.\cr
 Note that filters never fail. If a filter references an attribute not present in the point cloud
-(e.g., \code{Intensity} in a point cloud without intensity data), the attribute is treated as if it
-has a value of 0. This behavior can impact conditions like \code{Intensity > 50}.\cr
+(e.g., \code{Intensity < 50} in a point cloud without intensity data), the attribute is treated as if it
+has a value of 0. This behavior can impact conditions like \code{Intensity < 50}.\cr
 For convenience, the most commonly used filters have corresponding helper functions that return
 the appropriate filter string. Points that satisfy the specified condition \strong{are retained} for
 processing, while others are ignored for the current stage.
-}
-\details{
-Internally, \code{lasR} uses the open-source libraries
-\href{https://github.com/LAStools/LAStools}{LASlib and LASzip}, developed by Martin Isenburg, to read
-and write LAS/LAZ files. Consequently, the flags available in \code{LAStools} are also accessible in \code{lasR}.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")

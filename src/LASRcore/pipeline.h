@@ -75,8 +75,8 @@ private:
   std::vector<int> order;
 
   LAS* las;                             // owned by this
-  LASpoint* point;                      // owned by LASreader and managed by las
-  LASheader* header;                    // owned by LASreader and managed by las
+  Point* point;                         // owned by las or by reader_las in streaming mode
+  Header* header;                       // owned by las or by reader_las in streaming mode
   std::shared_ptr<LAScatalog> catalog;  // owned by this and shared in cloned pipelines
   bool point_cloud_ownership_transfered;
 

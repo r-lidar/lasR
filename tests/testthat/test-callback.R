@@ -24,6 +24,7 @@ test_that("callback creates and exposes data.frame with bbox",
 
   expect_s3_class(las, "data.frame")
   expect_equal(dim(las), c(30L,4L))
+  expect_equal(names(las), c("X", "Y", "Z", "Intensity"))
   expect_equal(attr(las, "bbox"), c(339002.9, 5248000.0,  339015.1, 5248001.2), tolerance = 0.01)
 })
 
@@ -53,6 +54,8 @@ test_that("callback cannot add an attribute not compatble with the format.",
 
 test_that("callback fails if an attribute is of incorrect type.",
 {
+  skip("No longer valid")
+
   fun = function(data) { data$Classification = 0 ; data }
   read = reader_las()
   call = callback(fun, expose = "xyzi")
@@ -131,7 +134,7 @@ test_that("callback exposes everything",
 {
   las = read_las(f, expose = "*")
 
-  expect_equal(dim(las), c(62, 19))
+  expect_equal(dim(las), c(62, 14))
 })
 
 test_that("callback coverage",

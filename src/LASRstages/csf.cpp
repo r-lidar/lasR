@@ -14,19 +14,17 @@ bool LASRcsf::process(LAS*& las)
   std::vector<csf::Point> points;
   points.reserve(las->npoints);
 
+  AttributeHandler set_and_get_classification("Classification");
+
   while(las->read_point())
   {
-    if (lasfilter.filter(&las->point)) continue;
+    if (pointfilter.filter(&las->p)) continue;
 
     csf::Point p;
-    p.x = las->point.get_x();
-    p.y = las->point.get_y();
-    p.z = las->point.get_z();
-    if (las->point.get_classification() == classification)
-    {
-      las->point.set_classification(0);
-      las->update_point();
-    }
+    p.x = las->p.get_x();
+    p.y = las->p.get_y();
+    p.z = las->p.get_z();
+    if (set_and_get_classification(&las->p) == (double)classification) set_and_get_classification(&las->p, 0);
     points.push_back(p);
   }
 
@@ -47,16 +45,12 @@ bool LASRcsf::process(LAS*& las)
   int k = 0;
   while(las->read_point())
   {
-    if (lasfilter.filter(&las->point)) continue;
+    if (pointfilter.filter(&las->p)) continue;
 
     if (i == ground[k])
     {
       k++;
-      if (las->point.classification != 9) // Preserve water
-      {
-        las->point.set_classification(classification);
-        las->update_point();
-      }
+      if (set_and_get_classification(&las->p) != 9) set_and_get_classification(&las->p, classification);
     }
     i++;
   }

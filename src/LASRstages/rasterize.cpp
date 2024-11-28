@@ -9,7 +9,7 @@ bool LASRrasterize::set_parameters(const nlohmann::json& stage)
 
   if (connections.size() == 0)
   {
-    std::vector<std::string> methods = get_vector<std::string>(stage["method"]);
+    methods = get_vector<std::string>(stage["method"]);
 
     window = stage.value("window", res);
     window = (window > res) ? (window-res)/2 : 0;
@@ -38,11 +38,11 @@ bool LASRrasterize::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRrasterize::process(LASpoint*& p)
+bool LASRrasterize::process(Point*& p)
 {
   if (!metric_engine.is_streamable())  return true;
-  if (p->get_withheld_flag() != 0) return true;
-  if (lasfilter.filter(p)) return true;
+  if (p->get_deleted() != 0) return true;
+  if (pointfilter.filter(p)) return true;
 
   double x = p->get_x();
   double y = p->get_y();
@@ -73,10 +73,10 @@ bool LASRrasterize::process(LAS*& las)
   // but we are in a non streamble pipeline. We can call streamable code
   if (streamable)
   {
-    LASpoint* p;
+    Point* p;
     while (las->read_point())
     {
-      p = &las->point;
+      p = &las->p;
       if (!process(p))
         return false; // # nocov
     }
@@ -107,8 +107,8 @@ bool LASRrasterize::process(LAS*& las)
   std::vector<int> cells;
   while (las->read_point(true)) // Need to include withheld points to do not mess grouper indexes
   {
-    double x = las->point.get_x();
-    double y = las->point.get_y();
+    double x = las->p.get_x();
+    double y = las->p.get_y();
 
     if (window)
       raster.get_cells(x-window,y-window, x+window,y+window, cells);
@@ -158,9 +158,9 @@ bool LASRrasterize::process(LAS*& las)
   {
     if (progress->interrupted()) continue;
 
-    std::vector<PointLAS> pts;
+    std::vector<Point> pts;
     int cell = keys[i];
-    las->query(*intervals[i], pts, &lasfilter);
+    las->query(*intervals[i], pts, &pointfilter);
 
     for (int i = 0 ; i < metric_engine.size() ; i++)
     {
