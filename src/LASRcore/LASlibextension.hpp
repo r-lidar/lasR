@@ -1,10 +1,26 @@
-#include "FilterParser.h"
-#include "AttributeMapping.h"
+#ifndef LASLIBFILTERPARSER_H
+#define LASLIBFILTERPARSER_H
 
+#include "PointSchema.h"
+
+#include <string>
+#include <vector>
 #include <numeric>
 #include <stdexcept>
 
-std::string FilterParser::parse(const std::string& condition) const
+class LASlibFilterParserExtension
+{
+private:
+  std::string trim(const std::string& str) const;
+  std::vector<std::string> split(const std::string& str, char delimiter) const;
+
+public:
+  LASlibFilterParserExtension() = default;
+  ~LASlibFilterParserExtension() = default;
+  std::string parse(const std::string& condition) const;
+};
+
+std::string LASlibFilterParserExtension::parse(const std::string& condition) const
 {
   if (condition.empty() || condition[0] == '-')
   {
@@ -33,6 +49,7 @@ std::string FilterParser::parse(const std::string& condition) const
 
   // Extract left-hand side (LHS), operator, and right-hand side (RHS)
   std::string lhs = trim(condition.substr(0, opPos));
+  lhs = map_attribute(lhs);
   std::string rhs = trim(condition.substr(opPos + op.length()));
 
   // Process based on the operator
@@ -81,7 +98,7 @@ std::string FilterParser::parse(const std::string& condition) const
   throw std::invalid_argument("Invalid condition: unsupported operator");
 }
 
-std::vector<std::string> FilterParser::split(const std::string& str, char delimiter) const
+std::vector<std::string> LASlibFilterParserExtension::split(const std::string& str, char delimiter) const
 {
   std::vector<std::string> tokens;
   size_t start = 0;
@@ -98,9 +115,12 @@ std::vector<std::string> FilterParser::split(const std::string& str, char delimi
   return tokens;
 }
 
-std::string FilterParser::trim(const std::string& str) const
+std::string LASlibFilterParserExtension::trim(const std::string& str) const
 {
   size_t start = str.find_first_not_of(" \t");
   size_t end = str.find_last_not_of(" \t");
   return (start == std::string::npos) ? "" : str.substr(start, end - start + 1);
 }
+
+
+#endif // FILTERPARSER_H

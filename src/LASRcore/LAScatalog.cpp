@@ -3,9 +3,7 @@
 #include "Progress.h"
 #include "error.h"
 #include "Grid.h"
-
-// LASlib
-#include "lasreader.hpp"
+#include "PointSchema.h"
 
 // STL
 #include <iostream>
@@ -14,6 +12,8 @@
 #include <algorithm>
 #include <filesystem>
 #include <ctime>
+
+#include "lasreader.hpp"
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
@@ -443,34 +443,9 @@ void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bo
   this->noprocess.push_back(noprocess);
 }
 
-void LAScatalog::add_crs(const LASheader* header)
+void LAScatalog::add_crs(const Header* header)
 {
-  if (header->vlr_geo_keys)
-  {
-    for (int j = 0; j < header->vlr_geo_keys->number_of_keys; j++)
-    {
-      if (header->vlr_geo_key_entries[j].key_id == 3072)
-      {
-        add_epsg(header->vlr_geo_key_entries[j].value_offset);
-        break;
-      }
-    }
-  }
-
-  if (header->vlr_geo_ogc_wkt)
-  {
-    for (unsigned int j = 0; j < header->number_of_variable_length_records; j++)
-    {
-      if (header->vlrs[j].record_id == 2112)
-      {
-        char* data = (char*)header->vlrs[j].data;
-        int len = strnlen(data, header->vlrs[j].record_length_after_header);
-        std::string wkt(data, len);
-        add_wkt(wkt);
-        break;
-      }
-    }
-  }
+  crs = header->crs;
 }
 
 bool LAScatalog::add_file(std::string file, bool noprocess)
@@ -486,8 +461,34 @@ bool LAScatalog::add_file(std::string file, bool noprocess)
     return false; // # nocov
   }
 
+  if (lasreader->header.vlr_geo_keys)
+  {
+    for (int j = 0; j < lasreader->header.vlr_geo_keys->number_of_keys; j++)
+    {
+      if (lasreader->header.vlr_geo_key_entries[j].key_id == 3072)
+      {
+        add_epsg(lasreader->header.vlr_geo_key_entries[j].value_offset);
+        break;
+      }
+    }
+  }
+
+  if (lasreader->header.vlr_geo_ogc_wkt)
+  {
+    for (unsigned int j = 0; j < lasreader->header.number_of_variable_length_records; j++)
+    {
+      if (lasreader->header.vlrs[j].record_id == 2112)
+      {
+        char* data = (char*)lasreader->header.vlrs[j].data;
+        int len = strnlen(data, lasreader->header.vlrs[j].record_length_after_header);
+        std::string wkt(data, len);
+        add_wkt(wkt);
+        break;
+      }
+    }
+  }
+
   files.push_back(file);
-  add_crs(&lasreader->header);
   add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
   npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
   header_dates.push_back({lasreader->header.file_creation_year, lasreader->header.file_creation_day});

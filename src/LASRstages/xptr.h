@@ -9,7 +9,7 @@ class LASRreaderxptr : public Stage
 {
 public:
   LASRreaderxptr(LAS* las) { this->las = las; };
-  bool process(LASheader*& header) override { header = this->las->header; return true; };
+  bool process(Header*& header) override { header = this->las->newheader; return true; };
   bool process(LAS*& las) override { las = this->las; return true; };
   std::string get_name() const override { return "reader_externalptr";  }
   bool use_rcapi() const override { return true; };

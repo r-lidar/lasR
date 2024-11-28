@@ -1,25 +1,18 @@
 #' Point Filters
 #'
 #' Filters are strings used in the `filter` argument of `lasR` stages to process only the points of
-#' interest. Filters follow the format 'Attribute condition value(s)', e.g., `Z > 2`, `Intensity < 155`,
-#' `Classification == 2`, or `ReturnNumber == 1`. The available conditions include `>`, `<`, `>=`, `<=`,
-#' `==`, `!=`, `%in%`, `%out%`, and `%between%`. The supported attributes are `X`, `Y`, `Z`, `Intensity`,
-#' `gpstime`, `UserData`, `ReturnNumber`, `ScanAngle`, and `PointSourceID`. Variations in attribute naming
-#' conventions are allowed. For example, `z < 2` and `Z < 2` are equivalent, as are `gps_time`,
-#' `GPStime`, `time`, and `t`, which are all interpreted as `gpstime`. Any unrecognized attribute name
-#' is treated as an extra attribute. For instance, if the point cloud includes an attribute named
-#' `Amplitude`, a filter like `Amplitude < 255` is valid.\cr
+#' interest. Filters follow the format 'Attribute condition value(s)', e.g.: `Z > 2`, `Intensity < 155`,
+#' `Classification == 2`, or `ReturnNumber == 1`. \cr
+#' The available conditions include `>`, `<`, `>=`, `<=`, `==`, `!=`, `%in%`, `%out%`, and `%between%`.
+#' The supported attributes are any names of the attributes of the point cloud such as `X`, `Y`, `Z`, `Intensity`,
+#' `gpstime`, `UserData`, `ReturnNumber`, `ScanAngle`, `Amplitude` and so on.\cr
 #' Note that filters never fail. If a filter references an attribute not present in the point cloud
-#' (e.g., `Intensity` in a point cloud without intensity data), the attribute is treated as if it
-#' has a value of 0. This behavior can impact conditions like `Intensity > 50`.\cr
+#' (e.g., `Intensity < 50` in a point cloud without intensity data), the attribute is treated as if it
+#' has a value of 0. This behavior can impact conditions like `Intensity < 50`.\cr
 #' For convenience, the most commonly used filters have corresponding helper functions that return
 #' the appropriate filter string. Points that satisfy the specified condition **are retained** for
 #' processing, while others are ignored for the current stage.
 #'
-#' Internally, `lasR` uses the open-source libraries
-#' [LASlib and LASzip](https://github.com/LAStools/LAStools), developed by Martin Isenburg, to read
-#' and write LAS/LAZ files. Consequently, the flags available in `LAStools` are also accessible in `lasR`.
-
 #' @param x numeric or integer as a function of the filter used.
 #' @param e1,e2 lasR objects.
 #' @param ... Unused.
@@ -124,13 +117,16 @@ print.laslibfilter = function(x, ...)
   return(ans)
 }
 
-validate_filter <- function(condition)
+validate_filter <- function(condition, allow_laslib_filter)
 {
   if (length(condition) == 0L) return(condition)
   if (length(condition) > 1L) return(sapply(condition, validate_filter))
   if (condition == "") return(condition)
-  if (substr(condition, 1, 1) == "-") return(condition)
-
+  if (substr(condition, 1, 1) == "-")
+  {
+    if (!allow_laslib_filter) stop(paste0("LASlib filter flags (", condition, ") are no longer supported except in the LAS/LAZ file reader stage"))
+    return(condition)
+  }
   # Regex patterns for general attributes
   attribute_patterns <- list(
     "above" = "^([A-Za-z_]+)\\s*>\\s*([0-9.]+)$",

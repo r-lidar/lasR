@@ -3,10 +3,7 @@
 
 #include "Stage.h"
 
-class LASwriter;
-class LASheader;
-//class LASindex;
-//class LASquadtree;
+class LASlibInterface;
 
 class LASRlaswriter: public StageWriter
 {
@@ -14,10 +11,10 @@ public:
   LASRlaswriter();
   ~LASRlaswriter();
   bool set_chunk(Chunk& chunk) override;
-  void set_header(LASheader*& header) override;
+  void set_header(Header*& header) override;
   bool set_input_file_name(const std::string& file) override;
   bool set_output_file(const std::string& file) override;
-  bool process(LASpoint*& p) override;
+  bool process(Point*& p) override;
   bool process(LAS*& las) override;
   bool is_streamable() const override { return true; };
   void clear(bool last) override;
@@ -31,12 +28,10 @@ public:
 private:
   void clean_copc_ext(std::string& path);
 
-private:
   bool keep_buffer;
-  LASwriter* laswriter;
-  LASheader* lasheader;
-  double scales[3];
-  double offsets[3];
+  std::vector<AttributeHandler> core_accessors;
+
+  LASlibInterface* laslibinterface;
 };
 
 #endif

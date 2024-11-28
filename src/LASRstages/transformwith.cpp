@@ -101,8 +101,6 @@ bool LASRtransformwith::process(LAS*& las)
     return false; // # nocov
   }
 
-  // 'connections' contains a single stage that is supposed to be a either a triangulation stage.
-  // a raster stage or an icp stage. This is the only two supported stage as of feb 2024
   auto it = connections.begin();
   LASRtriangulate* triangulation = dynamic_cast<LASRtriangulate*>(it->second);
   StageRaster* rasterization = dynamic_cast<StageRaster*>(it->second);
@@ -115,41 +113,40 @@ bool LASRtransformwith::process(LAS*& las)
     return false; // # nocov
   }
 
-  int attr_index = -1;
-  int data_type = -1;
-  double scale = 1;
-  double offset = 0;
-  if (!attribute.empty())
-  {
-    attr_index = las->header->get_attribute_index(attribute.c_str());
-
-    if (attr_index == -1)
-    {
-      last_error = "invalid attribute index";
-      return false;
-    }
-
-    data_type = las->header->attributes[attr_index].data_type;
-
-    if (data_type != LAS::LONG && data_type != LAS::DOUBLE)
-    {
-      last_error = "the extrabyte attribute must be of type 'int' or 'double'";
-      return false;
-    }
-
-    if (data_type == LAS::LONG)
-    {
-      scale = las->point.quantizer->z_scale_factor;
-      //offset = las->point.quantizer->z_offset;
-      las->header->attributes[attr_index].set_scale(scale);
-      las->header->attributes[attr_index].set_offset(offset);
-      las->header->update_extra_bytes_vlr();
-    }
-  }
-
   // With a triangulation or a raster we are only updating Z
   if (triangulation != nullptr || rasterization != nullptr)
   {
+    AttributeHandler set_and_get_value("Z");
+
+    if (!attribute.empty())
+    {
+      int index = las->newheader->schema.get_attribute_index(attribute);
+
+      if (index == -1)
+      {
+        last_error = "invalid attribute";
+        return false;
+      }
+
+      Attribute* attr = &las->newheader->schema.attributes[index];
+      AttributeType data_type = attr->type;
+
+      if (data_type != AttributeType::INT32 && data_type != AttributeType::DOUBLE)
+      {
+        last_error = "the attribute " + attribute + " must be of type 'int' or 'double'";
+        return false;
+      }
+
+      if (data_type == AttributeType::INT32 && attr->scale_factor == 1)
+      {
+        attr->scale_factor = las->newheader->schema.attributes[2].scale_factor;
+        //last_error = "the attribute " + attribute + " is of type 'int' but does not have as scale factor";
+        //return false;
+      }
+
+      set_and_get_value = AttributeHandler(attribute);
+    }
+
     std::vector<double> hag;
 
     if (triangulation != nullptr)
@@ -165,7 +162,7 @@ bool LASRtransformwith::process(LAS*& las)
 
       while (las->read_point())
       {
-        float val = raster.get_value_bilinear(las->point.get_x(), las->point.get_y());
+        float val = raster.get_value_bilinear(las->p.get_x(), las->p.get_y());
         if (val != raster.get_nodata()) hag[las->current_point] = val;
       }
     }
@@ -177,24 +174,19 @@ bool LASRtransformwith::process(LAS*& las)
 
       if (z == NA_F64)
       {
-        las->remove_point();
+        las->delete_point();
         deleted++;
         continue;
       }
 
       switch(op)
       {
-      case SUB: z = las->point.get_z() - z; break;
-      case ADD: z = las->point.get_z() + z; break;
+      case SUB: z = las->p.get_z() - z; break;
+      case ADD: z = las->p.get_z() + z; break;
       default: last_error = "internal error, invalid operator"; return false; break; // # nocov
       }
 
-      if (attr_index == -1)
-        las->point.set_z(z);
-      else
-        las->point.set_attribute_as_float(attr_index, z);
-
-      las->update_point();
+      set_and_get_value(&las->p, z);
     }
 
     las->update_header();
@@ -209,29 +201,32 @@ bool LASRtransformwith::process(LAS*& las)
     double y = 0;
     double z = 0;
 
-    double new_xoffset = las->header->x_offset;
-    double new_yoffset = las->header->y_offset;
-    double new_zoffset = las->header->z_offset;
+    double new_xoffset = las->newheader->schema.attributes[0].offset;
+    double new_yoffset = las->newheader->schema.attributes[1].offset;
+    double new_zoffset = las->newheader->schema.attributes[2].offset;
+
     mat->transform(new_xoffset, new_yoffset, new_zoffset);
 
     while (las->read_point())
     {
-      x = las->point.get_x();
-      y = las->point.get_y();
-      z = las->point.get_z();
+      x = las->p.get_x();
+      y = las->p.get_y();
+      z = las->p.get_z();
 
       mat->transform(x,y,z);
 
-      las->point.set_X((x-new_xoffset)/las->header->x_scale_factor);
-      las->point.set_Y((y-new_yoffset)/las->header->y_scale_factor);
-      las->point.set_Z((z-new_zoffset)/las->header->z_scale_factor);
-
-      las->update_point();
+      las->p.set_X((x-new_xoffset)/las->newheader->schema.attributes[0].scale_factor);
+      las->p.set_Y((y-new_yoffset)/las->newheader->schema.attributes[1].scale_factor);
+      las->p.set_Z((z-new_zoffset)/las->newheader->schema.attributes[2].scale_factor);
     }
 
-    las->header->x_offset = new_xoffset;
-    las->header->y_offset = new_yoffset;
-    las->header->z_offset = new_zoffset;
+
+    las->newheader->schema.attributes[0].value_offset = new_xoffset;
+    las->newheader->schema.attributes[1].value_offset = new_yoffset;
+    las->newheader->schema.attributes[2].value_offset = new_zoffset;
+
+    las->seek(0);
+
     las->update_header();
   }
 

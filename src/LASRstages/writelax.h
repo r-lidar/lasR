@@ -17,9 +17,6 @@ public:
   LASRlaxwriter* clone() const override { return new LASRlaxwriter(*this); };
 
 private:
-  bool write_lax(const std::string& file);
-
-private:
   bool embedded;
   bool overwrite;
   bool onthefly;

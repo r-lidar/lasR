@@ -1,14 +1,10 @@
 #ifndef LASF_H
 #define LASF_H
 
-#include "laszip.hpp"
-#include "laspoint.hpp"
-#include "lasdefinitions.hpp"
-
 #include "Interval.h"
 #include "Shape.h"
-#include "PointLAS.h"
-#include "Accessors.h"
+#include "PointSchema.h"
+#include "PointFilter.h"
 
 #include <vector>
 #include <string>
@@ -16,17 +12,17 @@
 class GridPartition;
 class Raster;
 class LASfilter;
-class LASreader;
-class LASreadOpener;
+class LASheader;
 
 class LAS
 {
 public:
-  LAS(LASheader* header);
+  LAS(Header* header);
   LAS(const Raster& raster);
   ~LAS();
-  bool add_attribute(int data_type, const std::string& name, const std::string& description, double scale = 1, double offset = 0, bool mem_realloc = true);
-  bool add_point(const LASpoint& p);
+  bool add_attribute(const Attribute&);
+  bool add_attributes(const std::vector<Attribute>&);
+  bool add_point(const Point& p);
   bool add_rgb();
   bool seek(size_t pos);
   bool read_point(bool include_withhelded = false);
@@ -36,17 +32,19 @@ public:
   void update_header();
   bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
-  bool realloc_point_and_buffer();
-  bool delete_withheld();
-  bool sort();
+  void delete_point(Point* p = nullptr);
+  bool delete_deleted();
+  //bool sort();
   bool sort(const std::vector<int>& order);
 
   // Thread safe queries
-  bool get_xyz(size_t pos, double* xyz) const;
-  bool get_point(size_t pos, PointLAS& pt, LASfilter* const lasfilter = nullptr, AttributeAccessor * const accessor = nullptr) const;
-  bool query(const Shape* const shape, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
-  bool query(const std::vector<Interval>& intervals, std::vector<PointLAS>& addr, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
-  bool knn(const double* x, int k, double radius_max, std::vector<PointLAS>& res, LASfilter* const lasfilter = nullptr, AttributeAccessor* const accessor = nullptr) const;
+  //bool get_xyz(size_t pos, double* xyz) const;
+  bool get_point(size_t pos, Point* p, PointFilter* const filter = nullptr) const;
+  bool query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
+  bool query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
+  bool knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
+
+  int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/newheader->schema.total_point_size); }
 
   // Spatial queries
   void set_inside(Shape* shape);
@@ -65,34 +63,36 @@ private:
   void clean_query();
   bool alloc_buffer();
   bool realloc_buffer();
-  U64 get_true_number_of_points() const;
+  uint64_t get_true_number_of_points() const;
 
   // Access to point attributes without copying the whole point
+  /*inline double get_x(int i) const;
+  inline double get_y(int i) const;
+  inline double get_z(int i) const;
   inline double get_x(const unsigned char* buf) const;
   inline double get_y(const unsigned char* buf) const;
   inline double get_z(const unsigned char* buf) const;
   inline double get_gpstime(const unsigned char* buf) const;
   inline unsigned char get_scanner_channel(const unsigned char* buf) const;
-  inline unsigned char get_return_number(const unsigned char* buf) const;
+  inline unsigned char get_return_number(const unsigned char* buf) const;*/
 
 public:
-  LASpoint point;
+  Point p;
+
+public:
   size_t npoints;
   size_t current_point;
 
   // This part is extremely tricky because lasreadopener own lasreader. If lasreadopener is destructed
   // it invalidate lasreader and thus header. We need header as long as this object exist. Consequently
   // we must also own lasreadopener and lasreader
-  LASreadOpener* lasreadopener;
-  LASreader* lasreader;
-  LASheader* header;
+  Header* newheader;
 
 private:
   unsigned char* buffer;
+  unsigned char* buffer2;
   size_t capacity; // capacity of the buffer in bytes
   int next_point;
-
-  bool own_header; // The pointer to the LASheader is owned by LASlib (LASreader) but could, in some cases, be owned by the class
 
   // For spatial indexed search
   GridPartition* index;
@@ -104,7 +104,6 @@ private:
   std::string file;
 
 public:
-  enum attribute_type { UNDOC = 0, UCHAR = 1, CHAR = 2, USHORT = 3, SHORT = 4, ULONG = 5, LONG = 6, ULONGLONG = 7, LONGLONG = 8, FLOAT = 9, DOUBLE = 10};
   enum attributes{X, Y, Z, I, T, RN, NOR, SDF, EoF, CLASS, SYNT, KEYP, WITH, OVER, UD, SA, PSID, R, G, B, NIR, CHAN, BUFF};
 };
 

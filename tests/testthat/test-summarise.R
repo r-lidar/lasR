@@ -42,7 +42,7 @@ test_that("summary works with 4 files",
   expect_equal(u$npoints_per_class, c(2684009L, 150341L), ignore_attr = TRUE)
 })
 
-test_that("summary works one non streaming mode with buffer",
+test_that("summary works on non streaming mode with buffer",
 {
   f = paste0(system.file(package="lasR"), "/extdata/bcts")
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
