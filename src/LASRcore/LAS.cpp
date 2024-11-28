@@ -309,54 +309,78 @@ bool LAS::delete_deleted()
   return true;
 }
 
-// Static functions defined for C qsort in LAS::sort
-static inline double get_gps_time_extended(const unsigned char* buf) { return *((const double*)&buf[22]); };
-static inline double get_gps_time_legacy(const unsigned char* buf) { return *((const double*)&buf[20]); };
-static inline unsigned char get_scanner_channel(const unsigned char* buf) { return (buf[15] >> 4) & 0x03; };
-static inline unsigned char get_return_number(const unsigned char* buf) { return buf[14] & 0x0F; };
-static int compare_buffers(const void *a, const void *b)
+
+static inline double get_gps_time(const unsigned char* buf, size_t offset) { return *((const double*)&buf[offset]); }
+static inline unsigned char get_return_number(const unsigned char* buf, size_t offset) { return buf[offset] ; }
+
+static int compare_buffers(const void* a, const void* b, void* context)
 {
-  if (get_gps_time_extended((const unsigned char*)a) < get_gps_time_extended((const unsigned char*)b)) return -1;
-  if (get_gps_time_extended((const unsigned char*)a) > get_gps_time_extended((const unsigned char*)b)) return 1;
-  if (get_scanner_channel((const unsigned char*)a) < get_scanner_channel((const unsigned char*)b)) return -1;
-  if (get_scanner_channel((const unsigned char*)a) > get_scanner_channel((const unsigned char*)b)) return 1;
-  if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
-  if (get_return_number((const unsigned char*)a) > get_return_number((const unsigned char*)b)) return 1;
-  return 0;
-}
-static int compare_buffers_nochannel(const void *a, const void *b)
-{
-  if (get_gps_time_legacy((const unsigned char*)a) < get_gps_time_legacy((const unsigned char*)b)) return -1;
-  if (get_gps_time_legacy((const unsigned char*)a) > get_gps_time_legacy((const unsigned char*)b)) return 1;
-  if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
-  if (get_return_number((const unsigned char*)a) > get_return_number((const unsigned char*)b)) return 1;
-  return 0;
-}
-static int compare_buffers_nogps(const void *a, const void *b)
-{
-  if (get_return_number((const unsigned char*)a) < get_return_number((const unsigned char*)b)) return -1;
-  if (get_return_number((const unsigned char*)a) > get_return_number((const unsigned char*)b)) return 1;
+  size_t* offsets = (size_t*)context;
+
+  const unsigned char* buf_a = (const unsigned char*)a;
+  const unsigned char* buf_b = (const unsigned char*)b;
+
+  if (get_gps_time(buf_a, offsets[0]) < get_gps_time(buf_b, offsets[0])) return -1;
+  if (get_gps_time(buf_a, offsets[0]) > get_gps_time(buf_b, offsets[0])) return 1;
+  if (get_return_number(buf_a, offsets[1]) < get_return_number(buf_b, offsets[1])) return -1;
+  if (get_return_number(buf_a, offsets[1]) > get_return_number(buf_b, offsets[1])) return 1;
   return 0;
 }
 
-bool LAS::sort()
+static int compare_buffers_norn(const void* a, const void* b, void* context)
+{
+  size_t* offsets = (size_t*)context;
+  const unsigned char* buf_a = (const unsigned char*)a;
+  const unsigned char* buf_b = (const unsigned char*)b;
+
+  if (get_gps_time(buf_a, offsets[0]) < get_gps_time(buf_b, offsets[0])) return -1;
+  if (get_gps_time(buf_a, offsets[0]) > get_gps_time(buf_b, offsets[0])) return 1;
+  return 0;
+}
+
+static int compare_buffers_nogps(const void* a, const void* b, void* context)
+{
+  size_t* offsets = (size_t*)context;
+
+  const unsigned char* buf_a = (const unsigned char*)a;
+  const unsigned char* buf_b = (const unsigned char*)b;
+
+  if (get_return_number(buf_a, offsets[1]) < get_return_number(buf_b, offsets[1])) return -1;
+  if (get_return_number(buf_a, offsets[1]) > get_return_number(buf_b, offsets[1])) return 1;
+  return 0;
+}
+
+#include <stdlib.h>
+
+/*bool LAS::sort()
 {
   const Attribute* gpstime = p.schema->find_attribute("gpstime");
   const Attribute* returnnumber = p.schema->find_attribute("ReturnNumber");
   bool have_gpstime = gpstime != nullptr;
   bool have_returnnumber = returnnumber != nullptr;
+  have_gpstime = false;
 
-  return false;
+  size_t gpstime_offset = have_gpstime ? gpstime->offset : 0;
+  size_t returnnumber_offset = have_returnnumber ? returnnumber->offset : 0;
 
-  if (have_gpstime)
-    qsort((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers);
+  size_t offsets[2] = { gpstime_offset, returnnumber_offset };
+
+  print("Offsets: %lu %lu\n", gpstime_offset, returnnumber_offset);
+
+  if (have_gpstime && have_returnnumber)
+    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers, offsets);
+  else if (!have_gpstime && have_returnnumber)
+    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_nogps, offsets);
+  else if (have_gpstime && !have_returnnumber)
+    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_norn, offsets);
   else
-    qsort((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_nogps);
+    return true;
 
   reindex();
 
   return true;
-}
+}*/
+
 
 bool LAS::sort(const std::vector<int>& order)
 {

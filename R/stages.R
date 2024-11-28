@@ -1154,7 +1154,7 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' exec(sort_points(), on = f)
-#' @export
+#' @noMd
 sort_points = function(spatial = TRUE)
 {
   ans <- list(algoname = "sort", spatial = spatial)

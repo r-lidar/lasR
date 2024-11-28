@@ -34,7 +34,7 @@ public:
   bool is_attribute_loadable(int index);
   void delete_point(Point* p = nullptr);
   bool delete_deleted();
-  bool sort();
+  //bool sort();
   bool sort(const std::vector<int>& order);
 
   // Thread safe queries
