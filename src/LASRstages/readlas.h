@@ -3,9 +3,7 @@
 
 #include "Stage.h"
 
-class LASreadOpener;
-class LASreader;
-class LASheader;
+class LASlibInterface;
 
 class LASRlasreader: public Stage
 {
@@ -27,26 +25,7 @@ public:
 private:
   Header* header; // ownwed only in streaming mode
   bool streaming;
-
-  AttributeHandler intensity;
-  AttributeHandler returnnumber;
-  AttributeHandler numberofreturns;
-  AttributeHandler userdata;
-  AttributeHandler psid;
-  AttributeHandler classification;
-  AttributeHandler scanangle;
-  AttributeHandler gpstime;
-  AttributeHandler scannerchannel;
-  AttributeHandler red;
-  AttributeHandler green;
-  AttributeHandler blue;
-  AttributeHandler nir;
-  std::vector<AttributeHandler> extrabytes;
-  void reset_accessor();
-
-  LASreadOpener* lasreadopener;
-  LASreader* lasreader;
-  LASheader* lasheader;
+  LASlibInterface* laslibinterface;
 };
 
 #endif

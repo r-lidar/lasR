@@ -3,11 +3,7 @@
 
 #include "Stage.h"
 
-class LASwriter;
-class LASheader;
-class LASpoint;
-//class LASindex;
-//class LASquadtree;
+class LASlibInterface;
 
 class LASRlaswriter: public StageWriter
 {
@@ -32,28 +28,10 @@ public:
 private:
   void clean_copc_ext(std::string& path);
 
-private:
-  AttributeHandler intensity;
-  AttributeHandler returnnumber;
-  AttributeHandler numberofreturns;
-  AttributeHandler userdata;
-  AttributeHandler psid;
-  AttributeHandler classification;
-  AttributeHandler scanangle;
-  AttributeHandler gpstime;
-  AttributeHandler scannerchannel;
-  AttributeHandler red;
-  AttributeHandler green;
-  AttributeHandler blue;
-  AttributeHandler nir;
-  std::vector<AttributeHandler> extrabytes;
-  void reset_accessor();
-
   bool keep_buffer;
-  LASpoint* point;
-  LASwriter* laswriter;
-  LASheader* lasheader;
   std::vector<AttributeHandler> core_accessors;
+
+  LASlibInterface* laslibinterface;
 };
 
 #endif

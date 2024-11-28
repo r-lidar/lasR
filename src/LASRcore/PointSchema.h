@@ -329,13 +329,15 @@ protected:
 class Header
 {
 public:
-
   double max_x;
   double min_x;
   double max_y;
   double min_y;
   double max_z;
   double min_z;
+  double x_scale_factor, y_scale_factor, z_scale_factor;
+  double x_offset, y_offset, z_offset;
+  bool adjusted_standard_gps_time;
   uint64_t number_of_point_records;
   AttributeSchema schema;
   CRS crs;
