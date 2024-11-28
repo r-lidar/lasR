@@ -11,13 +11,13 @@
 #' las
 #' u = exec(chm(5), on = las)
 #' u
-read_cloud = function(file)
+read_cloud = function(file, progress = TRUE)
 {
   stopifnot(all(file.exists(file)), length(file) == 1, is.character(file))
   file = normalizePath(file)
   xptr <- list(algoname = "xptr")
   xptr = set_lasr_class(xptr)
-  ans = exec(xptr, on = file, noread = T)
+  ans = exec(xptr, on = file, noread = T, progress = progress)
   ans = list(ans)
   class(ans) = "lasrcloud"
   return(ans)
@@ -45,6 +45,12 @@ print.lasrcloud <- function(x, ...)
 #' @param ... Additional arguments (not used).
 #' @export
 #' @method plot lasrcloud
+#' \dontrun{
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#' las <- read_cloud(f)
+#' las
+#' plot(las)
+#' }
 plot.lasrcloud <- function(x, ...)
 {
   total = .Call(`C_plot_pointcloud`, x[[1]])

@@ -9,6 +9,9 @@
 #include <string>
 #include <unordered_map>
 
+#define MAX3(a,b,c) (((a)>(b)) ? (((a)>(c)) ? (a) : (c)) : (((b)>(c)) ? (b) : (c)));
+#define MIN3(a,b,c) (((a)>(b)) ? (((b)>(c)) ? (c) : (b)) : (((a)>(c)) ? (c) : (a)));
+
 struct PointXY
 {
   double x;

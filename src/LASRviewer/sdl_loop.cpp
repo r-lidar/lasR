@@ -164,18 +164,18 @@ void sdl_loop(LAS* las)
               run = false;
               break;
             case SDLK_z:
-              drawer->setAttribute(Attribute::Z);
+              drawer->setAttribute(AttributeEnum::Z);
               break;
             case SDLK_i:
-              drawer->setAttribute(Attribute::I);
+              drawer->setAttribute(AttributeEnum::I);
               break;
             case SDLK_c:
-              drawer->setAttribute(Attribute::CLASS);
+              drawer->setAttribute(AttributeEnum::CLASS);
               break;
             case SDLK_r:
             case SDLK_g:
             case SDLK_b:
-              drawer->setAttribute(Attribute::RGB);
+              drawer->setAttribute(AttributeEnum::RGB);
               break;
             case SDLK_q:
               drawer->display_hide_spatial_index();

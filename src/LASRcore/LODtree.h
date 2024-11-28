@@ -1,6 +1,8 @@
 #ifndef LODTREE_H
 #define LODTREE_H
 
+#include "macros.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <array>
@@ -10,9 +12,6 @@
 #include <unordered_map>
 
 class LAS;
-
-#define MAX(a, b, c) ((a) <= (b)? (b) <= (c)? (c) : (b) : (a) <= (c)? (c) : (a))
-#define INFD std::numeric_limits<double>::infinity();
 
 struct Key
 {

@@ -1,5 +1,3 @@
-#include "LODtree.h"
-
 #include <cstdio>
 #include <cmath>
 #include <limits>
@@ -8,6 +6,7 @@
 #include <fstream>
 #include <stdexcept>
 
+#include "LODtree.h"
 #include "LAS.h"
 
 Key::Key(int32_t d, int32_t x, int32_t y, int32_t z) : d(d), x(x), y(y), z(z) {}
@@ -66,16 +65,16 @@ LODtree::LODtree(LAS* las)
   max_depth = 0;
   grid_size = 128;
 
-  xmin = las->header->min_x;
-  ymin = las->header->min_y;
-  zmin = las->header->min_z;
-  xmax = las->header->max_x;
-  ymax = las->header->max_y;
-  zmax = las->header->max_z;
+  xmin = las->newheader->min_x;
+  ymin = las->newheader->min_y;
+  zmin = las->newheader->min_z;
+  xmax = las->newheader->max_x;
+  ymax = las->newheader->max_y;
+  zmax = las->newheader->max_z;
   double center_x = (xmin+xmax)/2;
   double center_y = (ymin+ymax)/2;
   double center_z = (zmin+zmax)/2;
-  double halfsize = MAX(xmax-xmin, ymax-ymin, zmax-zmin)/2;
+  double halfsize = MAX3(xmax-xmin, ymax-ymin, zmax-zmin); halfsize /=2;
 
   xmin = center_x - halfsize;
   ymin = center_y - halfsize;
@@ -93,7 +92,7 @@ void LODtree::compute_max_depth(size_t npts, size_t max_points_per_octant)
   double xsize = xmax-xmin;
   double ysize = ymax-ymin;
   double zsize = zmax-zmin;
-  double size  = MAX(xsize, ysize, zsize);
+  double size  = MAX3(xsize, ysize, zsize);
 
   max_depth = 0;
 

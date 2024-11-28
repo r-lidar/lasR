@@ -102,12 +102,12 @@ Drawer::Drawer(SDL_Window *window, LAS* las)
   this->npoints = las->npoints;
 
   PSquare zp99(0.99);
-  this->minx = las->header->min_x;
-  this->miny = las->header->min_y;
-  this->minz = las->header->min_z;
-  this->maxx = las->header->max_x;
-  this->maxy = las->header->max_y;
-  this->maxz = las->header->max_z;
+  this->minx = las->newheader->min_x;
+  this->miny = las->newheader->min_y;
+  this->minz = las->newheader->min_z;
+  this->maxx = las->newheader->max_x;
+  this->maxy = las->newheader->max_y;
+  this->maxz = las->newheader->max_z;
   this->xcenter = (maxx+minx)/2;
   this->ycenter = (maxy+miny)/2;
   this->zcenter = (maxz+minz)/2;
@@ -115,8 +115,8 @@ Drawer::Drawer(SDL_Window *window, LAS* las)
   this->yrange = maxy-miny;
   this->zrange = maxz-minz;
   this->range = std::max(xrange, yrange);
-  this->zqmin = minz;
-  this->zqmax = zp99.getQuantile();
+  this->zqmin = minz-zcenter;
+  this->zqmax = maxz-zcenter;
 
   this->draw_index = false;
   this->point_budget = 300000;
@@ -130,8 +130,14 @@ Drawer::Drawer(SDL_Window *window, LAS* las)
   this->camera.setPanSensivity(distance*0.001);
   this->camera.setZoomSensivity(distance*0.05);
 
-  setAttribute(Attribute::Z);
-  setAttribute(Attribute::RGB);
+  intensity = AttributeHandler("Intensity");
+  red = AttributeHandler("R");
+  green = AttributeHandler("G");
+  blue = AttributeHandler("B");
+  classification = AttributeHandler("Classification");
+
+  setAttribute(AttributeEnum::Z);
+  setAttribute(AttributeEnum::RGB);
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -140,7 +146,7 @@ Drawer::Drawer(SDL_Window *window, LAS* las)
   int i = 0;
   while (las->read_point())
   {
-    index.insert(las->point.get_x(), las->point.get_y(), las->point.get_z(), las->current_point);
+    index.insert(las->p.get_x(), las->p.get_y(), las->p.get_z(), las->current_point);
     if (i % 1000000 == 0)
     {
       camera.changed = true;
@@ -181,9 +187,9 @@ void Drawer::init_viewport()
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
-void Drawer::setAttribute(Attribute x)
+void Drawer::setAttribute(AttributeEnum x)
 {
-  if (x == Attribute::RGB)
+  if (x == AttributeEnum::RGB)
   {
     camera.changed = true;
 
@@ -196,16 +202,16 @@ void Drawer::setAttribute(Attribute x)
     {
       int index = dis(gen);
       las->seek(index);
-      if (las->point.get_R() > 255) rgb_norm = 255;
+      if (red(&las->p) > 255) rgb_norm = 255;
     }
     las->seek(0);
   }
-  else if (x == Attribute::CLASS)
+  else if (x == AttributeEnum::CLASS)
   {
     this->attr = x;
     camera.changed = true;
   }
-  else if (x == Attribute::I)
+  else if (x == AttributeEnum::I)
   {
     this->attr = x;
     PSquare p01(0.01);
@@ -217,8 +223,8 @@ void Drawer::setAttribute(Attribute x)
     for (int i = 0 ; i < npoints - jump; i += jump)
     {
       las->seek(i);
-      p01.addDataPoint(las->point.get_intensity());
-      p99.addDataPoint(las->point.get_intensity());
+      p01.addDataPoint(intensity(&las->p));
+      p99.addDataPoint(intensity(&las->p));
     }
     this->minattr = p01.getQuantile();
     this->maxattr = p99.getQuantile();
@@ -227,7 +233,7 @@ void Drawer::setAttribute(Attribute x)
   }
   else
   {
-    this->attr = Attribute::Z;
+    this->attr = AttributeEnum::Z;
     this->minattr = zqmin;
     this->maxattr = zqmax;
     this->attrrange = maxattr - minattr;
@@ -263,18 +269,18 @@ bool Drawer::draw()
   for (auto i : pp)
   {
     las->seek(i);
-    float px = las->point.get_x()-xcenter;
-    float py = las->point.get_y()-ycenter;
-    float pz = las->point.get_z()-zcenter;
-    int pr = las->point.get_R();
-    int pg = las->point.get_G();
-    int pb = las->point.get_B();
-    int pc = las->point.get_classification();
-    int pi = las->point.get_intensity();
+    float px = las->p.get_x()-xcenter;
+    float py = las->p.get_y()-ycenter;
+    float pz = las->p.get_z()-zcenter;
+    int pr = red(&las->p);
+    int pg = green(&las->p);
+    int pb = blue(&las->p);
+    int pc = classification(&las->p);
+    int pi = intensity(&las->p);
 
     switch (attr)
     {
-      case Attribute::Z:
+      case AttributeEnum::Z:
       {
         float nz = (std::clamp(pz, (float)minattr, (float)maxattr) - minattr) / (attrrange);
         int bin = std::min(static_cast<int>(nz * (zgradient.size() - 1)), static_cast<int>(zgradient.size() - 1));
@@ -282,19 +288,19 @@ bool Drawer::draw()
         glColor3ub(col[0], col[1], col[2]);
         break;
       }
-      case Attribute::RGB:
+      case AttributeEnum::RGB:
       {
         glColor3ub(pr/rgb_norm, pg/rgb_norm, pb/rgb_norm);
         break;
       }
-      case Attribute::CLASS:
+      case AttributeEnum::CLASS:
       {
         int classification = std::clamp(pc, 0, 19);
         auto& col = classcolor[classification];
         glColor3ub(col[0], col[1], col[2]);
         break;
       }
-      case Attribute::I:
+      case AttributeEnum::I:
       {
         float ni = (std::clamp(pi, (int)minattr, (int)maxattr) - (int)minattr) / (attrrange);
         int bin = std::min(static_cast<int>(ni * (igradient.size() - 1)), static_cast<int>(igradient.size() - 1));

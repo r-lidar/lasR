@@ -1,6 +1,8 @@
 #ifndef DRAWER_H
 #define DRAWER_H
 
+#include "PointSchema.h"
+
 #include <SDL2/SDL.h>
 
 #include "LODtree.h"
@@ -8,7 +10,7 @@
 
 class LAS;
 
-enum Attribute{Z, I, RGB, CLASS};
+enum AttributeEnum{Z, I, RGB, CLASS};
 
 class Drawer
 {
@@ -17,7 +19,7 @@ public:
   bool draw();
   void resize();
   void setPointSize(float);
-  void setAttribute(Attribute x);
+  void setAttribute(AttributeEnum x);
   void display_hide_spatial_index() { draw_index = !draw_index; camera.changed = true; };
   void display_hide_edl() { lightning = !lightning; camera.changed = true; };
   void point_size_plus() { point_size++; camera.changed = true; };
@@ -62,7 +64,7 @@ private:
   double maxattr;
   double attrrange;
 
-  Attribute attr;
+  AttributeEnum attr;
   std::vector<int> pp;
   std::vector<Node*> visible_octants;
 
@@ -74,6 +76,11 @@ private:
   int height;
 
   LAS* las;
+  AttributeHandler intensity;
+  AttributeHandler red;
+  AttributeHandler green;
+  AttributeHandler blue;
+  AttributeHandler classification;
 };
 
 #endif //DRAWER_H
