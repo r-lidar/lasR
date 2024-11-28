@@ -58,6 +58,7 @@ private:
   AttributeHandler blue;
   AttributeHandler nir;
   std::vector<AttributeHandler> extrabytes;
+  std::vector<size_t> extrabytes_offsets;
 };
 
 

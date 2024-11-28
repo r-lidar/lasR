@@ -83,6 +83,7 @@ bool LASRlasreader::process(LAS*& las)
       p.set_buffered();
 
     if (!las->add_point(p)) return false;
+
     progress->update(laslibinterface->p_count());
     progress->show();
   }

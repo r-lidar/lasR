@@ -263,16 +263,18 @@ bool LASlibInterface::init(const Header* header, const CRS& crs)
 
   reset_accessor();
 
-  int num_extrabytes = 0;
-  for (auto attribute : header->schema.attributes)
+  extrabytes_offsets.clear();
+  for (int i = 0 ; i < header->schema.attributes.size() ; i++)
   {
+    const Attribute& attribute = header->schema.attributes[i];
+
     if (lascoreattributes.count(attribute.name) == 0)
     {
       LASattribute attr(attribute.type-1, attribute.name.c_str(), attribute.description.c_str());
       attr.set_scale(attribute.scale_factor);
       attr.set_offset(attribute.value_offset);
       lasheader->add_attribute(attr);
-      num_extrabytes++;
+      extrabytes_offsets.push_back(attribute.offset);
     }
   }
 
@@ -342,15 +344,8 @@ bool LASlibInterface::write_point(Point* p)
   point->set_B(blue(p));
   point->set_NIR(nir(p));
 
-  int i = 0;
-  for (auto attribute : p->schema->attributes)
-  {
-    if (lascoreattributes.count(attribute.name) == 0)
-    {
-      point->set_attribute(i, p->data + attribute.offset);
-      i++;
-    }
-  }
+  for (int i = 0 ; i < extrabytes_offsets.size() ; i++)
+    point->set_attribute(i, p->data + extrabytes_offsets[i]);
 
   laswriter->write_point(point);
   laswriter->update_inventory(point);
