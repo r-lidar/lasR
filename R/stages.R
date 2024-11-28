@@ -131,12 +131,11 @@ build_catalog = function(files, with)
 #' **expose:** the 'expose' argument specifies the data that will actually be exposed to R. For example,
 #' 'xyzia' means that the x, y, and z coordinates, the intensity, and the scan angle will be exposed.
 #' The supported entries are t - gpstime, a - scan angle, i - intensity, n - number of returns,
-#' r - return number, c - classification, s - synthetic flag, k - keypoint flag, w - withheld flag,
-#' o - overlap flag (format 6+), u - user data, p - point source ID, e - edge of flight line flag,
-#' d - direction of scan flag, R - red channel of RGB color, G - green channel of RGB color,
-#' B - blue channel of RGB color, N - near-infrared channel, C - scanner channel (format 6+)
-#' Also numbers from 1 to 9 for the extra bytes data numbers 1 to 9. 'E' enables all extra bytes to be
-#' loaded.  '*' is the wildcard that enables everything to be exposed from the LAS file.
+#' r - return number, c - classification, u - user data, p - point source ID, e - edge of flight line flag,
+#' R - red channel of RGB color, G - green channel of RGB color, B - blue channel of RGB color,
+#' N - near-infrared channel, C - scanner channel (format 6+)
+#' Also numbers from 1 to 9 for the extra attributes data numbers 1 to 9. 'E' enables all extra attribute to be
+#' loaded. '*' is the wildcard that enables everything to be exposed from the point cloud
 #'
 #' @param fun function. A user-defined function that takes as first argument a `data.frame` with the exposed
 #' point cloud attributes (see examples).
@@ -1141,23 +1140,19 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 
 #' Sort points in the point cloud
 #'
-#' This stage sorts the points by scanner channel, GPStime, and return number in order to maximize LAZ
-#' compression. An optional second sorting step can be added to also sort points spatially. In this case,
-#' a grid of 50 meters is applied, and points are sorted by scanner channel, GPSTime, and return number
-#' within each cell of the grid. This increases data locality, speeds up spatial queries, but may slightly
+#' This stage sorts points spatially. A grid of 50 meters is applied, and points are sorted within
+#' each cell of the grid. This increases data locality, speeds up spatial queries, but may slightly
 #' increases the final size of the files when compressed in LAZ format compared to the optimal compression.
-#'
-#' @param spatial Boolean indicating whether to add a spatial sorting stage.
 #'
 #' @template return-pointcloud
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' exec(sort_points(), on = f)
-#' @noMd
-sort_points = function(spatial = TRUE)
+#' @export
+sort_points = function()
 {
-  ans <- list(algoname = "sort", spatial = spatial)
+  ans <- list(algoname = "sort", spatial = TRUE)
   set_lasr_class(ans)
 }
 
@@ -1222,8 +1217,7 @@ summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' read <- reader_las()
 #' tri1 <- triangulate(25, filter = keep_ground(), ofile = tempgpkg())
-#' filter <- "-keep_random_fraction 0.1"
-#' tri2 <- triangulate(filter = filter, ofile = tempgpkg())
+#' tri2 <- triangulate(ofile = tempgpkg())
 #' pipeline <- read + tri1 + tri2
 #' ans <- exec(pipeline, on = f)
 #' #plot(ans[[1]])

@@ -41,8 +41,7 @@ This stage does not modify the point cloud.
 f <- system.file("extdata", "Topography.las", package="lasR")
 read <- reader_las()
 tri1 <- triangulate(25, filter = keep_ground(), ofile = tempgpkg())
-filter <- "-keep_random_fraction 0.1"
-tri2 <- triangulate(filter = filter, ofile = tempgpkg())
+tri2 <- triangulate(ofile = tempgpkg())
 pipeline <- read + tri1 + tri2
 ans <- exec(pipeline, on = f)
 #plot(ans[[1]])
