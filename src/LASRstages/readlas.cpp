@@ -10,6 +10,7 @@ LASRlasreader::LASRlasreader()
   lasreader = nullptr;
   lasheader = nullptr;
   header = nullptr;
+  streaming = true;
   reset_accessor();
 }
 
@@ -222,6 +223,8 @@ bool LASRlasreader::process(LAS*& las)
   if (las != nullptr) { delete las; las = nullptr; }
   if (las == nullptr) las = new LAS(header);
 
+  streaming = false;
+
   progress->reset();
   progress->set_total(lasreader->npoints);
   progress->set_prefix("read_las");
@@ -312,7 +315,7 @@ void LASRlasreader::reset_accessor()
 void LASRlasreader::clear(bool)
 {
   // Called at the end of the pipeline. We can delete the header
-  if (header)
+  if (streaming && header)
   {
     delete header;
     header = nullptr;

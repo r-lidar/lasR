@@ -25,7 +25,8 @@ public:
   LASRlasreader* clone() const override { return new LASRlasreader(*this); };
 
 private:
-  Header* header; // not ownwed
+  Header* header; // ownwed only in streaming mode
+  bool streaming;
 
   AttributeHandler intensity;
   AttributeHandler returnnumber;

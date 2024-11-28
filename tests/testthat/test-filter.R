@@ -72,6 +72,7 @@ test_that("Filters errors",
   expect_error(test("3 == 4")$npoints)
   #expect_error(test("-keep_z_above 234 345"))
   expect_error(test(paste0("UserData %in% ", paste(1:65, collapse = " "))))
+  expect_error(test("-keep_z_above 3"), "LASlib")
 })
 
 test_that("rasterize works with a filter (#29)",

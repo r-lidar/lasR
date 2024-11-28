@@ -32,15 +32,6 @@ LAS::LAS(Header* newheader)
 
   // Initialize the good point format
   p.set_schema(&newheader->schema);
-  //point.init(newheader, newheader->point_data_format, newheader->point_data_record_length, newheader);
-
-  // This fixes #2 and troubles with add_extrabytes but I don't know exactly why except
-  // it is a matter of item in the compressor
-  //delete newheader->laszip;
-  //newheader->laszip = 0;
-
-  //lasreader = nullptr;
-  //lasreadopener = nullptr;
 }
 
 LAS::LAS(const Raster& raster)
@@ -109,12 +100,11 @@ LAS::LAS(const Raster& raster)
 
 LAS::~LAS()
 {
-  // The heade is own by reader_las
-  /*if (newheader)
+  if (newheader)
   {
     delete newheader;
     newheader = nullptr;
-  }*/
+  }
 
   if (buffer)
   {

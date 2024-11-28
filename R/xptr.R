@@ -4,7 +4,7 @@ read_las = function(file)
   file = normalizePath(file)
   xptr <- list(algoname = "xptr")
   xptr = set_lasr_class(xptr)
-  ans = exec(xptr, on = f, noread = T)
+  ans = exec(xptr, on = file, noread = T)
   ans = list(ans)
   class(ans) = "lasrcloud"
   return(ans)

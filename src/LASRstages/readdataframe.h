@@ -38,7 +38,9 @@ private:
   std::vector<AttributeHandler> accessors;
   std::string wkt;
   SEXP dataframe;
-  Header* header;
+
+  Header* header; // own in streaming mode
+  bool streaming;
 
   Point point;
 
