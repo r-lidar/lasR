@@ -45,9 +45,9 @@ bool LASRivf::process(LAS*& las)
 
   while (las->read_point())
   {
-    int nx = std::floor((las->p.get_x() - rxmin) / res);
-    int ny = std::floor((las->p.get_y() - rymin) / res);
-    int nz = std::floor((las->p.get_z() - rzmin) / res);
+    int nx = std::floor((las->point.get_x() - rxmin) / res);
+    int ny = std::floor((las->point.get_y() - rymin) / res);
+    int nz = std::floor((las->point.get_z() - rzmin) / res);
 
     // Add one in the 27 neighboring voxels of this point
     for (int i : {-1,0,1})
@@ -90,9 +90,9 @@ bool LASRivf::process(LAS*& las)
   // Check if the number of points in its neighbourhood is above the threshold
   while (las->read_point())
   {
-    int nx = std::floor((las->p.get_x() - rxmin) / res);
-    int ny = std::floor((las->p.get_y() - rymin) / res);
-    int nz = std::floor((las->p.get_z() - rzmin) / res);
+    int nx = std::floor((las->point.get_x() - rxmin) / res);
+    int ny = std::floor((las->point.get_y() - rymin) / res);
+    int nz = std::floor((las->point.get_z() - rzmin) / res);
 
     int count;
 
@@ -109,7 +109,7 @@ bool LASRivf::process(LAS*& las)
 
     if (count < n)
     {
-      set_and_get_classification(&las->p, classification);
+      set_and_get_classification(&las->point, classification);
     }
 
     progress->update(las->current_point + las->npoints);

@@ -41,7 +41,7 @@ bool LASRtriangulate::process(LAS*& las)
   Point* p;
   while (las->read_point())
   {
-    p = &las->p;
+    p = &las->point;
     if (pointfilter.filter(p)) continue;
     coords.push_back(p->get_x());
     coords.push_back(p->get_y());

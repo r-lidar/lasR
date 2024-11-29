@@ -54,7 +54,7 @@ bool LASRsor::process(LAS*& las)
 
     if (distances[i] > dmean + m*dstd)
     {
-      set_classification(&las->p, classification);
+      set_classification(&las->point, classification);
     }
   }
 

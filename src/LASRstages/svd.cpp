@@ -238,37 +238,37 @@ bool LASRsvd::process(LAS*& las)
 
       if (ft_C)
       {
-        set_coeff00(&las->p, coeff00);
-        set_coeff01(&las->p, coeff01);
-        set_coeff02(&las->p, coeff02);
-        set_coeff10(&las->p, coeff10);
-        set_coeff11(&las->p, coeff11);
-        set_coeff12(&las->p, coeff12);
-        set_coeff20(&las->p, coeff20);
-        set_coeff21(&las->p, coeff21);
-        set_coeff22(&las->p, coeff22);
+        set_coeff00(&las->point, coeff00);
+        set_coeff01(&las->point, coeff01);
+        set_coeff02(&las->point, coeff02);
+        set_coeff10(&las->point, coeff10);
+        set_coeff11(&las->point, coeff11);
+        set_coeff12(&las->point, coeff12);
+        set_coeff20(&las->point, coeff20);
+        set_coeff21(&las->point, coeff21);
+        set_coeff22(&las->point, coeff22);
       }
 
       if (ft_E)
       {
-        set_lambda1(&las->p, eigen_largest);
-        set_lambda2(&las->p, eigen_medium);
-        set_lambda3(&las->p, eigen_smallest);
+        set_lambda1(&las->point, eigen_largest);
+        set_lambda2(&las->point, eigen_medium);
+        set_lambda3(&las->point, eigen_smallest);
       }
 
-      if (ft_a) { set_anisotropy(&las->p, anisotropy); }
-      if (ft_p) { set_planarity(&las->p, planarity); }
-      if (ft_s) { set_sphericity(&las->p, sphericity); }
-      if (ft_l) { set_linearity(&las->p, linearity); }
-      if (ft_o) { set_omnivariance(&las->p, omnivariance); }
-      if (ft_c) { set_curvature(&las->p, curvature); }
-      if (ft_e) { set_eigensum(&las->p, eigen_sum); }
-      if (ft_i) { set_angle(&las->p, angle); }
+      if (ft_a) { set_anisotropy(&las->point, anisotropy); }
+      if (ft_p) { set_planarity(&las->point, planarity); }
+      if (ft_s) { set_sphericity(&las->point, sphericity); }
+      if (ft_l) { set_linearity(&las->point, linearity); }
+      if (ft_o) { set_omnivariance(&las->point, omnivariance); }
+      if (ft_c) { set_curvature(&las->point, curvature); }
+      if (ft_e) { set_eigensum(&las->point, eigen_sum); }
+      if (ft_i) { set_angle(&las->point, angle); }
       if (ft_n)
       {
-        set_normalX(&las->p, nx);
-        set_normalY(&las->p, ny);
-        set_normalZ(&las->p, nz);
+        set_normalX(&las->point, nx);
+        set_normalY(&las->point, ny);
+        set_normalZ(&las->point, nz);
       }
 
       if (main_thread)

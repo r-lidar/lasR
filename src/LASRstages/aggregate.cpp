@@ -34,8 +34,8 @@ bool LASRaggregate::process(LAS*& las)
   std::vector<int> cells;
   while (las->read_point(true)) // Need to include withheld points to do not mess grouper indexes
   {
-    double x = las->p.get_x();
-    double y = las->p.get_y();
+    double x = las->point.get_x();
+    double y = las->point.get_y();
 
     if (window)
       raster.get_cells(x-window,y-window, x+window,y+window, cells);
@@ -105,16 +105,16 @@ bool LASRaggregate::process(LAS*& las)
     int j = 0;
     while (las->read_point())
     {
-      if (pointfilter.filter(&las->p)) continue;
+      if (pointfilter.filter(&las->point)) continue;
 
       for (int i = 0 ; i < Rf_length(list) ; i++)
       {
         SEXP vector = VECTOR_ELT(list, i);
 
         if (sexp_types[i] == REALSXP)
-          REAL(vector)[j] = accessors[i](&las->p);
+          REAL(vector)[j] = accessors[i](&las->point);
         else
-          INTEGER(vector)[j] = accessors[i](&las->p);
+          INTEGER(vector)[j] = accessors[i](&las->point);
       }
 
       j++;

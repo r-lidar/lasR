@@ -162,7 +162,7 @@ bool LASRtransformwith::process(LAS*& las)
 
       while (las->read_point())
       {
-        float val = raster.get_value_bilinear(las->p.get_x(), las->p.get_y());
+        float val = raster.get_value_bilinear(las->point.get_x(), las->point.get_y());
         if (val != raster.get_nodata()) hag[las->current_point] = val;
       }
     }
@@ -181,12 +181,12 @@ bool LASRtransformwith::process(LAS*& las)
 
       switch(op)
       {
-      case SUB: z = las->p.get_z() - z; break;
-      case ADD: z = las->p.get_z() + z; break;
+      case SUB: z = las->point.get_z() - z; break;
+      case ADD: z = las->point.get_z() + z; break;
       default: last_error = "internal error, invalid operator"; return false; break; // # nocov
       }
 
-      set_and_get_value(&las->p, z);
+      set_and_get_value(&las->point, z);
     }
 
     las->update_header();
@@ -209,15 +209,15 @@ bool LASRtransformwith::process(LAS*& las)
 
     while (las->read_point())
     {
-      x = las->p.get_x();
-      y = las->p.get_y();
-      z = las->p.get_z();
+      x = las->point.get_x();
+      y = las->point.get_y();
+      z = las->point.get_z();
 
       mat->transform(x,y,z);
 
-      las->p.set_X((x-new_xoffset)/las->header->schema.attributes[0].scale_factor);
-      las->p.set_Y((y-new_yoffset)/las->header->schema.attributes[1].scale_factor);
-      las->p.set_Z((z-new_zoffset)/las->header->schema.attributes[2].scale_factor);
+      las->point.set_X((x-new_xoffset)/las->header->schema.attributes[0].scale_factor);
+      las->point.set_Y((y-new_yoffset)/las->header->schema.attributes[1].scale_factor);
+      las->point.set_Z((z-new_zoffset)/las->header->schema.attributes[2].scale_factor);
     }
 
 

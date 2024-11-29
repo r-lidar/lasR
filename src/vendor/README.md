@@ -27,6 +27,7 @@ Please refer to the individual LICENSE files in each subdirectory for terms and 
 - Fixed various memory leaks (specific locations not remembered).
 - Changed `stdout` usage to `return true` in `bytestreamount_file.hpp` (see L134) to comply with CRAN policies.
 - Added extra filters in `lasfilter.cpp` (see LL617–1807) and extra flags (see L1959–2161).
+- Added file `lasaccessor.`
 
 All modifications are provided under the LGPL license.
 

@@ -77,7 +77,7 @@ private:
   inline unsigned char get_return_number(const unsigned char* buf) const;*/
 
 public:
-  Point p;
+  Point point;
 
 public:
   size_t npoints;

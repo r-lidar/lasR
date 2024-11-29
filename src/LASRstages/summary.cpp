@@ -62,7 +62,7 @@ bool LASRsummary::process(LAS*& las)
   Point* p;
   while (las->read_point())
   {
-    p = &las->p;
+    p = &las->point;
     process(p);
   }
 

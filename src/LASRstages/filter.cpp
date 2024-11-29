@@ -14,7 +14,7 @@ bool LASRfilter::process(LAS*& las)
   Point* p;
   while (las->read_point())
   {
-    p = &las->p;
+    p = &las->point;
     process(p);
     if (p->get_deleted())
     {
@@ -59,11 +59,11 @@ bool LASRfiltergrid::process(LAS*& las)
 
   while (las->read_point())
   {
-    if (pointfilter.filter(&las->p)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
-    double x = las->p.get_x();
-    double y = las->p.get_y();
-    double z = las->p.get_z();
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    double z = las->point.get_z();
     unsigned int id = las->current_point;
     int cell = grid.cell_from_xy(x,y);
 

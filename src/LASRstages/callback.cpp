@@ -151,7 +151,7 @@ bool LASRcallback::process(LAS*& las)
   int j = 0;
   while (las->read_point())
   {
-    bool buffer = las->p.get_buffered();
+    bool buffer = las->point.get_buffered();
     if (drop_buffer && buffer) continue;
 
     for (int i = 0 ; i < nattr ; i++)
@@ -164,12 +164,12 @@ bool LASRcallback::process(LAS*& las)
       if (i != buffered_index)
       {
         use_realsexp = attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0;
-        value = accessors[i](&las->p);
+        value = accessors[i](&las->point);
       }
       else
       {
         use_realsexp = false;
-        value = (double)las->p.get_buffered();
+        value = (double)las->point.get_buffered();
       }
 
 
@@ -284,7 +284,7 @@ bool LASRcallback::process(LAS*& las)
       // Update the LAS
       while (las->read_point())
       {
-        bool buffer = las->p.inside_buffer(xmin, ymin, xmax, ymax, circular);
+        bool buffer = las->point.inside_buffer(xmin, ymin, xmax, ymax, circular);
         if (drop_buffer && buffer) continue;
 
         int i = las->current_point;
@@ -306,7 +306,7 @@ bool LASRcallback::process(LAS*& las)
             else
              val = (double)INTEGER(vector)[i];
 
-            las->p.set_deleted(val > 0);
+            las->point.set_deleted(val > 0);
             continue;
           }
 
@@ -321,16 +321,16 @@ bool LASRcallback::process(LAS*& las)
             else
               val = (double)INTEGER(vector)[i];
 
-            las->p.set_buffered(val > 0);
+            las->point.set_buffered(val > 0);
             continue;
           }
 
           if (type == REALSXP)
-            accessors[j](&las->p, REAL(vector)[i]);
+            accessors[j](&las->point, REAL(vector)[i]);
           else if (type == LGLSXP)
-            accessors[j](&las->p, (double)LOGICAL(vector)[i]);
+            accessors[j](&las->point, (double)LOGICAL(vector)[i]);
           else
-            accessors[j](&las->p, (double)INTEGER(vector)[i]);
+            accessors[j](&las->point, (double)INTEGER(vector)[i]);
         }
 
         las->update_point();

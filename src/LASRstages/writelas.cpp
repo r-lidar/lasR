@@ -111,7 +111,7 @@ bool LASRlaswriter::process(LAS*& las)
   Point* p;
   while (las->read_point())
   {
-    p = &las->p;
+    p = &las->point;
     if (!process(p))
       return false; // # nocov
 

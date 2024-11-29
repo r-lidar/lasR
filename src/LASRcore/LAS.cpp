@@ -31,7 +31,7 @@ LAS::LAS(Header* header)
   inside = false;
 
   // Initialize the good point format
-  p.set_schema(&header->schema);
+  point.set_schema(&header->schema);
 }
 
 LAS::LAS(const Raster& raster)
@@ -77,7 +77,7 @@ LAS::LAS(const Raster& raster)
   inside = false;
   index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, raster.get_xres()*4);
 
-  p = Point(&header->schema);
+  point = Point(&header->schema);
 
   for (int i = 0 ; i < raster.get_ncells() ; i++)
   {
@@ -88,11 +88,11 @@ LAS::LAS(const Raster& raster)
     double x = raster.x_from_cell(i);
     double y = raster.y_from_cell(i);
 
-    p.set_x(x);
-    p.set_y(y);
-    p.set_z(z);
+    point.set_x(x);
+    point.set_y(y);
+    point.set_z(z);
 
-    add_point(p);
+    add_point(point);
   }
 
   header->number_of_point_records = npoints;
@@ -166,7 +166,7 @@ bool LAS::seek(size_t pos)
   current_point = pos;
   next_point = pos;
   next_point++;
-  p.data = buffer + current_point * header->schema.total_point_size;
+  point.data = buffer + current_point * header->schema.total_point_size;
   return true;
 }
 
@@ -228,7 +228,7 @@ bool LAS::read_point(bool include_withhelded)
     }
 
     current_point = next_point;
-    p.data = buffer + current_point * header->schema.total_point_size;
+    point.data = buffer + current_point * header->schema.total_point_size;
     next_point++;
 
     // If the new current point is not in the current interval we switch to next interval
@@ -241,14 +241,14 @@ bool LAS::read_point(bool include_withhelded)
 
     if (shape)
     {
-      if (shape->contains(p.get_x(), p.get_y()))
+      if (shape->contains(point.get_x(), point.get_y()))
       {
-        if (include_withhelded || !p.get_deleted()) return true;
+        if (include_withhelded || !point.get_deleted()) return true;
       }
     }
     else
     {
-      if (include_withhelded || !p.get_deleted()) return true;
+      if (include_withhelded || !point.get_deleted()) return true;
     }
   } while (true);
 
@@ -270,7 +270,7 @@ void LAS::delete_point(Point* p)
 {
   if (p == nullptr)
   {
-    this->p.set_deleted();
+    this->point.set_deleted();
     header->number_of_point_records--;
   }
   else
@@ -289,10 +289,10 @@ bool LAS::delete_deleted()
   for (int i = 0 ; i < npoints ; i++)
   {
     seek(i);
-    if (p.get_deleted())
+    if (point.get_deleted())
     {
-      p.data = buffer + j * header->schema.total_point_size;
-      index->insert(p.get_x(), p.get_y());
+      point.data = buffer + j * header->schema.total_point_size;
+      index->insert(point.get_x(), point.get_y());
       j++;
     }
   }
@@ -354,8 +354,8 @@ static int compare_buffers_nogps(const void* a, const void* b, void* context)
 
 /*bool LAS::sort()
 {
-  const Attribute* gpstime = p.schema->find_attribute("gpstime");
-  const Attribute* returnnumber = p.schema->find_attribute("ReturnNumber");
+  const Attribute* gpstime = point.schema->find_attribute("gpstime");
+  const Attribute* returnnumber = point.schema->find_attribute("ReturnNumber");
   bool have_gpstime = gpstime != nullptr;
   bool have_returnnumber = returnnumber != nullptr;
   have_gpstime = false;
@@ -691,7 +691,7 @@ void LAS::reindex()
 {
   clean_index();
   index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
-  while (read_point()) index->insert(p.get_x(), p.get_y());
+  while (read_point()) index->insert(point.get_x(), point.get_y());
 }
 
 bool LAS::is_attribute_loadable(int index)
@@ -699,7 +699,7 @@ bool LAS::is_attribute_loadable(int index)
   if (index < 0) return false;
   //if (header->number_attributes-1 < index) return false;
 
-  AttributeType data_type = p.schema->attributes[index].type;
+  AttributeType data_type = point.schema->attributes[index].type;
 
   if (data_type == AttributeType::INT64 || data_type == AttributeType::UINT64)
   {

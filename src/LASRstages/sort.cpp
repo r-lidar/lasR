@@ -29,7 +29,7 @@ bool LASRsort::process(LAS*& las)
 
   // Spatial sort
   GridPartition grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, res);
-  while (las->read_point()) grid.insert(las->p.get_x(), las->p.get_y());
+  while (las->read_point()) grid.insert(las->point.get_x(), las->point.get_y());
   auto& umap = grid.map;
   std::map<int, std::vector<Interval>> sorted_map(umap.begin(), umap.end());   // Use a map to automatically sort the keys
 

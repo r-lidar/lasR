@@ -71,16 +71,16 @@ bool LASRsamplingpoisson::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->p.get_deleted()) continue;
-    if (pointfilter.filter(&las->p))
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point))
     {
       //las->delete_point();
       continue;
     }
 
-    double px = las->p.get_x();
-    double py = las->p.get_y();
-    double pz = las->p.get_z();
+    double px = las->point.get_x();
+    double py = las->point.get_y();
+    double pz = las->point.get_z();
 
     // Voxel of this point
     int nx = std::floor((px - rxmin) / res);
@@ -183,7 +183,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
     }
     else
     {
-      las->p.set_deleted();
+      las->point.set_deleted();
     }
 
     (*progress)++;
@@ -262,17 +262,17 @@ bool LASRsamplingvoxels::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->p.get_deleted()) continue;
-    if (pointfilter.filter(&las->p))
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point))
     {
       //las->delete_point();
       continue;
     }
 
     // Voxel of this point
-    int nx = std::floor((las->p.get_x() - rxmin) / res);
-    int ny = std::floor((las->p.get_y() - rymin) / res);
-    int nz = std::floor((las->p.get_z() - rzmin) / res);
+    int nx = std::floor((las->point.get_x() - rxmin) / res);
+    int ny = std::floor((las->point.get_y() - rymin) / res);
+    int nz = std::floor((las->point.get_z() - rzmin) / res);
     int key = nx + ny*length + nz*length*width;
 
     // Do we retain this point ? We look into the registry to know if the voxel exist. If not, we retain the point.
@@ -376,11 +376,11 @@ bool LASRsamplingpixels::random(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->p.get_deleted()) continue;
-    if (pointfilter.filter(&las->p)) continue;
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     // Pixel of this point
-    int key = grid.cell_from_xy(las->p.get_x(), las->p.get_y());
+    int key = grid.cell_from_xy(las->point.get_x(), las->point.get_y());
 
     // Do we retain this point ? We look into the registry to know if the pixel exist. If not, we retain the point.
     if (use_bitregistry)
@@ -459,11 +459,11 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
 
   while (las->read_point())
   {
-    if (pointfilter.filter(&las->p)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
-    double x = las->p.get_x();
-    double y = las->p.get_y();
-    double z = accessor(&las->p);
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    double z = accessor(&las->point);
     int cell = grid.cell_from_xy(x,y);
 
     if ((high && registry[cell].second < z) || (!high && registry[cell].second > z))
@@ -472,14 +472,14 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
 
   while (las->read_point())
   {
-    if (pointfilter.filter(&las->p)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
-    double x = las->p.get_x();
-    double y = las->p.get_y();
+    double x = las->point.get_x();
+    double y = las->point.get_y();
     int cell = grid.cell_from_xy(x,y);
 
     if (registry[cell].first != las->current_point)
-      las->p.set_deleted();
+      las->point.set_deleted();
   }
 
   las->update_header();
