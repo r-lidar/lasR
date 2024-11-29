@@ -23,6 +23,7 @@ public:
   LASRsummary* clone() const override { return new LASRsummary(*this); };
   void merge(const Stage* other) override;
   void sort(const std::vector<int>& order) override;
+  void clear(bool) override { reset_accessors(); };
 
   #ifdef USING_R
   SEXP to_R() override;

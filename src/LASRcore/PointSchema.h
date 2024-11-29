@@ -102,13 +102,13 @@ struct Point
   unsigned char* data;                 // Pointer to raw point data
   const AttributeSchema* schema;       // Reference to the attribute schema
 
-  Point() : data(nullptr), schema(nullptr), own_data(false) {}
-  Point(AttributeSchema* schema) : data(new unsigned char[schema->total_point_size]), schema(schema), own_data(true) {  zero(); }
-  Point(unsigned char* ptr, const AttributeSchema* schema) : data(ptr), schema(schema), own_data(false) {}
+  Point() : own_data(false), data(nullptr), schema(nullptr) {}
+  Point(AttributeSchema* schema) : own_data(true), data(new unsigned char[schema->total_point_size]), schema(schema) { zero(); }
+  Point(unsigned char* ptr, const AttributeSchema* schema) : own_data(false), data(ptr), schema(schema) {}
   ~Point() {if (own_data && data) { delete[] data; data = nullptr; }; }
   void dump() const { print("%.2lf %.2lf %.2lf\n", get_x(), get_y(), get_z()); };
 
-  Point(const Point& other) : data(other.own_data ? new unsigned char[other.schema->total_point_size] : other.data), schema(other.schema), own_data(other.own_data)
+  Point(const Point& other) : own_data(other.own_data), data(other.own_data ? new unsigned char[other.schema->total_point_size] : other.data), schema(other.schema)
   {
     if (own_data) std::copy(other.data, other.data + other.schema->total_point_size, data);
   }
@@ -132,7 +132,7 @@ struct Point
   }
 
   // Move constructor
-  Point(Point&& other) noexcept : data(other.data), schema(other.schema), own_data(other.own_data)
+  Point(Point&& other) noexcept : own_data(other.own_data), data(other.data), schema(other.schema)
   {
     other.data = nullptr;
     other.schema = nullptr;

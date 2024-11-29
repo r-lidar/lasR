@@ -56,6 +56,7 @@ bool LASRsummary::process(Point*& p)
 bool LASRsummary::process(LAS*& las)
 {
   reset_accessors();
+
   metrics_engine.reset();
 
   Point* p;
