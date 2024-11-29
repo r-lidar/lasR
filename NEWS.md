@@ -5,9 +5,10 @@
 ### Breaking Changes
 
 - It is no longer possible to use `LASlib` filters such as `-drop_z_above 5` in the stages (except the reader stage). Users must use conditional commands introduced in 0.12.0, such as `"Z > 5"`.
-- The reader no longer reads the bit flags from the LAS/LAZ files, as they were never used anyway.
+- The reader no longer reads the bit flags from the LAS/LAZ files, as they are never used anyway.
 - `sort_points()` no longer sorts by GPS time and return number. It performs a spatial sort only, and the parameter `spatial` has been removed.
 - `classify_with_csf()` no longer uses the last return only.
+- `write_las()` no longer preserves VLR and EVLR. This will be fixed later.
 - There are likely other changes as I rewrote thousands of lines of code.
 
 ### New Features

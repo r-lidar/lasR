@@ -1,6 +1,6 @@
 #include "pipeline.h"
 #include "PointCloud.h"
-#include "LAScatalog.h"
+#include "Catalog.h"
 #include "Stage.h"
 #include "Progress.h"
 #include "macros.h"
@@ -78,7 +78,7 @@ Pipeline::~Pipeline()
 
 bool Pipeline::pre_run()
 {
-  LAScatalog* ctg = catalog.get();
+  Catalog* ctg = catalog.get();
   for (auto&& stage : pipeline)
   {
     bool success = stage->process(ctg);
