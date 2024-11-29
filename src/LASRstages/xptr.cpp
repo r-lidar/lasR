@@ -6,7 +6,7 @@
 // Finalizer function for the external pointer
 extern "C" void las_finalizer(SEXP extPtr)
 {
-  LAS* las = static_cast<LAS*>(R_ExternalPtrAddr(extPtr));
+  PointCloud* las = static_cast<PointCloud*>(R_ExternalPtrAddr(extPtr));
   if (las)
   {
     delete las; // Free the memory
@@ -15,7 +15,7 @@ extern "C" void las_finalizer(SEXP extPtr)
   }
 }
 
-bool LASRxptr::process(LAS*& las)
+bool LASRxptr::process(PointCloud*& las)
 {
   this->las = las;
   return true;

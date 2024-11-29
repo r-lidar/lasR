@@ -13,7 +13,7 @@ class LASRsummary: public Stage
 public:
   LASRsummary();
   bool process(Point*& p) override;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool is_streamable() const override { return !metrics_engine.active(); }
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "summary"; }
@@ -23,6 +23,7 @@ public:
   LASRsummary* clone() const override { return new LASRsummary(*this); };
   void merge(const Stage* other) override;
   void sort(const std::vector<int>& order) override;
+  void clear(bool) override { reset_accessors(); };
 
   #ifdef USING_R
   SEXP to_R() override;
@@ -34,10 +35,10 @@ private:
   void merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2);
 
 private:
-  AttributeHandler get_intensity;
-  AttributeHandler get_returnnumber;
-  AttributeHandler get_classification;
-  AttributeHandler get_number_of_returns;
+  AttributeAccessor get_intensity;
+  AttributeAccessor get_returnnumber;
+  AttributeAccessor get_classification;
+  AttributeAccessor get_number_of_returns;
   void reset_accessors();
 
   uint64_t npoints;

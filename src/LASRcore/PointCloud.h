@@ -14,12 +14,12 @@ class Raster;
 class LASfilter;
 class LASheader;
 
-class LAS
+class PointCloud
 {
 public:
-  LAS(Header* header);
-  LAS(const Raster& raster);
-  ~LAS();
+  PointCloud(Header* header);
+  PointCloud(const Raster& raster);
+  ~PointCloud();
   bool add_attribute(const Attribute&);
   bool add_attributes(const std::vector<Attribute>&);
   bool add_point(const Point& p);
@@ -38,24 +38,18 @@ public:
   bool sort(const std::vector<int>& order);
 
   // Thread safe queries
-  //bool get_xyz(size_t pos, double* xyz) const;
   bool get_point(size_t pos, Point* p, PointFilter* const filter = nullptr) const;
   bool query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
   bool knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
 
-  int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/newheader->schema.total_point_size); }
+  int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/header->schema.total_point_size); }
 
   // Spatial queries
   void set_inside(Shape* shape);
 
   // Non spatial queries
   void set_intervals_to_read(const std::vector<Interval>& intervals);
-
-  // Tools
-  static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
-  static int get_header_size(int minor_version);
-  static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir);
 
 private:
   void clean_index();
@@ -65,32 +59,14 @@ private:
   bool realloc_buffer();
   uint64_t get_true_number_of_points() const;
 
-  // Access to point attributes without copying the whole point
-  /*inline double get_x(int i) const;
-  inline double get_y(int i) const;
-  inline double get_z(int i) const;
-  inline double get_x(const unsigned char* buf) const;
-  inline double get_y(const unsigned char* buf) const;
-  inline double get_z(const unsigned char* buf) const;
-  inline double get_gpstime(const unsigned char* buf) const;
-  inline unsigned char get_scanner_channel(const unsigned char* buf) const;
-  inline unsigned char get_return_number(const unsigned char* buf) const;*/
-
 public:
-  Point p;
-
-public:
+  Header* header;
+  Point point;
   size_t npoints;
   size_t current_point;
 
-  // This part is extremely tricky because lasreadopener own lasreader. If lasreadopener is destructed
-  // it invalidate lasreader and thus header. We need header as long as this object exist. Consequently
-  // we must also own lasreadopener and lasreader
-  Header* newheader;
-
 private:
   unsigned char* buffer;
-  unsigned char* buffer2;
   size_t capacity; // capacity of the buffer in bytes
   int next_point;
 

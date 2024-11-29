@@ -5,7 +5,7 @@ LASRcsf::LASRcsf()
 {
 }
 
-bool LASRcsf::process(LAS*& las)
+bool LASRcsf::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_prefix("CSF");
@@ -14,17 +14,17 @@ bool LASRcsf::process(LAS*& las)
   std::vector<csf::Point> points;
   points.reserve(las->npoints);
 
-  AttributeHandler set_and_get_classification("Classification");
+  AttributeAccessor set_and_get_classification("Classification");
 
   while(las->read_point())
   {
-    if (pointfilter.filter(&las->p)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     csf::Point p;
-    p.x = las->p.get_x();
-    p.y = las->p.get_y();
-    p.z = las->p.get_z();
-    if (set_and_get_classification(&las->p) == (double)classification) set_and_get_classification(&las->p, 0);
+    p.x = las->point.get_x();
+    p.y = las->point.get_y();
+    p.z = las->point.get_z();
+    if (set_and_get_classification(&las->point) == (double)classification) set_and_get_classification(&las->point, 0);
     points.push_back(p);
   }
 
@@ -45,12 +45,12 @@ bool LASRcsf::process(LAS*& las)
   int k = 0;
   while(las->read_point())
   {
-    if (pointfilter.filter(&las->p)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     if (i == ground[k])
     {
       k++;
-      if (set_and_get_classification(&las->p) != 9) set_and_get_classification(&las->p, classification);
+      if (set_and_get_classification(&las->point) != 9) set_and_get_classification(&las->point, classification);
     }
     i++;
   }
@@ -99,7 +99,7 @@ if (use_low)
 
   while(las->read_point(true))
   {
-    int cell = min.cell_from_xy(las->point.get_x(), las->point.get_y());
+    int cell = min.cell_from_xy(las->pointoint.get_x(), las->pointoint.get_y());
     if (cell < 0 || cell > min.get_ncells())
     {
       last_error = "Internal error: inccorect cell";
@@ -110,12 +110,12 @@ if (use_low)
 
     if (val == NA_F32_RASTER)
     {
-      min.set_value(cell, las->point.get_z());
+      min.set_value(cell, las->pointoint.get_z());
       low_points[cell] = las->current_point;
     }
-    else if (las->point.get_z() < val)
+    else if (las->pointoint.get_z() < val)
     {
-      min.set_value(cell, las->point.get_z());
+      min.set_value(cell, las->pointoint.get_z());
       low_points[cell] = las->current_point;
     }
   }
@@ -128,12 +128,12 @@ if (use_low)
     //print("Add point %d\n", i);
 
     csf::Point p;
-    p.x = las->point.get_x();
-    p.y = las->point.get_y();
-    p.z = las->point.get_z();
-    if (las->point.get_classification() == classification)
+    p.x = las->pointoint.get_x();
+    p.y = las->pointoint.get_y();
+    p.z = las->pointoint.get_z();
+    if (las->pointoint.get_classification() == classification)
     {
-      las->point.set_classification(0);
+      las->pointoint.set_classification(0);
       las->update_point();
     }
     points.push_back(p);
@@ -146,12 +146,12 @@ else
   while(las->read_point())
   {
     csf::Point p;
-    p.x = las->point.get_x();
-    p.y = las->point.get_y();
-    p.z = las->point.get_z();
-    if (las->point.get_classification() == classification)
+    p.x = las->pointoint.get_x();
+    p.y = las->pointoint.get_y();
+    p.z = las->pointoint.get_z();
+    if (las->pointoint.get_classification() == classification)
     {
-      las->point.set_classification(0);
+      las->pointoint.set_classification(0);
       las->update_point();
     }
     points.push_back(p);
@@ -181,9 +181,9 @@ if (use_low)
     if (j == -1) continue;
 
     las->seek(j);
-    if (las->point.classification != 9) // Preserve water
+    if (las->pointoint.classification != 9) // Preserve water
     {
-      las->point.set_classification(classification);
+      las->pointoint.set_classification(classification);
       las->update_point();
     }
   }
@@ -197,9 +197,9 @@ else
     if (i == ground[k])
     {
       k++;
-      if (las->point.classification != 9) // Preserve water
+      if (las->pointoint.classification != 9) // Preserve water
       {
-        las->point.set_classification(classification);
+        las->pointoint.set_classification(classification);
         las->update_point();
       }
     }

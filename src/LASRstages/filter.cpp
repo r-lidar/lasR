@@ -8,13 +8,13 @@ bool LASRfilter::process(Point*& p)
   return true;
 }
 
-bool LASRfilter::process(LAS*& las)
+bool LASRfilter::process(PointCloud*& las)
 {
   int n = 0;
   Point* p;
   while (las->read_point())
   {
-    p = &las->p;
+    p = &las->point;
     process(p);
     if (p->get_deleted())
     {
@@ -49,9 +49,9 @@ bool LASRfiltergrid::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRfiltergrid::process(LAS*& las)
+bool LASRfiltergrid::process(PointCloud*& las)
 {
-  Grid grid(las->newheader->min_x, las->newheader->min_y, las->newheader->max_x, las->newheader->max_y, res);
+  Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, res);
   std::vector<PointLAS> selected_points;
   selected_points.resize(grid.get_ncells());
   double v = (op == MIN) ? std::numeric_limits<double>::max() : -std::numeric_limits<double>::max();
@@ -59,11 +59,11 @@ bool LASRfiltergrid::process(LAS*& las)
 
   while (las->read_point())
   {
-    if (pointfilter.filter(&las->p)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
-    double x = las->p.get_x();
-    double y = las->p.get_y();
-    double z = las->p.get_z();
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    double z = las->point.get_z();
     unsigned int id = las->current_point;
     int cell = grid.cell_from_xy(x,y);
 

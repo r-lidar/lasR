@@ -62,10 +62,10 @@ bool LASRlasreader::process(Point*& point)
 }
 
 // In memory mode
-bool LASRlasreader::process(LAS*& las)
+bool LASRlasreader::process(PointCloud*& las)
 {
   if (las != nullptr) { delete las; las = nullptr; }
-  if (las == nullptr) las = new LAS(header);
+  if (las == nullptr) las = new PointCloud(header);
 
   streaming = false;
 

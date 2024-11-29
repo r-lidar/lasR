@@ -1,7 +1,7 @@
 #include "sor.h"
 #include "Grid.h"
 
-bool LASRsor::process(LAS*& las)
+bool LASRsor::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_total(las->npoints);
@@ -21,7 +21,7 @@ bool LASRsor::process(LAS*& las)
     if (progress->interrupted()) continue;
 
     Point p;
-    p.set_schema(&las->newheader->schema);
+    p.set_schema(&las->header->schema);
 
     if (!las->get_point(i, &p)) continue;
 
@@ -46,7 +46,7 @@ bool LASRsor::process(LAS*& las)
   double dmean = m0;
   double dstd = std::sqrt(m2/(n-1));
 
-  AttributeHandler set_classification("Classification");
+  AttributeAccessor set_classification("Classification");
 
   while (las->read_point())
   {
@@ -54,7 +54,7 @@ bool LASRsor::process(LAS*& las)
 
     if (distances[i] > dmean + m*dstd)
     {
-      set_classification(&las->p, classification);
+      set_classification(&las->point, classification);
     }
   }
 

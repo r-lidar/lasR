@@ -2,7 +2,7 @@ test_that("external pointer works",
 {
   f <- system.file("extdata", "Topography.las", package="lasR")
 
-  expect_error(ans <- read_cloud(f), NA)
+  expect_error(ans <- read_cloud(f, progress = FALSE), NA)
 
   u = exec(summarise(), on = ans)
   expect_equal(u$npoints, 73403)

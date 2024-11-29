@@ -18,7 +18,7 @@ class LASRtriangulate : public StageVector
 {
 public:
   LASRtriangulate();
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool interpolate(std::vector<double>& res, const Raster* raster = nullptr);
   bool contour(std::vector<Edge>& edges) const;
   double need_buffer() const override { return 20.0; }
@@ -39,7 +39,7 @@ private:
   std::vector<int> index_map;
   std::string use_attribute;
   delaunator::Delaunator* d;
-  LAS* las;
+  PointCloud* las;
 };
 
 #endif

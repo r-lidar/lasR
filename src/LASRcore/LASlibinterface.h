@@ -1,7 +1,7 @@
 #ifndef LASLIBINTERFACE_H
 #define LASLIBINTERFACE_H
 
-#include "LAS.h"
+#include "PointCloud.h"
 #include "Chunk.h"
 
 #include <string>
@@ -20,11 +20,13 @@ class Progress;
 class LASlibInterface
 {
 public:
+  LASlibInterface();
   LASlibInterface(Progress*);
   ~LASlibInterface();
   bool open(const Chunk& chunk, std::vector<std::string> filters);
   bool open(const std::string& file);
-  bool populate_header(Header* header);
+  bool create(const std::string& file);
+  bool populate_header(Header* header, bool read_first_point = false);
   bool init(const Header* header, const CRS& crs);
   bool read_point(Point* p);
   bool write_point(Point* p);
@@ -33,6 +35,11 @@ public:
   void close();
   void reset_accessor();
   int64_t p_count();
+
+  // Tools
+  static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
+  static int get_header_size(int minor_version);
+  static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir);
 
 private:
   LASreadOpener* lasreadopener;
@@ -44,20 +51,20 @@ private:
 
   Progress* progress;
 
-  AttributeHandler intensity;
-  AttributeHandler returnnumber;
-  AttributeHandler numberofreturns;
-  AttributeHandler userdata;
-  AttributeHandler psid;
-  AttributeHandler classification;
-  AttributeHandler scanangle;
-  AttributeHandler gpstime;
-  AttributeHandler scannerchannel;
-  AttributeHandler red;
-  AttributeHandler green;
-  AttributeHandler blue;
-  AttributeHandler nir;
-  std::vector<AttributeHandler> extrabytes;
+  AttributeAccessor intensity;
+  AttributeAccessor returnnumber;
+  AttributeAccessor numberofreturns;
+  AttributeAccessor userdata;
+  AttributeAccessor psid;
+  AttributeAccessor classification;
+  AttributeAccessor scanangle;
+  AttributeAccessor gpstime;
+  AttributeAccessor scannerchannel;
+  AttributeAccessor red;
+  AttributeAccessor green;
+  AttributeAccessor blue;
+  AttributeAccessor nir;
+  std::vector<AttributeAccessor> extrabytes;
   std::vector<size_t> extrabytes_offsets;
 };
 

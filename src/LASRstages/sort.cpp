@@ -8,7 +8,7 @@ bool LASRsort::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsort::process(LAS*& las)
+bool LASRsort::process(PointCloud*& las)
 {
   auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -28,8 +28,8 @@ bool LASRsort::process(LAS*& las)
   double res = 50 * crs.get_linear_units();
 
   // Spatial sort
-  GridPartition grid(las->newheader->min_x, las->newheader->min_y, las->newheader->max_x, las->newheader->max_y, res);
-  while (las->read_point()) grid.insert(las->p.get_x(), las->p.get_y());
+  GridPartition grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, res);
+  while (las->read_point()) grid.insert(las->point.get_x(), las->point.get_y());
   auto& umap = grid.map;
   std::map<int, std::vector<Interval>> sorted_map(umap.begin(), umap.end());   // Use a map to automatically sort the keys
 

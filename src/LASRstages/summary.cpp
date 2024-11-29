@@ -10,10 +10,10 @@ LASRsummary::LASRsummary()
   nwithheld = 0;
   nsynthetic = 0;
 
-  get_intensity = AttributeHandler("Intensity");
-  get_returnnumber = AttributeHandler("ReturnNumber");
-  get_classification = AttributeHandler("Classification");
-  get_number_of_returns = AttributeHandler("NumberOfReturns");
+  get_intensity = AttributeAccessor("Intensity");
+  get_returnnumber = AttributeAccessor("ReturnNumber");
+  get_classification = AttributeAccessor("Classification");
+  get_number_of_returns = AttributeAccessor("NumberOfReturns");
 }
 
 bool LASRsummary::set_parameters(const nlohmann::json& stage)
@@ -53,15 +53,16 @@ bool LASRsummary::process(Point*& p)
   return true;
 }
 
-bool LASRsummary::process(LAS*& las)
+bool LASRsummary::process(PointCloud*& las)
 {
   reset_accessors();
+
   metrics_engine.reset();
 
   Point* p;
   while (las->read_point())
   {
-    p = &las->p;
+    p = &las->point;
     process(p);
   }
 

@@ -4,7 +4,7 @@ LASRaddattribute::LASRaddattribute()
 {
 }
 
-bool LASRaddattribute::process(LAS*& las)
+bool LASRaddattribute::process(PointCloud*& las)
 {
   Attribute attr(name, data_type, scale, offset, description);
   return las->add_attribute(attr);

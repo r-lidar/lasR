@@ -64,7 +64,7 @@ bool LASRlaswriter::process(Point*& p)
   // No writer initialized? Create a writer.
   if (!laslibinterface->is_opened())
   {
-    if (!laslibinterface->open(ofile)) return false;
+    if (!laslibinterface->create(ofile)) return false;
     written.push_back(ofile);
   }
 
@@ -102,7 +102,7 @@ bool LASRlaswriter::process(Point*& p)
   return true;
 }
 
-bool LASRlaswriter::process(LAS*& las)
+bool LASRlaswriter::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_prefix("Write LAS");
@@ -111,7 +111,7 @@ bool LASRlaswriter::process(LAS*& las)
   Point* p;
   while (las->read_point())
   {
-    p = &las->p;
+    p = &las->point;
     if (!process(p))
       return false; // # nocov
 

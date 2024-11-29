@@ -1,19 +1,20 @@
 # lasR 0.13.0
 
-`lasR 0.13.0` is a massive rewritting of the internal engine to conform to third party libraries licences. I'm expecting users to find some bugs in a close future. Yet, all the unit tests are passing.
+`lasR 0.13.0` is a massive rewrite of the internal engine to conform to third-party libraries' licenses. I'm expecting users to encounter some bugs in the near future. However, all the unit tests are passing.
 
-### Breaking chnages
+### Breaking Changes
 
- - It is not longer possible to use `LASlib` filters such as `-drop_z_above 5` in the stages (except the reader stage). User must use conditional commands introduced in 0.12.0 such as `"Z > 5"`
- - The reader no longer read the bit flags from the LAS/LAS files that are never used anyway.
- - `sort_points()` not longer sorts by gpstime and return number. It performs a spatial sort only. The parameter spatial have been removed
- - `classify_with_csf()` no longer uses last return only
- - Probably other changes but I changes thousands of lines of code...
- 
- ### News 
- 
-- New: capacity to pre-read a point cloud in R using an external pointer. See `read_cloud()`.
-- New: stages can be applied one by one to a point cloud loaded in memory
+- It is no longer possible to use `LASlib` filters such as `-drop_z_above 5` in the stages (except the reader stage). Users must use conditional commands introduced in 0.12.0, such as `"Z > 5"`.
+- The reader no longer reads the bit flags from the LAS/LAZ files, as they are never used anyway.
+- `sort_points()` no longer sorts by GPS time and return number. It performs a spatial sort only, and the parameter `spatial` has been removed.
+- `classify_with_csf()` no longer uses the last return only.
+- `write_las()` no longer preserves VLR and EVLR. This will be fixed later.
+- There are likely other changes as I rewrote thousands of lines of code.
+
+### New Features
+
+- New: Ability to pre-read a point cloud in R using an external pointer. See `read_cloud()`.
+- New: Stages can now be applied one by one to a point cloud loaded in memory.
 
   ```r
   f <- system.file("extdata", "Topography.las", package="lasR")

@@ -34,7 +34,7 @@ bool LASRregiongrowing::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRregiongrowing::process(LAS*& las)
+bool LASRregiongrowing::process(PointCloud*& las)
 {
   double ti = taketime();
 
@@ -124,8 +124,11 @@ bool LASRregiongrowing::process(LAS*& las)
     {
       Region& region = pair.second;
 
-      for(int cell : region.cells)     // Loop across all cells of a region
+      int n = region.cells.size();
+      for(int k = 0 ; k < n ; k++)     // Loop across all cells of a region
       {
+        int cell = region.cells[k];
+
         double hSeed = region.top.z;           // Seed height
         double mhCrown= region.mean_height();  // Mean height of the crown
 

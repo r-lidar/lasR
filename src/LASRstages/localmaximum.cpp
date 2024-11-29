@@ -45,8 +45,8 @@ bool LASRlocalmaximum::process()
   const Raster& raster = p->get_raster();
 
   // Convert the raster to a LAS object to recycle the point cloud based local maximum
-  LAS las(raster);
-  LAS* ptr = &las;
+  PointCloud las(raster);
+  PointCloud* ptr = &las;
 
   // Process the LAS
   use_raster = false; // deactivate to process a LAS
@@ -56,7 +56,7 @@ bool LASRlocalmaximum::process()
   return success;
 }
 
-bool LASRlocalmaximum::process(LAS*& las)
+bool LASRlocalmaximum::process(PointCloud*& las)
 {
   if (use_raster) return true;
 
@@ -66,11 +66,11 @@ bool LASRlocalmaximum::process(LAS*& las)
     return false; // # nocov
   }
 
-  AttributeHandler accessor(use_attribute);
-  AttributeHandler get_intensity("Intensity");
-  AttributeHandler get_angle("Angle");
-  AttributeHandler get_return("ReturnNumber");
-  AttributeHandler get_number("NumberOfReturns");
+  AttributeAccessor accessor(use_attribute);
+  AttributeAccessor get_intensity("Intensity");
+  AttributeAccessor get_angle("Angle");
+  AttributeAccessor get_return("ReturnNumber");
+  AttributeAccessor get_number("NumberOfReturns");
 
   progress->reset();
   progress->set_total(las->npoints);
@@ -94,7 +94,7 @@ bool LASRlocalmaximum::process(LAS*& las)
     if (progress->interrupted()) continue;
 
     Point pp;
-    pp.set_schema(&las->newheader->schema);
+    pp.set_schema(&las->header->schema);
 
     if (main_thread)
     {

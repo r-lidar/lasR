@@ -67,7 +67,7 @@ bool LASRrasterize::process(Point*& p)
   return true;
 }
 
-bool LASRrasterize::process(LAS*& las)
+bool LASRrasterize::process(PointCloud*& las)
 {
   // Streamable metrics:
   // but we are in a non streamble pipeline. We can call streamable code
@@ -76,7 +76,7 @@ bool LASRrasterize::process(LAS*& las)
     Point* p;
     while (las->read_point())
     {
-      p = &las->p;
+      p = &las->point;
       if (!process(p))
         return false; // # nocov
     }
@@ -107,8 +107,8 @@ bool LASRrasterize::process(LAS*& las)
   std::vector<int> cells;
   while (las->read_point(true)) // Need to include withheld points to do not mess grouper indexes
   {
-    double x = las->p.get_x();
-    double y = las->p.get_y();
+    double x = las->point.get_x();
+    double y = las->point.get_y();
 
     if (window)
       raster.get_cells(x-window,y-window, x+window,y+window, cells);

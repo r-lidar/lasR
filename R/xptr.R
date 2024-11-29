@@ -4,6 +4,7 @@
 #' and is not exposed to users
 #'
 #' @param file a file containing a point cloud. Currently only LAS and LAZ files are supported
+#' @param progress boolean progress bar
 #' @export
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
@@ -45,6 +46,7 @@ print.lasrcloud <- function(x, ...)
 #' @param ... Additional arguments (not used).
 #' @export
 #' @method plot lasrcloud
+#' @examples
 #' \dontrun{
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' las <- read_cloud(f)
@@ -53,5 +55,5 @@ print.lasrcloud <- function(x, ...)
 #' }
 plot.lasrcloud <- function(x, ...)
 {
-  total = .Call(`C_plot_pointcloud`, x[[1]])
+  .Call(`C_plot_pointcloud`, x[[1]])
 }

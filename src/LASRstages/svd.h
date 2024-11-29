@@ -7,7 +7,7 @@ class LASRsvd : public Stage
 {
 public:
   LASRsvd();
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "svd"; }
   bool is_parallelized() const override { return true; }

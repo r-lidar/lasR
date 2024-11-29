@@ -42,7 +42,7 @@ bool LASRcallback::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRcallback::process(LAS*& las)
+bool LASRcallback::process(PointCloud*& las)
 {
   int error = 0;
 
@@ -51,7 +51,7 @@ bool LASRcallback::process(LAS*& las)
 
   // List all selected attributes by index
   std::vector<std::string> names;
-  std::vector<AttributeHandler> accessors;
+  std::vector<AttributeAccessor> accessors;
   std::vector<Attribute> attributes;
   int k = 0;
   for(char c : select)
@@ -63,7 +63,7 @@ bool LASRcallback::process(LAS*& las)
     {
       int i = c - '0';
       int j = 0;
-      for (auto attribute : las->newheader->schema.attributes)
+      for (auto attribute : las->header->schema.attributes)
       {
         if (lascoreattributes.count(attribute.name) == 0)
         {
@@ -82,13 +82,13 @@ bool LASRcallback::process(LAS*& las)
     // Handle extrabytes in a (not elegant) backward compatible way
     else if (c == 'E')
     {
-      for (auto attribute : las->newheader->schema.attributes)
+      for (auto attribute : las->header->schema.attributes)
       {
         if (lascoreattributes.count(attribute.name) == 0)
         {
           name = attribute.name;
           names.push_back(name);
-          accessors.push_back(AttributeHandler(name));
+          accessors.push_back(AttributeAccessor(name));
           attributes.push_back(attribute);
         }
       }
@@ -100,7 +100,7 @@ bool LASRcallback::process(LAS*& las)
       name = "Buffer";
       buffered_index = k;
       names.push_back(name);
-      accessors.push_back(AttributeHandler(name));
+      accessors.push_back(AttributeAccessor(name));
       attributes.push_back(Attribute(name, AttributeType::NOTYPE));
     }
     else
@@ -109,12 +109,12 @@ bool LASRcallback::process(LAS*& las)
       name = map_attribute(name);
     }
 
-    int index = las->newheader->schema.get_attribute_index(name);
+    int index = las->header->schema.get_attribute_index(name);
     if (index < 0) continue;
-    name = las->newheader->schema.attributes[index].name;
+    name = las->header->schema.attributes[index].name;
     names.push_back(name);
-    accessors.push_back(AttributeHandler(name));
-    attributes.push_back(las->newheader->schema.attributes[index]);
+    accessors.push_back(AttributeAccessor(name));
+    attributes.push_back(las->header->schema.attributes[index]);
 
     k++;
   }
@@ -151,7 +151,7 @@ bool LASRcallback::process(LAS*& las)
   int j = 0;
   while (las->read_point())
   {
-    bool buffer = las->p.get_buffered();
+    bool buffer = las->point.get_buffered();
     if (drop_buffer && buffer) continue;
 
     for (int i = 0 ; i < nattr ; i++)
@@ -164,12 +164,12 @@ bool LASRcallback::process(LAS*& las)
       if (i != buffered_index)
       {
         use_realsexp = attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0;
-        value = accessors[i](&las->p);
+        value = accessors[i](&las->point);
       }
       else
       {
         use_realsexp = false;
-        value = (double)las->p.get_buffered();
+        value = (double)las->point.get_buffered();
       }
 
 
@@ -266,7 +266,7 @@ bool LASRcallback::process(LAS*& las)
         {
           buffered_index = i;
         }
-        else if (!las->newheader->schema.has_attribute(name))
+        else if (!las->header->schema.has_attribute(name))
         {
           last_error = "non supported column '" + name +"'";
           UNPROTECT(nsexpprotected);
@@ -284,7 +284,7 @@ bool LASRcallback::process(LAS*& las)
       // Update the LAS
       while (las->read_point())
       {
-        bool buffer = las->p.inside_buffer(xmin, ymin, xmax, ymax, circular);
+        bool buffer = las->point.inside_buffer(xmin, ymin, xmax, ymax, circular);
         if (drop_buffer && buffer) continue;
 
         int i = las->current_point;
@@ -306,7 +306,7 @@ bool LASRcallback::process(LAS*& las)
             else
              val = (double)INTEGER(vector)[i];
 
-            las->p.set_deleted(val > 0);
+            las->point.set_deleted(val > 0);
             continue;
           }
 
@@ -321,16 +321,16 @@ bool LASRcallback::process(LAS*& las)
             else
               val = (double)INTEGER(vector)[i];
 
-            las->p.set_buffered(val > 0);
+            las->point.set_buffered(val > 0);
             continue;
           }
 
           if (type == REALSXP)
-            accessors[j](&las->p, REAL(vector)[i]);
+            accessors[j](&las->point, REAL(vector)[i]);
           else if (type == LGLSXP)
-            accessors[j](&las->p, (double)LOGICAL(vector)[i]);
+            accessors[j](&las->point, (double)LOGICAL(vector)[i]);
           else
-            accessors[j](&las->p, (double)INTEGER(vector)[i]);
+            accessors[j](&las->point, (double)INTEGER(vector)[i]);
         }
 
         las->update_point();

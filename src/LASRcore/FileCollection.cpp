@@ -1,9 +1,10 @@
 // LASR
-#include "LAScatalog.h"
+#include "FileCollection.h"
 #include "Progress.h"
 #include "error.h"
 #include "Grid.h"
 #include "PointSchema.h"
+#include "LASlibinterface.h"
 
 // STL
 #include <iostream>
@@ -12,8 +13,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <ctime>
-
-#include "lasreader.hpp"
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
@@ -28,7 +27,7 @@ inline void gmtime_r(const time_t* timep, std::tm* result)
 }
 #endif
 
-bool LAScatalog::read(const std::vector<std::string>& files, bool progress)
+bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 {
   Progress pb;
   pb.set_total(files.size());
@@ -99,7 +98,7 @@ bool LAScatalog::read(const std::vector<std::string>& files, bool progress)
   return true;
 }
 
-bool LAScatalog::read_vpc(const std::string& filename)
+bool FileCollection::read_vpc(const std::string& filename)
 {
   clear();
   use_dataframe = false;
@@ -230,7 +229,7 @@ bool LAScatalog::read_vpc(const std::string& filename)
   return true;
 }
 
-bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolute_path, bool use_gpstime)
+bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolute_path, bool use_gpstime)
 {
   if (use_dataframe)
   {
@@ -428,7 +427,7 @@ bool LAScatalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool abso
   return true;
 }
 
-void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess)
+void FileCollection::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess)
 {
   Rectangle bb(xmin, ymin, xmax, ymax);
   bboxes.push_back(bb);
@@ -438,67 +437,37 @@ void LAScatalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bo
   if (this->xmax < xmax) this->xmax = xmax;
   if (this->ymax < ymax) this->ymax = ymax;
 
-  laskdtree.add(xmin, ymin, xmax, ymax);
+  file_index.add(xmin, ymin, xmax, ymax);
   this->indexed.push_back(indexed);
   this->noprocess.push_back(noprocess);
 }
 
-void LAScatalog::add_crs(const Header* header)
+void FileCollection::add_crs(const Header* header)
 {
   crs = header->crs;
 }
 
-bool LAScatalog::add_file(std::string file, bool noprocess)
+bool FileCollection::add_file(std::string file, bool noprocess)
 {
   std::replace(file.begin(), file.end(), '\\', '/' );
 
-  LASreadOpener lasreadopener;
-  lasreadopener.add_file_name(file.c_str());
-  LASreader* lasreader = lasreadopener.open();
-  if (lasreader == 0)
-  {
-    last_error = "cannot open not open lasreader"; // # nocov
-    return false; // # nocov
-  }
-
-  if (lasreader->header.vlr_geo_keys)
-  {
-    for (int j = 0; j < lasreader->header.vlr_geo_keys->number_of_keys; j++)
-    {
-      if (lasreader->header.vlr_geo_key_entries[j].key_id == 3072)
-      {
-        add_epsg(lasreader->header.vlr_geo_key_entries[j].value_offset);
-        break;
-      }
-    }
-  }
-
-  if (lasreader->header.vlr_geo_ogc_wkt)
-  {
-    for (unsigned int j = 0; j < lasreader->header.number_of_variable_length_records; j++)
-    {
-      if (lasreader->header.vlrs[j].record_id == 2112)
-      {
-        char* data = (char*)lasreader->header.vlrs[j].data;
-        int len = strnlen(data, lasreader->header.vlrs[j].record_length_after_header);
-        std::string wkt(data, len);
-        add_wkt(wkt);
-        break;
-      }
-    }
-  }
+  Header header;
+  LASlibInterface reader;
+  if (!reader.open(file)) return false;
+  reader.populate_header(&header, true);
+  reader.close();
 
   files.push_back(file);
-  add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
-  npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
-  header_dates.push_back({lasreader->header.file_creation_year, lasreader->header.file_creation_day});
-  zlim.push_back({lasreader->header.min_z, lasreader->header.max_z});
-  gpstime_encodind_bits.push_back(lasreader->header.get_global_encoding_bit(0));
+  add_bbox(header.min_x, header.min_y, header.max_x, header.max_y, header.spatial_index, noprocess);
+  npoints.push_back(header.number_of_point_records);
+  header_dates.push_back({header.file_creation_year, header.file_creation_day});
+  zlim.push_back({header.min_z, header.max_z});
+  gpstime_encodind_bits.push_back(header.adjusted_standard_gps_time);
+  add_wkt(header.crs.get_wkt());
 
-  lasreader->read_point();
-  if (lasreader->point.have_gps_time && lasreader->header.get_global_encoding_bit(0) == true)
+  if (header.gpstime != 0 &&  header.adjusted_standard_gps_time)
   {
-    uint64_t ns = ((uint64_t)lasreader->point.get_gps_time()+1000000000ULL)*1000000000ULL + 315964800000000000ULL; // offset between gps epoch and unix epoch is 315964800 seconds
+    uint64_t ns = ((uint64_t)header.gpstime+1000000000ULL)*1000000000ULL + 315964800000000000ULL; // offset between gps epoch and unix epoch is 315964800 seconds
 
     struct timespec ts;
     ts.tv_sec = ns / 1000000000ULL;
@@ -516,36 +485,33 @@ bool LAScatalog::add_file(std::string file, bool noprocess)
     gpstime_dates.push_back({0, 0});
   }
 
-  lasreader->close();
-  delete lasreader;
-
   use_dataframe = false;
   return true;
 }
 
-void LAScatalog::add_wkt(const std::string& wkt)
+void FileCollection::add_wkt(const std::string& wkt)
 {
   if (!wkt.empty()) wkt_set.insert(wkt);
 }
 
-void LAScatalog::add_epsg(int epsg)
+void FileCollection::add_epsg(int epsg)
 {
   if (epsg != 0) epsg_set.insert(epsg);
 }
 
-void LAScatalog::add_query(double xmin, double ymin, double xmax, double ymax)
+void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax)
 {
   Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
   queries.push_back(rect);
 }
 
-void LAScatalog::add_query(double xcenter, double ycenter, double radius)
+void FileCollection::add_query(double xcenter, double ycenter, double radius)
 {
   Circle* circ = new Circle(xcenter, ycenter, radius);
   queries.push_back(circ);
 }
 
-bool LAScatalog::set_noprocess(const std::vector<bool>& b)
+bool FileCollection::set_noprocess(const std::vector<bool>& b)
 {
   if (b.size() != files.size())
   {
@@ -557,7 +523,7 @@ bool LAScatalog::set_noprocess(const std::vector<bool>& b)
   return true;
 }
 
-bool LAScatalog::set_chunk_size(double size)
+bool FileCollection::set_chunk_size(double size)
 {
   chunk_size = 0;
 
@@ -578,7 +544,7 @@ bool LAScatalog::set_chunk_size(double size)
       double y = grid.y_from_cell(i);
       double hsize = size/2;
 
-      if (laskdtree.has_overlap(x-hsize, y-hsize, x+hsize, y+hsize))
+      if (file_index.has_overlap(x-hsize, y-hsize, x+hsize, y+hsize))
         add_query(x-hsize, y-hsize, x+hsize, y+hsize);
     }
   }
@@ -586,7 +552,7 @@ bool LAScatalog::set_chunk_size(double size)
   return true;
 }
 
-bool LAScatalog::get_chunk(int i, Chunk& chunk) const
+bool FileCollection::get_chunk(int i, Chunk& chunk) const
 {
   if (i < 0 || i > get_number_chunks())
   {
@@ -612,12 +578,12 @@ bool LAScatalog::get_chunk(int i, Chunk& chunk) const
   return success;
 }
 
-const std::vector<std::filesystem::path>& LAScatalog::get_files() const
+const std::vector<std::filesystem::path>& FileCollection::get_files() const
 {
   return files;
 }
 
-bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
+bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
 {
   chunk.clear();
 
@@ -648,7 +614,7 @@ bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
   chunk.buffer = buffer;
 
   // Perform a query to find the files that encompass the buffered region
-  std::vector<int> indexes = laskdtree.get_overlaps(bb.xmin() - buffer, bb.ymin() - buffer, bb.xmax() + buffer, bb.ymax() + buffer);
+  std::vector<int> indexes = file_index.get_overlaps(bb.xmin() - buffer, bb.ymin() - buffer, bb.xmax() + buffer, bb.ymax() + buffer);
   for (auto index : indexes)
   {
     std::string file = files[index].string();
@@ -661,7 +627,7 @@ bool LAScatalog::get_chunk_regular(int i, Chunk& chunk) const
   return true;
 }
 
-bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
+bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
 {
   unsigned int index;
   chunk.clear();
@@ -677,7 +643,7 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   double epsilon = 1e-8;
 
   // Search if there is a match
-  std::vector<int> indexes = laskdtree.get_overlaps(minx - buffer, miny - buffer,  maxx + buffer, maxy + buffer);
+  std::vector<int> indexes = file_index.get_overlaps(minx - buffer, miny - buffer,  maxx + buffer, maxy + buffer);
   if (indexes.empty())
   {
     char buff[64];
@@ -732,7 +698,7 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
 
   // We search the file that contains the centroid of the query to assign a name to the query
   // If we can't find it we have already assigned a name anyway.
-  indexes = laskdtree.get_overlaps(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
+  indexes = file_index.get_overlaps(centerx - epsilon, centery - epsilon,  centerx + epsilon, centery + epsilon);
   if (!indexes.empty())
   {
     int index = indexes[0];
@@ -742,7 +708,7 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   // We perform a query again with buffered shape to get the other files in the buffer
   if (chunk.buffer > 0)
   {
-    indexes = laskdtree.get_overlaps(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
+    indexes = file_index.get_overlaps(minx - buffer, miny - buffer, maxx + buffer, maxy + buffer);
     for (auto index : indexes)
     {
       std::string file = files[index].string();
@@ -759,7 +725,7 @@ bool LAScatalog::get_chunk_with_query(int i, Chunk& chunk) const
   return true;
 }
 
-bool LAScatalog::check_spatial_index()
+bool FileCollection::check_spatial_index()
 {
   bool multi_files = get_number_files() > 1;
   bool use_buffer = get_buffer() > 0;
@@ -768,32 +734,32 @@ bool LAScatalog::check_spatial_index()
   return !((multi_files && use_buffer && no_index) || (has_queries && no_index));
 }
 
-int LAScatalog::get_number_chunks() const
+int FileCollection::get_number_chunks() const
 {
   return (queries.size() == 0) ? get_number_files() : queries.size();
 }
 
-int LAScatalog::get_number_files() const
+int FileCollection::get_number_files() const
 {
   return indexed.size();
 }
 
-int LAScatalog::get_number_indexed_files() const
+int FileCollection::get_number_indexed_files() const
 {
   return std::count(indexed.begin(), indexed.end(), true);
 }
 
-void LAScatalog::set_all_indexed()
+void FileCollection::set_all_indexed()
 {
   std::fill(indexed.begin(), indexed.end(), true);
 }
 
-void LAScatalog::clear()
+void FileCollection::clear()
 {
-  xmin = F64_MAX;
-  ymin = F64_MAX;
-  xmax = F64_MIN;
-  ymax = F64_MIN;
+  xmin = std::numeric_limits<double>::max();
+  ymin = std::numeric_limits<double>::max();
+  xmax = -std::numeric_limits<double>::max();
+  ymax = -std::numeric_limits<double>::max();
   last_error.clear();
 
   // CRS
@@ -818,13 +784,13 @@ void LAScatalog::clear()
   queries.clear();
 }
 
-bool LAScatalog::file_exists(std::string& file)
+bool FileCollection::file_exists(std::string& file)
 {
   auto it = std::find(files.begin(), files.end(), file);
   return it != files.end();
 }
 
-PathType LAScatalog::parse_path(const std::string& path)
+PathType FileCollection::parse_path(const std::string& path)
 {
   std::filesystem::path file_path(path);
 
@@ -854,22 +820,22 @@ PathType LAScatalog::parse_path(const std::string& path)
 }
 
 
-LAScatalog::LAScatalog()
+FileCollection::FileCollection()
 {
   clear();
 }
 
-LAScatalog::~LAScatalog()
+FileCollection::~FileCollection()
 {
   for (auto p : queries) delete p;
 }
 
-void LAScatalogIndex::add(double xmin, double ymin, double xmax, double ymax)
+void FileCollectionIndex::add(double xmin, double ymin, double xmax, double ymax)
 {
   bboxes.emplace_back(xmin, ymin, xmax, ymax);
 }
 
-bool LAScatalogIndex::has_overlap(double xmin, double ymin, double xmax, double ymax) const
+bool FileCollectionIndex::has_overlap(double xmin, double ymin, double xmax, double ymax) const
 {
   for (const auto& bbox : bboxes)
   {
@@ -881,7 +847,7 @@ bool LAScatalogIndex::has_overlap(double xmin, double ymin, double xmax, double 
   return false;
 }
 
-std::vector<int> LAScatalogIndex::get_overlaps(double xmin, double ymin, double xmax, double ymax) const
+std::vector<int> FileCollectionIndex::get_overlaps(double xmin, double ymin, double xmax, double ymax) const
 {
   std::vector<int> overlaps;
   for (int i = 0; i < bboxes.size(); ++i)

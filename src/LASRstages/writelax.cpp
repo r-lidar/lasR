@@ -24,7 +24,7 @@ bool LASRlaxwriter::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRlaxwriter::process(LAScatalog*& ctg)
+bool LASRlaxwriter::process(FileCollection*& ctg)
 {
   if (onthefly) return true;
 

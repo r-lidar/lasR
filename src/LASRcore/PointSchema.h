@@ -102,13 +102,13 @@ struct Point
   unsigned char* data;                 // Pointer to raw point data
   const AttributeSchema* schema;       // Reference to the attribute schema
 
-  Point() : data(nullptr), schema(nullptr), own_data(false) {}
-  Point(AttributeSchema* schema) : data(new unsigned char[schema->total_point_size]), schema(schema), own_data(true) {  zero(); }
-  Point(unsigned char* ptr, const AttributeSchema* schema) : data(ptr), schema(schema), own_data(false) {}
+  Point() : own_data(false), data(nullptr), schema(nullptr) {}
+  Point(AttributeSchema* schema) : own_data(true), data(new unsigned char[schema->total_point_size]), schema(schema) { zero(); }
+  Point(unsigned char* ptr, const AttributeSchema* schema) : own_data(false), data(ptr), schema(schema) {}
   ~Point() {if (own_data && data) { delete[] data; data = nullptr; }; }
   void dump() const { print("%.2lf %.2lf %.2lf\n", get_x(), get_y(), get_z()); };
 
-  Point(const Point& other) : data(other.own_data ? new unsigned char[other.schema->total_point_size] : other.data), schema(other.schema), own_data(other.own_data)
+  Point(const Point& other) : own_data(other.own_data), data(other.own_data ? new unsigned char[other.schema->total_point_size] : other.data), schema(other.schema)
   {
     if (own_data) std::copy(other.data, other.data + other.schema->total_point_size, data);
   }
@@ -132,7 +132,7 @@ struct Point
   }
 
   // Move constructor
-  Point(Point&& other) noexcept : data(other.data), schema(other.schema), own_data(other.own_data)
+  Point(Point&& other) noexcept : own_data(other.own_data), data(other.data), schema(other.schema)
   {
     other.data = nullptr;
     other.schema = nullptr;
@@ -302,12 +302,12 @@ struct Point
   }
 };
 
-class AttributeHandler {
+class AttributeAccessor {
 public:
-  AttributeHandler(double default_value = 0);
-  AttributeHandler(const std::string& name, double default_value = 0);
-  AttributeHandler(const std::string& name, AttributeSchema* schema, double default_value = 0);
-  ~AttributeHandler() = default;
+  AttributeAccessor(double default_value = 0);
+  AttributeAccessor(const std::string& name, double default_value = 0);
+  AttributeAccessor(const std::string& name, AttributeSchema* schema, double default_value = 0);
+  ~AttributeAccessor() = default;
 
   // Overloaded operators for reading and writing
   double operator()(const Point* point);
@@ -329,15 +329,13 @@ protected:
 class Header
 {
 public:
-  double max_x;
-  double min_x;
-  double max_y;
-  double min_y;
-  double max_z;
-  double min_z;
+  double max_x, min_x, max_y, min_y, max_z, min_z;
   double x_scale_factor, y_scale_factor, z_scale_factor;
   double x_offset, y_offset, z_offset;
+  double gpstime; // first point
+  unsigned short file_creation_year, file_creation_day;
   bool adjusted_standard_gps_time;
+  bool spatial_index;
   uint64_t number_of_point_records;
   AttributeSchema schema;
   CRS crs;

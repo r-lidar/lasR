@@ -2,7 +2,7 @@
 #include <limits>
 
 #include "pipeline.h"
-#include "LAScatalog.h"
+#include "FileCollection.h"
 
 #include "addattribute.h"
 #include "addrgb.h"
@@ -149,7 +149,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         {
           std::vector<std::string> files = get_vector<std::string>(stage["files"]);
 
-          catalog = std::make_shared<LAScatalog>();
+          catalog = std::make_shared<FileCollection>();
           if (!catalog->read(files, progress))
           {
             last_error = "In the parser while reading the file collection: " + last_error; // # nocov
@@ -196,7 +196,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
             if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
           }
 
-          catalog = std::make_shared<LAScatalog>();
+          catalog = std::make_shared<FileCollection>();
           catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
           catalog->set_crs(CRS(wkt));
         }
@@ -204,20 +204,20 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         {
           std::string address_ptr = stage.at("externalptr");
           SEXP sexplas = string_address_to_sexp(address_ptr);
-          las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
+          las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
           if (las == nullptr)
           {
             last_error = "invalid external pointer";
             return false;
           }
-          xmin = las->newheader->min_x;
-          ymin = las->newheader->min_y;
-          xmax = las->newheader->max_x;
-          ymax = las->newheader->max_y;
+          xmin = las->header->min_x;
+          ymin = las->header->min_y;
+          xmax = las->header->max_x;
+          ymax = las->header->max_y;
           int n = las->npoints;
-          CRS crs = las->newheader->crs;
+          CRS crs = las->header->crs;
 
-          catalog = std::make_shared<LAScatalog>();
+          catalog = std::make_shared<FileCollection>();
           catalog->add_bbox(xmin, ymin, xmax, ymax, n);
           catalog->set_crs(crs);
         }
@@ -254,7 +254,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         {
           std::string address_ptr = stage.at("externalptr");
           SEXP sexplas = string_address_to_sexp(address_ptr);
-          las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
+          las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
           if (las == nullptr)
           {
             last_error = "invalid external pointer";

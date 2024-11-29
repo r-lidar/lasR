@@ -28,14 +28,14 @@ bool LASRaggregate::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRaggregate::process(LAS*& las)
+bool LASRaggregate::process(PointCloud*& las)
 {
   // Pre-compute the groups for each point
   std::vector<int> cells;
   while (las->read_point(true)) // Need to include withheld points to do not mess grouper indexes
   {
-    double x = las->p.get_x();
-    double y = las->p.get_y();
+    double x = las->point.get_x();
+    double y = las->point.get_y();
 
     if (window)
       raster.get_cells(x-window,y-window, x+window,y+window, cells);
@@ -47,7 +47,7 @@ bool LASRaggregate::process(LAS*& las)
   }
 
   int error = 0;  // Error handling
-  int nattr = las->newheader->schema.attributes.size();
+  int nattr = las->header->schema.attributes.size();
   int nalloc = grouper.largest_group_size();   // Size of the largest group (i.e. the pixel with most numerous points)
 
   #pragma omp critical (RAPI)
@@ -57,13 +57,13 @@ bool LASRaggregate::process(LAS*& las)
   SEXP list_names = PROTECT(Rf_allocVector(STRSXP, nattr)); nsexpprotected++;
 
   // Configure accessors
-  std::vector<AttributeHandler> accessors; accessors.resize(nattr);
+  std::vector<AttributeAccessor> accessors; accessors.resize(nattr);
   std::vector<int> sexp_types; sexp_types.resize(nattr);
 
   // Populate the list by allocating vectors of size nalloc to store points data.
   for (int i = 0 ; i < nattr ; i++)
   {
-    const Attribute& attribute = las->newheader->schema.attributes[i];
+    const Attribute& attribute = las->header->schema.attributes[i];
     std::string name = attribute.name;
     int sexp_type = (attribute.type >= AttributeType::FLOAT || attribute.scale_factor != 1 || attribute.value_offset != 0) ? REALSXP : INTSXP;
 
@@ -71,7 +71,7 @@ bool LASRaggregate::process(LAS*& las)
     SET_VECTOR_ELT(list, i, v);
     SET_STRING_ELT(list_names, i, Rf_mkChar(name.c_str()));
 
-    accessors[i] = AttributeHandler(name);
+    accessors[i] = AttributeAccessor(name);
     sexp_types[i] = sexp_type;
   }
 
@@ -105,16 +105,16 @@ bool LASRaggregate::process(LAS*& las)
     int j = 0;
     while (las->read_point())
     {
-      if (pointfilter.filter(&las->p)) continue;
+      if (pointfilter.filter(&las->point)) continue;
 
       for (int i = 0 ; i < Rf_length(list) ; i++)
       {
         SEXP vector = VECTOR_ELT(list, i);
 
         if (sexp_types[i] == REALSXP)
-          REAL(vector)[j] = accessors[i](&las->p);
+          REAL(vector)[j] = accessors[i](&las->point);
         else
-          INTEGER(vector)[j] = accessors[i](&las->p);
+          INTEGER(vector)[j] = accessors[i](&las->point);
       }
 
       j++;

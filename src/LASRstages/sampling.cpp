@@ -23,7 +23,7 @@ bool LASRsamplingpoisson::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingpoisson::process(LAS*& las)
+bool LASRsamplingpoisson::process(PointCloud*& las)
 {
   double r_square = distance*distance;
   double res = distance; // Cell size for the grid
@@ -36,12 +36,12 @@ bool LASRsamplingpoisson::process(LAS*& las)
   std::iota(index.begin(), index.end(), 0);
   shuffle(index, shuffle_size);
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rzmin = las->newheader->min_z;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
-  double rzmax = las->newheader->max_z;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rzmin = las->header->min_z;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
+  double rzmax = las->header->max_z;
 
   rxmin = ROUNDANY(rxmin - 0.5 * res, res);
   rymin = ROUNDANY(rymin - 0.5 * res, res);
@@ -71,16 +71,16 @@ bool LASRsamplingpoisson::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->p.get_deleted()) continue;
-    if (pointfilter.filter(&las->p))
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point))
     {
       //las->delete_point();
       continue;
     }
 
-    double px = las->p.get_x();
-    double py = las->p.get_y();
-    double pz = las->p.get_z();
+    double px = las->point.get_x();
+    double py = las->point.get_y();
+    double pz = las->point.get_z();
 
     // Voxel of this point
     int nx = std::floor((px - rxmin) / res);
@@ -183,7 +183,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
     }
     else
     {
-      las->p.set_deleted();
+      las->point.set_deleted();
     }
 
     (*progress)++;
@@ -218,7 +218,7 @@ bool LASRsamplingvoxels::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingvoxels::process(LAS*& las)
+bool LASRsamplingvoxels::process(PointCloud*& las)
 {
   std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
@@ -228,12 +228,12 @@ bool LASRsamplingvoxels::process(LAS*& las)
   std::iota(index.begin(), index.end(), 0);
   shuffle(index, shuffle_size);
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rzmin = las->newheader->min_z;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
-  double rzmax = las->newheader->max_z;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rzmin = las->header->min_z;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
+  double rzmax = las->header->max_z;
 
   rxmin = ROUNDANY(rxmin - 0.5 * res, res);
   rymin = ROUNDANY(rymin - 0.5 * res, res);
@@ -262,17 +262,17 @@ bool LASRsamplingvoxels::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->p.get_deleted()) continue;
-    if (pointfilter.filter(&las->p))
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point))
     {
       //las->delete_point();
       continue;
     }
 
     // Voxel of this point
-    int nx = std::floor((las->p.get_x() - rxmin) / res);
-    int ny = std::floor((las->p.get_y() - rymin) / res);
-    int nz = std::floor((las->p.get_z() - rzmin) / res);
+    int nx = std::floor((las->point.get_x() - rxmin) / res);
+    int ny = std::floor((las->point.get_y() - rymin) / res);
+    int nz = std::floor((las->point.get_z() - rzmin) / res);
     int key = nx + ny*length + nz*length*width;
 
     // Do we retain this point ? We look into the registry to know if the voxel exist. If not, we retain the point.
@@ -337,7 +337,7 @@ bool LASRsamplingpixels::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingpixels::process(LAS*& las)
+bool LASRsamplingpixels::process(PointCloud*& las)
 {
   if (method == "random") return random(las);
   if (method == "max") return highest(las);
@@ -345,7 +345,7 @@ bool LASRsamplingpixels::process(LAS*& las)
   return true;
 }
 
-bool LASRsamplingpixels::random(LAS*& las)
+bool LASRsamplingpixels::random(PointCloud*& las)
 {
   std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
@@ -355,10 +355,10 @@ bool LASRsamplingpixels::random(LAS*& las)
   std::iota(index.begin(), index.end(), 0);
   shuffle(index, shuffle_size);
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
   Grid grid(rxmin, rymin, rxmax, rymax, res);
 
   size_t npixels = grid.get_ncells();
@@ -376,11 +376,11 @@ bool LASRsamplingpixels::random(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->p.get_deleted()) continue;
-    if (pointfilter.filter(&las->p)) continue;
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     // Pixel of this point
-    int key = grid.cell_from_xy(las->p.get_x(), las->p.get_y());
+    int key = grid.cell_from_xy(las->point.get_x(), las->point.get_y());
 
     // Do we retain this point ? We look into the registry to know if the pixel exist. If not, we retain the point.
     if (use_bitregistry)
@@ -427,16 +427,16 @@ bool LASRsamplingpixels::random(LAS*& las)
   return true;
 }
 
-bool LASRsamplingpixels::highest(LAS*& las, bool high)
+bool LASRsamplingpixels::highest(PointCloud*& las, bool high)
 {
   int n = las->npoints;
 
   std::vector<std::pair<int, double>> registry;
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
   Grid grid(rxmin, rymin, rxmax, rymax, res);
 
   size_t npixels = grid.get_ncells();
@@ -455,15 +455,15 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
     return false;
   }
 
-  AttributeHandler accessor(use_attribute);
+  AttributeAccessor accessor(use_attribute);
 
   while (las->read_point())
   {
-    if (pointfilter.filter(&las->p)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
-    double x = las->p.get_x();
-    double y = las->p.get_y();
-    double z = accessor(&las->p);
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    double z = accessor(&las->point);
     int cell = grid.cell_from_xy(x,y);
 
     if ((high && registry[cell].second < z) || (!high && registry[cell].second > z))
@@ -472,14 +472,14 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
 
   while (las->read_point())
   {
-    if (pointfilter.filter(&las->p)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
-    double x = las->p.get_x();
-    double y = las->p.get_y();
+    double x = las->point.get_x();
+    double y = las->point.get_y();
     int cell = grid.cell_from_xy(x,y);
 
     if (registry[cell].first != las->current_point)
-      las->p.set_deleted();
+      las->point.set_deleted();
   }
 
   las->update_header();

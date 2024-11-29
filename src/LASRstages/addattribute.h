@@ -7,7 +7,7 @@ class LASRaddattribute: public Stage
 {
 public:
   LASRaddattribute();
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "add_extrabytes"; };
 

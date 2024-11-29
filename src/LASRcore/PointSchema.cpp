@@ -31,9 +31,9 @@ Attribute::Attribute(const std::string& name, AttributeType type, double scale_f
 void Attribute::dump(bool verbose) const
 {
   if (verbose)
-    printf("Attribute: %-15s | Offset: %-2zu | Size: %-1zu | Type: %-1d | Scale Factor: %-5.2f | Offset: %-5.2f\n", name.c_str(), offset, size, type, scale_factor, value_offset);
+    print("Attribute: %-15s | Offset: %-2zu | Size: %-1zu | Type: %-1d | Scale Factor: %-5.2f | Offset: %-5.2f\n", name.c_str(), offset, size, type, scale_factor, value_offset);
   else
-    printf("Attribute: %-15s | Description: %s\n", name.c_str(), description.c_str());
+    print("Attribute: %-15s | Description: %s\n", name.c_str(), description.c_str());
 }
 
 void AttributeSchema::add_attribute(const Attribute& attribute)
@@ -84,14 +84,14 @@ void AttributeSchema::dump(bool verbose) const
   for (const auto& attr : attributes) attr.dump(verbose);
 }
 
-AttributeHandler::AttributeHandler(double default_value) : name(""), attribute(nullptr), init(false), default_value(default_value) {}
-AttributeHandler::AttributeHandler(const std::string& name, double default_value) : name(name), attribute(nullptr), init(false), default_value(default_value) {}
-AttributeHandler::AttributeHandler(const std::string& name, AttributeSchema* schema, double default_value) : name(name), attribute(schema->find_attribute(name)), init(true), default_value(default_value)
+AttributeAccessor::AttributeAccessor(double default_value) : name(""), attribute(nullptr), init(false), default_value(default_value) {}
+AttributeAccessor::AttributeAccessor(const std::string& name, double default_value) : name(name), attribute(nullptr), init(false), default_value(default_value) {}
+AttributeAccessor::AttributeAccessor(const std::string& name, AttributeSchema* schema, double default_value) : name(name), attribute(schema->find_attribute(name)), init(true), default_value(default_value)
 {
   if (!attribute) throw std::runtime_error("Attribute not found in schema");
 }
 
-double AttributeHandler::read(const Point* point)
+double AttributeAccessor::read(const Point* point)
 {
   if (!init)
   {
@@ -118,7 +118,7 @@ double AttributeHandler::read(const Point* point)
   return attribute->value_offset + attribute->scale_factor * cast_value;
 }
 
-void AttributeHandler::write(Point* point, double value)
+void AttributeAccessor::write(Point* point, double value)
 {
   if (!init)
   {
@@ -147,12 +147,12 @@ void AttributeHandler::write(Point* point, double value)
   }
 }
 
-double AttributeHandler::operator()(const Point* point)
+double AttributeAccessor::operator()(const Point* point)
 {
   return read(point);
 }
 
-void AttributeHandler::operator()(Point* point, double value)
+void AttributeAccessor::operator()(Point* point, double value)
 {
   write(point, value);
 }

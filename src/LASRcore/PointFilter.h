@@ -6,11 +6,11 @@
 #include <string>
 #include <vector>
 
-class Condition : public AttributeHandler
+class Condition : public AttributeAccessor
 {
 public:
-  Condition() : AttributeHandler() {};
-  Condition(const std::string& attribute_name) : AttributeHandler(attribute_name) {};
+  Condition() : AttributeAccessor() {};
+  Condition(const std::string& attribute_name) : AttributeAccessor(attribute_name) {};
   virtual bool filter(const Point* point) = 0;
   virtual ~Condition(){};
 };
@@ -34,6 +34,7 @@ public:
   void add_condition(const std::string& x);
   void add_condition(Condition* condition);
   void add_clip(double xmin, double ymin, double xmax, double ymax, bool circle = false);
+  void reset();
 
   PointFilter() = default;
   ~PointFilter();

@@ -8,6 +8,31 @@
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
 
+LASlibInterface::LASlibInterface()
+{
+  lasreadopener = nullptr;
+  laswriteopener = nullptr;
+  lasreader = nullptr;
+  lasheader = nullptr;
+  laswriter = nullptr;
+  point = nullptr;
+  progress = nullptr;
+
+  intensity = AttributeAccessor("Intensity");
+  returnnumber = AttributeAccessor("ReturnNumber");
+  numberofreturns = AttributeAccessor("NumberOfReturns");
+  userdata = AttributeAccessor("UserData");
+  classification = AttributeAccessor("Classification");
+  psid = AttributeAccessor("PointSourceID");
+  scanangle = AttributeAccessor("ScanAngle");
+  gpstime = AttributeAccessor("gpstime");
+  scannerchannel = AttributeAccessor("ScannerChannel");
+  red = AttributeAccessor("R");
+  green = AttributeAccessor("G");
+  blue = AttributeAccessor("B");
+  nir = AttributeAccessor("NIR");
+}
+
 LASlibInterface::LASlibInterface(Progress* progress)
 {
   lasreadopener = nullptr;
@@ -18,19 +43,19 @@ LASlibInterface::LASlibInterface(Progress* progress)
   point = nullptr;
   this->progress = progress;
 
-  intensity = AttributeHandler("Intensity");
-  returnnumber = AttributeHandler("ReturnNumber");
-  numberofreturns = AttributeHandler("NumberOfReturns");
-  userdata = AttributeHandler("UserData");
-  classification = AttributeHandler("Classification");
-  psid = AttributeHandler("PointSourceID");
-  scanangle = AttributeHandler("ScanAngle");
-  gpstime = AttributeHandler("gpstime");
-  scannerchannel = AttributeHandler("ScannerChannel");
-  red = AttributeHandler("R");
-  green = AttributeHandler("G");
-  blue = AttributeHandler("B");
-  nir = AttributeHandler("NIR");
+  intensity = AttributeAccessor("Intensity");
+  returnnumber = AttributeAccessor("ReturnNumber");
+  numberofreturns = AttributeAccessor("NumberOfReturns");
+  userdata = AttributeAccessor("UserData");
+  classification = AttributeAccessor("Classification");
+  psid = AttributeAccessor("PointSourceID");
+  scanangle = AttributeAccessor("ScanAngle");
+  gpstime = AttributeAccessor("gpstime");
+  scannerchannel = AttributeAccessor("ScannerChannel");
+  red = AttributeAccessor("R");
+  green = AttributeAccessor("G");
+  blue = AttributeAccessor("B");
+  nir = AttributeAccessor("NIR");
 }
 
 LASlibInterface::~LASlibInterface()
@@ -114,9 +139,41 @@ bool LASlibInterface::open(const Chunk& chunk, std::vector<std::string> filters)
 
 bool LASlibInterface::open(const std::string& file)
 {
+  if (lasheader != nullptr)
+  {
+    last_error = "Internal error. LASheader already initialized."; // # nocov
+    return false;
+  }
+
+  if (laswriter)
+  {
+    last_error = "Internal error. This interface has been created as a writer"; // # nocov
+    return false;
+  }
+
+  lasreadopener = new LASreadOpener;
+  lasreadopener->add_file_name(file.c_str());
+  lasreader = lasreadopener->open();
+
+  if (!lasreader)
+  {
+    // # nocov start
+    char buffer[512];
+    snprintf(buffer, 512, "LASlib internal error. Cannot open LASreader with %s\n", file.c_str());
+    last_error = std::string(buffer);
+    return false;
+    // # nocov end
+  }
+
+  return true;
+}
+
+bool LASlibInterface::create(const std::string& file)
+{
   if (lasheader == nullptr)
   {
     last_error = "Internal error. LASheader not initialized."; // # nocov
+    return false;
   }
 
   if (lasreader)
@@ -126,9 +183,9 @@ bool LASlibInterface::open(const std::string& file)
   }
 
 
-  LASwriteOpener laswriteopener;
-  laswriteopener.set_file_name(file.c_str());
-  laswriter = laswriteopener.open(lasheader);
+  laswriteopener = new LASwriteOpener;
+  laswriteopener->set_file_name(file.c_str());
+  laswriter = laswriteopener->open(lasheader);
 
   if (!laswriter)
   {
@@ -139,7 +196,7 @@ bool LASlibInterface::open(const std::string& file)
   return true;
 }
 
-bool LASlibInterface::populate_header(Header* header)
+bool LASlibInterface::populate_header(Header* header, bool read_first_point)
 {
   if (lasreader == nullptr)
   {
@@ -162,7 +219,9 @@ bool LASlibInterface::populate_header(Header* header)
   header->x_scale_factor = lasreader->header.x_scale_factor;
   header->y_scale_factor = lasreader->header.y_scale_factor;
   header->z_scale_factor = lasreader->header.z_scale_factor;
-  header->adjusted_standard_gps_time = lasreader->header.get_global_encoding_bit(0);
+  header->file_creation_year = lasreader->header.file_creation_year;
+  header->file_creation_day = lasreader->header.file_creation_day;
+  header->adjusted_standard_gps_time = lasreader->header.get_global_encoding_bit(0) == true;
 
   header->schema.add_attribute("X", AttributeType::INT32, header->x_scale_factor, header->x_offset, "X coordinate");
   header->schema.add_attribute("Y", AttributeType::INT32, header->y_scale_factor, header->y_offset, "Y coordinate");
@@ -210,9 +269,44 @@ bool LASlibInterface::populate_header(Header* header)
     double scale = lasreader->header.attributes[i].scale[0];
     double offset = lasreader->header.attributes[i].offset[0];
     header->schema.add_attribute(name, type, scale, offset, description);
-    extrabytes.push_back(AttributeHandler(name));
+    extrabytes.push_back(AttributeAccessor(name));
   }
 
+  if (lasreader->header.vlr_geo_keys)
+  {
+    for (int j = 0; j < lasreader->header.vlr_geo_keys->number_of_keys; j++)
+    {
+      if (lasreader->header.vlr_geo_key_entries[j].key_id == 3072)
+      {
+        header->crs = CRS(lasreader->header.vlr_geo_key_entries[j].value_offset);
+        break;
+      }
+    }
+  }
+
+  if (lasreader->header.vlr_geo_ogc_wkt)
+  {
+    for (unsigned int j = 0; j < lasreader->header.number_of_variable_length_records; j++)
+    {
+      if (lasreader->header.vlrs[j].record_id == 2112)
+      {
+        char* data = (char*)lasreader->header.vlrs[j].data;
+        int len = strnlen(data, lasreader->header.vlrs[j].record_length_after_header);
+        std::string wkt(data, len);
+        header->crs = CRS(wkt);
+        break;
+      }
+    }
+  }
+
+  header->spatial_index = (lasreader->get_index() != nullptr) || (lasreader->get_copcindex() != nullptr);
+
+  if (read_first_point)
+  {
+    lasreader->read_point();
+    header->gpstime = lasreader->point.get_gps_time();
+    lasreader->seek(0);
+  }
   return true;
 }
 
@@ -240,12 +334,12 @@ bool LASlibInterface::init(const Header* header, const CRS& crs)
   lasheader->file_source_ID       = 0;
   lasheader->version_major        = 1;
   lasheader->version_minor        = version_minor;
-  lasheader->header_size          = LAS::get_header_size(version_minor);
-  lasheader->offset_to_point_data = LAS::get_header_size(version_minor);
+  lasheader->header_size          = get_header_size(version_minor);
+  lasheader->offset_to_point_data = get_header_size(version_minor);
   lasheader->file_creation_year   = 0;
   lasheader->file_creation_day    = 0;
-  lasheader->point_data_format    = LAS::guess_point_data_format(has_gps, has_rgb, has_nir);
-  lasheader->point_data_record_length = LAS::get_point_data_record_length(lasheader->point_data_format);
+  lasheader->point_data_format    = guess_point_data_format(has_gps, has_rgb, has_nir);
+  lasheader->point_data_record_length = get_point_data_record_length(lasheader->point_data_format);
   lasheader->x_scale_factor       = header->schema.attributes[0].scale_factor;
   lasheader->y_scale_factor       = header->schema.attributes[1].scale_factor;
   lasheader->z_scale_factor       = header->schema.attributes[2].scale_factor;
@@ -510,4 +604,77 @@ void LASlibInterface::reset_accessor()
   nir.reset();
   for (auto& accessor : extrabytes)
     accessor.reset();
+}
+
+
+int LASlibInterface::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)
+{
+  std::vector<int> formats = {0,1,2,3,6,7,8};
+
+  if (has_nir) // format 8 or 10
+    return 8;
+
+  if (has_gps) // format 1,3:10
+  {
+    auto end = std::remove(formats.begin(), formats.end(), 0);
+    formats.erase(end, formats.end());
+    end = std::remove(formats.begin(), formats.end(), 2);
+    formats.erase(end, formats.end());
+  }
+
+  if (has_rgb)  // format 3, 5, 7, 8
+  {
+    auto end = std::remove(formats.begin(), formats.end(), 0);
+    formats.erase(end, formats.end());
+    end = std::remove(formats.begin(), formats.end(), 1);
+    formats.erase(end, formats.end());
+    end = std::remove(formats.begin(), formats.end(), 6);
+    formats.erase(end, formats.end());
+  }
+
+  return formats[0];
+}
+
+int LASlibInterface::get_header_size(int minor_version)
+{
+  int header_size = 0;
+
+  switch (minor_version)
+  {
+  case 0:
+  case 1:
+  case 2:
+    header_size = 227;
+    break;
+  case 3:
+    header_size = 235;
+    break;
+  case 4:
+    header_size = 375;
+    break;
+  default:
+    header_size = -1;
+  break;
+  }
+
+  return header_size;
+}
+
+int LASlibInterface::get_point_data_record_length(int point_data_format, int num_extrabytes)
+{
+  switch (point_data_format)
+  {
+  case 0: return 20 + num_extrabytes; break;
+  case 1: return 28 + num_extrabytes; break;
+  case 2: return 26 + num_extrabytes; break;
+  case 3: return 34 + num_extrabytes; break;
+  case 4: return 57 + num_extrabytes; break;
+  case 5: return 63 + num_extrabytes; break;
+  case 6: return 30 + num_extrabytes; break;
+  case 7: return 36 + num_extrabytes; break;
+  case 8: return 38 + num_extrabytes; break;
+  case 9: return 59 + num_extrabytes; break;
+  case 10: return 67 + num_extrabytes; break;
+  default: return 0; break;
+  }
 }

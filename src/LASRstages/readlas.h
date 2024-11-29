@@ -12,7 +12,7 @@ public:
   ~LASRlasreader();
   bool process(Header*& header) override;
   bool process(Point*& point) override;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool set_chunk(Chunk& chunk) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };

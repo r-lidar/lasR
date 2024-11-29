@@ -14,8 +14,8 @@
 #include <list>
 
 // lasR
-#include "LAS.h"
-#include "LAScatalog.h"
+#include "PointCloud.h"
+#include "FileCollection.h"
 #include "Raster.h"
 #include "Vector.h"
 #include "Progress.h"
@@ -76,8 +76,8 @@ public:
   virtual bool process() { return true; };
   virtual bool process(Header*& header) { return true; };
   virtual bool process(Point*& p) { return true; };
-  virtual bool process(LAS*& las) { return true; };
-  virtual bool process(LAScatalog*& las) { return true; };
+  virtual bool process(PointCloud*& las) { return true; };
+  virtual bool process(FileCollection*& las) { return true; };
   virtual bool break_pipeline() { return false; };
   virtual bool write() { return true; };
   virtual void clear(bool last = false) { return; };
@@ -110,7 +110,7 @@ public:
   //void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
-  void reset_filter() { };
+  void reset_filter() { pointfilter.reset(); };
 
   std::string get_uid() const { return uid; };
   const std::map<std::string, Stage*>& get_connection() { return connections; };

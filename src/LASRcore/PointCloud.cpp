@@ -1,19 +1,14 @@
-#include "LAS.h"
+#include "PointCloud.h"
 #include "GridPartition.h"
 #include "Raster.h"
 #include "macros.h"
 #include "error.h"
 
-#include "lasdefinitions.hpp"
-#include "lasfilter.hpp"
-#include "lasutility.hpp"
-#include "lasreader.hpp"
-
 #include <algorithm>
 
-LAS::LAS(Header* newheader)
+PointCloud::PointCloud(Header* header)
 {
-  this->newheader = newheader;
+  this->header = header;
 
   // Point cloud storage
   buffer = NULL;
@@ -25,16 +20,16 @@ LAS::LAS(Header* newheader)
   read_started = false;
 
   // For spatial indexing
-  index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, 2);
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
   current_interval = 0;
   shape = nullptr;
   inside = false;
 
   // Initialize the good point format
-  p.set_schema(&newheader->schema);
+  point.set_schema(&header->schema);
 }
 
-LAS::LAS(const Raster& raster)
+PointCloud::PointCloud(const Raster& raster)
 {
   // Point cloud storage
   buffer = NULL;
@@ -45,39 +40,39 @@ LAS::LAS(const Raster& raster)
   next_point = 0;
   read_started = false;
 
-  // Convert the raster to a LAS
-  newheader = new Header;
-  /*newheader->file_source_ID       = 0;
-  newheader->version_major        = 1;
-  newheader->version_minor        = 2;
-  newheader->header_size          = 227;
-  newheader->offset_to_point_data = 227;
-  newheader->file_creation_year   = 0;
-  newheader->file_creation_day    = 0;
-  newheader->point_data_format    = 0;
-  newheader->x_scale_factor       = 0.01;
-  newheader->y_scale_factor       = 0.01;
-  newheader->z_scale_factor       = 0.01;
-  newheader->x_offset             = raster.get_full_extent()[0];
-  newheader->y_offset             = raster.get_full_extent()[1];
-  newheader->z_offset             = 0;*/
-  newheader->number_of_point_records = raster.get_ncells();
-  newheader->min_x                = raster.get_xmin()-raster.get_xres()/2;
-  newheader->min_y                = raster.get_ymin()-raster.get_yres()/2;
-  newheader->max_x                = raster.get_xmax()+raster.get_xres()/2;
-  newheader->max_y                = raster.get_ymax()-raster.get_yres()/2;
-  newheader->schema.add_attribute("X", AttributeType::INT32, 0.001, raster.get_full_extent()[0]);
-  newheader->schema.add_attribute("Y", AttributeType::INT32, 0.001, raster.get_full_extent()[1]);
-  newheader->schema.add_attribute("Z", AttributeType::INT32, 0.001, 0);
-  newheader->schema.add_attribute("Flags", AttributeType::INT8);
+  // Convert the raster to a PointCloud
+  header = new Header;
+  /*header->file_source_ID       = 0;
+  header->version_major        = 1;
+  header->version_minor        = 2;
+  header->header_size          = 227;
+  header->offset_to_point_data = 227;
+  header->file_creation_year   = 0;
+  header->file_creation_day    = 0;
+  header->point_data_format    = 0;
+  header->x_scale_factor       = 0.01;
+  header->y_scale_factor       = 0.01;
+  header->z_scale_factor       = 0.01;
+  header->x_offset             = raster.get_full_extent()[0];
+  header->y_offset             = raster.get_full_extent()[1];
+  header->z_offset             = 0;*/
+  header->number_of_point_records = raster.get_ncells();
+  header->min_x                = raster.get_xmin()-raster.get_xres()/2;
+  header->min_y                = raster.get_ymin()-raster.get_yres()/2;
+  header->max_x                = raster.get_xmax()+raster.get_xres()/2;
+  header->max_y                = raster.get_ymax()-raster.get_yres()/2;
+  header->schema.add_attribute("X", AttributeType::INT32, 0.001, raster.get_full_extent()[0]);
+  header->schema.add_attribute("Y", AttributeType::INT32, 0.001, raster.get_full_extent()[1]);
+  header->schema.add_attribute("Z", AttributeType::INT32, 0.001, 0);
+  header->schema.add_attribute("Flags", AttributeType::INT8);
 
   // For spatial indexing
   current_interval = 0;
   shape = nullptr;
   inside = false;
-  index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, raster.get_xres()*4);
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, raster.get_xres()*4);
 
-  p = Point(&newheader->schema);
+  point = Point(&header->schema);
 
   for (int i = 0 ; i < raster.get_ncells() ; i++)
   {
@@ -88,22 +83,22 @@ LAS::LAS(const Raster& raster)
     double x = raster.x_from_cell(i);
     double y = raster.y_from_cell(i);
 
-    p.set_x(x);
-    p.set_y(y);
-    p.set_z(z);
+    point.set_x(x);
+    point.set_y(y);
+    point.set_z(z);
 
-    add_point(p);
+    add_point(point);
   }
 
-  newheader->number_of_point_records = npoints;
+  header->number_of_point_records = npoints;
 }
 
-LAS::~LAS()
+PointCloud::~PointCloud()
 {
-  if (newheader)
+  if (header)
   {
-    delete newheader;
-    newheader = nullptr;
+    delete header;
+    header = nullptr;
   }
 
   if (buffer)
@@ -115,27 +110,27 @@ LAS::~LAS()
   clean_index();
 }
 
-bool LAS::add_point(const Point& p)
+bool PointCloud::add_point(const Point& p)
 {
   if (buffer == NULL)
   {
-    capacity = 100000 * newheader->schema.total_point_size;
+    capacity = 100000 * header->schema.total_point_size;
     if (!alloc_buffer()) return false;
   }
 
-  if (npoints == I32_MAX)
+  if (npoints == std::numeric_limits<int>::max())
   {
     last_error = "LASR cannot stores more than 2147483647 points"; // # nocov
     return false;                                                  // # nocov
   }
 
   // Realloc memory and increase buffer size if needed
-  size_t required_capacity = npoints*newheader->schema.total_point_size;
+  size_t required_capacity = npoints*header->schema.total_point_size;
   if (required_capacity == capacity)
   {
-    size_t capacity_max = get_true_number_of_points()*newheader->schema.total_point_size;
+    size_t capacity_max = get_true_number_of_points()*header->schema.total_point_size;
 
-    // This may happens if the newheader is not properly populated
+    // This may happens if the header is not properly populated
     if (required_capacity >= capacity_max)
       capacity_max = capacity*2; // # nocov
 
@@ -147,7 +142,7 @@ bool LAS::add_point(const Point& p)
     if (!realloc_buffer()) return false;
   }
 
-  memcpy(buffer + npoints * newheader->schema.total_point_size, p.data, newheader->schema.total_point_size);
+  memcpy(buffer + npoints * header->schema.total_point_size, p.data, header->schema.total_point_size);
   npoints++;
 
   index->insert(p.get_x(), p.get_y());
@@ -155,7 +150,7 @@ bool LAS::add_point(const Point& p)
   return true;
 }
 
-bool LAS::seek(size_t pos)
+bool PointCloud::seek(size_t pos)
 {
   if (pos >= npoints)
   {
@@ -166,12 +161,12 @@ bool LAS::seek(size_t pos)
   current_point = pos;
   next_point = pos;
   next_point++;
-  p.data = buffer + current_point * newheader->schema.total_point_size;
+  point.data = buffer + current_point * header->schema.total_point_size;
   return true;
 }
 
 // Thread safe and fast
-/*bool LAS::get_xyz(size_t pos, double* xyz) const
+/*bool PointCloud::get_xyz(size_t pos, double* xyz) const
 {
   if (pos >= npoints)
   {
@@ -179,14 +174,14 @@ bool LAS::seek(size_t pos)
     return false; // # nocov
   }
 
-  unsigned char* buf = buffer + pos * newheader->schema.total_point_size;
+  unsigned char* buf = buffer + pos * header->schema.total_point_size;
   xyz[0] = get_x(buf);
   xyz[1] = get_y(buf);
   xyz[2] = get_z(buf);
   return true;
 }*/
 
-bool LAS::read_point(bool include_withhelded)
+bool PointCloud::read_point(bool include_withhelded)
 {
   if (npoints == 0) return false; // Fix #40
 
@@ -228,7 +223,7 @@ bool LAS::read_point(bool include_withhelded)
     }
 
     current_point = next_point;
-    p.data = buffer + current_point * newheader->schema.total_point_size;
+    point.data = buffer + current_point * header->schema.total_point_size;
     next_point++;
 
     // If the new current point is not in the current interval we switch to next interval
@@ -241,58 +236,58 @@ bool LAS::read_point(bool include_withhelded)
 
     if (shape)
     {
-      if (shape->contains(p.get_x(), p.get_y()))
+      if (shape->contains(point.get_x(), point.get_y()))
       {
-        if (include_withhelded || !p.get_deleted()) return true;
+        if (include_withhelded || !point.get_deleted()) return true;
       }
     }
     else
     {
-      if (include_withhelded || !p.get_deleted()) return true;
+      if (include_withhelded || !point.get_deleted()) return true;
     }
   } while (true);
 
   return true;
 }
 
-void LAS::update_point()
+void PointCloud::update_point()
 {
-  //point.copy_to(buffer + current_point * newheader->schema.total_point_size);
+  //point.copy_to(buffer + current_point * header->schema.total_point_size);
 }
 
-void LAS::remove_point()
+void PointCloud::remove_point()
 {
   /*point.set_withheld_flag(1);
   update_point();*/
 }
 
-void LAS::delete_point(Point* p)
+void PointCloud::delete_point(Point* p)
 {
   if (p == nullptr)
   {
-    this->p.set_deleted();
-    newheader->number_of_point_records--;
+    this->point.set_deleted();
+    header->number_of_point_records--;
   }
   else
   {
     p->set_deleted();
-    if (!p->own_data) newheader->number_of_point_records--;
+    if (!p->own_data) header->number_of_point_records--;
   }
 }
 
-bool LAS::delete_deleted()
+bool PointCloud::delete_deleted()
 {
   clean_index();
-  index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, 2);
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
 
   int j = 0;
   for (int i = 0 ; i < npoints ; i++)
   {
     seek(i);
-    if (p.get_deleted())
+    if (point.get_deleted())
     {
-      p.data = buffer + j * newheader->schema.total_point_size;
-      index->insert(p.get_x(), p.get_y());
+      point.data = buffer + j * header->schema.total_point_size;
+      index->insert(point.get_x(), point.get_y());
       j++;
     }
   }
@@ -302,7 +297,7 @@ bool LAS::delete_deleted()
 
   if (ratio < 0.5)
   {
-    capacity = npoints*newheader->schema.total_point_size;
+    capacity = npoints*header->schema.total_point_size;
     if (!realloc_buffer()) return false;
   }
 
@@ -352,10 +347,10 @@ static int compare_buffers_nogps(const void* a, const void* b, void* context)
 
 #include <stdlib.h>
 
-/*bool LAS::sort()
+/*bool PointCloud::sort()
 {
-  const Attribute* gpstime = p.schema->find_attribute("gpstime");
-  const Attribute* returnnumber = p.schema->find_attribute("ReturnNumber");
+  const Attribute* gpstime = point.schema->find_attribute("gpstime");
+  const Attribute* returnnumber = point.schema->find_attribute("ReturnNumber");
   bool have_gpstime = gpstime != nullptr;
   bool have_returnnumber = returnnumber != nullptr;
   have_gpstime = false;
@@ -368,11 +363,11 @@ static int compare_buffers_nogps(const void* a, const void* b, void* context)
   print("Offsets: %lu %lu\n", gpstime_offset, returnnumber_offset);
 
   if (have_gpstime && have_returnnumber)
-    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers, offsets);
+    qsort_s((void*)buffer, npoints, header->schema.total_point_size, compare_buffers, offsets);
   else if (!have_gpstime && have_returnnumber)
-    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_nogps, offsets);
+    qsort_s((void*)buffer, npoints, header->schema.total_point_size, compare_buffers_nogps, offsets);
   else if (have_gpstime && !have_returnnumber)
-    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_norn, offsets);
+    qsort_s((void*)buffer, npoints, header->schema.total_point_size, compare_buffers_norn, offsets);
   else
     return true;
 
@@ -382,11 +377,11 @@ static int compare_buffers_nogps(const void* a, const void* b, void* context)
 }*/
 
 
-bool LAS::sort(const std::vector<int>& order)
+bool PointCloud::sort(const std::vector<int>& order)
 {
   std::vector<bool> visited(npoints, false);
-  char* temp = (char*)malloc(newheader->schema.total_point_size);
-  size_t chunk_size = newheader->schema.total_point_size;
+  char* temp = (char*)malloc(header->schema.total_point_size);
+  size_t chunk_size = header->schema.total_point_size;
 
   for (size_t i = 0; i < npoints; ++i)
   {
@@ -417,18 +412,18 @@ bool LAS::sort(const std::vector<int>& order)
   return true;
 }
 
-void LAS::update_header()
+void PointCloud::update_header()
 {
   /*LASinventory inventory;
   while (read_point()) inventory.add(&point);
-  inventory.update_newheader(newheader);*/
+  inventory.update_header(header);*/
 }
 
 // Thread safe
-bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter) const
+bool PointCloud::query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter) const
 {
   Point p;
-  p.set_schema(&newheader->schema);
+  p.set_schema(&header->schema);
 
   addr.clear();
 
@@ -441,7 +436,7 @@ bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter*
   {
     for (int i = interval.start ; i <= interval.end ; i++)
     {
-      p.data = buffer + i * newheader->schema.total_point_size;
+      p.data = buffer + i * header->schema.total_point_size;
 
       if (filter && filter->filter(&p)) continue;
 
@@ -455,10 +450,10 @@ bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter*
   return addr.size() > 0;
 }
 
-bool LAS::query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter) const
+bool PointCloud::query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter) const
 {
   Point p;
-  p.set_schema(&newheader->schema);
+  p.set_schema(&header->schema);
 
   addr.clear();
 
@@ -468,7 +463,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<Point>& addr
   {
     for (int i = interval.start ; i <= interval.end ; i++)
     {
-      p.data = buffer + i * newheader->schema.total_point_size;
+      p.data = buffer + i * header->schema.total_point_size;
 
       if (filter && filter->filter(&p)) continue;
 
@@ -483,16 +478,16 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<Point>& addr
 }
 
 // Thread safe
-bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter) const
+bool PointCloud::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter) const
 {
   double x = xyz.get_x();
   double y = xyz.get_y();
   double z = xyz.get_z();
 
   Point p;
-  p.set_schema(&newheader->schema);
+  p.set_schema(&header->schema);
 
-  double area = (newheader->max_x-newheader->min_x)*(newheader->max_y-newheader->min_y);
+  double area = (header->max_x-header->min_x)*(header->max_y-header->min_y);
   double density = get_true_number_of_points() / area;
   double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
 
@@ -519,7 +514,7 @@ bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& re
         {
           for (int i = interval.start ; i <= interval.end ; i++)
           {
-            p.data = buffer + i * newheader->schema.total_point_size;
+            p.data = buffer + i * header->schema.total_point_size;
             if (p.get_deleted()) continue;
             //if (lasfilter && lasfilter->filter(&p)) continue;
             if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
@@ -547,7 +542,7 @@ bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& re
   {
     for (int i = interval.start ; i <= interval.end ; i++)
     {
-      p.data = buffer + i * newheader->schema.total_point_size;
+      p.data = buffer + i * header->schema.total_point_size;
 
       //if (lasfilter && lasfilter->filter(&p)) continue;
       if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
@@ -571,9 +566,9 @@ bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& re
   return true;
 }
 
-bool LAS::get_point(size_t pos, Point* p, PointFilter* const filter) const
+bool PointCloud::get_point(size_t pos, Point* p, PointFilter* const filter) const
 {
-  p->data = buffer + pos * newheader->schema.total_point_size;
+  p->data = buffer + pos * header->schema.total_point_size;
   if (p->get_deleted()) return false;
   if (filter && filter->filter(p)) return false;
   //pt.copy(&p);
@@ -581,27 +576,27 @@ bool LAS::get_point(size_t pos, Point* p, PointFilter* const filter) const
   return true;
 }
 
-void LAS::set_inside(Shape* shape)
+void PointCloud::set_inside(Shape* shape)
 {
   clean_query();
   inside = true;
   this->shape = shape;
 }
 
-void LAS::set_intervals_to_read(const std::vector<Interval>& intervals)
+void PointCloud::set_intervals_to_read(const std::vector<Interval>& intervals)
 {
   clean_query();
   inside = true;
   intervals_to_read = intervals;
 }
 
-bool LAS::add_attribute(const Attribute& attribute)
+bool PointCloud::add_attribute(const Attribute& attribute)
 {
-  size_t previous_size = newheader->schema.total_point_size;
+  size_t previous_size = header->schema.total_point_size;
   size_t new_size = previous_size + attribute.size;
   size_t new_capacity = get_true_number_of_points() * new_size;
 
-  newheader->schema.add_attribute(attribute);
+  header->schema.add_attribute(attribute);
 
   if (new_capacity > capacity)
   {
@@ -617,15 +612,15 @@ bool LAS::add_attribute(const Attribute& attribute)
   return true;
 }
 
-bool LAS::add_attributes(const std::vector<Attribute>& attributes)
+bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 {
-  size_t previous_size = newheader->schema.total_point_size;
+  size_t previous_size = header->schema.total_point_size;
   size_t new_size = previous_size;
 
   for (const auto& attribute : attributes)
   {
     new_size += attribute.size;
-    newheader->schema.add_attribute(attribute);
+    header->schema.add_attribute(attribute);
   }
 
   size_t new_capacity = get_true_number_of_points() * new_size;
@@ -644,22 +639,22 @@ bool LAS::add_attributes(const std::vector<Attribute>& attributes)
   return true;
 }
 
-/*void LAS::set_index(bool index)
+/*void PointCloud::set_index(bool index)
 {
   clean_index();
-  index = new GridPartition(lasnewheader.min_x, lasnewheader.min_y, lasnewheader.max_x, lasnewheader.max_y, 10);
+  index = new GridPartition(lasheader.min_x, lasheader.min_y, lasheader.max_x, lasheader.max_y, 10);
   while (read_point()) index->insert(point);
 }
 
-void LAS::set_index(float res)
+void PointCloud::set_index(float res)
 {
   clean_index();
-  index = new GridPartition(lasnewheader.min_x, lasnewheader.min_y, lasnewheader.max_x, lasnewheader.max_y, res);
+  index = new GridPartition(lasheader.min_x, lasheader.min_y, lasheader.max_x, lasheader.max_y, res);
   while (read_point()) index->insert(point);
 }*/
 
 
-bool LAS::add_rgb()
+bool PointCloud::add_rgb()
 {
   Attribute R("R", AttributeType::INT16, 0, 0, "Red channel");
   Attribute G("G", AttributeType::INT16, 0, 0, "Green channel");
@@ -668,7 +663,7 @@ bool LAS::add_rgb()
   return true;
 }
 
-void LAS::clean_index()
+void PointCloud::clean_index()
 {
   clean_query();
   if (index)
@@ -678,7 +673,7 @@ void LAS::clean_index()
   }
 }
 
-void LAS::clean_query()
+void PointCloud::clean_query()
 {
   current_interval = 0;
   shape = nullptr;
@@ -687,19 +682,19 @@ void LAS::clean_query()
   intervals_to_read.clear();
 }
 
-void LAS::reindex()
+void PointCloud::reindex()
 {
   clean_index();
-  index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, 2);
-  while (read_point()) index->insert(p.get_x(), p.get_y());
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+  while (read_point()) index->insert(point.get_x(), point.get_y());
 }
 
-bool LAS::is_attribute_loadable(int index)
+bool PointCloud::is_attribute_loadable(int index)
 {
   if (index < 0) return false;
-  //if (newheader->number_attributes-1 < index) return false;
+  //if (header->number_attributes-1 < index) return false;
 
-  AttributeType data_type = p.schema->attributes[index].type;
+  AttributeType data_type = point.schema->attributes[index].type;
 
   if (data_type == AttributeType::INT64 || data_type == AttributeType::UINT64)
   {
@@ -710,7 +705,7 @@ bool LAS::is_attribute_loadable(int index)
   return false; // to trigger an error
 }
 
-bool LAS::alloc_buffer()
+bool PointCloud::alloc_buffer()
 {
   if (buffer != NULL)
   {
@@ -734,7 +729,7 @@ bool LAS::alloc_buffer()
   return true;
 }
 
-bool LAS::realloc_buffer()
+bool PointCloud::realloc_buffer()
 {
   if (capacity == 0)
   {
@@ -764,9 +759,9 @@ bool LAS::realloc_buffer()
   return true;
 }
 
-/*bool LAS::realloc_point_and_buffer()
+/*bool PointCloud::realloc_point_and_buffer()
 {
-  size_t new_capacity = npoints * newheader->schema.total_point_size;
+  size_t new_capacity = npoints * header->schema.total_point_size;
   if (new_capacity > capacity)
   {
     capacity = new_capacity;
@@ -777,100 +772,28 @@ bool LAS::realloc_buffer()
   {
     seek(i);
     new_point = point;
-    new_point.copy_to(buffer + i * new_newheader->schema.total_point_size);
+    new_point.copy_to(buffer + i * new_header->schema.total_point_size);
   }
 
   point = LASpoint();
-  point.init(newheader, newheader->point_data_format, newheader->point_data_record_length, newheader);
+  point.init(header, header->point_data_format, header->point_data_record_length, header);
 
   return false;
 }*/
 
-int LAS::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)
+uint64_t PointCloud::get_true_number_of_points() const
 {
-  std::vector<int> formats = {0,1,2,3,6,7,8};
-
-  if (has_nir) // format 8 or 10
-    return 8;
-
-  if (has_gps) // format 1,3:10
-  {
-    auto end = std::remove(formats.begin(), formats.end(), 0);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 2);
-    formats.erase(end, formats.end());
-  }
-
-  if (has_rgb)  // format 3, 5, 7, 8
-  {
-    auto end = std::remove(formats.begin(), formats.end(), 0);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 1);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 6);
-    formats.erase(end, formats.end());
-  }
-
-  return formats[0];
+  return header->number_of_point_records;
 }
 
-int LAS::get_header_size(int minor_version)
-{
-  int header_size = 0;
+/*double PointCloud::get_x(int i) const { unsigned int X = *(buffer + i * header->schema.total_point_size + 0); return point.quantizer->get_x(X); };
+double PointCloud::get_y(int i) const { unsigned int Y = *(buffer + i * header->schema.total_point_size + 4); return point.quantizer->get_y(Y); };
+double PointCloud::get_z(int i) const { unsigned int Z = *(buffer + i * header->schema.total_point_size + 8); return point.quantizer->get_z(Z); };
 
-  switch (minor_version)
-  {
-  case 0:
-  case 1:
-  case 2:
-    header_size = 227;
-    break;
-  case 3:
-    header_size = 235;
-    break;
-  case 4:
-    header_size = 375;
-    break;
-  default:
-    header_size = -1;
-  break;
-  }
-
-  return header_size;
-}
-
-int LAS::get_point_data_record_length(int point_data_format, int num_extrabytes)
-{
-  switch (point_data_format)
-  {
-  case 0: return 20 + num_extrabytes; break;
-  case 1: return 28 + num_extrabytes; break;
-  case 2: return 26 + num_extrabytes; break;
-  case 3: return 34 + num_extrabytes; break;
-  case 4: return 57 + num_extrabytes; break;
-  case 5: return 63 + num_extrabytes; break;
-  case 6: return 30 + num_extrabytes; break;
-  case 7: return 36 + num_extrabytes; break;
-  case 8: return 38 + num_extrabytes; break;
-  case 9: return 59 + num_extrabytes; break;
-  case 10: return 67 + num_extrabytes; break;
-  default: return 0; break;
-  }
-}
-
-U64 LAS::get_true_number_of_points() const
-{
-  return newheader->number_of_point_records;
-}
-
-/*double LAS::get_x(int i) const { unsigned int X = *(buffer + i * newheader->schema.total_point_size + 0); return point.quantizer->get_x(X); };
-double LAS::get_y(int i) const { unsigned int Y = *(buffer + i * newheader->schema.total_point_size + 4); return point.quantizer->get_y(Y); };
-double LAS::get_z(int i) const { unsigned int Z = *(buffer + i * newheader->schema.total_point_size + 8); return point.quantizer->get_z(Z); };
-
-double LAS::get_x(const unsigned char* buf) const { unsigned int X = *((unsigned int*)buf);     return point.quantizer->get_x(X); };
-double LAS::get_y(const unsigned char* buf) const { unsigned int Y = *((unsigned int*)(buf+4)); return point.quantizer->get_y(Y); };
-double LAS::get_z(const unsigned char* buf) const { unsigned int Z = *((unsigned int*)(buf+8)); return point.quantizer->get_z(Z); };
-double LAS::get_gpstime(const unsigned char* buf) const { if (point.is_extended_point_type()) return *((const double*)&buf[22]); else return *((const double*)&buf[20]); };
-unsigned char LAS::get_scanner_channel(const unsigned char* buf) const { if (point.is_extended_point_type()) return (buf[15] >> 4) & 0x03; else return 0; };
-unsigned char LAS::get_return_number(const unsigned char* buf) const { return buf[14] & 0x0F; };
+double PointCloud::get_x(const unsigned char* buf) const { unsigned int X = *((unsigned int*)buf);     return point.quantizer->get_x(X); };
+double PointCloud::get_y(const unsigned char* buf) const { unsigned int Y = *((unsigned int*)(buf+4)); return point.quantizer->get_y(Y); };
+double PointCloud::get_z(const unsigned char* buf) const { unsigned int Z = *((unsigned int*)(buf+8)); return point.quantizer->get_z(Z); };
+double PointCloud::get_gpstime(const unsigned char* buf) const { if (point.is_extended_point_type()) return *((const double*)&buf[22]); else return *((const double*)&buf[20]); };
+unsigned char PointCloud::get_scanner_channel(const unsigned char* buf) const { if (point.is_extended_point_type()) return (buf[15] >> 4) & 0x03; else return 0; };
+unsigned char PointCloud::get_return_number(const unsigned char* buf) const { return buf[14] & 0x0F; };
 */
