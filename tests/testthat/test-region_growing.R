@@ -45,7 +45,8 @@ test_that("growing region works with multiple files",
 
   # We have an issue on the r-universe version of macos-r-release it is 81 instead of 83
   # but on github action it is ok... who knows.
-  expect_gte(sum(is.na(u$region_growing[])), 6881)
-  expect_lte(sum(is.na(u$region_growing[])), 6883)
+  #expect_gte(sum(is.na(u$region_growing[])), 6881)
+  #expect_lte(sum(is.na(u$region_growing[])), 6883)
+  expect_equal(sum(is.na(u$region_growing[])), 6883)
 })
 
