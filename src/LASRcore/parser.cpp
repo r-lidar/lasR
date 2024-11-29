@@ -204,7 +204,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         {
           std::string address_ptr = stage.at("externalptr");
           SEXP sexplas = string_address_to_sexp(address_ptr);
-          las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
+          las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
           if (las == nullptr)
           {
             last_error = "invalid external pointer";
@@ -254,7 +254,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         {
           std::string address_ptr = stage.at("externalptr");
           SEXP sexplas = string_address_to_sexp(address_ptr);
-          las = static_cast<LAS*>(R_ExternalPtrAddr(sexplas));
+          las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
           if (las == nullptr)
           {
             last_error = "invalid external pointer";

@@ -1,7 +1,7 @@
 #include "sor.h"
 #include "Grid.h"
 
-bool LASRsor::process(LAS*& las)
+bool LASRsor::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_total(las->npoints);

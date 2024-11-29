@@ -53,7 +53,7 @@ bool LASRsummary::process(Point*& p)
   return true;
 }
 
-bool LASRsummary::process(LAS*& las)
+bool LASRsummary::process(PointCloud*& las)
 {
   reset_accessors();
 

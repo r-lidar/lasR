@@ -93,7 +93,7 @@ bool LASRtransformwith::set_chunk(Chunk& chunk)
   return true;
 }
 
-bool LASRtransformwith::process(LAS*& las)
+bool LASRtransformwith::process(PointCloud*& las)
 {
   if (connections.empty())
   {

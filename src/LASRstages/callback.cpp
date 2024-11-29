@@ -42,7 +42,7 @@ bool LASRcallback::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRcallback::process(LAS*& las)
+bool LASRcallback::process(PointCloud*& las)
 {
   int error = 0;
 

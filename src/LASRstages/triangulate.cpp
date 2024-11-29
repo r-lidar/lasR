@@ -27,7 +27,7 @@ bool LASRtriangulate::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRtriangulate::process(LAS*& las)
+bool LASRtriangulate::process(PointCloud*& las)
 {
   this->las = las;
 

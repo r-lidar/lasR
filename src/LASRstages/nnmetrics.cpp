@@ -33,7 +33,7 @@ bool LASRnnmetrics::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRnnmetrics::process(LAS*& las)
+bool LASRnnmetrics::process(PointCloud*& las)
 {
   // Get the maxima from the local maximum stage
   auto it = connections.begin();

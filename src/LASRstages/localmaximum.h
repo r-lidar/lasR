@@ -14,7 +14,7 @@ class LASRlocalmaximum : public StageVector
 public:
   LASRlocalmaximum();
   bool process() override;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool write() override;
   void clear(bool last) override;
   double need_buffer() const override { return ws; }

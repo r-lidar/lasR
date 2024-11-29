@@ -7,7 +7,7 @@ class LASRsort : public Stage
 {
 public:
   LASRsort() : spatial(false) { };
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "sort"; };
 

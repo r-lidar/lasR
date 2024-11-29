@@ -7,7 +7,7 @@ class LASRtransformwith: public Stage
 {
 public:
   LASRtransformwith() = default;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "transform_with"; }

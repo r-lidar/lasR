@@ -9,7 +9,7 @@ class LASRboundaries : public StageVector
 public:
   LASRboundaries() = default;
   bool process(Header*& header) override;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   void clear(bool last) override;
   bool write() override;
   bool need_points() const override;

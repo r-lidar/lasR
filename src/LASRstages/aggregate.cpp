@@ -28,7 +28,7 @@ bool LASRaggregate::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRaggregate::process(LAS*& las)
+bool LASRaggregate::process(PointCloud*& las)
 {
   // Pre-compute the groups for each point
   std::vector<int> cells;

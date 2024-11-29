@@ -8,7 +8,7 @@ bool LASRsort::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsort::process(LAS*& las)
+bool LASRsort::process(PointCloud*& las)
 {
   auto start_time = std::chrono::high_resolution_clock::now();
 

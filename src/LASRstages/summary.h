@@ -13,7 +13,7 @@ class LASRsummary: public Stage
 public:
   LASRsummary();
   bool process(Point*& p) override;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool is_streamable() const override { return !metrics_engine.active(); }
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "summary"; }

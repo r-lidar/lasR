@@ -8,7 +8,7 @@ bool LASRfilter::process(Point*& p)
   return true;
 }
 
-bool LASRfilter::process(LAS*& las)
+bool LASRfilter::process(PointCloud*& las)
 {
   int n = 0;
   Point* p;
@@ -49,7 +49,7 @@ bool LASRfiltergrid::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRfiltergrid::process(LAS*& las)
+bool LASRfiltergrid::process(PointCloud*& las)
 {
   Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, res);
   std::vector<PointLAS> selected_points;

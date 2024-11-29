@@ -9,7 +9,7 @@ public:
   LASRnothing();
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "nothing"; };
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool is_streamable() const override { return streamable; };
   bool need_points() const override { return read_points; };
 

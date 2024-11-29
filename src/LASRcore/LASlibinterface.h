@@ -1,7 +1,7 @@
 #ifndef LASLIBINTERFACE_H
 #define LASLIBINTERFACE_H
 
-#include "LAS.h"
+#include "PointCloud.h"
 #include "Chunk.h"
 
 #include <string>
@@ -33,6 +33,11 @@ public:
   void close();
   void reset_accessor();
   int64_t p_count();
+
+  // Tools
+  static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
+  static int get_header_size(int minor_version);
+  static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir);
 
 private:
   LASreadOpener* lasreadopener;

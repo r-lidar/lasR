@@ -1,5 +1,5 @@
 #include "pipeline.h"
-#include "LAS.h"
+#include "PointCloud.h"
 #include "LAScatalog.h"
 #include "Stage.h"
 #include "Progress.h"

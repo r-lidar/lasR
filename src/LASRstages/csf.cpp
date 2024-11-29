@@ -5,7 +5,7 @@ LASRcsf::LASRcsf()
 {
 }
 
-bool LASRcsf::process(LAS*& las)
+bool LASRcsf::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_prefix("CSF");

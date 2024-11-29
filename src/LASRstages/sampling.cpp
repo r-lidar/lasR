@@ -23,7 +23,7 @@ bool LASRsamplingpoisson::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingpoisson::process(LAS*& las)
+bool LASRsamplingpoisson::process(PointCloud*& las)
 {
   double r_square = distance*distance;
   double res = distance; // Cell size for the grid
@@ -218,7 +218,7 @@ bool LASRsamplingvoxels::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingvoxels::process(LAS*& las)
+bool LASRsamplingvoxels::process(PointCloud*& las)
 {
   std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
@@ -337,7 +337,7 @@ bool LASRsamplingpixels::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingpixels::process(LAS*& las)
+bool LASRsamplingpixels::process(PointCloud*& las)
 {
   if (method == "random") return random(las);
   if (method == "max") return highest(las);
@@ -345,7 +345,7 @@ bool LASRsamplingpixels::process(LAS*& las)
   return true;
 }
 
-bool LASRsamplingpixels::random(LAS*& las)
+bool LASRsamplingpixels::random(PointCloud*& las)
 {
   std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
@@ -427,7 +427,7 @@ bool LASRsamplingpixels::random(LAS*& las)
   return true;
 }
 
-bool LASRsamplingpixels::highest(LAS*& las, bool high)
+bool LASRsamplingpixels::highest(PointCloud*& las, bool high)
 {
   int n = las->npoints;
 

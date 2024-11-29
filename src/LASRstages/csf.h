@@ -7,7 +7,7 @@ class LASRcsf: public Stage
 {
 public:
   LASRcsf();
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   double need_buffer() const override { return cloth_resolution*5; };
   bool is_parallelized() const override { return true; };
   bool set_parameters(const nlohmann::json&) override;

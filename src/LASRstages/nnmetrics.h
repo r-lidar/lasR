@@ -8,7 +8,7 @@ class LASRnnmetrics : public StageVector
 {
 public:
   LASRnnmetrics() = default;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   bool write() override;
   bool set_parameters(const nlohmann::json&) override;
   bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;

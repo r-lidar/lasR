@@ -102,7 +102,7 @@ bool LASRlaswriter::process(Point*& p)
   return true;
 }
 
-bool LASRlaswriter::process(LAS*& las)
+bool LASRlaswriter::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_prefix("Write LAS");

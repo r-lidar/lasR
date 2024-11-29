@@ -67,7 +67,7 @@ bool LASRrasterize::process(Point*& p)
   return true;
 }
 
-bool LASRrasterize::process(LAS*& las)
+bool LASRrasterize::process(PointCloud*& las)
 {
   // Streamable metrics:
   // but we are in a non streamble pipeline. We can call streamable code

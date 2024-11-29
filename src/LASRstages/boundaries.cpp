@@ -35,7 +35,7 @@ bool LASRboundaries::process(Header*& header)
   return true;
 }
 
-bool LASRboundaries::process(LAS*& las)
+bool LASRboundaries::process(PointCloud*& las)
 {
   ASSERT_VALID_POINTER(las);
 

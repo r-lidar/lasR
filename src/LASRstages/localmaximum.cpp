@@ -45,8 +45,8 @@ bool LASRlocalmaximum::process()
   const Raster& raster = p->get_raster();
 
   // Convert the raster to a LAS object to recycle the point cloud based local maximum
-  LAS las(raster);
-  LAS* ptr = &las;
+  PointCloud las(raster);
+  PointCloud* ptr = &las;
 
   // Process the LAS
   use_raster = false; // deactivate to process a LAS
@@ -56,7 +56,7 @@ bool LASRlocalmaximum::process()
   return success;
 }
 
-bool LASRlocalmaximum::process(LAS*& las)
+bool LASRlocalmaximum::process(PointCloud*& las)
 {
   if (use_raster) return true;
 

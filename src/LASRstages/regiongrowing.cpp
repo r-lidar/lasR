@@ -34,7 +34,7 @@ bool LASRregiongrowing::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRregiongrowing::process(LAS*& las)
+bool LASRregiongrowing::process(PointCloud*& las)
 {
   double ti = taketime();
 

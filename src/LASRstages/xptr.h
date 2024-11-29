@@ -8,9 +8,9 @@
 class LASRreaderxptr : public Stage
 {
 public:
-  LASRreaderxptr(LAS* las) { this->las = las; };
+  LASRreaderxptr(PointCloud* las) { this->las = las; };
   bool process(Header*& header) override { header = this->las->header; return true; };
-  bool process(LAS*& las) override { las = this->las; return true; };
+  bool process(PointCloud*& las) override { las = this->las; return true; };
   std::string get_name() const override { return "reader_externalptr";  }
   bool use_rcapi() const override { return true; };
   void merge(const Stage* other) override { const LASRreaderxptr* o = dynamic_cast<const LASRreaderxptr*>(other); las = o->las; };
@@ -18,14 +18,14 @@ public:
   LASRreaderxptr* clone() const override { return new LASRreaderxptr(*this); };
 
 private:
-  LAS* las;
+  PointCloud* las;
 };
 
 class LASRxptr : public Stage
 {
 public:
   LASRxptr() { las = nullptr; };
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   SEXP to_R() override;
   std::string get_name() const override { return "xpointer";  }
   bool use_rcapi() const override { return true; };
@@ -34,7 +34,7 @@ public:
   LASRxptr* clone() const override { return new LASRxptr(*this); };
 
 private:
-  LAS* las;
+  PointCloud* las;
 };
 
 

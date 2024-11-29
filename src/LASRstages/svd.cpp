@@ -81,7 +81,7 @@ bool LASRsvd::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsvd::process(LAS*& las)
+bool LASRsvd::process(PointCloud*& las)
 {
   std::vector<Attribute> attributes;
   std::vector<AttributeAccessor> writers;

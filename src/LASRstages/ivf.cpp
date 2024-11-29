@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 
-bool LASRivf::process(LAS*& las)
+bool LASRivf::process(PointCloud*& las)
 {
   // Stores for a given voxel the number of point in its 27 voxels neighborhood
   std::unordered_map<Voxel, int, VoxelHash> uregistry;

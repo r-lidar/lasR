@@ -338,7 +338,7 @@ bool LASRdataframereader::process(Point*& point)
   return true;
 }
 
-bool LASRdataframereader::process(LAS*& las)
+bool LASRdataframereader::process(PointCloud*& las)
 {
   streaming = false;
 
@@ -349,7 +349,7 @@ bool LASRdataframereader::process(LAS*& las)
   }
 
   if (las == nullptr)
-    las = new LAS(header);
+    las = new PointCloud(header);
 
   Point* p = nullptr;
   while (process(p))

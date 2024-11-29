@@ -74,7 +74,7 @@ private:
   double chunk_size;
   std::vector<int> order;
 
-  LAS* las;                             // owned by this
+  PointCloud* las;                             // owned by this
   Point* point;                         // owned by las or by reader_las in streaming mode
   Header* header;                       // owned by las or by reader_las in streaming mode
   std::shared_ptr<LAScatalog> catalog;  // owned by this and shared in cloned pipelines
