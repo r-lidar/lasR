@@ -2,7 +2,7 @@
 #include <limits>
 
 #include "pipeline.h"
-#include "Catalog.h"
+#include "FileCollection.h"
 
 #include "addattribute.h"
 #include "addrgb.h"
@@ -149,7 +149,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         {
           std::vector<std::string> files = get_vector<std::string>(stage["files"]);
 
-          catalog = std::make_shared<Catalog>();
+          catalog = std::make_shared<FileCollection>();
           if (!catalog->read(files, progress))
           {
             last_error = "In the parser while reading the file collection: " + last_error; // # nocov
@@ -196,7 +196,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
             if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
           }
 
-          catalog = std::make_shared<Catalog>();
+          catalog = std::make_shared<FileCollection>();
           catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
           catalog->set_crs(CRS(wkt));
         }
@@ -217,7 +217,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           int n = las->npoints;
           CRS crs = las->header->crs;
 
-          catalog = std::make_shared<Catalog>();
+          catalog = std::make_shared<FileCollection>();
           catalog->add_bbox(xmin, ymin, xmax, ymax, n);
           catalog->set_crs(crs);
         }

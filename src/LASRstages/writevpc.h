@@ -7,7 +7,7 @@ class LASRvpcwriter: public Stage
 {
 public:
   LASRvpcwriter() = default;
-  bool process(Catalog*& p) override;
+  bool process(FileCollection*& p) override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "write_vpc"; }
   bool need_points() const override { return false; }

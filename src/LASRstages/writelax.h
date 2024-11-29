@@ -8,7 +8,7 @@ class LASRlaxwriter: public Stage
 public:
   LASRlaxwriter();
   LASRlaxwriter(bool embedded, bool overwrite, bool onthefly);
-  bool process(Catalog*& ctg) override;
+  bool process(FileCollection*& ctg) override;
   bool set_chunk(Chunk& chunk) override;
   bool need_points() const override { return false; };
   bool is_streamable() const override { return true; };

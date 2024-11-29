@@ -15,7 +15,7 @@
 
 // lasR
 #include "PointCloud.h"
-#include "Catalog.h"
+#include "FileCollection.h"
 #include "Raster.h"
 #include "Vector.h"
 #include "Progress.h"
@@ -77,7 +77,7 @@ public:
   virtual bool process(Header*& header) { return true; };
   virtual bool process(Point*& p) { return true; };
   virtual bool process(PointCloud*& las) { return true; };
-  virtual bool process(Catalog*& las) { return true; };
+  virtual bool process(FileCollection*& las) { return true; };
   virtual bool break_pipeline() { return false; };
   virtual bool write() { return true; };
   virtual void clear(bool last = false) { return; };

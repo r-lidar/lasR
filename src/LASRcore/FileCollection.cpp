@@ -1,5 +1,5 @@
 // LASR
-#include "Catalog.h"
+#include "FileCollection.h"
 #include "Progress.h"
 #include "error.h"
 #include "Grid.h"
@@ -27,7 +27,7 @@ inline void gmtime_r(const time_t* timep, std::tm* result)
 }
 #endif
 
-bool Catalog::read(const std::vector<std::string>& files, bool progress)
+bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 {
   Progress pb;
   pb.set_total(files.size());
@@ -98,7 +98,7 @@ bool Catalog::read(const std::vector<std::string>& files, bool progress)
   return true;
 }
 
-bool Catalog::read_vpc(const std::string& filename)
+bool FileCollection::read_vpc(const std::string& filename)
 {
   clear();
   use_dataframe = false;
@@ -229,7 +229,7 @@ bool Catalog::read_vpc(const std::string& filename)
   return true;
 }
 
-bool Catalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolute_path, bool use_gpstime)
+bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolute_path, bool use_gpstime)
 {
   if (use_dataframe)
   {
@@ -427,7 +427,7 @@ bool Catalog::write_vpc(const std::string& vpcfile, const CRS& crs, bool absolut
   return true;
 }
 
-void Catalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess)
+void FileCollection::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess)
 {
   Rectangle bb(xmin, ymin, xmax, ymax);
   bboxes.push_back(bb);
@@ -442,12 +442,12 @@ void Catalog::add_bbox(double xmin, double ymin, double xmax, double ymax, bool 
   this->noprocess.push_back(noprocess);
 }
 
-void Catalog::add_crs(const Header* header)
+void FileCollection::add_crs(const Header* header)
 {
   crs = header->crs;
 }
 
-bool Catalog::add_file(std::string file, bool noprocess)
+bool FileCollection::add_file(std::string file, bool noprocess)
 {
   std::replace(file.begin(), file.end(), '\\', '/' );
 
@@ -489,29 +489,29 @@ bool Catalog::add_file(std::string file, bool noprocess)
   return true;
 }
 
-void Catalog::add_wkt(const std::string& wkt)
+void FileCollection::add_wkt(const std::string& wkt)
 {
   if (!wkt.empty()) wkt_set.insert(wkt);
 }
 
-void Catalog::add_epsg(int epsg)
+void FileCollection::add_epsg(int epsg)
 {
   if (epsg != 0) epsg_set.insert(epsg);
 }
 
-void Catalog::add_query(double xmin, double ymin, double xmax, double ymax)
+void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax)
 {
   Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
   queries.push_back(rect);
 }
 
-void Catalog::add_query(double xcenter, double ycenter, double radius)
+void FileCollection::add_query(double xcenter, double ycenter, double radius)
 {
   Circle* circ = new Circle(xcenter, ycenter, radius);
   queries.push_back(circ);
 }
 
-bool Catalog::set_noprocess(const std::vector<bool>& b)
+bool FileCollection::set_noprocess(const std::vector<bool>& b)
 {
   if (b.size() != files.size())
   {
@@ -523,7 +523,7 @@ bool Catalog::set_noprocess(const std::vector<bool>& b)
   return true;
 }
 
-bool Catalog::set_chunk_size(double size)
+bool FileCollection::set_chunk_size(double size)
 {
   chunk_size = 0;
 
@@ -552,7 +552,7 @@ bool Catalog::set_chunk_size(double size)
   return true;
 }
 
-bool Catalog::get_chunk(int i, Chunk& chunk) const
+bool FileCollection::get_chunk(int i, Chunk& chunk) const
 {
   if (i < 0 || i > get_number_chunks())
   {
@@ -578,12 +578,12 @@ bool Catalog::get_chunk(int i, Chunk& chunk) const
   return success;
 }
 
-const std::vector<std::filesystem::path>& Catalog::get_files() const
+const std::vector<std::filesystem::path>& FileCollection::get_files() const
 {
   return files;
 }
 
-bool Catalog::get_chunk_regular(int i, Chunk& chunk) const
+bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
 {
   chunk.clear();
 
@@ -627,7 +627,7 @@ bool Catalog::get_chunk_regular(int i, Chunk& chunk) const
   return true;
 }
 
-bool Catalog::get_chunk_with_query(int i, Chunk& chunk) const
+bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
 {
   unsigned int index;
   chunk.clear();
@@ -725,7 +725,7 @@ bool Catalog::get_chunk_with_query(int i, Chunk& chunk) const
   return true;
 }
 
-bool Catalog::check_spatial_index()
+bool FileCollection::check_spatial_index()
 {
   bool multi_files = get_number_files() > 1;
   bool use_buffer = get_buffer() > 0;
@@ -734,27 +734,27 @@ bool Catalog::check_spatial_index()
   return !((multi_files && use_buffer && no_index) || (has_queries && no_index));
 }
 
-int Catalog::get_number_chunks() const
+int FileCollection::get_number_chunks() const
 {
   return (queries.size() == 0) ? get_number_files() : queries.size();
 }
 
-int Catalog::get_number_files() const
+int FileCollection::get_number_files() const
 {
   return indexed.size();
 }
 
-int Catalog::get_number_indexed_files() const
+int FileCollection::get_number_indexed_files() const
 {
   return std::count(indexed.begin(), indexed.end(), true);
 }
 
-void Catalog::set_all_indexed()
+void FileCollection::set_all_indexed()
 {
   std::fill(indexed.begin(), indexed.end(), true);
 }
 
-void Catalog::clear()
+void FileCollection::clear()
 {
   xmin = std::numeric_limits<double>::max();
   ymin = std::numeric_limits<double>::max();
@@ -784,13 +784,13 @@ void Catalog::clear()
   queries.clear();
 }
 
-bool Catalog::file_exists(std::string& file)
+bool FileCollection::file_exists(std::string& file)
 {
   auto it = std::find(files.begin(), files.end(), file);
   return it != files.end();
 }
 
-PathType Catalog::parse_path(const std::string& path)
+PathType FileCollection::parse_path(const std::string& path)
 {
   std::filesystem::path file_path(path);
 
@@ -820,22 +820,22 @@ PathType Catalog::parse_path(const std::string& path)
 }
 
 
-Catalog::Catalog()
+FileCollection::FileCollection()
 {
   clear();
 }
 
-Catalog::~Catalog()
+FileCollection::~FileCollection()
 {
   for (auto p : queries) delete p;
 }
 
-void CatalogIndex::add(double xmin, double ymin, double xmax, double ymax)
+void FileCollectionIndex::add(double xmin, double ymin, double xmax, double ymax)
 {
   bboxes.emplace_back(xmin, ymin, xmax, ymax);
 }
 
-bool CatalogIndex::has_overlap(double xmin, double ymin, double xmax, double ymax) const
+bool FileCollectionIndex::has_overlap(double xmin, double ymin, double xmax, double ymax) const
 {
   for (const auto& bbox : bboxes)
   {
@@ -847,7 +847,7 @@ bool CatalogIndex::has_overlap(double xmin, double ymin, double xmax, double yma
   return false;
 }
 
-std::vector<int> CatalogIndex::get_overlaps(double xmin, double ymin, double xmax, double ymax) const
+std::vector<int> FileCollectionIndex::get_overlaps(double xmin, double ymin, double xmax, double ymax) const
 {
   std::vector<int> overlaps;
   for (int i = 0; i < bboxes.size(); ++i)

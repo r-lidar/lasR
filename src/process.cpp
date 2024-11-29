@@ -23,7 +23,7 @@
 #include "print.h"
 
 #include "pipeline.h"
-#include "Catalog.h"
+#include "FileCollection.h"
 
 #include "DrawflowParser.h"
 #include "nlohmann/json.hpp"
@@ -89,7 +89,7 @@ bool process(const std::string& config_file)
   double chunk_size = processing_options.value("chunk", 0);
   std::string fprofiling = processing_options.value("profiling", "");
 
-  // build_catalog() has been added at R level because there are some subtleties to handle LAS and Catalog
+  // build_catalog() has been added at R level because there are some subtleties to handle LAS and FileCollection
   // object from lidR. If build_catalog is missing, add it because we are using an API that is not R
   if (json_pipeline.empty() || json_pipeline[0]["algoname"] != "build_catalog")
   {
@@ -140,7 +140,7 @@ bool process(const std::string& config_file)
     bool is_parallelized = pipeline.is_parallelized();      // concurrent-points
     bool is_parallelizable = pipeline.is_parallelizable();  // concurrent-files
 
-    Catalog* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
+    FileCollection* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
 
     int n = lascatalog->get_number_chunks();
 
@@ -198,8 +198,8 @@ bool process(const std::string& config_file)
 
     pipeline.set_progress(&progress);
 
-    // Pre-run processes the Catalog
-    // write_vpc() and write_lax() are the only stage that can processed the Catalog
+    // Pre-run processes the FileCollection
+    // write_vpc() and write_lax() are the only stage that can processed the FileCollection
     if (!pipeline.pre_run())
     {
       throw last_error;

@@ -39,7 +39,7 @@ test_that("growing region works with multiple files",
   #terra::plot(u$region_growing, col = lidR::random.colors(2000))
   #plot(u$local_maximum$geom, add = TRUE, cex = 0.1, pch = 19)
 
-  expect_equal(length(unique(u$region_growing[])), 2235)
+  expect_equal(length(unique(u$region_growing[])), 2235L) # 2234+NaN
   expect_equal(nrow(u$local_maximum), 2234L)
   expect_equal(sum(is.na(u$rasterize[])), 5367L)
 
