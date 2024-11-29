@@ -20,11 +20,13 @@ class Progress;
 class LASlibInterface
 {
 public:
+  LASlibInterface();
   LASlibInterface(Progress*);
   ~LASlibInterface();
   bool open(const Chunk& chunk, std::vector<std::string> filters);
   bool open(const std::string& file);
-  bool populate_header(Header* header);
+  bool create(const std::string& file);
+  bool populate_header(Header* header, bool read_first_point = false);
   bool init(const Header* header, const CRS& crs);
   bool read_point(Point* p);
   bool write_point(Point* p);

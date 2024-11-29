@@ -4,6 +4,7 @@
 #include "error.h"
 #include "Grid.h"
 #include "PointSchema.h"
+#include "LASlibinterface.h"
 
 // STL
 #include <iostream>
@@ -12,8 +13,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <ctime>
-
-#include "lasreader.hpp"
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
@@ -452,53 +451,23 @@ bool LAScatalog::add_file(std::string file, bool noprocess)
 {
   std::replace(file.begin(), file.end(), '\\', '/' );
 
-  LASreadOpener lasreadopener;
-  lasreadopener.add_file_name(file.c_str());
-  LASreader* lasreader = lasreadopener.open();
-  if (lasreader == 0)
-  {
-    last_error = "cannot open not open lasreader"; // # nocov
-    return false; // # nocov
-  }
-
-  if (lasreader->header.vlr_geo_keys)
-  {
-    for (int j = 0; j < lasreader->header.vlr_geo_keys->number_of_keys; j++)
-    {
-      if (lasreader->header.vlr_geo_key_entries[j].key_id == 3072)
-      {
-        add_epsg(lasreader->header.vlr_geo_key_entries[j].value_offset);
-        break;
-      }
-    }
-  }
-
-  if (lasreader->header.vlr_geo_ogc_wkt)
-  {
-    for (unsigned int j = 0; j < lasreader->header.number_of_variable_length_records; j++)
-    {
-      if (lasreader->header.vlrs[j].record_id == 2112)
-      {
-        char* data = (char*)lasreader->header.vlrs[j].data;
-        int len = strnlen(data, lasreader->header.vlrs[j].record_length_after_header);
-        std::string wkt(data, len);
-        add_wkt(wkt);
-        break;
-      }
-    }
-  }
+  Header header;
+  LASlibInterface reader;
+  if (!reader.open(file)) return false;
+  reader.populate_header(&header, true);
+  reader.close();
 
   files.push_back(file);
-  add_bbox(lasreader->header.min_x, lasreader->header.min_y, lasreader->header.max_x, lasreader->header.max_y, lasreader->get_index() || lasreader->get_copcindex(), noprocess);
-  npoints.push_back(MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records));
-  header_dates.push_back({lasreader->header.file_creation_year, lasreader->header.file_creation_day});
-  zlim.push_back({lasreader->header.min_z, lasreader->header.max_z});
-  gpstime_encodind_bits.push_back(lasreader->header.get_global_encoding_bit(0));
+  add_bbox(header.min_x, header.min_y, header.max_x, header.max_y, header.spatial_index, noprocess);
+  npoints.push_back(header.number_of_point_records);
+  header_dates.push_back({header.file_creation_year, header.file_creation_day});
+  zlim.push_back({header.min_z, header.max_z});
+  gpstime_encodind_bits.push_back(header.adjusted_standard_gps_time);
+  add_wkt(header.crs.get_wkt());
 
-  lasreader->read_point();
-  if (lasreader->point.have_gps_time && lasreader->header.get_global_encoding_bit(0) == true)
+  if (header.gpstime != 0 &&  header.adjusted_standard_gps_time)
   {
-    uint64_t ns = ((uint64_t)lasreader->point.get_gps_time()+1000000000ULL)*1000000000ULL + 315964800000000000ULL; // offset between gps epoch and unix epoch is 315964800 seconds
+    uint64_t ns = ((uint64_t)header.gpstime+1000000000ULL)*1000000000ULL + 315964800000000000ULL; // offset between gps epoch and unix epoch is 315964800 seconds
 
     struct timespec ts;
     ts.tv_sec = ns / 1000000000ULL;
@@ -515,9 +484,6 @@ bool LAScatalog::add_file(std::string file, bool noprocess)
   {
     gpstime_dates.push_back({0, 0});
   }
-
-  lasreader->close();
-  delete lasreader;
 
   use_dataframe = false;
   return true;
@@ -790,10 +756,10 @@ void LAScatalog::set_all_indexed()
 
 void LAScatalog::clear()
 {
-  xmin = F64_MAX;
-  ymin = F64_MAX;
-  xmax = F64_MIN;
-  ymax = F64_MIN;
+  xmin = std::numeric_limits<double>::max();
+  ymin = std::numeric_limits<double>::max();
+  xmax = -std::numeric_limits<double>::max();
+  ymax = -std::numeric_limits<double>::max();
   last_error.clear();
 
   // CRS

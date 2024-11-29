@@ -64,7 +64,7 @@ bool LASRlaswriter::process(Point*& p)
   // No writer initialized? Create a writer.
   if (!laslibinterface->is_opened())
   {
-    if (!laslibinterface->open(ofile)) return false;
+    if (!laslibinterface->create(ofile)) return false;
     written.push_back(ofile);
   }
 

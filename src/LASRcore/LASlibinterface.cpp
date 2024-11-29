@@ -8,6 +8,31 @@
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
 
+LASlibInterface::LASlibInterface()
+{
+  lasreadopener = nullptr;
+  laswriteopener = nullptr;
+  lasreader = nullptr;
+  lasheader = nullptr;
+  laswriter = nullptr;
+  point = nullptr;
+  progress = nullptr;
+
+  intensity = AttributeAccessor("Intensity");
+  returnnumber = AttributeAccessor("ReturnNumber");
+  numberofreturns = AttributeAccessor("NumberOfReturns");
+  userdata = AttributeAccessor("UserData");
+  classification = AttributeAccessor("Classification");
+  psid = AttributeAccessor("PointSourceID");
+  scanangle = AttributeAccessor("ScanAngle");
+  gpstime = AttributeAccessor("gpstime");
+  scannerchannel = AttributeAccessor("ScannerChannel");
+  red = AttributeAccessor("R");
+  green = AttributeAccessor("G");
+  blue = AttributeAccessor("B");
+  nir = AttributeAccessor("NIR");
+}
+
 LASlibInterface::LASlibInterface(Progress* progress)
 {
   lasreadopener = nullptr;
@@ -114,9 +139,41 @@ bool LASlibInterface::open(const Chunk& chunk, std::vector<std::string> filters)
 
 bool LASlibInterface::open(const std::string& file)
 {
+  if (lasheader != nullptr)
+  {
+    last_error = "Internal error. LASheader already initialized."; // # nocov
+    return false;
+  }
+
+  if (laswriter)
+  {
+    last_error = "Internal error. This interface has been created as a writer"; // # nocov
+    return false;
+  }
+
+  lasreadopener = new LASreadOpener;
+  lasreadopener->add_file_name(file.c_str());
+  lasreader = lasreadopener->open();
+
+  if (!lasreader)
+  {
+    // # nocov start
+    char buffer[512];
+    snprintf(buffer, 512, "LASlib internal error. Cannot open LASreader with %s\n", file.c_str());
+    last_error = std::string(buffer);
+    return false;
+    // # nocov end
+  }
+
+  return true;
+}
+
+bool LASlibInterface::create(const std::string& file)
+{
   if (lasheader == nullptr)
   {
     last_error = "Internal error. LASheader not initialized."; // # nocov
+    return false;
   }
 
   if (lasreader)
@@ -126,9 +183,9 @@ bool LASlibInterface::open(const std::string& file)
   }
 
 
-  LASwriteOpener laswriteopener;
-  laswriteopener.set_file_name(file.c_str());
-  laswriter = laswriteopener.open(lasheader);
+  laswriteopener = new LASwriteOpener;
+  laswriteopener->set_file_name(file.c_str());
+  laswriter = laswriteopener->open(lasheader);
 
   if (!laswriter)
   {
@@ -139,7 +196,7 @@ bool LASlibInterface::open(const std::string& file)
   return true;
 }
 
-bool LASlibInterface::populate_header(Header* header)
+bool LASlibInterface::populate_header(Header* header, bool read_first_point)
 {
   if (lasreader == nullptr)
   {
@@ -162,7 +219,9 @@ bool LASlibInterface::populate_header(Header* header)
   header->x_scale_factor = lasreader->header.x_scale_factor;
   header->y_scale_factor = lasreader->header.y_scale_factor;
   header->z_scale_factor = lasreader->header.z_scale_factor;
-  header->adjusted_standard_gps_time = lasreader->header.get_global_encoding_bit(0);
+  header->file_creation_year = lasreader->header.file_creation_year;
+  header->file_creation_day = lasreader->header.file_creation_day;
+  header->adjusted_standard_gps_time = lasreader->header.get_global_encoding_bit(0) == true;
 
   header->schema.add_attribute("X", AttributeType::INT32, header->x_scale_factor, header->x_offset, "X coordinate");
   header->schema.add_attribute("Y", AttributeType::INT32, header->y_scale_factor, header->y_offset, "Y coordinate");
@@ -213,6 +272,41 @@ bool LASlibInterface::populate_header(Header* header)
     extrabytes.push_back(AttributeAccessor(name));
   }
 
+  if (lasreader->header.vlr_geo_keys)
+  {
+    for (int j = 0; j < lasreader->header.vlr_geo_keys->number_of_keys; j++)
+    {
+      if (lasreader->header.vlr_geo_key_entries[j].key_id == 3072)
+      {
+        header->crs = CRS(lasreader->header.vlr_geo_key_entries[j].value_offset);
+        break;
+      }
+    }
+  }
+
+  if (lasreader->header.vlr_geo_ogc_wkt)
+  {
+    for (unsigned int j = 0; j < lasreader->header.number_of_variable_length_records; j++)
+    {
+      if (lasreader->header.vlrs[j].record_id == 2112)
+      {
+        char* data = (char*)lasreader->header.vlrs[j].data;
+        int len = strnlen(data, lasreader->header.vlrs[j].record_length_after_header);
+        std::string wkt(data, len);
+        header->crs = CRS(wkt);
+        break;
+      }
+    }
+  }
+
+  header->spatial_index = (lasreader->get_index() != nullptr) || (lasreader->get_copcindex() != nullptr);
+
+  if (read_first_point)
+  {
+    lasreader->read_point();
+    header->gpstime = lasreader->point.get_gps_time();
+    lasreader->seek(0);
+  }
   return true;
 }
 
