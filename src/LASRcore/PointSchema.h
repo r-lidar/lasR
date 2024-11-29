@@ -302,12 +302,12 @@ struct Point
   }
 };
 
-class AttributeHandler {
+class AttributeAccessor {
 public:
-  AttributeHandler(double default_value = 0);
-  AttributeHandler(const std::string& name, double default_value = 0);
-  AttributeHandler(const std::string& name, AttributeSchema* schema, double default_value = 0);
-  ~AttributeHandler() = default;
+  AttributeAccessor(double default_value = 0);
+  AttributeAccessor(const std::string& name, double default_value = 0);
+  AttributeAccessor(const std::string& name, AttributeSchema* schema, double default_value = 0);
+  ~AttributeAccessor() = default;
 
   // Overloaded operators for reading and writing
   double operator()(const Point* point);

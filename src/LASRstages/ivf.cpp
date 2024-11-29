@@ -10,12 +10,12 @@ bool LASRivf::process(LAS*& las)
   std::vector<int> vregistry;
   bool use_vregistry = false;
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rzmin = las->newheader->min_z;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
-  double rzmax = las->newheader->max_z;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rzmin = las->header->min_z;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
+  double rzmax = las->header->max_z;
 
   rxmin = ROUNDANY(rxmin - 0.5 * res, res);
   rymin = ROUNDANY(rymin - 0.5 * res, res);
@@ -84,7 +84,7 @@ bool LASRivf::process(LAS*& las)
     if (progress->interrupted()) break;
   }
 
-  AttributeHandler set_and_get_classification("Classification");
+  AttributeAccessor set_and_get_classification("Classification");
 
   // Loop again through each point.
   // Check if the number of points in its neighbourhood is above the threshold

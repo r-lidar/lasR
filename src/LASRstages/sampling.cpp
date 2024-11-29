@@ -36,12 +36,12 @@ bool LASRsamplingpoisson::process(LAS*& las)
   std::iota(index.begin(), index.end(), 0);
   shuffle(index, shuffle_size);
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rzmin = las->newheader->min_z;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
-  double rzmax = las->newheader->max_z;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rzmin = las->header->min_z;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
+  double rzmax = las->header->max_z;
 
   rxmin = ROUNDANY(rxmin - 0.5 * res, res);
   rymin = ROUNDANY(rymin - 0.5 * res, res);
@@ -228,12 +228,12 @@ bool LASRsamplingvoxels::process(LAS*& las)
   std::iota(index.begin(), index.end(), 0);
   shuffle(index, shuffle_size);
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rzmin = las->newheader->min_z;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
-  double rzmax = las->newheader->max_z;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rzmin = las->header->min_z;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
+  double rzmax = las->header->max_z;
 
   rxmin = ROUNDANY(rxmin - 0.5 * res, res);
   rymin = ROUNDANY(rymin - 0.5 * res, res);
@@ -355,10 +355,10 @@ bool LASRsamplingpixels::random(LAS*& las)
   std::iota(index.begin(), index.end(), 0);
   shuffle(index, shuffle_size);
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
   Grid grid(rxmin, rymin, rxmax, rymax, res);
 
   size_t npixels = grid.get_ncells();
@@ -433,10 +433,10 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
 
   std::vector<std::pair<int, double>> registry;
 
-  double rxmin = las->newheader->min_x;
-  double rymin = las->newheader->min_y;
-  double rxmax = las->newheader->max_x;
-  double rymax = las->newheader->max_y;
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
   Grid grid(rxmin, rymin, rxmax, rymax, res);
 
   size_t npixels = grid.get_ncells();
@@ -455,7 +455,7 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
     return false;
   }
 
-  AttributeHandler accessor(use_attribute);
+  AttributeAccessor accessor(use_attribute);
 
   while (las->read_point())
   {

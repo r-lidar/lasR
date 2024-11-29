@@ -62,7 +62,7 @@ bool LASRtriangulate::process(LAS*& las)
 
 bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster)
 {
-  AttributeHandler accessor(use_attribute);
+  AttributeAccessor accessor(use_attribute);
 
   int n = (raster == nullptr) ? las->npoints : raster->get_ncells();
   res.resize(n);
@@ -89,9 +89,9 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
 
     int id;
     Point A,B,C;
-    A.set_schema(&las->newheader->schema);
-    B.set_schema(&las->newheader->schema);
-    C.set_schema(&las->newheader->schema);
+    A.set_schema(&las->header->schema);
+    B.set_schema(&las->header->schema);
+    C.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
     las->get_point(id, &A);
@@ -192,9 +192,9 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
 
     int id;
     Point a, b, c;
-    a.set_schema(&las->newheader->schema);
-    b.set_schema(&las->newheader->schema);
-    c.set_schema(&las->newheader->schema);
+    a.set_schema(&las->header->schema);
+    b.set_schema(&las->header->schema);
+    c.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
     las->get_point(id, &a);
@@ -244,7 +244,7 @@ bool LASRtriangulate::write()
 {
   if (ofile.empty()) return true;
 
-  AttributeHandler accessor(use_attribute);
+  AttributeAccessor accessor(use_attribute);
 
   progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Write triangulation");
@@ -258,9 +258,9 @@ bool LASRtriangulate::write()
   {
     int id;
     Point A,B,C;
-    A.set_schema(&las->newheader->schema);
-    B.set_schema(&las->newheader->schema);
-    C.set_schema(&las->newheader->schema);
+    A.set_schema(&las->header->schema);
+    B.set_schema(&las->header->schema);
+    C.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
     las->get_point(id, &A);

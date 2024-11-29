@@ -116,11 +116,11 @@ bool LASRtransformwith::process(LAS*& las)
   // With a triangulation or a raster we are only updating Z
   if (triangulation != nullptr || rasterization != nullptr)
   {
-    AttributeHandler set_and_get_value("Z");
+    AttributeAccessor set_and_get_value("Z");
 
     if (!attribute.empty())
     {
-      int index = las->newheader->schema.get_attribute_index(attribute);
+      int index = las->header->schema.get_attribute_index(attribute);
 
       if (index == -1)
       {
@@ -128,7 +128,7 @@ bool LASRtransformwith::process(LAS*& las)
         return false;
       }
 
-      Attribute* attr = &las->newheader->schema.attributes[index];
+      Attribute* attr = &las->header->schema.attributes[index];
       AttributeType data_type = attr->type;
 
       if (data_type != AttributeType::INT32 && data_type != AttributeType::DOUBLE)
@@ -139,12 +139,12 @@ bool LASRtransformwith::process(LAS*& las)
 
       if (data_type == AttributeType::INT32 && attr->scale_factor == 1)
       {
-        attr->scale_factor = las->newheader->schema.attributes[2].scale_factor;
+        attr->scale_factor = las->header->schema.attributes[2].scale_factor;
         //last_error = "the attribute " + attribute + " is of type 'int' but does not have as scale factor";
         //return false;
       }
 
-      set_and_get_value = AttributeHandler(attribute);
+      set_and_get_value = AttributeAccessor(attribute);
     }
 
     std::vector<double> hag;
@@ -201,9 +201,9 @@ bool LASRtransformwith::process(LAS*& las)
     double y = 0;
     double z = 0;
 
-    double new_xoffset = las->newheader->schema.attributes[0].offset;
-    double new_yoffset = las->newheader->schema.attributes[1].offset;
-    double new_zoffset = las->newheader->schema.attributes[2].offset;
+    double new_xoffset = las->header->schema.attributes[0].offset;
+    double new_yoffset = las->header->schema.attributes[1].offset;
+    double new_zoffset = las->header->schema.attributes[2].offset;
 
     mat->transform(new_xoffset, new_yoffset, new_zoffset);
 
@@ -215,15 +215,15 @@ bool LASRtransformwith::process(LAS*& las)
 
       mat->transform(x,y,z);
 
-      las->p.set_X((x-new_xoffset)/las->newheader->schema.attributes[0].scale_factor);
-      las->p.set_Y((y-new_yoffset)/las->newheader->schema.attributes[1].scale_factor);
-      las->p.set_Z((z-new_zoffset)/las->newheader->schema.attributes[2].scale_factor);
+      las->p.set_X((x-new_xoffset)/las->header->schema.attributes[0].scale_factor);
+      las->p.set_Y((y-new_yoffset)/las->header->schema.attributes[1].scale_factor);
+      las->p.set_Z((z-new_zoffset)/las->header->schema.attributes[2].scale_factor);
     }
 
 
-    las->newheader->schema.attributes[0].value_offset = new_xoffset;
-    las->newheader->schema.attributes[1].value_offset = new_yoffset;
-    las->newheader->schema.attributes[2].value_offset = new_zoffset;
+    las->header->schema.attributes[0].value_offset = new_xoffset;
+    las->header->schema.attributes[1].value_offset = new_yoffset;
+    las->header->schema.attributes[2].value_offset = new_zoffset;
 
     las->seek(0);
 

@@ -35,10 +35,10 @@ private:
   void merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2);
 
 private:
-  AttributeHandler get_intensity;
-  AttributeHandler get_returnnumber;
-  AttributeHandler get_classification;
-  AttributeHandler get_number_of_returns;
+  AttributeAccessor get_intensity;
+  AttributeAccessor get_returnnumber;
+  AttributeAccessor get_classification;
+  AttributeAccessor get_number_of_returns;
   void reset_accessors();
 
   uint64_t npoints;

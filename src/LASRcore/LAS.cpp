@@ -11,9 +11,9 @@
 
 #include <algorithm>
 
-LAS::LAS(Header* newheader)
+LAS::LAS(Header* header)
 {
-  this->newheader = newheader;
+  this->header = header;
 
   // Point cloud storage
   buffer = NULL;
@@ -25,13 +25,13 @@ LAS::LAS(Header* newheader)
   read_started = false;
 
   // For spatial indexing
-  index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, 2);
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
   current_interval = 0;
   shape = nullptr;
   inside = false;
 
   // Initialize the good point format
-  p.set_schema(&newheader->schema);
+  p.set_schema(&header->schema);
 }
 
 LAS::LAS(const Raster& raster)
@@ -46,38 +46,38 @@ LAS::LAS(const Raster& raster)
   read_started = false;
 
   // Convert the raster to a LAS
-  newheader = new Header;
-  /*newheader->file_source_ID       = 0;
-  newheader->version_major        = 1;
-  newheader->version_minor        = 2;
-  newheader->header_size          = 227;
-  newheader->offset_to_point_data = 227;
-  newheader->file_creation_year   = 0;
-  newheader->file_creation_day    = 0;
-  newheader->point_data_format    = 0;
-  newheader->x_scale_factor       = 0.01;
-  newheader->y_scale_factor       = 0.01;
-  newheader->z_scale_factor       = 0.01;
-  newheader->x_offset             = raster.get_full_extent()[0];
-  newheader->y_offset             = raster.get_full_extent()[1];
-  newheader->z_offset             = 0;*/
-  newheader->number_of_point_records = raster.get_ncells();
-  newheader->min_x                = raster.get_xmin()-raster.get_xres()/2;
-  newheader->min_y                = raster.get_ymin()-raster.get_yres()/2;
-  newheader->max_x                = raster.get_xmax()+raster.get_xres()/2;
-  newheader->max_y                = raster.get_ymax()-raster.get_yres()/2;
-  newheader->schema.add_attribute("X", AttributeType::INT32, 0.001, raster.get_full_extent()[0]);
-  newheader->schema.add_attribute("Y", AttributeType::INT32, 0.001, raster.get_full_extent()[1]);
-  newheader->schema.add_attribute("Z", AttributeType::INT32, 0.001, 0);
-  newheader->schema.add_attribute("Flags", AttributeType::INT8);
+  header = new Header;
+  /*header->file_source_ID       = 0;
+  header->version_major        = 1;
+  header->version_minor        = 2;
+  header->header_size          = 227;
+  header->offset_to_point_data = 227;
+  header->file_creation_year   = 0;
+  header->file_creation_day    = 0;
+  header->point_data_format    = 0;
+  header->x_scale_factor       = 0.01;
+  header->y_scale_factor       = 0.01;
+  header->z_scale_factor       = 0.01;
+  header->x_offset             = raster.get_full_extent()[0];
+  header->y_offset             = raster.get_full_extent()[1];
+  header->z_offset             = 0;*/
+  header->number_of_point_records = raster.get_ncells();
+  header->min_x                = raster.get_xmin()-raster.get_xres()/2;
+  header->min_y                = raster.get_ymin()-raster.get_yres()/2;
+  header->max_x                = raster.get_xmax()+raster.get_xres()/2;
+  header->max_y                = raster.get_ymax()-raster.get_yres()/2;
+  header->schema.add_attribute("X", AttributeType::INT32, 0.001, raster.get_full_extent()[0]);
+  header->schema.add_attribute("Y", AttributeType::INT32, 0.001, raster.get_full_extent()[1]);
+  header->schema.add_attribute("Z", AttributeType::INT32, 0.001, 0);
+  header->schema.add_attribute("Flags", AttributeType::INT8);
 
   // For spatial indexing
   current_interval = 0;
   shape = nullptr;
   inside = false;
-  index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, raster.get_xres()*4);
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, raster.get_xres()*4);
 
-  p = Point(&newheader->schema);
+  p = Point(&header->schema);
 
   for (int i = 0 ; i < raster.get_ncells() ; i++)
   {
@@ -95,15 +95,15 @@ LAS::LAS(const Raster& raster)
     add_point(p);
   }
 
-  newheader->number_of_point_records = npoints;
+  header->number_of_point_records = npoints;
 }
 
 LAS::~LAS()
 {
-  if (newheader)
+  if (header)
   {
-    delete newheader;
-    newheader = nullptr;
+    delete header;
+    header = nullptr;
   }
 
   if (buffer)
@@ -119,7 +119,7 @@ bool LAS::add_point(const Point& p)
 {
   if (buffer == NULL)
   {
-    capacity = 100000 * newheader->schema.total_point_size;
+    capacity = 100000 * header->schema.total_point_size;
     if (!alloc_buffer()) return false;
   }
 
@@ -130,12 +130,12 @@ bool LAS::add_point(const Point& p)
   }
 
   // Realloc memory and increase buffer size if needed
-  size_t required_capacity = npoints*newheader->schema.total_point_size;
+  size_t required_capacity = npoints*header->schema.total_point_size;
   if (required_capacity == capacity)
   {
-    size_t capacity_max = get_true_number_of_points()*newheader->schema.total_point_size;
+    size_t capacity_max = get_true_number_of_points()*header->schema.total_point_size;
 
-    // This may happens if the newheader is not properly populated
+    // This may happens if the header is not properly populated
     if (required_capacity >= capacity_max)
       capacity_max = capacity*2; // # nocov
 
@@ -147,7 +147,7 @@ bool LAS::add_point(const Point& p)
     if (!realloc_buffer()) return false;
   }
 
-  memcpy(buffer + npoints * newheader->schema.total_point_size, p.data, newheader->schema.total_point_size);
+  memcpy(buffer + npoints * header->schema.total_point_size, p.data, header->schema.total_point_size);
   npoints++;
 
   index->insert(p.get_x(), p.get_y());
@@ -166,7 +166,7 @@ bool LAS::seek(size_t pos)
   current_point = pos;
   next_point = pos;
   next_point++;
-  p.data = buffer + current_point * newheader->schema.total_point_size;
+  p.data = buffer + current_point * header->schema.total_point_size;
   return true;
 }
 
@@ -179,7 +179,7 @@ bool LAS::seek(size_t pos)
     return false; // # nocov
   }
 
-  unsigned char* buf = buffer + pos * newheader->schema.total_point_size;
+  unsigned char* buf = buffer + pos * header->schema.total_point_size;
   xyz[0] = get_x(buf);
   xyz[1] = get_y(buf);
   xyz[2] = get_z(buf);
@@ -228,7 +228,7 @@ bool LAS::read_point(bool include_withhelded)
     }
 
     current_point = next_point;
-    p.data = buffer + current_point * newheader->schema.total_point_size;
+    p.data = buffer + current_point * header->schema.total_point_size;
     next_point++;
 
     // If the new current point is not in the current interval we switch to next interval
@@ -257,7 +257,7 @@ bool LAS::read_point(bool include_withhelded)
 
 void LAS::update_point()
 {
-  //point.copy_to(buffer + current_point * newheader->schema.total_point_size);
+  //point.copy_to(buffer + current_point * header->schema.total_point_size);
 }
 
 void LAS::remove_point()
@@ -271,19 +271,19 @@ void LAS::delete_point(Point* p)
   if (p == nullptr)
   {
     this->p.set_deleted();
-    newheader->number_of_point_records--;
+    header->number_of_point_records--;
   }
   else
   {
     p->set_deleted();
-    if (!p->own_data) newheader->number_of_point_records--;
+    if (!p->own_data) header->number_of_point_records--;
   }
 }
 
 bool LAS::delete_deleted()
 {
   clean_index();
-  index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, 2);
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
 
   int j = 0;
   for (int i = 0 ; i < npoints ; i++)
@@ -291,7 +291,7 @@ bool LAS::delete_deleted()
     seek(i);
     if (p.get_deleted())
     {
-      p.data = buffer + j * newheader->schema.total_point_size;
+      p.data = buffer + j * header->schema.total_point_size;
       index->insert(p.get_x(), p.get_y());
       j++;
     }
@@ -302,7 +302,7 @@ bool LAS::delete_deleted()
 
   if (ratio < 0.5)
   {
-    capacity = npoints*newheader->schema.total_point_size;
+    capacity = npoints*header->schema.total_point_size;
     if (!realloc_buffer()) return false;
   }
 
@@ -368,11 +368,11 @@ static int compare_buffers_nogps(const void* a, const void* b, void* context)
   print("Offsets: %lu %lu\n", gpstime_offset, returnnumber_offset);
 
   if (have_gpstime && have_returnnumber)
-    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers, offsets);
+    qsort_s((void*)buffer, npoints, header->schema.total_point_size, compare_buffers, offsets);
   else if (!have_gpstime && have_returnnumber)
-    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_nogps, offsets);
+    qsort_s((void*)buffer, npoints, header->schema.total_point_size, compare_buffers_nogps, offsets);
   else if (have_gpstime && !have_returnnumber)
-    qsort_s((void*)buffer, npoints, newheader->schema.total_point_size, compare_buffers_norn, offsets);
+    qsort_s((void*)buffer, npoints, header->schema.total_point_size, compare_buffers_norn, offsets);
   else
     return true;
 
@@ -385,8 +385,8 @@ static int compare_buffers_nogps(const void* a, const void* b, void* context)
 bool LAS::sort(const std::vector<int>& order)
 {
   std::vector<bool> visited(npoints, false);
-  char* temp = (char*)malloc(newheader->schema.total_point_size);
-  size_t chunk_size = newheader->schema.total_point_size;
+  char* temp = (char*)malloc(header->schema.total_point_size);
+  size_t chunk_size = header->schema.total_point_size;
 
   for (size_t i = 0; i < npoints; ++i)
   {
@@ -421,14 +421,14 @@ void LAS::update_header()
 {
   /*LASinventory inventory;
   while (read_point()) inventory.add(&point);
-  inventory.update_newheader(newheader);*/
+  inventory.update_header(header);*/
 }
 
 // Thread safe
 bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter) const
 {
   Point p;
-  p.set_schema(&newheader->schema);
+  p.set_schema(&header->schema);
 
   addr.clear();
 
@@ -441,7 +441,7 @@ bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter*
   {
     for (int i = interval.start ; i <= interval.end ; i++)
     {
-      p.data = buffer + i * newheader->schema.total_point_size;
+      p.data = buffer + i * header->schema.total_point_size;
 
       if (filter && filter->filter(&p)) continue;
 
@@ -458,7 +458,7 @@ bool LAS::query(const Shape* const shape, std::vector<Point>& addr, PointFilter*
 bool LAS::query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter) const
 {
   Point p;
-  p.set_schema(&newheader->schema);
+  p.set_schema(&header->schema);
 
   addr.clear();
 
@@ -468,7 +468,7 @@ bool LAS::query(const std::vector<Interval>& intervals, std::vector<Point>& addr
   {
     for (int i = interval.start ; i <= interval.end ; i++)
     {
-      p.data = buffer + i * newheader->schema.total_point_size;
+      p.data = buffer + i * header->schema.total_point_size;
 
       if (filter && filter->filter(&p)) continue;
 
@@ -490,9 +490,9 @@ bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& re
   double z = xyz.get_z();
 
   Point p;
-  p.set_schema(&newheader->schema);
+  p.set_schema(&header->schema);
 
-  double area = (newheader->max_x-newheader->min_x)*(newheader->max_y-newheader->min_y);
+  double area = (header->max_x-header->min_x)*(header->max_y-header->min_y);
   double density = get_true_number_of_points() / area;
   double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
 
@@ -519,7 +519,7 @@ bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& re
         {
           for (int i = interval.start ; i <= interval.end ; i++)
           {
-            p.data = buffer + i * newheader->schema.total_point_size;
+            p.data = buffer + i * header->schema.total_point_size;
             if (p.get_deleted()) continue;
             //if (lasfilter && lasfilter->filter(&p)) continue;
             if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
@@ -547,7 +547,7 @@ bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& re
   {
     for (int i = interval.start ; i <= interval.end ; i++)
     {
-      p.data = buffer + i * newheader->schema.total_point_size;
+      p.data = buffer + i * header->schema.total_point_size;
 
       //if (lasfilter && lasfilter->filter(&p)) continue;
       if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
@@ -573,7 +573,7 @@ bool LAS::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& re
 
 bool LAS::get_point(size_t pos, Point* p, PointFilter* const filter) const
 {
-  p->data = buffer + pos * newheader->schema.total_point_size;
+  p->data = buffer + pos * header->schema.total_point_size;
   if (p->get_deleted()) return false;
   if (filter && filter->filter(p)) return false;
   //pt.copy(&p);
@@ -597,11 +597,11 @@ void LAS::set_intervals_to_read(const std::vector<Interval>& intervals)
 
 bool LAS::add_attribute(const Attribute& attribute)
 {
-  size_t previous_size = newheader->schema.total_point_size;
+  size_t previous_size = header->schema.total_point_size;
   size_t new_size = previous_size + attribute.size;
   size_t new_capacity = get_true_number_of_points() * new_size;
 
-  newheader->schema.add_attribute(attribute);
+  header->schema.add_attribute(attribute);
 
   if (new_capacity > capacity)
   {
@@ -619,13 +619,13 @@ bool LAS::add_attribute(const Attribute& attribute)
 
 bool LAS::add_attributes(const std::vector<Attribute>& attributes)
 {
-  size_t previous_size = newheader->schema.total_point_size;
+  size_t previous_size = header->schema.total_point_size;
   size_t new_size = previous_size;
 
   for (const auto& attribute : attributes)
   {
     new_size += attribute.size;
-    newheader->schema.add_attribute(attribute);
+    header->schema.add_attribute(attribute);
   }
 
   size_t new_capacity = get_true_number_of_points() * new_size;
@@ -647,14 +647,14 @@ bool LAS::add_attributes(const std::vector<Attribute>& attributes)
 /*void LAS::set_index(bool index)
 {
   clean_index();
-  index = new GridPartition(lasnewheader.min_x, lasnewheader.min_y, lasnewheader.max_x, lasnewheader.max_y, 10);
+  index = new GridPartition(lasheader.min_x, lasheader.min_y, lasheader.max_x, lasheader.max_y, 10);
   while (read_point()) index->insert(point);
 }
 
 void LAS::set_index(float res)
 {
   clean_index();
-  index = new GridPartition(lasnewheader.min_x, lasnewheader.min_y, lasnewheader.max_x, lasnewheader.max_y, res);
+  index = new GridPartition(lasheader.min_x, lasheader.min_y, lasheader.max_x, lasheader.max_y, res);
   while (read_point()) index->insert(point);
 }*/
 
@@ -690,14 +690,14 @@ void LAS::clean_query()
 void LAS::reindex()
 {
   clean_index();
-  index = new GridPartition(newheader->min_x, newheader->min_y, newheader->max_x, newheader->max_y, 2);
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
   while (read_point()) index->insert(p.get_x(), p.get_y());
 }
 
 bool LAS::is_attribute_loadable(int index)
 {
   if (index < 0) return false;
-  //if (newheader->number_attributes-1 < index) return false;
+  //if (header->number_attributes-1 < index) return false;
 
   AttributeType data_type = p.schema->attributes[index].type;
 
@@ -766,7 +766,7 @@ bool LAS::realloc_buffer()
 
 /*bool LAS::realloc_point_and_buffer()
 {
-  size_t new_capacity = npoints * newheader->schema.total_point_size;
+  size_t new_capacity = npoints * header->schema.total_point_size;
   if (new_capacity > capacity)
   {
     capacity = new_capacity;
@@ -777,11 +777,11 @@ bool LAS::realloc_buffer()
   {
     seek(i);
     new_point = point;
-    new_point.copy_to(buffer + i * new_newheader->schema.total_point_size);
+    new_point.copy_to(buffer + i * new_header->schema.total_point_size);
   }
 
   point = LASpoint();
-  point.init(newheader, newheader->point_data_format, newheader->point_data_record_length, newheader);
+  point.init(header, header->point_data_format, header->point_data_record_length, header);
 
   return false;
 }*/
@@ -860,12 +860,12 @@ int LAS::get_point_data_record_length(int point_data_format, int num_extrabytes)
 
 U64 LAS::get_true_number_of_points() const
 {
-  return newheader->number_of_point_records;
+  return header->number_of_point_records;
 }
 
-/*double LAS::get_x(int i) const { unsigned int X = *(buffer + i * newheader->schema.total_point_size + 0); return point.quantizer->get_x(X); };
-double LAS::get_y(int i) const { unsigned int Y = *(buffer + i * newheader->schema.total_point_size + 4); return point.quantizer->get_y(Y); };
-double LAS::get_z(int i) const { unsigned int Z = *(buffer + i * newheader->schema.total_point_size + 8); return point.quantizer->get_z(Z); };
+/*double LAS::get_x(int i) const { unsigned int X = *(buffer + i * header->schema.total_point_size + 0); return point.quantizer->get_x(X); };
+double LAS::get_y(int i) const { unsigned int Y = *(buffer + i * header->schema.total_point_size + 4); return point.quantizer->get_y(Y); };
+double LAS::get_z(int i) const { unsigned int Z = *(buffer + i * header->schema.total_point_size + 8); return point.quantizer->get_z(Z); };
 
 double LAS::get_x(const unsigned char* buf) const { unsigned int X = *((unsigned int*)buf);     return point.quantizer->get_x(X); };
 double LAS::get_y(const unsigned char* buf) const { unsigned int Y = *((unsigned int*)(buf+4)); return point.quantizer->get_y(Y); };

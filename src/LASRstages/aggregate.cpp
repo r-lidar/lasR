@@ -47,7 +47,7 @@ bool LASRaggregate::process(LAS*& las)
   }
 
   int error = 0;  // Error handling
-  int nattr = las->newheader->schema.attributes.size();
+  int nattr = las->header->schema.attributes.size();
   int nalloc = grouper.largest_group_size();   // Size of the largest group (i.e. the pixel with most numerous points)
 
   #pragma omp critical (RAPI)
@@ -57,13 +57,13 @@ bool LASRaggregate::process(LAS*& las)
   SEXP list_names = PROTECT(Rf_allocVector(STRSXP, nattr)); nsexpprotected++;
 
   // Configure accessors
-  std::vector<AttributeHandler> accessors; accessors.resize(nattr);
+  std::vector<AttributeAccessor> accessors; accessors.resize(nattr);
   std::vector<int> sexp_types; sexp_types.resize(nattr);
 
   // Populate the list by allocating vectors of size nalloc to store points data.
   for (int i = 0 ; i < nattr ; i++)
   {
-    const Attribute& attribute = las->newheader->schema.attributes[i];
+    const Attribute& attribute = las->header->schema.attributes[i];
     std::string name = attribute.name;
     int sexp_type = (attribute.type >= AttributeType::FLOAT || attribute.scale_factor != 1 || attribute.value_offset != 0) ? REALSXP : INTSXP;
 
@@ -71,7 +71,7 @@ bool LASRaggregate::process(LAS*& las)
     SET_VECTOR_ELT(list, i, v);
     SET_STRING_ELT(list_names, i, Rf_mkChar(name.c_str()));
 
-    accessors[i] = AttributeHandler(name);
+    accessors[i] = AttributeAccessor(name);
     sexp_types[i] = sexp_type;
   }
 

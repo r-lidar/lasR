@@ -29,7 +29,7 @@ private:
   void clean_copc_ext(std::string& path);
 
   bool keep_buffer;
-  std::vector<AttributeHandler> core_accessors;
+  std::vector<AttributeAccessor> core_accessors;
 
   LASlibInterface* laslibinterface;
 };

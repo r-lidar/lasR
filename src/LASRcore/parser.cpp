@@ -210,12 +210,12 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
             last_error = "invalid external pointer";
             return false;
           }
-          xmin = las->newheader->min_x;
-          ymin = las->newheader->min_y;
-          xmax = las->newheader->max_x;
-          ymax = las->newheader->max_y;
+          xmin = las->header->min_x;
+          ymin = las->header->min_y;
+          xmax = las->header->max_x;
+          ymax = las->header->max_y;
           int n = las->npoints;
-          CRS crs = las->newheader->crs;
+          CRS crs = las->header->crs;
 
           catalog = std::make_shared<LAScatalog>();
           catalog->add_bbox(xmin, ymin, xmax, ymax, n);

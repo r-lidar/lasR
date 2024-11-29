@@ -51,7 +51,7 @@ bool LASRfiltergrid::set_parameters(const nlohmann::json& stage)
 
 bool LASRfiltergrid::process(LAS*& las)
 {
-  Grid grid(las->newheader->min_x, las->newheader->min_y, las->newheader->max_x, las->newheader->max_y, res);
+  Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, res);
   std::vector<PointLAS> selected_points;
   selected_points.resize(grid.get_ncells());
   double v = (op == MIN) ? std::numeric_limits<double>::max() : -std::numeric_limits<double>::max();

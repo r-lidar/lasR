@@ -51,7 +51,7 @@ bool LASRcallback::process(LAS*& las)
 
   // List all selected attributes by index
   std::vector<std::string> names;
-  std::vector<AttributeHandler> accessors;
+  std::vector<AttributeAccessor> accessors;
   std::vector<Attribute> attributes;
   int k = 0;
   for(char c : select)
@@ -63,7 +63,7 @@ bool LASRcallback::process(LAS*& las)
     {
       int i = c - '0';
       int j = 0;
-      for (auto attribute : las->newheader->schema.attributes)
+      for (auto attribute : las->header->schema.attributes)
       {
         if (lascoreattributes.count(attribute.name) == 0)
         {
@@ -82,13 +82,13 @@ bool LASRcallback::process(LAS*& las)
     // Handle extrabytes in a (not elegant) backward compatible way
     else if (c == 'E')
     {
-      for (auto attribute : las->newheader->schema.attributes)
+      for (auto attribute : las->header->schema.attributes)
       {
         if (lascoreattributes.count(attribute.name) == 0)
         {
           name = attribute.name;
           names.push_back(name);
-          accessors.push_back(AttributeHandler(name));
+          accessors.push_back(AttributeAccessor(name));
           attributes.push_back(attribute);
         }
       }
@@ -100,7 +100,7 @@ bool LASRcallback::process(LAS*& las)
       name = "Buffer";
       buffered_index = k;
       names.push_back(name);
-      accessors.push_back(AttributeHandler(name));
+      accessors.push_back(AttributeAccessor(name));
       attributes.push_back(Attribute(name, AttributeType::NOTYPE));
     }
     else
@@ -109,12 +109,12 @@ bool LASRcallback::process(LAS*& las)
       name = map_attribute(name);
     }
 
-    int index = las->newheader->schema.get_attribute_index(name);
+    int index = las->header->schema.get_attribute_index(name);
     if (index < 0) continue;
-    name = las->newheader->schema.attributes[index].name;
+    name = las->header->schema.attributes[index].name;
     names.push_back(name);
-    accessors.push_back(AttributeHandler(name));
-    attributes.push_back(las->newheader->schema.attributes[index]);
+    accessors.push_back(AttributeAccessor(name));
+    attributes.push_back(las->header->schema.attributes[index]);
 
     k++;
   }
@@ -266,7 +266,7 @@ bool LASRcallback::process(LAS*& las)
         {
           buffered_index = i;
         }
-        else if (!las->newheader->schema.has_attribute(name))
+        else if (!las->header->schema.has_attribute(name))
         {
           last_error = "non supported column '" + name +"'";
           UNPROTECT(nsexpprotected);

@@ -44,7 +44,7 @@ public:
   bool query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
   bool knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
 
-  int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/newheader->schema.total_point_size); }
+  int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/header->schema.total_point_size); }
 
   // Spatial queries
   void set_inside(Shape* shape);
@@ -86,7 +86,7 @@ public:
   // This part is extremely tricky because lasreadopener own lasreader. If lasreadopener is destructed
   // it invalidate lasreader and thus header. We need header as long as this object exist. Consequently
   // we must also own lasreadopener and lasreader
-  Header* newheader;
+  Header* header;
 
 private:
   unsigned char* buffer;

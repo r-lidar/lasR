@@ -81,15 +81,15 @@ bool LASRdataframereader::process(Header*& header)
 
   Attribute attrx("X", AttributeType::INT32, scale[0], offset[0]);
   header->add_attribute(attrx);
-  accessors.push_back(AttributeHandler("X"));
+  accessors.push_back(AttributeAccessor("X"));
 
   Attribute attry("Y", AttributeType::INT32, scale[1], offset[1]);
   header->add_attribute(attry);
-  accessors.push_back(AttributeHandler("Y"));
+  accessors.push_back(AttributeAccessor("Y"));
 
   Attribute attrz("Z", AttributeType::INT32, scale[2], offset[2]);
   header->add_attribute(attrz);
-  accessors.push_back(AttributeHandler("Z"));
+  accessors.push_back(AttributeAccessor("Z"));
 
   Attribute attrf("flags", AttributeType::INT8);
   header->add_attribute(attrf);
@@ -118,149 +118,149 @@ bool LASRdataframereader::process(Header*& header)
     {
       Attribute attr("Intensity", AttributeType::UINT16);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "gpstime")
     {
       Attribute attr("gpstime", AttributeType::DOUBLE);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "ReturnNumber")
     {
       Attribute attr("ReturnNumber", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "NumberOfReturns")
     {
       Attribute attr("NumberOfReturns", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "ScanDirectionFlag")
     {
       Attribute attr("ScanDirectionFlag", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "EdgeOfFlightline")
     {
       Attribute attr("EdgeOfFlightline", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Classification")
     {
       Attribute attr("Classification", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Synthetic")
     {
       Attribute attr("Synthetic", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Keypoint")
     {
       Attribute attr("Keypoint", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Withheld")
     {
       Attribute attr("Withheld", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Overlap")
     {
       Attribute attr("Overlap", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "ScanAngle")
     {
       Attribute attr("ScanAngle", AttributeType::FLOAT);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "UserData")
     {
       Attribute attr("UserData", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "PointSourceID")
     {
       Attribute attr("PointSourceID", AttributeType::UINT16);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "R")
     {
       Attribute attr("R", AttributeType::UINT16);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "G")
     {
       Attribute attr("G", AttributeType::UINT16);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "B")
     {
       Attribute attr("B", AttributeType::UINT16);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "NIR")
     {
       Attribute attr("NIR", AttributeType::UINT16);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Channel")
     {
       Attribute attr("Channel", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Buffer")
     {
       Attribute attr("Buffer", AttributeType::UINT8);
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "ScanAngleRank") {
       Attribute attr("ScanAngleRank", AttributeType::INT8); // # nocov
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Synthetic_flag")
     {
       Attribute attr("Synthetic_flag", AttributeType::UINT8); // # nocov
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Keypoint_flag") {
       Attribute attr("Keypoint_flag", AttributeType::UINT8); // # nocov
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Withheld_flag")
     {
       Attribute attr("Withheld_flag", AttributeType::UINT8); // # nocov
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Overlap_flag")
     {
       Attribute attr("Overlap_flag", AttributeType::UINT8); // # nocov
       header->add_attribute(attr);
-      accessors.push_back(AttributeHandler(sname));
+      accessors.push_back(AttributeAccessor(sname));
     }
     else
     {
@@ -268,19 +268,19 @@ bool LASRdataframereader::process(Header*& header)
       {
         Attribute attr(sname, AttributeType::DOUBLE);
         header->add_attribute(attr);
-        accessors.push_back(AttributeHandler(sname));
+        accessors.push_back(AttributeAccessor(sname));
       }
       else if (type == INTSXP)
       {
         Attribute attr(sname, AttributeType::INT32);
         header->add_attribute(attr);
-        accessors.push_back(AttributeHandler(sname));
+        accessors.push_back(AttributeAccessor(sname));
       }
       else
       {
         Attribute attr(sname, AttributeType::INT8);
         header->add_attribute(attr);
-        accessors.push_back(AttributeHandler(sname));
+        accessors.push_back(AttributeAccessor(sname));
       }
     }
   }

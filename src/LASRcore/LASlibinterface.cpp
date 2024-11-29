@@ -18,19 +18,19 @@ LASlibInterface::LASlibInterface(Progress* progress)
   point = nullptr;
   this->progress = progress;
 
-  intensity = AttributeHandler("Intensity");
-  returnnumber = AttributeHandler("ReturnNumber");
-  numberofreturns = AttributeHandler("NumberOfReturns");
-  userdata = AttributeHandler("UserData");
-  classification = AttributeHandler("Classification");
-  psid = AttributeHandler("PointSourceID");
-  scanangle = AttributeHandler("ScanAngle");
-  gpstime = AttributeHandler("gpstime");
-  scannerchannel = AttributeHandler("ScannerChannel");
-  red = AttributeHandler("R");
-  green = AttributeHandler("G");
-  blue = AttributeHandler("B");
-  nir = AttributeHandler("NIR");
+  intensity = AttributeAccessor("Intensity");
+  returnnumber = AttributeAccessor("ReturnNumber");
+  numberofreturns = AttributeAccessor("NumberOfReturns");
+  userdata = AttributeAccessor("UserData");
+  classification = AttributeAccessor("Classification");
+  psid = AttributeAccessor("PointSourceID");
+  scanangle = AttributeAccessor("ScanAngle");
+  gpstime = AttributeAccessor("gpstime");
+  scannerchannel = AttributeAccessor("ScannerChannel");
+  red = AttributeAccessor("R");
+  green = AttributeAccessor("G");
+  blue = AttributeAccessor("B");
+  nir = AttributeAccessor("NIR");
 }
 
 LASlibInterface::~LASlibInterface()
@@ -210,7 +210,7 @@ bool LASlibInterface::populate_header(Header* header)
     double scale = lasreader->header.attributes[i].scale[0];
     double offset = lasreader->header.attributes[i].offset[0];
     header->schema.add_attribute(name, type, scale, offset, description);
-    extrabytes.push_back(AttributeHandler(name));
+    extrabytes.push_back(AttributeAccessor(name));
   }
 
   return true;

@@ -84,7 +84,7 @@ bool LASRsvd::set_parameters(const nlohmann::json& stage)
 bool LASRsvd::process(LAS*& las)
 {
   std::vector<Attribute> attributes;
-  std::vector<AttributeHandler> writers;
+  std::vector<AttributeAccessor> writers;
 
   if (ft_C)
   {
@@ -129,32 +129,32 @@ bool LASRsvd::process(LAS*& las)
   progress->set_ncpu(ncpu);
   progress->show();
 
-  AttributeHandler set_coeff00("coeff00");
-  AttributeHandler set_coeff01("coeff01");
-  AttributeHandler set_coeff02("coeff02");
-  AttributeHandler set_coeff10("coeff10");
-  AttributeHandler set_coeff11("coeff11");
-  AttributeHandler set_coeff12("coeff12");
-  AttributeHandler set_coeff20("coeff20");
-  AttributeHandler set_coeff21("coeff21");
-  AttributeHandler set_coeff22("coeff22");
+  AttributeAccessor set_coeff00("coeff00");
+  AttributeAccessor set_coeff01("coeff01");
+  AttributeAccessor set_coeff02("coeff02");
+  AttributeAccessor set_coeff10("coeff10");
+  AttributeAccessor set_coeff11("coeff11");
+  AttributeAccessor set_coeff12("coeff12");
+  AttributeAccessor set_coeff20("coeff20");
+  AttributeAccessor set_coeff21("coeff21");
+  AttributeAccessor set_coeff22("coeff22");
 
-  AttributeHandler set_lambda1("lambda1");
-  AttributeHandler set_lambda2("lambda2");
-  AttributeHandler set_lambda3("lambda3");
+  AttributeAccessor set_lambda1("lambda1");
+  AttributeAccessor set_lambda2("lambda2");
+  AttributeAccessor set_lambda3("lambda3");
 
-  AttributeHandler set_anisotropy("anisotropy");
-  AttributeHandler set_planarity("planarity");
-  AttributeHandler set_sphericity("sphericity");
-  AttributeHandler set_linearity("linearity");
-  AttributeHandler set_omnivariance("omnivariance");
-  AttributeHandler set_curvature("curvature");
-  AttributeHandler set_eigensum("eigensum");
-  AttributeHandler set_angle("angle");
+  AttributeAccessor set_anisotropy("anisotropy");
+  AttributeAccessor set_planarity("planarity");
+  AttributeAccessor set_sphericity("sphericity");
+  AttributeAccessor set_linearity("linearity");
+  AttributeAccessor set_omnivariance("omnivariance");
+  AttributeAccessor set_curvature("curvature");
+  AttributeAccessor set_eigensum("eigensum");
+  AttributeAccessor set_angle("angle");
 
-  AttributeHandler set_normalX("normalX");
-  AttributeHandler set_normalY("normalY");
-  AttributeHandler set_normalZ("normalZ");
+  AttributeAccessor set_normalX("normalX");
+  AttributeAccessor set_normalY("normalY");
+  AttributeAccessor set_normalZ("normalZ");
 
 
   // The next for loop is at the level a nested parallel region. Printing the progress bar
@@ -167,7 +167,7 @@ bool LASRsvd::process(LAS*& las)
     if (progress->interrupted()) continue;
 
     Point p;
-    p.set_schema(&las->newheader->schema);
+    p.set_schema(&las->header->schema);
 
     if (!las->get_point(i, &p)) continue;
 

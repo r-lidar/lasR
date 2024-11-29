@@ -14,7 +14,7 @@ bool LASRcsf::process(LAS*& las)
   std::vector<csf::Point> points;
   points.reserve(las->npoints);
 
-  AttributeHandler set_and_get_classification("Classification");
+  AttributeAccessor set_and_get_classification("Classification");
 
   while(las->read_point())
   {

@@ -35,7 +35,7 @@ private:
   int npoints;
   double scale[3];
   double offset[3];
-  std::vector<AttributeHandler> accessors;
+  std::vector<AttributeAccessor> accessors;
   std::string wkt;
   SEXP dataframe;
 

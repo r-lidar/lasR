@@ -44,20 +44,20 @@ private:
 
   Progress* progress;
 
-  AttributeHandler intensity;
-  AttributeHandler returnnumber;
-  AttributeHandler numberofreturns;
-  AttributeHandler userdata;
-  AttributeHandler psid;
-  AttributeHandler classification;
-  AttributeHandler scanangle;
-  AttributeHandler gpstime;
-  AttributeHandler scannerchannel;
-  AttributeHandler red;
-  AttributeHandler green;
-  AttributeHandler blue;
-  AttributeHandler nir;
-  std::vector<AttributeHandler> extrabytes;
+  AttributeAccessor intensity;
+  AttributeAccessor returnnumber;
+  AttributeAccessor numberofreturns;
+  AttributeAccessor userdata;
+  AttributeAccessor psid;
+  AttributeAccessor classification;
+  AttributeAccessor scanangle;
+  AttributeAccessor gpstime;
+  AttributeAccessor scannerchannel;
+  AttributeAccessor red;
+  AttributeAccessor green;
+  AttributeAccessor blue;
+  AttributeAccessor nir;
+  std::vector<AttributeAccessor> extrabytes;
   std::vector<size_t> extrabytes_offsets;
 };
 
