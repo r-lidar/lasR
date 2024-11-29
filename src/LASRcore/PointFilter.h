@@ -34,6 +34,7 @@ public:
   void add_condition(const std::string& x);
   void add_condition(Condition* condition);
   void add_clip(double xmin, double ymin, double xmax, double ymax, bool circle = false);
+  void reset();
 
   PointFilter() = default;
   ~PointFilter();

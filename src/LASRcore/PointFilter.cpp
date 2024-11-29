@@ -158,6 +158,11 @@ bool PointFilter::filter(const Point* point) {
   return FALSE; // point survived
 }
 
+void PointFilter::reset() {
+  for (const auto condition : conditions)
+    condition->reset();
+}
+
 PointFilter::~PointFilter() {
   for (auto condition : conditions) delete condition;
 }

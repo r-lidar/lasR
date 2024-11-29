@@ -110,7 +110,7 @@ public:
   //void set_filter(const std::string& f);
   void set_progress(Progress* progress) { this->progress = progress; };
   void set_chunk(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
-  void reset_filter() { };
+  void reset_filter() { pointfilter.reset(); };
 
   std::string get_uid() const { return uid; };
   const std::map<std::string, Stage*>& get_connection() { return connections; };
