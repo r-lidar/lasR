@@ -7,7 +7,7 @@
 #include <stdexcept>
 
 #include "LODtree.h"
-#include "LAS.h"
+#include "PointCloud.h"
 
 Key::Key(int32_t d, int32_t x, int32_t y, int32_t z) : d(d), x(x), y(y), z(z) {}
 Key::Key() : Key(-1, -1, -1, -1) {}
@@ -15,22 +15,18 @@ Key::Key() : Key(-1, -1, -1, -1) {}
 std::array<Key, 8> Key::get_children() const
 {
   std::array<Key, 8> children;
-  for (unsigned char direction = 0 ; direction < 8 ; direction++)
+  int32_t next_d = d + 1;
+  int32_t base_x = x * 2, base_y = y * 2, base_z = z * 2;
+
+  for (unsigned char direction = 0; direction < 8; ++direction)
   {
-    Key key(*this);
-
-    key.d++;
-    key.x *= 2;
-    key.y *= 2;
-    key.z *= 2;
-
-    if (direction & (((unsigned char)1) << 0)) key.x++;
-    if (direction & (((unsigned char)1) << 1)) key.y++;
-    if (direction & (((unsigned char)1) << 2)) key.z++;
-
-    children[direction] = key;
+    children[direction] = Key(
+      next_d,
+      base_x + ((direction & 1) ? 1 : 0),
+      base_y + ((direction & 2) ? 1 : 0),
+      base_z + ((direction & 4) ? 1 : 0)
+    );
   }
-
   return children;
 }
 
@@ -56,7 +52,7 @@ void Node::insert(size_t idx, uint32_t cell)
   if (cell >= 0) occupancy.insert(cell); // cell = -1 means that recording the location of the point is useless (save memory)
 };
 
-LODtree::LODtree(LAS* las)
+LODtree::LODtree(PointCloud* las)
 {
   if (las->npoints > UINT32_MAX)
     throw std::runtime_error("Spatial indexation is bound to 4,294 billion points");
@@ -65,12 +61,12 @@ LODtree::LODtree(LAS* las)
   max_depth = 0;
   grid_size = 128;
 
-  xmin = las->newheader->min_x;
-  ymin = las->newheader->min_y;
-  zmin = las->newheader->min_z;
-  xmax = las->newheader->max_x;
-  ymax = las->newheader->max_y;
-  zmax = las->newheader->max_z;
+  xmin = las->header->min_x;
+  ymin = las->header->min_y;
+  zmin = las->header->min_z;
+  xmax = las->header->max_x;
+  ymax = las->header->max_y;
+  zmax = las->header->max_z;
   double center_x = (xmin+xmax)/2;
   double center_y = (ymin+ymax)/2;
   double center_z = (zmin+zmax)/2;
@@ -110,6 +106,8 @@ void LODtree::compute_max_depth(size_t npts, size_t max_points_per_octant)
 
 bool LODtree::insert(double x, double y, double z, uint32_t i)
 {
+  //print("1 lvl max = %d\n", max_depth);
+
   std::unordered_map<Key, Node, KeyHasher>::iterator it;
 
   // Search a place to insert the point
@@ -125,12 +123,9 @@ bool LODtree::insert(double x, double y, double z, uint32_t i)
     else
       cell = get_cell(x, y, z, key);
 
-    //printf("Suggested key %d-%d-%d-%d in cell %d\n", key.x, key.y, key.z, key.d, cell);
-
     it = registry.find(key);
     if (it == registry.end())
     {
-      //printf("Registry add key %d-%d-%d-%d\n", key.x, key.y, key.z, key.d);
       Node node;
       set_bbox(key, node.bbox);
       it = registry.emplace(key, node).first;
@@ -145,7 +140,7 @@ bool LODtree::insert(double x, double y, double z, uint32_t i)
   it->second.insert(i, cell);
 
   //if (it->first.d == 0)
-  //printf("Insert point i = %lu (%.1lf, %.1lf, %.1lf) in %d-%d-%d-%d in cell %d n = %lu\n", i,  x[i], y[i], z[i], it->first.x, it->first.y, it->first.z, it->first.d, cell, it->second.point_idx.size());
+  //printf("Insert point i = %u (%.1lf, %.1lf, %.1lf) in %d-%d-%d-%d in cell %d n = %lu\n", i,  x, y, z, it->first.x, it->first.y, it->first.z, it->first.d, cell, it->second.point_idx.size());
 
   return true;
 }
@@ -336,3 +331,130 @@ bool LODtree::read(const std::string& filename)
   inFile.close();
   return true;
 }
+
+
+// Helper function for generating unique voxel keys
+int64_t OctreeNode::voxelKey(double x, double y, double z) const
+{
+  int64_t col = std::floor((x - min_x) / voxelSize);
+  int64_t row = std::floor((max_y - y) / voxelSize);
+  int64_t lay = std::floor((z - min_z) / voxelSize);
+  return  lay * 64 * 64 + row * 64 + col;
+}
+
+// Constructor
+OctreeNode::OctreeNode(double min_x, double min_y, double min_z, double max_x, double max_y, double max_z, int max_depth, int depth)
+  : min_x(min_x), min_y(min_y), min_z(min_z),  max_x(max_x), max_y(max_y), max_z(max_z), maxDepth(max_depth), depth(depth)
+{
+  voxelSize = (max_x-min_x)/64;
+  children.fill(nullptr);
+}
+
+// Destructor
+OctreeNode::~OctreeNode()
+{
+  for (auto& child : children) {
+    delete child;
+  }
+}
+
+// Check if the node is a leaf
+bool OctreeNode::isLeaf() const
+{
+  return children[0] == nullptr;
+}
+
+// Add point to voxel if not already occupied
+bool OctreeNode::addToVoxel(const Point& point)
+{
+  if (depth == maxDepth) return true;
+
+  int64_t key = voxelKey(point.get_x(), point.get_y(), point.get_z());
+
+  /*if (depth == 0)
+  {
+  printf("Key %ld \n Occupied: ", key);
+  for (auto k : occupiedVoxels)
+    printf("%ld ", k);
+  printf("\n");
+  }*/
+  if (occupiedVoxels.find(key) != occupiedVoxels.end()) return false; // Voxel already occupied
+  occupiedVoxels.insert(key);
+  return true;
+}
+
+// Subdivide the current node
+void OctreeNode::subdivide()
+{
+  double mid_x = (min_x + max_x) / 2.0;
+  double mid_y = (min_y + max_y) / 2.0;
+  double mid_z = (min_z + max_z) / 2.0;
+
+  children[0] = new OctreeNode(min_x, min_y, min_z, mid_x, mid_y, mid_z, maxDepth, depth + 1);
+  children[1] = new OctreeNode(mid_x, min_y, min_z, max_x, mid_y, mid_z, maxDepth, depth + 1);
+  children[2] = new OctreeNode(min_x, mid_y, min_z, mid_x, max_y, mid_z, maxDepth, depth + 1);
+  children[3] = new OctreeNode(mid_x, mid_y, min_z, max_x, max_y, mid_z, maxDepth, depth + 1);
+  children[4] = new OctreeNode(min_x, min_y, mid_z, mid_x, mid_y, max_z, maxDepth, depth + 1);
+  children[5] = new OctreeNode(mid_x, min_y, mid_z, max_x, mid_y, max_z, maxDepth, depth + 1);
+  children[6] = new OctreeNode(min_x, mid_y, mid_z, mid_x, max_y, max_z, maxDepth, depth + 1);
+  children[7] = new OctreeNode(mid_x, mid_y, mid_z, max_x, max_y, max_z, maxDepth, depth + 1);
+}
+
+// Insert a point into the octree
+void OctreeNode::insert(const Point& point)
+{
+  //printf("Received a point at level %d\n", depth);
+  if (depth == maxDepth)
+  {
+    //printf("Insert at max depth %d\n", maxDepth);
+    points.push_back(point);
+    return;
+  }
+
+  // Add to voxel if possible
+  if (addToVoxel(point))
+  {
+    //printf("Insert at lvl %d\n", depth);
+    points.push_back(point);
+    return;
+  }
+
+  // Otherwise, subdivide and distribute points
+  if (isLeaf())
+  {
+    //printf("Subdivide\n");
+    subdivide();
+  }
+
+  for (auto& child : children)
+  {
+    if (child->min_x <= point.get_x() && point.get_x() < child->max_x &&
+        child->min_y <= point.get_y() && point.get_y() < child->max_y &&
+        child->min_z <= point.get_z() && point.get_z() < child->max_z)
+    {
+      child->insert(point);
+      return;
+    }
+  }
+}
+
+// Print the octree (for debugging)
+void OctreeNode::print() const
+{
+  std::cout << "Node Depth: " << depth
+            << ", Points: " << points.size()
+            << ", Bounds: [" << min_x << ", " << min_y << ", " << min_z
+            << "] to [" << max_x << ", " << max_y << ", " << max_z << "]\n";
+
+  for (const auto& child : children)
+  {
+    if (child != nullptr)
+    {
+      child->print();
+    }
+  }
+}
+
+
+
+

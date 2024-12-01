@@ -15,7 +15,7 @@ enum AttributeEnum{Z, I, RGB, CLASS};
 class Drawer
 {
 public:
-  Drawer(SDL_Window*, LAS*);
+  Drawer(SDL_Window*, PointCloud*);
   bool draw();
   void resize();
   void setPointSize(float);
@@ -27,17 +27,16 @@ public:
   void budget_plus() { point_budget += 500000; camera.changed = true; };
   void budget_minus() { if (point_budget > 500000) point_budget -= 500000; camera.changed = true; };
   Camera camera;
-  LODtree index;
+  OctreeNode root;
 
   float point_size;
   bool lightning;
 
 private:
   void edl();
-  bool is_visible(const Node& octant);
   void compute_cell_visibility();
   void query_rendered_point();
-  void traverse_and_collect(const Key& key, std::vector<Node*>& visible_octants);
+  void traverse_and_collect(OctreeNode* octant, std::vector<const OctreeNode*>& visible_octants);
   void init_viewport();
 
   bool draw_index;
@@ -65,8 +64,8 @@ private:
   double attrrange;
 
   AttributeEnum attr;
-  std::vector<int> pp;
-  std::vector<Node*> visible_octants;
+  std::vector<Point> pp;
+  std::vector<const OctreeNode*> visible_octants;
 
   SDL_Window *window;
   float zNear;
@@ -75,12 +74,12 @@ private:
   int width;
   int height;
 
-  LAS* las;
-  AttributeHandler intensity;
-  AttributeHandler red;
-  AttributeHandler green;
-  AttributeHandler blue;
-  AttributeHandler classification;
+  PointCloud* las;
+  AttributeAccessor intensity;
+  AttributeAccessor red;
+  AttributeAccessor green;
+  AttributeAccessor blue;
+  AttributeAccessor classification;
 };
 
 #endif //DRAWER_H

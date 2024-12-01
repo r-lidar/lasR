@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <unordered_map>
 
-class LAS;
+class PointCloud;
 
 struct Key
 {
@@ -73,7 +73,7 @@ class LODtree
 {
 public:
   LODtree() = default;
-  LODtree(LAS* las);
+  LODtree(PointCloud* las);
   Key get_key(double x, double y, double z, int depth) const;
   int get_cell(double x, double y, double z, const Key& key) const;
   inline int get_max_depth() const { return max_depth; };
@@ -113,6 +113,49 @@ private:
 
   int32_t max_depth;
   int32_t grid_size;
+};
+
+
+#include <vector>
+#include <array>
+#include <unordered_set>
+#include <cmath>
+#include <iostream>
+#include "PointSchema.h"
+
+class OctreeNode
+{
+public:
+  OctreeNode() = default;
+  OctreeNode(double min_x, double min_y, double min_z, double max_x, double max_y, double max_z, int max_depth, int depth);
+  ~OctreeNode();
+
+  // Methods
+  void insert(const Point& point);
+  void print() const;
+
+  // Bounding box
+  double min_x, min_y, min_z, max_x, max_y, max_z;
+
+  // Screen size is computed by a drawer
+  float screen_size;
+
+  // Node properties
+  int depth;                // Current depth
+  int maxDepth;             // Maximum allowable depth
+  std::vector<Point> points;
+  std::array<OctreeNode*, 8> children;
+
+
+private:
+  double voxelSize;
+  std::unordered_set<uint64_t> occupiedVoxels;
+
+  // Private methods
+  bool isLeaf() const;
+  bool addToVoxel(const Point& point);
+  int64_t voxelKey(double x, double y, double z) const;
+  void subdivide();
 };
 
 #endif

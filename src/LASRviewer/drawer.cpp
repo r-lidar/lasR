@@ -8,7 +8,8 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#include "LAS.h"
+#include "PointCloud.h"
+#include "Progress.h"
 
 const std::vector<std::array<unsigned char, 3>> zgradient = {
   {0, 0, 255},
@@ -88,7 +89,7 @@ const std::vector<std::array<unsigned char, 3>> igradient = {
   {255, 255, 234}   // [25]
 };
 
-Drawer::Drawer(SDL_Window *window, LAS* las)
+Drawer::Drawer(SDL_Window *window, PointCloud* las)
 {
   zNear = 1;
   zFar = 100000;
@@ -102,12 +103,12 @@ Drawer::Drawer(SDL_Window *window, LAS* las)
   this->npoints = las->npoints;
 
   PSquare zp99(0.99);
-  this->minx = las->newheader->min_x;
-  this->miny = las->newheader->min_y;
-  this->minz = las->newheader->min_z;
-  this->maxx = las->newheader->max_x;
-  this->maxy = las->newheader->max_y;
-  this->maxz = las->newheader->max_z;
+  this->minx = las->header->min_x;
+  this->miny = las->header->min_y;
+  this->minz = las->header->min_z;
+  this->maxx = las->header->max_x;
+  this->maxy = las->header->max_y;
+  this->maxz = las->header->max_z;
   this->xcenter = (maxx+minx)/2;
   this->ycenter = (maxy+miny)/2;
   this->zcenter = (maxz+minz)/2;
@@ -119,7 +120,7 @@ Drawer::Drawer(SDL_Window *window, LAS* las)
   this->zqmax = maxz-zcenter;
 
   this->draw_index = false;
-  this->point_budget = 300000;
+  this->point_budget = 200000;
   this->point_size = 5.0;
   this->lightning = true;
 
@@ -130,34 +131,58 @@ Drawer::Drawer(SDL_Window *window, LAS* las)
   this->camera.setPanSensivity(distance*0.001);
   this->camera.setZoomSensivity(distance*0.05);
 
-  intensity = AttributeHandler("Intensity");
-  red = AttributeHandler("R");
-  green = AttributeHandler("G");
-  blue = AttributeHandler("B");
-  classification = AttributeHandler("Classification");
+  intensity.reset();
+  red.reset();
+  green.reset();
+  blue.reset();
+  classification.reset();
 
   setAttribute(AttributeEnum::Z);
   setAttribute(AttributeEnum::RGB);
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  this->index = LODtree(las);
+  const Header& h = *las->header;
+  double dx = h.max_x - h.min_x;
+  double dy = h.max_y - h.min_y;
+  double dz = h.max_z - h.min_z;
+  double xc = (h.max_x + h.min_x)/2;
+  double yc = (h.max_y + h.min_y)/2;
+  double zc = (h.max_z + h.min_z)/2;
+  double delta = MAX3(dx,dy,dz)
+
+  root = OctreeNode(xc-delta, yc-delta, zc-delta, xc+delta, yc+delta, zc+delta, 7, 0);
+
+  Progress progress;
+  progress.set_total(las->npoints);
+  progress.set_display(true);
+  progress.set_prefix("LoD");
 
   int i = 0;
+  unsigned int curr;
   while (las->read_point())
   {
-    index.insert(las->p.get_x(), las->p.get_y(), las->p.get_z(), las->current_point);
-    if (i % 1000000 == 0)
+    curr = las->current_point;
+    root.insert(las->point);
+    /*if (i % 1000000 == 0)
     {
       camera.changed = true;
       draw();
-    }
+      las->seek(curr); // Draw is seeking and invalidates the index
+    }*/
+    progress++;
+    progress.show();
     i++;
   }
 
+  //print("n point at lvl 0 = %d\n", root.points.size());
+  //root.print();
+
+  progress.done();
+
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration = end - start;
-  //printf("Indexation: %.1lf seconds (%.1lfM pts/s)\n", duration.count(), x.size()/duration.count()/1000000);
+  printf("Indexation: %.1lf seconds (%.1lfM pts/s)\n", duration.count(), las->npoints/duration.count()/1000000);
 
   this->point_budget *= 10;
   camera.changed = true;
@@ -202,7 +227,7 @@ void Drawer::setAttribute(AttributeEnum x)
     {
       int index = dis(gen);
       las->seek(index);
-      if (red(&las->p) > 255) rgb_norm = 255;
+      if (red(&las->point) > 255) rgb_norm = 255;
     }
     las->seek(0);
   }
@@ -223,8 +248,8 @@ void Drawer::setAttribute(AttributeEnum x)
     for (int i = 0 ; i < npoints - jump; i += jump)
     {
       las->seek(i);
-      p01.addDataPoint(intensity(&las->p));
-      p99.addDataPoint(intensity(&las->p));
+      p01.addDataPoint(intensity(&las->point));
+      p99.addDataPoint(intensity(&las->point));
     }
     this->minattr = p01.getQuantile();
     this->maxattr = p99.getQuantile();
@@ -233,12 +258,26 @@ void Drawer::setAttribute(AttributeEnum x)
   }
   else
   {
-    this->attr = AttributeEnum::Z;
-    this->minattr = zqmin;
-    this->maxattr = zqmax;
+    this->attr = x;
+    PSquare p01(0.01);
+    PSquare p99(0.99);
+    int jump = 1;
+    if (npoints > 100000) jump = npoints/100;
+    if (npoints > 1000000) jump = npoints/1000;
+
+    for (int i = 0 ; i < npoints - jump; i += jump)
+    {
+      las->seek(i);
+      p01.addDataPoint(las->point.get_z());
+      p99.addDataPoint(las->point.get_z());
+    }
+    this->minattr = p01.getQuantile() - zcenter;
+    this->maxattr = p99.getQuantile() - zcenter;
     this->attrrange = maxattr - minattr;
     camera.changed = true;
   }
+
+  print("Range [%.1lf %.1lf]\n", minattr, maxattr);
 }
 
 bool Drawer::draw()
@@ -266,17 +305,16 @@ bool Drawer::draw()
   glBegin(GL_POINTS);
 
   // UPDATE HERE
-  for (auto i : pp)
+  for (auto p : pp)
   {
-    las->seek(i);
-    float px = las->p.get_x()-xcenter;
-    float py = las->p.get_y()-ycenter;
-    float pz = las->p.get_z()-zcenter;
-    int pr = red(&las->p);
-    int pg = green(&las->p);
-    int pb = blue(&las->p);
-    int pc = classification(&las->p);
-    int pi = intensity(&las->p);
+    float px = p.get_x()-xcenter;
+    float py = p.get_y()-ycenter;
+    float pz = p.get_z()-zcenter;
+    int pr = red(&p);
+    int pg = green(&p);
+    int pb = blue(&p);
+    int pc = classification(&p);
+    int pi = intensity(&p);
 
     switch (attr)
     {
@@ -317,7 +355,7 @@ bool Drawer::draw()
 
   if (lightning) edl();
 
-  if (draw_index)
+  /*if (draw_index)
   {
     glColor3f(1.0f, 1.0f, 1.0f);
 
@@ -357,27 +395,27 @@ bool Drawer::draw()
 
       glEnd();
     }
-  }
+  }*/
 
   // Draw the X axis (red)
   glColor3f(1.0f, 0.0f, 0.0f);
   glBegin(GL_LINES);
-  glVertex3f(minx-xcenter, miny-ycenter, minz+10); // Start point of X axis
-  glVertex3f(minx-xcenter+20, miny-ycenter, minz+10);  // End point of X axis
+  glVertex3f(minx-xcenter, miny-ycenter, minz-zcenter); // Start point of X axis
+  glVertex3f(minx-xcenter+20, miny-ycenter, minz-zcenter);  // End point of X axis
   glEnd();
 
   // Draw the Y axis (green)
   glColor3f(0.0f, 1.0f, 0.0f);
   glBegin(GL_LINES);
-  glVertex3f(minx-xcenter, miny-ycenter, minz+10); // Start point of Y axis
-  glVertex3f(minx-xcenter, miny-ycenter+20, minz+10);  // End point of Y axis
+  glVertex3f(minx-xcenter, miny-ycenter, minz-zcenter); // Start point of Y axis
+  glVertex3f(minx-xcenter, miny-ycenter+20, minz-zcenter);  // End point of Y axis
   glEnd();
 
   // Draw the Z axis (blue)
   glColor3f(0.0f, 0.0f, 1.0f);
   glBegin(GL_LINES);
-  glVertex3f(minx-xcenter, miny-ycenter, minz+10); // Start point of Y axis
-  glVertex3f(minx-xcenter, miny-ycenter, minz+20+10);  // End point of Y axis
+  glVertex3f(minx-xcenter, miny-ycenter, minz-zcenter+10); // Start point of Y axis
+  glVertex3f(minx-xcenter, miny-ycenter, minz-zcenter+10);  // End point of Y axis
   glEnd();
 
   camera.changed = false;
@@ -491,25 +529,19 @@ void Drawer::resize()
   camera.changed = true;
 }
 
-bool Drawer::is_visible(const Node& octant)
-{
-  return camera.see(octant.bbox[0]-xcenter, octant.bbox[1]-ycenter, octant.bbox[2]-zcenter, octant.bbox[3]);
-}
-
 void Drawer::compute_cell_visibility()
 {
   visible_octants.clear();
 
-  Key root = Key::root();
-  traverse_and_collect(root, visible_octants);
+  traverse_and_collect(&root, visible_octants);
 
-  std::sort(visible_octants.begin(), visible_octants.end(), [](const Node* a, const Node* b)
+  std::sort(visible_octants.begin(), visible_octants.end(), [](const OctreeNode* a, const OctreeNode* b)
   {
     return a->screen_size > b->screen_size;  // Sort in descending order
   });
 }
 
-void Drawer::traverse_and_collect(const Key& key, std::vector<Node*>& visible_octants)
+/*void Drawer::traverse_and_collect(const Key& key, std::vector<Node*>& visible_octants)
 {
   auto it = index.registry.find(key);
   if (it == index.registry.end()) return;
@@ -552,6 +584,45 @@ void Drawer::traverse_and_collect(const Key& key, std::vector<Node*>& visible_oc
       }
     }
   }
+}*/
+
+void Drawer::traverse_and_collect(OctreeNode* node, std::vector<const OctreeNode*>& visible_octants)
+{
+  if (node == nullptr) return;
+
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  int screenWidth = viewport[2];
+  int screenHeight = viewport[3];
+
+  float fov = 70 * M_PI / 180;
+  float slope = std::tan(fov / 2.0f);
+
+  // Calculate the screen size or other criteria for visibility
+  double x = (node->min_x + node->max_x) / 2.0 - xcenter;
+  double y = (node->min_y + node->max_y) / 2.0 - ycenter;
+  double z = (node->min_z + node->max_z) / 2.0 - zcenter;
+  double r = (node->max_x - node->min_x) * 1.414; // Adjusted for diagonal size of the node
+
+  double cx = camera.x;
+  double cy = camera.y;
+  double cz = camera.z;
+
+  // Check if the current node is visible
+  if (camera.see(x,y,z, r))
+  {
+    float distance = std::sqrt((cx - x) * (cx - x) + (cy - y) * (cy - y) + (cz - z) * (cz - z));
+    double screen_size = (screenHeight / 2.0) * (r / (slope * distance));
+    node->screen_size = screen_size;
+
+    if (screen_size > 100)
+    {
+      visible_octants.push_back(node);
+
+      for (const auto& child : node->children)
+        traverse_and_collect(child, visible_octants);
+    }
+  }
 }
 
 void Drawer::query_rendered_point()
@@ -561,8 +632,8 @@ void Drawer::query_rendered_point()
   unsigned int n = 0;
   for (const auto octant : visible_octants)
   {
-    n += octant->point_idx.size();
-    pp.insert(pp.end(), octant->point_idx.begin(), octant->point_idx.end());
+    n += octant->points.size();
+    pp.insert(pp.end(), octant->points.begin(), octant->points.end());
     if (n > point_budget) break;
   }
 }

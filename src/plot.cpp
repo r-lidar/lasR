@@ -4,16 +4,16 @@
 
 #include <thread>
 
-class LAS;
+class PointCloud;
 
-void sdl_loop(LAS* las);
+void sdl_loop(PointCloud* las);
 
 bool running = false;
 std::thread sdl_thread;
 
 SEXP plot_pointcloud(SEXP xptr, bool detach)
 {
-  LAS* las = static_cast<LAS*>(R_ExternalPtrAddr(xptr));
+  PointCloud* las = static_cast<PointCloud*>(R_ExternalPtrAddr(xptr));
   if (!las)
   {
     Rf_error("Invalid pointer");

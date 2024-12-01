@@ -94,9 +94,9 @@ const char *move[] =
 
 const Uint32 time_per_frame = 1000 / 30;
 
-class LAS;
+class PointCloud;
 
-void sdl_loop(LAS* las)
+void sdl_loop(PointCloud* las)
 {
   SDL_Event event;
 
