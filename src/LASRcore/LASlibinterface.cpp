@@ -1,5 +1,4 @@
 #include "LASlibinterface.h"
-#include "LASlibextension.hpp"
 #include "Progress.h"
 
 #include "lasreader.hpp"
@@ -71,10 +70,20 @@ bool LASlibInterface::open(const Chunk& chunk, std::vector<std::string> filters)
     return false;
   }
 
-  // Create a reader
-  LASlibFilterParserExtension parser;
-  for (auto& s : filters) s = parser.parse(s);
-  std::string sfilter = std::accumulate(filters.begin(), filters.end(), std::string(" "));
+  // Keep only LASlib string that start with - (e.g. -drop_z_above 50) and drop condition
+  // like Z > 50
+  std::string sfilter;
+  for (const auto& filter : filters)
+  {
+    // Trim leading spaces
+    size_t start = filter.find_first_not_of(" \t");
+    std::string trimmed = (start == std::string::npos) ? "" : filter.substr(start);
+
+    // Check if the trimmed string starts with '-'
+    if (!trimmed.empty() && trimmed[0] == '-') sfilter += trimmed + " ";
+  }
+
+  //print("LASlib filters = '%s'\n", sfilter.c_str());
 
   const char* tmp = sfilter.c_str();
   int n = strlen(tmp)+1;
