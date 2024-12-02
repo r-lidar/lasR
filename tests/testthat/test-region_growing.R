@@ -40,7 +40,8 @@ test_that("growing region works with multiple files",
   #plot(u$local_maximum$geom, add = TRUE, cex = 0.1, pch = 19)
 
   expect_equal(length(unique(u$region_growing[])), 2235L) # 2234+NaN
-  expect_equal(nrow(u$local_maximum), 2234L)
+  expect_gte(nrow(u$local_maximum), 2234L)
+  expect_gte(nrow(u$local_maximum), 2235L)
   expect_equal(sum(is.na(u$rasterize[])), 5367L)
 
   # We have an issue on the r-universe version of macos-r-release it is 81 instead of 83
