@@ -41,7 +41,7 @@ test_that("growing region works with multiple files",
 
   expect_equal(length(unique(u$region_growing[])), 2235L) # 2234+NaN
   expect_gte(nrow(u$local_maximum), 2234L)
-  expect_gte(nrow(u$local_maximum), 2235L)
+  expect_lte(nrow(u$local_maximum), 2235L)
   expect_equal(sum(is.na(u$rasterize[])), 5367L)
 
   # We have an issue on the r-universe version of macos-r-release it is 81 instead of 83
