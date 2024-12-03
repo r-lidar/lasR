@@ -247,6 +247,10 @@ unsigned char * find_holes(int size, int snlin, int sncol, int mini, int maxi, i
     }
   }
 
+  free(hole_map);
+  free(hole_score);
+  free(dil_buf);
+
   return hole_map2;
 }
 
@@ -510,6 +514,8 @@ float * median_filter(int msize, int snlin, int sncol, int mini, int maxi, int m
       }
     }
   }
+
+  free(mfe);
 
   return out_scene;
 }

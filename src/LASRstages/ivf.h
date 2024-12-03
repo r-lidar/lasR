@@ -7,7 +7,7 @@ class LASRivf: public Stage
 {
 public:
   LASRivf() = default;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   double need_buffer() const override { return res; };
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "ivf"; };

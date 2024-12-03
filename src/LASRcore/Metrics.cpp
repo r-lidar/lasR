@@ -10,6 +10,9 @@
 
 bool MetricManager::parse(const std::vector<std::string>& names, bool support_streamable)
 {
+  streaming_operators.clear();
+  regular_operators.clear();
+
   if (names.size() == 0) return true;
 
   // Check if we have only streamable MetricManager
@@ -74,7 +77,7 @@ MetricCalculator MetricManager::parse(const std::string& name)
   std::string::size_type underscore_pos = name.find('_');
   if (underscore_pos == std::string::npos)
   {
-    attribute = "z";
+    attribute = "Z";
     metric = name;
   }
   else
@@ -104,22 +107,11 @@ MetricCalculator MetricManager::parse(const std::string& name)
   }
 
   // The string is parsed. We can instantiate the accessors
-
   auto it1 = metric_functions.find(metric);
   if (it1 == metric_functions.end()) throw std::invalid_argument("Invalid metric name: " + metric);
 
-  PointAttributeAccessor attribute_accessor;
-  auto it2 = attribute_functions.find(attribute);
-  if (it2 != attribute_functions.end())
-  {
-    attribute_accessor = it2->second;
-  }
-  else
-  {
-    // We can't find the attribute in the list of existing attributes. This might be an extrabyte (or a typo)
-    // we assume an extrabyte for now
-    attribute_accessor = [attribute](const PointLAS& p) { return p.get_extrabyte(attribute); };
-  }
+  attribute = map_attribute(attribute);
+  AttributeAccessor attribute_accessor(attribute);
 
   return MetricCalculator(it1->second, attribute_accessor, param);
 }
@@ -131,73 +123,73 @@ float MetricManager::pcount(float x, float y) const { if (x == NA_F32_RASTER) re
 
 // batch MetricManager
 
-float MetricManager::min(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::min(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   double min = std::numeric_limits<double>::max();
   for (const auto& point : points)
   {
-    double val = accessor(point);
+    double val = accessor(&point);
     if (min > val) min = val;
   }
   return min;
 }
 
-float MetricManager::max(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::max(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   double max = std::numeric_limits<double>::lowest();
   for (const auto& point : points)
   {
-    double val = accessor(point);
+    double val = accessor(&point);
     if (max < val) max = val;
   }
   return max;
 }
 
-float MetricManager::mean(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::mean(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   double sum = 0.0;
-  for (const auto& point : points) sum += accessor(point);
+  for (const auto& point : points) sum += accessor(&point);
   return (float)(sum/points.size());
 }
 
-float MetricManager::median(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::median(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   std::vector<double> x;
   x.reserve(points.size());
-  for (const auto& point : points) x.push_back(accessor(point));
+  for (const auto& point : points) x.push_back(accessor(&point));
   std::sort(x.begin(), x.end());
   return percentile(x, 50);
 }
 
-float MetricManager::sd(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::sd(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   if (points.size() == 1) return NA_F32_RASTER;
 
   double sum = 0.0;
-  for (const auto& point : points) sum += accessor(point);
+  for (const auto& point : points) sum += accessor(&point);
   double mean = sum/points.size();
 
   sum = 0.0;
   for (const auto& point : points)
   {
-    double value = accessor(point);
+    double value = accessor(&point);
     sum += (value - mean) * (value - mean);
   }
 
   return (float)(std::sqrt(sum/(points.size()-1)));
 }
 
-float MetricManager::mode(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::mode(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   std::unordered_map<double, int> registry;
 
   for (const auto& point : points)
   {
-    double value = accessor(point);
+    double value = accessor(&point);
     registry[value]++;
   }
 
-  double mode = accessor(points[0]);
+  double mode = accessor(&points[0]);
   int count = registry[mode];
 
   for (const auto& pair : registry)
@@ -212,7 +204,7 @@ float MetricManager::mode(PointAttributeAccessor accessor, const PointCollection
   return (float)mode;
 }
 
-float MetricManager::cv(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::cv(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   float avg = mean(accessor, points, param);
   float std = sd(accessor, points, param);
@@ -220,35 +212,33 @@ float MetricManager::cv(PointAttributeAccessor accessor, const PointCollection& 
   return std/avg;
 }
 
-float MetricManager::sum(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::sum(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   double sum = 0;
-  for (const auto& point : points) sum += accessor(point);
+  for (const auto& point : points) sum += accessor(&point);
   return (float)sum;
 }
 
-float MetricManager::count(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::count(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   return (float)points.size();
 }
 
 
-float MetricManager::percentile(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::percentile(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   std::vector<double> x;
   x.reserve(points.size());
-  for (const auto& point : points) x.push_back(accessor(point));
+  for (const auto& point : points) x.push_back(accessor(&point));
   std::sort(x.begin(), x.end());
   return percentile(x, param);
 }
 
-float MetricManager::above(PointAttributeAccessor accessor, const PointCollection& points, float param) const
+float MetricManager::above(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
   float k = 0;
   for (const auto& point : points)
-  {
-    if (accessor(point) > param) k++;
-  }
+    if (accessor(&point) > param) k++;
   return k/(float)points.size();
 }
 
@@ -258,7 +248,7 @@ float MetricManager::get_metric(int index, float x, float y) const
   return (this->*f)(x,y);
 }
 
-float MetricManager::get_metric(int index, const PointCollection& points) const
+float MetricManager::get_metric(int index, const PointCollection& points)
 {
   if (points.size() == 0) return default_value;
   return regular_operators[index].compute(points);
@@ -282,6 +272,13 @@ int MetricManager::size() const
 bool MetricManager::active() const
 {
   return size() > 0;
+}
+
+
+void MetricManager::reset()
+{
+  for(auto& op : regular_operators)
+    op.reset();
 }
 
 float MetricManager::string_to_float(const std::string& s) const

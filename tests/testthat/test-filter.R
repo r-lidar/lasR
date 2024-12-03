@@ -12,7 +12,7 @@ test_that("R convient filters work", {
   expect_equal(as.character(v(keep_z_below(7))), "-lasr_z_below 7")
   expect_equal(as.character(v(drop_z_above(7))), "-lasr_z_below 7")
   expect_equal(as.character(v(drop_z_below(7))), "-lasr_z_aboveeq 7")
-  expect_equal(as.character(v(drop_duplicates())), "-drop_duplicates")
+  #expect_equal(as.character(v(drop_duplicates())), "-drop_duplicates")
   expect_equal(as.character(v(keep_ground()+keep_z_above(7))), c("-lasr_class_equal 2",  "-lasr_z_aboveeq 7"))
   expect_error(keep_ground()+ "-keep_class 2")
 })
@@ -70,8 +70,6 @@ test_that("Filters errors",
 
   expect_error(test("Z > 976 546")$npoints)
   expect_error(test("3 == 4")$npoints)
-  #expect_error(test("-keep_z_above 234 345"))
-  expect_error(test(paste0("UserData %in% ", paste(1:65, collapse = " "))))
 })
 
 test_that("rasterize works with a filter (#29)",

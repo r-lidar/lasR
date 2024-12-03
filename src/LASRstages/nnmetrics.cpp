@@ -22,7 +22,7 @@ bool LASRnnmetrics::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
-  if (mode == PUREKNN) this->r = F64_MAX;
+  if (mode == PUREKNN) this->r = std::numeric_limits<double>::max();
 
   if (!metrics.parse(methods)) return false;
 
@@ -33,7 +33,7 @@ bool LASRnnmetrics::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRnnmetrics::process(LAS*& las)
+bool LASRnnmetrics::process(PointCloud*& las)
 {
   // Get the maxima from the local maximum stage
   auto it = connections.begin();
@@ -64,16 +64,19 @@ bool LASRnnmetrics::process(LAS*& las)
 
     const PointLAS& p = maxima[i];
 
-    std::vector<PointLAS> pts;
+    std::vector<Point> pts;
     if (mode == PURERADIUS)
     {
       Sphere s(p.x, p.y, p.z, r);
-      las->query(&s, pts, &lasfilter);
+      las->query(&s, pts, &pointfilter);
     }
     else
     {
-      double xyz[3] = {p.x, p.y, p.z};
-      las->knn(xyz, k, r, pts, &lasfilter);
+      Point pt(&las->header->schema);
+      pt.set_x(p.x);
+      pt.set_y(p.y);
+      pt.set_z(p.z);
+      las->knn(pt, k, r, pts, &pointfilter);
     }
 
     PointXYZAttrs pt(p.x, p.y, p.z);

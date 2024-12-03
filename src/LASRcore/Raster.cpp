@@ -162,9 +162,9 @@ float Raster::get_value_bilinear(double x, double y, int layer) const
 
   // The reference is  the pixel(2,1) (neighbors[2]). See https://seadas.gsfc.nasa.gov/help-8.1.0/general/overview/ResamplingMethods.html
   // thus our reference if not correct. Invert the fraction.
-  if (pos == 0)      { x_frac = x_frac  ; y_frac = y_frac;  }
-  else if (pos == 1) { x_frac = 1-x_frac; y_frac = y_frac;  }
-  else if (pos == 2) { x_frac = x_frac  ; y_frac = 1-y_frac;  }
+  if (pos == 0)      { }
+  else if (pos == 1) { x_frac = 1-x_frac; }
+  else if (pos == 2) { y_frac = 1-y_frac; }
   else if (pos == 3) { x_frac = 1-x_frac; y_frac = 1-y_frac; }
 
   // Accumulate contributions from valid neighbors

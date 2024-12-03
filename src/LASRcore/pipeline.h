@@ -49,7 +49,7 @@ public:
   void sort();
   void show_profiling(const std::string& path);
   void set_progress(Progress* progress);
-  LAScatalog* get_catalog() const { return catalog.get(); };
+  FileCollection* get_catalog() const { return catalog.get(); };
 
 #ifdef USING_R
   SEXP to_R();
@@ -74,10 +74,11 @@ private:
   double chunk_size;
   std::vector<int> order;
 
-  LAS* las;                             // owned by this
-  LASpoint* point;                      // owned by LASreader in stage reader_las or by las
-  LASheader* header;                    // owned by LASreader in stage reader_las or by las
-  std::shared_ptr<LAScatalog> catalog;  // owned by this and shared in cloned pipelines
+  PointCloud* las;                             // owned by this
+  Point* point;                         // owned by las or by reader_las in streaming mode
+  Header* header;                       // owned by las or by reader_las in streaming mode
+  std::shared_ptr<FileCollection> catalog;  // owned by this and shared in cloned pipelines
+  bool point_cloud_ownership_transfered;
 
   std::list<std::unique_ptr<Stage>> pipeline;
 };

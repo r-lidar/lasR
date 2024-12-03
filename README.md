@@ -67,6 +67,7 @@ For more details, see the relevant [vignette](https://r-lidar.github.io/lasR/art
 - For `LASlib` and `LASzip`:
   - © 2007-2021 Martin Isenburg - <http://rapidlasso.com>
   - Licence: LGPL  (modified to be R-compliant by Jean-Romain Roussel)
+  - See the dedicated readme for more details about the modifications made and alternative linking.
 - For `chm_prep`:
   - © 2008-2023 Benoît St-Onge - [Geophoton-inc/chm_prep](https://github.com/Geophoton-inc/chm_prep)
   - Licence: GPL-3

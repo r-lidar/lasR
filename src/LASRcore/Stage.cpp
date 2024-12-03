@@ -1,5 +1,4 @@
 #include "Stage.h"
-#include "FilterParser.h"
 
 /* ==============
  *  VIRTUAL
@@ -37,12 +36,7 @@ Stage::Stage(const Stage& other)
   progress = other.progress;
   connections = other.connections;
   crs = other.crs;
-
-  // Special treatment for LASfilter which is why we need a copy constructor
-  // LASfilter is full of pointer, pointer on pointers without copy constructor.
-  // We are better to build a new one for each copy.
-  lasfilter = LASfilter();
-  set_filter(other.filter);
+  set_filter(other.filters);
 
   #ifdef USING_R
   nsexpprotected = 0;
@@ -60,34 +54,26 @@ bool Stage::set_chunk(Chunk& chunk)
 {
   set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
   if (chunk.shape == ShapeType::CIRCLE) circular = true;
+  buffer = chunk.buffer;
   return true;
 }
 
-void Stage::set_filter(std::vector<std::string> f)
+void Stage::set_filter(const std::vector<std::string>& f)
 {
-  // Parse each condition into a LASlib filter flag
-  FilterParser fp;
-  for (auto i = 0 ; i < f.size() ; i++)
-    f[i] = fp.parse(f[i]);
+  filters = f;
 
-  // Join the flags into a LASlib parsable string
-  std::string filter;
-  for (size_t i = 0; i < f.size(); ++i)
-  {
-    if (i != 0) filter += " ";
-    filter += f[i];
-  }
+  for (auto c : f)
+    pointfilter.add_condition(c);
 
-  set_filter(filter);
 }
 
-void Stage::set_filter(const std::string& f)
+/*void Stage::set_filter(const std::string& f)
 {
   filter = f;
   std::string cpy = f;
   char* s = const_cast<char*>(cpy.c_str());
   if (!lasfilter.parse(s)) throw std::string("Invalid filter detected");
-}
+}*/
 
 #ifdef USING_R
 SEXP Stage::to_R()
@@ -426,32 +412,22 @@ StageMatrix::StageMatrix(const StageMatrix& other)
 
 void StageMatrix::transform(double& x, double& y, double& z)
 {
-  double xt,yt,zt;
-  double point[4];
-  double tpoint[4];
-
-  point[0] = x;
-  point[1] = y;
-  point[2] = z;
-  point[3] = 1;
-
-  tpoint[0] = 0;
-  tpoint[1] = 0;
-  tpoint[2] = 0;
-  tpoint[3] = 0;
+  double point[4] = {x, y, z, 1}; // Homogeneous coordinates
+  double tpoint[4] = {0, 0, 0, 0}; // Transformed coordinates
 
   for (int i = 0; i < 4; ++i)
   {
     for (int j = 0; j < 4; ++j)
     {
-      tpoint[i] += matrix[i][j] * point[j];
+      tpoint[i] += matrix[i][j] * point[j]; // Matrix-vector multiplication
     }
   }
 
-  x = tpoint[0];
-  y = tpoint[1];
-  z = tpoint[2];
+  x = tpoint[0]; // Update x
+  y = tpoint[1]; // Update y
+  z = tpoint[2]; // Update z
 }
+
 
 void StageMatrix::merge(const Stage* other)
 {

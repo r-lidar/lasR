@@ -7,7 +7,7 @@ bool LASRvpcwriter::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRvpcwriter::process(LAScatalog*& catalog)
+bool LASRvpcwriter::process(FileCollection*& catalog)
 {
   return catalog->write_vpc(ofile, crs, absolute_path, use_gpstime);
 }

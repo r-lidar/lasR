@@ -1614,7 +1614,45 @@ private:
   my_I64_set times;
 };
 
-#include "filters.cpp" // Additionnal filter difined by lasR
+class LAScriterionDropDuplicates : public LAScriterion
+{
+  typedef std::array<I32,3> Triplet;
+
+public:
+  inline const CHAR* name() const { return "drop_duplicate"; };
+  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
+  inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY | LASZIP_DECOMPRESS_SELECTIVE_Z; };
+  inline BOOL filter(const LASpoint* point)
+  {
+    Triplet key = {point->get_Z(), point->get_Y(), point->get_Z()};
+    return !registry.insert(key).second;
+  };
+  void reset()
+  {
+    registry.clear();
+  };
+  LAScriterionDropDuplicates()
+  {
+  };
+  ~LAScriterionDropDuplicates(){ reset(); };
+
+private:
+  struct ArrayCompare
+  {
+    bool operator()(const Triplet& a, const Triplet& b) const
+    {
+      if (a[0] < b[0]) return true;
+      if (a[0] > b[0]) return false;
+
+      if (a[1] < b[1]) return true;
+      if (a[1] > b[1]) return false;
+
+      return a[2] < b[2];
+    }
+  };
+
+  std::set<Triplet, ArrayCompare> registry;
+};
 
 void LASfilter::clean()
 {
@@ -1764,211 +1802,6 @@ BOOL LASfilter::parse(int argc, char* argv[])
     {
       usage();
       return TRUE;
-    }
-    // Additional criterion added for lasR
-    else if (strncmp(argv[i],"-lasr_", 6) == 0)
-    {
-      const char* prefix = "-lasr";
-      size_t prefix_length = strlen(prefix);
-      size_t len = strlen(argv[i]);
-
-      // Find the underscores after the prefix
-      const char* first_underscore = strchr(argv[i] + prefix_length, '_');
-      if (!first_underscore)
-      {
-        eprint("ERROR: '%s' invalid format\n", argv[i]);
-        return FALSE;
-      }
-
-      const char* second_underscore = strchr(first_underscore + 1, '_');
-      if (!second_underscore)
-      {
-        eprint("ERROR: '%s' invalid format\n", argv[i]);
-        return FALSE;
-      }
-
-      char operator_name[256];
-      char attribute_name[256];
-
-      // Extract the first word (between prefix and first underscore)
-      size_t len_operator_name = second_underscore - first_underscore - 1;
-      strncpy(operator_name, first_underscore + 1, len_operator_name);
-      operator_name[len_operator_name] = '\0';
-
-      // Extract the second word (between second underscore and space)
-      size_t len_attribute_name = len - (second_underscore - argv[i]) - 1;
-      strncpy(attribute_name, second_underscore + 1, len_attribute_name);
-      attribute_name[len_attribute_name] = '\0';
-
-      //printf("%s %s\n", operator_name, attribute_name);
-
-      if (strcmp(attribute_name, "above") == 0)
-      {
-        if ((i+1) >= argc)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
-          return FALSE;
-        }
-        F64 v;
-        if (sscanf(argv[i+1], "%lf", &v) != 1)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
-          return FALSE;
-        }
-
-        add_criterion(new LASRcriterionKeepAbove(operator_name, v));
-        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
-      }
-      else if (strcmp(attribute_name, "below") == 0)
-      {
-        if ((i+1) >= argc)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
-          return FALSE;
-        }
-        F64 v;
-        if (sscanf(argv[i+1], "%lf", &v) != 1)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
-          return FALSE;
-        }
-
-        add_criterion(new LASRcriterionKeepBelow(operator_name, v));
-        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
-      }
-      else if (strcmp(attribute_name,"aboveeq") == 0)
-      {
-        if ((i+1) >= argc)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
-          return FALSE;
-        }
-        F64 v;
-        if (sscanf(argv[i+1], "%lf", &v) != 1)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
-          return FALSE;
-        }
-
-        add_criterion(new LASRcriterionKeepAboveEqual(operator_name, v));
-        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
-      }
-      else if (strcmp(attribute_name, "beloweq") == 0)
-      {
-        if ((i+1) >= argc)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
-          return FALSE;
-        }
-        F64 v;
-        if (sscanf(argv[i+1], "%lf", &v) != 1)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
-          return FALSE;
-        }
-
-        add_criterion(new LASRcriterionKeepBelowEqual(operator_name, v));
-        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
-      }
-      else if (strcmp(attribute_name,"equal") == 0)
-      {
-        if ((i+1) >= argc)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
-          return FALSE;
-        }
-        F64 v;
-        if (sscanf(argv[i+1], "%lf", &v) != 1)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
-          return FALSE;
-        }
-
-        add_criterion(new LASRcriterionKeepEqual(operator_name, v));
-        *argv[i]='\0'; *argv[i+1]='\0'; i+=1;
-      }
-      else if (strcmp(attribute_name, "different") == 0)
-      {
-        if ((i+1) >= argc)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold\n", argv[i]);
-          return FALSE;
-        }
-        F64 v;
-        if (sscanf(argv[i+1], "%lf", &v) != 1)
-        {
-          eprint("ERROR: '%s' needs 1 argument: threshold but '%s' is no valid threshold\n", argv[i], argv[i+1]);
-          return FALSE;
-        }
-
-        add_criterion(new LASRcriterionKeepDifferent(operator_name, v));
-        *argv[i]='\0';
-      }
-      else if (strcmp(attribute_name, "between") == 0)
-      {
-        if ((i+2) >= argc)
-        {
-          eprint("ERROR: '%s' needs 2 arguments: min_z max_z\n", argv[i]);
-          return FALSE;
-        }
-        F64 min;
-        if (sscanf(argv[i+1], "%lf", &min) != 1)
-        {
-          eprint("ERROR: '%s' needs 2 arguments: min_z max_z but '%s' is no valid min_z\n", argv[i], argv[i+1]);
-          return FALSE;
-        }
-        F64 max;
-        if (sscanf(argv[i+2], "%lf", &max) != 1)
-        {
-          eprint("ERROR: '%s' needs 2 arguments: min_z max_z but '%s' is no valid max_z\n", argv[i], argv[i+2]);
-          return FALSE;
-        }
-
-        add_criterion(new LASRcriterionKeepBetween(operator_name, min, max));
-        *argv[i]='\0'; *argv[i+1]='\0'; *argv[i+2]='\0'; i+=2;
-      }
-      else if (strcmp(attribute_name, "in") == 0 || strcmp(attribute_name, "out") == 0)
-      {
-        if ((i+1) >= argc)
-        {
-          eprint("ERROR: '%s' needs at least 1 argument: values\n", argv[i]);
-          return FALSE;
-        }
-
-        int i_in = i;
-        int j = 0;
-        *argv[i]='\0';
-        i+=1;
-        F64 v;
-        F64 values[64];
-        do
-        {
-          if (sscanf(argv[i], "%lf", &v) != 1)
-          {
-            eprint("ERROR: '%s' needs at least 1 argument: values but '%s' is no valid value\n", argv[i_in], argv[i]);
-            return FALSE;
-          }
-
-          if (j > 63)
-          {
-            eprint("ERROR: operator 'in' and 'out' cannot have more than 64 arguments\n");
-            return FALSE;
-          }
-
-          values[j] = v;
-          *argv[i]='\0';
-          i+=1;
-          j+=1;
-        } while ((i < argc) && ('0' <= *argv[i]) && (*argv[i] <= '9'));
-        i-=1;
-
-        if (strcmp(attribute_name, "in") == 0)
-          add_criterion(new LASRcriterionKeepIn(operator_name, values, j+1));
-        else
-          add_criterion(new LASRcriterionKeepOut(operator_name, values, j+1));
-
-        *argv[i]='\0';
-      }
     }
     else if (strncmp(argv[i],"-keep_", 6) == 0)
     {

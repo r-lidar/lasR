@@ -52,7 +52,7 @@ bool LASRsvd::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
-  if (mode == PUREKNN) r = F64_MAX;
+  if (mode == PUREKNN) r = std::numeric_limits<double>::max();
 
   // Parse feature = "*"
   std::string all = "CEapslocein";
@@ -81,52 +81,81 @@ bool LASRsvd::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsvd::process(LAS*& las)
+bool LASRsvd::process(PointCloud*& las)
 {
-  int nattr_before_geometry = las->header->number_attributes;
+  std::vector<Attribute> attributes;
+  std::vector<AttributeAccessor> writers;
 
   if (ft_C)
   {
-    las->add_attribute(LAS::FLOAT, "coeff00", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff01", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff02", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff10", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff11", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff12", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff20", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff21", "Principal component coefficient", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "coeff22", "Principal component coefficient", 1, 0, false);
+    attributes.push_back(Attribute("coeff00", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
+    attributes.push_back(Attribute("coeff01", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
+    attributes.push_back(Attribute("coeff02", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
+    attributes.push_back(Attribute("coeff10", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
+    attributes.push_back(Attribute("coeff11", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
+    attributes.push_back(Attribute("coeff12", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
+    attributes.push_back(Attribute("coeff20", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
+    attributes.push_back(Attribute("coeff21", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
+    attributes.push_back(Attribute("coeff22", AttributeType::FLOAT, 1, 0, "Principal component coefficient"));
   }
 
   if (ft_E)
   {
-    las->add_attribute(LAS::FLOAT, "lambda1", "Eigen value 1", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "lambda2", "Eigen value 2", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "lambda3", "Eigen value 3", 1, 0, false);
+    attributes.push_back(Attribute("lambda1", AttributeType::FLOAT, 1, 0, "Eigen value 1"));
+    attributes.push_back(Attribute("lambda2", AttributeType::FLOAT, 1, 0, "Eigen value 2"));
+    attributes.push_back(Attribute("lambda3", AttributeType::FLOAT, 1, 0, "Eigen value 3"));
   }
 
-  if (ft_a) las->add_attribute(LAS::FLOAT, "anisotropy", "anisotropy", 1, 0, false);
-  if (ft_p) las->add_attribute(LAS::FLOAT, "planarity", "planarity", 1, 0, false);
-  if (ft_s) las->add_attribute(LAS::FLOAT, "sphericity", "sphericity", 1, 0, false);
-  if (ft_l) las->add_attribute(LAS::FLOAT, "linearity", "linearity", 1, 0, false);
-  if (ft_o) las->add_attribute(LAS::FLOAT, "omnivariance", "omnivariance", 1, 0, false);
-  if (ft_c) las->add_attribute(LAS::FLOAT, "curvature", "curvature", 1, 0, false);
-  if (ft_e) las->add_attribute(LAS::FLOAT, "eigensum", "sum of eigen values", 1, 0, false);
-  if (ft_i) las->add_attribute(LAS::FLOAT, "angle", "azimutal angle (degree)", 1, 0, false);
+  if (ft_a) attributes.push_back(Attribute("anisotropy", AttributeType::FLOAT, 1, 0, "anisotropy"));
+  if (ft_p) attributes.push_back(Attribute("planarity", AttributeType::FLOAT, 1, 0, "planarity"));
+  if (ft_s) attributes.push_back(Attribute("sphericity", AttributeType::FLOAT, 1, 0, "sphericity"));
+  if (ft_l) attributes.push_back(Attribute("linearity", AttributeType::FLOAT, 1, 0, "linearity"));
+  if (ft_o) attributes.push_back(Attribute("omnivariance", AttributeType::FLOAT, 1, 0, "omnivariance"));
+  if (ft_c) attributes.push_back(Attribute("curvature", AttributeType::FLOAT, 1, 0, "curvature"));
+  if (ft_e) attributes.push_back(Attribute("eigensum", AttributeType::FLOAT, 1, 0, "sum of eigen values"));
+  if (ft_i) attributes.push_back(Attribute("angle", AttributeType::FLOAT, 1, 0, "azimutal angle (degree)"));
   if (ft_n)
   {
-    las->add_attribute(LAS::FLOAT, "normalX", "x component of normal vector", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "normalY", "y component of normal vector", 1, 0, false);
-    las->add_attribute(LAS::FLOAT, "normalZ", "z component of normal vector", 1, 0, false);
+    attributes.push_back(Attribute("normalX", AttributeType::FLOAT, 1, 0, "x component of normal vector"));
+    attributes.push_back(Attribute("normalY", AttributeType::FLOAT, 1, 0, "y component of normal vector"));
+    attributes.push_back(Attribute("normalZ", AttributeType::FLOAT, 1, 0, "z component of normal vector"));
   }
 
-  las->realloc_point_and_buffer();
+  las->add_attributes(attributes);
 
   progress->reset();
   progress->set_total(las->npoints);
   progress->set_prefix("SVD/PCA");
   progress->set_ncpu(ncpu);
   progress->show();
+
+  AttributeAccessor set_coeff00("coeff00");
+  AttributeAccessor set_coeff01("coeff01");
+  AttributeAccessor set_coeff02("coeff02");
+  AttributeAccessor set_coeff10("coeff10");
+  AttributeAccessor set_coeff11("coeff11");
+  AttributeAccessor set_coeff12("coeff12");
+  AttributeAccessor set_coeff20("coeff20");
+  AttributeAccessor set_coeff21("coeff21");
+  AttributeAccessor set_coeff22("coeff22");
+
+  AttributeAccessor set_lambda1("lambda1");
+  AttributeAccessor set_lambda2("lambda2");
+  AttributeAccessor set_lambda3("lambda3");
+
+  AttributeAccessor set_anisotropy("anisotropy");
+  AttributeAccessor set_planarity("planarity");
+  AttributeAccessor set_sphericity("sphericity");
+  AttributeAccessor set_linearity("linearity");
+  AttributeAccessor set_omnivariance("omnivariance");
+  AttributeAccessor set_curvature("curvature");
+  AttributeAccessor set_eigensum("eigensum");
+  AttributeAccessor set_angle("angle");
+
+  AttributeAccessor set_normalX("normalX");
+  AttributeAccessor set_normalY("normalY");
+  AttributeAccessor set_normalZ("normalZ");
+
 
   // The next for loop is at the level a nested parallel region. Printing the progress bar
   // is not thread safe. We first check that we are in outer thread 0
@@ -137,19 +166,20 @@ bool LASRsvd::process(LAS*& las)
   {
     if (progress->interrupted()) continue;
 
-    PointLAS p;
-    if (!las->get_point(i, p)) continue;
+    Point p;
+    p.set_schema(&las->header->schema);
 
-    std::vector<PointLAS> pts;
+    if (!las->get_point(i, &p)) continue;
+
+    std::vector<Point> pts;
     if (mode == PURERADIUS)
     {
-        Sphere s(p.x, p.y, p.z, r);
-        las->query(&s, pts, &lasfilter);
+        Sphere s(p.get_x(), p.get_y(), p.get_z(), r);
+        las->query(&s, pts, &pointfilter);
     }
     else
     {
-        double xyz[3] = {p.x, p.y, p.z};
-        las->knn(xyz, k, r, pts, &lasfilter);
+        las->knn(p, k, r, pts, &pointfilter);
     }
 
     Eigen::MatrixXd A(pts.size(), 3);
@@ -159,9 +189,9 @@ bool LASRsvd::process(LAS*& las)
     // Fill the matrix A with points
     for (size_t k = 0; k < pts.size(); ++k)
     {
-      A(k, 0) = pts[k].x;
-      A(k, 1) = pts[k].y;
-      A(k, 2) = pts[k].z;
+      A(k, 0) = pts[k].get_x();
+      A(k, 1) = pts[k].get_y();
+      A(k, 2) = pts[k].get_z();
     }
 
     // Compute the mean
@@ -204,45 +234,42 @@ bool LASRsvd::process(LAS*& las)
 
     #pragma omp critical
     {
-      int attr_index = nattr_before_geometry;
       las->seek(i);
 
       if (ft_C)
       {
-        las->point.set_attribute_as_float(attr_index, coeff00); attr_index++;
-        las->point.set_attribute_as_float(attr_index, coeff01); attr_index++;
-        las->point.set_attribute_as_float(attr_index, coeff02); attr_index++;
-        las->point.set_attribute_as_float(attr_index, coeff10); attr_index++;
-        las->point.set_attribute_as_float(attr_index, coeff11); attr_index++;
-        las->point.set_attribute_as_float(attr_index, coeff12); attr_index++;
-        las->point.set_attribute_as_float(attr_index, coeff20); attr_index++;
-        las->point.set_attribute_as_float(attr_index, coeff21); attr_index++;
-        las->point.set_attribute_as_float(attr_index, coeff22); attr_index++;
+        set_coeff00(&las->point, coeff00);
+        set_coeff01(&las->point, coeff01);
+        set_coeff02(&las->point, coeff02);
+        set_coeff10(&las->point, coeff10);
+        set_coeff11(&las->point, coeff11);
+        set_coeff12(&las->point, coeff12);
+        set_coeff20(&las->point, coeff20);
+        set_coeff21(&las->point, coeff21);
+        set_coeff22(&las->point, coeff22);
       }
 
       if (ft_E)
       {
-        las->point.set_attribute_as_float(attr_index, eigen_largest); attr_index++;
-        las->point.set_attribute_as_float(attr_index, eigen_medium); attr_index++;
-        las->point.set_attribute_as_float(attr_index, eigen_smallest); attr_index++;
+        set_lambda1(&las->point, eigen_largest);
+        set_lambda2(&las->point, eigen_medium);
+        set_lambda3(&las->point, eigen_smallest);
       }
 
-      if (ft_a) { las->point.set_attribute_as_float(attr_index, anisotropy); attr_index++; }
-      if (ft_p) { las->point.set_attribute_as_float(attr_index, planarity); attr_index++; }
-      if (ft_s) { las->point.set_attribute_as_float(attr_index, sphericity); attr_index++; }
-      if (ft_l) { las->point.set_attribute_as_float(attr_index, linearity); attr_index++; }
-      if (ft_o) { las->point.set_attribute_as_float(attr_index, omnivariance); attr_index++; }
-      if (ft_c) { las->point.set_attribute_as_float(attr_index, curvature); attr_index++; }
-      if (ft_e) { las->point.set_attribute_as_float(attr_index, eigen_sum); attr_index++; }
-      if (ft_i) { las->point.set_attribute_as_float(attr_index, angle); attr_index++; }
+      if (ft_a) { set_anisotropy(&las->point, anisotropy); }
+      if (ft_p) { set_planarity(&las->point, planarity); }
+      if (ft_s) { set_sphericity(&las->point, sphericity); }
+      if (ft_l) { set_linearity(&las->point, linearity); }
+      if (ft_o) { set_omnivariance(&las->point, omnivariance); }
+      if (ft_c) { set_curvature(&las->point, curvature); }
+      if (ft_e) { set_eigensum(&las->point, eigen_sum); }
+      if (ft_i) { set_angle(&las->point, angle); }
       if (ft_n)
       {
-        las->point.set_attribute_as_float(attr_index, nx); attr_index++;
-        las->point.set_attribute_as_float(attr_index, ny); attr_index++;
-        las->point.set_attribute_as_float(attr_index, nz); attr_index++;
+        set_normalX(&las->point, nx);
+        set_normalY(&las->point, ny);
+        set_normalZ(&las->point, nz);
       }
-
-      las->update_point();
 
       if (main_thread)
       {

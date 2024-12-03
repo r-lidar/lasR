@@ -12,13 +12,11 @@
 #include <vector>
 #include <filesystem>
 
-class LASheader;
-class LASreadOpener;
-class LASkdtreeRectangles;
-
 enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE};
 
-class LAScatalogIndex
+class Header;
+
+class FileCollectionIndex
 {
 private:
   std::vector<Rectangle> bboxes;
@@ -30,11 +28,11 @@ public:
 };
 
 
-class LAScatalog
+class FileCollection
 {
 public:
-  LAScatalog();
-  ~LAScatalog();
+  FileCollection();
+  ~FileCollection();
   bool read(const std::vector<std::string>& files, bool progress = false);
   bool write_vpc(const std::string& file, const CRS& crs, bool absolute_path, bool use_gpstime);
   bool is_source_vpc() { return use_vpc; };
@@ -61,7 +59,7 @@ public:
   bool file_exists(std::string& file);
 
   #ifdef USING_R
-  // Special to build a LAScatalog from a data.frame in R
+  // Special to build a FileCollection from a data.frame in R
   void add_bbox(double xmin, double ymin, double xmax, double ymax, int npoints)
   {
     this->npoints.push_back(npoints);
@@ -75,7 +73,7 @@ private:
   void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess = false);
   void add_wkt(const std::string& wkt);
   void add_epsg(int epsg);
-  void add_crs(const LASheader* header);
+  void add_crs(const Header* header);
   bool get_chunk_regular(int index, Chunk& chunk) const;
   bool get_chunk_with_query(int index, Chunk& chunk) const;
   PathType parse_path(const std::string& path);
@@ -115,7 +113,7 @@ private:
   std::vector<std::pair<double, double>> zlim;
 
   // queries, partial read
-  LAScatalogIndex laskdtree;
+  FileCollectionIndex file_index;
   std::vector<Shape*> queries;
 };
 

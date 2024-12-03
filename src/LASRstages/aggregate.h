@@ -10,7 +10,7 @@ class LASRaggregate: public StageRaster
 {
 public:
   LASRaggregate();
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   void clear(bool last) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
   bool set_parameters(const nlohmann::json&) override;

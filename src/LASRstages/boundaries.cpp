@@ -12,7 +12,7 @@ bool LASRboundaries::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRboundaries::process(LASheader*& header)
+bool LASRboundaries::process(Header*& header)
 {
   ASSERT_VALID_POINTER(header);
 
@@ -20,20 +20,10 @@ bool LASRboundaries::process(LASheader*& header)
 
   double xmin, ymin, xmax, ymax;
 
-  if (header->vlr_lasoriginal)
-  {
-    xmin = header->vlr_lasoriginal->min_x;
-    ymin = header->vlr_lasoriginal->min_y;
-    xmax = header->vlr_lasoriginal->max_x;
-    ymax = header->vlr_lasoriginal->max_y;
-  }
-  else
-  {
-    xmin = header->min_x;
-    ymin = header->min_y;
-    xmax = header->max_x;
-    ymax = header->max_y;
-  }
+  xmin = header->min_x + buffer;
+  ymin = header->min_y + buffer;
+  xmax = header->max_x - buffer;
+  ymax = header->max_y - buffer;
 
   PolygonXY bbox;
   bbox.push_back({xmin, ymin});
@@ -45,7 +35,7 @@ bool LASRboundaries::process(LASheader*& header)
   return true;
 }
 
-bool LASRboundaries::process(LAS*& las)
+bool LASRboundaries::process(PointCloud*& las)
 {
   ASSERT_VALID_POINTER(las);
 

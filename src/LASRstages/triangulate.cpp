@@ -27,7 +27,7 @@ bool LASRtriangulate::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRtriangulate::process(LAS*& las)
+bool LASRtriangulate::process(PointCloud*& las)
 {
   this->las = las;
 
@@ -38,11 +38,11 @@ bool LASRtriangulate::process(LAS*& las)
 
   std::vector<double> coords;
 
-  LASpoint* p;
+  Point* p;
   while (las->read_point())
   {
     p = &las->point;
-    if (lasfilter.filter(p)) continue;
+    if (pointfilter.filter(p)) continue;
     coords.push_back(p->get_x());
     coords.push_back(p->get_y());
     index_map.push_back(las->current_point);
@@ -88,18 +88,25 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
     if (progress->interrupted()) continue;
 
     int id;
-    PointLAS A,B,C;
+    Point A,B,C;
+    A.set_schema(&las->header->schema);
+    B.set_schema(&las->header->schema);
+    C.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
-    las->get_point(id, A, nullptr, &accessor);
+    las->get_point(id, &A);
 
     id = index_map[d->triangles[i+1]];
-    las->get_point(id, B, nullptr, &accessor);
+    las->get_point(id, &B);
 
     id = index_map[d->triangles[i+2]];
-    las->get_point(id, C, nullptr, &accessor);
+    las->get_point(id, &C);
 
-    TriangleXYZ triangle(A, B, C);
+    PointXYZ a(A.get_x(), A.get_y(), accessor(&A));
+    PointXYZ b(B.get_x(), B.get_y(), accessor(&B));
+    PointXYZ c(C.get_x(), C.get_y(), accessor(&C));
+
+    TriangleXYZ triangle(a, b, c);
 
     // Interpolate in this triangle if the longest edge fulfill requirements
     bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
@@ -131,13 +138,15 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
       }
       else
       {
-        std::vector<PointLAS> points;
-        las->query(&triangle, points, nullptr, &accessor);
+        std::vector<Point> points;
+        las->query(&triangle, points);
 
-        for (auto& p : points)
+        for (auto& pt : points)
         {
+          PointXYZ p(pt.get_x(), pt.get_y());
           triangle.linear_interpolation(p);
-          res[p.FID] = p.z;
+          int index = las->get_index(&pt);
+          res[index] = p.z;
         }
       }
     }
@@ -182,21 +191,21 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
     if (progress->interrupted()) continue;
 
     int id;
-    double xyz[3];
+    Point a, b, c;
+    a.set_schema(&las->header->schema);
+    b.set_schema(&las->header->schema);
+    c.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
-    las->get_xyz(id, xyz);
-    PointXYZ A({xyz[0], xyz[1], xyz[2]});
+    las->get_point(id, &a);
 
     id = index_map[d->triangles[i+1]];
-    las->get_xyz(id, xyz);
-    PointXYZ B({xyz[0], xyz[1], xyz[2]});
+    las->get_point(id, &b);
 
     id = index_map[d->triangles[i+2]];
-    las->get_xyz(id, xyz);
-    PointXYZ C({xyz[0], xyz[1], xyz[2]});
+    las->get_point(id, &c);
 
-    TriangleXYZ triangle(A, B, C);
+    TriangleXYZ triangle(a, b, c);
 
     bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
     if (trim == 0 || keep_triangle)
@@ -248,16 +257,19 @@ bool LASRtriangulate::write()
   for (unsigned int i = 0 ; i < d->triangles.size(); i+=3)
   {
     int id;
-    PointLAS A,B,C;
+    Point A,B,C;
+    A.set_schema(&las->header->schema);
+    B.set_schema(&las->header->schema);
+    C.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
-    las->get_point(id, A, nullptr, &accessor);
+    las->get_point(id, &A);
 
     id = index_map[d->triangles[i+1]];
-    las->get_point(id, B, nullptr, &accessor);
+    las->get_point(id, &B);
 
     id = index_map[d->triangles[i+2]];
-    las->get_point(id, C, nullptr, &accessor);
+    las->get_point(id, &C);
 
     TriangleXYZ triangle(A, B, C);
 

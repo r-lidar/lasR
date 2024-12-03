@@ -1,6 +1,6 @@
 #include "pipeline.h"
-#include "LAS.h"
-#include "LAScatalog.h"
+#include "PointCloud.h"
+#include "FileCollection.h"
 #include "Stage.h"
 #include "Progress.h"
 #include "macros.h"
@@ -23,6 +23,8 @@ Pipeline::Pipeline()
   point = nullptr;
   las = nullptr;
   catalog = nullptr;
+
+  point_cloud_ownership_transfered = false;
 }
 
 // The copy constructor is used for multi-threading. It creates a copy of the pipeline
@@ -44,6 +46,8 @@ Pipeline::Pipeline(const Pipeline& other)
   las = nullptr;
 
   catalog = other.catalog;
+
+  point_cloud_ownership_transfered = other.point_cloud_ownership_transfered;
 
   for (const auto& stage : other.pipeline)
   {
@@ -74,7 +78,7 @@ Pipeline::~Pipeline()
 
 bool Pipeline::pre_run()
 {
-  LAScatalog* ctg = catalog.get();
+  FileCollection* ctg = catalog.get();
   for (auto&& stage : pipeline)
   {
     bool success = stage->process(ctg);
@@ -139,7 +143,6 @@ bool Pipeline::run_streamed()
       // There is no point to read
       uint64_t npoints = 0;
       npoints += header->number_of_point_records;
-      npoints += header->extended_number_of_point_records;
       if (npoints == 0) break;
 
       // Some stages need the header to get initialized (write_las is the only one)
@@ -234,7 +237,6 @@ bool Pipeline::run_loaded()
     // There is no point to read
     uint64_t npoints = 0;
     npoints += header->number_of_point_records;
-    npoints += header->extended_number_of_point_records;
     if (npoints == 0)
     {
       order.pop_back();
@@ -473,7 +475,7 @@ void Pipeline::clear(bool last)
 
 void Pipeline::clean()
 {
-  delete las;
+  if (!point_cloud_ownership_transfered) delete las;
   header = nullptr;
   point = nullptr;
   las = nullptr;

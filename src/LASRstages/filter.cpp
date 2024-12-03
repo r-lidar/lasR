@@ -1,24 +1,24 @@
 #include "filter.h"
 
-bool LASRfilter::process(LASpoint*& p)
+bool LASRfilter::process(Point*& p)
 {
-  if (lasfilter.filter(p))
-    p->set_withheld_flag(1);
+  if (pointfilter.filter(p))
+    p->set_deleted();
 
   return true;
 }
 
-bool LASRfilter::process(LAS*& las)
+bool LASRfilter::process(PointCloud*& las)
 {
   int n = 0;
-  LASpoint* p;
+  Point* p;
   while (las->read_point())
   {
     p = &las->point;
     process(p);
-    if (p->get_withheld_flag() != 0)
+    if (p->get_deleted())
     {
-      las->update_point();
+      las->delete_point();
       n++;
     }
   }
@@ -28,11 +28,11 @@ bool LASRfilter::process(LAS*& las)
   // In lasR, deleted points are not actually deleted. They are withheled, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
-  double ratio = (double)n/(double)las->npoints;
+  /*double ratio = (double)n/(double)las->npoints;
   if (ratio > 1/3)
   {
     if (!las->delete_withheld()) return false;
-  }
+  }*/
 
   return true;
 }
@@ -49,17 +49,17 @@ bool LASRfiltergrid::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRfiltergrid::process(LAS*& las)
+bool LASRfiltergrid::process(PointCloud*& las)
 {
   Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, res);
   std::vector<PointLAS> selected_points;
   selected_points.resize(grid.get_ncells());
-  double v = (op == MIN) ? F64_MAX : F64_MIN;
+  double v = (op == MIN) ? std::numeric_limits<double>::max() : -std::numeric_limits<double>::max();
   for (auto& seed : selected_points) seed.z = v;
 
   while (las->read_point())
   {
-    if (lasfilter.filter(&las->point)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     double x = las->point.get_x();
     double y = las->point.get_y();
@@ -91,18 +91,18 @@ bool LASRfiltergrid::process(LAS*& las)
 
   while (las->read_point())
   {
-    las->point.set_withheld_flag(!keep[las->current_point]);
-    las->update_point();
+    if (!keep[las->current_point])
+      las->delete_point();
   }
 
   // In lasR, deleted points are not actually deleted. They are withheled, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
-  double ratio = (double)n/(double)las->npoints;
+  /*double ratio = (double)n/(double)las->npoints;
   if (ratio > 1/3)
   {
     if (!las->delete_withheld()) return false;
-  }
+  }*/
 
   return true;
 }

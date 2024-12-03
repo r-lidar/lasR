@@ -54,7 +54,7 @@ exec = function(pipeline, on, with = NULL, ...)
   }
   else if (methods::is(pipeline, "LASRpipeline"))
   {
-    # A reader stage is mandatory. It is allowed to omit it the engine adds it.
+    # A reader stage is mandatory. It is allowed to omit it, the engine adds it.
     if (is_reader_missing(pipeline))
     {
       pipeline = reader_las() + pipeline
@@ -91,6 +91,7 @@ exec = function(pipeline, on, with = NULL, ...)
       pipeline[[1]]$dataframe = on
       pipeline[[1]]$crs = crs
       pipeline[[1]]$files = NULL
+      pipeline[[1]]$type = "dataframe"
 
       ind = get_reader_index(pipeline)
       pipeline[[ind]]$algoname = "reader_dataframe"
@@ -107,12 +108,26 @@ exec = function(pipeline, on, with = NULL, ...)
       on <- on$filename
     }
 
+    if (methods::is(on, "lasrcloud"))
+    {
+      pipeline[[1]]$files = NULL
+      pipeline[[1]]$externalptr = on[[1]]
+      pipeline[[1]]$type = "externalptr"
+
+      ind = get_reader_index(pipeline)
+      pipeline[[ind]]$algoname = "reader_externalptr"
+      pipeline[[ind]]$externalptr = on[[1]]
+
+      on_is_valid = TRUE
+    }
+
     # If 'on' is character, this is the default behavior.
     if (is.character(on))
     {
       pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
       pipeline$build_catalog$buffer <- with$buffer
       pipeline$build_catalog$noprocess <- with$noprocess
+      pipeline$build_catalog$type = "files"
 
       # 'noprocess' is a hidden and not documented options to be compatible with LAScatalog$processed
       if (!is.null(with$noprocess))
@@ -411,12 +426,13 @@ write_json = function(config)
       stage$call <- address(stage$call)
       stage$env <- address(stage$env)
     }
-    else if (stage$algoname == "reader_dataframe" || stage$algoname == "build_catalog")
+    else if (stage$algoname == "reader_dataframe" || stage$algoname == "build_catalog" || stage$algoname == "reader_externalptr")
     {
       if (!is.null(stage$dataframe))
-      {
         stage$dataframe = address(stage$dataframe)
-      }
+
+      if (!is.null(stage$externalptr))
+        stage$externalptr = address(stage$externalptr)
     }
 
     config$pipeline[[i]] <- stage

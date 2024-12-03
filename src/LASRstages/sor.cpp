@@ -1,7 +1,7 @@
 #include "sor.h"
 #include "Grid.h"
 
-bool LASRsor::process(LAS*& las)
+bool LASRsor::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_total(las->npoints);
@@ -20,15 +20,16 @@ bool LASRsor::process(LAS*& las)
     (*progress)++;
     if (progress->interrupted()) continue;
 
-    PointLAS p;
-    if (!las->get_point(i, p)) continue;
+    Point p;
+    p.set_schema(&las->header->schema);
 
-    std::vector<PointLAS> pts;
-    double xyz[3] = {p.x, p.y, p.z};
-    las->knn(xyz, k+1, F64_MAX, pts, &lasfilter);
+    if (!las->get_point(i, &p)) continue;
+
+    std::vector<Point> pts;
+    las->knn(p, k+1, std::numeric_limits<double>::max(), pts, &pointfilter);
 
     double dsum = 0;
-    for (size_t i = 1; i < pts.size(); ++i) dsum += std::sqrt(std::pow(p.x - pts[i].x, 2) + std::pow(p.y - pts[i].y, 2) + std::pow(p.z - pts[i].z, 2));
+    for (size_t i = 1; i < pts.size(); ++i) dsum += std::sqrt(std::pow(p.get_x() - pts[i].get_x(), 2) + std::pow(p.get_y() - pts[i].get_y(), 2) + std::pow(p.get_z() - pts[i].get_z(), 2));
     double dmean =  dsum / (pts.size()-1);
     distances[i] = dmean;
 
@@ -45,14 +46,15 @@ bool LASRsor::process(LAS*& las)
   double dmean = m0;
   double dstd = std::sqrt(m2/(n-1));
 
+  AttributeAccessor set_classification("Classification");
+
   while (las->read_point())
   {
     int i = las->current_point;
 
     if (distances[i] > dmean + m*dstd)
     {
-      las->point.set_classification(classification);
-      las->update_point();
+      set_classification(&las->point, classification);
     }
   }
 

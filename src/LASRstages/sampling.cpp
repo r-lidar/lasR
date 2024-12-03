@@ -1,6 +1,5 @@
 #include "sampling.h"
 #include "Grid.h"
-#include "Accessors.h"
 #include "openmp.h"
 
 #include <unordered_map>
@@ -24,7 +23,7 @@ bool LASRsamplingpoisson::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingpoisson::process(LAS*& las)
+bool LASRsamplingpoisson::process(PointCloud*& las)
 {
   double r_square = distance*distance;
   double res = distance; // Cell size for the grid
@@ -72,10 +71,10 @@ bool LASRsamplingpoisson::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->point.get_withheld_flag() != 0) continue;
-    if (lasfilter.filter(&las->point))
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point))
     {
-      //las->remove_point();
+      //las->delete_point();
       continue;
     }
 
@@ -184,7 +183,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
     }
     else
     {
-      las->remove_point();
+      las->point.set_deleted();
     }
 
     (*progress)++;
@@ -201,12 +200,12 @@ bool LASRsamplingpoisson::process(LAS*& las)
   // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
-  double ratio = (double)n/(double)las->npoints;
+  /*double ratio = (double)n/(double)las->npoints;
   if (ratio > 1/3)
   {
-    if (!las->delete_withheld()) return false;
+    if (!las->delete_deleted()) return false;
     if (verbose) print(" memory layout reallocated\n");
-  }
+  }*/
 
   return true;
 }
@@ -219,7 +218,7 @@ bool LASRsamplingvoxels::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingvoxels::process(LAS*& las)
+bool LASRsamplingvoxels::process(PointCloud*& las)
 {
   std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
@@ -263,10 +262,10 @@ bool LASRsamplingvoxels::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->point.get_withheld_flag() != 0) continue;
-    if (lasfilter.filter(&las->point))
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point))
     {
-      //las->remove_point();
+      //las->delete_point();
       continue;
     }
 
@@ -286,7 +285,7 @@ bool LASRsamplingvoxels::process(LAS*& las)
       }
       else
       {
-        las->remove_point();
+        las->delete_point();
       }
     }
     else
@@ -294,7 +293,7 @@ bool LASRsamplingvoxels::process(LAS*& las)
       if (uregistry.insert(key).second)
         n++;
       else
-        las->remove_point();
+        las->delete_point();
     }
 
     (*progress)++;
@@ -311,12 +310,12 @@ bool LASRsamplingvoxels::process(LAS*& las)
   // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
-  double ratio = (double)n/(double)las->npoints;
+  /*double ratio = (double)n/(double)las->npoints;
   if (ratio > 1/3)
   {
     if (!las->delete_withheld()) return false;
     if (verbose) print(" memory layout reallocated\n");
-  }
+  }*/
 
   return true;
 }
@@ -338,7 +337,7 @@ bool LASRsamplingpixels::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingpixels::process(LAS*& las)
+bool LASRsamplingpixels::process(PointCloud*& las)
 {
   if (method == "random") return random(las);
   if (method == "max") return highest(las);
@@ -346,7 +345,7 @@ bool LASRsamplingpixels::process(LAS*& las)
   return true;
 }
 
-bool LASRsamplingpixels::random(LAS*& las)
+bool LASRsamplingpixels::random(PointCloud*& las)
 {
   std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
@@ -377,8 +376,8 @@ bool LASRsamplingpixels::random(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->point.get_withheld_flag() != 0) continue;
-    if (lasfilter.filter(&las->point)) continue;
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     // Pixel of this point
     int key = grid.cell_from_xy(las->point.get_x(), las->point.get_y());
@@ -393,7 +392,7 @@ bool LASRsamplingpixels::random(LAS*& las)
       }
       else
       {
-        las->remove_point();
+        las->delete_point();
       }
     }
     else
@@ -401,7 +400,7 @@ bool LASRsamplingpixels::random(LAS*& las)
       if (uregistry.insert(key).second)
         n++;
       else
-        las->remove_point();
+        las->delete_point();
     }
 
     (*progress)++;
@@ -418,17 +417,17 @@ bool LASRsamplingpixels::random(LAS*& las)
   // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
-  double ratio = (double)n/(double)las->npoints;
+  /*double ratio = (double)n/(double)las->npoints;
   if (ratio > 1/3)
   {
     if (!las->delete_withheld()) return false;
     if (verbose) print(" memory layout reallocated\n");
-  }
+  }*/
 
   return true;
 }
 
-bool LASRsamplingpixels::highest(LAS*& las, bool high)
+bool LASRsamplingpixels::highest(PointCloud*& las, bool high)
 {
   int n = las->npoints;
 
@@ -460,7 +459,7 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
 
   while (las->read_point())
   {
-    if (lasfilter.filter(&las->point)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     double x = las->point.get_x();
     double y = las->point.get_y();
@@ -473,14 +472,14 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
 
   while (las->read_point())
   {
-    if (lasfilter.filter(&las->point)) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     double x = las->point.get_x();
     double y = las->point.get_y();
     int cell = grid.cell_from_xy(x,y);
 
     if (registry[cell].first != las->current_point)
-      las->remove_point();
+      las->point.set_deleted();
   }
 
   las->update_header();
@@ -490,12 +489,12 @@ bool LASRsamplingpixels::highest(LAS*& las, bool high)
   // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
   // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
   // actually remove the points. This will save some computation later.
-  double ratio = (double)las->npoints/(double)n;
+  /*double ratio = (double)las->npoints/(double)n;
   if (ratio > 1/3)
   {
-    if (!las->delete_withheld()) return false;
+    if (!las->delete_deleted()) return false;
     if (verbose) print(" memory layout reallocated\n");
-  }
+  }*/
 
   return true;
 }

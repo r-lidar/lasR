@@ -10,7 +10,7 @@ class LASRcallback : public Stage
 {
 public:
   LASRcallback();
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   SEXP to_R() override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "callback";  }
