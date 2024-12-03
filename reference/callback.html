@@ -19,7 +19,7 @@ online tutorial."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.12.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,12 +111,11 @@ is the only stage that allows direct interaction with the point cloud by <strong
 temporarily into a <code>data.frame</code> to apply a user-defined function.<br><br><strong>expose:</strong> the 'expose' argument specifies the data that will actually be exposed to R. For example,
 'xyzia' means that the x, y, and z coordinates, the intensity, and the scan angle will be exposed.
 The supported entries are t - gpstime, a - scan angle, i - intensity, n - number of returns,
-r - return number, c - classification, s - synthetic flag, k - keypoint flag, w - withheld flag,
-o - overlap flag (format 6+), u - user data, p - point source ID, e - edge of flight line flag,
-d - direction of scan flag, R - red channel of RGB color, G - green channel of RGB color,
-B - blue channel of RGB color, N - near-infrared channel, C - scanner channel (format 6+)
-Also numbers from 1 to 9 for the extra bytes data numbers 1 to 9. 'E' enables all extra bytes to be
-loaded.  '*' is the wildcard that enables everything to be exposed from the LAS file.</p>
+r - return number, c - classification, u - user data, p - point source ID, e - edge of flight line flag,
+R - red channel of RGB color, G - green channel of RGB color, B - blue channel of RGB color,
+N - near-infrared channel, C - scanner channel (format 6+)
+Also numbers from 1 to 9 for the extra attributes data numbers 1 to 9. 'E' enables all extra attribute to be
+loaded. '*' is the wildcard that enables everything to be exposed from the point cloud</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -163,13 +162,13 @@ loaded.  '*' is the wildcard that enables everything to be exposed from the LAS 
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">las</span> <span class="op">&lt;-</span> <span class="fu">read_las</span><span class="op">(</span><span class="va">ans</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">las</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          X       Y        Z Intensity</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 273357.1 5274360 806.5340       137</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 273357.2 5274359 806.5635        72</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 273357.2 5274358 806.0248       140</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 273357.2 5274510 809.6303        57</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 273357.2 5274509 809.3880       133</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 273357.2 5274508 809.4847         7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          X         Y        Z Intensity</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 273357.1 -94349.14 806.5340       137</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 273357.2 -94349.88 806.5635        72</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 273357.2 -94351.45 806.0248       140</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 273357.2 -94199.37 809.6303        57</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 273357.2 -94200.14 809.3880       133</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 273357.2 -94200.89 809.4847         7</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

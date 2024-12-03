@@ -36,7 +36,9 @@
 <url><loc>https://r-lidar.github.io/lasR/reference/metric_engine.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/multithreading.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/pit_fill.html</loc></url>
+<url><loc>https://r-lidar.github.io/lasR/reference/print.lasrcloud.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/rasterize.html</loc></url>
+<url><loc>https://r-lidar.github.io/lasR/reference/read_cloud.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/reader_las.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/region_growing.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/sampling.html</loc></url>

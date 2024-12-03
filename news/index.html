@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.12.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,33 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.13.0" id="lasr-0130">lasR 0.13.0<a class="anchor" aria-label="anchor" href="#lasr-0130"></a></h2>
+<p><code>lasR 0.13.0</code> is a massive rewrite of the internal engine to conform to third-party libraries’ licenses. I’m expecting users to encounter some bugs in the near future. However, all the unit tests are passing.</p>
+<div class="section level4">
+<h4 id="breaking-changes-0-13-0">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-13-0"></a></h4>
+<ul><li>It is no longer possible to use <code>LASlib</code> filters such as <code>-drop_z_above 5</code> in the stages (except the reader stage). Users must use conditional commands introduced in 0.12.0, such as <code>"Z &gt; 5"</code>.</li>
+<li>The reader no longer reads the bit flags from the LAS/LAZ files, as they are never used anyway.</li>
+<li>
+<code><a href="../reference/sort_points.html">sort_points()</a></code> no longer sorts by GPS time and return number. It performs a spatial sort only, and the parameter <code>spatial</code> has been removed.</li>
+<li>
+<code><a href="../reference/classify_with_csf.html">classify_with_csf()</a></code> no longer uses the last return only.</li>
+<li>
+<code><a href="../reference/write_las.html">write_las()</a></code> no longer preserves VLR and EVLR. This will be fixed later.</li>
+<li>There are likely other changes as I rewrote thousands of lines of code.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="new-features-0-13-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-13-0"></a></h4>
+<ul><li><p>New: Ability to pre-read a point cloud in R using an external pointer. See <code><a href="../reference/read_cloud.html">read_cloud()</a></code>.</p></li>
+<li>
+<p>New: Stages can now be applied one by one to a point cloud loaded in memory.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span>
+<span><span class="va">las</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_cloud.html">read_cloud</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
+<span><span class="va">u</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="fu"><a href="../reference/chm.html">chm</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>, on <span class="op">=</span> <span class="va">las</span><span class="op">)</span></span></code></pre></div>
+</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.12.1" id="lasr-0121">lasR 0.12.1<a class="anchor" aria-label="anchor" href="#lasr-0121"></a></h2>
 <ul><li>Fix: critical bug on windows <a href="https://github.com/r-lidar/lasR/issues/96" class="external-link">#96</a></li>
 </ul></div>
@@ -53,19 +80,19 @@
 <h2 class="pkg-version" data-toc-text="0.12.0" id="lasr-0120">lasR 0.12.0<a class="anchor" aria-label="anchor" href="#lasr-0120"></a></h2>
 <ul><li>
 <p>Fix: In sampling stages, the filter argument previously discarded all points that did not pass the test. The updated behavior processes only the points that pass the test while leaving others untouched. For example:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/sampling.html">sampling_poisson</a></span><span class="op">(</span><span class="fl">1</span>, filter <span class="op">=</span> <span class="fu"><a href="../reference/filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Previously, this filtered the point cloud to retain only Poisson-sampled ground points. Now, it correctly Poisson-samples the ground points while preserving all other points.</p>
 </li>
 <li><p>New: Added a new stage, <code><a href="../reference/info.html">info()</a></code>, to print useful information about a file.<br></p></li>
 <li>
 <p>New: Command-line utility introduced. Users can now execute simple pipelines from the terminal. First, use <code><a href="../reference/install_cmd_tools.html">install_cmd_tools()</a></code>, then commands like these become available:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">lasr</span> info <span class="at">-i</span> path/to/file.las</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="ex">lasr</span> vpc <span class="at">-i</span> path/to/folder </span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="ex">lasr</span> lax <span class="at">-i</span> path/to/folder <span class="at">-ncores</span> 8</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="ex">lasr</span> help</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="ex">lasr</span> chm <span class="at">-i</span> path/to/folder <span class="at">-o</span> path/to/chm.tif <span class="at">-res</span> 1 <span class="at">-ncore</span> 4</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="ex">lasr</span> dtm <span class="at">-i</span> path/to/folder <span class="at">-o</span> path/to/chm.tif <span class="at">-res</span> 0.5 <span class="at">-ncore</span> 4</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="ex">lasr</span> info <span class="at">-i</span> path/to/file.las</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="ex">lasr</span> vpc <span class="at">-i</span> path/to/folder </span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="ex">lasr</span> lax <span class="at">-i</span> path/to/folder <span class="at">-ncores</span> 8</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="ex">lasr</span> help</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="ex">lasr</span> chm <span class="at">-i</span> path/to/folder <span class="at">-o</span> path/to/chm.tif <span class="at">-res</span> 1 <span class="at">-ncore</span> 4</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="ex">lasr</span> dtm <span class="at">-i</span> path/to/folder <span class="at">-o</span> path/to/chm.tif <span class="at">-res</span> 0.5 <span class="at">-ncore</span> 4</span></code></pre></div>
 </li>
 <li><p>New: <code><a href="../reference/transform_with.html">transform_with()</a></code> now supports a 4x4 Affine Transformation Matrix to translate and rotate the point cloud.<br></p></li>
 <li><p>Change: The <code>Eigen</code> library has replaced the <code>Armadillo</code> library for linear algebra. This change may affect the sign of some vectors in <code>geometry_feature()</code>.<br></p></li>
@@ -358,27 +385,27 @@
 <h2 class="pkg-version" data-toc-text="0.3.0" id="lasr-030">lasR 0.3.0<a class="anchor" aria-label="anchor" href="#lasr-030"></a></h2>
 <ul><li>
 <p>Change: <code>processor()</code> and <code>reader()</code> are deprecated and are replaced by <code><a href="../reference/exec.html">exec()</a></code> and <code><a href="../reference/reader_las.html">reader_las()</a></code>. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the <code>LAScatalog</code> processing options and this was not possible with the previous syntax.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">lidR</span><span class="fu">::</span><span class="fu">readLAScatalog</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li>
 <p>New: the processor is now able to process by chunk like <code>lidR</code></p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">file</span>, chunk <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li><p>New: stage <code><a href="../reference/delete_points.html">delete_points()</a></code> to remove some points in the pipeline.</p></li>
 <li>
 <p>New: it is now possible to write the following:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dtm</span> <span class="op">=</span> <span class="fu"><a href="../reference/dtm.html">dtm</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">dtm</span> <span class="op">+</span> <span class="fu"><a href="../reference/transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">dtm</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li>
 <p>New: it is not possible to omit the reader stage. It automatically adds a default reader</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </li>

@@ -11,7 +11,7 @@ This stage does not modify the point cloud."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.12.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,8 +105,7 @@ Thus, it is discouraged to store them in formats with no 3D support, such as sha
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tri1</span> <span class="op">&lt;-</span> <span class="fu">triangulate</span><span class="op">(</span><span class="fl">25</span>, filter <span class="op">=</span> <span class="fu"><a href="filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span>, ofile <span class="op">=</span> <span class="fu"><a href="temporary_files.html">tempgpkg</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">filter</span> <span class="op">&lt;-</span> <span class="st">"-keep_random_fraction 0.1"</span></span></span>
-<span class="r-in"><span><span class="va">tri2</span> <span class="op">&lt;-</span> <span class="fu">triangulate</span><span class="op">(</span>filter <span class="op">=</span> <span class="va">filter</span>, ofile <span class="op">=</span> <span class="fu"><a href="temporary_files.html">tempgpkg</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">tri2</span> <span class="op">&lt;-</span> <span class="fu">triangulate</span><span class="op">(</span>ofile <span class="op">=</span> <span class="fu"><a href="temporary_files.html">tempgpkg</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">tri1</span> <span class="op">+</span> <span class="va">tri2</span></span></span>
 <span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co">#plot(ans[[1]])</span></span></span>

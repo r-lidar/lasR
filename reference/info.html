@@ -13,7 +13,7 @@ the most common use case (see examples)."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.12.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,24 +83,46 @@ the most common use case (see examples).</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Return a pipeline stage</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> LAS v1.2 format 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> File size    : 1.36 MB</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Extent       : 481260.000 481349.990 3812921.090000 3813010.990 (xmin, xmax, ymin, ymax)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Size         : 1.43 MB</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Extent       : 481260.00 481349.99 3812921.09 3813010.99 (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Points       : 37.66 thousands</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Coord. ref.  : NAD83 / UTM zone 12N</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Spatial index: LAX</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Extrabytes   :</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Schema       :</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: X               | Description: X coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: Y               | Description: Y coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: Z               | Description: Z coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: flags           | Description: Internal 8-bit mask reserved lasR core engine</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: Intensity       | Description: Pulse return magnitude</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: ReturnNumber    | Description: Pulse return number for a given output pulse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: NumberOfReturns | Description: Total number of returns for a given pulse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: Classification  | Description: The 'class' attributes of a point</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: UserData        | Description: Used at the user’s discretion</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: PointSourceID   | Description: Source from which this point originated</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: ScanAngle       | Description: Rounded angle at which the laser point was output</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: gpstime         | Description: Time tag value at which the point was observed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: treeID          | Description: An ID for each segmented tree</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Convenient user-friendly usage</span></span></span>
 <span class="r-in"><span><span class="fu">info</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> LAS v1.2 format 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> File size    : 1.36 MB</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Extent       : 481260.000 481349.990 3812921.090000 3813010.990 (xmin, xmax, ymin, ymax)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Size         : 1.43 MB</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Extent       : 481260.00 481349.99 3812921.09 3813010.99 (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Points       : 37.66 thousands</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Coord. ref.  : NAD83 / UTM zone 12N</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Spatial index: LAX</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Extrabytes   :</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Schema       :</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: X               | Description: X coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: Y               | Description: Y coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: Z               | Description: Z coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: flags           | Description: Internal 8-bit mask reserved lasR core engine</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: Intensity       | Description: Pulse return magnitude</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: ReturnNumber    | Description: Pulse return number for a given output pulse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: NumberOfReturns | Description: Total number of returns for a given pulse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: Classification  | Description: The 'class' attributes of a point</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: UserData        | Description: Used at the user’s discretion</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: PointSourceID   | Description: Source from which this point originated</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: ScanAngle       | Description: Rounded angle at which the laser point was output</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: gpstime         | Description: Time tag value at which the point was observed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Attribute: treeID          | Description: An ID for each segmented tree</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
