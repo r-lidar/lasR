@@ -46,17 +46,20 @@ bool LASRlasreader::process(Point*& point)
   if (point == nullptr)
     point = new Point(&header->schema);
 
-  if (laslibinterface->read_point(point))
+  do
   {
-    if (point->inside_buffer(xmin, ymin, ymax, ymax, circular))
-      point->set_buffered();
-  }
-  else
-  {
-    // In streaming mode this triggers a stop
-    delete point;
-    point = nullptr;
-  }
+    if (laslibinterface->read_point(point))
+    {
+      if (point->inside_buffer(xmin, ymin, ymax, ymax, circular))
+        point->set_buffered();
+    }
+    else
+    {
+      // In streaming mode this triggers a stop
+      delete point;
+      point = nullptr;
+    }
+  } while (point != nullptr && pointfilter.filter(point));
 
   return true;
 }
@@ -78,6 +81,8 @@ bool LASRlasreader::process(PointCloud*& las)
   while (laslibinterface->read_point(&p))
   {
     if (progress->interrupted()) break;
+
+    if (pointfilter.filter(&p)) continue;
 
     if (p.inside_buffer(xmin, ymin, xmax, ymax, circular))
       p.set_buffered();

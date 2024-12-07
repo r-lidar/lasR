@@ -153,9 +153,9 @@ private:
 bool PointFilter::filter(const Point* point) {
   for (const auto condition : conditions) {
     if (condition->filter(point))
-      return TRUE; // point was filtered
+      return true; // point was filtered
   }
-  return FALSE; // point survived
+  return false; // point survived
 }
 
 void PointFilter::reset() {
