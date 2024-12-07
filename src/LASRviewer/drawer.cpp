@@ -11,7 +11,7 @@
 #include "PointCloud.h"
 #include "Progress.h"
 
-const std::vector<std::array<unsigned char, 3>> zgradient = {
+static const std::vector<std::array<unsigned char, 3>> zgradient = {
   {0, 0, 255},
   {0, 29, 252},
   {0, 59, 250},
@@ -39,7 +39,7 @@ const std::vector<std::array<unsigned char, 3>> zgradient = {
   {255, 0, 0}
 };
 
-const std::vector<std::array<unsigned char, 3>> classcolor = {
+static const std::vector<std::array<unsigned char, 3>> classcolor = {
   {211, 211, 211}, // [1]
   {211, 211, 211}, // [2]
   {0,   0,   255}, // [3]
@@ -61,7 +61,7 @@ const std::vector<std::array<unsigned char, 3>> classcolor = {
   {255, 255, 0}    // [19]
 };
 
-const std::vector<std::array<unsigned char, 3>> igradient = {
+static const std::vector<std::array<unsigned char, 3>> igradient = {
   {255,   0,   0},  // [1]
   {255,  14,   0},  // [2]
   {255,  28,   0},  // [3]
