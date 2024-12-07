@@ -131,11 +131,11 @@ Drawer::Drawer(SDL_Window *window, PointCloud* las)
   this->camera.setPanSensivity(distance*0.001);
   this->camera.setZoomSensivity(distance*0.05);
 
-  intensity.reset();
-  red.reset();
-  green.reset();
-  blue.reset();
-  classification.reset();
+  intensity = AttributeAccessor("Intensity");
+  red = AttributeAccessor("R");
+  green = AttributeAccessor("G");
+  blue = AttributeAccessor("B");
+  classification = AttributeAccessor("Classification");
 
   setAttribute(AttributeEnum::Z);
   setAttribute(AttributeEnum::RGB);
