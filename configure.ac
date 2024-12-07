@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl GDAL stuff largely copied from rgdal, (c) Roger Bivand
 AC_INIT
-AC_CONFIG_SRCDIR([src/read_ogr.cpp])
+AC_CONFIG_SRCDIR([src/LASRcore/GDALdataset.cpp])
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
