@@ -68,13 +68,17 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
       {
         if (entry.is_regular_file())
         {
-          std::string ext = entry.path().extension().string();
-          if (ext == ".las" || ext == ".laz" || ext == ".LAS" || ext == ".LAZ")
+          if (parse_path(entry.path()) == LASFILE)
           {
             add_file(entry.path().string());
           }
         }
       }
+    }
+    else if (type == PCDFILE)
+    {
+      last_error = "PCD file format not supported: " + file;
+      return false;
     }
     else if (type == PathType::MISSINGFILE)
     {
