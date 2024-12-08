@@ -6,6 +6,7 @@
 
 #include "Chunk.h"
 #include "Shape.h"
+#include "Header.h"
 
 #include <set>
 #include <string>
@@ -102,7 +103,8 @@ private:
   double chunk_size;
 
   // information about each file
-  std::vector<uint64_t> npoints;            // number of points
+  std::vector<Header> headers;
+  /*std::vector<uint64_t> npoints;            // number of points
   std::vector<bool> indexed;                // the file has a spatial index
   std::vector<bool> noprocess;              // the file is not processed and is used only for buffering
   std::vector<bool> gpstime_encodind_bits;
@@ -110,7 +112,7 @@ private:
   std::vector<std::filesystem::path> files; // path to files
   std::vector<std::pair<unsigned short, unsigned short>> header_dates;
   std::vector<std::pair<unsigned short, unsigned short>> gpstime_dates;
-  std::vector<std::pair<double, double>> zlim;
+  std::vector<std::pair<double, double>> zlim;*/
 
   // queries, partial read
   FileCollectionIndex file_index;

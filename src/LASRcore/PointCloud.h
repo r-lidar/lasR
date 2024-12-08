@@ -5,6 +5,7 @@
 #include "Shape.h"
 #include "PointSchema.h"
 #include "PointFilter.h"
+#include "Header.h"
 
 #include <vector>
 #include <string>

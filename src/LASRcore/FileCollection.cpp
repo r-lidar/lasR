@@ -461,6 +461,8 @@ bool FileCollection::add_file(std::string file, bool noprocess)
   reader.populate_header(&header, true);
   reader.close();
 
+  headers.push_back(header);
+
   files.push_back(file);
   add_bbox(header.min_x, header.min_y, header.max_x, header.max_y, header.spatial_index, noprocess);
   npoints.push_back(header.number_of_point_records);
