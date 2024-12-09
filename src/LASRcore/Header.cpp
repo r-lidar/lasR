@@ -47,3 +47,26 @@ void Header::add_attribute(const Attribute& attr)
 {
   schema.add_attribute(attr);
 }
+
+std::pair<unsigned short, unsigned short> Header::gpstime_date() const
+{
+  if (gpstime != 0 && adjusted_standard_gps_time)
+  {
+    uint64_t ns = ((uint64_t)gpstime+1000000000ULL)*1000000000ULL + 315964800000000000ULL; // offset between gps epoch and unix epoch is 315964800 seconds
+
+    struct timespec ts;
+    ts.tv_sec = ns / 1000000000ULL;
+    ts.tv_nsec = ns % 1000000000ULL;
+
+    struct tm stm;
+    gmtime_r(&ts.tv_sec, &stm);
+
+    return {stm.tm_year + 1900, stm.tm_yday};
+
+    //std::cout << stm.tm_year + 1900 << "-" << stm.tm_mon + 1 << "-" << stm.tm_mday << " " << stm.tm_hour << ":" << stm.tm_min << ":" << stm.tm_sec << std::endl;
+  }
+  else
+  {
+    return {0, 0};
+  }
+}

@@ -18,7 +18,7 @@ public:
   bool is_meters() const;
   bool is_feets() const;
   void dump() const;
-
+  bool operator==(const CRS& other) const;
   std::string get_wkt() const;
 
 private:
