@@ -68,7 +68,7 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
       {
         if (entry.is_regular_file())
         {
-          if (parse_path(entry.path()) == LASFILE)
+          if (parse_path(entry.path().string()) == LASFILE)
           {
             add_las_file(entry.path().string());
           }
@@ -621,7 +621,6 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
 
 bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
 {
-  unsigned int index;
   chunk.clear();
 
   // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
@@ -836,7 +835,7 @@ bool FileCollectionIndex::has_overlap(double xmin, double ymin, double xmax, dou
 std::vector<int> FileCollectionIndex::get_overlaps(double xmin, double ymin, double xmax, double ymax) const
 {
   std::vector<int> overlaps;
-  for (int i = 0; i < bboxes.size(); ++i)
+  for (auto i = 0; i < bboxes.size(); ++i)
   {
     const auto& bbox = bboxes[i];
     if (!(xmax < bbox.xmin() || xmin > bbox.xmax() || ymax < bbox.ymin() || ymin > bbox.ymax()))
