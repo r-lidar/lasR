@@ -17,15 +17,6 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 
-// Define macros for cross-platform compatibility
-#ifdef _WIN32
-#define timegm _mkgmtime
-inline void gmtime_r(const time_t* timep, std::tm* result)
-{
-  gmtime_s(result, timep);
-}
-#endif
-
 bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 {
   Progress pb;

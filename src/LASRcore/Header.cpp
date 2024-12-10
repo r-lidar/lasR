@@ -50,6 +50,15 @@ void Header::add_attribute(const Attribute& attr)
 
 #include <ctime>
 
+// Define macros for cross-platform compatibility
+#ifdef _WIN32
+#define timegm _mkgmtime
+inline void gmtime_r(const time_t* timep, std::tm* result)
+{
+  gmtime_s(result, timep);
+}
+#endif
+
 std::pair<unsigned short, unsigned short> Header::gpstime_date() const
 {
   if (gpstime != 0 && adjusted_standard_gps_time)
