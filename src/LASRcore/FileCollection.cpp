@@ -12,7 +12,6 @@
 #include <iomanip>
 #include <algorithm>
 #include <filesystem>
-#include <ctime>
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
@@ -835,7 +834,7 @@ bool FileCollectionIndex::has_overlap(double xmin, double ymin, double xmax, dou
 std::vector<int> FileCollectionIndex::get_overlaps(double xmin, double ymin, double xmax, double ymax) const
 {
   std::vector<int> overlaps;
-  for (auto i = 0; i < bboxes.size(); ++i)
+  for (size_t i = 0; i < bboxes.size(); ++i)
   {
     const auto& bbox = bboxes[i];
     if (!(xmax < bbox.xmin() || xmin > bbox.xmax() || ymax < bbox.ymin() || ymin > bbox.ymax()))

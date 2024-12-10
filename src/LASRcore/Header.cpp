@@ -28,16 +28,16 @@ Header::Header()
 // # nocov start
 void Header::dump() const
 {
-  printf("Max Coordinates: (%.2f, %.2f, %.2f)\n", max_x, max_y, max_z);
-  printf("Min Coordinates: (%.2f, %.2f, %.2f)\n", min_x, min_y, min_z);
-  printf("Scale Factors: (%.2f, %.2f, %.2f)\n", x_scale_factor, y_scale_factor, z_scale_factor);
-  printf("Offsets: (%.2f, %.2f, %.2f)\n", x_offset, y_offset, z_offset);
-  printf("GPS Time: %.2f\n", gpstime);
-  printf("File Creation Year: %u\n", file_creation_year);
-  printf("File Creation Day: %u\n", file_creation_day);
-  printf("Adjusted Standard GPS Time: %s\n", adjusted_standard_gps_time ? "true" : "false");
-  printf("Spatial Index: %s\n", spatial_index ? "true" : "false");
-  printf("Number of Point Records: %lu\n", number_of_point_records);
+  print("Max Coordinates: (%.2f, %.2f, %.2f)\n", max_x, max_y, max_z);
+  print("Min Coordinates: (%.2f, %.2f, %.2f)\n", min_x, min_y, min_z);
+  print("Scale Factors: (%.2f, %.2f, %.2f)\n", x_scale_factor, y_scale_factor, z_scale_factor);
+  print("Offsets: (%.2f, %.2f, %.2f)\n", x_offset, y_offset, z_offset);
+  print("GPS Time: %.2f\n", gpstime);
+  print("File Creation Year: %u\n", file_creation_year);
+  print("File Creation Day: %u\n", file_creation_day);
+  print("Adjusted Standard GPS Time: %s\n", adjusted_standard_gps_time ? "true" : "false");
+  print("Spatial Index: %s\n", spatial_index ? "true" : "false");
+  print("Number of Point Records: %" PRIu64 "\n", number_of_point_records);
   schema.dump();
   crs.dump();
 }
@@ -47,6 +47,8 @@ void Header::add_attribute(const Attribute& attr)
 {
   schema.add_attribute(attr);
 }
+
+#include <ctime>
 
 std::pair<unsigned short, unsigned short> Header::gpstime_date() const
 {

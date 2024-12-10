@@ -2,6 +2,7 @@
 #define HEADER_H
 
 #include "PointSchema.h"
+#include <cinttypes>
 
 
 class Header
