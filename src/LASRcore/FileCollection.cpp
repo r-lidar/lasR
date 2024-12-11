@@ -4,7 +4,10 @@
 #include "error.h"
 #include "Grid.h"
 #include "PointSchema.h"
-#include "LASlibinterface.h"
+
+// To read the header of files
+#include "PCDio.h"
+#include "LASio.h"
 
 // STL
 #include <iostream>
@@ -38,6 +41,7 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 
   for (auto& file : files)
   {
+
     pb++;
     pb.show();
     PathType type = parse_path(file);
@@ -45,7 +49,11 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
     // A LAS or LAZ file
     if (type == PathType::LASFILE)
     {
-      add_las_file(file);
+      if (!add_las_file(file)) return false;
+    }
+    else if (type == PathType::PCDFILE)
+    {
+      if (!add_pcd_file(file)) return false;
     }
     // A virtual point cloud file
     else if (type == PathType::VPCFILE)
@@ -70,17 +78,18 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
       {
         if (entry.is_regular_file())
         {
-          if (parse_path(entry.path().string()) == LASFILE)
-          {
-            add_las_file(entry.path().string());
-          }
+          std::string f = entry.path().string();
+          PathType type = parse_path(f);
+          bool success = true;
+
+          if (type == LASFILE)
+            success = add_las_file(f);
+          else if (type == PCDFILE)
+            success = add_pcd_file(f);
+
+          if (!success) return false;
         }
       }
-    }
-    else if (type == PCDFILE)
-    {
-      last_error = "PCD file format not supported: " + file;
-      return false;
     }
     else if (type == PathType::MISSINGFILE)
     {
@@ -217,6 +226,7 @@ bool FileCollection::read_vpc(const std::string& filename)
       h.max_y = max_y;
       h.number_of_point_records = pccount;
       h.spatial_index = spatial_index;
+      h.signature = "LASF";
       if (epsg != 0) h.crs = CRS(epsg);
       if (!wkt.empty()) h.crs = CRS(wkt);
 
@@ -442,25 +452,6 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
   return true;
 }
 
-bool FileCollection::add_las_file(std::string file, bool noprocess)
-{
-  std::replace(file.begin(), file.end(), '\\', '/' );
-
-  Header header;
-  LASlibInterface reader;
-  if (!reader.open(file)) return false;
-  reader.populate_header(&header, true);
-  reader.close();
-
-  add_header(header, noprocess);
-  files.push_back(file);
-  file_index.add(header.min_x, header.min_y, header.max_x, header.max_y);
-  this->noprocess.push_back(noprocess);
-
-  use_dataframe = false;
-  return true;
-}
-
 void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax)
 {
   Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
@@ -473,7 +464,70 @@ void FileCollection::add_query(double xcenter, double ycenter, double radius)
   queries.push_back(circ);
 }
 
-bool FileCollection::add_header(const Header& header, bool noprogress)
+bool FileCollection::add_las_file(std::string file, bool noprocess)
+{
+  std::replace(file.begin(), file.end(), '\\', '/' );
+
+  Header header;
+  LASio reader;
+  if (!reader.open(file)) return false;
+  reader.populate_header(&header, true);
+  reader.close();
+
+  add_header(header, noprocess);
+  files.push_back(file);
+
+  use_dataframe = false;
+  return true;
+}
+
+bool FileCollection::add_pcd_file(std::string file, bool noprocess)
+{
+  std::replace(file.begin(), file.end(), '\\', '/' );
+
+  Header header;
+  PCDio reader;
+  if (!reader.open(file)) return false;
+  reader.populate_header(&header);
+  reader.close();
+
+  add_header(header, noprocess);
+  files.push_back(file);
+
+  use_dataframe = false;
+  return true;
+}
+
+
+#ifdef USING_R
+// Special to build a FileCollection from a data.frame in R
+void FileCollection::add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints)
+{
+  Header h;
+  h.min_x = xmin;
+  h.min_y = ymin;
+  h.max_x = xmax;
+  h.max_y = ymax;
+  h.number_of_point_records = npoints;
+  h.signature = "data.frame";
+
+  add_header(h);
+  files.push_back("data.frame");
+
+  use_dataframe = true;
+}
+
+void FileCollection::add_xptr(Header header)
+{
+  header.signature = "xptr";
+  add_header(header);
+  files.push_back("xptr");
+
+  use_dataframe = false;
+}
+#endif
+
+bool FileCollection::add_header(const Header& header, bool noprocess)
 {
   headers.push_back(header);
 
@@ -482,27 +536,11 @@ bool FileCollection::add_header(const Header& header, bool noprogress)
   if (xmax < header.max_x) xmax = header.max_x;
   if (ymax < header.max_y) ymax = header.max_y;
 
-  this->noprocess.push_back(noprogress);
+  this->noprocess.push_back(noprocess);
+  this->file_index.add(header.min_x, header.min_y, header.max_x, header.max_y);
 
   return true;
 }
-
-#ifdef USING_R
-// Special to build a FileCollection from a data.frame in R
-void FileCollection::add_bbox(double xmin, double ymin, double xmax, double ymax, int npoints)
-{
-  Header h;
-  h.min_x = xmin;
-  h.min_y = ymin;
-  h.max_x = xmax;
-  h.max_y = ymax;
-  h.number_of_point_records = npoints;
-
-  add_header(h);
-  files.push_back("data.frame");
-  file_index.add(h.min_x, h.min_y, h.max_x, h.max_y);
-}
-#endif
 
 bool FileCollection::set_noprocess(const std::vector<bool>& b)
 {
@@ -574,6 +612,22 @@ bool FileCollection::get_chunk(int i, Chunk& chunk) const
 const std::vector<std::filesystem::path>& FileCollection::get_files() const
 {
   return files;
+}
+
+PathType FileCollection::get_format() const
+{
+  const std::string& signature = headers[0].signature;
+
+  if (signature == "LASF")
+    return LASFILE;
+  else if (signature == "PCDF")
+    return PCDFILE;
+  else if (signature == "data.frame")
+    return DATAFRAME;
+  else if (signature == "xptr")
+    return XPTR;
+  else
+    return UNKNOWNFILE;
 }
 
 bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
@@ -660,7 +714,6 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   // With an R data.frame there is no file and thus no neighbouring files. We can exit.
   if (use_dataframe)
   {
-    print("Return\n");
     chunk.main_files.push_back("dataframe");
     chunk.name = "data.frame";
     return true;
@@ -787,8 +840,10 @@ PathType FileCollection::parse_path(const std::string& path)
     {
       std::string ext = file_path.extension().string();
       if (ext == ".vpc" || ext == ".vpc") return PathType::VPCFILE;
-      if (ext == ".las" || ext == ".laz" || ext == ".LAS" || ext == ".LAZ") return PathType::LASFILE;
+      if (ext == ".las" || ext == ".LAS") return PathType::LASFILE;
+      if (ext == ".laz" || ext == ".LAZ") return PathType::LASFILE;
       if (ext == ".lax" || ext == ".LAX") return PathType::LAXFILE;
+      if (ext == ".pcd" || ext == ".PCD") return PathType::PCDFILE;
       return PathType::OTHERFILE;
     }
     else if (std::filesystem::is_directory(path))

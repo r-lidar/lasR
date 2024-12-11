@@ -19,7 +19,7 @@
 #' @examples
 #' f <- system.file("extdata", "Example.las", package = "lasR")
 #' fun <- function(data) { data$RAND <- runif(nrow(data), 0, 100); return(data) }
-#' pipeline <- reader_las() +
+#' pipeline <- reader() +
 #'   add_extrabytes("float", "RAND", "Random numbers") +
 #'   callback(fun, expose = "xyz")
 #' exec(pipeline, on = f)
@@ -154,7 +154,7 @@ build_catalog = function(files, with)
 #' read_las <- function(f)
 #' {
 #'   load <- function(data) { return(data) }
-#'   read <- reader_las()
+#'   read <- reader()
 #'   call <- callback(load, expose = "xyzi", no_las_update = TRUE)
 #'   return (exec(read + call, on = f))
 #' }
@@ -171,7 +171,7 @@ build_catalog = function(files, with)
 #'   return(data)
 #' }
 #'
-#' read <- reader_las()
+#' read <- reader()
 #' call <- callback(convert_intensity_in_range, expose = "i", min = 0, max = 255)
 #' write <- write_las()
 #' pipeline <- read + call + write
@@ -338,7 +338,7 @@ geometry_features = function(k, r, features = "")
 #'
 #' @examples
 #' f <- system.file("extdata", "Megaplot.las", package="lasR")
-#' read <- reader_las()
+#' read <- reader()
 #' filter <- delete_points(keep_z_above(4))
 #'
 #' pipeline <- read + summarise() + filter + summarise()
@@ -401,7 +401,7 @@ filter_with_grid = function(res, operator = "min", filter = "")
 #' chm = rasterize(2, "zmax")
 #' chm2 = lasR:::focal(chm, 8, fun = "mean")
 #' chm3 = lasR:::focal(chm, 8, fun = "max")
-#' pipeline <- reader_las() + chm + chm2 + chm2
+#' pipeline <- reader() + chm + chm2 + chm2
 #' ans = exec(pipeline, on = f)
 #'
 #' terra::plot(ans[[1]])
@@ -436,7 +436,7 @@ focal = function(raster, size, fun = "mean", ofile = temptif())
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
-#' read <- reader_las()
+#' read <- reader()
 #' tri <- triangulate(20, filter = keep_ground())
 #' contour <- hulls(tri)
 #' pipeline <- read + tri + contour
@@ -588,7 +588,7 @@ load_matrix = function(matrix)
 #'
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
-#' read <- reader_las()
+#' read <- reader()
 #' lmf <- local_maximum(5)
 #' ans <- exec(read + lmf, on = f)
 #' ans
@@ -654,7 +654,7 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
 #'
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
-#' read <- reader_las()
+#' read <- reader()
 #' lmf <- local_maximum(5, ofile = "")
 #' nnm = lasR:::neighborhood_metrics(lmf, k = 10, metrics = c("i_mean", "count"))
 #' ans <- exec(read + lmf + nnm, on = f)
@@ -702,7 +702,7 @@ nothing = function(read = FALSE, stream = FALSE, loop = FALSE)
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package="lasR")
 #'
-#' reader <- reader_las(filter = keep_first())
+#' reader <- reader(filter = keep_first())
 #' tri <- triangulate()
 #' chm <- rasterize(0.25, tri)
 #' pit <- pit_fill(chm)
@@ -780,7 +780,7 @@ pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_si
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader_las()
+#' read <- reader()
 #' tri  <- triangulate(filter = keep_ground())
 #' dtm  <- rasterize(1, tri) # input is a triangulation stage
 #' avgi <- rasterize(10, mean(Intensity)) # input is a user expression
@@ -863,10 +863,10 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #'
 #' This is the first stage that must be called in each pipeline. The stage does nothing and returns
 #' nothing if it is not associated to another processing stage.
-#' It only initializes the pipeline. `reader_las()` is the main function that dispatches into to other
-#' functions. `reader_las_coverage()` processes the entire point cloud. `reader_las_circles()` and
-#' `reader_las_rectangles()` read and process only some selected regions of interest. If the chosen
-#' reader has no options i.e. using `reader_las()` it can be omitted.
+#' It only initializes the pipeline. `reader()` is the main function that dispatches into to other
+#' functions. `reader_coverage()` processes the entire point cloud. `reader_circles()` and
+#' `reader_rectangles()` read and process only some selected regions of interest. If the chosen
+#' reader has no options i.e. using `reader()` it can be omitted.
 #'
 #' @template param-filter
 #' @param xc,yc,r numeric. Circle centres and radius or radii.
@@ -876,11 +876,11 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package = "lasR")
 #'
-#' pipeline <- reader_las() + rasterize(10, "zmax")
+#' pipeline <- reader() + rasterize(10, "zmax")
 #' ans <- exec(pipeline, on = f)
 #' # terra::plot(ans)
 #'
-#' pipeline <- reader_las(filter = keep_z_above(1.3)) + rasterize(10, "zmean")
+#' pipeline <- reader(filter = keep_z_above(1.3)) + rasterize(10, "zmean")
 #' ans <- exec(pipeline, on = f)
 #' # terra::plot(ans)
 #'
@@ -889,46 +889,46 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' # terra::plot(ans)
 #'
 #' # Perform a query and apply the pipeline on a subset
-#' pipeline = reader_las_circles(273500, 5274500, 20) + rasterize(2, "zmax")
+#' pipeline = reader_circles(273500, 5274500, 20) + rasterize(2, "zmax")
 #' ans <- exec(pipeline, on = f)
 #' # terra::plot(ans)
 #'
 #' # Perform a query and apply the pipeline on a subset with 1 output files per query
 #' ofile = paste0(tempdir(), "/*_chm.tif")
-#' pipeline = reader_las_circles(273500, 5274500, 20) + rasterize(2, "zmax", ofile = ofile)
+#' pipeline = reader_circles(273500, 5274500, 20) + rasterize(2, "zmax", ofile = ofile)
 #' ans <- exec(pipeline, on = f)
 #' # terra::plot(ans)
 #' @export
 #' @md
-reader_las = function(filter = "", ...)
+reader = function(filter = "", ...)
 {
   p <- list(...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
 
-  if (circle) return(reader_las_circles(p$xc, p$yc, p$r, filter = filter, ...))
-  if (rectangle) return(reader_las_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, ...))
-  return(reader_las_coverage(filter = filter, ...))
+  if (circle) return(reader_circles(p$xc, p$yc, p$r, filter = filter, ...))
+  if (rectangle) return(reader_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, ...))
+  return(reader_coverage(filter = filter, ...))
 }
 
 #' @export
-#' @rdname reader_las
-reader_las_coverage = function(filter = "", ...)
+#' @rdname reader
+reader_coverage = function(filter = "", ...)
 {
-  ans <- list(algoname = "reader_las", filter = filter)
+  ans <- list(algoname = "reader", filter = filter)
   attr(ans, "laslib") = TRUE
   set_lasr_class(ans)
 }
 
 #' @export
-#' @rdname reader_las
-reader_las_circles = function(xc, yc, r, filter = "", ...)
+#' @rdname reader
+reader_circles = function(xc, yc, r, filter = "", ...)
 {
   stopifnot(length(xc) == length(yc))
   if (length(r) == 1) r <- rep(r, length(xc))
   if (length(r) > 1) stopifnot(length(xc) == length(r))
 
-  ans <- reader_las_coverage(filter, ...)
+  ans <- reader_coverage(filter, ...)
   ans[[1]]$xcenter <- xc
   ans[[1]]$ycenter <- yc
   ans[[1]]$radius <- r
@@ -936,12 +936,12 @@ reader_las_circles = function(xc, yc, r, filter = "", ...)
 }
 
 #' @export
-#' @rdname reader_las
-reader_las_rectangles = function(xmin, ymin, xmax, ymax, filter = "", ...)
+#' @rdname reader
+reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", ...)
 {
   stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
 
-  ans <- reader_las_coverage(filter, ...)
+  ans <- reader_coverage(filter, ...)
   ans[[1]]$xmin <- xmin
   ans[[1]]$ymin <- ymin
   ans[[1]]$xmax <- xmax
@@ -981,7 +981,7 @@ reader_las_rectangles = function(xmin, ymin, xmax, ymax, filter = "", ...)
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package="lasR")
 #'
-#' reader <- reader_las(filter = keep_first())
+#' reader <- reader(filter = keep_first())
 #' chm <- rasterize(1, "max")
 #' lmx <- local_maximum_raster(chm, 5)
 #' tree <- region_growing(chm, lmx, max_cr = 10)
@@ -1005,7 +1005,7 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
 #' Set the CRS of the pipeline
 #'
 #' Assign a CRS in the pipeline. This stage **does not** reproject the data. It assigns a CRS. This
-#' stage affects subsequent stages of the pipeline and thus should appear close to \link{reader_las}
+#' stage affects subsequent stages of the pipeline and thus should appear close to \link{reader}
 #' to assign the correct CRS to all stages.
 #'
 #' @param x integer or string. EPSG code or WKT string understood by GDAL
@@ -1014,7 +1014,7 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
 #' @examples
 #' # expected usage
 #' hmax = rasterize(10, "max")
-#' pipeline = reader_las() + set_crs(2949) + hmax
+#' pipeline = reader() + set_crs(2949) + hmax
 #'
 #' # fancy usages are working as expected. The .tif file is written with a CRS, the .gpkg file with
 #' # another CRS and the .las file with yet another CRS.
@@ -1048,7 +1048,7 @@ set_crs = function(x)
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #'
-#' read <- reader_las()
+#' read <- reader()
 #' vox <- sampling_voxel(5) # sample 1 random points per voxel
 #' write <- write_las()
 #' pipeline <- read + vox + write
@@ -1114,7 +1114,7 @@ sampling_poisson = function(distance = 2, filter = "", ...)
 #' # This bounding box encompasses only one of the four files
 #' stopif = stop_if_outside(884800, 620000, 885400, 629200)
 #'
-#' read = reader_las()
+#' read = reader()
 #' hll = hulls()
 #' tri = triangulate(filter = keep_ground())
 #' dtm = rasterize(1, tri)
@@ -1177,13 +1177,13 @@ stop_if_chunk_id_below = function(index)
 #' @template param-filter
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader_las()
+#' read <- reader()
 #' pipeline <- read + summarise()
 #' ans <- exec(pipeline, on = f)
 #' ans
 #'
 #' # Compute metrics for each plot
-#' read = reader_las_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
+#' read = reader_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
 #' metrics = summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
 #' pipeline = read + metrics
 #' ans = exec(pipeline, on = f)
@@ -1215,7 +1215,7 @@ summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader_las()
+#' read <- reader()
 #' tri1 <- triangulate(25, filter = keep_ground(), ofile = tempgpkg())
 #' tri2 <- triangulate(ofile = tempgpkg())
 #' pipeline <- read + tri1 + tri2
@@ -1319,7 +1319,7 @@ transform_with = function(stage, operator = "-", store_in_attribute = "")
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' read <- reader_las()
+#' read <- reader()
 #' tri  <- triangulate(filter = keep_ground())
 #' normalize <- tri + transform_with(tri)
 #' pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))

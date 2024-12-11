@@ -1,21 +1,21 @@
 #include "writelas.h"
 
-#include "LASlibinterface.h"
+#include "LASio.h"
 
 LASRlaswriter::LASRlaswriter()
 {
-  laslibinterface = nullptr;
+  lasio = nullptr;
 }
 
 LASRlaswriter::~LASRlaswriter()
 {
-  if (laslibinterface)
+  if (lasio)
   {
     // # nocov start
     warning("internal error: please report, a LASwriter is still opened when destructing LASRlaswriter. The LAS or LAZ file written may be corrupted\n");
-    laslibinterface->close();
-    delete laslibinterface;
-    laslibinterface = nullptr;
+    lasio->close();
+    delete lasio;
+    lasio = nullptr;
     // # nocov end
   }
 }
@@ -62,9 +62,9 @@ bool LASRlaswriter::process(Point*& p)
   if (p->get_deleted()) return true;
 
   // No writer initialized? Create a writer.
-  if (!laslibinterface->is_opened())
+  if (!lasio->is_opened())
   {
-    if (!laslibinterface->create(ofile)) return false;
+    if (!lasio->create(ofile)) return false;
     written.push_back(ofile);
   }
 
@@ -95,7 +95,7 @@ bool LASRlaswriter::process(Point*& p)
        }
        }*/
 
-      laslibinterface->write_point(p);
+      lasio->write_point(p);
     }
   }
 
@@ -130,14 +130,14 @@ void LASRlaswriter::set_header(Header*& header)
 
   // If we still have an interface this means that we are merging multiple files
   // We don't need to create a new writer.
-  if (laslibinterface)
+  if (lasio)
   {
-    laslibinterface->reset_accessor();
+    lasio->reset_accessor();
     return;
   }
 
-  laslibinterface = new LASlibInterface(progress);
-  laslibinterface->init(header, crs);
+  lasio = new LASio(progress);
+  lasio->init(header, crs);
 }
 
 bool LASRlaswriter::set_chunk(Chunk& chunk)
@@ -155,11 +155,11 @@ void LASRlaswriter::clear(bool last)
   //   a new writer will be created at next iteration
   if (!merged || last)
   {
-    if (laslibinterface)
+    if (lasio)
     {
-      laslibinterface->close();
-      delete laslibinterface;
-      laslibinterface = nullptr;
+      lasio->close();
+      delete lasio;
+      lasio = nullptr;
     }
   }
 }

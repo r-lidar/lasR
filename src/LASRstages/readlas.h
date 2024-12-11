@@ -3,7 +3,7 @@
 
 #include "Stage.h"
 
-class LASlibInterface;
+class LASio;
 
 class LASRlasreader: public Stage
 {
@@ -25,7 +25,7 @@ public:
 private:
   Header* header; // ownwed only in streaming mode
   bool streaming;
-  LASlibInterface* laslibinterface;
+  LASio* lasio;
 };
 
 #endif

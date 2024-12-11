@@ -3,7 +3,7 @@
 
 #include "Stage.h"
 
-class LASlibInterface;
+class LASio;
 
 class LASRlaswriter: public StageWriter
 {
@@ -31,7 +31,7 @@ private:
   bool keep_buffer;
   std::vector<AttributeAccessor> core_accessors;
 
-  LASlibInterface* laslibinterface;
+  LASio* lasio;
 };
 
 #endif

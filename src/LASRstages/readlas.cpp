@@ -1,11 +1,11 @@
 #include "readlas.h"
 
-#include "LASlibinterface.h"
+#include "LASio.h"
 
 LASRlasreader::LASRlasreader()
 {
   header = nullptr;
-  laslibinterface = nullptr;
+  lasio = nullptr;
   streaming = true;
 }
 
@@ -14,15 +14,15 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   Stage::set_chunk(chunk);
 
   // New chunk -> new reader for a new file. We can delete the previous reader and build a new one
-  if (laslibinterface)
+  if (lasio)
   {
-    laslibinterface->close();
-    delete laslibinterface;
-    laslibinterface = nullptr;
+    lasio->close();
+    delete lasio;
+    lasio = nullptr;
   }
 
-  laslibinterface = new LASlibInterface(progress);
-  return laslibinterface->open(chunk, filters);
+  lasio = new LASio(progress);
+  return lasio->open(chunk, filters);
 }
 
 bool LASRlasreader::process(Header*& header)
@@ -33,7 +33,7 @@ bool LASRlasreader::process(Header*& header)
   if (header != nullptr) return true;
 
   header = new Header;
-  laslibinterface->populate_header(header);
+  lasio->populate_header(header);
 
   this->header = header;
 
@@ -48,7 +48,7 @@ bool LASRlasreader::process(Point*& point)
 
   do
   {
-    if (laslibinterface->read_point(point))
+    if (lasio->read_point(point))
     {
       if (point->inside_buffer(xmin, ymin, ymax, ymax, circular))
         point->set_buffered();
@@ -78,7 +78,7 @@ bool LASRlasreader::process(PointCloud*& las)
 
   Point p(&header->schema);
 
-  while (laslibinterface->read_point(&p))
+  while (lasio->read_point(&p))
   {
     if (progress->interrupted()) break;
 
@@ -89,7 +89,7 @@ bool LASRlasreader::process(PointCloud*& las)
 
     if (!las->add_point(p)) return false;
 
-    progress->update(laslibinterface->p_count());
+    progress->update(lasio->p_count());
     progress->show();
   }
 
@@ -104,11 +104,11 @@ bool LASRlasreader::process(PointCloud*& las)
 
 LASRlasreader::~LASRlasreader()
 {
-  if (laslibinterface)
+  if (lasio)
   {
-    laslibinterface->close();
-    delete laslibinterface;
-    laslibinterface = nullptr;
+    lasio->close();
+    delete lasio;
+    lasio = nullptr;
   }
 }
 

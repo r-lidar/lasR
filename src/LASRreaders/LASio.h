@@ -1,5 +1,5 @@
-#ifndef LASLIBINTERFACE_H
-#define LASLIBINTERFACE_H
+#ifndef LASIO_H
+#define LASIO_H
 
 #include "PointCloud.h"
 #include "Chunk.h"
@@ -17,12 +17,12 @@ class LASheader;
 class LASpoint;
 class Progress;
 
-class LASlibInterface
+class LASio
 {
 public:
-  LASlibInterface();
-  LASlibInterface(Progress*);
-  ~LASlibInterface();
+  LASio();
+  LASio(Progress*);
+  ~LASio();
   bool open(const Chunk& chunk, std::vector<std::string> filters);
   bool open(const std::string& file);
   bool create(const std::string& file);

@@ -80,6 +80,24 @@ struct Attribute
   double scale_factor;    // Scaling factor
   double value_offset;    // Value offset
   std::string description;
+
+  const char* attributeTypeToString() const
+  {
+    switch (type) {
+    case NOTYPE: return "Unknown";
+    case UINT8: return "uchar";
+    case INT8: return "char";
+    case UINT16: return "ushort";
+    case INT16: return "short";
+    case UINT32: return "uint";
+    case INT32: return "int";
+    case UINT64: return "uint64";
+    case INT64: return "int64";
+    case FLOAT: return "float";
+    case DOUBLE: return "double";
+    default: return "Unknown";
+    }
+  }
 };
 
 struct AttributeSchema
@@ -186,18 +204,30 @@ struct Point
   }
   inline double get_x() const {
     const auto& attr = schema->attributes[0];
-    int X = *((int*)(data + attr.offset));
-    return attr.scale_factor * X + attr.value_offset;
+    switch(attr.type) {
+      case INT32: { int X = *((int*)(data + attr.offset));  return attr.scale_factor * X + attr.value_offset; }
+      case FLOAT: { return *((float*)(data + attr.offset)); }
+      case DOUBLE: { return *((double*)(data + attr.offset)); }
+      default: return 0;
+    }
   }
   inline double get_y() const {
     const auto& attr = schema->attributes[1];
-    int Y = *((int*)(data + attr.offset));
-    return attr.scale_factor * Y + attr.value_offset;
+    switch(attr.type) {
+      case INT32: { int Y = *((int*)(data + attr.offset));  return attr.scale_factor * Y + attr.value_offset; }
+      case FLOAT: { return *((float*)(data + attr.offset)); }
+      case DOUBLE: { return *((double*)(data + attr.offset)); }
+      default: return 0;
+    }
   }
   inline double get_z() const {
     const auto& attr = schema->attributes[2];
-    int Z = *((int*)(data + attr.offset));
-    return attr.scale_factor * Z + attr.value_offset;
+    switch(attr.type) {
+      case INT32: { int Z = *((int*)(data + attr.offset));  return attr.scale_factor * Z + attr.value_offset; }
+      case FLOAT: { return *((float*)(data + attr.offset)); }
+      case DOUBLE: { return *((double*)(data + attr.offset)); }
+      default: return 0;
+    }
   }
   inline bool get_flag(int i) const {
     const auto& attr = schema->attributes[3];

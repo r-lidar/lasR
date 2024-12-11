@@ -58,6 +58,7 @@ bool LASRdataframereader::process(Header*& header)
   SEXP names_attr = Rf_getAttrib(dataframe, R_NamesSymbol);
 
   header = new Header;
+  header->signature = "data.frame";
   header->min_x = xmin;
   header->min_y = ymin;
   header->max_x = xmax;

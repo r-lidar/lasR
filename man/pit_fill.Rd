@@ -45,7 +45,7 @@ is from St-Onge 2008 (see reference).
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package="lasR")
 
-reader <- reader_las(filter = keep_first())
+reader <- reader(filter = keep_first())
 tri <- triangulate()
 chm <- rasterize(0.25, tri)
 pit <- pit_fill(chm)
