@@ -6,8 +6,8 @@
 
 #include "Chunk.h"
 #include "Shape.h"
+#include "Header.h"
 
-#include <set>
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -59,21 +59,13 @@ public:
   bool file_exists(std::string& file);
 
   #ifdef USING_R
-  // Special to build a FileCollection from a data.frame in R
-  void add_bbox(double xmin, double ymin, double xmax, double ymax, int npoints)
-  {
-    this->npoints.push_back(npoints);
-    add_bbox(xmin, ymin, xmax, ymax, true, false);
-  };
+  void add_bbox(double xmin, double ymin, double xmax, double ymax, int npoints);   // Special to build a FileCollection from a data.frame in R
   #endif
 
 private:
   bool read_vpc(const std::string& file);
-  bool add_file(std::string file, bool noprocess = false);
-  void add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess = false);
-  void add_wkt(const std::string& wkt);
-  void add_epsg(int epsg);
-  void add_crs(const Header* header);
+  bool add_las_file(std::string file, bool noprocess = false);
+  bool add_header(const Header& header, bool noprocess = false);
   bool get_chunk_regular(int index, Chunk& chunk) const;
   bool get_chunk_with_query(int index, Chunk& chunk) const;
   PathType parse_path(const std::string& path);
@@ -85,10 +77,6 @@ private:
   double ymin;
   double xmax;
   double ymax;
-
-  // A set of CRS because each file may have different CRS so we must check the consistency
-  std::set<std::string> wkt_set;
-  std::set<int> epsg_set;
 
   // CRS retained of the overall collection
   CRS crs;
@@ -102,15 +90,9 @@ private:
   double chunk_size;
 
   // information about each file
-  std::vector<uint64_t> npoints;            // number of points
-  std::vector<bool> indexed;                // the file has a spatial index
-  std::vector<bool> noprocess;              // the file is not processed and is used only for buffering
-  std::vector<bool> gpstime_encodind_bits;
-  std::vector<Rectangle> bboxes;            // bounding boxes of the files
+  std::vector<Header> headers;
   std::vector<std::filesystem::path> files; // path to files
-  std::vector<std::pair<unsigned short, unsigned short>> header_dates;
-  std::vector<std::pair<unsigned short, unsigned short>> gpstime_dates;
-  std::vector<std::pair<double, double>> zlim;
+  std::vector<bool> noprocess;              // the file is not processed and is used only for buffering
 
   // queries, partial read
   FileCollectionIndex file_index;
