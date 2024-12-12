@@ -15,7 +15,7 @@ public:
   bool process(PointCloud*& las) override;
   bool set_chunk(Chunk& chunk) override;
   bool need_points() const override { return false; };
-  bool is_streamable() const override { return false; };
+  bool is_streamable() const override { return true; };
   std::string get_name() const override { return "reader_pcd"; }
   void clear(bool) override;
 

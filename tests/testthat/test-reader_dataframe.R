@@ -1,61 +1,3 @@
-f = system.file("extdata", "Example.las", package="lasR")
-
-test_that("reader works with single file",
-{
-  pipeline = reader_las()
-
-  expect_error({u = exec(pipeline, on = f)}, NA)
-  expect_length(u, 0)
-
-  pipeline = reader_las(filter = "-keep_intensity_above 100") + summarise()
-
-  expect_error({u = exec(pipeline, on = f)}, NA)
-  expect_equal(u$i_histogram, c("100" = 5))
-
-  pipeline = reader_las(filter = "Intensity > 50") + summarise()
-
-  expect_error({u = exec(pipeline, on = f)}, NA)
-  expect_equal(u$i_histogram, c("50" = 5, "100" = 21))
-})
-
-test_that("reader works with multiple files",
-{
-  pipeline = reader_las()
-
-  expect_error({u = exec(pipeline, on = c(f,f))}, NA)
-  expect_length(u, 0)
-})
-
-test_that("reader works with multiple files and filter",
-{
-  pipeline = reader_las(filter = keep_ground()) + summarise()
-
-  expect_error({u = exec(pipeline, on = c(f,f))}, NA)
-  expect_equal(names(u$npoints_per_class), "2")
-})
-
-test_that("reader fails if file does not exist",
-{
-  p = reader_las()
-  expect_error(exec(p, on = "missin.las"), "File not found")
-
-  f = system.file("extdata", "bcts/bcts.gpkg", package="lasR")
-  expect_error(exec(p, on = f), "Unknown file type")
-
-  f = system.file("extdata", "bcts/bcts.vpc", package="lasR")
-  g = system.file("extdata", "Megaplot.las", package="lasR")
-  f = c(f, g)
-  expect_error(exec(reader_las(), on = f), "Virtual point cloud file detected mixed with other content")
-})
-
-test_that("reader can read a folder",
-{
-  f = system.file("extdata", "bcts/", package="lasR")
-  p <- reader_las() + hulls()
-  ans = exec(p, on = f)
-  expect_equal(dim(ans), c(4L,1L))
-})
-
 test_that("reader_dataframe works",
 {
   f = system.file("extdata", "Example.rds", package="lasR")
@@ -185,4 +127,3 @@ test_that("reader_dataframe propagates the CRS",
 
   expect_equal(terra::crs(u), wkt)
 })
-

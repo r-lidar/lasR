@@ -22,7 +22,7 @@ slightly inaccurate, but anyway, these metrics are not supposed to be useful.
 
 The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
 a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
-s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+s - synthetic, u - userdata, p - pointsourceid,
 e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr
 \strong{Be careful} to the typos: attributes are non failing features. If the attribute does not exist \code{NaN}
 is returned. Thus \code{intesity_mean} return \code{NaN} rather than failing.
@@ -37,13 +37,13 @@ percentile of z. \code{z_aboveX} corresponds to the percentage of points above \
 It is possible to call a metric without the name of the attribute. In this case, z is the default. e.g. \code{mean} equals \code{z_mean}
 }
 
-\section{Extrabytes attribute}{
+\section{Extra attribute}{
 
-The core attributes are x, y, z, classification, intensity, and so on. Some point clouds have extra
-attributes called extrabytes attributes. In this case, metrics can be derived the same way using
-the names of the extra attributes. Be careful of typos. The attributes are not checked internally because
-of the extrabytes attributes. For example, if a user requests: \code{ntensity_mean}, this could be a typo
-or the name of an extra attribute. Because extrabytes are never failing, \code{ntensity_mean} will return \code{NaN}
+The core attributes natively supported are x, y, z, classification, intensity, and so on. Some
+point clouds have other may have other attributes. In this case, metrics can be derived the same way using
+the names of the attributes. Be careful of typos. The attributes existance are not checked internally
+because. For example, if a user requests: \code{ntensity_mean}, this could be a typo or the name of an
+extra attribute. Because extra attribute are never failing, \code{ntensity_mean} will return \code{NaN}
 rather than an error.
 }
 

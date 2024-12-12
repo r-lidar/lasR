@@ -36,6 +36,8 @@ private:
   std::ifstream istream;
   std::ofstream ostream;
   std::string line;
+  std::string file;
+  int64_t npoints;
   bool is_binary;
 };
 
