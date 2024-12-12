@@ -36,9 +36,11 @@ reader_las_rectangles(
 \arguments{
 \item{filter}{see \link{reader}}
 
+\item{select, copc_depth}{see \link{reader}}
+
 \item{...}{see \link{reader}}
 
-\item{xc, yx, r}{see \link{reader}}
+\item{xc, yc, r}{see \link{reader}}
 
 \item{xmin, xmax, ymin, ymax}{see \link{reader}}
 }
