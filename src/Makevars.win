@@ -24,7 +24,7 @@ PKG_LIBS = \
 
 CXX_STD=CXX17
 
-SOURCES = $(wildcard LASRcore/*.cpp LASRstages/*.cpp vendor/*/*.cpp ./*.cpp)
+SOURCES = $(wildcard LASRcore/*.cpp LASRstages/*.cpp LASRreaders/*.cpp vendor/*/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
 OBJECTS = $(TEMP1:.c=.o)
 
