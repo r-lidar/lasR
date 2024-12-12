@@ -126,7 +126,7 @@ Now, let's explore the capabilities of `callback` further. First, let's create a
 read_las = function(f, select = "xyzi", filter = "")
 {
   load = function(data) { return(data) }
-  read = reader_las(filter = filter)
+  read = reader(filter = filter)
   call = callback(load, expose = select, no_las_update = TRUE)
   return (exec(read+call, on = f))
 }
@@ -148,7 +148,7 @@ csf = function(data)
   return(data)
 }
 
-read = reader_las()
+read = reader()
 classify = callback(csf, expose = "xyz")
 write = write_las()
 pipeline = read + classify + write
