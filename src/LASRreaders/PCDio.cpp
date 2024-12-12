@@ -174,8 +174,8 @@ bool PCDio::populate_header(Header* header)
     return false;
   }
 
-  //Attribute attrf("flags", AttributeType::INT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
-  //header->add_attribute(attrf);
+  Attribute attrf("flags", AttributeType::INT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
+  header->add_attribute(attrf);
 
   for (int i = 0 ; i < fields.size() ; i++)
   {
@@ -222,6 +222,8 @@ bool PCDio::populate_header(Header* header)
 
   this->header = header;
 
+  auto payload_start = istream.tellg();
+
   Point p(&header->schema);
   while (read_point(&p))
   {
@@ -233,23 +235,22 @@ bool PCDio::populate_header(Header* header)
     if (header->max_z < p.get_z()) header->max_z = p.get_z();
   }
 
+  istream.clear();
+  istream.seekg(payload_start);
+
   return true;
 }
 
 bool PCDio::read_point(Point* p)
 {
-  do
-  {
-    // Read one point from the stream + 1 bytes because of the flags used by lasR
-    istream.read(reinterpret_cast<char*>(p->data), p->schema->total_point_size);
+  // Read one point from the stream + 1 bytes because of the flags used by lasR
+  istream.read(reinterpret_cast<char*>(p->data + 1), p->schema->total_point_size-1);
 
-    // Check if the correct number of bytes were read
-    if (istream.gcount() == header->schema.total_point_size)
-      return true;
-    else
-      return false;
-
-  } while (true);
+  // Check if the correct number of bytes were read
+  if (istream.gcount() == header->schema.total_point_size-1)
+    return true;
+  else
+    return false;
 }
 
 bool PCDio::is_opened()
