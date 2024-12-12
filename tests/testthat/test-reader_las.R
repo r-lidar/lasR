@@ -95,3 +95,24 @@ test_that("reader_las works (streamable)",
   expect_equal(ans[[4]]$npoints, 44974L)
 })
 
+
+test_that("reader_las works (filter case sensitive)",
+{
+  f <- system.file("extdata", "Megaplot.las", package="lasR")
+  pipeline = summarise() + rasterize(2, "max") + rasterize(2, "max", filter = "z < 16") + delete_points(filter = "z < 16") + summarise()
+  ans = exec(pipeline, on = f)
+
+  expect_true(lasR:::get_pipeline_info(pipeline)$streamable)
+
+  expect_equal(ans[[1]]$npoints, 81590L)
+
+  expect_equal(mean(ans[[2]][], na.rm = T), 16.2466, tolerance = 1e-6)
+  expect_equal(sum(is.na(ans[[2]][])), 559L)
+
+  expect_equal(mean(ans[[3]][], na.rm = T), 10.52907, tolerance = 1e-6)
+  expect_equal(sum(is.na(ans[[3]][])), 2588L)
+
+  expect_equal(ans[[4]]$npoints, 44974L)
+})
+
+

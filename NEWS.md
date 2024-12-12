@@ -1,6 +1,8 @@
 # lasR 0.13.0
 
-`lasR 0.13.0` is a massive rewrite of the internal engine to conform to third-party libraries' licenses. I'm expecting users to encounter some bugs in the near future. However, all the unit tests are passing.
+`lasR 0.13.0` is a massive rewrite of the internal engine to conform to third-party libraries licenses. With this version `lasR` is no longer tight to the LAS/LAZ format and will be able to support any point cloud format. It already partially supports the PCD file format.
+
+I'm expecting users to encounter some bugs in the near future. However, all the unit tests are passing.
 
 ### Breaking Changes
 
@@ -18,10 +20,11 @@
 
   ```r
   f <- system.file("extdata", "Topography.las", package="lasR")
-  las <- read_cloud(f)
-  u = exec(chm(5), on = las)
+  pc <- read_cloud(f)
+  u = exec(chm(5), on = pc)
   ```
-
+- New: `reader()` replace `reader_las()` because `lasR` is not intended to be limited to LAS/LAZ. `reader_las()` is deprecated. `reader()` is supposed to support any format in the future.
+- New: `reader()` has a new argument `copc_depth`  
 
 # lasR 0.12.1
 

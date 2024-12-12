@@ -871,6 +871,9 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' @template param-filter
 #' @param xc,yc,r numeric. Circle centres and radius or radii.
 #' @param xmin,ymin,xmax,ymax numeric. Coordinates of the rectangles
+#' @param select character. Unused. Reserved for future versions.
+#' @param copc_depth integer. If the files are COPC file is is possible to read the point hierarchy
+#' up to a given level.
 #' @param ... passed to other readers
 #'
 #' @examples
@@ -900,21 +903,26 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' # terra::plot(ans)
 #' @export
 #' @md
-reader = function(filter = "", ...)
+reader = function(filter = "", select = "*", copc_depth = NULL, ...)
 {
   p <- list(...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
 
-  if (circle) return(reader_circles(p$xc, p$yc, p$r, filter = filter, ...))
-  if (rectangle) return(reader_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, ...))
-  return(reader_coverage(filter = filter, ...))
+  if (circle) return(reader_circles(p$xc, p$yc, p$r, filter = filter, select = select, copc_depth = copc_depth, ...))
+  if (rectangle) return(reader_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, select = select, copc_depth = copc_depth,  ...))
+  return(reader_coverage(filter = filter, select = select, copc_depth = copc_depth, ...))
 }
 
 #' @export
 #' @rdname reader
-reader_coverage = function(filter = "", ...)
+reader_coverage = function(filter = "", select = "*", copc_depth = NULL, ...)
 {
+  if (!is.null(copc_depth))
+  {
+    stopifnot(is.numeric(copc_depth), copc_depth >= 0)
+    filter = c(filter, paste0("-max_depth ", copc_depth))
+  }
   ans <- list(algoname = "reader", filter = filter)
   attr(ans, "laslib") = TRUE
   set_lasr_class(ans)
@@ -922,13 +930,13 @@ reader_coverage = function(filter = "", ...)
 
 #' @export
 #' @rdname reader
-reader_circles = function(xc, yc, r, filter = "", ...)
+reader_circles = function(xc, yc, r, filter = "", select = "*", copc_depth = NULL, ...)
 {
   stopifnot(length(xc) == length(yc))
   if (length(r) == 1) r <- rep(r, length(xc))
   if (length(r) > 1) stopifnot(length(xc) == length(r))
 
-  ans <- reader_coverage(filter, ...)
+  ans <- reader_coverage(filter, select, copc_depth, ...)
   ans[[1]]$xcenter <- xc
   ans[[1]]$ycenter <- yc
   ans[[1]]$radius <- r
@@ -937,11 +945,11 @@ reader_circles = function(xc, yc, r, filter = "", ...)
 
 #' @export
 #' @rdname reader
-reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", ...)
+reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", copc_depth = NULL, ...)
 {
   stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
 
-  ans <- reader_coverage(filter, ...)
+  ans <- reader_coverage(filter, select, copc_depth, ...)
   ans[[1]]$xmin <- xmin
   ans[[1]]$ymin <- ymin
   ans[[1]]$xmax <- xmax

@@ -8,13 +8,30 @@
 \alias{reader_las_rectangles}
 \title{Deprecated}
 \usage{
-reader_las(filter = "", ...)
+reader_las(filter = "", select = "*", copc_depth = NULL, ...)
 
-reader_las_coverage(filter = "", ...)
+reader_las_coverage(filter = "", select = "*", copc_depth = NULL, ...)
 
-reader_las_circles(xc, yc, r, filter = "", ...)
+reader_las_circles(
+  xc,
+  yc,
+  r,
+  filter = "",
+  select = "*",
+  copc_depth = NULL,
+  ...
+)
 
-reader_las_rectangles(xmin, ymin, xmax, ymax, filter = "", ...)
+reader_las_rectangles(
+  xmin,
+  ymin,
+  xmax,
+  ymax,
+  filter = "",
+  select = "*",
+  copc_depth = NULL,
+  ...
+)
 }
 \arguments{
 \item{filter}{see \link{reader}}

@@ -7,19 +7,33 @@
 \alias{reader_rectangles}
 \title{Initialize the pipeline}
 \usage{
-reader(filter = "", ...)
+reader(filter = "", select = "*", copc_depth = NULL, ...)
 
-reader_coverage(filter = "", ...)
+reader_coverage(filter = "", select = "*", copc_depth = NULL, ...)
 
-reader_circles(xc, yc, r, filter = "", ...)
+reader_circles(xc, yc, r, filter = "", select = "*", copc_depth = NULL, ...)
 
-reader_rectangles(xmin, ymin, xmax, ymax, filter = "", ...)
+reader_rectangles(
+  xmin,
+  ymin,
+  xmax,
+  ymax,
+  filter = "",
+  select = "*",
+  copc_depth = NULL,
+  ...
+)
 }
 \arguments{
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
 The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
+
+\item{select}{character. Unused. Reserved for future versions.}
+
+\item{copc_depth}{integer. If the files are COPC file is is possible to read the point hierarchy
+up to a given level.}
 
 \item{...}{passed to other readers}
 
