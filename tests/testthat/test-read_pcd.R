@@ -4,7 +4,7 @@ test_that("reader_pcd works (in memory)",
   pipeline = summarise() + rasterize(0.25, "max") + rasterize(0.25, "max", filter = "Z < 16") + delete_points(filter = "Z < 16") + summarise() + lasR:::nothing(T,F,F)
   ans = exec(pipeline, on = f)
 
-  terra::plot(ans[[2]])
+  #terra::plot(ans[[2]])
 
   expect_false(lasR:::get_pipeline_info(pipeline)$streamable)
 
