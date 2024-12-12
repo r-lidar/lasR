@@ -19,7 +19,7 @@ the original Z coordinates (Height Above Sea Level).
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-pipeline <- reader_las() + normalize() + write_las()
+pipeline <- reader() + normalize() + write_las()
 exec(pipeline, on = f)
 }
 \seealso{

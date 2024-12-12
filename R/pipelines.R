@@ -9,7 +9,7 @@
 
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader_las() + normalize() + write_las()
+#' pipeline <- reader() + normalize() + write_las()
 #' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
@@ -47,7 +47,7 @@ hag = function()
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader_las() + dtm()
+#' pipeline <- reader() + dtm()
 #' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
@@ -74,7 +74,7 @@ dtm = function(res = 1, add_class = NULL, ofile = temptif())
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader_las() + chm()
+#' pipeline <- reader() + chm()
 #' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
