@@ -51,7 +51,7 @@ done by the user in separate functions.
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package="lasR")
 
-reader <- reader_las(filter = keep_first())
+reader <- reader(filter = keep_first())
 chm <- rasterize(1, "max")
 lmx <- local_maximum_raster(chm, 5)
 tree <- region_growing(chm, lmx, max_cr = 10)

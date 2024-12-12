@@ -57,7 +57,7 @@ exec = function(pipeline, on, with = NULL, ...)
     # A reader stage is mandatory. It is allowed to omit it, the engine adds it.
     if (is_reader_missing(pipeline))
     {
-      pipeline = reader_las() + pipeline
+      pipeline = reader() + pipeline
     }
 
     # A build_catalog stage is automatically added. Users do not need to take care of that one
@@ -94,7 +94,6 @@ exec = function(pipeline, on, with = NULL, ...)
       pipeline[[1]]$type = "dataframe"
 
       ind = get_reader_index(pipeline)
-      pipeline[[ind]]$algoname = "reader_dataframe"
       pipeline[[ind]]$dataframe = on
       pipeline[[ind]]$accuracy = acc
       pipeline[[ind]]$crs = crs
@@ -115,7 +114,6 @@ exec = function(pipeline, on, with = NULL, ...)
       pipeline[[1]]$type = "externalptr"
 
       ind = get_reader_index(pipeline)
-      pipeline[[ind]]$algoname = "reader_externalptr"
       pipeline[[ind]]$externalptr = on[[1]]
 
       on_is_valid = TRUE
@@ -170,7 +168,7 @@ is_reader_missing = function(pipeline)
 {
   for (stage in pipeline)
   {
-    if (stage$algoname == "reader_las")
+    if (substr(stage$algoname, 1, 6) == "reader")
     {
       return(FALSE)
     }
@@ -183,7 +181,7 @@ get_reader_index = function(pipeline)
   i = 1
   for (stage in pipeline)
   {
-    if (stage$algoname == "reader_las")
+    if (stage$algoname == "reader")
     {
       return(i)
     }
@@ -426,7 +424,7 @@ write_json = function(config)
       stage$call <- address(stage$call)
       stage$env <- address(stage$env)
     }
-    else if (stage$algoname == "reader_dataframe" || stage$algoname == "build_catalog" || stage$algoname == "reader_externalptr")
+    else if (stage$algoname == "reader" || stage$algoname == "build_catalog")
     {
       if (!is.null(stage$dataframe))
         stage$dataframe = address(stage$dataframe)

@@ -11,13 +11,13 @@ set_crs(x)
 }
 \description{
 Assign a CRS in the pipeline. This stage \strong{does not} reproject the data. It assigns a CRS. This
-stage affects subsequent stages of the pipeline and thus should appear close to \link{reader_las}
+stage affects subsequent stages of the pipeline and thus should appear close to \link{reader}
 to assign the correct CRS to all stages.
 }
 \examples{
 # expected usage
 hmax = rasterize(10, "max")
-pipeline = reader_las() + set_crs(2949) + hmax
+pipeline = reader() + set_crs(2949) + hmax
 
 # fancy usages are working as expected. The .tif file is written with a CRS, the .gpkg file with
 # another CRS and the .las file with yet another CRS.

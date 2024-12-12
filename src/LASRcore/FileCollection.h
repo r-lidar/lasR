@@ -12,7 +12,7 @@
 #include <vector>
 #include <filesystem>
 
-enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, PCDFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE};
+enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, PCDFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE, DATAFRAME, XPTR};
 
 class Header;
 
@@ -45,6 +45,7 @@ public:
   int get_number_chunks() const;
   int get_number_files() const;
   int get_number_indexed_files() const;
+  PathType get_format() const;
   double get_buffer() const { return buffer; };
   double get_xmin() const { return xmin; };
   double get_ymin() const { return ymin; };
@@ -59,12 +60,14 @@ public:
   bool file_exists(std::string& file);
 
   #ifdef USING_R
-  void add_bbox(double xmin, double ymin, double xmax, double ymax, int npoints);   // Special to build a FileCollection from a data.frame in R
+  void add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints);   // Special to build a FileCollection from a data.frame in R
+  void add_xptr(Header header);
   #endif
 
 private:
   bool read_vpc(const std::string& file);
   bool add_las_file(std::string file, bool noprocess = false);
+  bool add_pcd_file(std::string file, bool noprocess = false);
   bool add_header(const Header& header, bool noprocess = false);
   bool get_chunk_regular(int index, Chunk& chunk) const;
   bool get_chunk_with_query(int index, Chunk& chunk) const;

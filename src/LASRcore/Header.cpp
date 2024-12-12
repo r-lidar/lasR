@@ -38,7 +38,7 @@ void Header::dump() const
   print("Adjusted Standard GPS Time: %s\n", adjusted_standard_gps_time ? "true" : "false");
   print("Spatial Index: %s\n", spatial_index ? "true" : "false");
   print("Number of Point Records: %" PRIu64 "\n", number_of_point_records);
-  schema.dump();
+  schema.dump(true);
   crs.dump();
 }
 // # nocov end

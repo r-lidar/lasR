@@ -79,7 +79,7 @@ in this case.
 
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader_las()
+read <- reader()
 tri  <- triangulate(filter = keep_ground())
 dtm  <- rasterize(1, tri) # input is a triangulation stage
 avgi <- rasterize(10, mean(Intensity)) # input is a user expression

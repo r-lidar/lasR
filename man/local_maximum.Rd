@@ -63,7 +63,7 @@ in vector format. The function \code{local_maximum_raster} applies on a raster i
 }
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package = "lasR")
-read <- reader_las()
+read <- reader()
 lmf <- local_maximum(5)
 ans <- exec(read + lmf, on = f)
 ans
