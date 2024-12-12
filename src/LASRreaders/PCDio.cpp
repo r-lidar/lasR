@@ -158,21 +158,24 @@ bool PCDio::populate_header(Header* header)
 
   if (fields[0] != "x" && fields[0] != "X")
   {
-    last_error = "The first fields must be 'x' or 'X' not '" + fields[0] + "'";
+    last_error = "The first field must be 'x' or 'X' not '" + fields[0] + "'";
     return false;
   }
 
   if (fields[1] != "y" && fields[1] != "Y")
   {
-    last_error = "The first fields must be 'y' or 'Y' not '" + fields[1] + "'";
+    last_error = "The second field must be 'y' or 'Y' not '" + fields[1] + "'";
     return false;
   }
 
   if (fields[2] != "z" && fields[2] != "Z")
   {
-    last_error = "The first fields must be 'z' or 'Z' not '" + fields[2] + "'";
+    last_error = "The third field must be 'z' or 'Z' not '" + fields[2] + "'";
     return false;
   }
+
+  //Attribute attrf("flags", AttributeType::INT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
+  //header->add_attribute(attrf);
 
   for (int i = 0 ; i < fields.size() ; i++)
   {
@@ -237,7 +240,7 @@ bool PCDio::read_point(Point* p)
 {
   do
   {
-    // Read one point from the stream
+    // Read one point from the stream + 1 bytes because of the flags used by lasR
     istream.read(reinterpret_cast<char*>(p->data), p->schema->total_point_size);
 
     // Check if the correct number of bytes were read

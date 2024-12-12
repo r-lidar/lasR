@@ -80,6 +80,9 @@ bool LASRdataframereader::process(Header*& header)
     }
   }
 
+  Attribute attrf("flags", AttributeType::INT8);
+  header->add_attribute(attrf);
+
   Attribute attrx("X", AttributeType::INT32, scale[0], offset[0]);
   header->add_attribute(attrx);
   accessors.push_back(AttributeAccessor("X"));
@@ -91,9 +94,6 @@ bool LASRdataframereader::process(Header*& header)
   Attribute attrz("Z", AttributeType::INT32, scale[2], offset[2]);
   header->add_attribute(attrz);
   accessors.push_back(AttributeAccessor("Z"));
-
-  Attribute attrf("flags", AttributeType::INT8);
-  header->add_attribute(attrf);
 
   // Check the name and find to which LAS attributes it corresponds
   for (int i = 0; i <  Rf_length(dataframe); i++)

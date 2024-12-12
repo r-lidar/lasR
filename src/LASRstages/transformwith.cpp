@@ -201,9 +201,9 @@ bool LASRtransformwith::process(PointCloud*& las)
     double y = 0;
     double z = 0;
 
-    double new_xoffset = las->header->schema.attributes[0].offset;
-    double new_yoffset = las->header->schema.attributes[1].offset;
-    double new_zoffset = las->header->schema.attributes[2].offset;
+    double new_xoffset = las->header->schema.attributes[AttributeCore::X].value_offset;
+    double new_yoffset = las->header->schema.attributes[AttributeCore::Y].value_offset;
+    double new_zoffset = las->header->schema.attributes[AttributeCore::Z].value_offset;
 
     mat->transform(new_xoffset, new_yoffset, new_zoffset);
 
@@ -215,15 +215,14 @@ bool LASRtransformwith::process(PointCloud*& las)
 
       mat->transform(x,y,z);
 
-      las->point.set_X((x-new_xoffset)/las->header->schema.attributes[0].scale_factor);
-      las->point.set_Y((y-new_yoffset)/las->header->schema.attributes[1].scale_factor);
-      las->point.set_Z((z-new_zoffset)/las->header->schema.attributes[2].scale_factor);
+      las->point.set_X((x-new_xoffset)/las->header->schema.attributes[AttributeCore::X].scale_factor);
+      las->point.set_Y((y-new_yoffset)/las->header->schema.attributes[AttributeCore::Y].scale_factor);
+      las->point.set_Z((z-new_zoffset)/las->header->schema.attributes[AttributeCore::Z].scale_factor);
     }
 
-
-    las->header->schema.attributes[0].value_offset = new_xoffset;
-    las->header->schema.attributes[1].value_offset = new_yoffset;
-    las->header->schema.attributes[2].value_offset = new_zoffset;
+    las->header->schema.attributes[AttributeCore::X].value_offset = new_xoffset;
+    las->header->schema.attributes[AttributeCore::Y].value_offset = new_yoffset;
+    las->header->schema.attributes[AttributeCore::Z].value_offset = new_zoffset;
 
     las->seek(0);
 

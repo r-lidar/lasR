@@ -234,10 +234,10 @@ bool LASio::populate_header(Header* header, bool read_first_point)
   header->file_creation_day = lasreader->header.file_creation_day;
   header->adjusted_standard_gps_time = lasreader->header.get_global_encoding_bit(0) == true;
 
+  header->schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
   header->schema.add_attribute("X", AttributeType::INT32, header->x_scale_factor, header->x_offset, "X coordinate");
   header->schema.add_attribute("Y", AttributeType::INT32, header->y_scale_factor, header->y_offset, "Y coordinate");
   header->schema.add_attribute("Z", AttributeType::INT32, header->z_scale_factor, header->z_offset, "Z coordinate");
-  header->schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
   header->schema.add_attribute("Intensity", AttributeType::UINT16, 1, 0, "Pulse return magnitude");
   header->schema.add_attribute("ReturnNumber", AttributeType::UINT8, 1, 0, "Pulse return number for a given output pulse");
   header->schema.add_attribute("NumberOfReturns", AttributeType::UINT8, 1, 0, "Total number of returns for a given pulse");
@@ -351,12 +351,12 @@ bool LASio::init(const Header* header, const CRS& crs)
   lasheader->file_creation_day    = 0;
   lasheader->point_data_format    = guess_point_data_format(has_gps, has_rgb, has_nir);
   lasheader->point_data_record_length = get_point_data_record_length(lasheader->point_data_format);
-  lasheader->x_scale_factor       = header->schema.attributes[0].scale_factor;
-  lasheader->y_scale_factor       = header->schema.attributes[1].scale_factor;
-  lasheader->z_scale_factor       = header->schema.attributes[2].scale_factor;
-  lasheader->x_offset             = header->schema.attributes[0].offset;
-  lasheader->y_offset             = header->schema.attributes[1].offset;
-  lasheader->z_offset             = header->schema.attributes[2].offset;
+  lasheader->x_scale_factor       = header->schema.attributes[AttributeCore::X].scale_factor;
+  lasheader->y_scale_factor       = header->schema.attributes[AttributeCore::Y].scale_factor;
+  lasheader->z_scale_factor       = header->schema.attributes[AttributeCore::Z].scale_factor;
+  lasheader->x_offset             = header->schema.attributes[AttributeCore::X].value_offset;
+  lasheader->y_offset             = header->schema.attributes[AttributeCore::Y].value_offset;
+  lasheader->z_offset             = header->schema.attributes[AttributeCore::Z].value_offset;
   lasheader->number_of_point_records = 0;
   /*lasheader->min_x                = xmin;
   lasheader->min_y                = ymin;
