@@ -15,7 +15,7 @@ I'm expecting users to encounter some bugs in the near future. However, all the 
 
 ### New Features
 
-- New: Ability to pre-read a point cloud in R using an external pointer. See `read_cloud()`.
+- New: Ability to pre-read a point cloud in R using an external pointer. See `?read_cloud()`. See [the tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
 - New: Stages can now be applied one by one to a point cloud loaded in memory.
 
   ```r

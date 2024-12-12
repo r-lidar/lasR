@@ -532,6 +532,29 @@ Currently, there is only one `stop_if` stage that conditionally stops the pipeli
 
 The topic is covered in a [dedicated article](multithreading.html)
 
+## Pre-read a point cloud in memory
+
+In this tutorial we have seen the batch processing mode. It is also possible to load a point cloud in memory with `read_cloud()`
+
+```{r, echo=FALSE}
+set_exec_options(progress = FALSE)
+```
+
+```{r, readcloud}
+f <- c(system.file("extdata", "Topography.las", package="lasR"))
+cloud = read_cloud(f)
+cloud
+```
+Once a point cloud is loaded in memory is possible to apply a pipeline on it. In the following the we are computing a DTM and sampling the point cloud. The output is thus a raster and the point cloud has been modified. See above the point cloud was 73,400 point. After applying the pipeline the object only has 23,780 points
+
+```{r, pipelinexptr}
+pipeline = dtm() + sampling_poisson(2)
+ans = exec(pipeline, on = cloud)
+ans
+cloud
+```
+
+
 ## Other stages
 
 `lasR` has several other stages not mentioned in this tutorial. Among others:

@@ -414,9 +414,11 @@ bool PointCloud::sort(const std::vector<int>& order)
 
 void PointCloud::update_header()
 {
-  /*LASinventory inventory;
-  while (read_point()) inventory.add(&point);
-  inventory.update_header(header);*/
+  header->number_of_point_records = 0;
+  while (read_point())
+  {
+    header->number_of_point_records++;
+  }
 }
 
 // Thread safe
