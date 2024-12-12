@@ -201,9 +201,9 @@ bool LASRtransformwith::process(PointCloud*& las)
     double y = 0;
     double z = 0;
 
-    double new_xoffset = las->header->schema.attributes[0].offset;
-    double new_yoffset = las->header->schema.attributes[1].offset;
-    double new_zoffset = las->header->schema.attributes[2].offset;
+    double new_xoffset = las->header->schema.attributes[0].value_offset;
+    double new_yoffset = las->header->schema.attributes[1].value_offset;
+    double new_zoffset = las->header->schema.attributes[2].value_offset;
 
     mat->transform(new_xoffset, new_yoffset, new_zoffset);
 

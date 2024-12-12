@@ -352,9 +352,9 @@ bool LASlibInterface::init(const Header* header, const CRS& crs)
   lasheader->x_scale_factor       = header->schema.attributes[0].scale_factor;
   lasheader->y_scale_factor       = header->schema.attributes[1].scale_factor;
   lasheader->z_scale_factor       = header->schema.attributes[2].scale_factor;
-  lasheader->x_offset             = header->schema.attributes[0].offset;
-  lasheader->y_offset             = header->schema.attributes[1].offset;
-  lasheader->z_offset             = header->schema.attributes[2].offset;
+  lasheader->x_offset             = header->schema.attributes[0].value_offset;
+  lasheader->y_offset             = header->schema.attributes[1].value_offset;
+  lasheader->z_offset             = header->schema.attributes[2].value_offset;
   lasheader->number_of_point_records = 0;
   /*lasheader->min_x                = xmin;
   lasheader->min_y                = ymin;
