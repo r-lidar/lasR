@@ -130,7 +130,7 @@ loaded. '*' is the wildcard that enables everything to be exposed from the point
 <span class="r-in"><span><span class="va">read_las</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="va">load</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">}</span></span></span>
-<span class="r-in"><span>  <span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">call</span> <span class="op">&lt;-</span> <span class="fu">callback</span><span class="op">(</span><span class="va">load</span>, expose <span class="op">=</span> <span class="st">"xyzi"</span>, no_las_update <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span> <span class="op">(</span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">read</span> <span class="op">+</span> <span class="va">call</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
@@ -154,7 +154,7 @@ loaded. '*' is the wildcard that enables everything to be exposed from the point
 <span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">call</span> <span class="op">&lt;-</span> <span class="fu">callback</span><span class="op">(</span><span class="va">convert_intensity_in_range</span>, expose <span class="op">=</span> <span class="st">"i"</span>, min <span class="op">=</span> <span class="fl">0</span>, max <span class="op">=</span> <span class="fl">255</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">write</span> <span class="op">&lt;-</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">call</span> <span class="op">+</span> <span class="va">write</span></span></span>
@@ -162,13 +162,13 @@ loaded. '*' is the wildcard that enables everything to be exposed from the point
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">las</span> <span class="op">&lt;-</span> <span class="fu">read_las</span><span class="op">(</span><span class="va">ans</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">las</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          X         Y        Z Intensity</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 273357.1 -94349.14 806.5340       137</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 273357.2 -94349.88 806.5635        72</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 273357.2 -94351.45 806.0248       140</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 273357.2 -94199.37 809.6303        57</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 273357.2 -94200.14 809.3880       133</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 273357.2 -94200.89 809.4847         7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          X       Y        Z Intensity</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 273357.1 5274360 806.5340       137</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 273357.2 5274359 806.5635        72</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 273357.2 5274358 806.0248       140</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 273357.2 5274510 809.6303        57</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 273357.2 5274509 809.3880       133</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 273357.2 5274508 809.4847         7</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

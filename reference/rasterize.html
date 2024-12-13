@@ -140,7 +140,7 @@ in this case.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">read</span> <span class="op">&lt;-</span> <span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tri</span>  <span class="op">&lt;-</span> <span class="fu"><a href="triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">dtm</span>  <span class="op">&lt;-</span> <span class="fu">rasterize</span><span class="op">(</span><span class="fl">1</span>, <span class="va">tri</span><span class="op">)</span> <span class="co"># input is a triangulation stage</span></span></span>
 <span class="r-in"><span><span class="va">avgi</span> <span class="op">&lt;-</span> <span class="fu">rasterize</span><span class="op">(</span><span class="fl">10</span>, <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">Intensity</span><span class="op">)</span><span class="op">)</span> <span class="co"># input is a user expression</span></span></span>
@@ -153,23 +153,23 @@ in this case.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 1, 1  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1ed537887000.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1ed537887000 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e936e3025b9.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1e936e3025b9 </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 30, 30, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 10, 10  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273350, 273650, 5274350, 5274650  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1ed52c69e7dd.tif </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1ed52c69e7dd </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e9314f904b4.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> name        : file1e9314f904b4 </span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> dimensions  : 144, 144, 1  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 2, 2  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 273356, 273644, 5274356, 5274644  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1ed5507bbd5d.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e9360c01885.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> name        : max </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Demonstration of buffered rasterization</span></span></span>

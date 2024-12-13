@@ -19,6 +19,7 @@
 <url><loc>https://r-lidar.github.io/lasR/reference/classify_with_ivf.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/classify_with_sor.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/delete_points.html</loc></url>
+<url><loc>https://r-lidar.github.io/lasR/reference/deprecated.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/dtm.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/exec.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/filter_with_grid.html</loc></url>
@@ -39,7 +40,7 @@
 <url><loc>https://r-lidar.github.io/lasR/reference/print.lasrcloud.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/rasterize.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/read_cloud.html</loc></url>
-<url><loc>https://r-lidar.github.io/lasR/reference/reader_las.html</loc></url>
+<url><loc>https://r-lidar.github.io/lasR/reference/reader.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/region_growing.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/sampling.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/set_crs.html</loc></url>

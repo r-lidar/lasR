@@ -47,7 +47,8 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.13.0" id="lasr-0130">lasR 0.13.0<a class="anchor" aria-label="anchor" href="#lasr-0130"></a></h2>
-<p><code>lasR 0.13.0</code> is a massive rewrite of the internal engine to conform to third-party libraries’ licenses. I’m expecting users to encounter some bugs in the near future. However, all the unit tests are passing.</p>
+<p><code>lasR 0.13.0</code> is a massive rewrite of the internal engine to conform to third-party libraries licenses. With this version <code>lasR</code> is no longer tight to the LAS/LAZ format and will be able to support any point cloud format. It already partially supports the PCD file format.</p>
+<p>I’m expecting users to encounter some bugs in the near future. However, all the unit tests are passing.</p>
 <div class="section level4">
 <h4 id="breaking-changes-0-13-0">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-13-0"></a></h4>
 <ul><li>It is no longer possible to use <code>LASlib</code> filters such as <code>-drop_z_above 5</code> in the stages (except the reader stage). Users must use conditional commands introduced in 0.12.0, such as <code>"Z &gt; 5"</code>.</li>
@@ -62,14 +63,16 @@
 </ul></div>
 <div class="section level4">
 <h4 id="new-features-0-13-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-13-0"></a></h4>
-<ul><li><p>New: Ability to pre-read a point cloud in R using an external pointer. See <code><a href="../reference/read_cloud.html">read_cloud()</a></code>.</p></li>
+<ul><li><p>New: Ability to pre-read a point cloud in R using an external pointer. See <code>?read_cloud()</code>. See <a href="https://r-lidar.github.io/lasR/articles/tutorial.html">the tutorial</a>.</p></li>
 <li>
 <p>New: Stages can now be applied one by one to a point cloud loaded in memory.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span>
-<span><span class="va">las</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_cloud.html">read_cloud</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
-<span><span class="va">u</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="fu"><a href="../reference/chm.html">chm</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>, on <span class="op">=</span> <span class="va">las</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">pc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_cloud.html">read_cloud</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
+<span><span class="va">u</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="fu"><a href="../reference/chm.html">chm</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>, on <span class="op">=</span> <span class="va">pc</span><span class="op">)</span></span></code></pre></div>
 </li>
+<li><p>New: <code><a href="../reference/reader.html">reader()</a></code> replace <code><a href="../reference/deprecated.html">reader_las()</a></code> because <code>lasR</code> is not intended to be limited to LAS/LAZ. <code><a href="../reference/deprecated.html">reader_las()</a></code> is deprecated. <code><a href="../reference/reader.html">reader()</a></code> is supposed to support any format in the future.</p></li>
+<li><p>New: <code><a href="../reference/reader.html">reader()</a></code> has a new argument <code>copc_depth</code></p></li>
 </ul></div>
 </div>
     <div class="section level2">
@@ -112,7 +115,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.10.1" id="lasr-0101">lasR 0.10.1<a class="anchor" aria-label="anchor" href="#lasr-0101"></a></h2>
 <ul><li>Fix <a href="https://github.com/r-lidar/lasR/issues/91" class="external-link">#91</a>: Resolved a critical memory addressing issue when handling very large point clouds.</li>
-<li>Fix: Improved pipeline efficiency by preventing the reading of buffer tiles in pipelines using <code>stop_if()</code> before <code><a href="../reference/reader_las.html">reader_las()</a></code>. Previously, the buffer was being read even when points were meant to be skipped, leading to unnecessary processing time (a few seconds per skipped file).</li>
+<li>Fix: Improved pipeline efficiency by preventing the reading of buffer tiles in pipelines using <code>stop_if()</code> before <code><a href="../reference/deprecated.html">reader_las()</a></code>. Previously, the buffer was being read even when points were meant to be skipped, leading to unnecessary processing time (a few seconds per skipped file).</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.10.0" id="lasr-0100">lasR 0.10.0<a class="anchor" aria-label="anchor" href="#lasr-0100"></a></h2>
@@ -216,7 +219,7 @@
 <h2 class="pkg-version" data-toc-text="0.6.1" id="lasr-061">lasR 0.6.1<a class="anchor" aria-label="anchor" href="#lasr-061"></a></h2>
 <ul><li>Fix: metrics <code>cv</code> and <code>sd</code> that return <code>NAs</code> instead of <code>Inf</code> in the edges case where they are undefined.</li>
 <li>Enhance: progress bar displays better the number of cores used.</li>
-<li>Fix: progress bar for the <code><a href="../reference/reader_las.html">reader_las()</a></code> stage. It now displays the correct percentage.</li>
+<li>Fix: progress bar for the <code><a href="../reference/deprecated.html">reader_las()</a></code> stage. It now displays the correct percentage.</li>
 <li>Fix: <code><a href="../reference/write_las.html">write_las()</a></code> without wildcard (merge mode) works with files that have different formats and scales/offsets</li>
 </ul></div>
     <div class="section level2">
@@ -241,8 +244,8 @@
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.6" id="lasr-056">lasR 0.5.6<a class="anchor" aria-label="anchor" href="#lasr-056"></a></h2>
-<ul><li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> with COPC files, depth query (<code>-max_depth</code>), and buffer. The depth query was not performed at all. The fix is temporary: it breaks the progress bar of <code><a href="../reference/reader_las.html">reader_las()</a></code> but this is a less serious bug.</li>
-<li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> with very large files.</li>
+<ul><li>Fix: <code><a href="../reference/deprecated.html">reader_las()</a></code> with COPC files, depth query (<code>-max_depth</code>), and buffer. The depth query was not performed at all. The fix is temporary: it breaks the progress bar of <code><a href="../reference/deprecated.html">reader_las()</a></code> but this is a less serious bug.</li>
+<li>Fix: <code><a href="../reference/deprecated.html">reader_las()</a></code> with very large files.</li>
 <li>Fix: <code><a href="../reference/load_raster.html">load_raster()</a></code> is thread-safe</li>
 <li>New: <code><a href="../reference/rasterize.html">rasterize()</a></code> accepts a new argument <code>default_value</code>. When rasterizing with an operator and a filter (e.g. <code>-keep_z_above 2</code>) some pixels that are covered by points may no longer contain any point that pass the filter criteria and are assigned NA. To differentiate NAs from non covered pixels and NAs from covered pixels but without point that pass the filter, the later case can be assigned another value such as 0.</li>
 </ul></div>
@@ -252,7 +255,7 @@
 <li>Enhance: <code><a href="../reference/write_vpc.html">write_vpc()</a></code> writes <code>zmin</code> and <code>zmax</code> for each file.</li>
 <li>Fix: <a href="https://github.com/r-lidar/lasR/issues/55" class="external-link">#55</a> <code><a href="../reference/local_maximum.html">local_maximum()</a></code> no longer fails with <code>ofile = ""</code>
 </li>
-<li>Fix: progress bar of the <code><a href="../reference/reader_las.html">reader_las()</a></code> for COPC files.</li>
+<li>Fix: progress bar of the <code><a href="../reference/deprecated.html">reader_las()</a></code> for COPC files.</li>
 <li>Fix: metrics <code>zsd</code> and <code>isd</code> were incorrect due to wrong parenthesis in the code.</li>
 </ul></div>
     <div class="section level2">
@@ -333,7 +336,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.2" id="lasr-042">lasR 0.4.2<a class="anchor" aria-label="anchor" href="#lasr-042"></a></h2>
 <ul><li>Fix: <code>add_attribute()</code> was incorrectly reallocating memory causing potential crashes, especially when adding several attributes.</li>
-<li>Fix: <code><a href="../reference/reader_las.html">reader_las()</a></code> crashing if the header of the LAS file did not record the correct number of points.</li>
+<li>Fix: <code><a href="../reference/deprecated.html">reader_las()</a></code> crashing if the header of the LAS file did not record the correct number of points.</li>
 <li>Fix: naming of the queries.</li>
 <li>Documentation: reorganized the URLs and navbar of the website.</li>
 </ul></div>
@@ -384,16 +387,16 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="lasr-030">lasR 0.3.0<a class="anchor" aria-label="anchor" href="#lasr-030"></a></h2>
 <ul><li>
-<p>Change: <code>processor()</code> and <code>reader()</code> are deprecated and are replaced by <code><a href="../reference/exec.html">exec()</a></code> and <code><a href="../reference/reader_las.html">reader_las()</a></code>. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the <code>LAScatalog</code> processing options and this was not possible with the previous syntax.</p>
+<p>Change: <code>processor()</code> and <code><a href="../reference/reader.html">reader()</a></code> are deprecated and are replaced by <code><a href="../reference/exec.html">exec()</a></code> and <code><a href="../reference/deprecated.html">reader_las()</a></code>. This intends to provide a more consistent and natural way to separate the pipeline. i.e the stages and the global processing options i.e. the buffer, the chunking, the progress bar. For example the following now respects the <code>LAScatalog</code> processing options and this was not possible with the previous syntax.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ctg</span> <span class="op">=</span> <span class="fu">lidR</span><span class="fu">::</span><span class="fu">readLAScatalog</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/deprecated.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li>
 <p>New: the processor is now able to process by chunk like <code>lidR</code></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/reader_las.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="../reference/deprecated.html">reader_las</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="../reference/rasterize.html">rasterize</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">file</span>, chunk <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li><p>New: stage <code><a href="../reference/delete_points.html">delete_points()</a></code> to remove some points in the pipeline.</p></li>

@@ -82,7 +82,7 @@ slightly inaccurate, but anyway, these metrics are not supposed to be useful.</p
 
 <p>The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
 a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
-s - synthetic, k - keypoint, w - withheld, o - overlap (format 6+), u - userdata, p - pointsourceid,
+s - synthetic, u - userdata, p - pointsourceid,
 e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.<br><strong>Be careful</strong> to the typos: attributes are non failing features. If the attribute does not exist <code>NaN</code>
 is returned. Thus <code>intesity_mean</code> return <code>NaN</code> rather than failing.</p>
     </div>
@@ -97,14 +97,14 @@ percentile of z. <code>z_aboveX</code> corresponds to the percentage of points a
 It is possible to call a metric without the name of the attribute. In this case, z is the default. e.g. <code>mean</code> equals <code>z_mean</code></p>
     </div>
     <div class="section level2">
-    <h2 id="extrabytes-attribute">Extrabytes attribute<a class="anchor" aria-label="anchor" href="#extrabytes-attribute"></a></h2>
+    <h2 id="extra-attribute">Extra attribute<a class="anchor" aria-label="anchor" href="#extra-attribute"></a></h2>
 
 
-<p>The core attributes are x, y, z, classification, intensity, and so on. Some point clouds have extra
-attributes called extrabytes attributes. In this case, metrics can be derived the same way using
-the names of the extra attributes. Be careful of typos. The attributes are not checked internally because
-of the extrabytes attributes. For example, if a user requests: <code>ntensity_mean</code>, this could be a typo
-or the name of an extra attribute. Because extrabytes are never failing, <code>ntensity_mean</code> will return <code>NaN</code>
+<p>The core attributes natively supported are x, y, z, classification, intensity, and so on. Some
+point clouds have other may have other attributes. In this case, metrics can be derived the same way using
+the names of the attributes. Be careful of typos. The attributes existance are not checked internally
+because. For example, if a user requests: <code>ntensity_mean</code>, this could be a typo or the name of an
+extra attribute. Because extra attribute are never failing, <code>ntensity_mean</code> will return <code>NaN</code>
 rather than an error.</p>
     </div>
 
@@ -126,7 +126,7 @@ rather than an error.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 5, 5  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 339000, 339020, 5248000, 5248005  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83 / UTM zone 17N (EPSG:26917) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1ed511bc5c54.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1e936a0e9782.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> names       : z_max, i_min, r_mean, n_median, z_sd, c_sd, ... </span>
 </code></pre></div>
     </div>

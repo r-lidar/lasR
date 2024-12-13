@@ -104,10 +104,10 @@ OpenMP for macOS</a>
 <p>The sequential strategy is <strong>not</strong> the default strategy.
 However, it is easier to start with this option to explain some
 specificities of <code>lasR</code>. In sequential processing, as the
-name indicates, the LAS/LAZ files are processed sequentially, and
-nothing is parallelized. The point cloud from one file passes through
-the pipeline while the other files are waiting to be processed. This is
-represented in the figure below.</p>
+name indicates, the files are processed sequentially, and nothing is
+parallelized. The point cloud from one file passes through the pipeline
+while the other files are waiting to be processed. This is represented
+in the figure below.</p>
 <p><img src="sequential.png" width="600"></p>
 </div>
 <div class="section level2">
@@ -118,13 +118,12 @@ represented in the figure below.</p>
 <span><span class="co"># or</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fu"><a href="../reference/multithreading.html">concurrent_points</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Concurrent points with <code><a href="../reference/multithreading.html">half_cores()</a></code> is the default
-strategy. The LAS/LAZ files are processed sequentially. The point cloud
-from one file passes through the pipeline while the other files are
-waiting. Inside the pipeline, some stages are parallelized and are
-processing the points in different threads. Each core processes a subset
-of the point cloud. The stages that are parallelized are consequently
-faster, but in practice, not a lot of stages can easily be parallelized
-this way.</p>
+strategy. The files are processed sequentially. The point cloud from one
+file passes through the pipeline while the other files are waiting.
+Inside the pipeline, some stages are parallelized and are processing the
+points in different threads. Each core processes a subset of the point
+cloud. The stages that are parallelized are consequently faster, but in
+practice, not a lot of stages can easily be parallelized this way.</p>
 <p><img src="concurent_points.png" width="600"></p>
 </div>
 <div class="section level2">
@@ -136,16 +135,16 @@ this way.</p>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fu"><a href="../reference/multithreading.html">concurrent_files</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># or</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span> <span class="co"># more convenient</span></span></code></pre></div>
-<p>The LAS/LAZ files are processed in parallel. The point cloud from
-several files passes through several cloned pipelines while the other
-files are waiting. Inside the pipeline, the stages are not parallelized.
-This puts a lot of pressure on the disk because many LAS/LAZ files are
-read simultaneously, but also each stage can write some
-raster/vector/LAS files simultaneously. Additionally, it uses a lot of
-memory since many LAS files are loaded in memory simultaneously. With
-modern and fast SSD disks and a significant amount of RAM, this is the
-fastest option. Of course, users <strong>should not</strong> use all
-their cores; otherwise, they may run out of memory. See also the <a href="benchmarks.html">benchmarks</a> vignette.</p>
+<p>The files are processed in parallel. The point cloud from several
+files passes through several cloned pipelines while the other files are
+waiting. Inside the pipeline, the stages are not parallelized. This puts
+a lot of pressure on the disk because many files are read
+simultaneously, but also each stage can write some raster/vector/LAS
+files simultaneously. Additionally, it uses a lot of memory since many
+LAS files are loaded in memory simultaneously. With modern and fast SSD
+disks and a significant amount of RAM, this is the fastest option. Of
+course, users <strong>should not</strong> use all their cores;
+otherwise, they may run out of memory. See also the <a href="benchmarks.html">benchmarks</a> vignette.</p>
 <p><img src="concurent_files.png" width="600"></p>
 </div>
 <div class="section level2">
@@ -155,11 +154,11 @@ their cores; otherwise, they may run out of memory. See also the <a href="benchm
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/multithreading.html">set_parallel_strategy</a></span><span class="op">(</span><span class="fu"><a href="../reference/multithreading.html">nested</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># or</span></span>
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span>, ncores <span class="op">=</span> <span class="fu"><a href="../reference/multithreading.html">nested</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>The LAS/LAZ files are processed in parallel. The point cloud from
-several files passes through several cloned pipelines while the other
-files are waiting. Inside the pipeline, some stages are also
-parallelized and are processing the points in different threads. Nested
-is reserved for experts only.</p>
+<p>The files are processed in parallel. The point cloud from several
+files passes through several cloned pipelines while the other files are
+waiting. Inside the pipeline, some stages are also parallelized and are
+processing the points in different threads. Nested is reserved for
+experts only.</p>
 <p><img src="nested.png" width="600"></p>
 </div>
 <div class="section level2">
