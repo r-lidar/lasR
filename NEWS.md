@@ -1,6 +1,7 @@
 # lasR 0.13.1
 
 - Fix #103: A very silly typo bug that caused the buffering feature to be lost.
+- Fix #104: crash with deprecated extrabytes in LAS format
 
 # lasR 0.13.0
 
