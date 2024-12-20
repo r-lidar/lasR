@@ -1,3 +1,7 @@
+# lasR 0.13.1
+
+- Fix #103: A very silly typo bug that caused the buffering feature to be lost.
+
 # lasR 0.13.0
 
 `lasR 0.13.0` is a massive rewrite of the internal engine to conform to third-party libraries licenses. With this version `lasR` is no longer tight to the LAS/LAZ format and will be able to support any point cloud format. It already partially supports the PCD file format.
