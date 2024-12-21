@@ -18,6 +18,7 @@ PCDio::PCDio(Progress* progress)
   this->progress = progress;
   header = nullptr;
   is_binary = false;
+  npoints = 0;
 }
 
 PCDio::~PCDio()
@@ -151,6 +152,11 @@ bool PCDio::populate_header(Header* header)
   if (data == "binary")
   {
     is_binary = true;
+    read = &PCDio::read_binary_point;
+  }
+  else
+  {
+    read = &PCDio::read_ascii_point;
   }
 
   if (fields.size() < 3)
@@ -230,13 +236,8 @@ bool PCDio::populate_header(Header* header)
   // Check for a .bbox file
   std::string bbox_filename = file.substr(0, file.find_last_of('.')) + ".bbox";
 
-  std::ifstream bbox_file(bbox_filename);
-  if (bbox_file.is_open())
-  {
-    bbox_file >> header->min_x >> header->min_y >> header->min_z >> header->max_x >> header->max_y >> header->max_z;
-    bbox_file.close();
-  }
-  else
+  // Read the bbox from the bbox file. It not then, compute the bbox by reading the file.
+  if (!read_bbox(bbox_filename))
   {
     auto payload_start = istream.tellg();
 
@@ -255,12 +256,7 @@ bool PCDio::populate_header(Header* header)
     istream.seekg(payload_start);
 
     // Write the bounding box to the .bbox file
-    std::ofstream bbox_out(bbox_filename);
-    if (bbox_out.is_open())
-    {
-      bbox_out << std::setprecision(9) << header->min_x << " " << header->min_y << " " << header->min_z << " " << header->max_x << " " << header->max_y << " " << header->max_z;
-      bbox_out.close();
-    }
+    write_bbox(bbox_filename);
   }
 
   return true;
@@ -268,19 +264,62 @@ bool PCDio::populate_header(Header* header)
 
 bool PCDio::read_point(Point* p)
 {
+  return (this->*read)(p);
+}
+
+bool PCDio::read_binary_point(Point* p)
+{
   p->zero();
+  istream.read(reinterpret_cast<char*>(p->data + 1), p->schema->total_point_size-1);  // + 1 byte because of the flags used by lasR
+  if (istream.gcount() != header->schema.total_point_size-1) return false;   // Check if the correct number of bytes were read
+  npoints++;
+  return true;
+}
 
-  // Read one point from the stream + 1 bytes because of the flags used by lasR
-  istream.read(reinterpret_cast<char*>(p->data + 1), p->schema->total_point_size-1);
+bool PCDio::read_ascii_point(Point* p)
+{
+  p->zero();
+  if (istream.eof()) return false;
 
-  // Check if the correct number of bytes were read
-  if (istream.gcount() == header->schema.total_point_size-1)
+  std::string line;
+  if (!std::getline(istream, line))
   {
-    npoints++;
-    return true;
+    last_error = "Fail to read line";
+    return false;
   }
 
-  return false;
+  std::istringstream line_stream(line);
+  for (int i = 1; i < header->schema.num_attributes(); ++i)
+  {
+    const auto& attr = header->schema.attributes[i];
+    if (!parse_attribute(line_stream, attr.type, p->data + attr.offset))
+    {
+      last_error = "Failed to parse " + attr.name;
+      return false;
+    }
+  }
+
+  npoints++;
+  return true;
+}
+
+bool PCDio::parse_attribute(std::istringstream& line_stream, AttributeType type, void* dest)
+{
+  if (!dest) return false; // Null pointer check
+  switch (type)
+  {
+    case AttributeType::FLOAT:  return static_cast<bool>(line_stream >> *static_cast<float*>(dest));
+    case AttributeType::DOUBLE: return static_cast<bool>(line_stream >> *static_cast<double*>(dest));
+    case AttributeType::INT8:   return static_cast<bool>(line_stream >> *reinterpret_cast<int8_t*>(dest));
+    case AttributeType::INT16:  return static_cast<bool>(line_stream >> *reinterpret_cast<int16_t*>(dest));
+    case AttributeType::INT32:  return static_cast<bool>(line_stream >> *reinterpret_cast<int32_t*>(dest));
+    case AttributeType::INT64:  return static_cast<bool>(line_stream >> *reinterpret_cast<int64_t*>(dest));
+    case AttributeType::UINT8:  return static_cast<bool>(line_stream >> *reinterpret_cast<uint8_t*>(dest));
+    case AttributeType::UINT16: return static_cast<bool>(line_stream >> *reinterpret_cast<uint16_t*>(dest));
+    case AttributeType::UINT32: return static_cast<bool>(line_stream >> *reinterpret_cast<uint32_t*>(dest));
+    case AttributeType::UINT64: return static_cast<bool>(line_stream >> *reinterpret_cast<uint64_t*>(dest));
+    default: return false; // Unsupported type
+  }
 }
 
 bool PCDio::is_opened()
@@ -307,3 +346,62 @@ void PCDio::close()
     header = nullptr;
   }
 }
+
+bool PCDio::write_bbox(const std::string &bbox_filename)
+{
+  std::ofstream bbox_out(bbox_filename, std::ios::binary);
+  if (!bbox_out.is_open())
+  {
+    last_error = "Failed to open bbox file for writing.\n";
+    return false;
+  }
+
+  // Write ASCII format
+  bbox_out << std::setprecision(4) << header->min_x << " " << header->min_y << " " << header->min_z << " " << header->max_x << " " << header->max_y << " " << header->max_z << std::endl;
+
+  // Marker for binary start
+  bbox_out << "BINARY:\n";
+
+  // Write binary format
+  bbox_out.write(reinterpret_cast<const char*>(&header->min_x), sizeof(header->min_x));
+  bbox_out.write(reinterpret_cast<const char*>(&header->min_y), sizeof(header->min_y));
+  bbox_out.write(reinterpret_cast<const char*>(&header->min_z), sizeof(header->min_z));
+  bbox_out.write(reinterpret_cast<const char*>(&header->max_x), sizeof(header->max_x));
+  bbox_out.write(reinterpret_cast<const char*>(&header->max_y), sizeof(header->max_y));
+  bbox_out.write(reinterpret_cast<const char*>(&header->max_z), sizeof(header->max_z));
+
+  bbox_out.close();
+
+  return true;
+}
+
+bool PCDio::read_bbox(const std::string &bbox_filename)
+{
+  std::ifstream bbox_file(bbox_filename, std::ios::binary);
+  if (!bbox_file.is_open()) return false;
+
+  // Locate the binary section
+  std::string line;
+  while (std::getline(bbox_file, line))
+  {
+    if (line == "BINARY") break;
+  }
+
+  if (bbox_file.eof())
+  {
+    last_error = "BINARY marker not found in bbox file.\n";
+    return false;
+  }
+
+  // Read binary data
+  bbox_file.read(reinterpret_cast<char*>(&header->min_x), sizeof(header->min_x));
+  bbox_file.read(reinterpret_cast<char*>(&header->min_y), sizeof(header->min_y));
+  bbox_file.read(reinterpret_cast<char*>(&header->min_z), sizeof(header->min_z));
+  bbox_file.read(reinterpret_cast<char*>(&header->max_x), sizeof(header->max_x));
+  bbox_file.read(reinterpret_cast<char*>(&header->max_y), sizeof(header->max_y));
+  bbox_file.read(reinterpret_cast<char*>(&header->max_z), sizeof(header->max_z));
+
+  bbox_file.close();
+  return true;
+}
+

@@ -29,6 +29,12 @@ public:
   void reset_accessor();
   int64_t p_count();
 
+private:
+  bool read_ascii_point(Point* p);
+  bool read_binary_point(Point* p);
+  bool parse_attribute(std::istringstream& line_stream, AttributeType type, void* dest);
+  bool write_bbox(const std::string& bbox_filename);
+  bool read_bbox(const std::string& bbox_filename);
 
 private:
   Progress* progress;
@@ -39,6 +45,7 @@ private:
   std::string file;
   int64_t npoints;
   bool is_binary;
+  bool (PCDio::*read)(Point*);
 };
 
 #endif
