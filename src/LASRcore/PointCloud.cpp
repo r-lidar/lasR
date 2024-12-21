@@ -415,11 +415,34 @@ bool PointCloud::sort(const std::vector<int>& order)
 void PointCloud::update_header()
 {
   header->number_of_point_records = 0;
+  header->min_x = std::numeric_limits<double>::max();
+  header->min_y = std::numeric_limits<double>::max();
+  header->min_z = std::numeric_limits<double>::max();
+  header->max_x = std::numeric_limits<double>::lowest();
+  header->max_y = std::numeric_limits<double>::lowest();
+  header->max_z = std::numeric_limits<double>::lowest();
+
+  double x, y, z;
+
   while (read_point())
   {
+    x = point.get_x();
+    y = point.get_y();
+    z = point.get_z();
+
+    // Update bounding box values
+    if (x < header->min_x) header->min_x = x;
+    if (y < header->min_y) header->min_y = y;
+    if (z < header->min_z) header->min_z = z;
+
+    if (x > header->max_x) header->max_x = x;
+    if (y > header->max_y) header->max_y = y;
+    if (z > header->max_z) header->max_z = z;
+
     header->number_of_point_records++;
   }
 }
+
 
 // Thread safe
 bool PointCloud::query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter) const
