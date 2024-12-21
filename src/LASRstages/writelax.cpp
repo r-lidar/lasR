@@ -1,7 +1,7 @@
 #include "writelax.h"
 #include "macros.h"
 
-#include "LASlibinterface.h"
+#include "LASio.h"
 
 LASRlaxwriter::LASRlaxwriter()
 {
@@ -40,14 +40,14 @@ bool LASRlaxwriter::process(FileCollection*& ctg)
   progress.create_subprocess();
   this->progress = &progress;
 
-  LASlibInterface laslibinterface(&progress);
+  LASio lasio(&progress);
 
   #pragma omp parallel for num_threads(ncpu_concurrent_files)
   for (size_t i = 0 ; i < files.size() ; i++)
   {
     if (!success) continue;
     std::string file = files[i].string();
-    if (!laslibinterface.write_lax(file, overwrite, embedded)) success = false;
+    if (!lasio.write_lax(file, overwrite, embedded)) success = false;
 
     #pragma omp critical
     {
@@ -71,7 +71,7 @@ bool LASRlaxwriter::set_chunk(Chunk& chunk)
 
   bool success = true;
 
-  LASlibInterface laslibinterface(progress);
+  LASio lasio(progress);
 
   #pragma omp critical (write_lax)
   {
@@ -82,7 +82,7 @@ bool LASRlaxwriter::set_chunk(Chunk& chunk)
     for (const auto& file : files)
     {
       if (!success) continue;
-      success = laslibinterface.write_lax(file, overwrite, embedded);
+      success = lasio.write_lax(file, overwrite, embedded);
     }
   }
 

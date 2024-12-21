@@ -61,10 +61,10 @@ PointCloud::PointCloud(const Raster& raster)
   header->min_y                = raster.get_ymin()-raster.get_yres()/2;
   header->max_x                = raster.get_xmax()+raster.get_xres()/2;
   header->max_y                = raster.get_ymax()-raster.get_yres()/2;
+  header->schema.add_attribute("Flags", AttributeType::INT8);
   header->schema.add_attribute("X", AttributeType::INT32, 0.001, raster.get_full_extent()[0]);
   header->schema.add_attribute("Y", AttributeType::INT32, 0.001, raster.get_full_extent()[1]);
   header->schema.add_attribute("Z", AttributeType::INT32, 0.001, 0);
-  header->schema.add_attribute("Flags", AttributeType::INT8);
 
   // For spatial indexing
   current_interval = 0;
@@ -414,9 +414,11 @@ bool PointCloud::sort(const std::vector<int>& order)
 
 void PointCloud::update_header()
 {
-  /*LASinventory inventory;
-  while (read_point()) inventory.add(&point);
-  inventory.update_header(header);*/
+  header->number_of_point_records = 0;
+  while (read_point())
+  {
+    header->number_of_point_records++;
+  }
 }
 
 // Thread safe

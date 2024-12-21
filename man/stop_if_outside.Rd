@@ -22,7 +22,7 @@ f <- system.file("extdata", "bcts/", package="lasR")
 # This bounding box encompasses only one of the four files
 stopif = stop_if_outside(884800, 620000, 885400, 629200)
 
-read = reader_las()
+read = reader()
 hll = hulls()
 tri = triangulate(filter = keep_ground())
 dtm = rasterize(1, tri)

@@ -164,18 +164,18 @@ void sdl_loop(PointCloud* las)
               run = false;
               break;
             case SDLK_z:
-              drawer->setAttribute(AttributeEnum::Z);
+              drawer->setAttribute(Drawer::AttributeEnum::Z);
               break;
             case SDLK_i:
-              drawer->setAttribute(AttributeEnum::I);
+              drawer->setAttribute(Drawer::AttributeEnum::I);
               break;
             case SDLK_c:
-              drawer->setAttribute(AttributeEnum::CLASS);
+              drawer->setAttribute(Drawer::AttributeEnum::CLASS);
               break;
             case SDLK_r:
             case SDLK_g:
             case SDLK_b:
-              drawer->setAttribute(AttributeEnum::RGB);
+              drawer->setAttribute(Drawer::AttributeEnum::RGB);
               break;
             case SDLK_q:
               drawer->display_hide_spatial_index();

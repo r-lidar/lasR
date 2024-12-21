@@ -29,7 +29,7 @@ a new extrabyte attribute. This new attribute can be populated later in another 
 \examples{
 f <- system.file("extdata", "Example.las", package = "lasR")
 fun <- function(data) { data$RAND <- runif(nrow(data), 0, 100); return(data) }
-pipeline <- reader_las() +
+pipeline <- reader() +
   add_extrabytes("float", "RAND", "Random numbers") +
   callback(fun, expose = "xyz")
 exec(pipeline, on = f)

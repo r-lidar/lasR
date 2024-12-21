@@ -1,6 +1,6 @@
 Package: lasR
 Type: Package
-Version: 0.13.0
+Version: 0.13.1
 Title: Fast and Pipeable Airborne LiDAR Data Tools
 Authors@R: c(
     person("Jean-Romain", "Roussel", email = "info@r-lidar.com", role = c("aut", "cre", "cph")),
@@ -33,3 +33,18 @@ Encoding: UTF-8
 Language: en-US
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+Collate: 
+    'stages.R'
+    'deprecated.R'
+    'doc.R'
+    'filters.R'
+    'internals.R'
+    'json.R'
+    'openmp.R'
+    'pipeline_tools.R'
+    'pipelines.R'
+    'processor.R'
+    'tempfile.R'
+    'ui_tools.R'
+    'xptr.R'
+    'zzz.R'

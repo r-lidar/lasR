@@ -22,6 +22,7 @@
 #include "rasterize.h"
 #include "sampling.h"
 #include "readlas.h"
+#include "readpcd.h"
 #include "regiongrowing.h"
 #include "setcrs.h"
 #include "sor.h"
@@ -124,6 +125,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
       std::string name = stage.at("algoname");
       std::string uid = stage.value("uid", "xxx-xxx");
 
+      if (name == "reader_las") name = "reader"; // for backward compatibility with Drawflow
+
       auto iter = factory_map.find(name);
       if (iter != factory_map.end())
       {
@@ -197,7 +200,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           }
 
           catalog = std::make_shared<FileCollection>();
-          catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
+          catalog->add_dataframe(xmin, ymin, xmax, ymax, Rf_length(X));
           catalog->set_crs(CRS(wkt));
         }
         else if (type == "externalptr")
@@ -214,12 +217,9 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           ymin = las->header->min_y;
           xmax = las->header->max_x;
           ymax = las->header->max_y;
-          int n = las->npoints;
-          CRS crs = las->header->crs;
 
           catalog = std::make_shared<FileCollection>();
-          catalog->add_bbox(xmin, ymin, xmax, ymax, n);
-          catalog->set_crs(crs);
+          catalog->add_xptr(*las->header);
         }
         #endif
         else
@@ -228,7 +228,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           return false;
         }
       }
-      else if (name.substr(0,6) == "reader")
+      else if (name == "reader")
       {
         if (reader)
         {
@@ -237,37 +237,51 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         }
         reader = true;
 
-        if (name == "reader_las")
-        {
-          auto v = std::make_unique<LASRlasreader>();
-          pipeline.push_back(std::move(v));
-        }
-
-        #ifdef USING_R
-        if (name == "reader_dataframe")
-        {
-          auto v = std::make_unique<LASRdataframereader>();
-          pipeline.push_back(std::move(v));
-        }
-
-        if (name == "reader_externalptr")
-        {
-          std::string address_ptr = stage.at("externalptr");
-          SEXP sexplas = string_address_to_sexp(address_ptr);
-          las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
-          if (las == nullptr)
-          {
-            last_error = "invalid external pointer";
-            return false;
-          }
-          auto v = std::make_unique<LASRreaderxptr>(las);
-          pipeline.push_back(std::move(v));
-          point_cloud_ownership_transfered = true;
-        }
-        #endif
-
         if (catalog != nullptr)
         {
+          switch(catalog->get_format())
+          {
+            case LASFILE:
+            {
+              auto v = std::make_unique<LASRlasreader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            case PCDFILE:
+            {
+              auto v = std::make_unique<LASRpcdreader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            #ifdef USING_R
+            case DATAFRAME:
+            {
+              auto v = std::make_unique<LASRdataframereader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            case XPTR:
+            {
+              std::string address_ptr = stage.at("externalptr");
+              SEXP sexplas = string_address_to_sexp(address_ptr);
+              las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
+              if (las == nullptr)
+              {
+                last_error = "invalid external pointer";
+                return false;
+              }
+              auto v = std::make_unique<LASRreaderxptr>(las);
+              pipeline.push_back(std::move(v));
+              point_cloud_ownership_transfered = true;
+              break;
+            }
+            #endif
+            default:
+            {
+              last_error = "Invalid catalog";
+              return false;
+            }
+          }
           double temp_xmin = std::numeric_limits<double>::max();
           double temp_ymin = std::numeric_limits<double>::max();
           double temp_xmax = std::numeric_limits<double>::lowest();

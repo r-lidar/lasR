@@ -26,13 +26,13 @@ This stage does not modify the point cloud. It produces a summary as a \code{lis
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader_las()
+read <- reader()
 pipeline <- read + summarise()
 ans <- exec(pipeline, on = f)
 ans
 
 # Compute metrics for each plot
-read = reader_las_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
+read = reader_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
 metrics = summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
 pipeline = read + metrics
 ans = exec(pipeline, on = f)

@@ -1,39 +1,39 @@
-#include "readlas.h"
+#include "readpcd.h"
 
-#include "LASio.h"
+#include "PCDio.h"
 
-LASRlasreader::LASRlasreader()
+LASRpcdreader::LASRpcdreader()
 {
   header = nullptr;
-  lasio = nullptr;
+  pcdio = nullptr;
   streaming = true;
 }
 
-bool LASRlasreader::set_chunk(Chunk& chunk)
+bool LASRpcdreader::set_chunk(Chunk& chunk)
 {
   Stage::set_chunk(chunk);
 
   // New chunk -> new reader for a new file. We can delete the previous reader and build a new one
-  if (lasio)
+  if (pcdio)
   {
-    lasio->close();
-    delete lasio;
-    lasio = nullptr;
+    pcdio->close();
+    delete pcdio;
+    pcdio = nullptr;
   }
 
-  lasio = new LASio(progress);
-  return lasio->open(chunk, filters);
+  pcdio = new PCDio(progress);
+  return pcdio->open(chunk, filters);
 }
 
-bool LASRlasreader::process(Header*& header)
+bool LASRpcdreader::process(Header*& header)
 {
-  // LASRlasreader is responsible for populating the header.
-  // It is called first before LASRlasreader::process(Point) (streaming) or LASRlasreader::process(LAS) (in memory)
+  // LASRpcdreader is responsible for populating the header.
+  // It is called first before LASRpcdreader::process(Point) (streaming) or LASRpcdreader::process(LAS) (in memory)
   // If the point is null then we create one Header. This object own the Header
   if (header != nullptr) return true;
 
   header = new Header;
-  lasio->populate_header(header);
+  pcdio->populate_header(header);
 
   this->header = header;
 
@@ -41,17 +41,17 @@ bool LASRlasreader::process(Header*& header)
 }
 
 // Streaming mode
-bool LASRlasreader::process(Point*& point)
+bool LASRpcdreader::process(Point*& point)
 {
   if (point == nullptr)
     point = new Point(&header->schema);
 
   do
   {
-    if (lasio->read_point(point))
+    if (pcdio->read_point(point))
     {
-      if (point->inside_buffer(xmin, ymin, ymax, ymax, circular))
-        point->set_buffered();
+      //if (point->inside_buffer(xmin, ymin, ymax, ymax, circular))
+      //  point->set_buffered();
     }
     else
     {
@@ -65,7 +65,7 @@ bool LASRlasreader::process(Point*& point)
 }
 
 // In memory mode
-bool LASRlasreader::process(PointCloud*& las)
+bool LASRpcdreader::process(PointCloud*& las)
 {
   if (las != nullptr) { delete las; las = nullptr; }
   if (las == nullptr) las = new PointCloud(header);
@@ -78,7 +78,7 @@ bool LASRlasreader::process(PointCloud*& las)
 
   Point p(&header->schema);
 
-  while (lasio->read_point(&p))
+  while (pcdio->read_point(&p))
   {
     if (progress->interrupted()) break;
 
@@ -89,7 +89,7 @@ bool LASRlasreader::process(PointCloud*& las)
 
     if (!las->add_point(p)) return false;
 
-    progress->update(lasio->p_count());
+    progress->update(pcdio->p_count());
     progress->show();
   }
 
@@ -102,17 +102,17 @@ bool LASRlasreader::process(PointCloud*& las)
   return true;
 }
 
-LASRlasreader::~LASRlasreader()
+LASRpcdreader::~LASRpcdreader()
 {
-  if (lasio)
+  if (pcdio)
   {
-    lasio->close();
-    delete lasio;
-    lasio = nullptr;
+    pcdio->close();
+    delete pcdio;
+    pcdio = nullptr;
   }
 }
 
-void LASRlasreader::clear(bool)
+void LASRpcdreader::clear(bool)
 {
   // Called at the end of the pipeline. We can delete the header
   if (streaming && header)

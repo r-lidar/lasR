@@ -69,6 +69,13 @@ enum AttributeType {
   DOUBLE = 10
 };
 
+enum AttributeCore {
+  FLAG = 0,
+  X = 1,
+  Y = 2,
+  Z = 3,
+};
+
 struct Attribute
 {
   Attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
@@ -80,6 +87,24 @@ struct Attribute
   double scale_factor;    // Scaling factor
   double value_offset;    // Value offset
   std::string description;
+
+  const char* attributeTypeToString() const
+  {
+    switch (type) {
+    case NOTYPE: return "Unknown";
+    case UINT8: return "uchar";
+    case INT8: return "char";
+    case UINT16: return "ushort";
+    case INT16: return "short";
+    case UINT32: return "uint";
+    case INT32: return "int";
+    case UINT64: return "uint64";
+    case INT64: return "int64";
+    case FLOAT: return "float";
+    case DOUBLE: return "double";
+    default: return "Unknown";
+    }
+  }
 };
 
 struct AttributeSchema
@@ -169,80 +194,66 @@ struct Point
     if (own_data && data) delete[] data;
     data = nullptr;
   }
-  inline int get_X() const {
-    const auto& attr = schema->attributes[0];
-    int X = *((int*)(data + attr.offset));
-    return X;
+
+  inline int get_core_attribute_as_int(AttributeCore i) const {
+    const auto& attr = schema->attributes[i];
+    return *((int*)(data + attr.offset));
   }
-  inline int get_Y() const {
-    const auto& attr = schema->attributes[1];
-    int Y = *((int*)(data + attr.offset));
-    return Y;
+  inline double get_core_attribute_as_double(AttributeCore i) const {
+    const auto& attr = schema->attributes[i];
+    switch(attr.type)
+    {
+      case INT32: { int value = *((int*)(data + attr.offset));return attr.scale_factor * value + attr.value_offset; }
+      case FLOAT: { return *((float*)(data + attr.offset)); }
+      case DOUBLE: { return *((double*)(data + attr.offset)); }
+      default: return 0;
+    }
   }
-  inline int get_Z() const {
-    const auto& attr = schema->attributes[2];
-    int Z = *((int*)(data + attr.offset));
-    return Z;
+  inline void set_core_attribute_as_int(AttributeCore i, int value) {
+    const auto& attr = schema->attributes[i];
+    unsigned char* pointer = data + attr.offset;
+    *reinterpret_cast<int*>(pointer) = static_cast<int>(value);
   }
-  inline double get_x() const {
-    const auto& attr = schema->attributes[0];
-    int X = *((int*)(data + attr.offset));
-    return attr.scale_factor * X + attr.value_offset;
-  }
-  inline double get_y() const {
-    const auto& attr = schema->attributes[1];
-    int Y = *((int*)(data + attr.offset));
-    return attr.scale_factor * Y + attr.value_offset;
-  }
-  inline double get_z() const {
-    const auto& attr = schema->attributes[2];
-    int Z = *((int*)(data + attr.offset));
-    return attr.scale_factor * Z + attr.value_offset;
+
+  inline void set_core_attribute_as_double(AttributeCore i, double value) {
+    const auto& attr = schema->attributes[i];
+    unsigned char* pointer = data + attr.offset;
+    double scaled_value = (value - attr.value_offset) / attr.scale_factor;
+    *reinterpret_cast<int*>(pointer) = static_cast<int>(scaled_value);
   }
   inline bool get_flag(int i) const {
-    const auto& attr = schema->attributes[3];
+    const auto& attr = schema->attributes[AttributeCore::FLAG];
     unsigned int flag = *((unsigned int*)(data + attr.offset));
     return ((flag & (1 << i)) == 0) ? false : true;
   }
-  inline bool get_deleted() const {
-    return get_flag(0);
+  inline void set_flag(int i, bool value = true) {
+    auto& attr = schema->attributes[AttributeCore::FLAG];
+    unsigned int& flag = *((unsigned int*)(data + attr.offset));
+    if (value) {
+      flag |= (1 << i); // Set the ith bit to 1
+    } else {
+      flag &= ~(1 << i); // Clear the ith bit to 0
+    }
   }
-  inline bool get_buffered() const {
-    return get_flag(1);
-  }
-  inline void set_X(int value) {
-    const auto& attr = schema->attributes[0];
-    unsigned char* pointer = data + attr.offset;
-    *reinterpret_cast<int*>(pointer) = static_cast< int>(value);
-  }
-  inline void set_Y(int value) {
-    const auto& attr = schema->attributes[1];
-    unsigned char* pointer = data + attr.offset;
-    *reinterpret_cast<int*>(pointer) = static_cast< int>(value);
-  }
-  inline void set_Z(int value) {
-    const auto& attr = schema->attributes[2];
-    unsigned char* pointer = data + attr.offset;
-    *reinterpret_cast<int*>(pointer) = static_cast< int>(value);
-  }
-  inline void set_x(double value) {
-    const auto& attr = schema->attributes[0];
-    unsigned char* pointer = data + attr.offset;
-    double scaled_value = (value - attr.value_offset) / attr.scale_factor;
-    *reinterpret_cast<int*>(pointer) = static_cast<int>(scaled_value);
-  }
-  inline void set_y(double value) {
-    const auto& attr = schema->attributes[1];
-    unsigned char* pointer = data + attr.offset;
-    double scaled_value = (value - attr.value_offset) / attr.scale_factor;
-    *reinterpret_cast<int*>(pointer) = static_cast< int>(scaled_value);
-  }
-  inline void set_z(double value) {
-    const auto& attr = schema->attributes[2];
-    unsigned char* pointer = data + attr.offset;
-    double scaled_value = (value - attr.value_offset) / attr.scale_factor;
-    *reinterpret_cast<int*>(pointer) = static_cast<int>(scaled_value);
-  }
+
+  inline int get_X() const { return get_core_attribute_as_int(AttributeCore::X); }
+  inline int get_Y() const { return get_core_attribute_as_int(AttributeCore::Y); }
+  inline int get_Z() const { return get_core_attribute_as_int(AttributeCore::Z); }
+  inline double get_x() const { return get_core_attribute_as_double(AttributeCore::X); }
+  inline double get_y() const { return get_core_attribute_as_double(AttributeCore::Y); }
+  inline double get_z() const { return get_core_attribute_as_double(AttributeCore::Z); }
+  inline bool get_deleted() const { return get_flag(0); }
+  inline bool get_buffered() const { return get_flag(1); }
+  inline void set_X(int value) { set_core_attribute_as_int(AttributeCore::X, value); }
+  inline void set_Y(int value) { set_core_attribute_as_int(AttributeCore::Y, value); }
+  inline void set_Z(int value) { set_core_attribute_as_int(AttributeCore::Z, value); }
+  inline void set_x(double value) { set_core_attribute_as_double(AttributeCore::X, value); }
+  inline void set_y(double value) { set_core_attribute_as_double(AttributeCore::Y, value); }
+  inline void set_z(double value) { set_core_attribute_as_double(AttributeCore::Z, value); }
+  inline void set_deleted(bool value = true) { set_flag(0, value); }
+  inline void set_buffered(bool value = true) { set_flag(1, value); }
+  inline void zero() { memset(data, 0, schema->total_point_size); }
+
   inline double get_attribute_as_double(int index)
   {
     const auto& attr = schema->attributes[index];
@@ -263,24 +274,7 @@ struct Point
     }
     return attr.value_offset + attr.scale_factor * cast_value;
   }
-  inline void set_flag(int i, bool value = true) {
-    auto& attr = schema->attributes[3];
-    unsigned int& flag = *((unsigned int*)(data + attr.offset));
-    if (value) {
-      flag |= (1 << i); // Set the ith bit to 1
-    } else {
-      flag &= ~(1 << i); // Clear the ith bit to 0
-    }
-  }
-  inline void set_deleted(bool value = true) {
-    set_flag(0, value);
-  }
-  inline void set_buffered(bool value = true) {
-    set_flag(1, value);
-  }
-  inline void zero() {
-    memset(data, 0, schema->total_point_size);
-  }
+
   inline bool inside_buffer(const double min_x, const double min_y, const double max_x, const double max_y, const bool circle = false)
   {
     double x = get_x();
@@ -324,28 +318,5 @@ protected:
   double read(const Point* point);
   void write(Point* point, double value);
 };
-
-
-class Header
-{
-public:
-  double max_x, min_x, max_y, min_y, max_z, min_z;
-  double x_scale_factor, y_scale_factor, z_scale_factor;
-  double x_offset, y_offset, z_offset;
-  double gpstime; // first point
-  unsigned short file_creation_year, file_creation_day;
-  bool adjusted_standard_gps_time;
-  bool spatial_index;
-  uint64_t number_of_point_records;
-  AttributeSchema schema;
-  CRS crs;
-
-  void add_attribute(const Attribute& attr)
-  {
-    schema.add_attribute(attr);
-  }
-};
-
-
 
 #endif

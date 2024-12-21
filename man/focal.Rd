@@ -34,7 +34,7 @@ f <- system.file("extdata", "Topography.las", package = "lasR")
 chm = rasterize(2, "zmax")
 chm2 = lasR:::focal(chm, 8, fun = "mean")
 chm3 = lasR:::focal(chm, 8, fun = "max")
-pipeline <- reader_las() + chm + chm2 + chm2
+pipeline <- reader() + chm + chm2 + chm2
 ans = exec(pipeline, on = f)
 
 terra::plot(ans[[1]])

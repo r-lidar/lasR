@@ -120,7 +120,7 @@ print.laslibfilter = function(x, ...)
 validate_filter <- function(condition, allow_laslib_filter)
 {
   if (length(condition) == 0L) return(condition)
-  if (length(condition) > 1L) return(sapply(condition, validate_filter))
+  if (length(condition) > 1L) return(sapply(condition, validate_filter, allow_laslib_filter = allow_laslib_filter))
   if (condition == "") return(condition)
   if (substr(condition, 1, 1) == "-")
   {

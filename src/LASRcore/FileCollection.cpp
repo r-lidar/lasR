@@ -4,7 +4,10 @@
 #include "error.h"
 #include "Grid.h"
 #include "PointSchema.h"
-#include "LASlibinterface.h"
+
+// To read the header of files
+#include "PCDio.h"
+#include "LASio.h"
 
 // STL
 #include <iostream>
@@ -12,11 +15,12 @@
 #include <iomanip>
 #include <algorithm>
 #include <filesystem>
-#include <ctime>
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
 #include <fstream>
+
+#include <ctime>
 
 // Define macros for cross-platform compatibility
 #ifdef _WIN32
@@ -27,6 +31,7 @@ inline void gmtime_r(const time_t* timep, std::tm* result)
 }
 #endif
 
+
 bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 {
   Progress pb;
@@ -36,6 +41,7 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 
   for (auto& file : files)
   {
+
     pb++;
     pb.show();
     PathType type = parse_path(file);
@@ -43,7 +49,11 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
     // A LAS or LAZ file
     if (type == PathType::LASFILE)
     {
-      add_file(file);
+      if (!add_las_file(file)) return false;
+    }
+    else if (type == PathType::PCDFILE)
+    {
+      if (!add_pcd_file(file)) return false;
     }
     // A virtual point cloud file
     else if (type == PathType::VPCFILE)
@@ -68,11 +78,16 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
       {
         if (entry.is_regular_file())
         {
-          std::string ext = entry.path().extension().string();
-          if (ext == ".las" || ext == ".laz" || ext == ".LAS" || ext == ".LAZ")
-          {
-            add_file(entry.path().string());
-          }
+          std::string f = entry.path().string();
+          PathType type = parse_path(f);
+          bool success = true;
+
+          if (type == LASFILE)
+            success = add_las_file(f);
+          else if (type == PCDFILE)
+            success = add_pcd_file(f);
+
+          if (!success) return false;
         }
       }
     }
@@ -90,10 +105,11 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 
   pb.done();
 
-  if (epsg_set.size() > 1) warning("mix epsg found. First one retained\n");
-  if (wkt_set.size() > 1) warning("mix wkt crs found. First one retained.\n");
-  if (epsg_set.size() > 0) crs = CRS(*epsg_set.begin());
-  if (wkt_set.size() > 0) crs = CRS(*wkt_set.begin());
+  // Check if all headers have the same CRS
+  const CRS& referenceCRS = headers[0].crs; // Take the CRS of the first header
+  bool allSameCRS = std::all_of(headers.begin(), headers.end(), [&referenceCRS](const Header& h) { return h.crs == referenceCRS; });
+  if (!allSameCRS) warning("mix CRS found. First one retained\n");
+  crs = referenceCRS;
 
   return true;
 }
@@ -170,7 +186,7 @@ bool FileCollection::read_vpc(const std::string& filename)
       if (optbbox == feature["properties"].end())
       {
         // # nocov start
-        if (!add_file(file_path))
+        if (!add_las_file(file_path))
         {
           return false;
         }
@@ -203,11 +219,26 @@ bool FileCollection::read_vpc(const std::string& filename)
 
       bool spatial_index = feature["properties"].value("index:indexed", false); // backward compatibility
 
+      Header h;
+      h.min_x = min_x;
+      h.min_y = min_y;
+      h.max_x = max_x;
+      h.max_y = max_y;
+      h.number_of_point_records = pccount;
+      h.spatial_index = spatial_index;
+      h.signature = "LASF";
+      if (epsg != 0) h.crs = CRS(epsg);
+      if (!wkt.empty()) h.crs = CRS(wkt);
+
+      headers.push_back(h);
       files.push_back(file_path);
-      add_wkt(wkt);
-      add_epsg(epsg);
-      add_bbox(min_x, min_y, max_x, max_y, spatial_index);
-      npoints.push_back(pccount);
+      noprocess.push_back(false);
+      file_index.add(h.min_x, h.min_y, h.max_x, h.max_y);
+
+      if (xmin > h.min_x) xmin = h.min_x;
+      if (ymin > h.min_y) ymin = h.min_y;
+      if (xmax < h.max_x) xmax = h.max_x;
+      if (ymax < h.max_y) ymax = h.max_y;
     }
   }
   catch (const std::ifstream::failure& e)
@@ -288,43 +319,37 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
       }
     }
 
-    Rectangle& bbox = bboxes[i];
-    uint64_t n = npoints[i];
-    bool index = indexed[i];
-    double zmin = zlim[i].first;
-    double zmax = zlim[i].second;
+    const Header& h = headers[i];
+
+    Rectangle bbox = {h.min_x, h.min_y, h.max_x, h.max_y};
+    uint64_t n = h.number_of_point_records;
+    bool index = h.spatial_index;
+    double zmin = h.min_z;
+    double zmax = h.max_z;
 
     std::string date;
-    int year;
-    int doy;
+    int year = h.file_creation_year;
+    int doy = h.file_creation_day;
 
     if (use_gpstime)
     {
-      if (gpstime_encodind_bits[i])
+      if (h.adjusted_standard_gps_time)
       {
-        if (gpstime_dates.size() == 0)
+        if (h.gpstime == 0)
         {
           warning("This files as no GPS time. Cannot use GPS time to assign a date.");
-          year = header_dates[i].first;
-          doy = header_dates[i].second;
         }
         else
         {
-          year = gpstime_dates[i].first;
-          doy = gpstime_dates[i].second;
+          auto date = h.gpstime_date();
+          year = date.first;
+          doy = date.second;
         }
       }
       else
       {
         warning("The GPS time is not recorded as Adjusted Standard GPS Time but as GPS Week Time. Cannot use GPS time to assign a date.");
-        year = header_dates[i].first;
-        doy = header_dates[i].second;
       }
-    }
-    else
-    {
-      year = header_dates[i].first;
-      doy = header_dates[i].second;
     }
 
     if (year > 0)
@@ -427,78 +452,6 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
   return true;
 }
 
-void FileCollection::add_bbox(double xmin, double ymin, double xmax, double ymax, bool indexed, bool noprocess)
-{
-  Rectangle bb(xmin, ymin, xmax, ymax);
-  bboxes.push_back(bb);
-
-  if (this->xmin > xmin) this->xmin = xmin;
-  if (this->ymin > ymin) this->ymin = ymin;
-  if (this->xmax < xmax) this->xmax = xmax;
-  if (this->ymax < ymax) this->ymax = ymax;
-
-  file_index.add(xmin, ymin, xmax, ymax);
-  this->indexed.push_back(indexed);
-  this->noprocess.push_back(noprocess);
-}
-
-void FileCollection::add_crs(const Header* header)
-{
-  crs = header->crs;
-}
-
-bool FileCollection::add_file(std::string file, bool noprocess)
-{
-  std::replace(file.begin(), file.end(), '\\', '/' );
-
-  Header header;
-  LASlibInterface reader;
-  if (!reader.open(file)) return false;
-  reader.populate_header(&header, true);
-  reader.close();
-
-  files.push_back(file);
-  add_bbox(header.min_x, header.min_y, header.max_x, header.max_y, header.spatial_index, noprocess);
-  npoints.push_back(header.number_of_point_records);
-  header_dates.push_back({header.file_creation_year, header.file_creation_day});
-  zlim.push_back({header.min_z, header.max_z});
-  gpstime_encodind_bits.push_back(header.adjusted_standard_gps_time);
-  add_wkt(header.crs.get_wkt());
-
-  if (header.gpstime != 0 &&  header.adjusted_standard_gps_time)
-  {
-    uint64_t ns = ((uint64_t)header.gpstime+1000000000ULL)*1000000000ULL + 315964800000000000ULL; // offset between gps epoch and unix epoch is 315964800 seconds
-
-    struct timespec ts;
-    ts.tv_sec = ns / 1000000000ULL;
-    ts.tv_nsec = ns % 1000000000ULL;
-
-    struct tm stm;
-    gmtime_r(&ts.tv_sec, &stm);
-
-    gpstime_dates.push_back({stm.tm_year + 1900, stm.tm_yday});
-
-    //std::cout << stm.tm_year + 1900 << "-" << stm.tm_mon + 1 << "-" << stm.tm_mday << " " << stm.tm_hour << ":" << stm.tm_min << ":" << stm.tm_sec << std::endl;
-  }
-  else
-  {
-    gpstime_dates.push_back({0, 0});
-  }
-
-  use_dataframe = false;
-  return true;
-}
-
-void FileCollection::add_wkt(const std::string& wkt)
-{
-  if (!wkt.empty()) wkt_set.insert(wkt);
-}
-
-void FileCollection::add_epsg(int epsg)
-{
-  if (epsg != 0) epsg_set.insert(epsg);
-}
-
 void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax)
 {
   Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
@@ -509,6 +462,84 @@ void FileCollection::add_query(double xcenter, double ycenter, double radius)
 {
   Circle* circ = new Circle(xcenter, ycenter, radius);
   queries.push_back(circ);
+}
+
+bool FileCollection::add_las_file(std::string file, bool noprocess)
+{
+  std::replace(file.begin(), file.end(), '\\', '/' );
+
+  Header header;
+  LASio reader;
+  if (!reader.open(file)) return false;
+  reader.populate_header(&header, true);
+  reader.close();
+
+  add_header(header, noprocess);
+  files.push_back(file);
+
+  use_dataframe = false;
+  return true;
+}
+
+bool FileCollection::add_pcd_file(std::string file, bool noprocess)
+{
+  std::replace(file.begin(), file.end(), '\\', '/' );
+
+  Header header;
+  PCDio reader;
+  if (!reader.open(file)) return false;
+  reader.populate_header(&header);
+  reader.close();
+
+  add_header(header, noprocess);
+  files.push_back(file);
+
+  use_dataframe = false;
+  return true;
+}
+
+
+#ifdef USING_R
+// Special to build a FileCollection from a data.frame in R
+void FileCollection::add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints)
+{
+  Header h;
+  h.min_x = xmin;
+  h.min_y = ymin;
+  h.max_x = xmax;
+  h.max_y = ymax;
+  h.number_of_point_records = npoints;
+  h.signature = "data.frame";
+
+  add_header(h);
+  files.push_back("data.frame");
+
+  use_dataframe = true;
+}
+
+void FileCollection::add_xptr(Header header)
+{
+  header.signature = "xptr";
+  add_header(header);
+  files.push_back("xptr");
+
+  use_dataframe = false;
+}
+#endif
+
+bool FileCollection::add_header(const Header& header, bool noprocess)
+{
+  headers.push_back(header);
+
+  if (xmin > header.min_x) xmin = header.min_x;
+  if (ymin > header.min_y) ymin = header.min_y;
+  if (xmax < header.max_x) xmax = header.max_x;
+  if (ymax < header.max_y) ymax = header.max_y;
+
+  this->noprocess.push_back(noprocess);
+  this->file_index.add(header.min_x, header.min_y, header.max_x, header.max_y);
+
+  return true;
 }
 
 bool FileCollection::set_noprocess(const std::vector<bool>& b)
@@ -583,15 +614,32 @@ const std::vector<std::filesystem::path>& FileCollection::get_files() const
   return files;
 }
 
+PathType FileCollection::get_format() const
+{
+  const std::string& signature = headers[0].signature;
+
+  if (signature == "LASF")
+    return LASFILE;
+  else if (signature == "PCDF")
+    return PCDFILE;
+  else if (signature == "data.frame")
+    return DATAFRAME;
+  else if (signature == "xptr")
+    return XPTR;
+  else
+    return UNKNOWNFILE;
+}
+
 bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
 {
   chunk.clear();
 
-  Rectangle bb = bboxes[i];
-  chunk.xmin = bb.xmin();
-  chunk.ymin = bb.ymin();
-  chunk.xmax = bb.xmax();
-  chunk.ymax = bb.ymax();
+  const Header& h = headers[i];
+
+  chunk.xmin = h.min_x;
+  chunk.ymin = h.min_y;
+  chunk.xmax = h.max_x;
+  chunk.ymax = h.max_y;
 
   if (!use_dataframe)
   {
@@ -614,7 +662,7 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
   chunk.buffer = buffer;
 
   // Perform a query to find the files that encompass the buffered region
-  std::vector<int> indexes = file_index.get_overlaps(bb.xmin() - buffer, bb.ymin() - buffer, bb.xmax() + buffer, bb.ymax() + buffer);
+  std::vector<int> indexes = file_index.get_overlaps(h.min_x - buffer, h.min_y - buffer, h.max_x + buffer, h.max_y + buffer);
   for (auto index : indexes)
   {
     std::string file = files[index].string();
@@ -629,7 +677,6 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
 
 bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
 {
-  unsigned int index;
   chunk.clear();
 
   // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
@@ -741,17 +788,18 @@ int FileCollection::get_number_chunks() const
 
 int FileCollection::get_number_files() const
 {
-  return indexed.size();
+  return files.size();
 }
 
 int FileCollection::get_number_indexed_files() const
 {
-  return std::count(indexed.begin(), indexed.end(), true);
+  int count = std::count_if(headers.begin(), headers.end(), [](const Header& h) { return h.spatial_index; });
+  return count;
 }
 
 void FileCollection::set_all_indexed()
 {
-  std::fill(indexed.begin(), indexed.end(), true);
+  for (Header& h : headers) h.spatial_index = true;
 }
 
 void FileCollection::clear()
@@ -762,22 +810,14 @@ void FileCollection::clear()
   ymax = -std::numeric_limits<double>::max();
   last_error.clear();
 
-  // CRS
-  wkt_set.clear();
-  epsg_set.clear();
-  //epsg = 0;
-  //wkt.clear();
-
   use_dataframe = true;
   use_vpc = false;
 
   buffer = 0;
   chunk_size = 0;
 
-  indexed.clear();
-  npoints.clear();
+  headers.clear();
   noprocess.clear();
-  bboxes.clear();
   files.clear();
 
   for (auto p : queries) delete p;
@@ -800,8 +840,10 @@ PathType FileCollection::parse_path(const std::string& path)
     {
       std::string ext = file_path.extension().string();
       if (ext == ".vpc" || ext == ".vpc") return PathType::VPCFILE;
-      if (ext == ".las" || ext == ".laz" || ext == ".LAS" || ext == ".LAZ") return PathType::LASFILE;
+      if (ext == ".las" || ext == ".LAS") return PathType::LASFILE;
+      if (ext == ".laz" || ext == ".LAZ") return PathType::LASFILE;
       if (ext == ".lax" || ext == ".LAX") return PathType::LAXFILE;
+      if (ext == ".pcd" || ext == ".PCD") return PathType::PCDFILE;
       return PathType::OTHERFILE;
     }
     else if (std::filesystem::is_directory(path))
@@ -850,13 +892,15 @@ bool FileCollectionIndex::has_overlap(double xmin, double ymin, double xmax, dou
 std::vector<int> FileCollectionIndex::get_overlaps(double xmin, double ymin, double xmax, double ymax) const
 {
   std::vector<int> overlaps;
-  for (int i = 0; i < bboxes.size(); ++i)
+  for (size_t i = 0; i < bboxes.size(); ++i)
   {
     const auto& bbox = bboxes[i];
-    if (!(xmax < bbox.xmin() || xmin > bbox.xmax() || ymax < bbox.ymin() || ymin > bbox.ymax()))
+
+    if (xmin <= bbox.xmax() && xmax >= bbox.xmin() && ymin <= bbox.ymax() && ymax >= bbox.ymin())
     {
       overlaps.push_back(i);
     }
   }
+
   return overlaps;
 }

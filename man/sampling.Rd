@@ -52,7 +52,7 @@ in the point cloud.
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 
-read <- reader_las()
+read <- reader()
 vox <- sampling_voxel(5) # sample 1 random points per voxel
 write <- write_las()
 pipeline <- read + vox + write

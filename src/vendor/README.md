@@ -31,4 +31,4 @@ All modifications are provided under the LGPL license.
 
 ### How to Compile Without LASlib/LASzip:
 
-According to the LGPL license, users must be able to replace LASlib/LASzip. Since the libraries are statically linked (the only method permitted in an R package), users cannot simply swap out the `.so` or `.dll` files. To use an alternative library, users can modify a single file that serves as an interface: `LASRcore/LASlibInterface.cpp`. This approach complies with LGPL requirements.
+According to the LGPL license, users must be able to replace LASlib/LASzip. Since the libraries are statically linked (the only method permitted in an R package), users cannot simply swap out the `.so` or `.dll` files. To use an alternative library, users can modify a single file that serves as an interface: `LASRreaders/LASio.cpp`. This approach complies with LGPL requirements.

@@ -31,9 +31,9 @@ Attribute::Attribute(const std::string& name, AttributeType type, double scale_f
 void Attribute::dump(bool verbose) const
 {
   if (verbose)
-    print("Attribute: %-15s | Offset: %-2zu | Size: %-1zu | Type: %-1d | Scale Factor: %-5.2f | Offset: %-5.2f\n", name.c_str(), offset, size, type, scale_factor, value_offset);
+    print("Attribute: %-15s | Address offset: %-2zu | Size: %-1zu | Type: %-6s | Scale Factor: %-5.2f | Value Offset: %-5.2f\n", name.c_str(), offset, size, attributeTypeToString(), scale_factor, value_offset);
   else
-    print("Attribute: %-15s | Description: %s\n", name.c_str(), description.c_str());
+    print("Name: %-15s | %-6s | Desc: %s\n", name.c_str(), attributeTypeToString(), description.c_str());
 }
 
 void AttributeSchema::add_attribute(const Attribute& attribute)

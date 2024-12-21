@@ -1,4 +1,4 @@
-#include "LASlibinterface.h"
+#include "LASio.h"
 #include "Progress.h"
 
 #include "lasreader.hpp"
@@ -7,7 +7,7 @@
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
 
-LASlibInterface::LASlibInterface()
+LASio::LASio()
 {
   lasreadopener = nullptr;
   laswriteopener = nullptr;
@@ -32,7 +32,7 @@ LASlibInterface::LASlibInterface()
   nir = AttributeAccessor("NIR");
 }
 
-LASlibInterface::LASlibInterface(Progress* progress)
+LASio::LASio(Progress* progress)
 {
   lasreadopener = nullptr;
   laswriteopener = nullptr;
@@ -57,12 +57,12 @@ LASlibInterface::LASlibInterface(Progress* progress)
   nir = AttributeAccessor("NIR");
 }
 
-LASlibInterface::~LASlibInterface()
+LASio::~LASio()
 {
   close();
 }
 
-bool LASlibInterface::open(const Chunk& chunk, std::vector<std::string> filters)
+bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
 {
   if (laswriter)
   {
@@ -146,7 +146,7 @@ bool LASlibInterface::open(const Chunk& chunk, std::vector<std::string> filters)
   return true;
 }
 
-bool LASlibInterface::open(const std::string& file)
+bool LASio::open(const std::string& file)
 {
   if (lasheader != nullptr)
   {
@@ -177,7 +177,7 @@ bool LASlibInterface::open(const std::string& file)
   return true;
 }
 
-bool LASlibInterface::create(const std::string& file)
+bool LASio::create(const std::string& file)
 {
   if (lasheader == nullptr)
   {
@@ -205,7 +205,7 @@ bool LASlibInterface::create(const std::string& file)
   return true;
 }
 
-bool LASlibInterface::populate_header(Header* header, bool read_first_point)
+bool LASio::populate_header(Header* header, bool read_first_point)
 {
   if (lasreader == nullptr)
   {
@@ -214,6 +214,8 @@ bool LASlibInterface::populate_header(Header* header, bool read_first_point)
   }
 
   reset_accessor();
+
+  header->signature = "LASF";
 
   header->min_x = lasreader->header.min_x;
   header->max_x = lasreader->header.max_x;
@@ -232,10 +234,10 @@ bool LASlibInterface::populate_header(Header* header, bool read_first_point)
   header->file_creation_day = lasreader->header.file_creation_day;
   header->adjusted_standard_gps_time = lasreader->header.get_global_encoding_bit(0) == true;
 
+  header->schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
   header->schema.add_attribute("X", AttributeType::INT32, header->x_scale_factor, header->x_offset, "X coordinate");
   header->schema.add_attribute("Y", AttributeType::INT32, header->y_scale_factor, header->y_offset, "Y coordinate");
   header->schema.add_attribute("Z", AttributeType::INT32, header->z_scale_factor, header->z_offset, "Z coordinate");
-  header->schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
   header->schema.add_attribute("Intensity", AttributeType::UINT16, 1, 0, "Pulse return magnitude");
   header->schema.add_attribute("ReturnNumber", AttributeType::UINT8, 1, 0, "Pulse return number for a given output pulse");
   header->schema.add_attribute("NumberOfReturns", AttributeType::UINT8, 1, 0, "Total number of returns for a given pulse");
@@ -274,7 +276,9 @@ bool LASlibInterface::populate_header(Header* header, bool read_first_point)
   {
     std::string name(lasreader->header.attributes[i].name);
     std::string description(lasreader->header.attributes[i].description);
-    AttributeType type = static_cast<AttributeType>(lasreader->header.attributes[i].data_type);
+    int data_type = lasreader->header.attributes[i].data_type;
+    if (data_type > 10) continue; // Don't read deprecated types
+    AttributeType type = static_cast<AttributeType>(data_type);
     double scale = lasreader->header.attributes[i].scale[0];
     double offset = lasreader->header.attributes[i].offset[0];
     header->schema.add_attribute(name, type, scale, offset, description);
@@ -319,7 +323,7 @@ bool LASlibInterface::populate_header(Header* header, bool read_first_point)
   return true;
 }
 
-bool LASlibInterface::init(const Header* header, const CRS& crs)
+bool LASio::init(const Header* header, const CRS& crs)
 {
   if (lasheader != nullptr)
   {
@@ -349,12 +353,12 @@ bool LASlibInterface::init(const Header* header, const CRS& crs)
   lasheader->file_creation_day    = 0;
   lasheader->point_data_format    = guess_point_data_format(has_gps, has_rgb, has_nir);
   lasheader->point_data_record_length = get_point_data_record_length(lasheader->point_data_format);
-  lasheader->x_scale_factor       = header->schema.attributes[0].scale_factor;
-  lasheader->y_scale_factor       = header->schema.attributes[1].scale_factor;
-  lasheader->z_scale_factor       = header->schema.attributes[2].scale_factor;
-  lasheader->x_offset             = header->schema.attributes[0].offset;
-  lasheader->y_offset             = header->schema.attributes[1].offset;
-  lasheader->z_offset             = header->schema.attributes[2].offset;
+  lasheader->x_scale_factor       = header->schema.attributes[AttributeCore::X].scale_factor;
+  lasheader->y_scale_factor       = header->schema.attributes[AttributeCore::Y].scale_factor;
+  lasheader->z_scale_factor       = header->schema.attributes[AttributeCore::Z].scale_factor;
+  lasheader->x_offset             = header->schema.attributes[AttributeCore::X].value_offset;
+  lasheader->y_offset             = header->schema.attributes[AttributeCore::Y].value_offset;
+  lasheader->z_offset             = header->schema.attributes[AttributeCore::Z].value_offset;
   lasheader->number_of_point_records = 0;
   /*lasheader->min_x                = xmin;
   lasheader->min_y                = ymin;
@@ -401,7 +405,7 @@ bool LASlibInterface::init(const Header* header, const CRS& crs)
   return true;
 }
 
-bool LASlibInterface::read_point(Point* p)
+bool LASio::read_point(Point* p)
 {
   if (!lasreader->read_point()) return false;
 
@@ -423,12 +427,14 @@ bool LASlibInterface::read_point(Point* p)
   blue(p, lasreader->point.get_B());
   nir(p, lasreader->point.get_NIR());
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
+  {
+    if (lasreader->point.attributer->attributes[i].data_type > 10) continue; // Don't read deprecated types
     extrabytes[i](p, lasreader->point.get_attribute_as_float(i));
-
+  }
   return true;
 }
 
-bool LASlibInterface::write_point(Point* p)
+bool LASio::write_point(Point* p)
 {
   point->set_x(p->get_x());
   point->set_y(p->get_y());
@@ -456,7 +462,7 @@ bool LASlibInterface::write_point(Point* p)
   return true;
 }
 
-bool LASlibInterface::write_lax(const std::string& file, bool overwrite, bool embedded)
+bool LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
 {
   // Initialize las objects
   const char* filechar = const_cast<char*>(file.c_str());
@@ -546,17 +552,17 @@ bool LASlibInterface::write_lax(const std::string& file, bool overwrite, bool em
   return true;
 }
 
-bool LASlibInterface::is_opened()
+bool LASio::is_opened()
 {
   return (lasreader != nullptr || laswriter != nullptr);
 }
 
-int64_t LASlibInterface::p_count()
+int64_t LASio::p_count()
 {
   return lasreader->p_count;
 }
 
-void LASlibInterface::close()
+void LASio::close()
 {
   if (lasreader)
   {
@@ -596,7 +602,7 @@ void LASlibInterface::close()
   }
 }
 
-void LASlibInterface::reset_accessor()
+void LASio::reset_accessor()
 {
   intensity.reset();
   returnnumber.reset();
@@ -616,7 +622,7 @@ void LASlibInterface::reset_accessor()
 }
 
 
-int LASlibInterface::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)
+int LASio::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)
 {
   std::vector<int> formats = {0,1,2,3,6,7,8};
 
@@ -644,7 +650,7 @@ int LASlibInterface::guess_point_data_format(bool has_gps, bool has_rgb, bool ha
   return formats[0];
 }
 
-int LASlibInterface::get_header_size(int minor_version)
+int LASio::get_header_size(int minor_version)
 {
   int header_size = 0;
 
@@ -669,7 +675,7 @@ int LASlibInterface::get_header_size(int minor_version)
   return header_size;
 }
 
-int LASlibInterface::get_point_data_record_length(int point_data_format, int num_extrabytes)
+int LASio::get_point_data_record_length(int point_data_format, int num_extrabytes)
 {
   switch (point_data_format)
   {

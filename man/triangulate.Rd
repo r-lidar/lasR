@@ -39,7 +39,7 @@ This stage does not modify the point cloud.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader_las()
+read <- reader()
 tri1 <- triangulate(25, filter = keep_ground(), ofile = tempgpkg())
 tri2 <- triangulate(ofile = tempgpkg())
 pipeline <- read + tri1 + tri2

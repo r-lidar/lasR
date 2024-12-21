@@ -10,11 +10,11 @@
 
 class LAS;
 
-enum AttributeEnum{Z, I, RGB, CLASS};
-
 class Drawer
 {
 public:
+  enum AttributeEnum{Z, I, RGB, CLASS};
+
   Drawer(SDL_Window*, PointCloud*);
   bool draw();
   void resize();

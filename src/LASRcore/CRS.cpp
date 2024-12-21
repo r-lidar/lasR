@@ -98,6 +98,11 @@ bool CRS::is_feets() const
   return std::fabs(value - 0.3048) < 1e-4;
 }
 
+bool CRS::operator==(const CRS& other) const
+{
+  return epsg == other.epsg && valid == other.valid && wkt == other.wkt;
+}
+
 // # nocov start
 void CRS::dump() const
 {
@@ -123,3 +128,4 @@ void CRS::dump() const
 }
 
 // # nocov end
+

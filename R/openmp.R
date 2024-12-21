@@ -50,6 +50,9 @@ NULL
 #' @export
 set_parallel_strategy <- function(strategy)
 {
+  if (is.null(strategy))
+    return(invisible())
+
   if (strategy[1] > 1L & !has_omp_support())
   {
     warning("This version of lasR has no OpenMP support")

@@ -23,7 +23,7 @@ Create a Canopy Height Model using \link{triangulate} and \link{rasterize}.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-pipeline <- reader_las() + chm()
+pipeline <- reader() + chm()
 exec(pipeline, on = f)
 }
 \seealso{
