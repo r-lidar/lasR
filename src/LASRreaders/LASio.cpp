@@ -106,7 +106,7 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
   if (chunk.shape == ShapeType::CIRCLE)
     lasreadopener->set_inside_circle((chunk.xmin+chunk.xmax)/2, (chunk.ymin+chunk.ymax)/2,  (chunk.xmax-chunk.xmin)/2 + chunk.buffer + EPSILON);
   else
-    lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer, chunk.ymin - chunk.buffer, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
+    lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer - EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
 
   lasreader = lasreadopener->open();
   if (!lasreader)
