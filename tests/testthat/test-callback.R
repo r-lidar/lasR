@@ -69,19 +69,19 @@ test_that("callback without ouput and multiple file",
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
   f = f[1:2]
 
-  read = reader_las(filter = "-keep_every_nth 100")
+  read = reader_las(filter = "-keep_every_nth 10")
   call = callback(function(data) { data }, expose = "xyzi", no_las_update = TRUE)
   pipeline = read + call
   ans = exec(pipeline, on = f, buffer = 50)
 
   expect_type(ans, "list")
   expect_length(ans, 2)
-  expect_equal(attr(ans[[1]], "bbox"), c(885022.4, 629157.2, 885210.2, 629400.0), tolerance = 0.01)
-  expect_equal(attr(ans[[2]], "bbox"), c(885024.1, 629400.0, 885217.1, 629700.0), tolerance = 0.01)
+  expect_equal(attr(ans[[1]], "bbox"), c(885022.4, 629157.2, 885210.2, 629400.0), tolerance = 0.00001)
+  expect_equal(attr(ans[[2]], "bbox"), c(885024.1, 629400.0, 885217.1, 629700.0), tolerance = 0.00001)
   expect_equal(range(ans[[1]]$Y)[2], 629400.0 + 50, tolerance = 1e-7)
   expect_equal(range(ans[[2]]$Y)[1], 629400.0 - 50, tolerance = 1e-7)
-  expect_equal(nrow(ans[[1]]), 6820)
-  expect_equal(nrow(ans[[2]]), 9315)
+  expect_equal(nrow(ans[[1]]), 68205L)
+  expect_equal(nrow(ans[[2]]), 93158L)
 })
 
 test_that("callback can return any object",

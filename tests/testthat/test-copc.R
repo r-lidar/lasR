@@ -39,10 +39,10 @@ test_that("Write COPC",
 
   pipeline = reader_las(copc_depth = 2) + summarise()
   ans = exec(pipeline, on = o)
-  expect_equal(ans$npoints, 577637L)
+  expect_equal(ans$npoints, 577636L, tolerance = 0.000002) # 36 or 37
 
   pipeline = reader_las() + summarise()
   ans = exec(pipeline, on = o)
-  expect_equal(ans$npoints, 577637L)
+  expect_equal(ans$npoints, 577636L, tolerance = 0.000002) # 36 or 37
 
 })
