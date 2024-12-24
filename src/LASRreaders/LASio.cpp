@@ -276,7 +276,9 @@ bool LASio::populate_header(Header* header, bool read_first_point)
   {
     std::string name(lasreader->header.attributes[i].name);
     std::string description(lasreader->header.attributes[i].description);
-    AttributeType type = static_cast<AttributeType>(lasreader->header.attributes[i].data_type);
+    int data_type = lasreader->header.attributes[i].data_type;
+    if (data_type > 10) continue; // Don't read deprecated types
+    AttributeType type = static_cast<AttributeType>(data_type);
     double scale = lasreader->header.attributes[i].scale[0];
     double offset = lasreader->header.attributes[i].offset[0];
     header->schema.add_attribute(name, type, scale, offset, description);
@@ -425,8 +427,10 @@ bool LASio::read_point(Point* p)
   blue(p, lasreader->point.get_B());
   nir(p, lasreader->point.get_NIR());
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
+  {
+    if (lasreader->point.attributer->attributes[i].data_type > 10) continue; // Don't read deprecated types
     extrabytes[i](p, lasreader->point.get_attribute_as_float(i));
-
+  }
   return true;
 }
 

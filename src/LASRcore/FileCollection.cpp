@@ -662,7 +662,7 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
   chunk.buffer = buffer;
 
   // Perform a query to find the files that encompass the buffered region
-  std::vector<int> indexes = file_index.get_overlaps(h.min_y - buffer, h.min_y - buffer, h.max_x + buffer, h.max_y + buffer);
+  std::vector<int> indexes = file_index.get_overlaps(h.min_x - buffer, h.min_y - buffer, h.max_x + buffer, h.max_y + buffer);
   for (auto index : indexes)
   {
     std::string file = files[index].string();
@@ -895,10 +895,12 @@ std::vector<int> FileCollectionIndex::get_overlaps(double xmin, double ymin, dou
   for (size_t i = 0; i < bboxes.size(); ++i)
   {
     const auto& bbox = bboxes[i];
-    if (!(xmax < bbox.xmin() || xmin > bbox.xmax() || ymax < bbox.ymin() || ymin > bbox.ymax()))
+
+    if (xmin <= bbox.xmax() && xmax >= bbox.xmin() && ymin <= bbox.ymax() && ymax >= bbox.ymin())
     {
       overlaps.push_back(i);
     }
   }
+
   return overlaps;
 }
