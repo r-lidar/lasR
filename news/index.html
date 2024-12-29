@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,12 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.13.3" id="lasr-0133">lasR 0.13.3<a class="anchor" aria-label="anchor" href="#lasr-0133"></a></h2>
+<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/105" class="external-link">#105</a> invalid read of extrabytes</li>
+<li>Change: memory is reallocated and freed when many points are deleted in a stage (not visible for users)</li>
+<li>Change: adaptive indexation of the point cloud should speed up some process for some low or high density point clouds.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.13.2" id="lasr-0132">lasR 0.13.2<a class="anchor" aria-label="anchor" href="#lasr-0132"></a></h2>
 <ul><li>Fix: internal function <code>update_header()</code> updates the bounding box. Bug probably invisible to users.</li>
