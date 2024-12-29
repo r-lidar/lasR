@@ -149,6 +149,20 @@ private:
   bool circle;
 };
 
+class ConditionKeepRandomFraction : public Condition
+{
+public:
+  ConditionKeepRandomFraction(double probability) : Condition(""), probability(probability) {}
+
+  inline bool filter(const Point* point)
+  {
+    double random_number = static_cast<double>(std::rand()) / RAND_MAX;
+    return random_number > probability;
+  }
+
+private:
+  double probability;
+};
 
 bool PointFilter::filter(const Point* point) {
   for (const auto condition : conditions) {

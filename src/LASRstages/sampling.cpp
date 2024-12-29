@@ -194,18 +194,9 @@ bool LASRsamplingpoisson::process(PointCloud*& las)
   progress->done();
 
   las->update_header();
+  las->delete_deleted();
 
   if (verbose) print(" sampling retained %d points\n", n);
-
-  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  /*double ratio = (double)n/(double)las->npoints;
-  if (ratio > 1/3)
-  {
-    if (!las->delete_deleted()) return false;
-    if (verbose) print(" memory layout reallocated\n");
-  }*/
 
   return true;
 }
@@ -304,18 +295,9 @@ bool LASRsamplingvoxels::process(PointCloud*& las)
   progress->done();
 
   las->update_header();
+  las->delete_deleted();
 
   if (verbose) print(" sampling retained %d points\n", n);
-
-  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  /*double ratio = (double)n/(double)las->npoints;
-  if (ratio > 1/3)
-  {
-    if (!las->delete_withheld()) return false;
-    if (verbose) print(" memory layout reallocated\n");
-  }*/
 
   return true;
 }
@@ -411,18 +393,9 @@ bool LASRsamplingpixels::random(PointCloud*& las)
   progress->done();
 
   las->update_header();
+  las->delete_deleted();
 
   if (verbose) print(" sampling retained %d points\n", n);
-
-  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  /*double ratio = (double)n/(double)las->npoints;
-  if (ratio > 1/3)
-  {
-    if (!las->delete_withheld()) return false;
-    if (verbose) print(" memory layout reallocated\n");
-  }*/
 
   return true;
 }
@@ -483,18 +456,9 @@ bool LASRsamplingpixels::highest(PointCloud*& las, bool high)
   }
 
   las->update_header();
+  las->delete_deleted();
 
-  if (verbose) print(" sampling retained %d points\n", las->npoints);
-
-  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  /*double ratio = (double)las->npoints/(double)n;
-  if (ratio > 1/3)
-  {
-    if (!las->delete_deleted()) return false;
-    if (verbose) print(" memory layout reallocated\n");
-  }*/
+  if (verbose) print(" sampling retained %d points\n", n);
 
   return true;
 }

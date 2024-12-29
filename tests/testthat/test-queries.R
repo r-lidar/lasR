@@ -61,3 +61,4 @@ test_that("circle buffer is removed #80",
 
   expect_equal(sum(is.na(ans[])), 136L)
 })
+

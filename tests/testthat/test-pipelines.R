@@ -16,7 +16,7 @@ test_that("buffer tiles",
   area2 = as.numeric(sum(sf::st_area(cont2)))
 
   expect_equal(area1, 206788.110)
-  expect_equal(area2, 236796.375)
+  expect_equal(area2, 236802.182)
 })
 
 test_that("normalize & dtm",

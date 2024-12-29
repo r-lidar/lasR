@@ -101,8 +101,8 @@ test_that("aggregate works with multiple filea",
   expect_equal(terra::res(ans), c(10L,10L))
   expect_equal(dim(ans), c(55L,20L,1L))
   expect_equal(names(ans), "iz")
-  expect_equal(mean(ans[], na.rm = TRUE), 334.119, tolerance = 1e-6)
-  expect_equal(sum(is.na(ans[])), 33L)
-  expect_equal(unname(unlist(ans[c(10L,500L,980L)])), c(334.2441, 329.6076, NA_real_),  tolerance = 1e-6)
+  expect_equal(mean(ans[], na.rm = TRUE), 334.094, tolerance = 1e-6)
+  expect_equal(sum(is.na(ans[])), 34L)
+  expect_equal(unname(unlist(ans[c(10L,500L,980L)])), c(334.6464, 330.7812, NA_real_),  tolerance = 1e-6)
 })
 

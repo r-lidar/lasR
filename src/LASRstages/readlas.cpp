@@ -81,12 +81,8 @@ bool LASRlasreader::process(PointCloud*& las)
   while (lasio->read_point(&p))
   {
     if (progress->interrupted()) break;
-
     if (pointfilter.filter(&p)) continue;
-
-    if (p.inside_buffer(xmin, ymin, xmax, ymax, circular))
-      p.set_buffered();
-
+    if (p.inside_buffer(xmin, ymin, xmax, ymax, circular)) p.set_buffered();
     if (!las->add_point(p)) return false;
 
     progress->update(lasio->p_count());
@@ -94,6 +90,7 @@ bool LASRlasreader::process(PointCloud*& las)
   }
 
   las->update_header();
+  las->build_spatialindex();
 
   progress->done();
 

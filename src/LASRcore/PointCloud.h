@@ -28,8 +28,6 @@ public:
   bool seek(size_t pos);
   bool read_point(bool include_withhelded = false);
   void set_file(const std::string& file) { this->file = file; };
-  void update_point();
-  void remove_point();
   void update_header();
   bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
@@ -48,13 +46,13 @@ public:
 
   // Spatial queries
   void set_inside(Shape* shape);
+  void build_spatialindex();
 
   // Non spatial queries
   void set_intervals_to_read(const std::vector<Interval>& intervals);
 
 private:
-  void clean_index();
-  void reindex();
+  void clean_spatialindex();
   void clean_query();
   bool alloc_buffer();
   bool realloc_buffer();

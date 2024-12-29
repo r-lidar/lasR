@@ -116,6 +116,7 @@ struct AttributeSchema
   const Attribute* find_attribute(const std::string& s) const;
   bool has_attribute(const std::string& s) const { return find_attribute(s) != nullptr; };
   int get_attribute_index(const std::string& s) const;
+  int num_attributes() const { return attributes.size(); };
   void add_attribute(const Attribute& attribute);
   void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
   void dump(bool verbose = false) const;

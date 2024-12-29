@@ -20,7 +20,8 @@ PointCloud::PointCloud(Header* header)
   read_started = false;
 
   // For spatial indexing
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+  double res = GridPartition::guess_resolution_from_density(header->density());
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
   current_interval = 0;
   shape = nullptr;
   inside = false;
@@ -107,7 +108,7 @@ PointCloud::~PointCloud()
     buffer = NULL;
   }
 
-  clean_index();
+  clean_spatialindex();
 }
 
 bool PointCloud::add_point(const Point& p)
@@ -250,17 +251,6 @@ bool PointCloud::read_point(bool include_withhelded)
   return true;
 }
 
-void PointCloud::update_point()
-{
-  //point.copy_to(buffer + current_point * header->schema.total_point_size);
-}
-
-void PointCloud::remove_point()
-{
-  /*point.set_withheld_flag(1);
-  update_point();*/
-}
-
 void PointCloud::delete_point(Point* p)
 {
   if (p == nullptr)
@@ -277,31 +267,34 @@ void PointCloud::delete_point(Point* p)
 
 bool PointCloud::delete_deleted()
 {
-  clean_index();
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+  // ratio = actual number of non deleted points (assuming the header is up to date with data)
+  // divided by the actually number of points including the ones flagged as deleted.
+  double ratio = (double)header->number_of_point_records/(double)npoints;
 
+  // If more than 25% of deleted point then we reshaped the memory layout to free some memory
+  // and reshape the spatial index. Otherwise no need to spend time on this task
+  if (ratio > 0.75) return true;
+
+  // Read all the points and move memory at the beginning of the buffer.
   int j = 0;
   for (int i = 0 ; i < npoints ; i++)
   {
     seek(i);
-    if (point.get_deleted())
+    if (!point.get_deleted())
     {
-      point.data = buffer + j * header->schema.total_point_size;
-      index->insert(point.get_x(), point.get_y());
+      memcpy(buffer + j * header->schema.total_point_size, point.data, header->schema.total_point_size);
       j++;
     }
   }
-
-  double ratio = (double)j/(double)npoints;
   npoints = j;
 
-  if (ratio < 0.5)
-  {
-    capacity = npoints*header->schema.total_point_size;
-    if (!realloc_buffer()) return false;
-  }
+  // Rebuild the spatial index;
+  build_spatialindex();
 
-  return true;
+  // We move the point in the buffer, but the memory is still allocated. We recompute the capacity
+  // and realloc the memory for this new capacity.
+  capacity = npoints*header->schema.total_point_size;
+  return realloc_buffer();
 }
 
 
@@ -371,7 +364,7 @@ static int compare_buffers_nogps(const void* a, const void* b, void* context)
   else
     return true;
 
-  reindex();
+  build_spatialindex();
 
   return true;
 }*/
@@ -407,7 +400,7 @@ bool PointCloud::sort(const std::vector<int>& order)
 
   free(temp);
 
-  reindex();
+  build_spatialindex();
 
   return true;
 }
@@ -415,11 +408,34 @@ bool PointCloud::sort(const std::vector<int>& order)
 void PointCloud::update_header()
 {
   header->number_of_point_records = 0;
+  header->min_x = std::numeric_limits<double>::max();
+  header->min_y = std::numeric_limits<double>::max();
+  header->min_z = std::numeric_limits<double>::max();
+  header->max_x = std::numeric_limits<double>::lowest();
+  header->max_y = std::numeric_limits<double>::lowest();
+  header->max_z = std::numeric_limits<double>::lowest();
+
+  double x, y, z;
+
   while (read_point())
   {
+    x = point.get_x();
+    y = point.get_y();
+    z = point.get_z();
+
+    // Update bounding box values
+    if (x < header->min_x) header->min_x = x;
+    if (y < header->min_y) header->min_y = y;
+    if (z < header->min_z) header->min_z = z;
+
+    if (x > header->max_x) header->max_x = x;
+    if (y > header->max_y) header->max_y = y;
+    if (z > header->max_z) header->max_z = z;
+
     header->number_of_point_records++;
   }
 }
+
 
 // Thread safe
 bool PointCloud::query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter) const
@@ -643,14 +659,14 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 
 /*void PointCloud::set_index(bool index)
 {
-  clean_index();
+  clean_spatialindex();
   index = new GridPartition(lasheader.min_x, lasheader.min_y, lasheader.max_x, lasheader.max_y, 10);
   while (read_point()) index->insert(point);
 }
 
 void PointCloud::set_index(float res)
 {
-  clean_index();
+  clean_spatialindex();
   index = new GridPartition(lasheader.min_x, lasheader.min_y, lasheader.max_x, lasheader.max_y, res);
   while (read_point()) index->insert(point);
 }*/
@@ -665,7 +681,15 @@ bool PointCloud::add_rgb()
   return true;
 }
 
-void PointCloud::clean_index()
+void PointCloud::build_spatialindex()
+{
+  clean_spatialindex();
+  double res = GridPartition::guess_resolution_from_density(header->density());
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
+  while (read_point()) index->insert(point.get_x(), point.get_y());
+}
+
+void PointCloud::clean_spatialindex()
 {
   clean_query();
   if (index)
@@ -682,13 +706,6 @@ void PointCloud::clean_query()
   inside = false;
   read_started = false;
   intervals_to_read.clear();
-}
-
-void PointCloud::reindex()
-{
-  clean_index();
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
-  while (read_point()) index->insert(point.get_x(), point.get_y());
 }
 
 bool PointCloud::is_attribute_loadable(int index)

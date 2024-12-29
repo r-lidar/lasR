@@ -93,26 +93,20 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
   lasreadopener = new LASreadOpener;
   lasreadopener->set_merged(true);
   lasreadopener->set_stored(false);
-  lasreadopener->set_populate_header(true);
-  lasreadopener->set_buffer_size(chunk.buffer);
+  //lasreadopener->set_populate_header(true);
+  //lasreadopener->set_buffer_size(chunk.buffer);
   lasreadopener->parse_str(filtercpy);
   lasreadopener->set_copc_stream_ordered_by_chunk();
 
   free(filtercpy);
 
-  // In theory if buffer = 0 we should not have neighbor files on a properly tiled dataset. If the files
-  // overlap this could arise but the neighbor file won't be read because buffer = 0 does allows to instantiate
-  // LASreaderBuffer. We force an epsilon buffer
-  if (chunk.buffer == 0 && chunk.neighbour_files.size() > 0)
-    lasreadopener->set_buffer_size(EPSILON);
-
-  for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str());
-  for (auto& file : chunk.neighbour_files) lasreadopener->add_neighbor_file_name(file.c_str());
+  for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str(), TRUE);
+  for (auto& file : chunk.neighbour_files) lasreadopener->add_file_name(file.c_str(), TRUE);
 
   if (chunk.shape == ShapeType::CIRCLE)
     lasreadopener->set_inside_circle((chunk.xmin+chunk.xmax)/2, (chunk.ymin+chunk.ymax)/2,  (chunk.xmax-chunk.xmin)/2 + chunk.buffer + EPSILON);
   else
-    lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
+    lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer - EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
 
   lasreader = lasreadopener->open();
   if (!lasreader)
@@ -428,7 +422,7 @@ bool LASio::read_point(Point* p)
   nir(p, lasreader->point.get_NIR());
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
   {
-    if (lasreader->point.attributer->attributes[i].data_type > 10) continue; // Don't read deprecated types
+    if (lasreader->header.attributes[i].data_type > 10) continue; // Don't read deprecated types
     extrabytes[i](p, lasreader->point.get_attribute_as_float(i));
   }
   return true;

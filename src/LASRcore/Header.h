@@ -27,6 +27,8 @@ public:
 
   Header();
   void dump() const;
+  inline double area() const { return (max_x-min_y)*(max_y-min_y); }
+  inline double density() const { return (double)number_of_point_records/area(); }
   void add_attribute(const Attribute& attr);
   std::pair<unsigned short, unsigned short> gpstime_date() const;
 };

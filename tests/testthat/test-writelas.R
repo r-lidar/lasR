@@ -46,14 +46,14 @@ test_that("writelas writes 4 files with a buffered pipeline",
   u = exec(reader + writer, on = f, buffer = 50)
   h = exec(hulls(), on = u)
 
-  expect_equal(as.numeric(sum(sf::st_area(h))), 103349.808)
+  expect_equal(as.numeric(sum(sf::st_area(h))), 103361.154)
 
   reader = reader_las(filter = "-keep_every_nth 10 -keep_first")
   writer = write_las(keep_buffer = T)
   u = exec(reader + writer, on = f, buffer = 50)
   h = exec(hulls(), on = u)
 
-  expect_equal(as.numeric(sum(sf::st_area(h))), 122822.692)
+  expect_equal(as.numeric(sum(sf::st_area(h))), 122816.069)
 })
 
 test_that("writelas writes 1 merged file",
