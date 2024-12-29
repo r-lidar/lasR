@@ -256,7 +256,7 @@ void Drawer::setAttribute(AttributeEnum x)
     this->attrrange = maxattr - minattr;
     camera.changed = true;
   }
-  else
+  else if (x == AttributeEnum::Z)
   {
     this->attr = x;
     PSquare p01(0.01);
@@ -310,11 +310,6 @@ bool Drawer::draw()
     float px = p.get_x()-xcenter;
     float py = p.get_y()-ycenter;
     float pz = p.get_z()-zcenter;
-    int pr = red(&p);
-    int pg = green(&p);
-    int pb = blue(&p);
-    int pc = classification(&p);
-    int pi = intensity(&p);
 
     switch (attr)
     {
@@ -328,11 +323,15 @@ bool Drawer::draw()
       }
       case AttributeEnum::RGB:
       {
+        int pr = red(&p);
+        int pg = green(&p);
+        int pb = blue(&p);
         glColor3ub(pr/rgb_norm, pg/rgb_norm, pb/rgb_norm);
         break;
       }
       case AttributeEnum::CLASS:
       {
+        int pc = classification(&p);
         int classification = std::clamp(pc, 0, 19);
         auto& col = classcolor[classification];
         glColor3ub(col[0], col[1], col[2]);
@@ -340,6 +339,7 @@ bool Drawer::draw()
       }
       case AttributeEnum::I:
       {
+        int pi = intensity(&p);
         float ni = (std::clamp(pi, (int)minattr, (int)maxattr) - (int)minattr) / (attrrange);
         int bin = std::min(static_cast<int>(ni * (igradient.size() - 1)), static_cast<int>(igradient.size() - 1));
         auto& col = igradient[bin];
