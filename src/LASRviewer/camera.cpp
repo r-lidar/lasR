@@ -163,7 +163,7 @@ void Camera::rotate(int xrel, int yrel)
 
 void Camera::pan(int xrel, int yrel)
 {
-  panSensivity = distance*0.01;
+  panSensivity = distance*0.002;
   deltaX += xrel*panSensivity;
   deltaY -= yrel*panSensivity;
   changed = true;
