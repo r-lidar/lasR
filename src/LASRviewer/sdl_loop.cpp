@@ -193,6 +193,13 @@ void sdl_loop(PointCloud* las)
             case SDLK_m:
               drawer->point_size_minus();
               break;
+        case SDLK_RIGHT:
+              drawer->nextAttribute();
+              drawer->setAttribute(Drawer::AttributeEnum::OTHER);
+          break;
+        case SDLK_LEFT:
+            drawer->previousAttribute();
+            drawer->setAttribute(Drawer::AttributeEnum::OTHER);
             break;
           }
           break;

@@ -137,8 +137,10 @@ Drawer::Drawer(SDL_Window *window, PointCloud* las)
   blue = AttributeAccessor("B");
   classification = AttributeAccessor("Classification");
 
-  setAttribute(AttributeEnum::Z);
-  setAttribute(AttributeEnum::RGB);
+  if (las->header->schema.has_attribute("R"))
+    setAttribute(AttributeEnum::RGB);
+  else
+    setAttribute(AttributeEnum::Z);
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -216,6 +218,8 @@ void Drawer::setAttribute(AttributeEnum x)
 {
   if (x == AttributeEnum::RGB)
   {
+    this->attr = x;
+    attribute_index= las->header->schema.get_attribute_index("R");
     camera.changed = true;
 
     std::random_device rd;
@@ -230,15 +234,18 @@ void Drawer::setAttribute(AttributeEnum x)
       if (red(&las->point) > 255) rgb_norm = 255;
     }
     las->seek(0);
+
   }
   else if (x == AttributeEnum::CLASS)
   {
     this->attr = x;
+    attribute_index = las->header->schema.get_attribute_index("Classification");
     camera.changed = true;
   }
   else if (x == AttributeEnum::I)
   {
     this->attr = x;
+    attribute_index = las->header->schema.get_attribute_index("Intensity");
     PSquare p01(0.01);
     PSquare p99(0.99);
     int jump = 1;
@@ -259,6 +266,7 @@ void Drawer::setAttribute(AttributeEnum x)
   else if (x == AttributeEnum::Z)
   {
     this->attr = x;
+    attribute_index = las->header->schema.get_attribute_index("Z");
     PSquare p01(0.01);
     PSquare p99(0.99);
     int jump = 1;
@@ -276,8 +284,51 @@ void Drawer::setAttribute(AttributeEnum x)
     this->attrrange = maxattr - minattr;
     camera.changed = true;
   }
+  else
+  {
+    get_attribute = AttributeAccessor(las->header->schema.attributes[attribute_index].name);
+
+    PSquare p01(0.01);
+    PSquare p99(0.99);
+    int jump = 1;
+    if (npoints > 100000) jump = npoints/100;
+    if (npoints > 1000000) jump = npoints/1000;
+
+    for (int i = 0 ; i < npoints - jump; i += jump)
+    {
+      las->seek(i);
+      p01.addDataPoint(get_attribute(&las->point));
+      p99.addDataPoint(get_attribute(&las->point));
+    }
+    this->minattr = p01.getQuantile();
+    this->maxattr = p99.getQuantile();
+    this->attrrange = maxattr - minattr;
+    camera.changed = true;
+  }
+
+  if (attrrange == 0) attrrange = EPSILON;
 
   print("Range [%.1lf %.1lf]\n", minattr, maxattr);
+}
+
+void Drawer::nextAttribute()
+{
+  if (attribute_index >= las->header->schema.num_attributes()-1)
+    attribute_index = 3;
+  else
+    attribute_index++;
+
+  print("Attr %d: %s\n", attribute_index, las->header->schema.attributes[attribute_index].name.c_str()) ;
+}
+
+void Drawer::previousAttribute()
+{
+  if (attribute_index <= 3)
+    attribute_index = las->header->schema.num_attributes()-1;
+  else
+    attribute_index--;
+
+  print("Attr %d: %s\n", attribute_index, las->header->schema.attributes[attribute_index].name.c_str()) ;
 }
 
 bool Drawer::draw()
@@ -343,6 +394,15 @@ bool Drawer::draw()
         float ni = (std::clamp(pi, (int)minattr, (int)maxattr) - (int)minattr) / (attrrange);
         int bin = std::min(static_cast<int>(ni * (igradient.size() - 1)), static_cast<int>(igradient.size() - 1));
         auto& col = igradient[bin];
+        glColor3ub(col[0], col[1], col[2]);
+        break;
+      }
+      default:
+      {
+        double pa = get_attribute(&p);
+        float ni = (std::clamp(pa, minattr, maxattr) - minattr) / (attrrange);
+        int bin = std::min(static_cast<int>(ni * (igradient.size() - 1)), static_cast<int>(igradient.size() - 1));
+        auto& col = zgradient[bin];
         glColor3ub(col[0], col[1], col[2]);
         break;
       }

@@ -13,13 +13,15 @@ class LAS;
 class Drawer
 {
 public:
-  enum AttributeEnum{Z, I, RGB, CLASS};
+  enum AttributeEnum{Z, I, RGB, CLASS, OTHER};
 
   Drawer(SDL_Window*, PointCloud*);
   bool draw();
   void resize();
   void setPointSize(float);
   void setAttribute(AttributeEnum x);
+  void nextAttribute();
+  void previousAttribute();
   void display_hide_spatial_index() { draw_index = !draw_index; camera.changed = true; };
   void display_hide_edl() { lightning = !lightning; camera.changed = true; };
   void point_size_plus() { point_size++; camera.changed = true; };
@@ -75,11 +77,13 @@ private:
   int height;
 
   PointCloud* las;
+  int attribute_index;
   AttributeAccessor intensity;
   AttributeAccessor red;
   AttributeAccessor green;
   AttributeAccessor blue;
   AttributeAccessor classification;
+  AttributeAccessor get_attribute;
 };
 
 #endif //DRAWER_H
