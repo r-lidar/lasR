@@ -28,8 +28,6 @@ public:
   bool seek(size_t pos);
   bool read_point(bool include_withhelded = false);
   void set_file(const std::string& file) { this->file = file; };
-  void update_point();
-  void remove_point();
   void update_header();
   bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);

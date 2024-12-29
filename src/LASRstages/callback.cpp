@@ -332,8 +332,6 @@ bool LASRcallback::process(PointCloud*& las)
           else
             accessors[j](&las->point, (double)INTEGER(vector)[i]);
         }
-
-        las->update_point();
       }
     }
 

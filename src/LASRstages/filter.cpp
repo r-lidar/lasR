@@ -24,15 +24,7 @@ bool LASRfilter::process(PointCloud*& las)
   }
 
   las->update_header();
-
-  // In lasR, deleted points are not actually deleted. They are withheled, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  /*double ratio = (double)n/(double)las->npoints;
-  if (ratio > 1/3)
-  {
-    if (!las->delete_withheld()) return false;
-  }*/
+  las->delete_deleted();
 
   return true;
 }
@@ -95,14 +87,7 @@ bool LASRfiltergrid::process(PointCloud*& las)
       las->delete_point();
   }
 
-  // In lasR, deleted points are not actually deleted. They are withheled, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  /*double ratio = (double)n/(double)las->npoints;
-  if (ratio > 1/3)
-  {
-    if (!las->delete_withheld()) return false;
-  }*/
+  las->delete_deleted();
 
   return true;
 }

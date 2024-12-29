@@ -250,17 +250,6 @@ bool PointCloud::read_point(bool include_withhelded)
   return true;
 }
 
-void PointCloud::update_point()
-{
-  //point.copy_to(buffer + current_point * header->schema.total_point_size);
-}
-
-void PointCloud::remove_point()
-{
-  /*point.set_withheld_flag(1);
-  update_point();*/
-}
-
 void PointCloud::delete_point(Point* p)
 {
   if (p == nullptr)
@@ -277,31 +266,34 @@ void PointCloud::delete_point(Point* p)
 
 bool PointCloud::delete_deleted()
 {
-  clean_index();
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+  // ratio = actual number of non deleted points (assuming the header is up to date with data)
+  // divided by the actually number of points including the ones flagged as deleted.
+  double ratio = (double)header->number_of_point_records/(double)npoints;
 
+  // If more than 25% of deleted point then we reshaped the memory layout to free some memory
+  // and reshape the spatial index. Otherwise no need to spend time on this task
+  if (ratio > 0.75) return true;
+
+  // Read all the points and move memory at the beginning of the buffer.
   int j = 0;
   for (int i = 0 ; i < npoints ; i++)
   {
     seek(i);
-    if (point.get_deleted())
+    if (!point.get_deleted())
     {
-      point.data = buffer + j * header->schema.total_point_size;
-      index->insert(point.get_x(), point.get_y());
+      memcpy(buffer + j * header->schema.total_point_size, point.data, header->schema.total_point_size);
       j++;
     }
   }
-
-  double ratio = (double)j/(double)npoints;
   npoints = j;
 
-  if (ratio < 0.5)
-  {
-    capacity = npoints*header->schema.total_point_size;
-    if (!realloc_buffer()) return false;
-  }
+  // Rebuild the spatial index;
+  reindex();
 
-  return true;
+  // We move the point in the buffer, but the memory is still allocated. We recompute the capacity
+  // and realloc the memory for this new capacity.
+  capacity = npoints*header->schema.total_point_size;
+  return realloc_buffer();
 }
 
 
@@ -709,8 +701,16 @@ void PointCloud::clean_query()
 
 void PointCloud::reindex()
 {
+  // Estimate the resolution of the GridPartition to maximize speed. Basically we need < 5-10 pts per cells
+  double density = header->density();
+  double res = 10; // 10 x 10 = 100 square units
+  if (density > 1) res = 5;
+  if (density > 5) res = 2;
+  if (density > 10) res = 1;
+  if (density > 50) res = 0.5;
+
   clean_index();
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
   while (read_point()) index->insert(point.get_x(), point.get_y());
 }
 
