@@ -1,8 +1,8 @@
 # lasR 0.13.3
 
-- Fix: #105 invalid read of extabytes
+- Fix: #105 invalid read of extrabytes
 - Change: memory is reallocated and freed when many points are deleted in a stage (not visible for users)
-- Change: adaptative indexation of the point cloud can speed up some process.
+- Change: adaptive indexation of the point cloud should speed up some process for some low or high density point clouds.
 
 # lasR 0.13.2
 
