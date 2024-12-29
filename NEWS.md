@@ -1,3 +1,9 @@
+# lasR 0.13.3
+
+- Fix: #105 invalid read of extabytes
+- Change: memory is reallocated and freed when many points are deleted in a stage (not visible for users)
+- Change: adaptative indexation of the point cloud can speed up some process.
+
 # lasR 0.13.2
 
 - Fix: internal function `update_header()` updates the bounding box. Bug probably invisible to users.

@@ -46,13 +46,13 @@ public:
 
   // Spatial queries
   void set_inside(Shape* shape);
+  void build_spatialindex();
 
   // Non spatial queries
   void set_intervals_to_read(const std::vector<Interval>& intervals);
 
 private:
-  void clean_index();
-  void reindex();
+  void clean_spatialindex();
   void clean_query();
   bool alloc_buffer();
   bool realloc_buffer();

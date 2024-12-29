@@ -33,6 +33,18 @@ void GridPartition::query(double xmin, double ymin, double xmax, double ymax, st
   }
 }
 
+double GridPartition::guess_resolution_from_density(double density)
+{
+  // !! Can use a more strategic function !!
+  double res = 10;             // < 100 pts/cell
+  if (density > 1) res = 5;    // < 125 pts/cell
+  if (density > 5) res = 2;    // < 40 pts/cell
+  if (density > 10) res = 1;   // < 12.5 pts/cell
+  if (density > 50) res = 0.5; // < 6.25 pts/cell
+  if (density > 100) res = 0.25;
+  return res;
+}
+
 /*void GridPartition::query(int cell, std::vector<Interval>& res) const
 {
   auto _it = map.find(cell);

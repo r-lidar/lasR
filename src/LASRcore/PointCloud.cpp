@@ -20,7 +20,8 @@ PointCloud::PointCloud(Header* header)
   read_started = false;
 
   // For spatial indexing
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, 2);
+  double res = GridPartition::guess_resolution_from_density(header->density());
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
   current_interval = 0;
   shape = nullptr;
   inside = false;
@@ -107,7 +108,7 @@ PointCloud::~PointCloud()
     buffer = NULL;
   }
 
-  clean_index();
+  clean_spatialindex();
 }
 
 bool PointCloud::add_point(const Point& p)
@@ -288,7 +289,7 @@ bool PointCloud::delete_deleted()
   npoints = j;
 
   // Rebuild the spatial index;
-  reindex();
+  build_spatialindex();
 
   // We move the point in the buffer, but the memory is still allocated. We recompute the capacity
   // and realloc the memory for this new capacity.
@@ -363,7 +364,7 @@ static int compare_buffers_nogps(const void* a, const void* b, void* context)
   else
     return true;
 
-  reindex();
+  build_spatialindex();
 
   return true;
 }*/
@@ -399,7 +400,7 @@ bool PointCloud::sort(const std::vector<int>& order)
 
   free(temp);
 
-  reindex();
+  build_spatialindex();
 
   return true;
 }
@@ -658,14 +659,14 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 
 /*void PointCloud::set_index(bool index)
 {
-  clean_index();
+  clean_spatialindex();
   index = new GridPartition(lasheader.min_x, lasheader.min_y, lasheader.max_x, lasheader.max_y, 10);
   while (read_point()) index->insert(point);
 }
 
 void PointCloud::set_index(float res)
 {
-  clean_index();
+  clean_spatialindex();
   index = new GridPartition(lasheader.min_x, lasheader.min_y, lasheader.max_x, lasheader.max_y, res);
   while (read_point()) index->insert(point);
 }*/
@@ -680,7 +681,15 @@ bool PointCloud::add_rgb()
   return true;
 }
 
-void PointCloud::clean_index()
+void PointCloud::build_spatialindex()
+{
+  clean_spatialindex();
+  double res = GridPartition::guess_resolution_from_density(header->density());
+  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
+  while (read_point()) index->insert(point.get_x(), point.get_y());
+}
+
+void PointCloud::clean_spatialindex()
 {
   clean_query();
   if (index)
@@ -697,21 +706,6 @@ void PointCloud::clean_query()
   inside = false;
   read_started = false;
   intervals_to_read.clear();
-}
-
-void PointCloud::reindex()
-{
-  // Estimate the resolution of the GridPartition to maximize speed. Basically we need < 5-10 pts per cells
-  double density = header->density();
-  double res = 10; // 10 x 10 = 100 square units
-  if (density > 1) res = 5;
-  if (density > 5) res = 2;
-  if (density > 10) res = 1;
-  if (density > 50) res = 0.5;
-
-  clean_index();
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
-  while (read_point()) index->insert(point.get_x(), point.get_y());
 }
 
 bool PointCloud::is_attribute_loadable(int index)
