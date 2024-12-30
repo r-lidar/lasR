@@ -1,3 +1,12 @@
+# lasR 0.14.0
+
+- New: `lasR` is not equipped with a powerful 3D viewer that will later be usable has a GUI. This is early stage development of the viewer more is coming and bug reports are welcome.
+  ```r
+  f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+  pc = read_cloud(f)
+  plot(pc)
+  ```
+  
 # lasR 0.13.3
 
 - Fix: #105 invalid read of extrabytes

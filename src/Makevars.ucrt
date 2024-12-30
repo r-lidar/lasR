@@ -1,22 +1,22 @@
 PKG_CPPFLAGS =\
 	-I$(RWINLIB)/include \
-	-I./ -I./LASRcore/ -I./LASRstages/ -I./LASRreaders/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ \
+	-I./ -I./LASRcore/ -I./LASRstages/ -I./LASRreaders/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ -I./vendor/ImGui/ \
 	-DHAVE_PROJ_H \
 	-DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R
 
-PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_CXXFLAGS = $(shell pkg-config --cflags sdl2 glu gl) $(SHLIB_OPENMP_CXXFLAGS)
 
 ifeq (,$(shell pkg-config --version 2>/dev/null))
   LIBSHARPYUV = $(or $(and $(wildcard $(R_TOOLS_SOFT)/lib/libsharpyuv.a),-lsharpyuv),)
   PKG_LIBS =  \
 -fopenmp -lgdal -larmadillo -lopenblas -lgfortran -lquadmath -lpq -lpgcommon -lpgport -lodbc32 -lodbccp32 -lblosc -lkea -lhdf5_cpp -lhdf5 -lpoppler -llcms2 -lfreetype -lharfbuzz -lfreetype -llz4 -lpcre2-8 -lxml2 -lopenjp2 -lnetcdf -lmysqlclient -lspatialite -lgeos_c -lgeos -lminizip -lgeos -ljson-c -lgta -lfreexl -lexpat -lssl -lpsapi -lgif -lmfhdf -lhdf5_hl -lcrypto -lportablexdr -ldf -lhdf5 -lsz -lpng16 -lpng -lpoppler -llcms2 -lfreetype -lharfbuzz -lfreetype -llz4 -lpcre2-8 -lpcre -lcurl -lbcrypt -lrtmp -lssl -lssh2 -lidn2 -lunistring -liconv -lgcrypt -lcrypto -lgpg-error -lws2_32 -ltiff -llzma -ljpeg -lz -lcfitsio -lzstd -lwebpdecoder -lwebp $(LIBSHARPYUV) -lsbml-static -lgeotiff -lproj -lsqlite3 -lbz2 -lcrypt32 -lwldap32 -lsecur32
 else
-  PKG_LIBS = $(shell pkg-config --libs gdal geos proj) $(SHLIB_OPENMP_CXXFLAGS)
+  PKG_LIBS = $(shell pkg-config --libs gdal geos proj sdl2 glu gl) $(SHLIB_OPENMP_CXXFLAGS)
 endif
 
 CXX_STD=CXX17
 
-SOURCES = $(wildcard LASRcore/*.cpp LASRstages/*.cpp LASRreaders/*.cpp  vendor/*/*.cpp ./*.cpp)
+SOURCES = $(wildcard LASRcore/*.cpp LASRstages/*.cpp LASRreaders/*.cpp  vendor/*/*.cpp vendor/ImGui/backends/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
 OBJECTS = $(TEMP1:.c=.o)
 
