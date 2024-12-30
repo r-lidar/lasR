@@ -210,7 +210,7 @@ const int FILE_VERSION_MINOR = 0;
 // Write function (not working)
 void LODtree::write(const std::string& filename)
 {
-  printf("write\n");
+  //printf("write\n");
   std::ofstream outFile(filename, std::ios::binary);
 
   if (!outFile)
@@ -261,7 +261,7 @@ void LODtree::write(const std::string& filename)
 // Read function (not working)
 bool LODtree::read(const std::string& filename)
 {
-  printf("read\n");
+  //printf("read\n");
 
   std::ifstream inFile(filename, std::ios::binary);
 
@@ -441,10 +441,10 @@ void OctreeNode::insert(const Point& point)
 // Print the octree (for debugging)
 void OctreeNode::print() const
 {
-  std::cout << "Node Depth: " << depth
+  /*std::cout << "Node Depth: " << depth
             << ", Points: " << points.size()
             << ", Bounds: [" << min_x << ", " << min_y << ", " << min_z
-            << "] to [" << max_x << ", " << max_y << ", " << max_z << "]\n";
+            << "] to [" << max_x << ", " << max_y << ", " << max_z << "]\n";*/
 
   for (const auto& child : children)
   {
