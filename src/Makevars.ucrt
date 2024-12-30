@@ -2,7 +2,7 @@ PKG_CPPFLAGS =\
 	-I$(RWINLIB)/include \
 	-I./ -I./LASRcore/ -I./LASRstages/ -I./LASRreaders/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ -I./vendor/ImGui/ \
 	-DHAVE_PROJ_H \
-	-DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R
+	-DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R -DIMGUI_DISABLE_TTY_FUNCTIONS
 
 PKG_CXXFLAGS = $(shell pkg-config --cflags sdl2 glu gl) $(SHLIB_OPENMP_CXXFLAGS)
 

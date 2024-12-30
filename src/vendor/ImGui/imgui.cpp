@@ -14516,7 +14516,8 @@ static bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext*, const char* path)
     if (!pid)
     {
         execvp(args[0], const_cast<char **>(args));
-        exit(-1);
+        //exit(-1);
+        return false;
     }
     else
     {

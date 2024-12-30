@@ -177,7 +177,7 @@ Drawer::Drawer(SDL_Window *window, PointCloud* las)
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration = end - start;
-  printf("Indexation: %.1lf seconds (%.1lfM pts/s)\n", duration.count(), las->npoints/duration.count()/1000000);
+  //printf("Indexation: %.1lf seconds (%.1lfM pts/s)\n", duration.count(), las->npoints/duration.count()/1000000);
 
   this->point_budget *= 10;
   camera.changed = true;
