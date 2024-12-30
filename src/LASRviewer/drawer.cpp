@@ -123,6 +123,10 @@ Drawer::Drawer(SDL_Window *window, PointCloud* las)
   this->point_budget = 200000;
   this->point_size = 5.0;
   this->lightning = true;
+  this->palette = zgradient;
+  this->max_percentile = 0.99;
+  this->min_percentile = 0.01;
+  setAttribute(3);
 
   this->pp.reserve(this->point_budget*1.1);
 
@@ -130,17 +134,6 @@ Drawer::Drawer(SDL_Window *window, PointCloud* las)
   this->camera.setDistance(distance);
   this->camera.setPanSensivity(distance*0.001);
   this->camera.setZoomSensivity(distance*0.05);
-
-  intensity = AttributeAccessor("Intensity");
-  red = AttributeAccessor("R");
-  green = AttributeAccessor("G");
-  blue = AttributeAccessor("B");
-  classification = AttributeAccessor("Classification");
-
-  if (las->header->schema.has_attribute("R"))
-    setAttribute(AttributeEnum::RGB);
-  else
-    setAttribute(AttributeEnum::Z);
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -214,126 +207,67 @@ void Drawer::init_viewport()
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
-void Drawer::setAttribute(AttributeEnum x)
+void Drawer::setAttribute(int index)
 {
-  if (x == AttributeEnum::RGB)
-  {
-    this->attr = x;
-    attribute_index= las->header->schema.get_attribute_index("R");
-    camera.changed = true;
+  if (index < 0 || index >= las->header->schema.num_attributes()) return; // invalid;
+  if (attribute_index == index) return; // no need to redraw
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, npoints-1);
+  attribute_index = index;
+  auto name = las->header->schema.attributes[index].name;
 
-    rgb_norm = 1;
-    for (int i = 0; i < std::min((int)las->npoints, 100); ++i)
-    {
-      int index = dis(gen);
-      las->seek(index);
-      if (red(&las->point) > 255) rgb_norm = 255;
-    }
-    las->seek(0);
+  get_attribute = AttributeAccessor(name);
+  compute_attribute_range();
 
-  }
-  else if (x == AttributeEnum::CLASS)
-  {
-    this->attr = x;
-    attribute_index = las->header->schema.get_attribute_index("Classification");
-    camera.changed = true;
-  }
-  else if (x == AttributeEnum::I)
-  {
-    this->attr = x;
-    attribute_index = las->header->schema.get_attribute_index("Intensity");
-    PSquare p01(0.01);
-    PSquare p99(0.99);
-    int jump = 1;
-    if (npoints > 100000) jump = npoints/100;
-    if (npoints > 1000000) jump = npoints/1000;
-
-    for (int i = 0 ; i < npoints - jump; i += jump)
-    {
-      las->seek(i);
-      p01.addDataPoint(intensity(&las->point));
-      p99.addDataPoint(intensity(&las->point));
-    }
-    this->minattr = p01.getQuantile();
-    this->maxattr = p99.getQuantile();
-    this->attrrange = maxattr - minattr;
-    camera.changed = true;
-  }
-  else if (x == AttributeEnum::Z)
-  {
-    this->attr = x;
-    attribute_index = las->header->schema.get_attribute_index("Z");
-    PSquare p01(0.01);
-    PSquare p99(0.99);
-    int jump = 1;
-    if (npoints > 100000) jump = npoints/100;
-    if (npoints > 1000000) jump = npoints/1000;
-
-    for (int i = 0 ; i < npoints - jump; i += jump)
-    {
-      las->seek(i);
-      p01.addDataPoint(las->point.get_z());
-      p99.addDataPoint(las->point.get_z());
-    }
-    this->minattr = p01.getQuantile() - zcenter;
-    this->maxattr = p99.getQuantile() - zcenter;
-    this->attrrange = maxattr - minattr;
-    camera.changed = true;
-  }
+  if (name == "Z")
+    palette = zgradient;
+  else if (name == "Intensity")
+    palette = igradient;
+  else if (name == "Classification")
+    palette = classcolor;
   else
-  {
-    get_attribute = AttributeAccessor(las->header->schema.attributes[attribute_index].name);
+    palette = zgradient;
 
-    PSquare p01(0.01);
-    PSquare p99(0.99);
-    int jump = 1;
-    if (npoints > 100000) jump = npoints/100;
-    if (npoints > 1000000) jump = npoints/1000;
-
-    for (int i = 0 ; i < npoints - jump; i += jump)
-    {
-      las->seek(i);
-      p01.addDataPoint(get_attribute(&las->point));
-      p99.addDataPoint(get_attribute(&las->point));
-    }
-    this->minattr = p01.getQuantile();
-    this->maxattr = p99.getQuantile();
-    this->attrrange = maxattr - minattr;
-    camera.changed = true;
-  }
-
-  if (attrrange == 0) attrrange = EPSILON;
-
-  print("Range [%.1lf %.1lf]\n", minattr, maxattr);
+  camera.changed = true;
 }
 
-void Drawer::nextAttribute()
+void Drawer::setPointSize(float size)
 {
-  if (attribute_index >= las->header->schema.num_attributes()-1)
-    attribute_index = 3;
-  else
-    attribute_index++;
-
-  print("Attr %d: %s\n", attribute_index, las->header->schema.attributes[attribute_index].name.c_str()) ;
+  if (size > 0) this->point_size = size;
 }
 
-void Drawer::previousAttribute()
+void Drawer::setPercentiles(float min, float max)
 {
-  if (attribute_index <= 3)
-    attribute_index = las->header->schema.num_attributes()-1;
-  else
-    attribute_index--;
+  if (min_percentile == min && max_percentile == max) return; // no update;
+  if (min < 0 || min > 1) return; // invalid
+  if (max < 0 || max > 1) return; // invalid
+  if (max < min) return; // invalid
 
-  print("Attr %d: %s\n", attribute_index, las->header->schema.attributes[attribute_index].name.c_str()) ;
+  max_percentile = max;
+  min_percentile = min;
+  compute_attribute_range();
+  camera.changed = true;
+}
+
+void Drawer::setEDL(bool b)
+{
+  if (lightning == b) return;
+
+  lightning = b;
+  camera.changed = true;
+}
+
+void Drawer::setEDLstrength(float val)
+{
+  if (val < 0) return;
+  if (edl_strengh == val) return;
+
+  edl_strengh = val;
+  camera.changed = true;
 }
 
 bool Drawer::draw()
 {
-  if (!camera.changed)  return false;
+  if (!camera.changed) return false;
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -355,66 +289,37 @@ bool Drawer::draw()
 
   glBegin(GL_POINTS);
 
-  // UPDATE HERE
   for (auto p : pp)
   {
     float px = p.get_x()-xcenter;
     float py = p.get_y()-ycenter;
     float pz = p.get_z()-zcenter;
+    double val = get_attribute(&p);
 
-    switch (attr)
-    {
-      case AttributeEnum::Z:
-      {
-        float nz = (std::clamp(pz, (float)minattr, (float)maxattr) - minattr) / (attrrange);
-        int bin = std::min(static_cast<int>(nz * (zgradient.size() - 1)), static_cast<int>(zgradient.size() - 1));
-        auto& col = zgradient[bin];
-        glColor3ub(col[0], col[1], col[2]);
-        break;
-      }
-      case AttributeEnum::RGB:
-      {
-        int pr = red(&p);
-        int pg = green(&p);
-        int pb = blue(&p);
-        glColor3ub(pr/rgb_norm, pg/rgb_norm, pb/rgb_norm);
-        break;
-      }
-      case AttributeEnum::CLASS:
-      {
-        int pc = classification(&p);
-        int classification = std::clamp(pc, 0, 19);
-        auto& col = classcolor[classification];
-        glColor3ub(col[0], col[1], col[2]);
-        break;
-      }
-      case AttributeEnum::I:
-      {
-        int pi = intensity(&p);
-        float ni = (std::clamp(pi, (int)minattr, (int)maxattr) - (int)minattr) / (attrrange);
-        int bin = std::min(static_cast<int>(ni * (igradient.size() - 1)), static_cast<int>(igradient.size() - 1));
-        auto& col = igradient[bin];
-        glColor3ub(col[0], col[1], col[2]);
-        break;
-      }
-      default:
-      {
-        double pa = get_attribute(&p);
-        float ni = (std::clamp(pa, minattr, maxattr) - minattr) / (attrrange);
-        int bin = std::min(static_cast<int>(ni * (igradient.size() - 1)), static_cast<int>(igradient.size() - 1));
-        auto& col = zgradient[bin];
-        glColor3ub(col[0], col[1], col[2]);
-        break;
-      }
-    }
+    val = (std::clamp(val, minattr, maxattr) - minattr) / (attrrange);
+    int bin = std::min(static_cast<int>(val * (palette.size() - 1)), static_cast<int>(palette.size() - 1));
+    auto& col = palette[bin];
+    glColor3ub(col[0], col[1], col[2]);
+
+    /*case AttributeEnum::RGB:
+     {
+     int pr = red(&p);
+     int pg = green(&p);
+     int pb = blue(&p);
+     glColor3ub(pr/rgb_norm, pg/rgb_norm, pb/rgb_norm);
+     break;
+     }*/
 
     glVertex3d(px, py, pz);
   }
 
   glEnd();
 
-  if (lightning) edl();
+  auto end_rendering = std::chrono::high_resolution_clock::now();
 
+  auto start_edl = std::chrono::high_resolution_clock::now();
+  if (lightning) edl();
+  auto end_edl = std::chrono::high_resolution_clock::now();
   /*if (draw_index)
   {
     glColor3f(1.0f, 1.0f, 1.0f);
@@ -480,63 +385,71 @@ bool Drawer::draw()
 
   camera.changed = false;
 
-  auto end_rendering = std::chrono::high_resolution_clock::now();
   auto end = std::chrono::high_resolution_clock::now();
 
-  // Calculate the duration
+  // Calculate the duration and stats
   std::chrono::duration<double> total_duration = end - start;
   std::chrono::duration<double> query_duration = end_query - start_query;
   std::chrono::duration<double> rendering_duration = end_rendering - start_rendering;
+  std::chrono::duration<double> edl_duration = end_edl - start_edl;
 
-  /*printf("Displayed %dk/%ldk points (%.1f\%)\n", (int)pp.size()/1000, x.size()/1000, (double)pp.size()/(double)x.size()*100);
-  printf("Full Rendering: %.3f seconds (%.1f fps)\n", total_duration.count(), 1.0f/total_duration.count());
-  printf("Cloud rendering: %.3f seconds (%.1f fps, %.1f\%)\n", rendering_duration.count(), 1.0f/rendering_duration.count(), rendering_duration.count()/total_duration.count()*100);
-  printf("Spatial query: %.3f seconds (%.1f fps %.1f\%)\n", query_duration.count(), 1.0f/query_duration.count(), query_duration.count()/total_duration.count()*100);
+  query_time = query_duration.count();
+  rendering_time = rendering_duration.count();
+  edl_time = edl_duration.count();
+  total_time = total_duration.count();
+  rendered_points_count = pp.size();
+
+  /*printf("Displayed %dk/%ldk points (%.1f\%)\n", (int)pp.size()/1000, (long)las->npoints/1000, (double)pp.size()/(double)las->npoints*100);
+  printf("Full Rendering: %.3f seconds (%.1f fps)\n", total_time, 1.0f/total_time);
+  printf("Cloud rendering: %.3f seconds (%.1f fps, %.1f\%)\n", rendering_time, 1.0f/rendering_time, rendering_time/total_time*100);
+  printf("Spatial query: %.3f seconds (%.1f fps %.1f\%)\n", query_time, 1.0f/query_time, query_time/total_time*100);
   printf("\n");*/
 
   glFlush();
-  SDL_GL_SwapWindow(window);
+  //SDL_GL_SwapWindow(window);
 
   return true;
 }
 
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <omp.h>
+#include <GL/gl.h>
+
 void Drawer::edl()
 {
-  std::vector< GLfloat > depth( width * height, 0 );
-  glReadPixels( 0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, &depth[0] );
+  // Step 1: Read Depth and Color Buffers
+  std::vector<GLfloat> depth(width * height);
+  glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, depth.data());
 
   std::vector<GLubyte> colorBuffer(width * height * 3);
-  glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, &colorBuffer[0]);
+  glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, colorBuffer.data());
 
   const float zNear = 1;
   const float zFar = 10000;
   const float logzFar = std::log2(zFar);
 
+  // Step 2: Compute Log Distances in Parallel
   std::vector<GLfloat> worldLogDistances(width * height);
+  #pragma omp parallel for
   for (int i = 0; i < width * height; ++i)
   {
-    GLfloat z = depth[i];           // Depth value from the depth buffer
-    GLfloat zNDC = 2.0f * z - 1.0f; // Convert depth value to Normalized Device Coordinate (NDC)
-    GLfloat zCamera = (2.0f * zNear * zFar) / (zFar + zNear - zNDC * (zFar - zNear)); // Convert NDC to camera space Z (real-world distance)
-    worldLogDistances[i] = std::log2(zCamera);  // Store the real-world log distance
+    GLfloat z = depth[i];
+    GLfloat zNDC = 2.0f * z - 1.0f;
+    GLfloat zCamera = (2.0f * zNear * zFar) / (zFar + zNear - zNDC * (zFar - zNear));
+    worldLogDistances[i] = std::log2(zCamera);
   }
 
-  // Define the 8 possible neighbor offsets in a 2D grid
-  /*std::vector<std::pair<int, int>> neighbors = {
-    {-1, -1}, {-1, 0}, {-1, 1},
-    { 0, -1},          { 0, 1},
-    { 1, -1}, { 1, 0}, { 1, 1}
-  };*/
-
-  // Define the 4 possible neighbor offsets in a 2D grid
-  std::vector<std::pair<int, int>> neighbors = {
-             {-1, 0},
-    { 0, -1},         { 0, 1},
-             { 1, 0},
+  // Precompute neighbor offsets for 1D indexing
+  std::vector<int> neighborOffsets = {
+    -width - 1, -width, -width + 1,
+    -1,          1,
+    width - 1,  width,  width + 1
   };
 
-  // Iterate over each pixel to shade the rendering
-  float edlStrength = 10;
+  // Step 3: Compute Shading in Parallel
+  #pragma omp parallel for collapse(2)
   for (int y = 0; y < height; ++y)
   {
     for (int x = 0; x < width; ++x)
@@ -544,17 +457,16 @@ void Drawer::edl()
       int idx = y * width + x;
       float wld = worldLogDistances[idx];
 
-      if (wld == logzFar) { continue; }
+      if (wld == logzFar) continue;
 
-      // Find the maximum log depth among neighbors
       GLfloat maxLogDepth = std::max(0.0f, wld);
 
-      // Compute the response for the current pixel
       GLfloat sum = 0.0f;
-      for (const auto& offset : neighbors)
+      for (int offset : neighborOffsets)
       {
-        int nx = x + offset.first;
-        int ny = y + offset.second;
+        int nx = x + (offset % width);
+        int ny = y + (offset / width);
+
         if (nx >= 0 && nx < width && ny >= 0 && ny < height)
         {
           int nIdx = ny * width + nx;
@@ -562,9 +474,9 @@ void Drawer::edl()
         }
       }
 
-      float response = sum/4;
-      float shade = std::exp(-response * 300.0 * edlStrength);
-      shade = 1-std::clamp(shade, 0.0f, 255.0f)/255.0f;
+      float response = sum / 4.0f;
+      float shade = std::exp(-response * 300.0f * edl_strengh);
+      shade = 1.0f - std::clamp(shade, 0.0f, 255.0f) / 255.0f;
 
       colorBuffer[idx * 3] *= shade;
       colorBuffer[idx * 3 + 1] *= shade;
@@ -572,8 +484,10 @@ void Drawer::edl()
     }
   }
 
+  // Step 4: Draw the Updated Color Buffer
   glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, colorBuffer.data());
 }
+
 
 void Drawer::resize()
 {
@@ -599,6 +513,27 @@ void Drawer::compute_cell_visibility()
   {
     return a->screen_size > b->screen_size;  // Sort in descending order
   });
+}
+
+void Drawer::compute_attribute_range()
+{
+  PSquare p01(min_percentile);
+  PSquare p99(max_percentile);
+  int jump = 1;
+  if (npoints > 100000) jump = npoints/100;
+  if (npoints > 1000000) jump = npoints/1000;
+
+  for (int i = 0 ; i < npoints - jump; i += jump)
+  {
+    las->seek(i);
+    p01.addDataPoint(get_attribute(&las->point));
+    p99.addDataPoint(get_attribute(&las->point));
+  }
+
+  minattr = p01.getQuantile();
+  maxattr = p99.getQuantile();
+  attrrange = maxattr - minattr;
+  if (attrrange == 0) attrrange = EPSILON;
 }
 
 /*void Drawer::traverse_and_collect(const Key& key, std::vector<Node*>& visible_octants)
@@ -696,9 +631,4 @@ void Drawer::query_rendered_point()
     pp.insert(pp.end(), octant->points.begin(), octant->points.end());
     if (n > point_budget) break;
   }
-}
-
-void Drawer::setPointSize(float size)
-{
-  if (size > 0) this->point_size = size;
 }

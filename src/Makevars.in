@@ -1,7 +1,7 @@
-PKG_CPPFLAGS= @PKG_CPPFLAGS@ -DNDEBUG -DUSING_R -I./ -I./LASRcore/ -I./LASRstages/ -I./LASRreaders/ -I./LASRviewer/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/
+PKG_CPPFLAGS= @PKG_CPPFLAGS@ -DNDEBUG -DUSING_R -I./ -I./LASRcore/ -I./LASRstages/ -I./LASRreaders/ -I./LASRviewer/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ -I./vendor/ImGui
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 PKG_LIBS=@PKG_LIBS@ $(SHLIB_OPENMP_CXXFLAGS)
 CXX_STD=CXX17
-SOURCES = $(wildcard LASRviewer/*.cpp LASRcore/*.cpp LASRstages/*.cpp LASRreaders/*.cpp vendor/*/*.cpp ./*.cpp)
+SOURCES = $(wildcard LASRviewer/*.cpp LASRcore/*.cpp LASRstages/*.cpp LASRreaders/*.cpp vendor/*/*.cpp vendor/ImGui/backends/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
 OBJECTS = $(TEMP1:.c=.o)

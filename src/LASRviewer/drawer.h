@@ -13,17 +13,16 @@ class LAS;
 class Drawer
 {
 public:
-  enum AttributeEnum{Z, I, RGB, CLASS, OTHER};
-
   Drawer(SDL_Window*, PointCloud*);
   bool draw();
   void resize();
   void setPointSize(float);
-  void setAttribute(AttributeEnum x);
-  void nextAttribute();
-  void previousAttribute();
+  void setAttribute(int index);
+  void setPercentiles(float min, float max);
+  void setEDL(bool b);
+  void setEDLstrength(float val);
+  void setBudget(int budget);
   void display_hide_spatial_index() { draw_index = !draw_index; camera.changed = true; };
-  void display_hide_edl() { lightning = !lightning; camera.changed = true; };
   void point_size_plus() { point_size++; camera.changed = true; };
   void point_size_minus() { point_size--; camera.changed = true; };
   void budget_plus() { point_budget += 500000; camera.changed = true; };
@@ -31,21 +30,28 @@ public:
   Camera camera;
   OctreeNode root;
 
-  float point_size;
-  bool lightning;
+  // Rendering stats
+  int rendered_points_count;
+  float query_time;
+  float rendering_time;
+  float edl_time;
+  float total_time;
 
 private:
-  void edl();
+  // Query points
   void compute_cell_visibility();
   void query_rendered_point();
   void traverse_and_collect(OctreeNode* octant, std::vector<const OctreeNode*>& visible_octants);
+  std::vector<Point> pp;
+  std::vector<const OctreeNode*> visible_octants;
+
   void init_viewport();
+  void compute_attribute_range();
 
-  bool draw_index;
+  void edl();
+
+  // Location of the scene
   uint32_t npoints;
-  int point_budget;
-  int rgb_norm;
-
   double minx;
   double miny;
   double minz;
@@ -65,10 +71,7 @@ private:
   double maxattr;
   double attrrange;
 
-  AttributeEnum attr;
-  std::vector<Point> pp;
-  std::vector<const OctreeNode*> visible_octants;
-
+  // Rendering size, location and depth
   SDL_Window *window;
   float zNear;
   float zFar;
@@ -76,14 +79,22 @@ private:
   int width;
   int height;
 
+  // Drawing state
+  float max_percentile;
+  float min_percentile;
+  float point_size;
+  bool lightning;
+  bool draw_index;
+  int point_budget;
+  int rgb_norm;
+  float edl_strengh;
+  std::vector<std::array<unsigned char, 3>> palette;
+
+
+  // Point cloud and accessors
   PointCloud* las;
-  int attribute_index;
-  AttributeAccessor intensity;
-  AttributeAccessor red;
-  AttributeAccessor green;
-  AttributeAccessor blue;
-  AttributeAccessor classification;
   AttributeAccessor get_attribute;
+  int attribute_index;
 };
 
 #endif //DRAWER_H
