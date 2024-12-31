@@ -14,3 +14,11 @@
 \description{
 This function defines a custom plot method for objects of class 'lasrcloud'.
 }
+\examples{
+\dontrun{
+f <- system.file("extdata", "Topography.las", package="lasR")
+las <- read_cloud(f)
+las
+plot(las)
+}
+}
