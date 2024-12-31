@@ -1,13 +1,22 @@
-#include "drawer.h"
-#include "PSquare.h"
+#include <GL/gl.h>
+#include <GL/glu.h>
+
+// Conflict with definition in windows.h included by gl.h
+#ifdef _WIN32
+#undef FLOAT
+#undef INT8
+#undef INT16
+#undef INT32
+#undef INT64
+#undef UINT8
+#endif
 
 #include <chrono>
 #include <random>
 #include <algorithm>
 
-#include <GL/gl.h>
-#include <GL/glu.h>
-
+#include "drawer.h"
+#include "PSquare.h"
 #include "PointCloud.h"
 #include "Progress.h"
 
@@ -101,8 +110,6 @@ Drawer::Drawer(SDL_Window *window, PointCloud* las)
   init_viewport();
 
   this->npoints = las->npoints;
-
-  PSquare zp99(0.99);
   this->minx = las->header->min_x;
   this->miny = las->header->min_y;
   this->minz = las->header->min_z;
@@ -126,9 +133,10 @@ Drawer::Drawer(SDL_Window *window, PointCloud* las)
   this->palette = zgradient;
   this->max_percentile = 0.99;
   this->min_percentile = 0.01;
-  setAttribute(3);
 
   this->pp.reserve(this->point_budget*1.1);
+
+  setAttribute(3);
 
   double distance = sqrt(xrange*xrange+yrange*yrange);
   this->camera.setDistance(distance);
