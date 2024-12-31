@@ -809,7 +809,7 @@ struct ImDrawDataBuilder
     ImVector<ImDrawList*>*  Layers[2];      // Pointers to global layers for: regular, tooltip. LayersP[0] is owned by DrawData.
     ImVector<ImDrawList*>   LayerData1;
 
-    ImDrawDataBuilder()                     { memset(this, 0, sizeof(*this)); }
+    ImDrawDataBuilder()                     { memset((void*)this, 0, sizeof(*this)); }
 };
 
 //-----------------------------------------------------------------------------
@@ -1066,7 +1066,7 @@ struct IMGUI_API ImGuiComboPreviewData
     float           BackupPrevLineTextBaseOffset;
     ImGuiLayoutType BackupLayout;
 
-    ImGuiComboPreviewData() { memset(this, 0, sizeof(*this)); }
+    ImGuiComboPreviewData() { memset((void*)this, 0, sizeof(*this)); }
 };
 
 // Stacked storage data for BeginGroup()/EndGroup()
@@ -1111,7 +1111,7 @@ struct IMGUI_API ImGuiInputTextDeactivatedState
     ImGuiID            ID;              // widget id owning the text state (which just got deactivated)
     ImVector<char>     TextA;           // text buffer
 
-    ImGuiInputTextDeactivatedState()    { memset(this, 0, sizeof(*this)); }
+    ImGuiInputTextDeactivatedState()    { memset((void*)this, 0, sizeof(*this)); }
     void    ClearFreeMemory()           { ID = 0; TextA.clear(); }
 };
 // Internal state of the currently focused/edited text input box
@@ -1137,7 +1137,7 @@ struct IMGUI_API ImGuiInputTextState
     int                     ReloadSelectionStart;   // POSITIONS ARE IN IMWCHAR units *NOT* UTF-8 this is why this is not exposed yet.
     int                     ReloadSelectionEnd;
 
-    ImGuiInputTextState()                   { memset(this, 0, sizeof(*this)); }
+    ImGuiInputTextState()                   { memset((void*)this, 0, sizeof(*this)); }
     void        ClearText()                 { CurLenW = CurLenA = 0; TextW[0] = 0; TextA[0] = 0; CursorClamp(); }
     void        ClearFreeMemory()           { TextW.clear(); TextA.clear(); InitialTextA.clear(); }
     int         GetUndoAvailCount() const   { return Stb.undostate.undo_point; }
@@ -1210,7 +1210,7 @@ struct ImGuiNextWindowData
     ImVec2                      MenuBarOffsetMinVal;    // (Always on) This is not exposed publicly, so we don't clear it and it doesn't have a corresponding flag (could we? for consistency?)
     ImGuiWindowRefreshFlags     RefreshFlagsVal;
 
-    ImGuiNextWindowData()       { memset(this, 0, sizeof(*this)); }
+    ImGuiNextWindowData()       { memset((void*)this, 0, sizeof(*this)); }
     inline void ClearFlags()    { Flags = ImGuiNextWindowDataFlags_None; }
 };
 
@@ -1256,7 +1256,7 @@ struct ImGuiLastItemData
     ImRect                  ClipRect;           // Clip rectangle at the time of submitting item. ONLY VALID IF (StatusFlags & ImGuiItemStatusFlags_HasClipRect) is set..
     ImGuiKeyChord           Shortcut;           // Shortcut at the time of submitting item. ONLY VALID IF (StatusFlags & ImGuiItemStatusFlags_HasShortcut) is set..
 
-    ImGuiLastItemData()     { memset(this, 0, sizeof(*this)); }
+    ImGuiLastItemData()     { memset((void*)this, 0, sizeof(*this)); }
 };
 
 // Store data emitted by TreeNode() for usage by TreePop()
@@ -1336,7 +1336,7 @@ struct ImGuiPopupData
     ImVec2              OpenPopupPos;   // Set on OpenPopup(), preferred popup position (typically == OpenMousePos when using mouse)
     ImVec2              OpenMousePos;   // Set on OpenPopup(), copy of mouse position at the time of opening popup
 
-    ImGuiPopupData()    { memset(this, 0, sizeof(*this)); ParentNavLayer = OpenFrameCount = -1; }
+    ImGuiPopupData()    { memset((void*)this, 0, sizeof(*this)); ParentNavLayer = OpenFrameCount = -1; }
 };
 
 //-----------------------------------------------------------------------------
@@ -1414,7 +1414,7 @@ struct ImGuiInputEvent
     };
     bool                            AddedByTestEngine;
 
-    ImGuiInputEvent() { memset(this, 0, sizeof(*this)); }
+    ImGuiInputEvent() { memset((void*)this, 0, sizeof(*this)); }
 };
 
 // Input function taking an 'ImGuiID owner_id' argument defaults to (ImGuiKeyOwner_Any == 0) aka don't test ownership, which matches legacy behavior.
@@ -1529,7 +1529,7 @@ struct ImGuiListClipperData
     int                             ItemsFrozen;
     ImVector<ImGuiListClipperRange> Ranges;
 
-    ImGuiListClipperData()          { memset(this, 0, sizeof(*this)); }
+    ImGuiListClipperData()          { memset((void*)this, 0, sizeof(*this)); }
     void                            Reset(ImGuiListClipper* clipper) { ListClipper = clipper; StepNo = ItemsFrozen = 0; Ranges.resize(0); }
 };
 
@@ -1692,7 +1692,7 @@ struct ImGuiOldColumnData
     ImGuiOldColumnFlags Flags;                  // Not exposed
     ImRect              ClipRect;
 
-    ImGuiOldColumnData() { memset(this, 0, sizeof(*this)); }
+    ImGuiOldColumnData() { memset((void*)this, 0, sizeof(*this)); }
 };
 
 struct ImGuiOldColumns
@@ -1713,7 +1713,7 @@ struct ImGuiOldColumns
     ImVector<ImGuiOldColumnData> Columns;
     ImDrawListSplitter  Splitter;
 
-    ImGuiOldColumns()   { memset(this, 0, sizeof(*this)); }
+    ImGuiOldColumns()   { memset((void*)this, 0, sizeof(*this)); }
 };
 
 //-----------------------------------------------------------------------------
@@ -1741,7 +1741,7 @@ struct ImGuiBoxSelectState
     ImRect                  BoxSelectRectPrev;  // Selection rectangle in absolute coordinates (derived every frame from BoxSelectStartPosRel and MousePos)
     ImRect                  BoxSelectRectCurr;
 
-    ImGuiBoxSelectState()   { memset(this, 0, sizeof(*this)); }
+    ImGuiBoxSelectState()   { memset((void*)this, 0, sizeof(*this)); }
 };
 
 //-----------------------------------------------------------------------------
@@ -1847,7 +1847,7 @@ struct ImGuiWindowSettings
     bool        WantApply;      // Set when loaded from .ini data (to enable merging/loading .ini data into an already running context)
     bool        WantDelete;     // Set to invalidate/delete the settings entry
 
-    ImGuiWindowSettings()       { memset(this, 0, sizeof(*this)); }
+    ImGuiWindowSettings()       { memset((void*)this, 0, sizeof(*this)); }
     char* GetName()             { return (char*)(this + 1); }
 };
 
@@ -1969,7 +1969,7 @@ struct ImGuiIDStackTool
     bool                    CopyToClipboardOnCtrlC;
     float                   CopyToClipboardLastTime;
 
-    ImGuiIDStackTool()      { memset(this, 0, sizeof(*this)); CopyToClipboardLastTime = -FLT_MAX; }
+    ImGuiIDStackTool()      { memset((void*)this, 0, sizeof(*this)); CopyToClipboardLastTime = -FLT_MAX; }
 };
 
 //-----------------------------------------------------------------------------
@@ -2863,7 +2863,7 @@ struct ImGuiTableColumn
 
     ImGuiTableColumn()
     {
-        memset(this, 0, sizeof(*this));
+        memset((void*)this, 0, sizeof(*this));
         StretchWeight = WidthRequest = -1.0f;
         NameOffset = -1;
         DisplayOrder = IndexWithinEnabledSet = -1;
@@ -3023,7 +3023,7 @@ struct IMGUI_API ImGuiTable
     bool                        MemoryCompacted;
     bool                        HostSkipItems;              // Backup of InnerWindow->SkipItem at the end of BeginTable(), because we will overwrite InnerWindow->SkipItem on a per-column basis
 
-    ImGuiTable()                { memset(this, 0, sizeof(*this)); LastFrameActive = -1; }
+    ImGuiTable()                { memset((void*)this, 0, sizeof(*this)); LastFrameActive = -1; }
     ~ImGuiTable()               { IM_FREE(RawData); }
 };
 
@@ -3051,7 +3051,7 @@ struct IMGUI_API ImGuiTableTempData
     float                       HostBackupItemWidth;        // Backup of OuterWindow->DC.ItemWidth at the end of BeginTable()
     int                         HostBackupItemWidthStackSize;//Backup of OuterWindow->DC.ItemWidthStack.Size at the end of BeginTable()
 
-    ImGuiTableTempData()        { memset(this, 0, sizeof(*this)); LastTimeActive = -1.0f; }
+    ImGuiTableTempData()        { memset((void*)this, 0, sizeof(*this)); LastTimeActive = -1.0f; }
 };
 
 // sizeof() ~ 12

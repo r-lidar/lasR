@@ -6171,7 +6171,7 @@ void ImGui::ColorPickerOptionsPopup(const float* ref_col, ImGuiColorEditFlags fl
                 g.ColorEditOptions = (g.ColorEditOptions & ~ImGuiColorEditFlags_PickerMask_) | (picker_flags & ImGuiColorEditFlags_PickerMask_);
             SetCursorScreenPos(backup_pos);
             ImVec4 previewing_ref_col;
-            memcpy(&previewing_ref_col, ref_col, sizeof(float) * ((picker_flags & ImGuiColorEditFlags_NoAlpha) ? 3 : 4));
+            memcpy((void*)&previewing_ref_col, ref_col, sizeof(float) * ((picker_flags & ImGuiColorEditFlags_NoAlpha) ? 3 : 4));
             ColorPicker4("##previewing_picker", &previewing_ref_col.x, picker_flags);
             PopID();
         }
@@ -8997,7 +8997,7 @@ namespace ImGui
 
 ImGuiTabBar::ImGuiTabBar()
 {
-    memset(this, 0, sizeof(*this));
+    memset((void*)this, 0, sizeof(*this));
     CurrFrameVisible = PrevFrameVisible = -1;
     LastTabItemIdx = -1;
 }
