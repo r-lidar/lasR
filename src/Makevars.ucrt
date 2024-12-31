@@ -16,7 +16,7 @@ endif
 
 CXX_STD=CXX17
 
-SOURCES = $(wildcard LASRcore/*.cpp LASRstages/*.cpp LASRreaders/*.cpp  vendor/*/*.cpp vendor/ImGui/backends/*.cpp ./*.cpp)
+SOURCES = $(wildcard LASRviewer/*.cpp LASRcore/*.cpp LASRstages/*.cpp LASRreaders/*.cpp  vendor/*/*.cpp vendor/ImGui/backends/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
 OBJECTS = $(TEMP1:.c=.o)
 
