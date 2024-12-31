@@ -208,7 +208,7 @@ const int FILE_VERSION_MAJOR = 1;
 const int FILE_VERSION_MINOR = 0;
 
 // Write function (not working)
-void LODtree::write(const std::string& filename)
+/*void LODtree::write(const std::string& filename)
 {
   //printf("write\n");
   std::ofstream outFile(filename, std::ios::binary);
@@ -256,10 +256,10 @@ void LODtree::write(const std::string& filename)
   }
 
   outFile.close();
-}
+}*/
 
 // Read function (not working)
-bool LODtree::read(const std::string& filename)
+/*bool LODtree::read(const std::string& filename)
 {
   //printf("read\n");
 
@@ -330,7 +330,7 @@ bool LODtree::read(const std::string& filename)
 
   inFile.close();
   return true;
-}
+}*/
 
 
 // Helper function for generating unique voxel keys
@@ -344,9 +344,17 @@ int64_t OctreeNode::voxelKey(double x, double y, double z) const
 
 // Constructor
 OctreeNode::OctreeNode(double min_x, double min_y, double min_z, double max_x, double max_y, double max_z, int max_depth, int depth)
-  : min_x(min_x), min_y(min_y), min_z(min_z),  max_x(max_x), max_y(max_y), max_z(max_z), maxDepth(max_depth), depth(depth)
 {
-  voxelSize = (max_x-min_x)/64;
+  this->min_x = min_x;
+  this->min_y = min_y;
+  this->min_z = min_z;
+  this->max_x = max_x;
+  this->max_y = max_y;
+  this->max_z = max_z;
+  this->maxDepth = max_depth;
+  this->depth = depth;
+
+  voxelSize = (max_x - min_x) / 64;
   children.fill(nullptr);
 }
 

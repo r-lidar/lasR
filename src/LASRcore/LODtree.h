@@ -92,8 +92,8 @@ public:
   inline int get_gridsize() const { return grid_size; };
   void set_bbox(const Key& key, double* bb);
   inline void set_gridsize(int32_t size) { if (size > 2) grid_size = size; };
-  void write(const std::string& filename);
-  bool read(const std::string& filename);
+  //void write(const std::string& filename);
+  //bool read(const std::string& filename);
 
   bool insert(double x, double y, double z, uint32_t i);
   std::unordered_map<Key, Node, KeyHasher> registry;
