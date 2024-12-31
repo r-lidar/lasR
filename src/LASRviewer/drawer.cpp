@@ -1,16 +1,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-// Conflict with definition in windows.h included by gl.h
-#ifdef _WIN32
-#undef FLOAT
-#undef INT8
-#undef INT16
-#undef INT32
-#undef INT64
-#undef UINT8
-#endif
-
 #include <chrono>
 #include <random>
 #include <algorithm>
@@ -240,7 +230,11 @@ void Drawer::setAttribute(int index)
 
 void Drawer::setPointSize(float size)
 {
-  if (size > 0) this->point_size = size;
+  if (size < 0) return;
+  if (point_size == size) return;
+
+  this->point_size = size;
+  camera.changed = true;
 }
 
 void Drawer::setPercentiles(float min, float max)

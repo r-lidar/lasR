@@ -55,7 +55,8 @@ static std::string map_attribute(const std::string& attribute)
   return attribute;
 }
 
-enum AttributeType {
+enum class AttributeType
+{
   NOTYPE = 0,
   UINT8 = 1,
   INT8 = 2,
@@ -69,12 +70,14 @@ enum AttributeType {
   DOUBLE = 10
 };
 
-enum AttributeCore {
+enum AttributeCore
+{
   FLAG = 0,
   X = 1,
   Y = 2,
   Z = 3,
 };
+
 
 struct Attribute
 {
@@ -91,17 +94,17 @@ struct Attribute
   const char* attributeTypeToString() const
   {
     switch (type) {
-    case NOTYPE: return "Unknown";
-    case UINT8: return "uchar";
-    case INT8: return "char";
-    case UINT16: return "ushort";
-    case INT16: return "short";
-    case UINT32: return "uint";
-    case INT32: return "int";
-    case UINT64: return "uint64";
-    case INT64: return "int64";
-    case FLOAT: return "float";
-    case DOUBLE: return "double";
+    case AttributeType::NOTYPE: return "Unknown";
+    case AttributeType::UINT8: return "uchar";
+    case AttributeType::INT8: return "char";
+    case AttributeType::UINT16: return "ushort";
+    case AttributeType::INT16: return "short";
+    case AttributeType::UINT32: return "uint";
+    case AttributeType::INT32: return "int";
+    case AttributeType::UINT64: return "uint64";
+    case AttributeType::INT64: return "int64";
+    case AttributeType::FLOAT: return "float";
+    case AttributeType::DOUBLE: return "double";
     default: return "Unknown";
     }
   }
@@ -204,9 +207,9 @@ struct Point
     const auto& attr = schema->attributes[i];
     switch(attr.type)
     {
-      case INT32: { int value = *((int*)(data + attr.offset));return attr.scale_factor * value + attr.value_offset; }
-      case FLOAT: { return *((float*)(data + attr.offset)); }
-      case DOUBLE: { return *((double*)(data + attr.offset)); }
+      case AttributeType::INT32: { int value = *((int*)(data + attr.offset));return attr.scale_factor * value + attr.value_offset; }
+      case AttributeType::FLOAT: { return *((float*)(data + attr.offset)); }
+      case AttributeType::DOUBLE: { return *((double*)(data + attr.offset)); }
       default: return 0;
     }
   }
@@ -261,16 +264,16 @@ struct Point
     unsigned char* pointer = data + attr.offset;
     double cast_value = 0;
     switch (attr.type) {
-    case UINT8: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
-    case INT8: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
-    case UINT16: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
-    case INT16: cast_value = static_cast<double>(*reinterpret_cast<const int16_t*>(pointer)); break;
-    case UINT32: cast_value = static_cast<double>(*reinterpret_cast<const uint32_t*>(pointer)); break;
-    case INT32: cast_value = static_cast<double>(*reinterpret_cast<const int32_t*>(pointer)); break;
-    case UINT64: cast_value = static_cast<double>(*reinterpret_cast<const uint64_t*>(pointer)); break;
-    case INT64: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
-    case FLOAT: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
-    case DOUBLE: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
+    case AttributeType::UINT8: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
+    case AttributeType::INT8: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
+    case AttributeType::UINT16: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
+    case AttributeType::INT16: cast_value = static_cast<double>(*reinterpret_cast<const int16_t*>(pointer)); break;
+    case AttributeType::UINT32: cast_value = static_cast<double>(*reinterpret_cast<const uint32_t*>(pointer)); break;
+    case AttributeType::INT32: cast_value = static_cast<double>(*reinterpret_cast<const int32_t*>(pointer)); break;
+    case AttributeType::UINT64: cast_value = static_cast<double>(*reinterpret_cast<const uint64_t*>(pointer)); break;
+    case AttributeType::INT64: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
+    case AttributeType::FLOAT: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
+    case AttributeType::DOUBLE: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
     default: return 0.0;
     }
     return attr.value_offset + attr.scale_factor * cast_value;
