@@ -267,6 +267,15 @@ void Drawer::setEDLstrength(float val)
   camera.changed = true;
 }
 
+void Drawer::setBudget(int val)
+{
+  if (val < 0) return;
+  if (point_budget == val) return;
+
+  point_budget = val;
+  camera.changed = true;
+}
+
 bool Drawer::draw()
 {
   if (!camera.changed) return false;
@@ -538,51 +547,6 @@ void Drawer::compute_attribute_range()
   if (attrrange == 0) attrrange = EPSILON;
 }
 
-/*void Drawer::traverse_and_collect(const Key& key, std::vector<Node*>& visible_octants)
-{
-  auto it = index.registry.find(key);
-  if (it == index.registry.end()) return;
-
-  GLint viewport[4];
-  glGetIntegerv(GL_VIEWPORT, viewport);
-  int screenWidth = viewport[2];
-  int screenHeight = viewport[3];
-
-  float fov = 70*M_PI/180;
-  float slope = std::tan(fov/2.0f);
-
-  double cx = camera.x;
-  double cy = camera.y;
-  double cz = camera.z;
-
-  Node& octant = it->second;
-
-  // Check if the current octant is visible
-  if (is_visible(octant))
-  {
-    // Calculate the screen size or other criteria for visibility
-    float x = octant.bbox[0] - xcenter;
-    float y = octant.bbox[1] - ycenter;
-    float z = octant.bbox[2] - zcenter;
-    float radius = octant.bbox[3] * 2 * 1.414f;
-
-    float distance = std::sqrt((cx - x) * (cx - x) + (cy - y) * (cy - y) + (cz - z) * (cz - z));
-    octant.screen_size = (screenHeight / 2.0f) * (radius / (slope * distance));
-
-    if (octant.screen_size > 200)
-    {
-      visible_octants.push_back(&octant);
-
-      // Recurse into children
-      std::array<Key, 8> children_keys = key.get_children();
-      for (const Key& child_key  : children_keys)
-      {
-        traverse_and_collect(child_key, visible_octants);
-      }
-    }
-  }
-}*/
-
 void Drawer::traverse_and_collect(OctreeNode* node, std::vector<const OctreeNode*>& visible_octants)
 {
   if (node == nullptr) return;
@@ -612,7 +576,7 @@ void Drawer::traverse_and_collect(OctreeNode* node, std::vector<const OctreeNode
     double screen_size = (screenHeight / 2.0) * (r / (slope * distance));
     node->screen_size = screen_size;
 
-    if (screen_size > 100)
+    if (screen_size > 50)
     {
       visible_octants.push_back(node);
 

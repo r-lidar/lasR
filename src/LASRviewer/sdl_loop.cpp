@@ -124,6 +124,8 @@ void sdl_loop(PointCloud* las)
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8); // 4x antialiasing
+  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1); // Enable the sample buffer
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window* window = SDL_CreateWindow("lasR", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, window_flags);
   if (window == nullptr)
@@ -177,6 +179,7 @@ void sdl_loop(PointCloud* las)
   bool showSpatialIndex = false;
   bool showEDL = true;
   int attributeSelection = 0;
+  int point_budget = 2000;
   bool ctrlPressed = false;
   bool rotate = false;
   bool pan = false;
@@ -367,6 +370,10 @@ void sdl_loop(PointCloud* las)
     ImGui::Checkbox("Enable", &showEDL);
     ImGui::SliderFloat("##EDLStrenghSlider", &edl_strengh, 1.0f, 30.0f);
 
+    ImGui::Text("Point Budget:");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Maximum number of points to display (x1000)");
+    ImGui::SliderInt("##BudgetSlider", &point_budget, 100, 100000);
+
     // Statistics panel
     ImGui::SetNextWindowPos(ImVec2(10, ImGui::GetIO().DisplaySize.y - 100), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(0.0f);
@@ -382,6 +389,7 @@ void sdl_loop(PointCloud* las)
 
     ImGui::End();
 
+    drawer->setBudget(point_budget*1000);
     drawer->setEDL(showEDL);
     drawer->setEDLstrength(edl_strengh);
     drawer->setPointSize(pointSize);
