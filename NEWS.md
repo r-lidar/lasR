@@ -1,6 +1,6 @@
 # lasR 0.14.0
 
-- New: `lasR` is not equipped with a powerful 3D viewer that will later be usable has a GUI. This is early stage development of the viewer more is coming and bug reports are welcome.
+- New: lasR now includes a powerful 3D viewer, which will eventually function as a GUI. This is an early-stage development of the viewer, with more features to come. Bug reports are welcome!
   ```r
   f <- system.file("extdata", "MixedConifer.las", package = "lasR")
   pc = read_cloud(f)
