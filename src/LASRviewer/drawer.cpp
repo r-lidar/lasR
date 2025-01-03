@@ -171,7 +171,8 @@ Drawer::Drawer(SDL_Window *window, PointCloud* las)
   //print("n point at lvl 0 = %d\n", root.points.size());
   //root.print();
 
-  progress.done();
+  progress.done(true);
+  progress.show();
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> duration = end - start;
