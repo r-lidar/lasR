@@ -134,6 +134,8 @@ void sdl_loop(PointCloud* las)
     return;
   }
 
+  SDL_RaiseWindow(window);
+
   SDL_GLContext gl_context = SDL_GL_CreateContext(window);
   SDL_GL_MakeCurrent(window, gl_context);
   SDL_GL_SetSwapInterval(1); // Enable vsync

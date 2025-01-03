@@ -4,6 +4,8 @@
 
 #include <GL/glu.h>
 
+#include <stdio.h>
+
 static bool InvertMatrix(const GLfloat m[16], GLfloat invOut[16])
 {
   GLfloat inv[16], det;
@@ -163,7 +165,6 @@ void Camera::rotate(int xrel, int yrel)
 
 void Camera::pan(int xrel, int yrel)
 {
-  panSensivity = distance*0.002;
   deltaX += xrel*panSensivity;
   deltaY -= yrel*panSensivity;
   changed = true;
@@ -171,21 +172,30 @@ void Camera::pan(int xrel, int yrel)
 
 void Camera::zoom(int zrel)
 {
+  const float minZoomSensivity = 0.1f;
+  const float zoomFactor = 0.5f;
+
+  const float minPanSensivity = 0.05f;
+  const float panFactor = 0.002f;
+
   if (zrel > 0)
   {
     distance += zoomSensivity;
-    panSensivity = distance * 0.001;
-    zoomSensivity = distance * 0.05;
   }
   else if (zrel < 0)
   {
     distance -= zoomSensivity;
-    panSensivity = distance * 0.001;
-    zoomSensivity = distance * 0.05;
+    if (distance < 0.01f) distance = 0.01f; // Prevent overshooting
   }
+
+  // Compute sensitivities
+  zoomSensivity = (zoomFactor * sqrt(distance) > minZoomSensivity) ? zoomFactor * sqrt(distance) : minZoomSensivity;
+  panSensivity = (panFactor * distance > minPanSensivity) ? panFactor * distance : minPanSensivity;
 
   changed = true;
 }
+
+
 
 void Camera::setPanSensivity(double sensivity)
 {
