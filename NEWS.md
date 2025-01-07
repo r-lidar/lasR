@@ -1,3 +1,8 @@
+# lasR 0.13.4
+
+- New metrics `skew` and `kurt` in the metric engine
+
+
 # lasR 0.13.3
 
 - Fix: #105 invalid read of extrabytes

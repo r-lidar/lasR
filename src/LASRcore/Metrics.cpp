@@ -163,7 +163,7 @@ float MetricManager::median(AttributeAccessor& accessor, const PointCollection& 
 
 float MetricManager::sd(AttributeAccessor& accessor, const PointCollection& points, float param) const
 {
-  if (points.size() == 1) return NA_F32_RASTER;
+  if (points.size() < 2) return NA_F32_RASTER;
 
   double sum = 0.0;
   for (const auto& point : points) sum += accessor(&point);
@@ -241,6 +241,44 @@ float MetricManager::above(AttributeAccessor& accessor, const PointCollection& p
     if (accessor(&point) > param) k++;
   return k/(float)points.size();
 }
+
+float MetricManager::moment(AttributeAccessor& accessor, const PointCollection& points, float param) const
+{
+  if (points.size() < 2) return NA_F32_RASTER;
+  if (param <= 1) return 0.0f;
+  if (param <= 2) return 1.0f;
+
+  double n = points.size();
+
+  float mean_val = mean(accessor, points, 0);
+
+  double numerator = 0.0;
+  double denominator = 0.0;
+  for (const auto& point : points)
+  {
+    double value = accessor(&point);
+    double diff = value - mean_val;
+    numerator += std::pow(diff, param);
+    denominator += std::pow(diff, 2);
+  }
+
+  numerator = (1/n)*numerator;
+  denominator = (1/n)*denominator;
+  denominator = std::pow(denominator, param/2);
+  return (float)(numerator / denominator);
+}
+
+float MetricManager::skewness(AttributeAccessor& accessor, const PointCollection& points, float param) const
+{
+  return moment(accessor, points, 3);
+}
+
+float MetricManager::kurtosis(AttributeAccessor& accessor, const PointCollection& points, float param) const
+{
+  return moment(accessor, points, 4);
+}
+
+
 
 float MetricManager::get_metric(int index, float x, float y) const
 {

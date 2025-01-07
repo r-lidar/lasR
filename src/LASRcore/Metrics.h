@@ -62,6 +62,9 @@ private:
   float above(AttributeAccessor& accessor, const PointCollection& points, float param) const;
   float count(AttributeAccessor& accessor, const PointCollection& points, float param) const;
   float mode(AttributeAccessor& accessor, const PointCollection& points, float param) const;
+  float moment(AttributeAccessor& accessor, const PointCollection& points, float param) const;
+  float skewness(AttributeAccessor& accessor, const PointCollection& points, float param) const;
+  float kurtosis(AttributeAccessor& accessor, const PointCollection& points, float param) const;
 
   float default_value;
   std::vector<std::string> names;
@@ -134,7 +137,9 @@ private:
     {"above", [this](AttributeAccessor& accessor, const PointCollection& points, float param) { return above(accessor, points, param); }},
     {"mode", [this](AttributeAccessor& accessor, const PointCollection& points, float param) { return mode(accessor, points, param); }},
     {"count", [this](AttributeAccessor& accessor, const PointCollection& points, float param) { return count(accessor, points, param); }},
-    {"p", [this](AttributeAccessor& accessor, const PointCollection& points, float param) { return percentile(accessor, points, param); }}
+    {"p", [this](AttributeAccessor& accessor, const PointCollection& points, float param) { return percentile(accessor, points, param); }},
+    {"skew", [this](AttributeAccessor& accessor, const PointCollection& points, float param) { return skewness(accessor, points, param); }},
+    {"kurt", [this](AttributeAccessor& accessor, const PointCollection& points, float param) { return kurtosis(accessor, points, param); }},
   };
 };
 

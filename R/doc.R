@@ -14,15 +14,16 @@
 #' slightly inaccurate, but anyway, these metrics are not supposed to be useful.
 #'
 #' @section Attribute:
-#' The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
-#' a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
-#' s - synthetic, u - userdata, p - pointsourceid,
-#' e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr
+#' The available attributes are accessible via their name. Some standard attribute have a shortcut
+#' by using a single letter: t - gpstime, a - angle, i - intensity, n - numberofreturns,
+#' r - returnnumber, c - classification, u - userdata, p - pointsourceid, e - edgeofflightline,
+#' d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr
 #' **Be careful** to the typos: attributes are non failing features. If the attribute does not exist `NaN`
 #' is returned. Thus `intesity_mean` return `NaN` rather than failing.
 #'
 #' @section Metrics:
-#' The available metric names are: `count`, `max`, `min`, `mean`, `median`, `sum`, `sd`, `cv`, `pX` (percentile), `aboveX`, and `mode`.
+#' The available metric names are: `count`, `max`, `min`, `mean`, `median`, `sum`, `sd`, `cv`, `pX` (percentile), `aboveX`, `mode`,
+#' `kurt` (kurtosis), `skew` (skewness).
 #' Some metrics have an attribute + name + a parameter `X`, such as `pX` where `X` can be substituted by a number.
 #' Here, `z_pX` represents the Xth percentile; for instance, `z_p95` signifies the 95th
 #' percentile of z. `z_aboveX` corresponds to the percentage of points above `X` (sometimes called canopy cover).\cr\cr
