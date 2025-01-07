@@ -80,17 +80,18 @@ slightly inaccurate, but anyway, these metrics are not supposed to be useful.</p
     <h2 id="attribute">Attribute<a class="anchor" aria-label="anchor" href="#attribute"></a></h2>
 
 
-<p>The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
-a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
-s - synthetic, u - userdata, p - pointsourceid,
-e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.<br><strong>Be careful</strong> to the typos: attributes are non failing features. If the attribute does not exist <code>NaN</code>
+<p>The available attributes are accessible via their name. Some standard attribute have a shortcut
+by using a single letter: t - gpstime, a - angle, i - intensity, n - numberofreturns,
+r - returnnumber, c - classification, u - userdata, p - pointsourceid, e - edgeofflightline,
+d - scandirectionflag, R - red, G - green, B - blue, N - nir.<br><strong>Be careful</strong> to the typos: attributes are non failing features. If the attribute does not exist <code>NaN</code>
 is returned. Thus <code>intesity_mean</code> return <code>NaN</code> rather than failing.</p>
     </div>
     <div class="section level2">
     <h2 id="metrics">Metrics<a class="anchor" aria-label="anchor" href="#metrics"></a></h2>
 
 
-<p>The available metric names are: <code>count</code>, <code>max</code>, <code>min</code>, <code>mean</code>, <code>median</code>, <code>sum</code>, <code>sd</code>, <code>cv</code>, <code>pX</code> (percentile), <code>aboveX</code>, and <code>mode</code>.
+<p>The available metric names are: <code>count</code>, <code>max</code>, <code>min</code>, <code>mean</code>, <code>median</code>, <code>sum</code>, <code>sd</code>, <code>cv</code>, <code>pX</code> (percentile), <code>aboveX</code>, <code>mode</code>,
+<code>kurt</code> (kurtosis), <code>skew</code> (skewness).
 Some metrics have an attribute + name + a parameter <code>X</code>, such as <code>pX</code> where <code>X</code> can be substituted by a number.
 Here, <code>z_pX</code> represents the Xth percentile; for instance, <code>z_p95</code> signifies the 95th
 percentile of z. <code>z_aboveX</code> corresponds to the percentage of points above <code>X</code> (sometimes called canopy cover).<br><br>
@@ -126,7 +127,7 @@ rather than an error.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 5, 5  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 339000, 339020, 5248000, 5248005  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83 / UTM zone 17N (EPSG:26917) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1efa6561e8c8.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file1ecd46385473.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> names       : z_max, i_min, r_mean, n_median, z_sd, c_sd, ... </span>
 </code></pre></div>
     </div>
