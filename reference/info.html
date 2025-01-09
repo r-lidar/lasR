@@ -83,46 +83,58 @@ the most common use case (see examples).</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Return a pipeline stage</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="fu">info</span><span class="op">(</span><span class="op">)</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Size         : 1.43 MB</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Size         : 1.47 MB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Extent       : 481260.00 481349.99 3812921.09 3813010.99 (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Points       : 37.66 thousands</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Coord. ref.  : NAD83 / UTM zone 12N</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Schema       :</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: flags           | uchar  | Desc: Internal 8-bit mask reserved lasR core engine</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: X               | int    | Desc: X coordinate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: Y               | int    | Desc: Y coordinate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: Z               | int    | Desc: Z coordinate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: Intensity       | ushort | Desc: Pulse return magnitude</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: ReturnNumber    | uchar  | Desc: Pulse return number for a given output pulse</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: NumberOfReturns | uchar  | Desc: Total number of returns for a given pulse</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: Classification  | uchar  | Desc: The 'class' attributes of a point</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: UserData        | uchar  | Desc: Used at the user’s discretion</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: PointSourceID   | short  | Desc: Source from which this point originated</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: ScanAngle       | char   | Desc: Rounded angle at which the laser point was output</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: gpstime         | double | Desc: Time tag value at which the point was observed</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: treeID          | double | Desc: An ID for each segmented tree</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 attributes | 39 bytes per points</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: flags             | uchar  | Desc: Internal 8-bit mask reserved for lasR core engine</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: X                 | int    | Desc: X coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Y                 | int    | Desc: Y coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Z                 | int    | Desc: Z coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Intensity         | ushort | Desc: Pulse return magnitude</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: ReturnNumber      | uchar  | Desc: Pulse return number for a given output pulse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: NumberOfReturns   | uchar  | Desc: Total number of returns for a given pulse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Classification    | uchar  | Desc: The 'class' attributes of a point</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: UserData          | uchar  | Desc: Used at the user’s discretion</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: PointSourceID     | short  | Desc: Source from which this point originated</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: ScanAngle         | char   | Desc: Rounded angle at which the laser point was output</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: gpstime           | double | Desc: Time tag value at which the point was observed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: treeID            | double | Desc: An ID for each segmented tree</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: EdgeOfFlightline  | bit    | Desc: Set when the point is at the end of a scan</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: ScanDirectionFlag | bit    | Desc: Direction in which the scanner mirror was traveling </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Synthetic         | bit    | Desc: Point created by a technique other than direct observation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Keypoint          | bit    | Desc: Point is considered to be a model key-point</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Withheld          | bit    | Desc: Point is supposed to be deleted)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Convenient user-friendly usage</span></span></span>
 <span class="r-in"><span><span class="fu">info</span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Size         : 1.43 MB</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Size         : 1.47 MB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Extent       : 481260.00 481349.99 3812921.09 3813010.99 (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Points       : 37.66 thousands</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Coord. ref.  : NAD83 / UTM zone 12N</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Schema       :</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: flags           | uchar  | Desc: Internal 8-bit mask reserved lasR core engine</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: X               | int    | Desc: X coordinate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: Y               | int    | Desc: Y coordinate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: Z               | int    | Desc: Z coordinate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: Intensity       | ushort | Desc: Pulse return magnitude</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: ReturnNumber    | uchar  | Desc: Pulse return number for a given output pulse</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: NumberOfReturns | uchar  | Desc: Total number of returns for a given pulse</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: Classification  | uchar  | Desc: The 'class' attributes of a point</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: UserData        | uchar  | Desc: Used at the user’s discretion</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: PointSourceID   | short  | Desc: Source from which this point originated</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: ScanAngle       | char   | Desc: Rounded angle at which the laser point was output</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: gpstime         | double | Desc: Time tag value at which the point was observed</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Name: treeID          | double | Desc: An ID for each segmented tree</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 attributes | 39 bytes per points</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: flags             | uchar  | Desc: Internal 8-bit mask reserved for lasR core engine</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: X                 | int    | Desc: X coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Y                 | int    | Desc: Y coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Z                 | int    | Desc: Z coordinate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Intensity         | ushort | Desc: Pulse return magnitude</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: ReturnNumber      | uchar  | Desc: Pulse return number for a given output pulse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: NumberOfReturns   | uchar  | Desc: Total number of returns for a given pulse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Classification    | uchar  | Desc: The 'class' attributes of a point</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: UserData          | uchar  | Desc: Used at the user’s discretion</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: PointSourceID     | short  | Desc: Source from which this point originated</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: ScanAngle         | char   | Desc: Rounded angle at which the laser point was output</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: gpstime           | double | Desc: Time tag value at which the point was observed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: treeID            | double | Desc: An ID for each segmented tree</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: EdgeOfFlightline  | bit    | Desc: Set when the point is at the end of a scan</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: ScanDirectionFlag | bit    | Desc: Direction in which the scanner mirror was traveling </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Synthetic         | bit    | Desc: Point created by a technique other than direct observation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Keypoint          | bit    | Desc: Point is considered to be a model key-point</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Name: Withheld          | bit    | Desc: Point is supposed to be deleted)</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
