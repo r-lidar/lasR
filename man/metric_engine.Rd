@@ -20,17 +20,18 @@ slightly inaccurate, but anyway, these metrics are not supposed to be useful.
 }
 \section{Attribute}{
 
-The available attributes are accessible via a single letter or via their lowercase name: t - gpstime,
-a - angle, i - intensity, n - numberofreturns, r - returnnumber, c - classification,
-s - synthetic, u - userdata, p - pointsourceid,
-e - edgeofflightline, d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr
+The available attributes are accessible via their name. Some standard attribute have a shortcut
+by using a single letter: t - gpstime, a - angle, i - intensity, n - numberofreturns,
+r - returnnumber, c - classification, u - userdata, p - pointsourceid, e - edgeofflightline,
+d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr
 \strong{Be careful} to the typos: attributes are non failing features. If the attribute does not exist \code{NaN}
 is returned. Thus \code{intesity_mean} return \code{NaN} rather than failing.
 }
 
 \section{Metrics}{
 
-The available metric names are: \code{count}, \code{max}, \code{min}, \code{mean}, \code{median}, \code{sum}, \code{sd}, \code{cv}, \code{pX} (percentile), \code{aboveX}, and \code{mode}.
+The available metric names are: \code{count}, \code{max}, \code{min}, \code{mean}, \code{median}, \code{sum}, \code{sd}, \code{cv}, \code{pX} (percentile), \code{aboveX}, \code{mode},
+\code{kurt} (kurtosis), \code{skew} (skewness).
 Some metrics have an attribute + name + a parameter \code{X}, such as \code{pX} where \code{X} can be substituted by a number.
 Here, \code{z_pX} represents the Xth percentile; for instance, \code{z_p95} signifies the 95th
 percentile of z. \code{z_aboveX} corresponds to the percentage of points above \code{X} (sometimes called canopy cover).\cr\cr

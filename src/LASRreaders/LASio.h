@@ -39,7 +39,7 @@ public:
   // Tools
   static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
   static int get_header_size(int minor_version);
-  static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir);
+  static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir, bool has_overlap);
 
 private:
   LASreadOpener* lasreadopener;
@@ -64,6 +64,12 @@ private:
   AttributeAccessor green;
   AttributeAccessor blue;
   AttributeAccessor nir;
+  AttributeAccessor eof_bit;
+  AttributeAccessor scandirection_bit;
+  AttributeAccessor withheld_bit;
+  AttributeAccessor synthetic_bit;
+  AttributeAccessor keypoint_bit;
+  AttributeAccessor overlap_bit;
   std::vector<AttributeAccessor> extrabytes;
   std::vector<size_t> extrabytes_offsets;
 };

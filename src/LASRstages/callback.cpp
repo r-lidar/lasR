@@ -101,7 +101,7 @@ bool LASRcallback::process(PointCloud*& las)
       buffered_index = k;
       names.push_back(name);
       accessors.push_back(AttributeAccessor(name));
-      attributes.push_back(Attribute(name, AttributeType::NOTYPE));
+      attributes.push_back(Attribute(name, AttributeType::UINT8));
     }
     else
     {

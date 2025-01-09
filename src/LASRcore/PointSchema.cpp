@@ -7,8 +7,10 @@ Attribute::Attribute(const std::string& name, AttributeType type, double scale_f
   this->scale_factor = scale_factor;
   this->value_offset = value_offset;
   this->description = description;
+  this->bit_pos = 0;
   switch (type)
   {
+  case AttributeType::BIT:
   case AttributeType::UINT8:
   case AttributeType::INT8:
     size = 1; break;
@@ -31,9 +33,9 @@ Attribute::Attribute(const std::string& name, AttributeType type, double scale_f
 void Attribute::dump(bool verbose) const
 {
   if (verbose)
-    print("Attribute: %-15s | Address offset: %-2zu | Size: %-1zu | Type: %-6s | Scale Factor: %-5.2f | Value Offset: %-5.2f\n", name.c_str(), offset, size, attributeTypeToString(), scale_factor, value_offset);
+    print(" Name: %-17s | Address offset: %-2zu | Size: %-1zu | Type: %-6s | Scale Factor: %-5.2f | Value Offset: %-5.2f\n", name.c_str(), offset, size, attributeTypeToString(), scale_factor, value_offset);
   else
-    print("Name: %-15s | %-6s | Desc: %s\n", name.c_str(), attributeTypeToString(), description.c_str());
+    print(" Name: %-17s | %-6s | Desc: %s\n", name.c_str(), attributeTypeToString(), description.c_str());
 }
 
 void AttributeSchema::add_attribute(const Attribute& attribute)
@@ -44,8 +46,23 @@ void AttributeSchema::add_attribute(const Attribute& attribute)
     std::runtime_error("Too many attributes for this point cloud");
   }
   attributes.push_back(attribute);
-  attributes.back().offset = total_point_size;
-  total_point_size += attribute.size;
+
+  // Regular attributes
+  if (attribute.type != AttributeType::BIT)
+  {
+    n_consecutive_bits = 0;
+    attributes.back().offset = total_point_size;
+    total_point_size += attribute.size;
+    return;
+  }
+
+  // Single bit attribute
+  if (n_consecutive_bits == 8) n_consecutive_bits = 0;
+  if (n_consecutive_bits == 0) n_consecutive_bits++;
+  if (n_consecutive_bits == 1) total_point_size++;
+  attributes.back().offset = total_point_size-1;
+  attributes.back().bit_pos = n_consecutive_bits-1;
+  n_consecutive_bits++;
 }
 
 void AttributeSchema::add_attribute(const std::string& name, AttributeType type, double scale_factor, double value_offset, const std::string& description)
@@ -81,6 +98,7 @@ int AttributeSchema::get_attribute_index(const std::string& name) const
 
 void AttributeSchema::dump(bool verbose) const
 {
+  print("%d attributes | %d bytes per points\n", num_attributes(), total_point_size);
   for (const auto& attr : attributes) attr.dump(verbose);
 }
 
@@ -103,6 +121,7 @@ double AttributeAccessor::read(const Point* point)
   unsigned char* pointer = point->data + attribute->offset;
   double cast_value = 0;
   switch (attribute->type) {
+  case AttributeType::BIT: cast_value = static_cast<double>(((*pointer >> attribute->bit_pos) & 1)); break;
   case AttributeType::UINT8: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
   case AttributeType::INT8: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
   case AttributeType::UINT16: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
@@ -127,12 +146,11 @@ void AttributeAccessor::write(Point* point, double value)
   }
   if (!attribute) return;
 
-
-
   unsigned char* pointer = point->data + attribute->offset;
   double scaled_value = (value - attribute->value_offset) / attribute->scale_factor;
 
   switch (attribute->type) {
+  case AttributeType::BIT:    *reinterpret_cast<uint8_t*>(pointer) = (*reinterpret_cast<uint8_t*>(pointer) & ~(1 << attribute->bit_pos)) | ((value != 0.0) << attribute->bit_pos); break;
   case AttributeType::UINT8:  *reinterpret_cast<uint8_t*>(pointer)  = static_cast<uint8_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint8_t>::lowest()), static_cast<double>(std::numeric_limits<uint8_t>::max()))); break;
   case AttributeType::INT8:   *reinterpret_cast<int8_t*>(pointer)   = static_cast<int8_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int8_t>::lowest()), static_cast<double>(std::numeric_limits<int8_t>::max()))); break;
   case AttributeType::UINT16: *reinterpret_cast<uint16_t*>(pointer) = static_cast<uint16_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint16_t>::lowest()), static_cast<double>(std::numeric_limits<uint16_t>::max()))); break;

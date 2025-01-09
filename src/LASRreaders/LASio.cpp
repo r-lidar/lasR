@@ -30,31 +30,17 @@ LASio::LASio()
   green = AttributeAccessor("G");
   blue = AttributeAccessor("B");
   nir = AttributeAccessor("NIR");
+  eof_bit = AttributeAccessor("EdgeOfFlightline");
+  scandirection_bit = AttributeAccessor("ScanDirectionFlag");
+  withheld_bit = AttributeAccessor("Withheld");
+  synthetic_bit = AttributeAccessor("Synthetic");
+  keypoint_bit = AttributeAccessor("Keypoint");
+  overlap_bit = AttributeAccessor("Overlap");
 }
 
-LASio::LASio(Progress* progress)
+LASio::LASio(Progress* progress) : LASio()
 {
-  lasreadopener = nullptr;
-  laswriteopener = nullptr;
-  lasreader = nullptr;
-  lasheader = nullptr;
-  laswriter = nullptr;
-  point = nullptr;
   this->progress = progress;
-
-  intensity = AttributeAccessor("Intensity");
-  returnnumber = AttributeAccessor("ReturnNumber");
-  numberofreturns = AttributeAccessor("NumberOfReturns");
-  userdata = AttributeAccessor("UserData");
-  classification = AttributeAccessor("Classification");
-  psid = AttributeAccessor("PointSourceID");
-  scanangle = AttributeAccessor("ScanAngle");
-  gpstime = AttributeAccessor("gpstime");
-  scannerchannel = AttributeAccessor("ScannerChannel");
-  red = AttributeAccessor("R");
-  green = AttributeAccessor("G");
-  blue = AttributeAccessor("B");
-  nir = AttributeAccessor("NIR");
 }
 
 LASio::~LASio()
@@ -228,7 +214,7 @@ bool LASio::populate_header(Header* header, bool read_first_point)
   header->file_creation_day = lasreader->header.file_creation_day;
   header->adjusted_standard_gps_time = lasreader->header.get_global_encoding_bit(0) == true;
 
-  header->schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
+  header->schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved for lasR core engine");
   header->schema.add_attribute("X", AttributeType::INT32, header->x_scale_factor, header->x_offset, "X coordinate");
   header->schema.add_attribute("Y", AttributeType::INT32, header->y_scale_factor, header->y_offset, "Y coordinate");
   header->schema.add_attribute("Z", AttributeType::INT32, header->z_scale_factor, header->z_offset, "Z coordinate");
@@ -278,6 +264,15 @@ bool LASio::populate_header(Header* header, bool read_first_point)
     header->schema.add_attribute(name, type, scale, offset, description);
     extrabytes.push_back(AttributeAccessor(name));
   }
+
+  header->schema.add_attribute("EdgeOfFlightline", AttributeType::BIT, 1, 0, "Set when the point is at the end of a scan");
+  header->schema.add_attribute("ScanDirectionFlag", AttributeType::BIT, 1, 0, "Direction in which the scanner mirror was traveling ");
+  header->schema.add_attribute("Synthetic", AttributeType::BIT, 1, 0, "Point created by a technique other than direct observation");
+  header->schema.add_attribute("Keypoint", AttributeType::BIT, 1, 0, "Point is considered to be a model key-point");
+  header->schema.add_attribute("Withheld", AttributeType::BIT, 1, 0, "Point is supposed to be deleted)");
+
+  if (lasreader->point.extended_point_type)
+    header->schema.add_attribute("Overlap", AttributeType::BIT, 1, 0, "If set, point is within an overlap region of 2+ swaths");
 
   if (lasreader->header.vlr_geo_keys)
   {
@@ -331,11 +326,13 @@ bool LASio::init(const Header* header, const CRS& crs)
     return false;
   }
 
-  int version_minor = 2;
-
   bool has_gps = header->schema.find_attribute("gpstime") != nullptr;
   bool has_rgb = header->schema.find_attribute("R") != nullptr;
   bool has_nir = header->schema.find_attribute("NIR") != nullptr;
+  bool has_overlap = header->schema.find_attribute("Overlap") != nullptr;
+
+  int pdf = guess_point_data_format(has_gps, has_rgb, has_nir, has_overlap);
+  int version_minor = (pdf >= 6) ? 4 : 2;
 
   lasheader = new LASheader();
   lasheader->file_source_ID       = 0;
@@ -345,7 +342,7 @@ bool LASio::init(const Header* header, const CRS& crs)
   lasheader->offset_to_point_data = get_header_size(version_minor);
   lasheader->file_creation_year   = 0;
   lasheader->file_creation_day    = 0;
-  lasheader->point_data_format    = guess_point_data_format(has_gps, has_rgb, has_nir);
+  lasheader->point_data_format    = pdf;
   lasheader->point_data_record_length = get_point_data_record_length(lasheader->point_data_format);
   lasheader->x_scale_factor       = header->schema.attributes[AttributeCore::X].scale_factor;
   lasheader->y_scale_factor       = header->schema.attributes[AttributeCore::Y].scale_factor;
@@ -425,6 +422,12 @@ bool LASio::read_point(Point* p)
     if (lasreader->header.attributes[i].data_type > 10) continue; // Don't read deprecated types
     extrabytes[i](p, lasreader->point.get_attribute_as_float(i));
   }
+  eof_bit(p, lasreader->point.get_edge_of_flight_line());
+  scandirection_bit(p, lasreader->point.get_scan_direction_flag());
+  withheld_bit(p, lasreader->point.get_withheld_flag());
+  synthetic_bit(p, lasreader->point.get_synthetic_flag());
+  keypoint_bit(p, lasreader->point.get_keypoint_flag());
+  overlap_bit(p, lasreader->point.get_extended_overlap_flag());
   return true;
 }
 
@@ -446,6 +449,12 @@ bool LASio::write_point(Point* p)
   point->set_G(green(p));
   point->set_B(blue(p));
   point->set_NIR(nir(p));
+  point->set_edge_of_flight_line(eof_bit(p));
+  point->set_scan_direction_flag(scandirection_bit(p));
+  point->set_synthetic_flag(synthetic_bit(p));
+  point->set_withheld_flag(withheld_bit(p));
+  point->set_keypoint_flag(keypoint_bit(p));
+  point->set_extended_overlap_flag(overlap_bit(p));
 
   for (int i = 0 ; i < extrabytes_offsets.size() ; i++)
     point->set_attribute(i, p->data + extrabytes_offsets[i]);
@@ -611,37 +620,35 @@ void LASio::reset_accessor()
   green.reset();
   blue.reset();
   nir.reset();
+  eof_bit.reset();
+  scandirection_bit.reset();
+  withheld_bit.reset();
+  synthetic_bit.reset();
+  keypoint_bit.reset();
+  overlap_bit.reset();
   for (auto& accessor : extrabytes)
     accessor.reset();
 }
 
 
-int LASio::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)
+int LASio::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir, bool has_overlap)
 {
-  std::vector<int> formats = {0,1,2,3,6,7,8};
+  if (has_nir) return 8; // NIR requires format 8 or 10 (fwf), choose 8
 
-  if (has_nir) // format 8 or 10
-    return 8;
+  // Start with all possible formats
+  std::vector<int> formats = {0, 1, 2, 3, 6, 7, 8};
 
-  if (has_gps) // format 1,3:10
+  // Filter formats based on conditions
+  formats.erase(std::remove_if(formats.begin(), formats.end(), [&](int format)
   {
-    auto end = std::remove(formats.begin(), formats.end(), 0);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 2);
-    formats.erase(end, formats.end());
-  }
+    if (has_overlap && (format < 6)) return true;                            // Overlap requires 6, 7, 8
+    if (has_gps && (format == 0 || format == 2)) return true;                // GPS excludes 0 and 2
+    if (has_rgb && (format == 0 || format == 1 || format == 6)) return true; // RGB excludes 0, 1, 6
+    return false;
+  }), formats.end());
 
-  if (has_rgb)  // format 3, 5, 7, 8
-  {
-    auto end = std::remove(formats.begin(), formats.end(), 0);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 1);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 6);
-    formats.erase(end, formats.end());
-  }
-
-  return formats[0];
+  // Return the first remaining format (or handle error if none remain)
+  return formats.empty() ? 0 : formats[0];
 }
 
 int LASio::get_header_size(int minor_version)
