@@ -64,6 +64,12 @@ private:
   AttributeAccessor green;
   AttributeAccessor blue;
   AttributeAccessor nir;
+  AttributeAccessor eof_bit;
+  AttributeAccessor scandirection_bit;
+  AttributeAccessor withheld_bit;
+  AttributeAccessor synthetic_bit;
+  AttributeAccessor keypoint_bit;
+  AttributeAccessor overlap_bit;
   std::vector<AttributeAccessor> extrabytes;
   std::vector<size_t> extrabytes_offsets;
 };

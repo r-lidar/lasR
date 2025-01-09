@@ -141,13 +141,13 @@ bool LASRdataframereader::process(Header*& header)
     }
     else if (sname == "ScanDirectionFlag")
     {
-      Attribute attr("ScanDirectionFlag", AttributeType::UINT8);
+      Attribute attr("ScanDirectionFlag", AttributeType::BIT);
       header->add_attribute(attr);
       accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "EdgeOfFlightline")
     {
-      Attribute attr("EdgeOfFlightline", AttributeType::UINT8);
+      Attribute attr("EdgeOfFlightline", AttributeType::BIT);
       header->add_attribute(attr);
       accessors.push_back(AttributeAccessor(sname));
     }
@@ -242,24 +242,24 @@ bool LASRdataframereader::process(Header*& header)
     }
     else if (sname == "Synthetic_flag")
     {
-      Attribute attr("Synthetic_flag", AttributeType::UINT8); // # nocov
+      Attribute attr("Synthetic", AttributeType::BIT); // # nocov
       header->add_attribute(attr);
       accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Keypoint_flag") {
-      Attribute attr("Keypoint_flag", AttributeType::UINT8); // # nocov
+      Attribute attr("Keypoint", AttributeType::BIT); // # nocov
       header->add_attribute(attr);
       accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Withheld_flag")
     {
-      Attribute attr("Withheld_flag", AttributeType::UINT8); // # nocov
+      Attribute attr("Withheld", AttributeType::BIT); // # nocov
       header->add_attribute(attr);
       accessors.push_back(AttributeAccessor(sname));
     }
     else if (sname == "Overlap_flag")
     {
-      Attribute attr("Overlap_flag", AttributeType::UINT8); // # nocov
+      Attribute attr("Overlap", AttributeType::BIT); // # nocov
       header->add_attribute(attr);
       accessors.push_back(AttributeAccessor(sname));
     }

@@ -1,7 +1,7 @@
 # lasR 0.13.4
 
-- New metrics `skew` and `kurt` in the metric engine
-
+- New: metrics `skew` and `kurt` in the metric engine
+- New: #110 for LAS files the bit flags are now read in bit attributes. This feature have been lost in 0.13.0
 
 # lasR 0.13.3
 

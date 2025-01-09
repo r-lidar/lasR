@@ -14,9 +14,10 @@
 
 static const std::set<std::string> lascoreattributes = {
   "X", "Y", "Z", "Intensity", "ReturnNumber",
-  "NumberOfReturns", "ScanDirectionFlag", "EdgeOfFlightLine",
+  "NumberOfReturns", "ScanDirectionFlag", "EdgeOfFlightline",
   "Classification", "UserData", "ScanAngleRank", "PointSourceID",
-  "gpstime", "ScannerChannel", "ScanAngle", "R", "G", "B", "flags"
+  "gpstime", "ScannerChannel", "ScanAngle", "R", "G", "B", "flags",
+  "Withheld", "Synthetic", "Keypoint", "Overlap"
 };
 
 static const std::unordered_map<std::string, std::vector<std::string>> attribute_map = {
@@ -28,13 +29,14 @@ static const std::unordered_map<std::string, std::vector<std::string>> attribute
   {"NumberOfReturns", {"NumberOfReturns", "NumberReturns", "numberofreturns", "n"}},
   {"Classification", {"Classification", "classification", "class", "c"}},
   {"gpstime", {"gpstime", "gps_time", "GPStime", "t", "time", "gps"}},
-  //s
-  //k
-  //w
+  {"Synthetic", {"Synthetic", "synthetic", "Synthetic_flag", "s"}},
+  {"Keypoint", {"Keypoint", "keypoint", "Keypoint_flag", "k"}},
+  {"Withheld", {"Withheld", "Withheld", "Withheld_flag", "w"}},
+  {"Overlap", {"Overlap", "overlap", "Overlap_flag", "o"}},
   {"UserData", {"UserData", "userdata", "user_data", "ud", "u"}},
   {"PointSourceID", {"PointSourceID", "point_source", "point_source_id", "pointsourceid", "psid", "p"}},
-  //e
-  //d
+  {"EdgeOfFlightline", {"EdgeOfFlightline", "edgeofflightline", "e"}},
+  {"ScanDirectionFlag", {"ScanDirectionFlag", "scandirectionflag", "d"}},
   {"ScanAngle", {"angle", "Angle", "ScanAngle", "ScanAngleRank", "scan_angle", "a"}},
   {"R", {"R", "Red", "red"}},
   {"G", {"G", "Green", "green"}},
@@ -56,7 +58,7 @@ static std::string map_attribute(const std::string& attribute)
 }
 
 enum AttributeType {
-  NOTYPE = 0,
+  BIT = 0,
   UINT8 = 1,
   INT8 = 2,
   UINT16 = 3,
@@ -66,7 +68,8 @@ enum AttributeType {
   UINT64 = 7,
   INT64 = 8,
   FLOAT = 9,
-  DOUBLE = 10
+  DOUBLE = 10,
+  NOTYPE = 11
 };
 
 enum AttributeCore {
@@ -86,12 +89,13 @@ struct Attribute
   AttributeType type;     // Type of the attribute
   double scale_factor;    // Scaling factor
   double value_offset;    // Value offset
+  unsigned char bit_pos;  // Bit position for bit fields
   std::string description;
 
   const char* attributeTypeToString() const
   {
     switch (type) {
-    case NOTYPE: return "Unknown";
+    case BIT: return "bit";
     case UINT8: return "uchar";
     case INT8: return "char";
     case UINT16: return "ushort";
@@ -109,9 +113,10 @@ struct Attribute
 
 struct AttributeSchema
 {
-  AttributeSchema() { total_point_size = 0; attributes.reserve(100); }
+  AttributeSchema() { total_point_size = 0; attributes.reserve(100); n_consecutive_bits = 0; }
   std::vector<Attribute> attributes;
   size_t total_point_size;
+  unsigned char n_consecutive_bits;
 
   const Attribute* find_attribute(const std::string& s) const;
   bool has_attribute(const std::string& s) const { return find_attribute(s) != nullptr; };
