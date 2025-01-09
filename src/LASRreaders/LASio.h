@@ -39,7 +39,7 @@ public:
   // Tools
   static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
   static int get_header_size(int minor_version);
-  static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir);
+  static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir, bool has_overlap);
 
 private:
   LASreadOpener* lasreadopener;

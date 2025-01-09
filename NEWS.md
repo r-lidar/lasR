@@ -2,6 +2,7 @@
 
 - New: metrics `skew` and `kurt` in the metric engine
 - New: #110 for LAS files the bit flags are now read in bit attributes. This feature have been lost in 0.13.0
+- New: #110 `write_las()` automatically writes LAS 1.4 format if required.
 
 # lasR 0.13.3
 

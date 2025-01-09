@@ -326,11 +326,13 @@ bool LASio::init(const Header* header, const CRS& crs)
     return false;
   }
 
-  int version_minor = 2;
-
   bool has_gps = header->schema.find_attribute("gpstime") != nullptr;
   bool has_rgb = header->schema.find_attribute("R") != nullptr;
   bool has_nir = header->schema.find_attribute("NIR") != nullptr;
+  bool has_overlap = header->schema.find_attribute("Overlap") != nullptr;
+
+  int pdf = guess_point_data_format(has_gps, has_rgb, has_nir, has_overlap);
+  int version_minor = (pdf >= 6) ? 4 : 2;
 
   lasheader = new LASheader();
   lasheader->file_source_ID       = 0;
@@ -340,7 +342,7 @@ bool LASio::init(const Header* header, const CRS& crs)
   lasheader->offset_to_point_data = get_header_size(version_minor);
   lasheader->file_creation_year   = 0;
   lasheader->file_creation_day    = 0;
-  lasheader->point_data_format    = guess_point_data_format(has_gps, has_rgb, has_nir);
+  lasheader->point_data_format    = pdf;
   lasheader->point_data_record_length = get_point_data_record_length(lasheader->point_data_format);
   lasheader->x_scale_factor       = header->schema.attributes[AttributeCore::X].scale_factor;
   lasheader->y_scale_factor       = header->schema.attributes[AttributeCore::Y].scale_factor;
@@ -629,32 +631,24 @@ void LASio::reset_accessor()
 }
 
 
-int LASio::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir)
+int LASio::guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir, bool has_overlap)
 {
-  std::vector<int> formats = {0,1,2,3,6,7,8};
+  if (has_nir) return 8; // NIR requires format 8 or 10 (fwf), choose 8
 
-  if (has_nir) // format 8 or 10
-    return 8;
+  // Start with all possible formats
+  std::vector<int> formats = {0, 1, 2, 3, 6, 7, 8};
 
-  if (has_gps) // format 1,3:10
+  // Filter formats based on conditions
+  formats.erase(std::remove_if(formats.begin(), formats.end(), [&](int format)
   {
-    auto end = std::remove(formats.begin(), formats.end(), 0);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 2);
-    formats.erase(end, formats.end());
-  }
+    if (has_overlap && (format < 6)) return true;                            // Overlap requires 6, 7, 8
+    if (has_gps && (format == 0 || format == 2)) return true;                // GPS excludes 0 and 2
+    if (has_rgb && (format == 0 || format == 1 || format == 6)) return true; // RGB excludes 0, 1, 6
+    return false;
+  }), formats.end());
 
-  if (has_rgb)  // format 3, 5, 7, 8
-  {
-    auto end = std::remove(formats.begin(), formats.end(), 0);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 1);
-    formats.erase(end, formats.end());
-    end = std::remove(formats.begin(), formats.end(), 6);
-    formats.erase(end, formats.end());
-  }
-
-  return formats[0];
+  // Return the first remaining format (or handle error if none remain)
+  return formats.empty() ? 0 : formats[0];
 }
 
 int LASio::get_header_size(int minor_version)
