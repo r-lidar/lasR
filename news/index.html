@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,9 +47,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.13.4" id="lasr-0134">lasR 0.13.4<a class="anchor" aria-label="anchor" href="#lasr-0134"></a></h2>
-<ul><li>New: metrics <code>skew</code> and <code>kurt</code> in the metric engine</li>
-<li>New: <a href="https://github.com/r-lidar/lasR/issues/110" class="external-link">#110</a> for LAS files the bit flags are now read in bit attributes. This feature have been lost in 0.13.0</li>
-<li>New: <a href="https://github.com/r-lidar/lasR/issues/110" class="external-link">#110</a> <code><a href="../reference/write_las.html">write_las()</a></code> automatically writes LAS 1.4 format if required.</li>
+<ul><li>New: Added metrics <code>skew</code> and <code>kurt</code> in the metric engine.</li>
+<li>New: [#110] For LAS files, the bit flags are now read as bit attributes. This feature was lost in version 0.13.0.</li>
+<li>New: [#110] <code><a href="../reference/write_las.html">write_las()</a></code> now automatically writes LAS 1.4 format if required.</li>
+<li>Fix: Resolved floating-point inaccuracy in <code><a href="../reference/region_growing.html">region_growing()</a></code> that could cause edge effects across two tiles or chunks effectively splitting some trees in two parts with different IDs in high-resolution CHM.</li>
+<li>Fix: The documentation for <code><a href="../reference/region_growing.html">region_growing()</a></code> states that the <code>max_cr</code> parameter represents the <em>“Maximum value of the crown <strong>diameter</strong> of a detected tree”</em>. In practice, it was used as the maximum <strong>radius</strong>, resulting in trees larger than expected. This has been corrected.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.13.3" id="lasr-0133">lasR 0.13.3<a class="anchor" aria-label="anchor" href="#lasr-0133"></a></h2>
