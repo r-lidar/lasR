@@ -48,8 +48,8 @@ public:
   inline int col_from_cell(int cell) const { return cell%ncols; }
   inline int row_from_cell(int cell) const { return std::floor(cell/ncols); }
   inline int cell_from_row_col(int row, int col) const { return row * ncols + col; }
-  inline double x_from_col(int col) const { return xmin + ((col+0.5) * xres); };
-  inline double y_from_row(int row) const { return ymax - ((row+0.5) * yres); };
+  inline double x_from_col(int col) const { return ROUNDANY(xmin + ((col+0.5) * xres), 0.0001); };
+  inline double y_from_row(int row) const { return ROUNDANY(ymax - ((row+0.5) * yres), 0.0001); };
   inline double x_from_cell(int cell) const { return x_from_col(col_from_cell(cell)); };
   inline double y_from_cell(int cell) const { return y_from_row(row_from_cell(cell)); };
 
@@ -74,6 +74,8 @@ protected:
   int ncols, nrows, ncells;
   double xmin,ymin,xmax,ymax;
   double xres, yres;
+
+private:
 };
 
 /*class Grid3D : public Grid

@@ -1,8 +1,10 @@
 # lasR 0.13.4
 
-- New: metrics `skew` and `kurt` in the metric engine
-- New: #110 for LAS files the bit flags are now read in bit attributes. This feature have been lost in 0.13.0
-- New: #110 `write_las()` automatically writes LAS 1.4 format if required.
+- New: Added metrics `skew` and `kurt` in the metric engine.
+- New: [#110] For LAS files, the bit flags are now read as bit attributes. This feature was lost in version 0.13.0.
+- New: [#110] `write_las()` now automatically writes LAS 1.4 format if required.
+- Fix: Resolved floating-point inaccuracy in `region_growing()` that could cause edge effects across two tiles or chunks effectively splitting some trees in two parts with different IDs in high-resolution CHM.
+- Fix: The documentation for `region_growing()` states that the `max_cr` parameter represents the _"Maximum value of the crown **diameter** of a detected tree"_. In practice, it was used as the maximum **radius**, resulting in trees larger than expected. This has been corrected.
 
 # lasR 0.13.3
 

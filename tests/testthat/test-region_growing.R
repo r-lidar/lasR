@@ -18,7 +18,7 @@ test_that("growing region works",
 
   skip_on_os("mac")
 
-  expect_equal(sum(!is.na(trees[])), 6244)
+  expect_equal(sum(!is.na(trees[])), 5967L)
 })
 
 test_that("growing region works with multiple files",
@@ -48,6 +48,6 @@ test_that("growing region works with multiple files",
   # but on github action it is ok... who knows.
   #expect_gte(sum(is.na(u$region_growing[])), 6881)
   #expect_lte(sum(is.na(u$region_growing[])), 6883)
-  expect_equal(sum(is.na(u$region_growing[])), 6883)
+  expect_equal(sum(is.na(u$region_growing[])), 15996L)
 })
 

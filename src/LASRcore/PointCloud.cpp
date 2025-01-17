@@ -50,22 +50,22 @@ PointCloud::PointCloud(const Raster& raster)
   header->offset_to_point_data = 227;
   header->file_creation_year   = 0;
   header->file_creation_day    = 0;
-  header->point_data_format    = 0;
-  header->x_scale_factor       = 0.01;
-  header->y_scale_factor       = 0.01;
-  header->z_scale_factor       = 0.01;
-  header->x_offset             = raster.get_full_extent()[0];
-  header->y_offset             = raster.get_full_extent()[1];
-  header->z_offset             = 0;*/
+  header->point_data_format    = 0;*/
+  header->x_scale_factor       = 0.001;
+  header->y_scale_factor       = 0.001;
+  header->z_scale_factor       = 0.001;
+  header->x_offset             = (int)raster.get_full_extent()[0];
+  header->y_offset             = (int)raster.get_full_extent()[1];
+  header->z_offset             = 0;
   header->number_of_point_records = raster.get_ncells();
   header->min_x                = raster.get_xmin()-raster.get_xres()/2;
   header->min_y                = raster.get_ymin()-raster.get_yres()/2;
   header->max_x                = raster.get_xmax()+raster.get_xres()/2;
   header->max_y                = raster.get_ymax()-raster.get_yres()/2;
   header->schema.add_attribute("Flags", AttributeType::INT8);
-  header->schema.add_attribute("X", AttributeType::INT32, 0.001, raster.get_full_extent()[0]);
-  header->schema.add_attribute("Y", AttributeType::INT32, 0.001, raster.get_full_extent()[1]);
-  header->schema.add_attribute("Z", AttributeType::INT32, 0.001, 0);
+  header->schema.add_attribute("X", AttributeType::INT32, header->x_scale_factor, header->x_offset);
+  header->schema.add_attribute("Y", AttributeType::INT32, header->y_scale_factor, header->y_offset);
+  header->schema.add_attribute("Z", AttributeType::INT32, header->z_scale_factor, header->z_offset);
 
   // For spatial indexing
   current_interval = 0;

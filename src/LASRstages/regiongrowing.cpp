@@ -18,7 +18,7 @@ bool LASRregiongrowing::set_parameters(const nlohmann::json& stage)
   th_tree = stage.value("th_tree", 2.0);
   th_seed = stage.value("th_seed", 0.45);
   th_crown = stage.value("th_cr", 0.55);
-  double max_cr = stage.value("max_cr", 20.0);
+  double max_cr = stage.value("max_cr", 20.0)/2;
   DIST  = max_cr*max_cr;
 
   for (auto elem : connections)
