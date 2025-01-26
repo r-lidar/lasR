@@ -6,6 +6,7 @@ bool LASRtransformwith::set_parameters(const nlohmann::json& stage)
 {
   std::string op = stage.value("operator", "-");
   attribute = stage.value("store_in_attribute", "");
+  bilinear = stage.value("bilinear", true);
 
   this->op = SUB;
   if (op == "-") this->op = SUB;
@@ -162,7 +163,12 @@ bool LASRtransformwith::process(PointCloud*& las)
 
       while (las->read_point())
       {
-        float val = raster.get_value_bilinear(las->point.get_x(), las->point.get_y());
+        float val;
+        if (bilinear)
+          val = raster.get_value_bilinear(las->point.get_x(), las->point.get_y());
+        else
+          val = raster.get_value(las->point.get_x(), las->point.get_y());
+
         if (val != raster.get_nodata()) hag[las->current_point] = val;
       }
     }

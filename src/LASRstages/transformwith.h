@@ -20,6 +20,7 @@ public:
 
 private:
   int op;
+  bool bilinear;
   std::string attribute;
   enum operators {ADD, SUB};
 };
