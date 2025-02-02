@@ -1,3 +1,7 @@
+# lasR 0.13.5
+
+- New: in `transform_with` is used with a raster bilinear interpolation can be deactivated
+
 # lasR 0.13.4
 
 - New: Added metrics `skew` and `kurt` in the metric engine.

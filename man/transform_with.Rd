@@ -4,7 +4,7 @@
 \alias{transform_with}
 \title{Transform a Point Cloud Using Another Stage}
 \usage{
-transform_with(stage, operator = "-", store_in_attribute = "")
+transform_with(stage, operator = "-", store_in_attribute = "", bilinear = TRUE)
 }
 \arguments{
 \item{stage}{A stage that produces a triangulation, raster, or Rotation-Translation Matrix (RTM),
@@ -14,6 +14,9 @@ sometimes also referred to as an "Affine Transformation Matrix". Can also be a 4
 
 \item{store_in_attribute}{A string. Use an extra byte attribute to store the result (only with
 a triangulation or a raster).}
+
+\item{bilinear}{bool. If the stage is a raster stage, the Z values are interpolated with a bilinear
+interpolation. FALSE to desactivate it.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.

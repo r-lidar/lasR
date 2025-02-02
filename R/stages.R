@@ -1259,6 +1259,8 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' @param operator A string. '-' and '+' are supported (only with a triangulation or a raster).
 #' @param store_in_attribute A string. Use an extra byte attribute to store the result (only with
 #' a triangulation or a raster).
+#' @param bilinear bool. If the stage is a raster stage, the Z values are interpolated with a bilinear
+#' interpolation. FALSE to desactivate it.
 #'
 #' @template return-pointcloud
 #'
@@ -1286,7 +1288,7 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' \link{write_las}
 #' @export
 #' @md
-transform_with = function(stage, operator = "-", store_in_attribute = "")
+transform_with = function(stage, operator = "-", store_in_attribute = "", bilinear = TRUE)
 {
   use_matrix = FALSE
   if (is.matrix(stage))
@@ -1301,7 +1303,7 @@ transform_with = function(stage, operator = "-", store_in_attribute = "")
   if (s$algoname != "triangulate" && !methods::is(s, "LASRraster") && !methods::is(s, "LASRmatrix"))
       stop("The stage must be a triangulation or a raster stage or a matrix stage.")
 
-  ans <- list(algoname = "transform_with", connect = s[["uid"]], operator = operator, store_in_attribute = store_in_attribute)
+  ans <- list(algoname = "transform_with", connect = s[["uid"]], operator = operator, store_in_attribute = store_in_attribute, bilinear = bilinear)
   ans <- set_lasr_class(ans)
 
   if (use_matrix)
