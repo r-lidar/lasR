@@ -117,10 +117,10 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
         // Generate the raster points in this triangle
         double xres = raster->get_xres();
         double yres = raster->get_yres();
-        double minx = ROUNDANY(triangle.xmin() - 0.5 * xres, xres);
-        double miny = ROUNDANY(triangle.ymin() - 0.5 * yres, yres);
-        double maxx = ROUNDANY(triangle.xmax() - 0.5 * xres, xres) + xres;
-        double maxy = ROUNDANY(triangle.ymax() - 0.5 * yres, yres) + yres;
+        double minx = ROUNDANY(triangle.xmin(), xres) - 0.5 * xres;
+        double miny = ROUNDANY(triangle.ymin(), yres) - 0.5 * yres;
+        double maxx = ROUNDANY(triangle.xmax(), xres) + 0.5 * xres;
+        double maxy = ROUNDANY(triangle.ymax(), yres) + 0.5 * yres;
 
         for (double x = minx ; x <= maxx ; x += xres)
         {
