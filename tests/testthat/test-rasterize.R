@@ -143,8 +143,8 @@ test_that("rasterize triangulation works with 1 file",
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(58, 58, 1))
-  expect_equal(mean(u[], na.rm = T), 805.4077, tolerance = 1e-6)
-  expect_equal(sum(is.na(u[])), 713)
+  expect_equal(mean(u[], na.rm = T), 805.390, tolerance = 1e-6)
+  expect_equal(sum(is.na(u[])), 769L)
   #terra::plot(u[[2]])
 })
 
@@ -165,8 +165,8 @@ test_that("rasterize triangulation works with 4 files",
   expect_equal(dim(dtm), c(213, 42, 1))
 
   payload = u[]
-  expect_equal(mean(payload, na.rm = TRUE), 341.4095, tolerance = 1e-6)
-  expect_equal(sum(is.na(payload)), 876)
+  expect_equal(mean(payload, na.rm = TRUE), 341.2918, tolerance = 1e-6)
+  expect_equal(sum(is.na(payload)), 909)
   #terra::plot(u)
 })
 

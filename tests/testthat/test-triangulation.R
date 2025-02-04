@@ -35,7 +35,7 @@ test_that("triangulate works with intensity",
   rast = rasterize(5, tri)
   u = exec(read + tri + rast, on = f)
 
-  expect_equal(range(u$rasterize[], na.rm = T), c(165.72, 2368.14), tolerance = 0.01)
+  expect_equal(range(u$rasterize[], na.rm = T), c(191.3, 2033.3), tolerance = 0.01)
 })
 
 test_that("triangulate works with gpstime",

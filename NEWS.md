@@ -1,6 +1,7 @@
 # lasR 0.13.5
 
-- New: in `transform_with` is used with a raster bilinear interpolation can be deactivated
+- New: in `transform_with` when used with a raster, bilinear interpolation can be deactivated
+- Fix: #118 one pixel shift in the DTM alignment
 
 # lasR 0.13.4
 

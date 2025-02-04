@@ -51,7 +51,7 @@ test_that("stages are skipping withhelded points (2) (batch)", {
   set_parallel_strategy(sequential())
   ans = exec(pipeline, on = f)
 
-  expect_equal(ans$summary$npoints, 25347L)
+  expect_equal(ans$summary$npoints, 25379L)
   expect_equal(nrow(ans$local_maximum), 1516L)
 })
 
