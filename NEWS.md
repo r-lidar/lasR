@@ -1,7 +1,9 @@
 # lasR 0.13.6
 
 - Fix: #120 fix `write_las()` properly writes return number and number of return in LAS 1.4 format 6
+- Fix: `info()` no longer prints for every point in streamable pipelines
 - Enhancement: better support of LAS format in `write_las()`. It will write the same LAS file version and format than the input.
+- Enhancement: `info()` prints the source format (`LAS`, `PCD`) and its version (`1.4`, `0.7`).
 
 # lasR 0.13.5
 

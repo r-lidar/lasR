@@ -197,7 +197,7 @@ bool LASio::populate_header(Header* header, bool read_first_point)
 
   header->signature = "LASF";
   header->version_major = lasreader->header.version_major;
-  header->version_minor = lasreader->header.version_major;
+  header->version_minor = lasreader->header.version_minor;
   header->point_data_format = lasreader->header.point_data_format;
 
   header->min_x = lasreader->header.min_x;

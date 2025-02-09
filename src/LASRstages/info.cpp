@@ -22,8 +22,15 @@ static std::string human_readable(uint64_t value, const std::vector<std::string>
   return std::string(buffer);
 }
 
+LASRinfo::LASRinfo()
+{
+  printed = false;
+}
+
 bool LASRinfo::process(Header*& h)
 {
+  if (printed) return true;
+
   const std::vector<std::string> numberUnits = {"", "thousands", "millions", "billions", "trillions"};
   const std::vector<std::string> byteUnits = {"B", "kB", "MB", "GB", "TB"};
 
@@ -34,11 +41,14 @@ bool LASRinfo::process(Header*& h)
   std::string filePath = ifile;
   bool fileExist = std::filesystem::exists(filePath);
 
+  print("Source       : %s (v%d.%d)\n", h->signature.c_str(), h->version_major, h->version_minor);
   print("Size         : %s\n", human_readable(fsize, byteUnits).c_str());
   print("Extent       : %.2lf %.2lf %.2lf %.2lf (xmin, xmax, ymin, ymax)\n", h->min_x, h->max_x, h->min_y, h->max_y);
   print("Points       : %s\n", human_readable(npoints, numberUnits).c_str());
   print("Coord. ref.  : %s\n", crs.get_crs().GetName());
   print("Schema       :\n"); h->schema.dump();
+
+  printed = true;
 
   return true;
 }

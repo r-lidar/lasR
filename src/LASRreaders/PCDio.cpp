@@ -76,6 +76,8 @@ bool PCDio::populate_header(Header* header)
   std::vector<int> data_counts;
   unsigned int npoints;
   std::string data;
+  unsigned char version_major = 0;
+  unsigned char version_minor = 0;
 
   while (std::getline(istream, line))
   {
@@ -88,6 +90,26 @@ bool PCDio::populate_header(Header* header)
     {
       std::string version;
       lineStream >> version;
+
+      size_t dotPos = version.find('.');
+      int major = 0, minor = 0;
+
+      if (dotPos == 0)
+      {
+        // Case: ".y" -> Major = 0, Minor = y
+        version_minor = std::stoi(version.substr(1));
+      }
+      else if (dotPos != std::string::npos)
+      {
+        // Case: "x.y"
+        version_major = std::stoi(version.substr(0, dotPos));
+        version_minor = std::stoi(version.substr(dotPos + 1));
+      }
+      else
+      {
+        // Case: "x" (no dot) -> Major = 2, Minor = 0
+        version_major = std::stoi(version);
+      }
     }
     else if (key == "FIELDS")
     {
@@ -225,6 +247,8 @@ bool PCDio::populate_header(Header* header)
   this->header = header;
 
   header->signature = "PCDF";
+  header->version_major = version_major;
+  header->version_minor = version_minor;
   header->number_of_point_records = npoints;
   header->min_x = std::numeric_limits<double>::infinity();
   header->min_y = std::numeric_limits<double>::infinity();

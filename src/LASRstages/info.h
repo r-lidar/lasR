@@ -11,7 +11,7 @@
 class LASRinfo: public Stage
 {
 public:
-  LASRinfo() = default;
+  LASRinfo();
   bool set_chunk(Chunk& chunk) override;
   bool process(Header*& header) override;
   bool is_streamable() const override { return true; }
@@ -21,6 +21,9 @@ public:
   bool is_parallelizable() const override { return false; };
   bool need_points() const override { return false; };
   LASRinfo* clone() const override { return new LASRinfo(*this); };
+
+private:
+  bool printed;
 };
 
 #endif
