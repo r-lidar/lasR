@@ -3,12 +3,19 @@
 
 Header::Header()
 {
+  // General purpose
+  version_major = 0;
+  version_minor = 0;
+
+  // General purpose
   max_x = 0;
   min_x = 0;
   max_y = 0;
   min_y = 0;
   max_z = 0;
   min_z = 0;
+
+  // LAS specifications only
   x_scale_factor = 1;
   y_scale_factor = 1;
   z_scale_factor = 1;
@@ -19,6 +26,9 @@ Header::Header()
   file_creation_year = 0;
   file_creation_day = 0;
   adjusted_standard_gps_time = false;
+  point_data_format = 0;
+
+  // General purpose
   spatial_index = false;
   number_of_point_records = 0;
   schema = AttributeSchema();
@@ -28,6 +38,7 @@ Header::Header()
 // # nocov start
 void Header::dump() const
 {
+  print("%s: %u.%u\n", signature.c_str(), version_major, version_minor);
   print("Max Coordinates: (%.2f, %.2f, %.2f)\n", max_x, max_y, max_z);
   print("Min Coordinates: (%.2f, %.2f, %.2f)\n", min_x, min_y, min_z);
   print("Scale Factors: (%.2f, %.2f, %.2f)\n", x_scale_factor, y_scale_factor, z_scale_factor);

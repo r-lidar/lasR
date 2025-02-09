@@ -1,7 +1,7 @@
 # lasR 0.13.6
 
 - Fix: #120 fix `write_las()` properly writes return number and number of return in LAS 1.4 format 6
-
+- Enhancement: better support of LAS format in `write_las()`. It will write the same LAS file version and format than the input.
 
 # lasR 0.13.5
 
