@@ -1,3 +1,8 @@
+# lasR 0.13.6
+
+- Fix: #120 fix `write_las()` properly writes return number and number of return in LAS 1.4 format 6
+
+
 # lasR 0.13.5
 
 - New: in `transform_with` when used with a raster, bilinear interpolation can be deactivated

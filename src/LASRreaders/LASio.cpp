@@ -444,7 +444,6 @@ bool LASio::write_point(Point* p)
   point->set_classification(classification(p));
   point->set_scan_angle(scanangle(p));
   point->set_gps_time(gpstime(p));
-  point->set_extended_scanner_channel(scannerchannel(p));
   point->set_R(red(p));
   point->set_G(green(p));
   point->set_B(blue(p));
@@ -454,7 +453,12 @@ bool LASio::write_point(Point* p)
   point->set_synthetic_flag(synthetic_bit(p));
   point->set_withheld_flag(withheld_bit(p));
   point->set_keypoint_flag(keypoint_bit(p));
+
   point->set_extended_overlap_flag(overlap_bit(p));
+  point->set_extended_scanner_channel(scannerchannel(p));
+  point->set_extended_return_number(returnnumber(p));
+  point->set_extended_number_of_returns(numberofreturns(p));
+  point->set_extended_classification(classification(p));
 
   for (int i = 0 ; i < extrabytes_offsets.size() ; i++)
     point->set_attribute(i, p->data + extrabytes_offsets[i]);
