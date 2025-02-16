@@ -1,3 +1,7 @@
+# lasR 0.13.7
+
+- Fix: #123 `filter` argument with negative numbers
+
 # lasR 0.13.6
 
 - Fix: #120 fix `write_las()` properly writes return number and number of return in LAS 1.4 format 6

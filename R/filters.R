@@ -129,15 +129,15 @@ validate_filter <- function(condition, allow_laslib_filter)
   }
   # Regex patterns for general attributes
   attribute_patterns <- list(
-    "above" = "^([A-Za-z_]+)\\s*>\\s*([0-9.]+)$",
-    "below" = "^([A-Za-z_]+)\\s*<\\s*([0-9.]+)$",
-    "aboveeq" = "^([A-Za-z_]+)\\s*>=\\s*([0-9.]+)$",
-    "beloweq" = "^([A-Za-z_]+)\\s*<=\\s*([0-9.]+)$",
-    "equal" = "^([A-Za-z_]+)\\s*==\\s*([0-9.]+)$",
-    "different" = "^([A-Za-z_]+)\\s*!=\\s*([0-9.]+)$",
-    "in" = "^([A-Za-z_]+)\\s*%in%\\s*([0-9.]+(?:\\s+[0-9.]+)*)$",
-    "out" = "^([A-Za-z_]+)\\s*%out%\\s*([0-9.]+(?:\\s+[0-9.]+)*)$",
-    "between" = "^([A-Za-z_]+)\\s*%between%\\s*([0-9.]+)\\s+([0-9.]+)$"
+    "above" = "^([A-Za-z_]+)\\s*>\\s*(-?[0-9.]+)$",
+    "below" = "^([A-Za-z_]+)\\s*<\\s*(-?[0-9.]+)$",
+    "aboveeq" = "^([A-Za-z_]+)\\s*>=\\s*(-?[0-9.]+)$",
+    "beloweq" = "^([A-Za-z_]+)\\s*<=\\s*(-?[0-9.]+)$",
+    "equal" = "^([A-Za-z_]+)\\s*==\\s*(-?[0-9.]+)$",
+    "different" = "^([A-Za-z_]+)\\s*!=\\s*(-?[0-9.]+)$",
+    "in" = "^([A-Za-z_]+)\\s*%in%\\s*(-?[0-9.]+(?:\\s+-?[0-9.]+)*)$",
+    "out" = "^([A-Za-z_]+)\\s*%out%\\s*(-?[0-9.]+(?:\\s+-?[0-9.]+)*)$",
+    "between" = "^([A-Za-z_]+)\\s*%between%\\s*(-?[0-9.]+)\\s+(-?[0-9.]+)$"
   )
 
   attribute_mapping <- list(
