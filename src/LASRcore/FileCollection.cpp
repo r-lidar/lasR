@@ -34,6 +34,12 @@ inline void gmtime_r(const time_t* timep, std::tm* result)
 
 bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 {
+  if (files.size() == 0)
+  {
+    last_error = "There is no file to read";
+    return false;
+  }
+
   Progress pb;
   pb.set_total(files.size());
   pb.set_prefix("Read files headers");

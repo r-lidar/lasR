@@ -1,6 +1,7 @@
 # lasR 0.13.7
 
 - Fix: #123 `filter` argument with negative numbers
+- Fix: #124 `exec()` with 0 file no longer crashes.
 
 # lasR 0.13.6
 

@@ -122,6 +122,8 @@ exec = function(pipeline, on, with = NULL, ...)
     # If 'on' is character, this is the default behavior.
     if (is.character(on))
     {
+      stopifnot(length(on) > 0)
+
       pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
       pipeline$build_catalog$buffer <- with$buffer
       pipeline$build_catalog$noprocess <- with$noprocess
