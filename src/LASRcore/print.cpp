@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "openmp.h"
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 #define R_NO_REMAP 1
 #include <R_ext/Print.h>
 #include <R_ext/Error.h>

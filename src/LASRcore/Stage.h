@@ -2,7 +2,7 @@
 #define LASRALGORITHM_H
 
 // R
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 #define R_NO_REMAP 1
 #include <R.h>
 #include <Rinternals.h>
@@ -119,7 +119,7 @@ public:
   bool is_valid_pointer(void*) const;
 
   // The default method consists in returning the string 'ofile'.
-  #ifdef USING_R
+  #if defined(USING_R) && USING_R != 0
   virtual SEXP to_R();
   #endif
 
@@ -162,7 +162,7 @@ protected:
   Progress* progress;
   std::map<std::string, Stage*> connections;
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
   int nsexpprotected;
 #endif
 };
@@ -175,7 +175,7 @@ public:
   void merge(const Stage* other) override;
   void sort(const std::vector<int>& order) override;
 
-  #ifdef USING_R
+  #if defined(USING_R) && USING_R != 0
   SEXP to_R() override;
   #endif
 
@@ -230,7 +230,7 @@ public:
   void merge(const Stage* other) override;
   void transform(double& x, double& y, double& z);
 
-  #ifdef USING_R
+  #if defined(USING_R) && USING_R != 0
     SEXP to_R() override;
   #endif
 
@@ -264,7 +264,7 @@ std::vector<T> get_vector(const nlohmann::json& element)
   return result;
 }
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 SEXP string_address_to_sexp(const std::string& addr);
 #endif
 

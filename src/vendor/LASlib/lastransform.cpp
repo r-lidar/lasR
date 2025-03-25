@@ -37,7 +37,7 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 #include <R_ext/Random.h>     /* RNG interface */
 #endif
 
@@ -583,7 +583,7 @@ public:
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s %d %d ", name(), max_raw_offset[0], max_raw_offset[1]); };
   inline void transform(LASpoint* point) {
     I32 r;
-    #ifdef USING_R
+    #if defined(USING_R) && USING_R != 0
     seed = (U32)(unif_rand() * RAND_MAX);
     #else
     srand(seed);

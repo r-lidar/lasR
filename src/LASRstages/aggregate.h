@@ -1,7 +1,7 @@
 #ifndef LASRAGGREGATE_H
 #define LASRAGGREGATE_H
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 
 #include "Stage.h"
 #include "GridPartition.h" // Must create a file Grouper

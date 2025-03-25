@@ -505,7 +505,7 @@ bool FileCollection::add_pcd_file(std::string file, bool noprocess)
 }
 
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 // Special to build a FileCollection from a data.frame in R
 void FileCollection::add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints)
 {

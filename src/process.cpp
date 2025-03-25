@@ -1,5 +1,5 @@
 // R
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
   #define STRICT_R_HEADERS
   #define R_NO_REMAP 1
   #include <R.h>
@@ -28,7 +28,7 @@
 #include "DrawflowParser.h"
 #include "nlohmann/json.hpp"
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 SEXP process(SEXP sexp_config_file, SEXP sexp_async_communication_file)
 {
   std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
@@ -43,7 +43,7 @@ bool process(const std::string& config_file)
   std::ifstream fjson(config_file);
   if (!fjson.is_open())
   {
-    #ifdef USING_R
+    #if defined(USING_R) && USING_R != 0
       return make_R_error("Could not open the json file containing the pipeline");
     #else
       eprint("Could not open the json file containing the pipeline");
@@ -64,7 +64,7 @@ bool process(const std::string& config_file)
     }
     catch (std::exception& e)
     {
-      #ifdef USING_R
+      #if defined(USING_R) && USING_R != 0
         return make_R_error(e.what());
       #else
         eprint(e.what());
@@ -82,7 +82,7 @@ bool process(const std::string& config_file)
   if (ncpu.size() == 0) ncpu.push_back(std::ceil((float)omp_get_num_threads()/2));
   std::string strategy = processing_options.value("strategy", "concurrent-points");
   bool progrss = processing_options.value("progress", true);
-  #ifdef USING_R
+  #if defined(USING_R) && USING_R != 0
   progrss = progrss && async_communication_file.empty();
   #endif
   bool verbose = processing_options.value("verbose", false);
@@ -123,7 +123,7 @@ bool process(const std::string& config_file)
   }
   if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
 
-  //#ifdef USING_R
+  //#if defined(USING_R) && USING_R != 0
   //uintptr_t original_CStackLimit = R_CStackLimit;
   //#endif
 
@@ -192,7 +192,7 @@ bool process(const std::string& config_file)
     progress.set_display(progrss);
     progress.set_ncpu(ncpu_outer_loop);
     progress.create_subprocess();
-    #ifdef USING_R
+    #if defined(USING_R) && USING_R != 0
     progress.set_async_message_file(async_communication_file);
     #endif
 
@@ -300,7 +300,7 @@ bool process(const std::string& config_file)
 
     // We are no longer in the parallel region we can return to R by allocating safely
     // some R memory
-    //#ifdef USING_R
+    //#if defined(USING_R) && USING_R != 0
     //R_CStackLimit = original_CStackLimit;
     //#endif
 
@@ -315,7 +315,7 @@ bool process(const std::string& config_file)
 
     pipeline.profiler.write(fprofiling);
 
-    #ifdef USING_R
+    #if defined(USING_R) && USING_R != 0
         return pipeline.to_R();
     #else
         nlohmann::json ans =  pipeline.to_json();
@@ -343,7 +343,7 @@ bool process(const std::string& config_file)
   }
   catch (std::string e)
   {
-    #ifdef USING_R
+    #if defined(USING_R) && USING_R != 0
       //R_CStackLimit = original_CStackLimit;
       return make_R_error(e.c_str());
     #else
@@ -354,7 +354,7 @@ bool process(const std::string& config_file)
   catch(...)
   {
     // # nocov start
-    #ifdef USING_R
+    #if defined(USING_R) && USING_R != 0
       //R_CStackLimit = original_CStackLimit;
       return make_R_error("c++ exception (unknown reason)");
     #else
@@ -364,7 +364,7 @@ bool process(const std::string& config_file)
     // # nocov end
   }
 
-  #ifdef USING_R
+  #if defined(USING_R) && USING_R != 0
     return R_NilValue;
   #else
     return false;
@@ -372,7 +372,7 @@ bool process(const std::string& config_file)
 
 }
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 SEXP get_pipeline_info(SEXP sexp_config_file)
 {
   std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));

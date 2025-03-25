@@ -127,7 +127,7 @@ void LASRsummary::merge_maps(std::map<int, uint64_t>& map1, const std::map<int, 
   }
 }
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 
 SEXP LASRsummary::to_R()
 {

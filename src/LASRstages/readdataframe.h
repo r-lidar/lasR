@@ -1,7 +1,7 @@
 #ifndef LASRREADATAFRAME_H
 #define LASRREADATAFRAME_H
 
-#ifdef USING_R
+#if defined(USING_R) && USING_R != 0
 
 #include "Stage.h"
 
