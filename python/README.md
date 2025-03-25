@@ -90,7 +90,13 @@ The Python bindings provide the following functions:
   - Parameters:
     - `config_file` (str): Path to the JSON configuration file
   - Returns:
-    - `str`: JSON string containing pipeline information
+    - `str`: JSON string containing pipeline information with the following properties:
+      - `streamable`: Whether the pipeline can be processed in a stream
+      - `read_points`: Whether the pipeline needs to read point data
+      - `buffer`: Buffer size needed for processing in spatial units
+      - `parallelizable`: Whether the pipeline can be parallelized
+      - `parallelized`: Whether the pipeline uses parallelization internally
+      - `R_API`: Whether the pipeline uses R API functionality
 
 ### System Information
 
@@ -124,8 +130,14 @@ print(f"Total RAM: {pylasr.get_total_ram() / (1024**3):.2f} GB")
 
 # Get pipeline information
 config_file = "path/to/config.json"
-info = pylasr.get_pipeline_info(config_file)
-print(json.dumps(json.loads(info), indent=2))
+info_json = pylasr.get_pipeline_info(config_file)
+info = json.loads(info_json)
+print(json.dumps(info, indent=2))
+
+# Access specific pipeline properties
+print(f"Pipeline is streamable: {info['streamable']}")
+print(f"Pipeline needs buffer: {info['buffer']} units")
+print(f"Pipeline can be parallelized: {info['parallelizable']}")
 
 # Process the pipeline
 result = pylasr.process(config_file)
@@ -151,3 +163,29 @@ If you encounter any build issues:
 - **Module not found**: If Python can't find the module, try using one of the methods described in the "Running the Examples" section
 
 For more information, please refer to the main LASR documentation. 
+
+## Command-line Usage
+
+The Python module can also be used from the command line through a Python script. Create a script like this:
+
+```python
+#!/usr/bin/env python3
+import sys
+import pylasr
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} <config_file.json>")
+        sys.exit(1)
+    
+    result = pylasr.process(sys.argv[1])
+    sys.exit(0 if result else 1)
+```
+
+Save this as `lasr_cli.py`, make it executable (`chmod +x lasr_cli.py`), and use it like:
+
+```bash
+./lasr_cli.py path/to/config.json
+```
+
+This provides a simple command-line interface to process LASR pipelines without having to write Python code. 

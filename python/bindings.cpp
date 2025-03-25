@@ -14,6 +14,7 @@
 
 // Forward declarations
 extern bool process(const std::string& config_file);
+extern std::string get_pipeline_info(const std::string& config_file);
 
 namespace py = pybind11;
 
@@ -23,6 +24,10 @@ PYBIND11_MODULE(pylasr, m) {
     // Basic processing functions
     m.def("process", &process,
           "Process a pipeline configuration file",
+          py::arg("config_file"));
+          
+    m.def("get_pipeline_info", &get_pipeline_info,
+          "Get information about a pipeline configuration",
           py::arg("config_file"));
 
     // System information functions
