@@ -11,6 +11,36 @@ set(USING_R 0)
 get_filename_component(LASR_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 message(STATUS "LASR_SOURCE_DIR: ${LASR_SOURCE_DIR}")
 
+# OpenMP configuration for macOS
+if(APPLE)
+    set(OpenMP_C_FLAGS "-Xclang -fopenmp")
+    set(OpenMP_CXX_FLAGS "-Xclang -fopenmp")
+    set(OpenMP_C_LIB_NAMES "omp")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY "/opt/homebrew/opt/libomp/lib/libomp.dylib")
+    set(OpenMP_C_INCLUDE_DIRS "/opt/homebrew/opt/libomp/include")
+    set(OpenMP_CXX_INCLUDE_DIRS "/opt/homebrew/opt/libomp/include")
+    
+    # Add OpenMP include directory to compiler flags
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I/opt/homebrew/opt/libomp/include")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/opt/libomp/include")
+
+    # Add rpath to ensure runtime can find libomp
+    set(CMAKE_INSTALL_RPATH "/opt/homebrew/opt/libomp/lib")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif()
+
+# Find OpenMP
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    include_directories(${OpenMP_CXX_INCLUDE_DIRS})
+else()
+    message(WARNING "OpenMP not found. LASR will be compiled without parallel processing support.")
+endif()
+
 # Compiler options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unknown-pragmas -Wno-unused-variable -Wno-deprecated -DNOMINMAX -DUSING_R=${USING_R}")
 
