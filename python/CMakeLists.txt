@@ -96,6 +96,9 @@ add_library(laszip STATIC
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/mydefs.cpp
 )
 
+# Enable PIC for laszip since it's used in a shared library
+set_target_properties(laszip PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_compile_definitions(laszip PRIVATE 
   COMPILATION_CLOSED=1
   NDEBUG=1
