@@ -138,6 +138,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRcore/Raster.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/Vector.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/parser.cpp
+  ${LASR_SOURCE_DIR}/src/LASRcore/pipeline.cpp
   
   # I/O implementation
   ${LASR_SOURCE_DIR}/src/LASRreaders/LASio.cpp
