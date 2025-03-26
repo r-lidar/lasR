@@ -116,7 +116,6 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRcore/error.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/print.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/DrawflowParser.cpp
-  ${LASR_SOURCE_DIR}/src/LASRcore/Pipeline.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/PointCloud.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/CRS.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/FileCollection.cpp
@@ -128,7 +127,6 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRcore/Grid.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/Grouper.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/Stage.cpp
-  ${LASR_SOURCE_DIR}/src/LASRcore/pipeline.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/GDALdataset.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/Metrics.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/PointLAS.cpp
