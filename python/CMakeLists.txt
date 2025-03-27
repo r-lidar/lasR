@@ -245,6 +245,8 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasfilter.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasignore.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/fopen_compressed.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/LASlib/laswaveform13reader.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/LASlib/laswaveform13writer.cpp
 )
 
 # Link libraries
