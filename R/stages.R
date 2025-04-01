@@ -554,7 +554,7 @@ load_raster = function(file, band = 1L)
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #'
 #' exec(pipeline, on = f)
-#' @noRd
+#' @export
 load_matrix = function(matrix)
 {
   if (!is.matrix(matrix)) stop("'matrix' is not a matrix")
