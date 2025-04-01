@@ -11,7 +11,7 @@ set(USING_R 0)
 get_filename_component(LASR_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 message(STATUS "LASR_SOURCE_DIR: ${LASR_SOURCE_DIR}")
 
-# OpenMP configuration for macOS
+# OpenMP configuration for macOS (works only with OpenMP on homebrew)
 if(APPLE)
     set(OpenMP_C_FLAGS "-Xclang -fopenmp")
     set(OpenMP_CXX_FLAGS "-Xclang -fopenmp")

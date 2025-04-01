@@ -52,7 +52,7 @@ PYBIND11_MODULE(pylasr, m) {
         .def("get_wkt", &CRS::get_wkt, "Get the WKT representation")
         .def("is_valid", &CRS::is_valid, "Check if CRS is valid")
         .def("is_meters", &CRS::is_meters, "Check if units are meters")
-        .def("is_feet", &CRS::is_feets, "Check if units are feet");
+        .def("is_feet", &CRS::is_feet, "Check if units are feet");
 
     // Export FileCollection (catalog) class
     py::class_<FileCollection>(m, "FileCollection")
