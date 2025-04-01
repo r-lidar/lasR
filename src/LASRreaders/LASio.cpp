@@ -377,7 +377,7 @@ bool LASio::init(const Header* header, const CRS& crs)
 
     if (lascoreattributes.count(attribute.name) == 0)
     {
-      LASattribute attr(attribute.type-1, attribute.name.c_str(), attribute.description.c_str());
+      LASattribute attr(static_cast<int>(attribute.type)-1, attribute.name.c_str(), attribute.description.c_str());
       attr.set_scale(attribute.scale_factor);
       attr.set_offset(attribute.value_offset);
       lasheader->add_attribute(attr);

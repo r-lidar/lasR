@@ -18,6 +18,10 @@ Files: src/vendor/nlohmann/*
 Lohmann, N. (2023). JSON for Modern C++ (Version 3.11.3) [Computer software]. https://github.com/nlohmann
 Licence: MIT
 
+Files: src/vendor/ImGui/*
+(c) 2014-2024 Omar Cornut - https://github.com/ocornut/imgui
+Licence: MIT
+
 Files: src/vendor/Eigen/* src/vendor/unsupported/Eigen/*
 Copyright: 2006 - 2012  Gael Guennebaud, Benoit Jacob
 License: MPL-2

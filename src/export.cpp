@@ -17,6 +17,7 @@ int available_threads();
 bool has_omp_support();
 unsigned long long getAvailableRAM();
 unsigned long long getTotalRAM();
+SEXP plot_pointcloud(SEXP, bool);
 
 extern "C" SEXP C_process(SEXP args, SEXP async) { return process(args, async); }
 extern "C" SEXP C_lasfilterusage() { return lasfilterusage(); }
@@ -28,6 +29,7 @@ extern "C" SEXP C_is_indexed(SEXP file) { return is_indexed(file); }
 extern "C" SEXP C_address(SEXP x) { return get_address(x); }
 extern "C" SEXP C_get_available_ram() { return Rf_ScalarInteger((int)getAvailableRAM()); }
 extern "C" SEXP C_get_total_ram() { return Rf_ScalarInteger((int)getTotalRAM()); }
+extern "C" SEXP C_plot_pointcloud(SEXP x) { return plot_pointcloud(x, false); }
 
 static const R_CallMethodDef CallEntries[] = {
   {"C_lasfilterusage", (DL_FUNC) &C_lasfilterusage, 0},
@@ -40,6 +42,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"C_address", (DL_FUNC) &C_address, 1},
   {"C_get_available_ram", (DL_FUNC) &C_get_available_ram, 0},
   {"C_get_total_ram", (DL_FUNC) &C_get_total_ram, 0},
+  {"C_plot_pointcloud", (DL_FUNC) &C_plot_pointcloud, 1},
   {NULL, NULL, 0}
 };
 

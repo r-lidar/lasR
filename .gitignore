@@ -18,5 +18,5 @@ python/build
 python/pylasr.egg-info
 python/dist
 python/build
-*.bak*
 *.a
+imgui.ini

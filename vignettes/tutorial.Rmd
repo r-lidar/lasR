@@ -534,7 +534,7 @@ The topic is covered in a [dedicated article](multithreading.html)
 
 ## Pre-read a point cloud in memory
 
-In this tutorial we have seen the batch processing mode. It is also possible to load a point cloud in memory with `read_cloud()`
+In this tutorial, we have covered the batch processing mode. It is also possible to load a point cloud into memory using `read_cloud()`.
 
 ```{r, echo=FALSE}
 set_exec_options(progress = FALSE)
@@ -545,7 +545,8 @@ f <- c(system.file("extdata", "Topography.las", package="lasR"))
 cloud = read_cloud(f)
 cloud
 ```
-Once a point cloud is loaded in memory is possible to apply a pipeline on it. In the following the we are computing a DTM and sampling the point cloud. The output is thus a raster and the point cloud has been modified. See above the point cloud was 73,400 point. After applying the pipeline the object only has 23,780 points
+
+Once a point cloud is loaded into memory, it is possible to apply a pipeline to it. In the following, we compute a DTM and sample the point cloud. The output is a raster, and the point cloud has been modified in place. As shown above, the point cloud initially had 73,400 points. After applying the pipeline, the object now contains only 23,780 points.
 
 ```{r, pipelinexptr}
 pipeline = dtm() + sampling_poisson(2)
@@ -553,6 +554,20 @@ ans = exec(pipeline, on = cloud)
 ans
 cloud
 ```
+
+
+## Plot a point cloud
+
+With a point cloud loaded in memory you can use the function `plot()`. It opens an interactive windows in which user can rotate/pan and zoom in the point clouds and control some rendering options.
+
+```r
+library(lasR)
+f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+pc = read_cloud(f)
+plot(pc)
+```
+
+![](lasRviewer.png)
 
 
 ## Other stages

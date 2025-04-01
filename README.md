@@ -85,6 +85,9 @@ For more details, see the relevant [vignette](https://r-lidar.github.io/lasR/art
   - © 2017 State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University
   - Licence: Apache
   - W. Zhang, J. Qi, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data Filtering Method Based on Cloth Simulation,” Remote Sens., vol. 8, no. 6, p. 501, 2016.
+- For `Dear ImGui`
+  - © 2014-2024 Omar Cornut [ocornut/imgui](https://github.com/ocornut/imgui)
+  - Licence: MIT
 
 ## About
 

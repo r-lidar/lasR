@@ -1,6 +1,6 @@
 Package: lasR
 Type: Package
-Version: 0.13.7
+Version: 0.14.0
 Title: Fast and Pipeable Airborne LiDAR Data Tools
 Authors@R: c(
     person("Jean-Romain", "Roussel", email = "info@r-lidar.com", role = c("aut", "cre", "cph")),
@@ -27,8 +27,8 @@ Suggests:
     sf,
     terra,
     testthat (>= 3.0.0),
-RoxygenNote: 7.3.2
-SystemRequirements: C++17, GDAL (>= 2.2.3), GEOS (>= 3.4.0), PROJ (>= 4.9.3), sqlite3, GNU make
+RoxygenNote: 7.3.1
+SystemRequirements: C++17, GDAL (>= 2.2.3), GEOS (>= 3.4.0), PROJ (>= 4.9.3), sqlite3, GNU make, GLU, OpenGL, SDL2
 Encoding: UTF-8
 Language: en-US
 Config/testthat/edition: 3

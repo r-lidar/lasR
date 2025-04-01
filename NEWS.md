@@ -1,20 +1,11 @@
-# lasR 0.13.7
+# lasR 0.14.0
 
-- Fix: #123 `filter` argument with negative numbers
-- Fix: #124 `exec()` with 0 file no longer crashes.
-- New: new stage `load_matrix()`
-
-# lasR 0.13.6
-
-- Fix: #120 fix `write_las()` properly writes return number and number of return in LAS 1.4 format 6
-- Fix: `info()` no longer prints for every point in streamable pipelines
-- Enhancement: better support of LAS format in `write_las()`. It will write the same LAS file version and format than the input.
-- Enhancement: `info()` prints the source format (`LAS`, `PCD`) and its version (`1.4`, `0.7`).
-
-# lasR 0.13.5
-
-- New: in `transform_with` when used with a raster, bilinear interpolation can be deactivated
-- Fix: #118 one pixel shift in the DTM alignment
+- New: lasR now includes a powerful 3D viewer, which will eventually function as a GUI. This is an early-stage development of the viewer, with more features to come. Bug reports are welcome!
+  ```r
+  f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+  pc = read_cloud(f)
+  plot(pc)
+  ```
 
 # lasR 0.13.4
 

@@ -10,20 +10,20 @@ Attribute::Attribute(const std::string& name, AttributeType type, double scale_f
   this->bit_pos = 0;
   switch (type)
   {
-  case BIT:
-  case UINT8:
-  case INT8:
+  case AttributeType::BIT:
+  case AttributeType::UINT8:
+  case AttributeType::INT8:
     size = 1; break;
-  case UINT16:
-  case INT16:
+  case AttributeType::UINT16:
+  case AttributeType::INT16:
     size = 2; break;
-  case UINT32:
-  case INT32:
-  case FLOAT:
+  case AttributeType::UINT32:
+  case AttributeType::INT32:
+  case AttributeType::FLOAT:
     size = 4; break;
-  case UINT64:
-  case INT64:
-  case DOUBLE:
+  case AttributeType::UINT64:
+  case AttributeType::INT64:
+  case AttributeType::DOUBLE:
     size = 8; break;
   default:
     size = 0;
@@ -121,17 +121,17 @@ double AttributeAccessor::read(const Point* point)
   unsigned char* pointer = point->data + attribute->offset;
   double cast_value = 0;
   switch (attribute->type) {
-  case BIT: cast_value = static_cast<double>(((*pointer >> attribute->bit_pos) & 1)); break;
-  case UINT8: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
-  case INT8: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
-  case UINT16: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
-  case INT16: cast_value = static_cast<double>(*reinterpret_cast<const int16_t*>(pointer)); break;
-  case UINT32: cast_value = static_cast<double>(*reinterpret_cast<const uint32_t*>(pointer)); break;
-  case INT32: cast_value = static_cast<double>(*reinterpret_cast<const int32_t*>(pointer)); break;
-  case UINT64: cast_value = static_cast<double>(*reinterpret_cast<const uint64_t*>(pointer)); break;
-  case INT64: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
-  case FLOAT: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
-  case DOUBLE: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
+  case AttributeType::BIT: cast_value = static_cast<double>(((*pointer >> attribute->bit_pos) & 1)); break;
+  case AttributeType::UINT8: cast_value = static_cast<double>(*reinterpret_cast<const uint8_t*>(pointer)); break;
+  case AttributeType::INT8: cast_value = static_cast<double>(*reinterpret_cast<const int8_t*>(pointer)); break;
+  case AttributeType::UINT16: cast_value = static_cast<double>(*reinterpret_cast<const uint16_t*>(pointer)); break;
+  case AttributeType::INT16: cast_value = static_cast<double>(*reinterpret_cast<const int16_t*>(pointer)); break;
+  case AttributeType::UINT32: cast_value = static_cast<double>(*reinterpret_cast<const uint32_t*>(pointer)); break;
+  case AttributeType::INT32: cast_value = static_cast<double>(*reinterpret_cast<const int32_t*>(pointer)); break;
+  case AttributeType::UINT64: cast_value = static_cast<double>(*reinterpret_cast<const uint64_t*>(pointer)); break;
+  case AttributeType::INT64: cast_value = static_cast<double>(*reinterpret_cast<const int64_t*>(pointer)); break;
+  case AttributeType::FLOAT: cast_value = static_cast<double>(*reinterpret_cast<const float*>(pointer)); break;
+  case AttributeType::DOUBLE: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
   default: return default_value;
   }
   return attribute->value_offset + attribute->scale_factor * cast_value;
@@ -150,17 +150,17 @@ void AttributeAccessor::write(Point* point, double value)
   double scaled_value = (value - attribute->value_offset) / attribute->scale_factor;
 
   switch (attribute->type) {
-  case BIT:    *reinterpret_cast<uint8_t*>(pointer) = (*reinterpret_cast<uint8_t*>(pointer) & ~(1 << attribute->bit_pos)) | ((value != 0.0) << attribute->bit_pos); break;
-  case UINT8:  *reinterpret_cast<uint8_t*>(pointer)  = static_cast<uint8_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint8_t>::lowest()), static_cast<double>(std::numeric_limits<uint8_t>::max()))); break;
-  case INT8:   *reinterpret_cast<int8_t*>(pointer)   = static_cast<int8_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int8_t>::lowest()), static_cast<double>(std::numeric_limits<int8_t>::max()))); break;
-  case UINT16: *reinterpret_cast<uint16_t*>(pointer) = static_cast<uint16_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint16_t>::lowest()), static_cast<double>(std::numeric_limits<uint16_t>::max()))); break;
-  case INT16:  *reinterpret_cast<int16_t*>(pointer)  = static_cast<int16_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int16_t>::lowest()), static_cast<double>(std::numeric_limits<int16_t>::max()))); break;
-  case UINT32: *reinterpret_cast<uint32_t*>(pointer) = static_cast<uint32_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint32_t>::lowest()), static_cast<double>(std::numeric_limits<uint32_t>::max()))); break;
-  case INT32:  *reinterpret_cast<int32_t*>(pointer)  = static_cast<int32_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int32_t>::lowest()), static_cast<double>(std::numeric_limits<int32_t>::max()))); break;
-  case UINT64: *reinterpret_cast<uint64_t*>(pointer) = static_cast<uint64_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint64_t>::lowest()), static_cast<double>(std::numeric_limits<uint64_t>::max()))); break;
-  case INT64:  *reinterpret_cast<int64_t*>(pointer)  = static_cast<int64_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int64_t>::lowest()), static_cast<double>(std::numeric_limits<int64_t>::max()))); break;
-  case FLOAT:  *reinterpret_cast<float*>(pointer)    = static_cast<float>(std::clamp(scaled_value, static_cast<double>(std::numeric_limits<float>::lowest()), static_cast<double>(std::numeric_limits<float>::max())));  break;
-  case DOUBLE: *reinterpret_cast<double*>(pointer)   = scaled_value; break;
+  case AttributeType::BIT:    *reinterpret_cast<uint8_t*>(pointer) = (*reinterpret_cast<uint8_t*>(pointer) & ~(1 << attribute->bit_pos)) | ((value != 0.0) << attribute->bit_pos); break;
+  case AttributeType::UINT8:  *reinterpret_cast<uint8_t*>(pointer)  = static_cast<uint8_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint8_t>::lowest()), static_cast<double>(std::numeric_limits<uint8_t>::max()))); break;
+  case AttributeType::INT8:   *reinterpret_cast<int8_t*>(pointer)   = static_cast<int8_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int8_t>::lowest()), static_cast<double>(std::numeric_limits<int8_t>::max()))); break;
+  case AttributeType::UINT16: *reinterpret_cast<uint16_t*>(pointer) = static_cast<uint16_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint16_t>::lowest()), static_cast<double>(std::numeric_limits<uint16_t>::max()))); break;
+  case AttributeType::INT16:  *reinterpret_cast<int16_t*>(pointer)  = static_cast<int16_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int16_t>::lowest()), static_cast<double>(std::numeric_limits<int16_t>::max()))); break;
+  case AttributeType::UINT32: *reinterpret_cast<uint32_t*>(pointer) = static_cast<uint32_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint32_t>::lowest()), static_cast<double>(std::numeric_limits<uint32_t>::max()))); break;
+  case AttributeType::INT32:  *reinterpret_cast<int32_t*>(pointer)  = static_cast<int32_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int32_t>::lowest()), static_cast<double>(std::numeric_limits<int32_t>::max()))); break;
+  case AttributeType::UINT64: *reinterpret_cast<uint64_t*>(pointer) = static_cast<uint64_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<uint64_t>::lowest()), static_cast<double>(std::numeric_limits<uint64_t>::max()))); break;
+  case AttributeType::INT64:  *reinterpret_cast<int64_t*>(pointer)  = static_cast<int64_t>(std::clamp(std::round(scaled_value), static_cast<double>(std::numeric_limits<int64_t>::lowest()), static_cast<double>(std::numeric_limits<int64_t>::max()))); break;
+  case AttributeType::FLOAT:  *reinterpret_cast<float*>(pointer)    = static_cast<float>(std::clamp(scaled_value, static_cast<double>(std::numeric_limits<float>::lowest()), static_cast<double>(std::numeric_limits<float>::max())));  break;
+  case AttributeType::DOUBLE: *reinterpret_cast<double*>(pointer)   = scaled_value; break;
   default: return;
   }
 }

@@ -9,6 +9,9 @@
 #include <string>
 #include <unordered_map>
 
+#define MAX3(a,b,c) (((a)>(b)) ? (((a)>(c)) ? (a) : (c)) : (((b)>(c)) ? (b) : (c)));
+#define MIN3(a,b,c) (((a)>(b)) ? (((b)>(c)) ? (c) : (b)) : (((a)>(c)) ? (c) : (a)));
+
 struct PointXY
 {
   double x;
@@ -164,10 +167,10 @@ struct Edge
   //bool operator<(const Edge& other) const;
   bool operator==(const Edge& other) const;
   std::size_t hash() const;
-  inline double xmin() const { return MIN(A.x, B.x); }
-  inline double xmax() const { return MAX(A.x, B.x); }
-  inline double ymin() const { return MIN(A.y, B.y); }
-  inline double ymax() const { return MAX(A.y, B.y); }
+  inline double xmin() const { return std::min(A.x, B.x); }
+  inline double xmax() const { return std::max(A.x, B.x); }
+  inline double ymin() const { return std::min(A.y, B.y); }
+  inline double ymax() const { return std::max(A.y, B.y); }
 
 private:
   static void hash_combine(std::size_t& seed, std::size_t hash) { seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2); }

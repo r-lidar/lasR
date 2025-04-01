@@ -34,3 +34,4 @@
 ^bin$
 ^Makefile$
 ^.vscode$
+imgui.ini
