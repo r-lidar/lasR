@@ -4,7 +4,7 @@ project(pylasr)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Allow R API use
+# R API configuration (disabled for Python build)
 set(USING_R 0)
 
 # Get the parent directory
