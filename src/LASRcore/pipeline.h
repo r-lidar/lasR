@@ -2,7 +2,7 @@
 #define LASRPIPELINE_H
 
 // R
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 #define R_NO_REMAP 1
 #include <R.h>
 #include <Rinternals.h>
@@ -51,7 +51,7 @@ public:
   void set_progress(Progress* progress);
   FileCollection* get_catalog() const { return catalog.get(); };
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
   SEXP to_R();
 #endif
   nlohmann::json to_json();

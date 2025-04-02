@@ -38,7 +38,7 @@
 #include <map>
 #include <set>
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 #include <R_ext/Random.h>     /* RNG interface */
 #endif
 
@@ -1314,7 +1314,7 @@ public:
   inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s %g ", name(), fraction); };
   inline BOOL filter(const LASpoint* point)
   {
-    #if defined(USING_R) && USING_R != 0
+    #ifdef USING_R
     seed = (U32)(unif_rand()*RAND_MAX);
     #else
     srand(seed);

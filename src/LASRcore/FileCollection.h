@@ -59,7 +59,7 @@ public:
   void clear();
   bool file_exists(std::string& file);
 
-  #if defined(USING_R) && USING_R != 0
+  #ifdef USING_R
   void add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints);   // Special to build a FileCollection from a data.frame in R
   void add_xptr(Header header);
   #endif

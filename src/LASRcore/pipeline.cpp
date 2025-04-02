@@ -481,7 +481,7 @@ void Pipeline::clean()
   las = nullptr;
 }
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 SEXP Pipeline::to_R()
 {
   SEXP ans = PROTECT(Rf_allocVector(VECSXP, pipeline.size()));

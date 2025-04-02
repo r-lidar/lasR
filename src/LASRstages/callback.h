@@ -1,7 +1,7 @@
 #ifndef LASCALLBACK_H
 #define LASCALLBACK_H
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 
 #include "Stage.h"
 #include <vector>

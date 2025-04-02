@@ -1,6 +1,6 @@
 #include "aggregate.h"
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 
 LASRaggregate::LASRaggregate()
 {

@@ -25,7 +25,7 @@ public:
   void sort(const std::vector<int>& order) override;
   void clear(bool) override { reset_accessors(); };
 
-  #if defined(USING_R) && USING_R != 0
+  #ifdef USING_R
   SEXP to_R() override;
   #endif
 

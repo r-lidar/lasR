@@ -16,7 +16,7 @@ Stage::Stage()
   ncpu = 1;
   ncpu_concurrent_files = 1;
 
-  #if defined(USING_R) && USING_R != 0
+  #ifdef USING_R
   nsexpprotected = 0;
   #endif
 }
@@ -38,14 +38,14 @@ Stage::Stage(const Stage& other)
   crs = other.crs;
   set_filter(other.filters);
 
-  #if defined(USING_R) && USING_R != 0
+  #ifdef USING_R
   nsexpprotected = 0;
   #endif
 }
 
 Stage::~Stage()
 {
-  #if defined(USING_R) && USING_R != 0
+  #ifdef USING_R
   if (nsexpprotected > 0) UNPROTECT(nsexpprotected);
   #endif
 }
@@ -75,7 +75,7 @@ void Stage::set_filter(const std::vector<std::string>& f)
   if (!lasfilter.parse(s)) throw std::string("Invalid filter detected");
 }*/
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 SEXP Stage::to_R()
 {
   if (ofile.empty()) return R_NilValue;
@@ -179,7 +179,7 @@ void StageWriter::merge(const Stage* other)
     written = o->written;
 }
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 SEXP StageWriter::to_R()
 {
   if (written.size() == 0) return R_NilValue;
@@ -442,7 +442,7 @@ void StageMatrix::merge(const Stage* other)
   }
 }
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 SEXP StageMatrix::to_R()
 {
   SEXP H = PROTECT(Rf_allocVector(REALSXP, 16)); nsexpprotected++;
@@ -481,7 +481,7 @@ nlohmann::json StageMatrix::to_json() const
   return j_matrix;
 }
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 SEXP string_address_to_sexp(const std::string& addr)
 {
   uintptr_t ptr = strtoull(addr.c_str(), NULL, 16);

@@ -36,7 +36,7 @@
 #include "writevpc.h"
 
 // If compiled as an R package include R's header, special R stages and helper functions
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 
 #define R_NO_REMAP 1
 #include <R.h>
@@ -111,7 +111,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"triangulate",          create_instance<LASRtriangulate>},
     {"write_las",            create_instance<LASRlaswriter>},
     {"write_vpc",            create_instance<LASRvpcwriter>}
-    #if defined(USING_R) && USING_R != 0
+    #ifdef USING_R
     ,{"aggregate",           create_instance<LASRaggregate>},
     {"callback",             create_instance<LASRcallback>},
     {"xptr",                 create_instance<LASRxptr>}
@@ -176,7 +176,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
             xmax = catalog->get_xmax();
             ymax = catalog->get_ymax();
           }
-          #if defined(USING_R) && USING_R != 0
+          #ifdef USING_R
           else if (type == "dataframe")
           {
             std::string address_dataframe_str = stage.at("dataframe");
@@ -254,7 +254,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
                 pipeline.push_back(std::move(v));
                 break;
               }
-              #if defined(USING_R) && USING_R != 0
+              #ifdef USING_R
               case DATAFRAME:
               {
                 auto v = std::make_unique<LASRdataframereader>();

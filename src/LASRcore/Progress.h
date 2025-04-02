@@ -24,7 +24,7 @@ public:
   void done(bool main = false);
   void show(bool flush = true);
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
   bool check_interrupt(bool force = false);
   static bool interrupted() { return user_interrupt_event; };
   void disable_check_interrupt();
@@ -36,7 +36,7 @@ private:
   bool must_show();
   void compute_percentage();
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
   // Handle user interrupt event
   static void checkInterruptFn(void*);
   static bool checkUserInterrupt();

@@ -1,7 +1,7 @@
 #include "callback.h"
 #include <unordered_set>
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 
 LASRcallback::LASRcallback()
 {

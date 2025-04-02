@@ -5,7 +5,7 @@
 extern int last_error_code;
 extern std::string last_error;
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 #define R_NO_REMAP 1
 #include <Rinternals.h>
 SEXP make_R_error(const char* message);

@@ -4,7 +4,7 @@
 int last_error_code = 0;
 std::string last_error;
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 SEXP make_R_error(const char* message)
 {
   SEXP res = PROTECT(Rf_allocVector(VECSXP, 2));

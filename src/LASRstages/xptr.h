@@ -1,7 +1,7 @@
 #ifndef XPOINTER_H
 #define XPOINTER_H
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 
 #include "Stage.h"
 

@@ -7,12 +7,12 @@
 #include <inttypes.h>
 #include <string>
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 #include <R.h> // for R_FlushConsole
 #include <Rinternals.h> // for R_ToplevelExec
 #endif
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 bool Progress::user_interrupt_event = false;
 #endif
 
@@ -29,7 +29,7 @@ Progress::Progress()
   ncpu = 1;
   use_async_api = false;
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
   interrupt_counter = 0;
   user_interrupt_event = false;
   check_interrupt_enabled = true;
@@ -67,7 +67,7 @@ Progress& Progress::operator++(int)
     this->current++;
     this->compute_percentage();
 
-    #if defined(USING_R) && USING_R != 0
+    #ifdef USING_R
     check_interrupt();
     #endif
   }
@@ -104,7 +104,7 @@ void Progress::update(uint64_t current, bool main)
       this->compute_percentage();
     }
 
-    #if defined(USING_R) && USING_R != 0
+    #ifdef USING_R
     check_interrupt(true);
     #endif
 
@@ -124,7 +124,7 @@ void Progress::update(uint64_t current, bool main)
     this->compute_percentage();
   }
 
-  #if defined(USING_R) && USING_R != 0
+  #ifdef USING_R
   check_interrupt();
   #endif
 };
@@ -147,7 +147,7 @@ void Progress::reset()
     this->ntotal = 0;
     this->ncpu = 1;
 
-    #if defined(USING_R) && USING_R != 0
+    #ifdef USING_R
     this->interrupt_counter = 0;
     #endif
   }
@@ -265,7 +265,7 @@ void Progress::show(bool flush)
       print(" | ");
       sub->show(false);
 
-      #if defined(USING_R) && USING_R != 0
+      #ifdef USING_R
       if (user_interrupt_event)
         print(" (Interrupt signal detected: stopping asap)");
       #endif
@@ -275,7 +275,7 @@ void Progress::show(bool flush)
     {
       print("%*s\r", 20, "");
 
-      #if defined(USING_R) && USING_R != 0
+      #ifdef USING_R
       R_FlushConsole();
       #else
       fflush(stdout);
@@ -299,7 +299,7 @@ void Progress::compute_percentage()
   if (this->percentage > 1.0f) this->percentage = 1.0f;
 }
 
-#if defined(USING_R) && USING_R != 0
+#ifdef USING_R
 bool Progress::check_interrupt(bool force)
 {
   // Do no check interrupt if an event has already been caught
