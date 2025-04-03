@@ -3,13 +3,14 @@ import sys
 import pylasr
 import json
 
+
 def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <config_file.json>")
         sys.exit(1)
-    
+
     config_file = sys.argv[1]
-    
+
     # Print basic information about the pipeline
     try:
         info_json = pylasr.get_pipeline_info(config_file)
@@ -24,11 +25,11 @@ def main():
         print()
     except Exception as e:
         print(f"Error getting pipeline info: {e}")
-    
+
     # Process the pipeline
     print(f"Processing pipeline from {config_file}...")
     result = pylasr.process(config_file)
-    
+
     if result:
         print("Pipeline processing successful")
         sys.exit(0)
@@ -36,5 +37,6 @@ def main():
         print("Pipeline processing failed")
         sys.exit(1)
 
+
 if __name__ == "__main__":
-    main() 
+    main()
