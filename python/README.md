@@ -59,7 +59,7 @@ Once the module is installed, you can run the example directly:
 
 ```bash
 cd python
-python example.py path/to/config.json
+python example.py advanced_pipeline.json
 ```
 
 ## API Reference
