@@ -130,7 +130,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name="pylasr",
-    version="0.1.0",
+    version="0.3.17",
     description="Python bindings for LASR library",
     author="LASR Team",
     ext_modules=[CMakeExtension("pylasr")],
