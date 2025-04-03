@@ -162,4 +162,10 @@ setup(
 
     Please refer to the individual LICENSE files in the src/vendor directory for detailed license information.
     """,
+    url="https://github.com/r-lidar/lasR",  # Your project URL
+    project_urls={
+        "Bug Tracker": "https://github.com/r-lidar/lasR/issues",
+        "Documentation": "https://r-lidar.github.io/lasR/",
+        "Source Code": "https://github.com/r-lidar/lasR",
+    },
 )

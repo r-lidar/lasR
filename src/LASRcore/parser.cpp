@@ -122,318 +122,296 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
   {
     for (auto& [key, stage] : json.items())
     {
-      try {
-        std::string name = stage.at("algoname");
-        std::string uid = stage.value("uid", "xxx-xxx");
+      std::string name = stage.at("algoname");
+      std::string uid = stage.value("uid", "xxx-xxx");
 
-        if (name == "reader_las") name = "reader"; // for backward compatibility with Drawflow
+      if (name == "reader_las") name = "reader"; // for backward compatibility with Drawflow
 
-        auto iter = factory_map.find(name);
-        if (iter != factory_map.end())
+      auto iter = factory_map.find(name);
+      if (iter != factory_map.end())
+      {
+        pipeline.push_back(iter->second());
+
+        if (name == "xptr") point_cloud_ownership_transfered = true;
+      }
+      else if (name == "build_catalog")
+      {
+        // This stage is a placeholder stage added at the R level to carry the file paths and processing options
+        // it adds no stage in the pipeline
+
+        // This is the buffer provided by the user. The actual buffer may be larger
+        // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
+        // stage tells us 50.
+        buffer = stage.value("buffer", 0.0);
+        chunk_size = stage.value("chunk", 0.0);
+        std::string type = stage.value("type", "files");
+
+        // We are processing some files. Otherwise with have a compatibility layer
+        // with lidR to process LAS objects
+        if (type == "files")
         {
-          pipeline.push_back(iter->second());
+          std::vector<std::string> files = get_vector<std::string>(stage["files"]);
 
-          if (name == "xptr") point_cloud_ownership_transfered = true;
-        }
-        else if (name == "build_catalog")
-        {
-          // This stage is a placeholder stage added at the R level to carry the file paths and processing options
-          // it adds no stage in the pipeline
-
-          // This is the buffer provided by the user. The actual buffer may be larger
-          // depending on the stages in the pipeline. User may provide 0 or 5 but the triangulation
-          // stage tells us 50.
-          buffer = stage.value("buffer", 0.0);
-          chunk_size = stage.value("chunk", 0.0);
-          std::string type = stage.value("type", "files");
-
-          // We are processing some files. Otherwise with have a compatibility layer
-          // with lidR to process LAS objects
-          if (type == "files")
+          catalog = std::make_shared<FileCollection>();
+          if (!catalog->read(files, progress))
           {
-            std::vector<std::string> files = get_vector<std::string>(stage["files"]);
+            last_error = "In the parser while reading the file collection: " + last_error; // # nocov
+            return false; // # nocov
+          }
 
-            catalog = std::make_shared<FileCollection>();
-            if (!catalog->read(files, progress))
+          if (stage.contains("noprocess"))
+          {
+            std::vector<bool> noproces = stage.at("noprocess");
+            if (!catalog->set_noprocess(noproces))
             {
               last_error = "In the parser while reading the file collection: " + last_error; // # nocov
               return false; // # nocov
             }
-
-            if (stage.contains("noprocess"))
-            {
-              std::vector<bool> noproces = stage.at("noprocess");
-              if (!catalog->set_noprocess(noproces))
-              {
-                last_error = "In the parser while reading the file collection: " + last_error; // # nocov
-                return false; // # nocov
-              }
-            }
-
-            // The catalog read all the files, we now know the extent of the coverage
-            xmin = catalog->get_xmin();
-            ymin = catalog->get_ymin();
-            xmax = catalog->get_xmax();
-            ymax = catalog->get_ymax();
           }
-          #ifdef USING_R
-          else if (type == "dataframe")
-          {
-            std::string address_dataframe_str = stage.at("dataframe");
-            SEXP dataframe = string_address_to_sexp(address_dataframe_str);
 
-            std::string wkt = stage.at("crs");
-
-            // Compute the bounding box. We assume that the data.frame has element named X and Y.
-            // This is not checked at R level. Anyway get_element() will throw an exception
-            SEXP X = get_element(dataframe, "X");
-            SEXP Y = get_element(dataframe, "Y");
-            xmin = std::numeric_limits<double>::max();
-            ymin = std::numeric_limits<double>::max();
-            xmax = -std::numeric_limits<double>::max();
-            ymax = -std::numeric_limits<double>::max();
-            for (int k = 0 ; k < Rf_length(X) ; ++k)
-            {
-              if (REAL(X)[k] < xmin) xmin = REAL(X)[k];
-              if (REAL(Y)[k] < ymin) ymin = REAL(Y)[k];
-              if (REAL(X)[k] > xmax) xmax = REAL(X)[k];
-              if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
-            }
-
-            catalog = std::make_shared<FileCollection>();
-            catalog->add_dataframe(xmin, ymin, xmax, ymax, Rf_length(X));
-            catalog->set_crs(CRS(wkt));
-          }
-          else if (type == "externalptr")
-          {
-            std::string address_ptr = stage.at("externalptr");
-            SEXP sexplas = string_address_to_sexp(address_ptr);
-            las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
-            if (las == nullptr)
-            {
-              last_error = "invalid external pointer";
-              return false;
-            }
-            xmin = las->header->min_x;
-            ymin = las->header->min_y;
-            xmax = las->header->max_x;
-            ymax = las->header->max_y;
-
-            catalog = std::make_shared<FileCollection>();
-            catalog->add_xptr(*las->header);
-          }
-          #endif
-          else
-          {
-            last_error = "Internal error: bad build_catalog stage";
-            return false;
-          }
+          // The catalog read all the files, we now know the extent of the coverage
+          xmin = catalog->get_xmin();
+          ymin = catalog->get_ymin();
+          xmax = catalog->get_xmax();
+          ymax = catalog->get_ymax();
         }
-        else if (name == "reader")
+        #ifdef USING_R
+        else if (type == "dataframe")
         {
-          if (reader)
+          std::string address_dataframe_str = stage.at("dataframe");
+          SEXP dataframe = string_address_to_sexp(address_dataframe_str);
+
+          std::string wkt = stage.at("crs");
+
+          // Compute the bounding box. We assume that the data.frame has element named X and Y.
+          // This is not checked at R level. Anyway get_element() will throw an exception
+          SEXP X = get_element(dataframe, "X");
+          SEXP Y = get_element(dataframe, "Y");
+          xmin = std::numeric_limits<double>::max();
+          ymin = std::numeric_limits<double>::max();
+          xmax = -std::numeric_limits<double>::max();
+          ymax = -std::numeric_limits<double>::max();
+          for (int k = 0 ; k < Rf_length(X) ; ++k)
           {
-            last_error = "The pipeline can only have a single reader stage";
+            if (REAL(X)[k] < xmin) xmin = REAL(X)[k];
+            if (REAL(Y)[k] < ymin) ymin = REAL(Y)[k];
+            if (REAL(X)[k] > xmax) xmax = REAL(X)[k];
+            if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
+          }
+
+          catalog = std::make_shared<FileCollection>();
+          catalog->add_dataframe(xmin, ymin, xmax, ymax, Rf_length(X));
+          catalog->set_crs(CRS(wkt));
+        }
+        else if (type == "externalptr")
+        {
+          std::string address_ptr = stage.at("externalptr");
+          SEXP sexplas = string_address_to_sexp(address_ptr);
+          las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
+          if (las == nullptr)
+          {
+            last_error = "invalid external pointer";
             return false;
           }
-          reader = true;
+          xmin = las->header->min_x;
+          ymin = las->header->min_y;
+          xmax = las->header->max_x;
+          ymax = las->header->max_y;
 
-          if (catalog != nullptr)
+          catalog = std::make_shared<FileCollection>();
+          catalog->add_xptr(*las->header);
+        }
+        #endif
+        else
+        {
+          last_error = "Internal error: bad build_catalog stage";
+          return false;
+        }
+      }
+      else if (name == "reader")
+      {
+        if (reader)
+        {
+          last_error = "The pipeline can only have a single reader stage";
+          return false;
+        }
+        reader = true;
+
+        if (catalog != nullptr)
+        {
+          switch(catalog->get_format())
           {
-            switch(catalog->get_format())
+            case LASFILE:
             {
-              case LASFILE:
+              auto v = std::make_unique<LASRlasreader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            case PCDFILE:
+            {
+              auto v = std::make_unique<LASRpcdreader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            #ifdef USING_R
+            case DATAFRAME:
+            {
+              auto v = std::make_unique<LASRdataframereader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            case XPTR:
+            {
+              std::string address_ptr = stage.at("externalptr");
+              SEXP sexplas = string_address_to_sexp(address_ptr);
+              las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
+              if (las == nullptr)
               {
-                auto v = std::make_unique<LASRlasreader>();
-                pipeline.push_back(std::move(v));
-                break;
-              }
-              case PCDFILE:
-              {
-                auto v = std::make_unique<LASRpcdreader>();
-                pipeline.push_back(std::move(v));
-                break;
-              }
-              #ifdef USING_R
-              case DATAFRAME:
-              {
-                auto v = std::make_unique<LASRdataframereader>();
-                pipeline.push_back(std::move(v));
-                break;
-              }
-              case XPTR:
-              {
-                std::string address_ptr = stage.at("externalptr");
-                SEXP sexplas = string_address_to_sexp(address_ptr);
-                las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
-                if (las == nullptr)
-                {
-                  last_error = "invalid external pointer";
-                  return false;
-                }
-                auto v = std::make_unique<LASRreaderxptr>(las);
-                pipeline.push_back(std::move(v));
-                point_cloud_ownership_transfered = true;
-                break;
-              }
-              #endif
-              default:
-              {
-                last_error = "Invalid catalog";
+                last_error = "invalid external pointer";
                 return false;
               }
+              auto v = std::make_unique<LASRreaderxptr>(las);
+              pipeline.push_back(std::move(v));
+              point_cloud_ownership_transfered = true;
+              break;
             }
-            double temp_xmin = std::numeric_limits<double>::max();
-            double temp_ymin = std::numeric_limits<double>::max();
-            double temp_xmax = std::numeric_limits<double>::lowest();
-            double temp_ymax = std::numeric_limits<double>::lowest();
-
-            // Special treatment of the reader to find the potential queries in the catalog
-            // If we have query we also recompute the bounding box in order to create outputs
-            // with the minimal bounding box
-            if (stage.contains("xcenter"))
+            #endif
+            default:
             {
-              std::vector<double> xcenter = get_vector<double>(stage["xcenter"]);
-              std::vector<double> ycenter = get_vector<double>(stage["ycenter"]);
-              std::vector<double> radius = get_vector<double>(stage["radius"]);
-
-              for (size_t j = 0 ; j <  xcenter.size() ; ++j)
-              {
-                double x = xcenter[j];
-                double y = ycenter[j];
-                double r = radius[j];
-
-                catalog->add_query(x, y, r);
-
-                temp_xmin = MIN(temp_xmin, x-r);
-                temp_ymin = MIN(temp_ymin, y-r);
-                temp_xmax = MAX(temp_xmax, x+r);
-                temp_ymax = MAX(temp_ymax, y+r);
-              }
-
-              xmin = MAX(xmin, temp_xmin);
-              ymin = MAX(ymin, temp_ymin);
-              xmax = MIN(xmax, temp_xmax);
-              ymax = MIN(ymax, temp_ymax);
-            }
-
-            if (stage.contains("xmin"))
-            {
-              std::vector<double> bbxmin = get_vector<double>(stage["xmin"]);
-              std::vector<double> bbymin = get_vector<double>(stage["ymin"]);
-              std::vector<double> bbxmax = get_vector<double>(stage["xmax"]);
-              std::vector<double> bbymax = get_vector<double>(stage["ymax"]);
-
-              for (size_t j = 0 ; j <  bbxmin.size() ; ++j)
-              {
-                catalog->add_query(bbxmin[j], bbymin[j], bbxmax[j], bbymax[j]);
-
-                temp_xmin = MIN(temp_xmin, bbxmin[j]);
-                temp_ymin = MIN(temp_ymin, bbymin[j]);
-                temp_xmax = MAX(temp_xmax, bbxmax[j]);
-                temp_ymax = MAX(temp_ymax, bbymax[j]);
-              }
-
-              xmin = MAX(xmin, temp_xmin);
-              ymin = MAX(ymin, temp_ymin);
-              xmax = MIN(xmax, temp_xmax);
-              ymax = MIN(ymax, temp_ymax);
+              last_error = "Invalid catalog";
+              return false;
             }
           }
+          double temp_xmin = std::numeric_limits<double>::max();
+          double temp_ymin = std::numeric_limits<double>::max();
+          double temp_xmax = std::numeric_limits<double>::lowest();
+          double temp_ymax = std::numeric_limits<double>::lowest();
+
+          // Special treatment of the reader to find the potential queries in the catalog
+          // If we have query we also recompute the bounding box in order to create outputs
+          // with the minimal bounding box
+          if (stage.contains("xcenter"))
+          {
+            std::vector<double> xcenter = get_vector<double>(stage["xcenter"]);
+            std::vector<double> ycenter = get_vector<double>(stage["ycenter"]);
+            std::vector<double> radius = get_vector<double>(stage["radius"]);
+
+            for (size_t j = 0 ; j <  xcenter.size() ; ++j)
+            {
+              double x = xcenter[j];
+              double y = ycenter[j];
+              double r = radius[j];
+
+              catalog->add_query(x, y, r);
+
+              temp_xmin = MIN(temp_xmin, x-r);
+              temp_ymin = MIN(temp_ymin, y-r);
+              temp_xmax = MAX(temp_xmax, x+r);
+              temp_ymax = MAX(temp_ymax, y+r);
+            }
+
+            xmin = MAX(xmin, temp_xmin);
+            ymin = MAX(ymin, temp_ymin);
+            xmax = MIN(xmax, temp_xmax);
+            ymax = MIN(ymax, temp_ymax);
+          }
+
+          if (stage.contains("xmin"))
+          {
+            std::vector<double> bbxmin = get_vector<double>(stage["xmin"]);
+            std::vector<double> bbymin = get_vector<double>(stage["ymin"]);
+            std::vector<double> bbxmax = get_vector<double>(stage["xmax"]);
+            std::vector<double> bbymax = get_vector<double>(stage["ymax"]);
+
+            for (size_t j = 0 ; j <  bbxmin.size() ; ++j)
+            {
+              catalog->add_query(bbxmin[j], bbymin[j], bbxmax[j], bbymax[j]);
+
+              temp_xmin = MIN(temp_xmin, bbxmin[j]);
+              temp_ymin = MIN(temp_ymin, bbymin[j]);
+              temp_xmax = MAX(temp_xmax, bbxmax[j]);
+              temp_ymax = MAX(temp_ymax, bbymax[j]);
+            }
+
+            xmin = MAX(xmin, temp_xmin);
+            ymin = MAX(ymin, temp_ymin);
+            xmax = MIN(xmax, temp_xmax);
+            ymax = MIN(ymax, temp_ymax);
+          }
         }
-        else if (name  == "region_growing")
+      }
+      else if (name  == "region_growing")
+      {
+        std::string uid1 = stage.at("connect1");
+        std::string uid2 = stage.at("connect2");
+        auto v = std::make_unique<LASRregiongrowing>();
+        bool b1 = v->connect(pipeline, uid1);
+        bool b2 = v->connect(pipeline, uid2);
+        if (!b1 || !b2) return false;
+        pipeline.push_back(std::move(v));
+      }
+      else if (name == "stop_if")
+      {
+        std::string condition = stage.at("condition");
+
+        if (condition == "outside_bbox")
         {
-          std::string uid1 = stage.at("connect1");
-          std::string uid2 = stage.at("connect2");
-          auto v = std::make_unique<LASRregiongrowing>();
-          bool b1 = v->connect(pipeline, uid1);
-          bool b2 = v->connect(pipeline, uid2);
-          if (!b1 || !b2) return false;
+          auto v = std::make_unique<LASRbreakoutsidebbox>();
           pipeline.push_back(std::move(v));
         }
-        else if (name == "stop_if")
+        else if (condition == "chunk_id_below")
         {
-          std::string condition = stage.at("condition");
-
-          if (condition == "outside_bbox")
-          {
-            auto v = std::make_unique<LASRbreakoutsidebbox>();
-            pipeline.push_back(std::move(v));
-          }
-          else if (condition == "chunk_id_below")
-          {
-            auto v = std::make_unique<LASRbreakbeforechunk>();
-            pipeline.push_back(std::move(v));
-          }
-          else
-          {
-            last_error = "Invalid condition in break_if";
-            return false;
-          }
-        }
-        else if (name == "write_lax")
-        {
-          indexer = true;
-          auto v = std::make_unique<LASRlaxwriter>();
+          auto v = std::make_unique<LASRbreakbeforechunk>();
           pipeline.push_back(std::move(v));
         }
         else
         {
-          last_error = "Unsupported stage: " + std::string(name.c_str()); // # nocov
-          return false; // # nocov
+          last_error = "Invalid condition in break_if";
+          return false;
         }
+      }
+      else if (name == "write_lax")
+      {
+        indexer = true;
+        auto v = std::make_unique<LASRlaxwriter>();
+        pipeline.push_back(std::move(v));
+      }
+      else
+      {
+        last_error = "Unsupported stage: " + std::string(name.c_str()); // # nocov
+        return false; // # nocov
+      }
 
-        if (pipeline.size() > 0)
+      if (pipeline.size() > 0)
+      {
+        auto& it = pipeline.back();
+
+        it->set_uid(uid);
+        it->set_ncpu(ncpu);
+        it->set_verbose(verbose);
+        it->set_extent(xmin, ymin, xmax, ymax);
+
+        if (stage.contains("connect"))
         {
-          auto& it = pipeline.back();
-
-          it->set_uid(uid);
-          it->set_ncpu(ncpu);
-          it->set_verbose(verbose);
-          it->set_extent(xmin, ymin, xmax, ymax);
-
-          if (stage.contains("connect"))
-          {
-            std::string uid = stage.at("connect");
-            bool b = it->connect(pipeline, uid);
-            if (!b) return false;
-          }
-
-          if (!it->set_parameters(stage))
-          {
-            last_error = "Invalid parameters in stage " + it->get_name() + ": " + last_error;
-            return false;
-          }
-
-          it->get_extent(xmin, ymin, xmax, ymax);
-
-          // If we intend to actually process the point cloud we check that a reader stage is present if needed
-          if (catalog != nullptr && it->need_points() && !reader)
-          {
-            last_error = "The stage " + it->get_name() + " processes the point cloud but is not preceded by a reader stage";
-            return false;
-          }
+          std::string uid = stage.at("connect");
+          bool b = it->connect(pipeline, uid);
+          if (!b) return false;
         }
-      }
-      catch (const nlohmann::json::type_error& e)
-      {
-        std::string error_msg = "JSON type error in stage '" + key + "': ";
-        error_msg += e.what();
-        error_msg += "\nStage name: " + stage.value("algoname", "unknown");
-        error_msg += "\nStage UID: " + stage.value("uid", "unknown");
-        error_msg += "\nStage parameters: " + stage.dump();
-        last_error = error_msg;
-        return false;
-      }
-      catch (const nlohmann::json::parse_error& e)
-      {
-        std::string error_msg = "JSON parsing error in stage '" + key + "': ";
-        error_msg += e.what();
-        error_msg += "\nError occurred at byte: " + std::to_string(e.byte);
-        error_msg += "\nStage name: " + stage.value("algoname", "unknown");
-        error_msg += "\nStage UID: " + stage.value("uid", "unknown");
-        last_error = error_msg;
-        return false;
+
+        if (!it->set_parameters(stage))
+        {
+          last_error = "Invalid parameters in stage " + it->get_name() + ": " + last_error;
+          return false;
+        }
+
+        it->get_extent(xmin, ymin, xmax, ymax);
+
+        // If we intend to actually process the point cloud we check that a reader stage is present if needed
+        if (catalog != nullptr && it->need_points() && !reader)
+        {
+          last_error = "The stage " + it->get_name() + " processes the point cloud but is not preceded by a reader stage";
+          return false;
+        }
       }
     }
 
