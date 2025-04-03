@@ -137,9 +137,6 @@ fi
 
 echo ""
 echo "Environment setup complete. You can now build and install the Python bindings with:"
-echo "export CMAKE_ARGS=\"-DUSE_OPENMP=OFF\" && pip install -e ."
-echo ""
-echo "To enable OpenMP (if supported by your system):"
 echo "pip install -e ."
 echo ""
 echo "To activate this environment in the future, run:"

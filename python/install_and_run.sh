@@ -22,9 +22,7 @@ echo "Building and installing pylasr module..."
 # Change to the python directory
 cd "$SCRIPT_DIR"
  
-# Build and install the module in development mode with OpenMP enabled
 # This creates a link to the source directory, so changes are immediately reflected
-export CMAKE_ARGS="-DUSE_OPENMP=ON"
 pip install -e .
 
 # Show information about build artifacts
