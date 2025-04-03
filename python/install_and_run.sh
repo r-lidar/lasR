@@ -21,13 +21,10 @@ echo "Building and installing pylasr module..."
 
 # Change to the python directory
 cd "$SCRIPT_DIR"
-
-# Make diagnostic script executable
-chmod +x debug_install.py
-chmod +x fix_module.py
-
-# Build and install the module in development mode
+ 
+# Build and install the module in development mode with OpenMP enabled
 # This creates a link to the source directory, so changes are immediately reflected
+export CMAKE_ARGS="-DUSE_OPENMP=ON"
 pip install -e .
 
 # Show information about build artifacts
@@ -41,9 +38,6 @@ else
     echo "Build directory not found"
 fi
 
-# Run the diagnostic script
-echo -e "\n\033[1mRunning diagnostic script:\033[0m"
-python debug_install.py
 
 # Check if the module was installed successfully
 echo -e "\n\033[1mTesting module import:\033[0m"
@@ -53,10 +47,6 @@ IMPORT_RESULT=$?
 if [ $IMPORT_RESULT -ne 0 ]; then
     echo "Error: Failed to import pylasr module. Error details:"
     echo "$IMPORT_TEST"
-    
-    # Try to fix the module installation
-    echo -e "\n\033[1mAttempting to fix module installation:\033[0m"
-    python fix_module.py
     
     # Test import again
     echo -e "\n\033[1mTesting module import again:\033[0m"

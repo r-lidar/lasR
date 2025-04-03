@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64.0.0", "wheel", "cmake>=3.18"]
+requires = ["setuptools>=64.0.0", "cmake>=3.18"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,3 +7,4 @@ name = "pylasr"
 version = "0.1.0"
 description = "Python bindings for LASR library"
 requires-python = ">=3.9" 
+dynamic = ["readme", "authors", "classifiers"] 

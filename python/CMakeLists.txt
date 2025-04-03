@@ -4,45 +4,71 @@ project(pylasr)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# R API configuration (disabled for Python build)
-set(USING_R 0)
 
 # Get the parent directory
 get_filename_component(LASR_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 message(STATUS "LASR_SOURCE_DIR: ${LASR_SOURCE_DIR}")
 
-# OpenMP configuration for macOS (works only with OpenMP on homebrew)
+# OpenMP configuration for macOS 
 if(APPLE)
-    set(OpenMP_C_FLAGS "-Xclang -fopenmp")
-    set(OpenMP_CXX_FLAGS "-Xclang -fopenmp")
-    set(OpenMP_C_LIB_NAMES "omp")
-    set(OpenMP_CXX_LIB_NAMES "omp")
-    set(OpenMP_omp_LIBRARY "/opt/homebrew/opt/libomp/lib/libomp.dylib")
-    set(OpenMP_C_INCLUDE_DIRS "/opt/homebrew/opt/libomp/include")
-    set(OpenMP_CXX_INCLUDE_DIRS "/opt/homebrew/opt/libomp/include")
+    # We need a different approach for macOS with Apple Clang
+    execute_process(
+        COMMAND brew --prefix libomp
+        OUTPUT_VARIABLE HOMEBREW_LIBOMP_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
     
-    # Add OpenMP include directory to compiler flags
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I/opt/homebrew/opt/libomp/include")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/opt/libomp/include")
-
-    # Add rpath to ensure runtime can find libomp
-    set(CMAKE_INSTALL_RPATH "/opt/homebrew/opt/libomp/lib")
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    message(STATUS "OpenMP homebrew prefix: ${HOMEBREW_LIBOMP_PREFIX}")
+    
+    # Use a simpler approach for Apple Clang
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
+        
+        # Include and lib directories
+        set(OpenMP_CXX_INCLUDE_DIRS "${HOMEBREW_LIBOMP_PREFIX}/include")
+        set(OpenMP_C_INCLUDE_DIRS "${HOMEBREW_LIBOMP_PREFIX}/include")
+        
+        # Link explicitly with libomp
+        set(OpenMP_CXX_LIBRARIES "-L${HOMEBREW_LIBOMP_PREFIX}/lib -lomp")
+        set(OpenMP_C_LIBRARIES "-L${HOMEBREW_LIBOMP_PREFIX}/lib -lomp")
+        
+        # Ensure we can find libomp at runtime
+        set(CMAKE_INSTALL_RPATH "${HOMEBREW_LIBOMP_PREFIX}/lib")
+        set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+        
+        # Define the OpenMP variables manually so find_package(OpenMP) succeeds
+        set(OpenMP_CXX_FOUND TRUE)
+        set(OpenMP_C_FOUND TRUE)
+    endif()
 endif()
 
 # Find OpenMP
-find_package(OpenMP REQUIRED)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    include_directories(${OpenMP_CXX_INCLUDE_DIRS})
+option(USE_OPENMP "Use OpenMP" ON)
+if(USE_OPENMP)
+    if(NOT (APPLE AND (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")))
+        find_package(OpenMP)
+    endif()
+    
+    if(OpenMP_CXX_FOUND)
+        message(STATUS "OpenMP found and enabled")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        include_directories(${OpenMP_CXX_INCLUDE_DIRS})
+        link_libraries(${OpenMP_CXX_LIBRARIES})
+        add_definitions(-D_OPENMP)
+        add_definitions(-DUSE_OPENMP=1)
+    else()
+        message(WARNING "OpenMP not found. LASR will be compiled without parallel processing support.")
+        add_definitions(-DUSE_OPENMP=0)
+    endif()
 else()
-    message(WARNING "OpenMP not found. LASR will be compiled without parallel processing support.")
+    message(STATUS "OpenMP disabled. LASR will be compiled without parallel processing support.")
+    add_definitions(-DUSE_OPENMP=0)
 endif()
 
 # Compiler options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unknown-pragmas -Wno-unused-variable -Wno-deprecated -DNOMINMAX -DUSING_R=${USING_R}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unknown-pragmas -Wno-unused-variable -Wno-deprecated -DNOMINMAX")
 
 # Check for link-time optimization
 include(CheckCXXCompilerFlag)
@@ -257,7 +283,6 @@ target_compile_definitions(pylasr PRIVATE
   NDEBUG=1
   UNORDERED=1
   COMPILATION_CLOSED=1
-  USING_R=0
 )
 
 # Set the output directory and output name for different platforms

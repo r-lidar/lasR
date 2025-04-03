@@ -42,14 +42,25 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         exit 1
     fi
     
-    # Install GDAL
-    echo "Installing GDAL via Homebrew..."
-    brew install gdal
+    # Install GDAL and libomp
+    echo "Installing GDAL and libomp via Homebrew..."
+    brew install gdal libomp
     
     # Get GDAL installation path
     GDAL_DIR=$(brew --prefix gdal)
     echo "GDAL installed at: $GDAL_DIR"
     export GDAL_DIR
+    
+    # Make sure libomp is properly linked
+    LIBOMP_DIR=$(brew --prefix libomp)
+    echo "libomp installed at: $LIBOMP_DIR"
+    echo "Checking if libomp is properly linked..."
+    if [ -f "$LIBOMP_DIR/lib/libomp.dylib" ]; then
+        echo "libomp library found at $LIBOMP_DIR/lib/libomp.dylib"
+    else
+        echo "ERROR: libomp library not found. Please make sure libomp is properly installed."
+        exit 1
+    fi
     
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo "Detected Linux"
@@ -87,11 +98,28 @@ if [ -z "$CXX" ]; then
 fi
 
 echo "Using C++ compiler: $CXX"
-if ! $CXX -std=c++17 -x c++ - -o /dev/null 2>/dev/null <<< "#include <filesystem>"; then
+
+# Create a more reliable test for C++17 support
+cat > test_cpp17.cpp << EOF
+#include <iostream>
+#include <filesystem>
+int main() {
+    std::filesystem::path p = "/tmp";
+    std::cout << "C++17 supported" << std::endl;
+    return 0;
+}
+EOF
+
+if ! $CXX -std=c++17 test_cpp17.cpp -o test_cpp17 2>/dev/null; then
     echo "ERROR: Your compiler doesn't support C++17 features."
     echo "Please install a modern C++ compiler (GCC 7+, Clang 5+, or MSVC 2017+)"
+    rm -f test_cpp17.cpp
     exit 1
 fi
+
+# Clean up test file
+rm -f test_cpp17.cpp test_cpp17
+echo "C++17 support confirmed"
 
 # Install Python build dependencies in the virtual environment
 echo "Installing Python build dependencies..."
@@ -109,6 +137,9 @@ fi
 
 echo ""
 echo "Environment setup complete. You can now build and install the Python bindings with:"
+echo "export CMAKE_ARGS=\"-DUSE_OPENMP=OFF\" && pip install -e ."
+echo ""
+echo "To enable OpenMP (if supported by your system):"
 echo "pip install -e ."
 echo ""
 echo "To activate this environment in the future, run:"
