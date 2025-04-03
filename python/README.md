@@ -55,23 +55,11 @@ This will build the extension module and install it in development mode, so any 
 
 ## Running the Examples
 
-There are two ways to run the examples:
-
-### Option 1: Run directly after installation
 Once the module is installed, you can run the example directly:
 
 ```bash
 cd python
 python example.py path/to/config.json
-```
-
-### Option 2: Use the provided script
-We provide a simplified script that builds, installs, and runs the example:
-
-```bash
-cd python
-chmod +x install_and_run.sh
-./install_and_run.sh path/to/config.json
 ```
 
 ## API Reference
