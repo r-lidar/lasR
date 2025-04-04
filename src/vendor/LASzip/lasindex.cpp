@@ -57,9 +57,8 @@
 #     include <unordered_map>
       using namespace std;
 #  elif defined(UNORDERED_FOUND)
-#    include <tr1/unordered_map>
+#    include <unordered_map>
     using namespace std;
-    using namespace tr1;
 #  endif
 typedef std::unordered_map<I32,U32> my_cell_hash;
 #elif defined(LZ_WIN32_VC6)
