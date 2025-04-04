@@ -20,6 +20,7 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(pylasr, m) {
     m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing"; 
+    m.attr("__version__") = "0.3.17";
 
     // Basic processing functions
     m.def("process", &process,
