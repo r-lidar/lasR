@@ -1,4 +1,4 @@
-#ifndef USING_R
+#ifdef EXECUTABLE
 
 #include <string>
 

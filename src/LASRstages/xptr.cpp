@@ -1,3 +1,5 @@
+#ifdef USING_R
+
 #include "xptr.h"
 
 #include <Rinternals.h>
@@ -33,3 +35,5 @@ void LASRxptr::merge(const Stage* other)
   const LASRxptr* o = dynamic_cast<const LASRxptr*>(other);
   las = o->las;
 }
+
+#endif
