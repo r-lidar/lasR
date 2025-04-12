@@ -315,7 +315,7 @@ bool LASio::populate_header(Header* header, bool read_first_point)
   return true;
 }
 
-bool LASio::init(const Header* header, const CRS& crs)
+bool LASio::init(const Header* header)
 {
   if (lasheader != nullptr)
   {
@@ -388,9 +388,9 @@ bool LASio::init(const Header* header, const CRS& crs)
   lasheader->update_extra_bytes_vlr();
   lasheader->point_data_record_length += lasheader->get_attributes_size();
 
-  if (!crs.get_wkt().empty())
+  if (!header->crs.get_wkt().empty())
   {
-    std::string wkt = crs.get_wkt();
+    std::string wkt = header->crs.get_wkt();
     lasheader->set_global_encoding_bit(4);
     lasheader->set_geo_ogc_wkt(wkt.size(), wkt.c_str(), false);
   }

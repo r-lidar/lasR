@@ -28,7 +28,7 @@ public:
   bool open(const std::string& file);
   bool create(const std::string& file);
   bool populate_header(Header* header, bool read_first_point = false);
-  bool init(const Header* header, const CRS& crs);
+  bool init(const Header* header);
   bool read_point(Point* p);
   bool write_point(Point* p);
   bool write_lax(const std::string& file, bool overwrite, bool embedded);
