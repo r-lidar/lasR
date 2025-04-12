@@ -1,0 +1,20 @@
+# Vendor files (include all LASlib implementations)
+set(VENDOR_FILES
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_las.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_txt.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_asc.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_bil.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_bin.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_dtm.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_ply.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_qfit.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_shp.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/laswriter.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/laswriter_las.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/laswriter_bin.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/laswriter_copc.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/laswriter_qfit.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/laswriter_txt.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/laswriter_wrl.cpp
+)
