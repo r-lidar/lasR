@@ -1,6 +1,8 @@
 #include "Header.h"
 #include "print.h"
 
+#include <cinttypes> // PRIu64
+
 Header::Header()
 {
   // General purpose

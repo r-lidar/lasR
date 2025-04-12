@@ -1,7 +1,8 @@
 #ifndef LASIO_H
 #define LASIO_H
 
-#include "PointCloud.h"
+#include "Header.h"
+#include "PointSchema.h"
 #include "Chunk.h"
 
 #include <string>

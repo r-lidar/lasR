@@ -1,16 +1,14 @@
 #ifndef POINTSCHEMA_H
 #define POINTSCHEMA_H
 
-#include "CRS.h"
 #include "print.h"
 
+#include <cstring> //memset
 #include <string>
 #include <vector>
-#include <cstdint>
-#include <functional>
 #include <set>
 #include <unordered_map>
-#include <algorithm>
+#include <algorithm> // std::find
 
 static const std::set<std::string> lascoreattributes = {
   "X", "Y", "Z", "Intensity", "ReturnNumber",
