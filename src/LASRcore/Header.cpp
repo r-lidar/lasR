@@ -34,7 +34,10 @@ Header::Header()
   spatial_index = false;
   number_of_point_records = 0;
   schema = AttributeSchema();
+
+#ifndef NOGDALCRS
   crs = CRS();
+#endif
 }
 
 // # nocov start
@@ -52,7 +55,10 @@ void Header::dump() const
   print("Spatial Index: %s\n", spatial_index ? "true" : "false");
   print("Number of Point Records: %" PRIu64 "\n", number_of_point_records);
   schema.dump(true);
+
+#ifndef NOGDALCRS
   crs.dump();
+#endif
 }
 // # nocov end
 
@@ -93,4 +99,31 @@ std::pair<unsigned short, unsigned short> Header::gpstime_date() const
   {
     return {0, 0};
   }
+}
+
+void Header::set_crs(int epsg)
+{
+#ifndef NOGDALCRS
+  crs = CRS(epsg);
+#else
+  this->epsg = epsg;
+#endif
+}
+
+void Header::set_crs(const std::string& wkt)
+{
+#ifndef NOGDALCRS
+  crs = CRS(wkt);
+#else
+  this->wkt = wkt;
+#endif
+}
+
+std::string Header::get_wkt() const
+{
+#ifndef NOGDALCRS
+  return(crs.get_wkt());
+#else
+  return(wkt);
+#endif
 }

@@ -1,8 +1,15 @@
 #ifndef HEADER_H
 #define HEADER_H
 
+// If NOGDALCRS is defined it allows to compile a subset of the code without linking to GDAL
+// for example to use lasr in third party software. In this case stages with GDAL wont be usable but
+// PointCloud class will be
+
 #include "PointSchema.h"
+
+#ifndef NOGDALCRS
 #include "CRS.h"
+#endif
 
 class Header
 {
@@ -17,7 +24,17 @@ public:
   bool spatial_index;
   uint64_t number_of_point_records;
   AttributeSchema schema;
+
+  void set_crs(int);
+  void set_crs(const std::string&);
+  std::string get_wkt() const;
+
+#ifndef NOGDALCRS
   CRS crs;
+#else
+  int epsg;
+  std::string wkt;
+#endif
 
   // LAS specifications only
   double x_scale_factor, y_scale_factor, z_scale_factor;

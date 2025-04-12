@@ -1,5 +1,6 @@
 #include "PCDio.h"
 #include "Progress.h"
+#include "error.h"
 
 #include <sstream>
 #include <limits>

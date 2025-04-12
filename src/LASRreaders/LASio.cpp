@@ -1,5 +1,6 @@
 #include "LASio.h"
 #include "Progress.h"
+#include "error.h"
 
 #include "lasreader.hpp"
 #include "laswriter.hpp"
@@ -283,7 +284,7 @@ bool LASio::populate_header(Header* header, bool read_first_point)
     {
       if (lasreader->header.vlr_geo_key_entries[j].key_id == 3072)
       {
-        header->crs = CRS(lasreader->header.vlr_geo_key_entries[j].value_offset);
+        header->set_crs((int)lasreader->header.vlr_geo_key_entries[j].value_offset);
         break;
       }
     }
@@ -298,7 +299,7 @@ bool LASio::populate_header(Header* header, bool read_first_point)
         char* data = (char*)lasreader->header.vlrs[j].data;
         int len = strnlen(data, lasreader->header.vlrs[j].record_length_after_header);
         std::string wkt(data, len);
-        header->crs = CRS(wkt);
+        header->set_crs(wkt);
         break;
       }
     }
@@ -388,9 +389,9 @@ bool LASio::init(const Header* header)
   lasheader->update_extra_bytes_vlr();
   lasheader->point_data_record_length += lasheader->get_attributes_size();
 
-  if (!header->crs.get_wkt().empty())
+  if (!header->get_wkt().empty())
   {
-    std::string wkt = header->crs.get_wkt();
+    std::string wkt = header->get_wkt();
     lasheader->set_global_encoding_bit(4);
     lasheader->set_geo_ogc_wkt(wkt.size(), wkt.c_str(), false);
   }
