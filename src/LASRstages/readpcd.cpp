@@ -33,7 +33,8 @@ bool LASRpcdreader::process(Header*& header)
   if (header != nullptr) return true;
 
   header = new Header;
-  pcdio->populate_header(header);
+  if (!pcdio->populate_header(header))
+    return false;
 
   this->header = header;
 
