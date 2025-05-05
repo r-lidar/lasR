@@ -1,6 +1,7 @@
 #ifndef LASIO_H
 #define LASIO_H
 
+#include "Fileio.h"
 #include "Header.h"
 #include "PointSchema.h"
 #include "Chunk.h"
@@ -18,24 +19,24 @@ class LASheader;
 class LASpoint;
 class Progress;
 
-class LASio
+class LASio : public Fileio
 {
 public:
   LASio();
   LASio(Progress*);
   ~LASio();
-  bool open(const Chunk& chunk, std::vector<std::string> filters);
-  bool open(const std::string& file);
-  bool create(const std::string& file);
-  bool populate_header(Header* header, bool read_first_point = false);
-  bool init(const Header* header);
-  bool read_point(Point* p);
-  bool write_point(Point* p);
+  bool open(const Chunk& chunk, std::vector<std::string> filters) override;
+  bool open(const std::string& file) override;
+  bool create(const std::string& file) override;
+  bool populate_header(Header* header, bool read_first_point = false) override;
+  bool init(const Header* header) override;
+  bool read_point(Point* p) override;
+  bool write_point(Point* p) override;
   bool write_lax(const std::string& file, bool overwrite, bool embedded);
-  bool is_opened();
-  void close();
-  void reset_accessor();
-  int64_t p_count();
+  bool is_opened() override;
+  void close() override;
+  void reset_accessor() override;
+  int64_t p_count() override;
 
   // Tools
   static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
@@ -49,8 +50,6 @@ private:
   LASwriter* laswriter;
   LASheader* lasheader;
   LASpoint* point;
-
-  Progress* progress;
 
   AttributeAccessor intensity;
   AttributeAccessor returnnumber;

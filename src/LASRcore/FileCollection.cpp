@@ -493,6 +493,7 @@ bool FileCollection::add_pcd_file(std::string file, bool noprocess)
 
   Header header;
   PCDio reader;
+  reader.preread_bbox = true;
   if (!reader.open(file)) return false;
   reader.populate_header(&header);
   reader.close();
