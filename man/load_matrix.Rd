@@ -4,10 +4,12 @@
 \alias{load_matrix}
 \title{Load a matrix for later use}
 \usage{
-load_matrix(matrix)
+load_matrix(matrix, check = TRUE)
 }
 \arguments{
 \item{matrix}{a 4x4 matrix typically a Rotation-Translation Matrix (RTM)}
+
+\item{check}{Boolean. Check matrix orthogonality.}
 }
 \description{
 Load a matrix for later use. For example, load a matrix to feed the \link{transform_with}

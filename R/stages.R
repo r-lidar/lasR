@@ -537,6 +537,7 @@ load_raster = function(file, band = 1L)
 #' stage
 #'
 #' @param matrix a 4x4 matrix typically a Rotation-Translation Matrix (RTM)
+#' @param check Boolean. Check matrix orthogonality.
 #'
 #' @examples
 #' a = 20 * pi / 180
@@ -555,13 +556,13 @@ load_raster = function(file, band = 1L)
 #'
 #' exec(pipeline, on = f)
 #' @export
-load_matrix = function(matrix)
+load_matrix = function(matrix, check = TRUE)
 {
   if (!is.matrix(matrix)) stop("'matrix' is not a matrix")
   if (dim(matrix)[1] != 4) stop("'matrix' is not a 4x4 matrix")
   if (dim(matrix)[2] != 4) stop("'matrix' is not a 4x4 matrix")
 
-  ans <- list(algoname = "load_matrix", matrix = as.numeric(t(matrix)))
+  ans <- list(algoname = "load_matrix", matrix = as.numeric(t(matrix)), check = check)
   set_lasr_class(ans, matrix = TRUE)
 }
 

@@ -1,3 +1,7 @@
+# lasR 0.13.8
+
+- New argument check in `load_matrix()` to disable orthogonality check
+
 # lasR 0.13.7
 
 - Fix: #123 `filter` argument with negative numbers
