@@ -1,6 +1,7 @@
 # lasR 0.13.8
 
 - New argument check in `load_matrix()` to disable orthogonality check
+- Enhancement `info()` is reporting the point density.
 
 # lasR 0.13.7
 
