@@ -24,6 +24,7 @@ PYBIND11_MODULE(pylasr, m) {
 
     // Basic processing functions
     m.def("process", &process,
+          py::call_guard<py::gil_scoped_release>(),
           "Process a pipeline configuration file",
           py::arg("config_file"));
           
