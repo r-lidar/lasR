@@ -30,6 +30,7 @@ PointCloud::PointCloud(Header* header)
   point.set_schema(&header->schema);
 }
 
+#ifndef NOGDAL
 PointCloud::PointCloud(const Raster& raster)
 {
   // Point cloud storage
@@ -93,6 +94,7 @@ PointCloud::PointCloud(const Raster& raster)
 
   header->number_of_point_records = npoints;
 }
+#endif
 
 PointCloud::~PointCloud()
 {

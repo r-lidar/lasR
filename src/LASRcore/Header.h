@@ -1,13 +1,13 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-// If NOGDALCRS is defined it allows to compile a subset of the code without linking to GDAL
+// If NOGDAL is defined it allows to compile a subset of the code without linking to GDAL
 // for example to use lasr in third party software. In this case stages with GDAL wont be usable but
 // PointCloud class will be
 
 #include "PointSchema.h"
 
-#ifndef NOGDALCRS
+#ifndef NOGDAL
 #include "CRS.h"
 #endif
 
@@ -29,7 +29,7 @@ public:
   void set_crs(const std::string&);
   std::string get_wkt() const;
 
-#ifndef NOGDALCRS
+#ifndef NOGDAL
   CRS crs;
 #else
   int epsg;

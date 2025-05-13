@@ -19,7 +19,6 @@ class PointCloud
 {
 public:
   PointCloud(Header* header);
-  PointCloud(const Raster& raster);
   ~PointCloud();
   bool add_attribute(const Attribute&);
   bool add_attributes(const std::vector<Attribute>&);
@@ -50,6 +49,11 @@ public:
 
   // Non spatial queries
   void set_intervals_to_read(const std::vector<Interval>& intervals);
+
+  // Additionnal feature with GDAL
+  #ifndef NOGDAL
+  PointCloud(const Raster& raster);
+  #endif
 
 private:
   void clean_spatialindex();
