@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,13 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.13.8" id="lasr-0138">lasR 0.13.8<a class="anchor" aria-label="anchor" href="#lasr-0138"></a></h2>
+<ul><li>New argument <code>check</code> in <code><a href="../reference/load_matrix.html">load_matrix()</a></code> to disable orthogonality check</li>
+<li>Enhancement: <code><a href="../reference/info.html">info()</a></code> is reporting the point density.</li>
+<li>Enhancement: incorrect extension for raster of vector files outputs now returns a helpful error. Previously using e.g. <code>.tif</code> for a local maximum output instead of <code>.shp</code>or <code>gpkg</code> returned a non helpful error: <em>Erreur : error 1 while creating GDAL dataset. Attempt to create 0x0 dataset is illegal,sizes must be larger than zero.</em> It now returns <em>Expecting a vector format for: file.tif</em>
+</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.13.7" id="lasr-0137">lasR 0.13.7<a class="anchor" aria-label="anchor" href="#lasr-0137"></a></h2>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/123" class="external-link">#123</a> <code>filter</code> argument with negative numbers</li>
