@@ -9,6 +9,7 @@
 #include <set>
 #include <unordered_map>
 #include <algorithm> // std::find
+#include <cstdint>
 
 static const std::set<std::string> lascoreattributes = {
   "X", "Y", "Z", "Intensity", "ReturnNumber",
@@ -42,7 +43,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> attribute
   {"NIR", {"N", "NIR", "nir"}},
 };
 
-static std::string map_attribute(const std::string& attribute)
+inline std::string map_attribute(const std::string& attribute)
 {
   for (const auto& [standard_name, aliases] : attribute_map)
   {
