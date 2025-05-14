@@ -71,9 +71,6 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
 
   std::string line;
 
-  int targetIndex = -1;
-  size_t pointCount = 0;
-
   std::vector<std::string> fields;
   std::vector<int> data_sizes;
   std::vector<std::string> data_types;
@@ -96,7 +93,6 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
       lineStream >> version;
 
       size_t dotPos = version.find('.');
-      int major = 0, minor = 0;
 
       if (dotPos == 0)
       {
@@ -212,7 +208,7 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
   Attribute attrf("flags", AttributeType::INT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
   header->add_attribute(attrf);
 
-  for (int i = 0 ; i < fields.size() ; i++)
+  for (unsigned int i = 0 ; i < fields.size() ; i++)
   {
     std::string name = fields[i];
     name = map_attribute(name);
@@ -300,7 +296,7 @@ bool PCDio::read_binary_point(Point* p)
 {
   p->zero();
   istream.read(reinterpret_cast<char*>(p->data + 1), p->schema->total_point_size-1);  // + 1 byte because of the flags used by lasR
-  if (istream.gcount() != header->schema.total_point_size-1) return false;   // Check if the correct number of bytes were read
+  if (istream.gcount() != (long)header->schema.total_point_size-1) return false;      // Check if the correct number of bytes were read
   npoints++;
   return true;
 }
