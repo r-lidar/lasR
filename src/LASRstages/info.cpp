@@ -33,6 +33,7 @@ bool LASRinfo::process(Header*& h)
 
   const std::vector<std::string> numberUnits = {"", "thousands", "millions", "billions", "trillions"};
   const std::vector<std::string> byteUnits = {"B", "kB", "MB", "GB", "TB"};
+  std::string areaUnits; if (crs.is_meters()) areaUnits = "m²"; else if (crs.is_feets()) areaUnits = "ft²"; else areaUnits = "units²";
 
   bool compressed = false;
   uint64_t npoints = h->number_of_point_records;
@@ -45,6 +46,7 @@ bool LASRinfo::process(Header*& h)
   print("Size         : %s\n", human_readable(fsize, byteUnits).c_str());
   print("Extent       : %.2lf %.2lf %.2lf %.2lf (xmin, xmax, ymin, ymax)\n", h->min_x, h->max_x, h->min_y, h->max_y);
   print("Points       : %s\n", human_readable(npoints, numberUnits).c_str());
+  print("Density      : %.1lf pts/%s\n", npoints/((h->max_x - h->min_x) * (h->max_y - h->min_y)), areaUnits.c_str());
   print("Coord. ref.  : %s\n", crs.get_crs().GetName());
   print("Schema       :\n"); h->schema.dump();
 

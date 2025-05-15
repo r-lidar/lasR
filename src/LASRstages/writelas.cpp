@@ -137,7 +137,7 @@ void LASRlaswriter::set_header(Header*& header)
   }
 
   lasio = new LASio(progress);
-  lasio->init(header, crs);
+  lasio->init(header);
 }
 
 bool LASRlaswriter::set_chunk(Chunk& chunk)

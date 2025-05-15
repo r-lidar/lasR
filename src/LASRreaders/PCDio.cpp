@@ -1,4 +1,6 @@
 #include "PCDio.h"
+#include "Header.h"
+#include "PointSchema.h"
 #include "Progress.h"
 
 #include <sstream>
@@ -8,17 +10,19 @@
 PCDio::PCDio()
 {
   header = nullptr;
-  progress = nullptr;
+  preread_bbox = false;
   is_binary = false;
   npoints = 0;
 }
 
 PCDio::PCDio(Progress* progress)
 {
-  this->progress = progress;
   header = nullptr;
+  preread_bbox = false;
   is_binary = false;
   npoints = 0;
+
+  this->progress = progress;
 }
 
 PCDio::~PCDio()
@@ -57,7 +61,7 @@ bool PCDio::open(const std::string& file)
   return true;
 }
 
-bool PCDio::populate_header(Header* header)
+bool PCDio::populate_header(Header* header, bool read_first_point)
 {
   if (!istream.is_open())
   {
@@ -261,7 +265,7 @@ bool PCDio::populate_header(Header* header)
   std::string bbox_filename = file.substr(0, file.find_last_of('.')) + ".bbox";
 
   // Read the bbox from the bbox file. It not then, compute the bbox by reading the file.
-  if (!read_bbox(bbox_filename))
+  if (!read_bbox(bbox_filename) && preread_bbox)
   {
     auto payload_start = istream.tellg();
 
@@ -281,6 +285,7 @@ bool PCDio::populate_header(Header* header)
 
     // Write the bounding box to the .bbox file
     write_bbox(bbox_filename);
+    npoints = 0;
   }
 
   return true;
@@ -427,5 +432,27 @@ bool PCDio::read_bbox(const std::string &bbox_filename)
 
   bbox_file.close();
   return true;
+}
+
+void PCDio::reset_accessor()
+{
+
+}
+
+bool PCDio::create(const std::string& file)
+{
+  last_error = "Writing PCD file is not supported yet";
+  return false;
+}
+
+bool PCDio::init(const Header* header)
+{
+  last_error = "Writing PCD file is not supported yet";
+  return false;
+}
+bool PCDio::write_point(Point* p)
+{
+  last_error = "Writing PCD file is not supported yet";
+  return false;
 }
 

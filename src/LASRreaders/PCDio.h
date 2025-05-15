@@ -1,7 +1,7 @@
 #ifndef PCDIO_H
 #define PCDIO_H
 
-#include "PointCloud.h"
+#include "Fileio.h"
 #include "Chunk.h"
 
 #include <string>
@@ -10,24 +10,29 @@
 #include <fstream>
 
 class Progress;
+class Header;
+class Point;
 
-class PCDio
+class PCDio : public Fileio
 {
 public:
   PCDio();
   PCDio(Progress*);
   ~PCDio();
-  bool open(const Chunk& chunk, std::vector<std::string> filters);
-  bool open(const std::string& file);
-  //bool create(const std::string& file);
-  bool populate_header(Header* header);
-  //bool init(const Header* header, const CRS& crs);
-  bool read_point(Point* p);
-  //bool write_point(Point* p);
-  bool is_opened();
-  void close();
-  void reset_accessor();
-  int64_t p_count();
+  bool open(const Chunk& chunk, std::vector<std::string> filters) override;
+  bool open(const std::string& file) override;
+  bool create(const std::string& file) override;
+  bool populate_header(Header* header, bool read_first_point = false) override;
+  bool init(const Header* header) override;
+  bool read_point(Point* p) override;
+  bool write_point(Point* p) override;
+  bool is_opened() override;
+  void close() override;
+  void reset_accessor() override;
+  int64_t p_count() override;
+
+public:
+  bool preread_bbox;
 
 private:
   bool read_ascii_point(Point* p);
@@ -37,7 +42,6 @@ private:
   bool read_bbox(const std::string& bbox_filename);
 
 private:
-  Progress* progress;
   Header* header;
   std::ifstream istream;
   std::ofstream ostream;

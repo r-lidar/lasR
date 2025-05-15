@@ -1,6 +1,8 @@
 #include "Header.h"
 #include "print.h"
 
+#include <cinttypes> // PRIu64
+
 Header::Header()
 {
   // General purpose
@@ -32,7 +34,10 @@ Header::Header()
   spatial_index = false;
   number_of_point_records = 0;
   schema = AttributeSchema();
+
+#ifndef NOGDAL
   crs = CRS();
+#endif
 }
 
 // # nocov start
@@ -50,7 +55,10 @@ void Header::dump() const
   print("Spatial Index: %s\n", spatial_index ? "true" : "false");
   print("Number of Point Records: %" PRIu64 "\n", number_of_point_records);
   schema.dump(true);
+
+#ifndef NOGDAL
   crs.dump();
+#endif
 }
 // # nocov end
 
@@ -91,4 +99,31 @@ std::pair<unsigned short, unsigned short> Header::gpstime_date() const
   {
     return {0, 0};
   }
+}
+
+void Header::set_crs(int epsg)
+{
+#ifndef NOGDAL
+  crs = CRS(epsg);
+#else
+  this->epsg = epsg;
+#endif
+}
+
+void Header::set_crs(const std::string& wkt)
+{
+#ifndef NOGDAL
+  crs = CRS(wkt);
+#else
+  this->wkt = wkt;
+#endif
+}
+
+std::string Header::get_wkt() const
+{
+#ifndef NOGDAL
+  return(crs.get_wkt());
+#else
+  return(wkt);
+#endif
 }

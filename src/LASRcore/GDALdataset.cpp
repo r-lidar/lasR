@@ -164,6 +164,33 @@ bool GDALdataset::create_file()
     // # nocov end
   }
 
+  const char* isRaster = driver->GetMetadataItem(GDAL_DCAP_RASTER);
+  const char* isVector = driver->GetMetadataItem(GDAL_DCAP_VECTOR);
+
+  switch (dType)
+  {
+  case RASTER:
+    if (!isRaster || std::string(isRaster) != "YES")
+    {
+      last_error = "Expecting a raster format for: " + file;
+      return false;
+    }
+    break;
+
+  case VECTOR:
+    if (!isVector || std::string(isVector) != "YES")
+    {
+      last_error = "Expecting a vector format for: " + file;
+      return false;
+    }
+    break;
+
+  case UNDEFINED:
+    last_error = "GDAL dataset type undefined. Please report.";
+    return false;
+    break;
+  }
+
   // Writing options (compression and co)
   char** papszOptions = NULL;
   if (strcmp(driver->GetDescription(), "GTiff") == 0)

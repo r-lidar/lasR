@@ -1,3 +1,10 @@
+# lasR 0.13.8
+
+- New argument `check` in `load_matrix()` to disable orthogonality check
+- Enhancement: `info()` is reporting the point density.
+- Enhancement: incorrect extension for raster of vector files outputs now returns a helpful error. Previously using e.g. `.tif` for a local maximum output instead of `.shp`or `gpkg` returned a non helpful error:
+  *Erreur : error 1 while creating GDAL dataset. Attempt to create 0x0 dataset is illegal,sizes must be larger than zero.* It now returns  *Expecting a vector format for: file.tif*
+
 # lasR 0.13.7
 
 - Fix: #123 `filter` argument with negative numbers
