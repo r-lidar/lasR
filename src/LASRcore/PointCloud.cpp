@@ -637,10 +637,26 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
   size_t previous_size = header->schema.total_point_size;
   size_t new_size = previous_size;
 
-  for (const auto& attribute : attributes)
+  for (const Attribute& attribute : attributes)
   {
-    new_size += attribute.size;
-    header->schema.add_attribute(attribute);
+    // Check if this attribute already exist to avoid adding twice the same attribute
+    const Attribute* attr = header->schema.find_attribute(attribute.name);
+
+    // The attribute exist. Is the new one the same? In this case we do not add an attribute
+    // but we overwrite the previous one. Otherwise we fail.
+    if (attr)
+    {
+      if (*attr != attribute)
+      {
+        last_error = "Cannot add a second attribute '" +  attribute.name + "'";
+        return false;
+      }
+    }
+    else
+    {
+      new_size += attribute.size;
+      header->schema.add_attribute(attribute);
+    }
   }
 
   size_t new_capacity = get_true_number_of_points() * new_size;

@@ -39,7 +39,8 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #' point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
 #' in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved.
 #'
-#' @template return-pointcloud
+#' @return If this stage transforms the point cloud in the pipeline it returns nothing. Otherwise
+#' it returns the R object returned by the function 'fun'
 #'
 #' @examples
 #' f <- system.file("extdata", "Example.las", package="lasR")
@@ -280,20 +281,21 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 
 #' Compute pointwise geometry features
 #'
-#' Compute pointwise geometry features based on local neighborhood. Each feature is added into an
-#' extrabyte attribute. The names of the extrabytes attributes (if recorded) are `coeff00`, `coeff01`,
+#' Compute pointwise geometry features based on local neighborhood. Each feature is added into a new point
+#' attribute. The names of the new attributes (if recorded) are `coeff00`, `coeff01`,
 #' `coeff02` and so on, `lambda1`, `lambda2`, `lambda3`, `anisotropy`, `planarity`, `sphericity`, `linearity`,
 #' `omnivariance`, `curvature`, `eigensum`, `angle`, `normalX`, `normalY`, `normalZ` (recorded in this order).
 #' There is a total of 23 attributes that can be added. It is strongly discouraged to use them all.
 #' All the features are recorded with single precision floating points yet computing them all will triple
 #' the size of the point cloud. This stage modifies the point cloud in the pipeline but does not produce
-#' any output.
+#' any output. If a pipeline has two or more stages with this stage, then attribute with the same name are
+#' overwritten.
 #'
 #' @param k,r integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
 #' sphere. If k is given and r is missing, computes with the knn, if r is given and k is missing
 #' computes with a sphere neighborhood, if k and r are given computes with the knn and a limit on the
 #' search distance.
-#' @param features String. Geometric feature to export. Each feature is added into an extrabyte
+#' @param features String. Geometric feature to export. Each feature is added into a new
 #' attribute. Use 'C' for the 9 principal component coefficients, 'E' for the 3 eigenvalues of the
 #' covariance matrix, 'a' for anisotropy, 'p' for planarity, 's' for sphericity, 'l' for linearity,
 #' 'o' for omnivariance, 'c' for curvature, 'e' for the sum of eigenvalues, 'i' for the angle

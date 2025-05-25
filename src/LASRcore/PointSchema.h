@@ -108,6 +108,16 @@ struct Attribute
     default: return "Unknown";
     }
   }
+
+  bool operator==(const Attribute& other) const
+  {
+    return name == other.name && size == other.size && type == other.type && scale_factor == other.scale_factor && value_offset == other.value_offset && description == other.description;
+  }
+
+  bool operator!=(const Attribute& other) const
+  {
+    return !(*this == other);
+  }
 };
 
 struct AttributeSchema

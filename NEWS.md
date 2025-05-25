@@ -1,3 +1,7 @@
+# lasR 0.13.9
+
+- Fix: #113 `geometry_feature()` overwrite attributes if they are already existing.
+
 # lasR 0.13.8
 
 - New argument `check` in `load_matrix()` to disable orthogonality check
