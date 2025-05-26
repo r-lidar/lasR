@@ -702,9 +702,16 @@ bool PointCloud::add_rgb()
 void PointCloud::build_spatialindex()
 {
   clean_spatialindex();
-  double res = GridPartition::guess_resolution_from_density(header->density());
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
-  while (read_point()) index->insert(point.get_x(), point.get_y());
+  if (npoints > 0)
+  {
+    double res = GridPartition::guess_resolution_from_density(header->density());
+    index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
+    while (read_point()) index->insert(point.get_x(), point.get_y());
+  }
+  else
+  {
+    index = new GridPartition(0, 0, 0, 0, 1);
+  }
 }
 
 void PointCloud::clean_spatialindex()
@@ -750,7 +757,7 @@ bool PointCloud::alloc_buffer()
     return false; // # nocov
   }
 
-  buffer = (unsigned char*)malloc(capacity);
+  buffer = (unsigned char*)calloc(capacity, sizeof(unsigned char));
   if (buffer == NULL)
   {
     // # nocov start
