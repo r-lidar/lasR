@@ -45,6 +45,7 @@ bool LASRcallback::set_parameters(const nlohmann::json& stage)
 bool LASRcallback::process(PointCloud*& las)
 {
   int error = 0;
+  int np = las->header->number_of_point_records;
 
   int withheld_index = -1; // for backward compatibility
   int buffered_index = -1; // for backward compatibility
@@ -121,8 +122,9 @@ bool LASRcallback::process(PointCloud*& las)
 
   int nattr = names.size(); // Number of attribute to expose
 
-  #pragma omp critical (RAPI)
-  {
+  //#pragma omp critical (RAPI)
+  //{
+
   // Create environments in which the call takes place
   SEXP data_frame = PROTECT(Rf_allocVector(VECSXP, nattr)); nsexpprotected++;
 
@@ -130,8 +132,11 @@ bool LASRcallback::process(PointCloud*& las)
   for (int i = 0 ; i < nattr ; i++)
   {
     std::string name = names[i];
+
+    // Choose if we allocate R REALSXP OR INTSXP vector
     int type = (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0) ? REALSXP : INTSXP;
 
+    // We overallocate npoints. We may actually have less than that.
     SEXP v = PROTECT(Rf_allocVector(type, las->npoints)); nsexpprotected++;
     SET_VECTOR_ELT(data_frame, i, v);
   }
@@ -148,11 +153,16 @@ bool LASRcallback::process(PointCloud*& las)
   UNPROTECT(nsexpprotected); nsexpprotected = 0;
   PROTECT(data_frame); nsexpprotected++;
 
-  int j = 0;
+  int p_count = 0;
+  int skipped = 0;
   while (las->read_point())
   {
     bool buffer = las->point.get_buffered();
-    if (drop_buffer && buffer) continue;
+    if (drop_buffer && buffer)
+    {
+      skipped++;
+      continue;
+    }
 
     for (int i = 0 ; i < nattr ; i++)
     {
@@ -174,22 +184,30 @@ bool LASRcallback::process(PointCloud*& las)
 
 
       if (use_realsexp)
-        REAL(vector)[j] = value;
+        REAL(vector)[p_count] = value;
       else
-        INTEGER(vector)[j] = (int)value;
+        INTEGER(vector)[p_count] = (int)value;
     }
 
-    j++;
+    p_count++;
+  }
+
+  if (p_count + skipped != np)
+  {
+    // This should not happen but actually happened because of a uninitialized memory bug
+    // Now we check for it anyway.
+    last_error = "Internal error: unexpected difference in point count";
+    return false;
   }
 
   // All the points were not exposed
   // Set the correct length to R's vectors
-  if (j != las->npoints)
+  if (p_count != las->npoints)
   {
     for (int i = 0 ; i < nattr ; i++)
     {
       SEXP vector = VECTOR_ELT(data_frame, i);
-      SETLENGTH(vector, j);
+      SETLENGTH(vector, p_count);
     }
   }
 
@@ -203,7 +221,7 @@ bool LASRcallback::process(PointCloud*& las)
   // Name the rows (see https://stackoverflow.com/questions/37069149/creating-a-r-data-frame-in-c-c)
   SEXP rnms = PROTECT(Rf_allocVector(INTSXP, 2)); nsexpprotected++;
   INTEGER(rnms)[0] = NA_INTEGER;
-  INTEGER(rnms)[1] = -j;
+  INTEGER(rnms)[1] = -p_count;
   Rf_setAttrib(data_frame, R_RowNamesSymbol, rnms);
 
   // Create a language object representing the function call
@@ -225,12 +243,14 @@ bool LASRcallback::process(PointCloud*& las)
   }
 
   // If modify = false or res is not a data.frame we can already push the result and return
-  if (!error &&  (!modify || (TYPEOF(res) != VECSXP) || Rf_length(VECTOR_ELT(res, 0)) != las->npoints))
+  if (!error &&  (!modify || (TYPEOF(res) != VECSXP) || Rf_length(VECTOR_ELT(res, 0)) != p_count))
   {
     UNPROTECT(nsexpprotected); // unprotect all the vectors (ncols) + 5 objects created in this function;
     nsexpprotected = 0;
     PROTECT(res); nsexpprotected++;
     PROTECT(ans); nsexpprotected++;
+
+    if (verbose)  print(" Output the result\n");
 
     // push_back res in ans
     int i = Rf_length(ans);
@@ -240,6 +260,9 @@ bool LASRcallback::process(PointCloud*& las)
   // Else it is the original data_frame. We update las with it.
   else if (!error)
   {
+
+    if (verbose) print(" Edit the point cloud\n");
+
     // for each element of the list get the name
     std::vector<int> col_names(Rf_length(res));
     SEXP names_attr = Rf_getAttrib(res, R_NamesSymbol);
@@ -340,7 +363,7 @@ bool LASRcallback::process(PointCloud*& las)
     PROTECT(ans); nsexpprotected++;
   }
 
-  } // end omp critical
+  //} // end omp critical
 
   las->update_header();
 
