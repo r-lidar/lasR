@@ -565,8 +565,8 @@ bool PointCloud::knn(const Point& xyz, int k, double radius_max, std::vector<Poi
       p.data = buffer + i * header->schema.total_point_size;
 
       //if (lasfilter && lasfilter->filter(&p)) continue;
-      if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
       if (p.get_deleted()) continue;
+      if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
 
       res.push_back(p);
     }
@@ -659,7 +659,7 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
     }
   }
 
-  size_t new_capacity = get_true_number_of_points() * new_size;
+  size_t new_capacity = npoints * new_size;
 
   if (new_capacity > capacity)
   {
@@ -667,7 +667,7 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
     if (!realloc_buffer()) return false;
   }
 
-  for (int i = get_true_number_of_points()-1 ; i >= 0 ; --i)
+  for (int i = npoints-1 ; i >= 0 ; --i)
   {
     memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
   }

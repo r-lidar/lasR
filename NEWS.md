@@ -1,6 +1,7 @@
 # lasR 0.13.9
 
 - Fix: #113 `geometry_feature()` overwrite attributes if they are already existing.
+- Fix: a very serious bug where memory may be corrupted after deleting points leading to unexpected results or crash.
 
 # lasR 0.13.8
 
