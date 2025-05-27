@@ -11,7 +11,7 @@ to the original collection of files."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.13.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,6 +62,14 @@ to the original collection of files.</p>
 <span>  ofile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*.las"</span><span class="op">)</span>,</span>
 <span>  filter <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  keep_buffer <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">write_copc</span><span class="op">(</span></span>
+<span>  ofile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*.copc.laz"</span><span class="op">)</span>,</span>
+<span>  filter <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  keep_buffer <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  max_depth <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  density <span class="op">=</span> <span class="st">"dense"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -86,7 +94,26 @@ The most common strings are <code>Classification == 2"</code>, <code>"Z &gt; 2"<
 <dt id="arg-keep-buffer">keep_buffer<a class="anchor" aria-label="anchor" href="#arg-keep-buffer"></a></dt>
 <dd><p>bool. The buffer is removed to write file but it can be preserved.</p></dd>
 
+
+<dt id="arg-max-depth">max_depth<a class="anchor" aria-label="anchor" href="#arg-max-depth"></a></dt>
+<dd><p>integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes</p></dd>
+
+
+<dt id="arg-density">density<a class="anchor" aria-label="anchor" href="#arg-density"></a></dt>
+<dd><p>character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
+With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
+is light. Normal is 128, dense is 256.</p></dd>
+
 </dl></div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>`write_las` can write a COPC LAZ file simply by naming the output file with the ".copc.laz" extension.
+However, users must be cautious. Writing COPC is not optimized for memory usage and requires two copies
+of the point cloud in memory to ensure proper sorting and writing. If the user cannot afford to keep
+two copies of the point cloud in RAM, they should use a more specialized writer such as Untwine (PDAL)
+or lascopcindex (LAStools).<br>
+`write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -96,7 +123,7 @@ The most common strings are <code>Classification == 2"</code>, <code>"Z &gt; 2"<
 <span class="r-in"><span><span class="va">normalize</span> <span class="op">&lt;-</span> <span class="va">tri</span> <span class="op">+</span> <span class="fu"><a href="transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">tri</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">read</span> <span class="op">+</span> <span class="va">normalize</span> <span class="op">+</span> <span class="fu">write_las</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"/*_norm.las"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpMxY7EH/Topography_norm.las"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpiZYt4v/Topography_norm.las"</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
