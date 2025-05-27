@@ -189,7 +189,7 @@ bool LASio::create(const std::string& file)
   laswriter->set_copc_depth(copc_depth);
   if (copc_density <= 64)
     laswriter->set_copc_sparse();
-  else if (copc_density > 64 & copc_density <= 128)
+  else if ((copc_density > 64) && (copc_density <= 128))
     laswriter->set_copc_normal();
   else
     laswriter->set_copc_dense();
