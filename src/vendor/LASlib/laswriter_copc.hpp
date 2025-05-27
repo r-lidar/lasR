@@ -63,7 +63,7 @@ public:
   BOOL update_header(const LASheader* header, BOOL use_inventory=FALSE, BOOL update_extra_bytes=FALSE);
   I64 close(BOOL update_npoints=TRUE);
 
-  void set_copc_depth(int depth) override { print("set copc depth %d", depth); if (depth > 0) copc_depth = depth; };
+  void set_copc_depth(int depth) override { if (depth > 0) copc_depth = depth; };
   void set_copc_sparse() override { copc_density = 64; };
   void set_copc_normal() override { copc_density = 128; };
   void set_copc_dense() override { copc_density = 256; };

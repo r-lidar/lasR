@@ -1,6 +1,6 @@
 # lasR 0.14.0
 
-- Doc: Documented that lasR can now write COPC files.
+- Doc: Documented that lasR can write COPC files.
 - New: Added write_copc() function with extra arguments to control hierarchy depth and density.
 - Fix: Fixed unmapped memory issue when writing COPC files.
 
