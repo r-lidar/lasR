@@ -168,7 +168,7 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
   // First, we shuffle the points
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<I64> distribution(0, p_count);
+  std::uniform_int_distribution<I64> distribution(0, p_count-1);
   U8* temp = (U8*)malloc(point_size);
   for (I64 i = 0; i < p_count; i++)
   {
@@ -191,7 +191,7 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
   // Delayed write
   for (I64 i = 0 ; i < p_count ; i++)
   {
-    // Get a point, the point are comming in a random order
+    // Get a point, the point are coming in a random order
     point->copy_from(points_buffer+i*point_size);
 
     // Search a place to insert the point
