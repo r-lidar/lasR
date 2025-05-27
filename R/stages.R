@@ -1323,6 +1323,13 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' the output won't be written into a single large file but in multiple tiled files corresponding
 #' to the original collection of files.
 #'
+#' `write_las` can write a COPC LAZ file simply by naming the output file with the ".copc.laz" extension.
+#' However, users must be cautious. Writing COPC is not optimized for memory usage and requires two copies
+#' of the point cloud in memory to ensure proper sorting and writing. If the user cannot afford to keep
+#' two copies of the point cloud in RAM, they should use a more specialized writer such as Untwine (PDAL)
+#' or lascopcindex (LAStools).\cr
+#' `write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.
+#'
 #' @param ofile character. Output file names. The string must contain a wildcard * so the wildcard can
 #' be replaced by the name of the original tile and preserve the tiling pattern. If the wildcard
 #' is omitted, everything will be written into a single file. This may be the desired behavior in some
@@ -1342,6 +1349,32 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 {
   ans <- list(algoname = "write_las", filter = filter, output = ofile, keep_buffer = keep_buffer)
   set_lasr_class(ans)
+}
+
+#' @export
+#' @rdname write_las
+#' @param max_depth integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes
+#' @param density character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
+#' With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
+#' is light. Normal is 128, dense is 256.
+write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense")
+{
+  ext = substr(ofile, nchar(ofile)-8, nchar(ofile))
+  stopifnot(ext == ".copc.laz")
+  density = match.arg(density, c("sparse", "normal", "dense", "denser"))
+
+  if (density == "sparse") density = 64
+  if (density == "normal") density = 128
+  if (density == "dense")  density = 256
+  if (density == "denser") density = 512
+
+  stage = write_las(ofile, filter, keep_buffer)
+
+  if (!is.null(max_depth) &&  !is.na(max_depth))
+    stage$write_las$max_depth = max_depth
+
+  stage$write_las$density = density
+  return(stage)
 }
 
 #' Write a Virtual Point Cloud

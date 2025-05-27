@@ -149,8 +149,14 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
 
   // Built the octree
   EPToctree octree(*header);
-  octree.set_gridsize(root_grid_size);
-  I32 max_depth = EPToctree::compute_max_depth(*header, max_points_per_octant);
+  octree.set_gridsize(copc_density);
+
+  I32 max_depth;
+  if (copc_depth < 0)
+    max_depth = EPToctree::compute_max_depth(*header, max_points_per_octant);
+  else
+    max_depth = copc_depth;
+
   max_depth = (max_depth > 10) ? 10 : max_depth;
 
   // Update the COPC VLR info now we have almost all the data we need
@@ -468,9 +474,10 @@ LASwriterCOPC::LASwriterCOPC()
   capacity = 0;
   gpstime_maximum = F64_MIN;
   gpstime_minimum = F64_MAX;
-  root_grid_size = 256;
   max_points_per_octant = 100000; // not absolute, only used to estimate the depth.
   min_points_per_octant = 100;    // not absolute, use to (maybe) remove too small chunks
+  copc_depth = -1; // auto compute
+  copc_density = 256;
 }
 
 LASwriterCOPC::~LASwriterCOPC()

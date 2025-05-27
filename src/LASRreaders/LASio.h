@@ -36,6 +36,8 @@ public:
   bool is_opened() override;
   void close() override;
   void reset_accessor() override;
+  void set_copc_max_depth(int depth);
+  void set_copc_density(int density);
   int64_t p_count() override;
 
   // Tools
@@ -72,6 +74,9 @@ private:
   AttributeAccessor overlap_bit;
   std::vector<AttributeAccessor> extrabytes;
   std::vector<size_t> extrabytes_offsets;
+
+  int copc_depth;
+  int copc_density;
 };
 
 

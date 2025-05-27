@@ -63,6 +63,11 @@ public:
   BOOL update_header(const LASheader* header, BOOL use_inventory=FALSE, BOOL update_extra_bytes=FALSE);
   I64 close(BOOL update_npoints=TRUE);
 
+  void set_copc_depth(int depth) override { print("set copc depth %d", depth); if (depth > 0) copc_depth = depth; };
+  void set_copc_sparse() override { copc_density = 64; };
+  void set_copc_normal() override { copc_density = 128; };
+  void set_copc_dense() override { copc_density = 256; };
+
   LASwriterCOPC();
   ~LASwriterCOPC();
 
@@ -79,9 +84,10 @@ private:
   // COPC information for (E)VLR and octree
   F64 gpstime_maximum;
   F64 gpstime_minimum;
-  U32 root_grid_size;
   U32 max_points_per_octant;
   I32 min_points_per_octant;
+  I32 copc_depth;
+  I32 copc_density;
 };
 
 #endif

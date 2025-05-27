@@ -23,6 +23,8 @@ LASRlaswriter::~LASRlaswriter()
 bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
 {
   keep_buffer = stage.value("keep_buffer", false);
+  copc_density = stage.value("density", 256);
+  copc_depth = stage.value("max_depth", -1);
   return true;
 }
 
@@ -138,6 +140,8 @@ void LASRlaswriter::set_header(Header*& header)
 
   lasio = new LASio(progress);
   lasio->init(header);
+  lasio->set_copc_max_depth(copc_depth);
+  lasio->set_copc_density(copc_density);
 }
 
 bool LASRlaswriter::set_chunk(Chunk& chunk)

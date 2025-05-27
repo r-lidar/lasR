@@ -2,12 +2,21 @@
 % Please edit documentation in R/stages.R
 \name{write_las}
 \alias{write_las}
+\alias{write_copc}
 \title{Write LAS or LAZ files}
 \usage{
 write_las(
   ofile = paste0(tempdir(), "/*.las"),
   filter = "",
   keep_buffer = FALSE
+)
+
+write_copc(
+  ofile = paste0(tempdir(), "/*.copc.laz"),
+  filter = "",
+  keep_buffer = FALSE,
+  max_depth = NA,
+  density = "dense"
 )
 }
 \arguments{
@@ -22,11 +31,25 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 \link{filters}.}
 
 \item{keep_buffer}{bool. The buffer is removed to write file but it can be preserved.}
+
+\item{max_depth}{integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes}
+
+\item{density}{character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
+With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
+is light. Normal is 128, dense is 256.}
 }
 \description{
 Write a LAS or LAZ file at any step of the pipeline (typically at the end). Unlike other stages,
 the output won't be written into a single large file but in multiple tiled files corresponding
 to the original collection of files.
+}
+\details{
+`write_las` can write a COPC LAZ file simply by naming the output file with the ".copc.laz" extension.
+However, users must be cautious. Writing COPC is not optimized for memory usage and requires two copies
+of the point cloud in memory to ensure proper sorting and writing. If the user cannot afford to keep
+two copies of the point cloud in RAM, they should use a more specialized writer such as Untwine (PDAL)
+or lascopcindex (LAStools).\cr
+`write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")

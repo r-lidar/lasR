@@ -37,6 +37,9 @@ LASio::LASio()
   synthetic_bit = AttributeAccessor("Synthetic");
   keypoint_bit = AttributeAccessor("Keypoint");
   overlap_bit = AttributeAccessor("Overlap");
+
+  copc_depth = -1;
+  copc_density = 256;
 }
 
 LASio::LASio(Progress* progress) : LASio()
@@ -182,6 +185,14 @@ bool LASio::create(const std::string& file)
     last_error = "LASlib internal error. Cannot open LASwriter."; // # nocov
     return false; // # nocov
   }
+
+  laswriter->set_copc_depth(copc_depth);
+  if (copc_density <= 64)
+    laswriter->set_copc_sparse();
+  else if (copc_density > 64 & copc_density <= 128)
+    laswriter->set_copc_normal();
+  else
+    laswriter->set_copc_dense();
 
   return true;
 }
@@ -707,4 +718,13 @@ int LASio::get_point_data_record_length(int point_data_format, int num_extrabyte
   case 10: return 67 + num_extrabytes; break;
   default: return 0; break;
   }
+}
+
+void LASio::set_copc_max_depth(int depth)
+{
+  copc_depth = depth;
+}
+void LASio::set_copc_density(int density)
+{
+  copc_density = density;
 }

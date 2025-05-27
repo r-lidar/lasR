@@ -29,6 +29,8 @@ private:
   void clean_copc_ext(std::string& path);
 
   bool keep_buffer;
+  int copc_density;
+  int copc_depth;
   std::vector<AttributeAccessor> core_accessors;
 
   LASio* lasio;
