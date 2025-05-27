@@ -1,3 +1,9 @@
+# lasR 0.14.0
+
+- Doc: Documented that lasR can now write COPC files.
+- New: Added write_copc() function with extra arguments to control hierarchy depth and density.
+- Fix: Fixed unmapped memory issue when writing COPC files.
+
 # lasR 0.13.9
 
 - Fix: #113 `geometry_feature()` overwrite attributes if they are already existing.
