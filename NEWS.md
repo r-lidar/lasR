@@ -1,7 +1,7 @@
 # lasR 0.14.1
 
 - Fix: #136 `write_las()` preserves dates and writes generating software
-- Enahnce: #137 a pipeline presevers VLR attributes of a LAS files
+- Enhance: #137 a pipeline preserve VLR attributes of a LAS files
 
 # lasR 0.14.0
 
