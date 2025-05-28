@@ -318,6 +318,34 @@ bool LASio::populate_header(Header* header, bool read_first_point)
 
   header->spatial_index = (lasreader->get_index() != nullptr) || (lasreader->get_copcindex() != nullptr);
 
+  // Copy VLRS
+  header->vlrs.reserve(lasreader->header.number_of_variable_length_records);
+  for (unsigned int i = 0; i < lasreader->header.number_of_variable_length_records; i++)
+  {
+    LASvlr& src = lasreader->header.vlrs[i];
+    VLR vlr;
+
+    vlr.reserved = src.reserved;
+    memcpy(vlr.user_id, src.user_id, 16);
+    vlr.record_id = src.record_id;
+    vlr.record_length_after_header = src.record_length_after_header;
+    memcpy(vlr.description, src.description, 32);
+
+    if (src.record_length_after_header > 0)
+    {
+      vlr.data = new unsigned char[src.record_length_after_header];
+      if (!vlr.data)
+      {
+        last_error= "VLR memory allocation failled";
+        return false;
+      }
+
+      memcpy(vlr.data, src.data, src.record_length_after_header);
+    }
+
+    header->vlrs.emplace_back(vlr);
+  }
+
   if (read_first_point)
   {
     lasreader->read_point();
@@ -380,6 +408,19 @@ bool LASio::init(const Header* header)
 
   if (header->adjusted_standard_gps_time)
     lasheader->set_global_encoding_bit(0);
+
+  for (const auto& vlr : header->vlrs)
+  {
+    unsigned char* data = new unsigned char[vlr.record_length_after_header];
+    if (!data)
+    {
+      last_error= "VLR memory allocation failled";
+      return false;
+    }
+
+    memcpy(data, vlr.data, vlr.record_length_after_header);
+    lasheader->add_vlr(vlr.user_id, vlr.record_id, vlr.record_length_after_header, data, TRUE, vlr.description);
+  }
 
   reset_accessor();
 
