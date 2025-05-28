@@ -361,8 +361,8 @@ bool LASio::init(const Header* header)
   lasheader->version_minor        = version_minor;
   lasheader->header_size          = get_header_size(version_minor);
   lasheader->offset_to_point_data = get_header_size(version_minor);
-  lasheader->file_creation_year   = 0;
-  lasheader->file_creation_day    = 0;
+  lasheader->file_creation_year   = header->file_creation_year;
+  lasheader->file_creation_day    = header->file_creation_day;
   lasheader->point_data_format    = pdf;
   lasheader->point_data_record_length = get_point_data_record_length(lasheader->point_data_format);
   lasheader->x_scale_factor       = header->schema.attributes[AttributeCore::X].scale_factor;
@@ -376,6 +376,7 @@ bool LASio::init(const Header* header)
   lasheader->min_y                = ymin;
   lasheader->max_x                = xmax;
   lasheader->max_y                = ymax;*/
+  std::strncpy(lasheader->generating_software, "lasR with LASlib", 32);
 
   if (header->adjusted_standard_gps_time)
     lasheader->set_global_encoding_bit(0);

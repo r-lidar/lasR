@@ -1,7 +1,12 @@
+# lasR 0.14.1
+
+- Fix: #136 `write_las()` preserves dates and writes generating software
+
+
 # lasR 0.14.0
 
 - Doc: Documented that lasR can write COPC files.
-- New: Added write_copc() function with extra arguments to control hierarchy depth and density.
+- New: Added `write_copc()` function with extra arguments to control hierarchy depth and density.
 - Fix: Fixed unmapped memory issue when writing COPC files.
 
 # lasR 0.13.9
