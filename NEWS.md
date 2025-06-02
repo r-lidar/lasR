@@ -1,5 +1,6 @@
 # lasR 0.14.1
 
+- Fix: #141 `write_las()` drops circular buffers properly
 - Fix: #136 `write_las()` preserves dates and writes generating software
 - Enhance: #137 a pipeline preserve VLR attributes of a LAS files
 
