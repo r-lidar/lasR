@@ -318,6 +318,34 @@ bool LASio::populate_header(Header* header, bool read_first_point)
 
   header->spatial_index = (lasreader->get_index() != nullptr) || (lasreader->get_copcindex() != nullptr);
 
+
+  // COPC info
+  COPCindex* copc_index = lasreader->get_copcindex();
+  if (copc_index)
+  {
+    if (lasreader->header.vlr_copc_info)
+      header->copc_root_spacing = lasreader->header.vlr_copc_info->spacing;
+
+    if (lasreader->header.vlr_copc_info && lasreader->header.vlr_copc_entries)
+    {
+      I32 max_octree_level = 0;
+      for (U32 j = 0 ; j < lasreader->header.number_of_copc_entries ; j++)
+      {
+        if (lasreader->header.vlr_copc_entries[j].key.depth > max_octree_level)
+          max_octree_level = lasreader->header.vlr_copc_entries[j].key.depth;
+      }
+      max_octree_level++;
+      header->copc_points_per_level.resize(max_octree_level+1);
+      header->copc_voxels_per_level.resize(max_octree_level+1);
+
+      for (U32 j = 0 ; j < lasreader->header.number_of_copc_entries ; j++)
+      {
+        header->copc_points_per_level[lasreader->header.vlr_copc_entries[j].key.depth] += lasreader->header.vlr_copc_entries[j].point_count;
+        header->copc_voxels_per_level[lasreader->header.vlr_copc_entries[j].key.depth]++;
+      }
+    }
+  }
+
   // Copy VLRS
   header->vlrs.reserve(lasreader->header.number_of_variable_length_records);
   for (unsigned int i = 0; i < lasreader->header.number_of_variable_length_records; i++)
@@ -409,6 +437,7 @@ bool LASio::init(const Header* header)
   if (header->adjusted_standard_gps_time)
     lasheader->set_global_encoding_bit(0);
 
+  // COPY VLRs
   for (const auto& vlr : header->vlrs)
   {
     unsigned char* data = new unsigned char[vlr.record_length_after_header];

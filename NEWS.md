@@ -1,3 +1,7 @@
+# lasR 0.15.0
+
+- New: #140 `info()` prints usefull COPC informations.
+
 # lasR 0.14.1
 
 - Fix: #141 `write_las()` drops circular buffers properly
