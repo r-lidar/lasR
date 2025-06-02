@@ -1,6 +1,6 @@
 # lasR 0.15.0
 
-- New: #140 `info()` prints usefull COPC informations.
+- New: #140 `info()` prints useful COPC informations.
 
 # lasR 0.14.1
 
