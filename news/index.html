@@ -48,6 +48,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.15.0" id="lasr-0150">lasR 0.15.0<a class="anchor" aria-label="anchor" href="#lasr-0150"></a></h2>
 <ul><li>New: <a href="https://github.com/r-lidar/lasR/issues/140" class="external-link">#140</a> <code><a href="../reference/info.html">info()</a></code> prints useful COPC informations.</li>
+<li>Change: <a href="https://github.com/r-lidar/lasR/issues/139" class="external-link">#139</a>. <code><a href="../reference/dsm.html">chm()</a></code> replaced by <code><a href="../reference/dsm.html">dsm()</a></code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.14.1" id="lasr-0141">lasR 0.14.1<a class="anchor" aria-label="anchor" href="#lasr-0141"></a></h2>
@@ -139,7 +140,7 @@
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span>
 <span><span class="va">pc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_cloud.html">read_cloud</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
-<span><span class="va">u</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="fu"><a href="../reference/chm.html">chm</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>, on <span class="op">=</span> <span class="va">pc</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">u</span> <span class="op">=</span> <span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="fu"><a href="../reference/dsm.html">chm</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>, on <span class="op">=</span> <span class="va">pc</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li><p>New: <code><a href="../reference/reader.html">reader()</a></code> replace <code><a href="../reference/deprecated.html">reader_las()</a></code> because <code>lasR</code> is not intended to be limited to LAS/LAZ. <code><a href="../reference/deprecated.html">reader_las()</a></code> is deprecated. <code><a href="../reference/reader.html">reader()</a></code> is supposed to support any format in the future.</p></li>
 <li><p>New: <code><a href="../reference/reader.html">reader()</a></code> has a new argument <code>copc_depth</code></p></li>
