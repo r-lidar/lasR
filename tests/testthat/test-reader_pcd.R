@@ -19,6 +19,17 @@ test_that("reader_pcd works (binary in memory)",
   expect_equal(ans[[4]]$npoints, 62598L)
 })
 
+test_that("reader_pcd works (binary in memory)",
+{
+  f <- system.file("extdata", "Example.pcd", package="lasR")
+  fans = read_las(f)
+
+  for (i in ncol(ans)) expect_true(is.numeric(fans[[i]]))
+  expect_equal(mean(fans$gpstime), 269347.443)
+  expect_equal(mean(fans$ScanAngle), -21.6666, tolerance = 1e-5)
+  expect_equal(mean(fans$Intensity), 78.6)
+})
+
 test_that("reader_pcd works (ascii in memory)",
 {
   f <- system.file("extdata", "pcd_ascii.pcd", package="lasR")

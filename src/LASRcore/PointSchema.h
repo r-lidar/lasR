@@ -36,7 +36,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> attribute
   {"PointSourceID", {"PointSourceID", "point_source", "point_source_id", "pointsourceid", "psid", "p"}},
   {"EdgeOfFlightline", {"EdgeOfFlightline", "edgeofflightline", "e"}},
   {"ScanDirectionFlag", {"ScanDirectionFlag", "scandirectionflag", "d"}},
-  {"ScanAngle", {"angle", "Angle", "ScanAngle", "ScanAngleRank", "scan_angle", "a"}},
+  {"ScanAngle", {"angle", "Angle", "ScanAngle", "ScanAngleRank", "scananglerank", "scan_angle", "a"}},
   {"R", {"R", "Red", "red"}},
   {"G", {"G", "Green", "green"}},
   {"B", {"B", "Blue", "blue"}},
@@ -323,6 +323,12 @@ public:
   void operator()(Point* point, double value);
   bool exist() { return attribute != nullptr; }
   void reset() { init = false; attribute = nullptr; };
+  void dump()
+  {
+    print("Accessor to %s\n", name.c_str());
+    print("Init %s\n", (init) ? "true" : "false");
+    if (attribute) attribute->dump(true);
+  }
 
 protected:
   std::string name;

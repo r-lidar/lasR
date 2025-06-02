@@ -3,7 +3,8 @@
 \name{write_las}
 \alias{write_las}
 \alias{write_copc}
-\title{Write LAS or LAZ files}
+\alias{write_pcd}
+\title{Write point clouds}
 \usage{
 write_las(
   ofile = paste0(tempdir(), "/*.las"),
@@ -18,6 +19,8 @@ write_copc(
   max_depth = NA,
   density = "dense"
 )
+
+write_pcd(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
 }
 \arguments{
 \item{ofile}{character. Output file names. The string must contain a wildcard * so the wildcard can
@@ -39,9 +42,9 @@ With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mea
 is light. Normal is 128, dense is 256.}
 }
 \description{
-Write a LAS or LAZ file at any step of the pipeline (typically at the end). Unlike other stages,
-the output won't be written into a single large file but in multiple tiled files corresponding
-to the original collection of files.
+Write the point cloud in LAS or LAZ or PCD files at any step of the pipeline (typically at the end).
+Unlike other stages, the output won't be written into a single large file but in multiple tiled files
+corresponding to the original collection of files.
 }
 \details{
 `write_las` can write a COPC LAZ file simply by naming the output file with the ".copc.laz" extension.
@@ -49,7 +52,9 @@ However, users must be cautious. Writing COPC is not optimized for memory usage 
 of the point cloud in memory to ensure proper sorting and writing. If the user cannot afford to keep
 two copies of the point cloud in RAM, they should use a more specialized writer such as Untwine (PDAL)
 or lascopcindex (LAStools).\cr
-`write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.
+`write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.\cr
+`write_pcd` cannot merge multiple files into one bigger file yet. It cannot write a subset of the file
+either yet.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")

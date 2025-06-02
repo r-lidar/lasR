@@ -470,7 +470,7 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 
 #' Print Information about the Point Cloud
 #'
-#' This function prints useful information about LAS/LAZ files, including the file version, size,
+#' This function prints useful information about point cloud files, including the file version, size,
 #' bounding box, CRS, and more. When called without parameters, it returns a pipeline stage. For
 #' convenience, it can also be called with the path to a file for immediate execution, which is likely
 #' the most common use case (see examples).
@@ -482,12 +482,15 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 #' @export
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+#' g <- system.file("extdata", "Example.pcd", package = "lasR")
 #'
 #' # Return a pipeline stage
 #' exec(info(), on = f)
 #'
 #' # Convenient user-friendly usage
 #' info(f)
+#'
+#' info(g)
 info = function(f)
 {
   if (missing(f))
@@ -1317,18 +1320,20 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 
 # ===== W ====
 
-#' Write LAS or LAZ files
+#' Write point clouds
 #'
-#' Write a LAS or LAZ file at any step of the pipeline (typically at the end). Unlike other stages,
-#' the output won't be written into a single large file but in multiple tiled files corresponding
-#' to the original collection of files.
+#' Write the point cloud in LAS or LAZ or PCD files at any step of the pipeline (typically at the end).
+#' Unlike other stages, the output won't be written into a single large file but in multiple tiled files
+#' corresponding to the original collection of files.
 #'
 #' `write_las` can write a COPC LAZ file simply by naming the output file with the ".copc.laz" extension.
 #' However, users must be cautious. Writing COPC is not optimized for memory usage and requires two copies
 #' of the point cloud in memory to ensure proper sorting and writing. If the user cannot afford to keep
 #' two copies of the point cloud in RAM, they should use a more specialized writer such as Untwine (PDAL)
 #' or lascopcindex (LAStools).\cr
-#' `write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.
+#' `write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.\cr
+#' `write_pcd` cannot merge multiple files into one bigger file yet. It cannot write a subset of the file
+#' either yet.
 #'
 #' @param ofile character. Output file names. The string must contain a wildcard * so the wildcard can
 #' be replaced by the name of the original tile and preserve the tiling pattern. If the wildcard
@@ -1345,6 +1350,7 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 #' exec(pipeline, on = f)
 #' @export
+#' @rdname write
 write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE)
 {
   ans <- list(algoname = "write_las", filter = filter, output = ofile, keep_buffer = keep_buffer)
@@ -1352,7 +1358,7 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 }
 
 #' @export
-#' @rdname write_las
+#' @rdname write
 #' @param max_depth integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes
 #' @param density character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
 #' With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
@@ -1375,6 +1381,14 @@ write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", kee
 
   stage$write_las$density = density
   return(stage)
+}
+
+#' @export
+#' @rdname write
+write_pcd = function(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
+{
+  ans <- list(algoname = "write_pcd", output = ofile, binary = binary)
+  set_lasr_class(ans)
 }
 
 #' Write a Virtual Point Cloud
