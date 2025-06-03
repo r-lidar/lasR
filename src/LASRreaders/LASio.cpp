@@ -334,7 +334,6 @@ bool LASio::populate_header(Header* header, bool read_first_point)
         if (lasreader->header.vlr_copc_entries[j].key.depth > max_octree_level)
           max_octree_level = lasreader->header.vlr_copc_entries[j].key.depth;
       }
-      max_octree_level++;
       header->copc_points_per_level.resize(max_octree_level+1);
       header->copc_voxels_per_level.resize(max_octree_level+1);
 
