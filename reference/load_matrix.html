@@ -9,7 +9,7 @@ stage"></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,7 +82,7 @@ stage</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">mat</span> <span class="op">=</span> <span class="fu">load_matrix</span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">trans</span> <span class="op">=</span> <span class="fu"><a href="transform_with.html">transform_with</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">write</span> <span class="op">=</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".las"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">write</span> <span class="op">=</span> <span class="fu"><a href="write.html">write_las</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".las"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="va">mat</span> <span class="op">+</span> <span class="va">trans</span> <span class="op">+</span> <span class="va">write</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span></span>
@@ -96,7 +96,7 @@ stage</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.0000000  0.0000000    0    1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $write_las</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpdMMS1f/file25032ad7e947.las"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpGGwd6Y/file24f82dbfecb6.las"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

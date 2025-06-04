@@ -11,7 +11,7 @@ to assign the correct CRS to all stages."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,7 +78,7 @@ to assign the correct CRS to all stages.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># fancy usages are working as expected. The .tif file is written with a CRS, the .gpkg file with</span></span></span>
 <span class="r-in"><span><span class="co"># another CRS and the .las file with yet another CRS.</span></span></span>
-<span class="r-in"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu">set_crs</span><span class="op">(</span><span class="fl">2044</span><span class="op">)</span> <span class="op">+</span> <span class="va">hmax</span> <span class="op">+</span> <span class="fu">set_crs</span><span class="op">(</span><span class="fl">2004</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="local_maximum.html">local_maximum</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">set_crs</span><span class="op">(</span><span class="fl">2949</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu">set_crs</span><span class="op">(</span><span class="fl">2044</span><span class="op">)</span> <span class="op">+</span> <span class="va">hmax</span> <span class="op">+</span> <span class="fu">set_crs</span><span class="op">(</span><span class="fl">2004</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="local_maximum.html">local_maximum</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">set_crs</span><span class="op">(</span><span class="fl">2949</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="write.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

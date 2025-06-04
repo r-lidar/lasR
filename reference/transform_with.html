@@ -19,7 +19,7 @@ but does not produce any output."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -113,7 +113,7 @@ there is no buffer involved.</p>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><a href="triangulate.html">triangulate</a>
-<a href="write_las.html">write_las</a></p></div>
+<a href="write.html">write_las</a></p></div>
     </div>
 
     <div class="section level2">
@@ -123,7 +123,7 @@ there is no buffer involved.</p>
 <span class="r-in"><span><span class="co"># with a triangulation</span></span></span>
 <span class="r-in"><span><span class="va">mesh</span>  <span class="op">&lt;-</span> <span class="fu"><a href="triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu"><a href="filters.html">keep_ground</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">trans</span> <span class="op">&lt;-</span> <span class="fu">transform_with</span><span class="op">(</span><span class="va">mesh</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">mesh</span> <span class="op">+</span> <span class="va">trans</span> <span class="op">+</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">mesh</span> <span class="op">+</span> <span class="va">trans</span> <span class="op">+</span> <span class="fu"><a href="write.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># with a matrix</span></span></span>
@@ -134,7 +134,7 @@ there is no buffer involved.</p>
 <span class="r-in"><span>  <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>,</span></span>
 <span class="r-in"><span>  <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">4</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu">transform_with</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="write_las.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu">transform_with</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="write.html">write_las</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">f</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $load_matrix</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           [,1]       [,2] [,3] [,4]</span>
@@ -144,7 +144,7 @@ there is no buffer involved.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.0000000  0.0000000    0    1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $write_las</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpdMMS1f/Topography.las"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpGGwd6Y/Topography.las"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>

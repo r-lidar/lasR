@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.14.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.15.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,20 +47,21 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.15.0" id="lasr-0150">lasR 0.15.0<a class="anchor" aria-label="anchor" href="#lasr-0150"></a></h2>
-<ul><li>New: <a href="https://github.com/r-lidar/lasR/issues/140" class="external-link">#140</a> <code><a href="../reference/info.html">info()</a></code> prints useful COPC informations.</li>
-<li>Change: <a href="https://github.com/r-lidar/lasR/issues/139" class="external-link">#139</a> <code><a href="../reference/dsm.html">chm()</a></code> replaced by <code><a href="../reference/dsm.html">dsm()</a></code>.</li>
-<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/142" class="external-link">#142</a> circular buffer are handled properly</li>
+<ul><li>New: <code>lasR</code> now supports the PCD format. The <code><a href="../reference/reader.html">reader()</a></code> function can read PCD files, and a new stage, <code><a href="../reference/write.html">write_pcd()</a></code>, is available. However, due to the current state of the software and limitations of the format itself, functionality is restricted: <code>lasR</code> cannot read multiple PCD files, and thus cannot buffer or merge them. Additionally, <code><a href="../reference/write.html">write_pcd()</a></code> does not support streaming data.</li>
+<li>New: <a href="https://github.com/r-lidar/lasR/issues/140" class="external-link">#140</a> <code><a href="../reference/info.html">info()</a></code> now prints useful COPC metadata.</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/142" class="external-link">#142</a> circular buffers are now handled properly.</li>
+<li>Change: <a href="https://github.com/r-lidar/lasR/issues/139" class="external-link">#139</a> the <code><a href="../reference/dsm.html">chm()</a></code> function has been replaced by <code><a href="../reference/dsm.html">dsm()</a></code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.14.1" id="lasr-0141">lasR 0.14.1<a class="anchor" aria-label="anchor" href="#lasr-0141"></a></h2>
-<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/141" class="external-link">#141</a> <code><a href="../reference/write_las.html">write_las()</a></code> drops circular buffers properly</li>
-<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/136" class="external-link">#136</a> <code><a href="../reference/write_las.html">write_las()</a></code> preserves dates and writes generating software</li>
+<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/141" class="external-link">#141</a> <code><a href="../reference/write.html">write_las()</a></code> drops circular buffers properly</li>
+<li>Fix: <a href="https://github.com/r-lidar/lasR/issues/136" class="external-link">#136</a> <code><a href="../reference/write.html">write_las()</a></code> preserves dates and writes generating software</li>
 <li>Enhance: <a href="https://github.com/r-lidar/lasR/issues/137" class="external-link">#137</a> a pipeline preserve VLR attributes of a LAS files</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.14.0" id="lasr-0140">lasR 0.14.0<a class="anchor" aria-label="anchor" href="#lasr-0140"></a></h2>
 <ul><li>Doc: Documented that lasR can write COPC files.</li>
-<li>New: Added <code><a href="../reference/write_las.html">write_copc()</a></code> function with extra arguments to control hierarchy depth and density.</li>
+<li>New: Added <code><a href="../reference/write.html">write_copc()</a></code> function with extra arguments to control hierarchy depth and density.</li>
 <li>Fix: Fixed unmapped memory issue when writing COPC files.</li>
 </ul></div>
     <div class="section level2">
@@ -84,9 +85,9 @@
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.13.6" id="lasr-0136">lasR 0.13.6<a class="anchor" aria-label="anchor" href="#lasr-0136"></a></h2>
-<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/120" class="external-link">#120</a> fix <code><a href="../reference/write_las.html">write_las()</a></code> properly writes return number and number of return in LAS 1.4 format 6</li>
+<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/120" class="external-link">#120</a> fix <code><a href="../reference/write.html">write_las()</a></code> properly writes return number and number of return in LAS 1.4 format 6</li>
 <li>Fix: <code><a href="../reference/info.html">info()</a></code> no longer prints for every point in streamable pipelines</li>
-<li>Enhancement: better support of LAS format in <code><a href="../reference/write_las.html">write_las()</a></code>. It will write the same LAS file version and format than the input.</li>
+<li>Enhancement: better support of LAS format in <code><a href="../reference/write.html">write_las()</a></code>. It will write the same LAS file version and format than the input.</li>
 <li>Enhancement: <code><a href="../reference/info.html">info()</a></code> prints the source format (<code>LAS</code>, <code>PCD</code>) and its version (<code>1.4</code>, <code>0.7</code>).</li>
 </ul></div>
     <div class="section level2">
@@ -98,7 +99,7 @@
 <h2 class="pkg-version" data-toc-text="0.13.4" id="lasr-0134">lasR 0.13.4<a class="anchor" aria-label="anchor" href="#lasr-0134"></a></h2>
 <ul><li>New: Added metrics <code>skew</code> and <code>kurt</code> in the metric engine.</li>
 <li>New: [#110] For LAS files, the bit flags are now read as bit attributes. This feature was lost in version 0.13.0.</li>
-<li>New: [#110] <code><a href="../reference/write_las.html">write_las()</a></code> now automatically writes LAS 1.4 format if required.</li>
+<li>New: [#110] <code><a href="../reference/write.html">write_las()</a></code> now automatically writes LAS 1.4 format if required.</li>
 <li>Fix: Resolved floating-point inaccuracy in <code><a href="../reference/region_growing.html">region_growing()</a></code> that could cause edge effects across two tiles or chunks effectively splitting some trees in two parts with different IDs in high-resolution CHM.</li>
 <li>Fix: The documentation for <code><a href="../reference/region_growing.html">region_growing()</a></code> states that the <code>max_cr</code> parameter represents the <em>“Maximum value of the crown <strong>diameter</strong> of a detected tree”</em>. In practice, it was used as the maximum <strong>radius</strong>, resulting in trees larger than expected. This has been corrected.</li>
 </ul></div>
@@ -130,7 +131,7 @@
 <li>
 <code><a href="../reference/classify_with_csf.html">classify_with_csf()</a></code> no longer uses the last return only.</li>
 <li>
-<code><a href="../reference/write_las.html">write_las()</a></code> no longer preserves VLR and EVLR. This will be fixed later.</li>
+<code><a href="../reference/write.html">write_las()</a></code> no longer preserves VLR and EVLR. This will be fixed later.</li>
 <li>There are likely other changes as I rewrote thousands of lines of code.</li>
 </ul></div>
 <div class="section level4">
@@ -292,7 +293,7 @@
 <ul><li>Fix: metrics <code>cv</code> and <code>sd</code> that return <code>NAs</code> instead of <code>Inf</code> in the edges case where they are undefined.</li>
 <li>Enhance: progress bar displays better the number of cores used.</li>
 <li>Fix: progress bar for the <code><a href="../reference/deprecated.html">reader_las()</a></code> stage. It now displays the correct percentage.</li>
-<li>Fix: <code><a href="../reference/write_las.html">write_las()</a></code> without wildcard (merge mode) works with files that have different formats and scales/offsets</li>
+<li>Fix: <code><a href="../reference/write.html">write_las()</a></code> without wildcard (merge mode) works with files that have different formats and scales/offsets</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.0" id="lasr-060">lasR 0.6.0<a class="anchor" aria-label="anchor" href="#lasr-060"></a></h2>
@@ -485,7 +486,7 @@
 <span><span class="fu"><a href="../reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">ctg</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li><p>New: triangulation is 4x faster and uses half the memory.</p></li>
-<li><p>Fix: <code>summarize()</code>, <code><a href="../reference/rasterize.html">rasterize()</a></code> and <code><a href="../reference/write_las.html">write_las()</a></code> no longer process withheld points in streaming mode.</p></li>
+<li><p>Fix: <code>summarize()</code>, <code><a href="../reference/rasterize.html">rasterize()</a></code> and <code><a href="../reference/write.html">write_las()</a></code> no longer process withheld points in streaming mode.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="lasr-021-2024-03-05">lasR 0.2.1 (2024-03-05)<a class="anchor" aria-label="anchor" href="#lasr-021-2024-03-05"></a></h2>
