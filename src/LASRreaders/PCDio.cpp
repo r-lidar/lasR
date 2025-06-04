@@ -331,14 +331,37 @@ bool PCDio::read_ascii_point(Point* p)
     return false;
   }
 
-  std::istringstream line_stream(line);
+  std::istringstream iss(line);
+  std::vector<double> numbers;
+  numbers.reserve(header->schema.attributes.size());
+  double num;
+  while (iss >> num) numbers.push_back(num);
+
+  if (numbers.size() != header->schema.attributes.size()-1)
+  {
+    last_error = "Invalid number of attribute in line " + line;
+    return false;
+  }
+
   for (int i = 1; i < header->schema.num_attributes(); ++i)
   {
     const auto& attr = header->schema.attributes[i];
-    if (!parse_attribute(line_stream, attr.type, p->data + attr.offset))
+    unsigned char* dest = p->data + attr.offset;
+    double value = numbers[i - 1];
+
+    switch (attr.type)
     {
-      last_error = "Failed to parse " + attr.name;
-      return false;
+      case AttributeType::FLOAT:   *reinterpret_cast<float*>(dest)   = static_cast<float>(value); break;
+      case AttributeType::DOUBLE:  *reinterpret_cast<double*>(dest)  = value; break;
+      case AttributeType::INT8:    *reinterpret_cast<int8_t*>(dest)  = static_cast<int8_t>(value); break;
+      case AttributeType::INT16:   *reinterpret_cast<int16_t*>(dest) = static_cast<int16_t>(value); break;
+      case AttributeType::INT32:   *reinterpret_cast<int32_t*>(dest) = static_cast<int32_t>(value); break;
+      case AttributeType::INT64:   *reinterpret_cast<int64_t*>(dest) = static_cast<int64_t>(value); break;
+      case AttributeType::UINT8:   *reinterpret_cast<uint8_t*>(dest) = static_cast<uint8_t>(value); break;
+      case AttributeType::UINT16:  *reinterpret_cast<uint16_t*>(dest)= static_cast<uint16_t>(value); break;
+      case AttributeType::UINT32:  *reinterpret_cast<uint32_t*>(dest)= static_cast<uint32_t>(value); break;
+      case AttributeType::UINT64:  *reinterpret_cast<uint64_t*>(dest)= static_cast<uint64_t>(value); break;
+      default: last_error = "Unsupported attribute type"; return false;
     }
   }
 
@@ -463,26 +486,6 @@ bool PCDio::write_binary_point(Point* p)
 
   npoints++;
   return true;
-}
-
-
-bool PCDio::parse_attribute(std::istringstream& line_stream, AttributeType type, void* dest)
-{
-  if (!dest) return false; // Null pointer check
-  switch (type)
-  {
-    case AttributeType::FLOAT:  return static_cast<bool>(line_stream >> *static_cast<float*>(dest));
-    case AttributeType::DOUBLE: return static_cast<bool>(line_stream >> *static_cast<double*>(dest));
-    case AttributeType::INT8:   return static_cast<bool>(line_stream >> *reinterpret_cast<int8_t*>(dest));
-    case AttributeType::INT16:  return static_cast<bool>(line_stream >> *reinterpret_cast<int16_t*>(dest));
-    case AttributeType::INT32:  return static_cast<bool>(line_stream >> *reinterpret_cast<int32_t*>(dest));
-    case AttributeType::INT64:  return static_cast<bool>(line_stream >> *reinterpret_cast<int64_t*>(dest));
-    case AttributeType::UINT8:  return static_cast<bool>(line_stream >> *reinterpret_cast<uint8_t*>(dest));
-    case AttributeType::UINT16: return static_cast<bool>(line_stream >> *reinterpret_cast<uint16_t*>(dest));
-    case AttributeType::UINT32: return static_cast<bool>(line_stream >> *reinterpret_cast<uint32_t*>(dest));
-    case AttributeType::UINT64: return static_cast<bool>(line_stream >> *reinterpret_cast<uint64_t*>(dest));
-    default: return false; // Unsupported type
-  }
 }
 
 bool PCDio::is_opened()

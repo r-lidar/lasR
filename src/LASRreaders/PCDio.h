@@ -40,7 +40,6 @@ private:
   bool read_binary_point(Point* p);
   bool write_ascii_point(Point* p);
   bool write_binary_point(Point* p);
-  bool parse_attribute(std::istringstream& line_stream, AttributeType type, void* dest);
   bool write_bbox(const Header* header, const std::string& bbox_filename);
   bool read_bbox(const std::string& bbox_filename, Header* header);
   char attribute_type_code(AttributeType type);
