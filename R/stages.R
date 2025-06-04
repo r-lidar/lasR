@@ -1340,6 +1340,7 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' is omitted, everything will be written into a single file. This may be the desired behavior in some
 #' circumstances, e.g., to merge some files.
 #' @param keep_buffer bool. The buffer is removed to write file but it can be preserved.
+#' @param binary boolean. Write binary or ascii PCD files.
 #' @template param-filter
 #'
 #' @examples
@@ -1350,6 +1351,7 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 #' exec(pipeline, on = f)
 #' @export
+#' @md
 #' @rdname write
 write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE)
 {

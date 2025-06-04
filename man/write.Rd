@@ -47,13 +47,13 @@ Unlike other stages, the output won't be written into a single large file but in
 corresponding to the original collection of files.
 }
 \details{
-`write_las` can write a COPC LAZ file simply by naming the output file with the ".copc.laz" extension.
+\code{write_las} can write a COPC LAZ file simply by naming the output file with the ".copc.laz" extension.
 However, users must be cautious. Writing COPC is not optimized for memory usage and requires two copies
 of the point cloud in memory to ensure proper sorting and writing. If the user cannot afford to keep
 two copies of the point cloud in RAM, they should use a more specialized writer such as Untwine (PDAL)
 or lascopcindex (LAStools).\cr
-`write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.\cr
-`write_pcd` cannot merge multiple files into one bigger file yet. It cannot write a subset of the file
+\code{write_copc} is a wrapper around \code{write_las}, with a few extra arguments to control the COPC format.\cr
+\code{write_pcd} cannot merge multiple files into one bigger file yet. It cannot write a subset of the file
 either yet.
 }
 \examples{
