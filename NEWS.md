@@ -1,7 +1,8 @@
 # lasR 0.15.0
 
 - New: #140 `info()` prints useful COPC informations.
-- Change: #139. `chm()` replaced by `dsm()`.
+- Change: #139 `chm()` replaced by `dsm()`.
+- Fix: #142 circular buffer are handled properly
 
 # lasR 0.14.1
 
