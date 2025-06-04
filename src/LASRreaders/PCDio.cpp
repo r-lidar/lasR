@@ -9,7 +9,7 @@
 PCDio::PCDio()
 {
   header = nullptr;
-  preread_bbox = false;
+  preread_bbox = true;
   is_binary = false;
   npoints = 0;
 }
@@ -17,7 +17,7 @@ PCDio::PCDio()
 PCDio::PCDio(Progress* progress)
 {
   header = nullptr;
-  preread_bbox = false;
+  preread_bbox = true;
   is_binary = false;
   npoints = 0;
 
@@ -547,7 +547,7 @@ bool PCDio::read_bbox(const std::string &bbox_filename, Header* header)
   std::string line;
   while (std::getline(bbox_file, line))
   {
-    if (line == "BINARY") break;
+    if (line == "BINARY:") break;
   }
 
   if (bbox_file.eof())

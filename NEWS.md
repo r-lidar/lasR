@@ -1,9 +1,13 @@
 # lasR 0.15.0
 
 - New: `lasR` supports PCD ascii and binary file format with `reader()` being able to read PCD files and a new stage `write_pcd()`. Yet the current state of the software and the limitations of the format itself limit what we can do. `lasR` cannot read multiple PCD files and thus cannot buffer or merge PCD file and `write_pcd()` cannot stream data.
+- New: #140 `info()` prints useful COPC informations.
+- Fix: #142 circular buffer are handled properly
+- Change: #139 `chm()` replaced by `dsm()`.
 
 # lasR 0.14.1
 
+- Fix: #141 `write_las()` drops circular buffers properly
 - Fix: #136 `write_las()` preserves dates and writes generating software
 - Enhance: #137 a pipeline preserve VLR attributes of a LAS files
 

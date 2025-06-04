@@ -62,26 +62,29 @@ dtm = function(res = 1, add_class = NULL, ofile = temptif())
   return(tin+chm)
 }
 
-#' Canopy Height Model
+#' Digital Surface Model
 #'
-#' Create a Canopy Height Model using \link{triangulate} and \link{rasterize}.
+#' Digital Surface Model using \link{triangulate} and \link{rasterize}. `chm()` is a alias to `dsm()`
+#' but is misleading because it actually computes a DSM and does not include a normalization step.
+#' `chm()` is deprecated. Technically `dsm(tin = TRUE)` is simply the association of the stage `triangulate()`
+#' and `rasterize()` while `dsm(tin = FALSE)` is simply an alias to `rasterize("max")`.
 #'
 #' @param res numeric. The resolution of the raster.
-#' @param tin bool. By default the CHM is a point-to-raster based methods i.e. each pixel is
+#' @param tin bool. By default the DSM is a point-to-raster based methods i.e. each pixel is
 #' assigned the elevation of the highest point. If `tin = TRUE` the CHM is a triangulation-based
 #' model. The first returns are triangulated and interpolated.
 #' @template param-ofile
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader() + chm()
+#' pipeline <- reader() + dsm()
 #' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
 #' \link{rasterize}
 #' @export
 #' @md
-chm = function(res = 1, tin = FALSE, ofile = tempfile(fileext = ".tif"))
+dsm = function(res = 1, tin = FALSE, ofile = tempfile(fileext = ".tif"))
 {
   if (tin)
   {
@@ -96,3 +99,7 @@ chm = function(res = 1, tin = FALSE, ofile = tempfile(fileext = ".tif"))
 
   return(pipeline)
 }
+
+#' @export
+#' @rdname dsm
+chm = dsm

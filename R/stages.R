@@ -879,7 +879,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' @param xmin,ymin,xmax,ymax numeric. Coordinates of the rectangles
 #' @param select character. Unused. Reserved for future versions.
 #' @param copc_depth integer. If the files are COPC file is is possible to read the point hierarchy
-#' up to a given level.
+#' up to a given level. COPC hierarchy is 0-index. The first level is 0 not 1.
 #' @param ... passed to other readers
 #'
 #' @examples

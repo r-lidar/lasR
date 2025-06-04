@@ -383,7 +383,6 @@ bool Raster::get_chunk(const Chunk& chunk, int band_index)
   // Read raster data
   void* gdal_buffer = CPLMalloc(ncells*sizeof(float));
   CPLErr err = band->RasterIO(GF_Read, xoffset, yoffset, ncols, nrows, gdal_buffer, ncols, nrows, GDT_Float32, 0, 0);
-
   if (err != CE_None)
   {
     last_error = std::string(CPLGetLastErrorMsg()); // # nocov
@@ -441,9 +440,21 @@ bool Raster::write()
     }
     else
     {
-      //printf("There is a buffer of size %d\n", buffer);
+      //printf("There is a buffer of size %d that need to be removed in the raster\n", buffer);
       int ncols_no_buffer = ncols - 2*buffer;
       int nrows_no_buffer = nrows - 2*buffer;
+      float centerx = (float)ncols_no_buffer/2;
+      float centery = (float)nrows_no_buffer/2;
+      float chunk_width = (xmax-xmin)/xres - 2*buffer;
+      float chunk_hwidth = chunk_width/2;
+
+      /*print("pix buffer %d\n", buffer);
+      print("dim w buf %d x %d\n", ncols, nrows);
+      print("dim no buf %d x %d\n", ncols_no_buffer, nrows_no_buffer);
+      print("center (%.1f %.1f)\n", centerx, centery);
+      print("width %.1f\n",chunk_width);
+      print("shape %s\n", (circular) ? "circular" : "rectangle");*/
+
       std::vector<float> data_no_buffer(ncols_no_buffer*nrows_no_buffer);
       std::fill(data_no_buffer.begin(), data_no_buffer.end(), nodata);
       for (int row = buffer ; row < nrows - buffer ; ++row)
@@ -463,8 +474,10 @@ bool Raster::write()
           {
             float centerx = (float)ncols_no_buffer/2;
             float centery = (float)nrows_no_buffer/2;
-            float distance = std::sqrt((new_col - centerx) * (new_col - centerx) + (new_row - centery) * (new_row - centery));
-            if (distance > buffer) val = NA_F32_RASTER;
+            float dx = new_col - centerx;
+            float dy = new_row - centery;
+            float distance = std::sqrt(dx*dx+dy*dy);
+            if (distance > chunk_hwidth) val = NA_F32_RASTER;
           }
 
           data_no_buffer[modifiedIndex] = val;

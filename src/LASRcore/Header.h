@@ -62,6 +62,11 @@ public:
   bool adjusted_standard_gps_time;
   std::vector<VLR> vlrs;
 
+  // COPC specification only
+  float copc_root_spacing = 0;
+  std::vector<unsigned int> copc_points_per_level;
+  std::vector<unsigned int> copc_voxels_per_level;
+
 public:
   Header();
   void dump() const;
