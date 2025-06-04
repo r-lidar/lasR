@@ -40,6 +40,8 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 \item{density}{character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
 With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
 is light. Normal is 128, dense is 256.}
+
+\item{binary}{boolean. Write binary or ascii PCD files.}
 }
 \description{
 Write the point cloud in LAS or LAZ or PCD files at any step of the pipeline (typically at the end).
