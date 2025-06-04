@@ -24,7 +24,7 @@ test_that("reader_pcd works (binary in memory)",
   f <- system.file("extdata", "Example.pcd", package="lasR")
   fans = read_las(f)
 
-  for (i in ncol(ans)) expect_true(is.numeric(fans[[i]]))
+  for (i in ncol(fans)) expect_true(is.numeric(fans[[i]]))
   expect_equal(mean(fans$gpstime), 269347.443)
   expect_equal(mean(fans$ScanAngle), -21.6666, tolerance = 1e-5)
   expect_equal(mean(fans$Intensity), 78.6)
@@ -70,4 +70,25 @@ test_that("reader_pcd works (binary streamable)",
   expect_equal(sum(is.na(ans[[2]][])), 2)
 
   expect_equal(ans[[4]]$npoints, 62598L)
+})
+
+test_that("Fails with mixed format",
+{
+  f <- system.file("extdata", "pcd_binary.pcd", package="lasR")
+  g <- system.file("extdata", "Example.las", package="lasR")
+
+  expect_error(exec(lasR:::nothing(), on = c(f,g)), "Impossible to mix different file formats")
+})
+
+test_that("Fails with collection",
+{
+  f <- system.file("extdata", "pcd_binary.pcd", package="lasR")
+  pipeline = reader() + summarise()
+
+  expect_error({u = exec(pipeline, on = c(f, f))}, NA)
+  expect_equal(u$npoints, 69977*2)
+
+  f <- system.file("extdata", "pcd_binary.pcd", package="lasR")
+  g <- system.file("extdata", "pcd_ascii.pcd", package="lasR")
+  expect_error({u = exec(pipeline, on = c(f, g), buffer = 2, verbose = T)}, "PCD file reader cannot read buffered PCD files yet")
 })

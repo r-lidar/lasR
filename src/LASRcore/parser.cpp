@@ -499,7 +499,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
 
       // Write lax is the very first stage. Even before read_las. It is called
       // only if needed.
-      if (!catalog->check_spatial_index() && !indexer)
+      if (!catalog->check_spatial_index() && !indexer && catalog->get_format() == LASFILE)
       {
         bool onthefly = catalog->get_number_files() > 1;
         auto v = std::make_unique<LASRlaxwriter>(false, false, onthefly);
