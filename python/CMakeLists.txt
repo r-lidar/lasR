@@ -228,6 +228,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/triangulate.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writelas.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writelax.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/writepcd.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writevpc.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/summary.cpp
   
