@@ -90,5 +90,5 @@ test_that("Fails with collection",
 
   f <- system.file("extdata", "pcd_binary.pcd", package="lasR")
   g <- system.file("extdata", "pcd_ascii.pcd", package="lasR")
-  expect_error({u = exec(pipeline, on = c(f, g), buffer = 2, verbose = T)}, "PCD file reader cannot read buffered PCD files yet")
+  expect_error({u = exec(pipeline, on = c(f, g), buffer = 2)}, "PCD file reader cannot read buffered PCD files yet")
 })
