@@ -1,7 +1,8 @@
 # lasR 0.15.0
 
-- Fix #146. Fix memory layout after adding new attributes
-- Fix #146. `add_attribute()` overwrite previous attribute rather that duplicating them.
+- Fix #146 fix memory layout after adding new attributes
+- Fix #146 `add_attribute()` overwrite previous attribute rather that duplicating them.
+- Fix #135 write valid WKT string in COPC files
 
 # lasR 0.15.0
 

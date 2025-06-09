@@ -35,7 +35,7 @@
 #include "bytestreamout_file.hpp"
 #include "bytestreamout_ostream.hpp"
 #include "laswritepoint.hpp"
-#include "geoprojectionconverter.hpp"
+//#include "geoprojectionconverter.hpp"
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -443,7 +443,7 @@ BOOL LASwriterCOPC::make_copc_header(const LASheader* header)
   }
 
   // convert CRS from GeoTIF to OGC WKT
-  if (header->vlr_geo_keys)
+  /*if (header->vlr_geo_keys)
   {
     GeoProjectionConverter geoprojectionconverter;
     char* ogc_wkt = 0;
@@ -463,7 +463,7 @@ BOOL LASwriterCOPC::make_copc_header(const LASheader* header)
       this->header->set_geo_ogc_wkt(len, ogc_wkt);
       free(ogc_wkt);
     }
-  }
+  }*/
 
   return true;
 }
