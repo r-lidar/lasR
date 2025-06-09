@@ -1,5 +1,10 @@
 # lasR 0.15.0
 
+- Fix #146. Fix memory layout after adding new attributes
+- Fix #146. `add_attribute()` overwrite previous attribute rather that duplicating them.
+
+# lasR 0.15.0
+
 - New: `lasR` now supports the PCD format. The `reader()` function can read PCD files, and a new stage, `write_pcd()`, is available. However, due to the current state of the software and limitations of the format itself, functionality is restricted: `lasR` cannot read multiple PCD files, and thus cannot buffer or merge them. Additionally, `write_pcd()` does not support streaming data.
 - New: #140 `info()` now prints useful COPC metadata.
 - Fix: #142 circular buffers are now handled properly.

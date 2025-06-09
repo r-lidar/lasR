@@ -612,30 +612,45 @@ void PointCloud::set_intervals_to_read(const std::vector<Interval>& intervals)
 
 bool PointCloud::add_attribute(const Attribute& attribute)
 {
-  size_t previous_size = header->schema.total_point_size;
-  size_t new_size = previous_size + attribute.size;
-  size_t new_capacity = get_true_number_of_points() * new_size;
-
-  header->schema.add_attribute(attribute);
-
-  if (new_capacity > capacity)
+  // Check if this attribute already exist to avoid adding twice the same attribute
+  const Attribute* attr = header->schema.find_attribute(attribute.name);
+  if (attr)
   {
-    capacity = new_capacity;
-    if (!realloc_buffer()) return false;
+    if (*attr != attribute)
+    {
+      last_error = "Cannot add a second attribute '" +  attribute.name + "'";
+      return false;
+    }
   }
-
-  for (int i = get_true_number_of_points()-1 ; i >= 0 ; --i)
+  // The attribute does not exist. Reallocate memory.
+  else
   {
-    memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
-  }
+    size_t previous_size = header->schema.total_point_size;
+    size_t new_size = previous_size + attribute.size;
+    size_t new_capacity = npoints * new_size;
 
+    header->schema.add_attribute(attribute);
+
+    if (new_capacity > capacity)
+    {
+      capacity = new_capacity;
+      if (!realloc_buffer()) return false;
+    }
+
+    for (int i = npoints-1 ; i >= 0 ; --i)
+    {
+      memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
+      memset(buffer + i * new_size + previous_size, 0, attribute.size); // zero the new data
+    }
+
+  }
   return true;
 }
 
 bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 {
   size_t previous_size = header->schema.total_point_size;
-  size_t new_size = previous_size;
+  size_t added_bytes = 0;
 
   for (const Attribute& attribute : attributes)
   {
@@ -654,22 +669,27 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
     }
     else
     {
-      new_size += attribute.size;
+      added_bytes += attribute.size;
       header->schema.add_attribute(attribute);
     }
   }
 
-  size_t new_capacity = npoints * new_size;
-
-  if (new_capacity > capacity)
+  if (added_bytes > 0)
   {
-    capacity = new_capacity;
-    if (!realloc_buffer()) return false;
-  }
+    size_t new_size = previous_size + added_bytes;
+    size_t new_capacity = npoints * new_size;
 
-  for (int i = npoints-1 ; i >= 0 ; --i)
-  {
-    memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
+    if (new_capacity > capacity)
+    {
+      capacity = new_capacity;
+      if (!realloc_buffer()) return false;
+    }
+
+    for (int i = npoints-1 ; i >= 0 ; --i)
+    {
+      memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
+      memset(buffer + i * new_size + previous_size, 0, added_bytes); // zero the new data
+    }
   }
 
   return true;
