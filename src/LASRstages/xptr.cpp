@@ -13,7 +13,6 @@ extern "C" void las_finalizer(SEXP extPtr)
   {
     delete las; // Free the memory
     R_ClearExternalPtr(extPtr); // Clear the external pointer
-    Rprintf("Point cloud destructed.\n");
   }
 }
 
