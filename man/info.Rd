@@ -13,17 +13,20 @@ info(f)
 nothing. The stage is used for its side effect of printing
 }
 \description{
-This function prints useful information about LAS/LAZ files, including the file version, size,
+This function prints useful information about point cloud files, including the file version, size,
 bounding box, CRS, and more. When called without parameters, it returns a pipeline stage. For
 convenience, it can also be called with the path to a file for immediate execution, which is likely
 the most common use case (see examples).
 }
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+g <- system.file("extdata", "Example.pcd", package = "lasR")
 
 # Return a pipeline stage
 exec(info(), on = f)
 
 # Convenient user-friendly usage
 info(f)
+
+info(g)
 }

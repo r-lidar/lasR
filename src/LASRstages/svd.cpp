@@ -121,7 +121,10 @@ bool LASRsvd::process(PointCloud*& las)
     attributes.push_back(Attribute("normalZ", AttributeType::FLOAT, 1, 0, "z component of normal vector"));
   }
 
-  las->add_attributes(attributes);
+  if (!las->add_attributes(attributes))
+  {
+    return false;
+  };
 
   progress->reset();
   progress->set_total(las->npoints);

@@ -28,6 +28,7 @@ public:
   bool write_point(Point* p) override;
   bool is_opened() override;
   void close() override;
+  void set_binary_mode(bool);
   void reset_accessor() override;
   int64_t p_count() override;
 
@@ -37,12 +38,14 @@ public:
 private:
   bool read_ascii_point(Point* p);
   bool read_binary_point(Point* p);
-  bool parse_attribute(std::istringstream& line_stream, AttributeType type, void* dest);
-  bool write_bbox(const std::string& bbox_filename);
-  bool read_bbox(const std::string& bbox_filename);
+  bool write_ascii_point(Point* p);
+  bool write_binary_point(Point* p);
+  bool write_bbox(const Header* header, const std::string& bbox_filename);
+  bool read_bbox(const std::string& bbox_filename, Header* header);
+  char attribute_type_code(AttributeType type);
 
 private:
-  Header* header;
+  const Header* header;
   std::ifstream istream;
   std::ofstream ostream;
   std::string line;
@@ -50,6 +53,7 @@ private:
   int64_t npoints;
   bool is_binary;
   bool (PCDio::*read)(Point*);
+  bool (PCDio::*write)(Point*);
 };
 
 #endif

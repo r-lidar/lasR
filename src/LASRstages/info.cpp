@@ -34,10 +34,12 @@ bool LASRinfo::process(Header*& h)
   const std::vector<std::string> numberUnits = {"", "thousands", "millions", "billions", "trillions"};
   const std::vector<std::string> byteUnits = {"B", "kB", "MB", "GB", "TB"};
   std::string areaUnits; if (crs.is_meters()) areaUnits = "m²"; else if (crs.is_feets()) areaUnits = "ft²"; else areaUnits = "units²";
+  std::string linearUnits; if (crs.is_meters()) linearUnits = "m"; else if (crs.is_feets()) linearUnits = "ft"; else linearUnits = "units";
 
   bool compressed = false;
   uint64_t npoints = h->number_of_point_records;
   uint64_t fsize = npoints*h->schema.total_point_size;
+  double area = (h->max_x - h->min_x) * (h->max_y - h->min_y);
 
   std::string filePath = ifile;
   bool fileExist = std::filesystem::exists(filePath);
@@ -46,8 +48,29 @@ bool LASRinfo::process(Header*& h)
   print("Size         : %s\n", human_readable(fsize, byteUnits).c_str());
   print("Extent       : %.2lf %.2lf %.2lf %.2lf (xmin, xmax, ymin, ymax)\n", h->min_x, h->max_x, h->min_y, h->max_y);
   print("Points       : %s\n", human_readable(npoints, numberUnits).c_str());
-  print("Density      : %.1lf pts/%s\n", npoints/((h->max_x - h->min_x) * (h->max_y - h->min_y)), areaUnits.c_str());
+  print("Area         : %.1lf %s\n", area, areaUnits.c_str());
+  print("Density      : %.1lf pts/%s\n", npoints/(area), areaUnits.c_str());
   print("Coord. ref.  : %s\n", crs.get_crs().GetName());
+
+  if (h->copc_root_spacing > 0 && h->copc_points_per_level.size() > 0)
+  {
+    print("COPC structure  : octree with %lu levels\n", h->copc_points_per_level.size());
+    uint64_t ntot_points = 0;
+    for (size_t i = 0 ; i < h->copc_points_per_level.size() ; i++)
+    {
+      double spacing = h->copc_root_spacing/std::pow(2, i);
+      unsigned int npoints = h->copc_points_per_level[i];
+      unsigned int nvoxels = h->copc_voxels_per_level[i];
+      ntot_points += npoints;
+      double density = (double)ntot_points/area;
+      print("    Level %lu: %u points in %u voxels\n", i, npoints, nvoxels);
+      print("       - Point spacing: %.2lf %s\n", spacing, linearUnits.c_str());
+      print("       - Estimated local density: %.2lf pts/%s\n", (double)npoints/area, areaUnits.c_str());
+      print("       - Estimated cumulated density: %.2lf pts/%s\n", density, areaUnits.c_str());
+    }
+
+  }
+
   print("Schema       :\n"); h->schema.dump();
 
   printed = true;

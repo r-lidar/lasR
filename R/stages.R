@@ -39,7 +39,8 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #' point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
 #' in another stage. If the point cloud already has RGB, nothing happens, RGB values are preserved.
 #'
-#' @template return-pointcloud
+#' @return If this stage transforms the point cloud in the pipeline it returns nothing. Otherwise
+#' it returns the R object returned by the function 'fun'
 #'
 #' @examples
 #' f <- system.file("extdata", "Example.las", package="lasR")
@@ -280,20 +281,21 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 
 #' Compute pointwise geometry features
 #'
-#' Compute pointwise geometry features based on local neighborhood. Each feature is added into an
-#' extrabyte attribute. The names of the extrabytes attributes (if recorded) are `coeff00`, `coeff01`,
+#' Compute pointwise geometry features based on local neighborhood. Each feature is added into a new point
+#' attribute. The names of the new attributes (if recorded) are `coeff00`, `coeff01`,
 #' `coeff02` and so on, `lambda1`, `lambda2`, `lambda3`, `anisotropy`, `planarity`, `sphericity`, `linearity`,
 #' `omnivariance`, `curvature`, `eigensum`, `angle`, `normalX`, `normalY`, `normalZ` (recorded in this order).
 #' There is a total of 23 attributes that can be added. It is strongly discouraged to use them all.
 #' All the features are recorded with single precision floating points yet computing them all will triple
 #' the size of the point cloud. This stage modifies the point cloud in the pipeline but does not produce
-#' any output.
+#' any output. If a pipeline has two or more stages with this stage, then attribute with the same name are
+#' overwritten.
 #'
 #' @param k,r integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
 #' sphere. If k is given and r is missing, computes with the knn, if r is given and k is missing
 #' computes with a sphere neighborhood, if k and r are given computes with the knn and a limit on the
 #' search distance.
-#' @param features String. Geometric feature to export. Each feature is added into an extrabyte
+#' @param features String. Geometric feature to export. Each feature is added into a new
 #' attribute. Use 'C' for the 9 principal component coefficients, 'E' for the 3 eigenvalues of the
 #' covariance matrix, 'a' for anisotropy, 'p' for planarity, 's' for sphericity, 'l' for linearity,
 #' 'o' for omnivariance, 'c' for curvature, 'e' for the sum of eigenvalues, 'i' for the angle
@@ -468,7 +470,7 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 
 #' Print Information about the Point Cloud
 #'
-#' This function prints useful information about LAS/LAZ files, including the file version, size,
+#' This function prints useful information about point cloud files, including the file version, size,
 #' bounding box, CRS, and more. When called without parameters, it returns a pipeline stage. For
 #' convenience, it can also be called with the path to a file for immediate execution, which is likely
 #' the most common use case (see examples).
@@ -480,12 +482,15 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 #' @export
 #' @examples
 #' f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+#' g <- system.file("extdata", "Example.pcd", package = "lasR")
 #'
 #' # Return a pipeline stage
 #' exec(info(), on = f)
 #'
 #' # Convenient user-friendly usage
 #' info(f)
+#'
+#' info(g)
 info = function(f)
 {
   if (missing(f))
@@ -874,7 +879,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' @param xmin,ymin,xmax,ymax numeric. Coordinates of the rectangles
 #' @param select character. Unused. Reserved for future versions.
 #' @param copc_depth integer. If the files are COPC file is is possible to read the point hierarchy
-#' up to a given level.
+#' up to a given level. COPC hierarchy is 0-index. The first level is 0 not 1.
 #' @param ... passed to other readers
 #'
 #' @examples
@@ -1315,17 +1320,27 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 
 # ===== W ====
 
-#' Write LAS or LAZ files
+#' Write point clouds
 #'
-#' Write a LAS or LAZ file at any step of the pipeline (typically at the end). Unlike other stages,
-#' the output won't be written into a single large file but in multiple tiled files corresponding
-#' to the original collection of files.
+#' Write the point cloud in LAS or LAZ or PCD files at any step of the pipeline (typically at the end).
+#' Unlike other stages, the output won't be written into a single large file but in multiple tiled files
+#' corresponding to the original collection of files.
+#'
+#' `write_las` can write a COPC LAZ file simply by naming the output file with the ".copc.laz" extension.
+#' However, users must be cautious. Writing COPC is not optimized for memory usage and requires two copies
+#' of the point cloud in memory to ensure proper sorting and writing. If the user cannot afford to keep
+#' two copies of the point cloud in RAM, they should use a more specialized writer such as Untwine (PDAL)
+#' or lascopcindex (LAStools).\cr
+#' `write_copc` is a wrapper around `write_las`, with a few extra arguments to control the COPC format.\cr
+#' `write_pcd` cannot merge multiple files into one bigger file yet. It cannot write a subset of the file
+#' either yet.
 #'
 #' @param ofile character. Output file names. The string must contain a wildcard * so the wildcard can
 #' be replaced by the name of the original tile and preserve the tiling pattern. If the wildcard
 #' is omitted, everything will be written into a single file. This may be the desired behavior in some
 #' circumstances, e.g., to merge some files.
 #' @param keep_buffer bool. The buffer is removed to write file but it can be preserved.
+#' @param binary boolean. Write binary or ascii PCD files.
 #' @template param-filter
 #'
 #' @examples
@@ -1336,9 +1351,45 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 #' exec(pipeline, on = f)
 #' @export
+#' @md
+#' @rdname write
 write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE)
 {
   ans <- list(algoname = "write_las", filter = filter, output = ofile, keep_buffer = keep_buffer)
+  set_lasr_class(ans)
+}
+
+#' @export
+#' @rdname write
+#' @param max_depth integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes
+#' @param density character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
+#' With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
+#' is light. Normal is 128, dense is 256.
+write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense")
+{
+  ext = substr(ofile, nchar(ofile)-8, nchar(ofile))
+  stopifnot(ext == ".copc.laz")
+  density = match.arg(density, c("sparse", "normal", "dense", "denser"))
+
+  if (density == "sparse") density = 64
+  if (density == "normal") density = 128
+  if (density == "dense")  density = 256
+  if (density == "denser") density = 512
+
+  stage = write_las(ofile, filter, keep_buffer)
+
+  if (!is.null(max_depth) &&  !is.na(max_depth))
+    stage$write_las$max_depth = max_depth
+
+  stage$write_las$density = density
+  return(stage)
+}
+
+#' @export
+#' @rdname write
+write_pcd = function(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
+{
+  ans <- list(algoname = "write_pcd", output = ofile, binary = binary)
   set_lasr_class(ans)
 }
 

@@ -59,6 +59,74 @@ test_that("circle buffer is removed #80",
   f <- system.file("extdata", "Topography.las", package = "lasR")
   ans <- exec(reader_las_circles(273500, 5274500, 20) + rasterize(2, "z_mean"), on = f, buffer = 20)
 
-  expect_equal(sum(is.na(ans[])), 136L)
+  expect_equal(sum(is.na(ans[])), 121)
+  expect_equal(terra::xmin(ans), 273480)
+  expect_equal(terra::xmax(ans), 273522)
+  expect_equal(terra::ymin(ans), 5274480)
+  expect_equal(terra::ymax(ans), 5274522)
 })
+
+
+test_that("reader_circle works with a buffer (#141)",
+{
+  file <- c(system.file("extdata", "MixedConifer.las", package="lasR"))
+
+  read <- lasR::reader_circles(xc = 481305, yc = 3812966, r = 50)
+  pipeline = read + summarise() + lasR::write_las(ofile = paste0(tempfile(), ".las"))
+
+  res1 <- lasR::exec(pipeline, on = file, buffer = 0)
+  res2 <- lasR::exec(pipeline, on = file, buffer = 30)
+
+  res1 = read_las(res1$write_las)
+  res2 = read_las(res2$write_las)
+
+  expect_equal(res1, res2)
+  expect_equal(dim(res1), c(29488, 18))
+})
+
+test_that("circle buffer is removed #142",
+{
+  file <- c(system.file("extdata", "Megaplot.las", package="lasR"))
+
+  read_small <- reader_circles(xc = 684876.6, yc = 5017902, r = 10)
+  chm <- lasR::chm(res = 1)
+
+  ans <- lasR::exec(read_small + chm, on = file)
+
+  expect_equal(sum(is.na(ans[])), 157)
+  expect_equal(terra::xmin(ans), 684876 - 10)
+  expect_equal(terra::xmax(ans), 684876 + 11)
+  expect_equal(terra::ymin(ans), 5017902 - 10)
+  expect_equal(terra::ymax(ans), 5017902 + 11)
+
+  ans <- lasR::exec(read_small + chm, on = file, buffer = 10)
+
+  expect_equal(sum(is.na(ans[])), 146)
+  expect_equal(terra::xmin(ans), 684876 - 10)
+  expect_equal(terra::xmax(ans), 684876 + 11)
+  expect_equal(terra::ymin(ans), 5017902 - 10)
+  expect_equal(terra::ymax(ans), 5017902 + 11)
+
+  read_large <- lasR::reader_circles(xc = 684876.6, yc = 5017902, r = 80)
+
+  ans <- lasR::exec(read_large + chm, on = file)
+
+  expect_equal(sum(is.na(ans[])), 7756)
+  expect_equal(terra::xmin(ans), 684876 - 80)
+  expect_equal(terra::xmax(ans), 684876 + 81)
+  expect_equal(terra::ymin(ans), 5017902 - 80)
+  expect_equal(terra::ymax(ans), 5017902 + 81)
+})
+
+test_that("circle buffer is removed #143",
+{
+  read_small <- reader_circles(xc = 684876.6, yc = 5017902, r = 800)
+  chm <- lasR::chm(res = 1)
+
+  #ans <- lasR::exec(read_small + chm, on = file)
+
+  # TO BE TESTED DOES NOT WORK YET
+})
+
+
 

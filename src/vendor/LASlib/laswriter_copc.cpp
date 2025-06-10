@@ -35,7 +35,7 @@
 #include "bytestreamout_file.hpp"
 #include "bytestreamout_ostream.hpp"
 #include "laswritepoint.hpp"
-#include "geoprojectionconverter.hpp"
+//#include "geoprojectionconverter.hpp"
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -149,8 +149,14 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
 
   // Built the octree
   EPToctree octree(*header);
-  octree.set_gridsize(root_grid_size);
-  I32 max_depth = EPToctree::compute_max_depth(*header, max_points_per_octant);
+  octree.set_gridsize(copc_density);
+
+  I32 max_depth;
+  if (copc_depth < 0)
+    max_depth = EPToctree::compute_max_depth(*header, max_points_per_octant);
+  else
+    max_depth = copc_depth;
+
   max_depth = (max_depth > 10) ? 10 : max_depth;
 
   // Update the COPC VLR info now we have almost all the data we need
@@ -168,7 +174,7 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
   // First, we shuffle the points
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<I64> distribution(0, p_count);
+  std::uniform_int_distribution<I64> distribution(0, p_count-1);
   U8* temp = (U8*)malloc(point_size);
   for (I64 i = 0; i < p_count; i++)
   {
@@ -191,7 +197,7 @@ I64 LASwriterCOPC::close(BOOL update_npoints)
   // Delayed write
   for (I64 i = 0 ; i < p_count ; i++)
   {
-    // Get a point, the point are comming in a random order
+    // Get a point, the point are coming in a random order
     point->copy_from(points_buffer+i*point_size);
 
     // Search a place to insert the point
@@ -437,7 +443,7 @@ BOOL LASwriterCOPC::make_copc_header(const LASheader* header)
   }
 
   // convert CRS from GeoTIF to OGC WKT
-  if (header->vlr_geo_keys)
+  /*if (header->vlr_geo_keys)
   {
     GeoProjectionConverter geoprojectionconverter;
     char* ogc_wkt = 0;
@@ -457,7 +463,7 @@ BOOL LASwriterCOPC::make_copc_header(const LASheader* header)
       this->header->set_geo_ogc_wkt(len, ogc_wkt);
       free(ogc_wkt);
     }
-  }
+  }*/
 
   return true;
 }
@@ -468,9 +474,10 @@ LASwriterCOPC::LASwriterCOPC()
   capacity = 0;
   gpstime_maximum = F64_MIN;
   gpstime_minimum = F64_MAX;
-  root_grid_size = 256;
   max_points_per_octant = 100000; // not absolute, only used to estimate the depth.
   min_points_per_octant = 100;    // not absolute, use to (maybe) remove too small chunks
+  copc_depth = -1; // auto compute
+  copc_density = 256;
 }
 
 LASwriterCOPC::~LASwriterCOPC()

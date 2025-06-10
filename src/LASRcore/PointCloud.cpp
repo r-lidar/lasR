@@ -565,8 +565,8 @@ bool PointCloud::knn(const Point& xyz, int k, double radius_max, std::vector<Poi
       p.data = buffer + i * header->schema.total_point_size;
 
       //if (lasfilter && lasfilter->filter(&p)) continue;
-      if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
       if (p.get_deleted()) continue;
+      if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
 
       res.push_back(p);
     }
@@ -612,48 +612,84 @@ void PointCloud::set_intervals_to_read(const std::vector<Interval>& intervals)
 
 bool PointCloud::add_attribute(const Attribute& attribute)
 {
-  size_t previous_size = header->schema.total_point_size;
-  size_t new_size = previous_size + attribute.size;
-  size_t new_capacity = get_true_number_of_points() * new_size;
-
-  header->schema.add_attribute(attribute);
-
-  if (new_capacity > capacity)
+  // Check if this attribute already exist to avoid adding twice the same attribute
+  const Attribute* attr = header->schema.find_attribute(attribute.name);
+  if (attr)
   {
-    capacity = new_capacity;
-    if (!realloc_buffer()) return false;
+    if (*attr != attribute)
+    {
+      last_error = "Cannot add a second attribute '" +  attribute.name + "'";
+      return false;
+    }
   }
-
-  for (int i = get_true_number_of_points()-1 ; i >= 0 ; --i)
+  // The attribute does not exist. Reallocate memory.
+  else
   {
-    memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
-  }
+    size_t previous_size = header->schema.total_point_size;
+    size_t new_size = previous_size + attribute.size;
+    size_t new_capacity = npoints * new_size;
 
+    header->schema.add_attribute(attribute);
+
+    if (new_capacity > capacity)
+    {
+      capacity = new_capacity;
+      if (!realloc_buffer()) return false;
+    }
+
+    for (int i = npoints-1 ; i >= 0 ; --i)
+    {
+      memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
+      memset(buffer + i * new_size + previous_size, 0, attribute.size); // zero the new data
+    }
+
+  }
   return true;
 }
 
 bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 {
   size_t previous_size = header->schema.total_point_size;
-  size_t new_size = previous_size;
+  size_t added_bytes = 0;
 
-  for (const auto& attribute : attributes)
+  for (const Attribute& attribute : attributes)
   {
-    new_size += attribute.size;
-    header->schema.add_attribute(attribute);
+    // Check if this attribute already exist to avoid adding twice the same attribute
+    const Attribute* attr = header->schema.find_attribute(attribute.name);
+
+    // The attribute exist. Is the new one the same? In this case we do not add an attribute
+    // but we overwrite the previous one. Otherwise we fail.
+    if (attr)
+    {
+      if (*attr != attribute)
+      {
+        last_error = "Cannot add a second attribute '" +  attribute.name + "'";
+        return false;
+      }
+    }
+    else
+    {
+      added_bytes += attribute.size;
+      header->schema.add_attribute(attribute);
+    }
   }
 
-  size_t new_capacity = get_true_number_of_points() * new_size;
-
-  if (new_capacity > capacity)
+  if (added_bytes > 0)
   {
-    capacity = new_capacity;
-    if (!realloc_buffer()) return false;
-  }
+    size_t new_size = previous_size + added_bytes;
+    size_t new_capacity = npoints * new_size;
 
-  for (int i = get_true_number_of_points()-1 ; i >= 0 ; --i)
-  {
-    memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
+    if (new_capacity > capacity)
+    {
+      capacity = new_capacity;
+      if (!realloc_buffer()) return false;
+    }
+
+    for (int i = npoints-1 ; i >= 0 ; --i)
+    {
+      memcpy(buffer + i * new_size, buffer + i * previous_size, previous_size);
+      memset(buffer + i * new_size + previous_size, 0, added_bytes); // zero the new data
+    }
   }
 
   return true;
@@ -686,9 +722,16 @@ bool PointCloud::add_rgb()
 void PointCloud::build_spatialindex()
 {
   clean_spatialindex();
-  double res = GridPartition::guess_resolution_from_density(header->density());
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
-  while (read_point()) index->insert(point.get_x(), point.get_y());
+  if (npoints > 0)
+  {
+    double res = GridPartition::guess_resolution_from_density(header->density());
+    index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
+    while (read_point()) index->insert(point.get_x(), point.get_y());
+  }
+  else
+  {
+    index = new GridPartition(0, 0, 0, 0, 1);
+  }
 }
 
 void PointCloud::clean_spatialindex()
@@ -734,7 +777,7 @@ bool PointCloud::alloc_buffer()
     return false; // # nocov
   }
 
-  buffer = (unsigned char*)malloc(capacity);
+  buffer = (unsigned char*)calloc(capacity, sizeof(unsigned char));
   if (buffer == NULL)
   {
     // # nocov start

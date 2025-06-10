@@ -111,6 +111,15 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 
   pb.done();
 
+  // Check if all headers have the same signature
+  const std::string& referenceSignature = headers[0].signature; // Take the CRS of the first header
+  bool allSameSignature = std::all_of(headers.begin(), headers.end(), [&referenceSignature](const Header& h) { return h.signature == referenceSignature; });
+  if (!allSameSignature)
+  {
+    last_error = "Impossible to mix different file formats";
+    return false;
+  }
+
   // Check if all headers have the same CRS
   const CRS& referenceCRS = headers[0].crs; // Take the CRS of the first header
   bool allSameCRS = std::all_of(headers.begin(), headers.end(), [&referenceCRS](const Header& h) { return h.crs == referenceCRS; });

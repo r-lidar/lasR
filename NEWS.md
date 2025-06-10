@@ -1,3 +1,33 @@
+# lasR 0.15.0
+
+- Fix #146 fix memory layout after adding new attributes
+- Fix #146 `add_attribute()` overwrite previous attribute rather that duplicating them.
+- Fix #135 write valid WKT string in COPC files
+
+# lasR 0.15.0
+
+- New: `lasR` now supports the PCD format. The `reader()` function can read PCD files, and a new stage, `write_pcd()`, is available. However, due to the current state of the software and limitations of the format itself, functionality is restricted: `lasR` cannot read multiple PCD files, and thus cannot buffer or merge them. Additionally, `write_pcd()` does not support streaming data.
+- New: #140 `info()` now prints useful COPC metadata.
+- Fix: #142 circular buffers are now handled properly.
+- Change: #139 the `chm()` function has been replaced by `dsm()`.
+
+# lasR 0.14.1
+
+- Fix: #141 `write_las()` drops circular buffers properly
+- Fix: #136 `write_las()` preserves dates and writes generating software
+- Enhance: #137 a pipeline preserve VLR attributes of a LAS files
+
+# lasR 0.14.0
+
+- Doc: Documented that lasR can write COPC files.
+- New: Added `write_copc()` function with extra arguments to control hierarchy depth and density.
+- Fix: Fixed unmapped memory issue when writing COPC files.
+
+# lasR 0.13.9
+
+- Fix: #113 `geometry_feature()` overwrite attributes if they are already existing.
+- Fix: a very serious bug where memory may be corrupted after deleting points leading to unexpected results or crash.
+
 # lasR 0.13.8
 
 - New argument `check` in `load_matrix()` to disable orthogonality check

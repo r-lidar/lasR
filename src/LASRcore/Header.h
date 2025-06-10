@@ -11,6 +11,23 @@
 #include "CRS.h"
 #endif
 
+class VLR
+{
+public:
+  unsigned short reserved;
+  char user_id[16];
+  unsigned short record_id;
+  unsigned short record_length_after_header;
+  char description[32];
+  unsigned char* data;
+
+  VLR();   // Default constructor
+  VLR(const VLR& other); // Copy constructor
+  VLR& operator=(const VLR& other);   // Copy assignment operator
+  VLR(VLR&& other) noexcept; // Move constructor
+  VLR& operator=(VLR&& other) noexcept; // Move assignment operator
+  ~VLR(); // Destructor
+};
 class Header
 {
 public:
@@ -43,7 +60,14 @@ public:
   unsigned char point_data_format;
   unsigned short file_creation_year, file_creation_day;
   bool adjusted_standard_gps_time;
+  std::vector<VLR> vlrs;
 
+  // COPC specification only
+  float copc_root_spacing = 0;
+  std::vector<unsigned int> copc_points_per_level;
+  std::vector<unsigned int> copc_voxels_per_level;
+
+public:
   Header();
   void dump() const;
   inline double area() const { return (max_x-min_y)*(max_y-min_y); }

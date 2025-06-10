@@ -8,7 +8,7 @@
 #' @param on Can be the paths of the files to use, the path of the folder in which the files are stored,
 #' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
 #' file or a `data.frame` containing the point cloud. It supports also a `LAScatalog` or a `LAS` objects
-#' from `lidR`.
+#' from `lidR`. It supports PCD, LAS, LAZ file formats.
 #' @param with list. A list of options to control how the pipeline is executed. This includes options to
 #' control parallel processing, progress bar display, tile buffering and so on. See \link{set_exec_options}
 #' for more details on the available options.

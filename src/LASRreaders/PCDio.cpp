@@ -3,14 +3,13 @@
 #include "PointSchema.h"
 #include "Progress.h"
 
-#include <sstream>
 #include <limits>
 #include <iomanip> // For std::setprecision
 
 PCDio::PCDio()
 {
   header = nullptr;
-  preread_bbox = false;
+  preread_bbox = true;
   is_binary = false;
   npoints = 0;
 }
@@ -18,7 +17,7 @@ PCDio::PCDio()
 PCDio::PCDio(Progress* progress)
 {
   header = nullptr;
-  preread_bbox = false;
+  preread_bbox = true;
   is_binary = false;
   npoints = 0;
 
@@ -34,7 +33,26 @@ bool PCDio::open(const Chunk& chunk, std::vector<std::string> filters)
 {
   if (ostream.is_open())
   {
-    last_error = "Internal error. This interface has been created as a writer"; // # nocov
+    last_error = "Internal error. This interface has been created as a writer";
+    return false;
+  }
+
+  if (chunk.main_files.size() > 1)
+  {
+    last_error = "PCD file reader cannot read multiple PCD files yet";
+    return false;
+  }
+
+  if (chunk.neighbour_files.size() > 0)
+  {
+    last_error = "PCD file reader cannot read buffered PCD files yet";
+    return false;
+  }
+
+  if ((filters.size() == 1 && filters[0] != "") || filters.size() > 1)
+  {
+    for (auto f :filters) print("%s\n", f.c_str());
+    last_error = "filters are not enabled for PCD files yet.";
     return false;
   }
 
@@ -71,9 +89,6 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
 
   std::string line;
 
-  int targetIndex = -1;
-  size_t pointCount = 0;
-
   std::vector<std::string> fields;
   std::vector<int> data_sizes;
   std::vector<std::string> data_types;
@@ -96,7 +111,6 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
       lineStream >> version;
 
       size_t dotPos = version.find('.');
-      int major = 0, minor = 0;
 
       if (dotPos == 0)
       {
@@ -212,7 +226,7 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
   Attribute attrf("flags", AttributeType::INT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
   header->add_attribute(attrf);
 
-  for (int i = 0 ; i < fields.size() ; i++)
+  for (unsigned int i = 0 ; i < fields.size() ; i++)
   {
     std::string name = fields[i];
     name = map_attribute(name);
@@ -265,7 +279,7 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
   std::string bbox_filename = file.substr(0, file.find_last_of('.')) + ".bbox";
 
   // Read the bbox from the bbox file. It not then, compute the bbox by reading the file.
-  if (!read_bbox(bbox_filename) && preread_bbox)
+  if (!read_bbox(bbox_filename, header) && preread_bbox)
   {
     auto payload_start = istream.tellg();
 
@@ -284,7 +298,7 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
     istream.seekg(payload_start);
 
     // Write the bounding box to the .bbox file
-    write_bbox(bbox_filename);
+    write_bbox(header, bbox_filename);
     npoints = 0;
   }
 
@@ -300,7 +314,7 @@ bool PCDio::read_binary_point(Point* p)
 {
   p->zero();
   istream.read(reinterpret_cast<char*>(p->data + 1), p->schema->total_point_size-1);  // + 1 byte because of the flags used by lasR
-  if (istream.gcount() != header->schema.total_point_size-1) return false;   // Check if the correct number of bytes were read
+  if (istream.gcount() != (long)header->schema.total_point_size-1) return false;      // Check if the correct number of bytes were read
   npoints++;
   return true;
 }
@@ -317,14 +331,37 @@ bool PCDio::read_ascii_point(Point* p)
     return false;
   }
 
-  std::istringstream line_stream(line);
+  std::istringstream iss(line);
+  std::vector<double> numbers;
+  numbers.reserve(header->schema.attributes.size());
+  double num;
+  while (iss >> num) numbers.push_back(num);
+
+  if (numbers.size() != header->schema.attributes.size()-1)
+  {
+    last_error = "Invalid number of attribute in line " + line;
+    return false;
+  }
+
   for (int i = 1; i < header->schema.num_attributes(); ++i)
   {
     const auto& attr = header->schema.attributes[i];
-    if (!parse_attribute(line_stream, attr.type, p->data + attr.offset))
+    unsigned char* dest = p->data + attr.offset;
+    double value = numbers[i - 1];
+
+    switch (attr.type)
     {
-      last_error = "Failed to parse " + attr.name;
-      return false;
+      case AttributeType::FLOAT:   *reinterpret_cast<float*>(dest)   = static_cast<float>(value); break;
+      case AttributeType::DOUBLE:  *reinterpret_cast<double*>(dest)  = value; break;
+      case AttributeType::INT8:    *reinterpret_cast<int8_t*>(dest)  = static_cast<int8_t>(value); break;
+      case AttributeType::INT16:   *reinterpret_cast<int16_t*>(dest) = static_cast<int16_t>(value); break;
+      case AttributeType::INT32:   *reinterpret_cast<int32_t*>(dest) = static_cast<int32_t>(value); break;
+      case AttributeType::INT64:   *reinterpret_cast<int64_t*>(dest) = static_cast<int64_t>(value); break;
+      case AttributeType::UINT8:   *reinterpret_cast<uint8_t*>(dest) = static_cast<uint8_t>(value); break;
+      case AttributeType::UINT16:  *reinterpret_cast<uint16_t*>(dest)= static_cast<uint16_t>(value); break;
+      case AttributeType::UINT32:  *reinterpret_cast<uint32_t*>(dest)= static_cast<uint32_t>(value); break;
+      case AttributeType::UINT64:  *reinterpret_cast<uint64_t*>(dest)= static_cast<uint64_t>(value); break;
+      default: last_error = "Unsupported attribute type"; return false;
     }
   }
 
@@ -332,23 +369,123 @@ bool PCDio::read_ascii_point(Point* p)
   return true;
 }
 
-bool PCDio::parse_attribute(std::istringstream& line_stream, AttributeType type, void* dest)
+bool PCDio::write_point(Point* p)
 {
-  if (!dest) return false; // Null pointer check
-  switch (type)
+  return (this->*write)(p);
+}
+
+bool PCDio::write_ascii_point(Point* p)
+{
+  if (!ostream.is_open()) return false;
+
+  ostream << std::fixed << std::setprecision(8);
+  ostream << p->get_x() << " ";
+  ostream << p->get_y() << " ";
+  ostream << p->get_z();
+
+  for (int i = 4; i < p->schema->num_attributes(); ++i)
   {
-    case AttributeType::FLOAT:  return static_cast<bool>(line_stream >> *static_cast<float*>(dest));
-    case AttributeType::DOUBLE: return static_cast<bool>(line_stream >> *static_cast<double*>(dest));
-    case AttributeType::INT8:   return static_cast<bool>(line_stream >> *reinterpret_cast<int8_t*>(dest));
-    case AttributeType::INT16:  return static_cast<bool>(line_stream >> *reinterpret_cast<int16_t*>(dest));
-    case AttributeType::INT32:  return static_cast<bool>(line_stream >> *reinterpret_cast<int32_t*>(dest));
-    case AttributeType::INT64:  return static_cast<bool>(line_stream >> *reinterpret_cast<int64_t*>(dest));
-    case AttributeType::UINT8:  return static_cast<bool>(line_stream >> *reinterpret_cast<uint8_t*>(dest));
-    case AttributeType::UINT16: return static_cast<bool>(line_stream >> *reinterpret_cast<uint16_t*>(dest));
-    case AttributeType::UINT32: return static_cast<bool>(line_stream >> *reinterpret_cast<uint32_t*>(dest));
-    case AttributeType::UINT64: return static_cast<bool>(line_stream >> *reinterpret_cast<uint64_t*>(dest));
-    default: return false; // Unsupported type
+    ostream << " ";
+    const Attribute& attr = p->schema->attributes[i];
+    void* ptr = (void*)(p->data + attr.offset);
+
+    if (p->schema->attributes[i].type == AttributeType::BIT)
+      continue;
+
+    switch (p->schema->attributes[i].type)
+    {
+      case AttributeType::FLOAT:  ostream << *reinterpret_cast<float*>(ptr); break;
+      case AttributeType::DOUBLE: ostream << *reinterpret_cast<double*>(ptr); break;
+      case AttributeType::INT8:   ostream << static_cast<int>(*reinterpret_cast<char*>(ptr)); break;
+      case AttributeType::INT16:  ostream << *reinterpret_cast<short*>(ptr); break;
+      case AttributeType::INT32:  ostream << *reinterpret_cast<int*>(ptr); break;
+      case AttributeType::INT64:  ostream << *reinterpret_cast<int64_t*>(ptr); break;
+      case AttributeType::UINT8:  ostream << static_cast<unsigned int>(*reinterpret_cast<unsigned char*>(ptr)); break;
+      case AttributeType::UINT16: ostream << *reinterpret_cast<unsigned short*>(ptr); break;
+      case AttributeType::UINT32: ostream << *reinterpret_cast<unsigned int*>(ptr); break;
+      case AttributeType::UINT64: ostream << *reinterpret_cast<uint64_t*>(ptr); break;
+      default: ostream << "NaN";
+    }
   }
+  ostream << std::endl;
+  npoints++;
+  return true;
+}
+
+bool PCDio::write_binary_point(Point* p)
+{
+  if (!ostream.is_open()) return false;
+
+  const auto& schema = p->schema->attributes;
+
+  // The coordinates can be either
+  // - int (from LAS) with scale factor and offset
+  // - double (from PCD)
+  // - float (from PCD)
+  // We need to respect the type at write time
+
+  double x = p->get_x();
+  if (schema[AttributeCore::X].type == AttributeType::FLOAT)
+  {
+    float xf = static_cast<float>(x);
+    ostream.write(reinterpret_cast<const char*>(&xf), sizeof(float));
+  }
+  else
+  {
+    ostream.write(reinterpret_cast<const char*>(&x), sizeof(double));
+  }
+
+  double y = p->get_y();
+  if (schema[AttributeCore::Y].type == AttributeType::FLOAT)
+  {
+    float yf = static_cast<float>(y);
+    ostream.write(reinterpret_cast<const char*>(&yf), sizeof(float));
+  }
+  else
+  {
+    ostream.write(reinterpret_cast<const char*>(&y), sizeof(double));
+  }
+
+
+  double z = p->get_z();
+  if (schema[AttributeCore::Z].type == AttributeType::FLOAT)
+  {
+    float zf = static_cast<float>(z);
+    ostream.write(reinterpret_cast<const char*>(&zf), sizeof(float));
+  }
+  else
+  {
+    ostream.write(reinterpret_cast<const char*>(&z), sizeof(double));
+  }
+
+  for (int i = 4; i < p->schema->num_attributes(); ++i)
+  {
+    const Attribute& attr = p->schema->attributes[i];
+    void* ptr = (void*)(p->data + attr.offset);
+
+    if (attr.type == AttributeType::BIT)
+      continue;
+
+    switch (attr.type)
+    {
+      case AttributeType::FLOAT:  ostream.write(reinterpret_cast<const char*>(ptr), sizeof(float)); break;
+      case AttributeType::DOUBLE: ostream.write(reinterpret_cast<const char*>(ptr), sizeof(double)); break;
+      case AttributeType::INT8:   ostream.write(reinterpret_cast<const char*>(ptr), sizeof(int8_t)); break;
+      case AttributeType::INT16:  ostream.write(reinterpret_cast<const char*>(ptr), sizeof(int16_t)); break;
+      case AttributeType::INT32:  ostream.write(reinterpret_cast<const char*>(ptr), sizeof(int32_t)); break;
+      case AttributeType::INT64:  ostream.write(reinterpret_cast<const char*>(ptr), sizeof(int64_t)); break;
+      case AttributeType::UINT8:  ostream.write(reinterpret_cast<const char*>(ptr), sizeof(uint8_t)); break;
+      case AttributeType::UINT16: ostream.write(reinterpret_cast<const char*>(ptr), sizeof(uint16_t)); break;
+      case AttributeType::UINT32: ostream.write(reinterpret_cast<const char*>(ptr), sizeof(uint32_t)); break;
+      case AttributeType::UINT64: ostream.write(reinterpret_cast<const char*>(ptr), sizeof(uint64_t)); break;
+      default:
+        // Optionally write NaN or skip
+        break;
+    }
+  }
+
+  npoints++;
+  return true;
 }
 
 bool PCDio::is_opened()
@@ -376,7 +513,7 @@ void PCDio::close()
   }
 }
 
-bool PCDio::write_bbox(const std::string &bbox_filename)
+bool PCDio::write_bbox(const Header* header, const std::string &bbox_filename)
 {
   std::ofstream bbox_out(bbox_filename, std::ios::binary);
   if (!bbox_out.is_open())
@@ -404,7 +541,7 @@ bool PCDio::write_bbox(const std::string &bbox_filename)
   return true;
 }
 
-bool PCDio::read_bbox(const std::string &bbox_filename)
+bool PCDio::read_bbox(const std::string &bbox_filename, Header* header)
 {
   std::ifstream bbox_file(bbox_filename, std::ios::binary);
   if (!bbox_file.is_open()) return false;
@@ -413,7 +550,7 @@ bool PCDio::read_bbox(const std::string &bbox_filename)
   std::string line;
   while (std::getline(bbox_file, line))
   {
-    if (line == "BINARY") break;
+    if (line == "BINARY:") break;
   }
 
   if (bbox_file.eof())
@@ -441,18 +578,115 @@ void PCDio::reset_accessor()
 
 bool PCDio::create(const std::string& file)
 {
-  last_error = "Writing PCD file is not supported yet";
-  return false;
+  if (istream.is_open())
+  {
+    last_error = "This PCDio instance is configured for reading, not writing.";
+    return false;
+  }
+
+  this->file = file;
+
+  ostream.open(file);
+  if (!ostream.is_open())
+  {
+    last_error = "Failed to open file for writing: " + file;
+    return false;
+  }
+
+  const AttributeSchema& schema = header->schema;
+
+  ostream << "# .PCD v0.7 - Point Cloud Data file format\n";
+  ostream << "VERSION 0.7\n";
+
+  ostream << "FIELDS";
+  ostream << " x y z";
+  for (int i = 4; i < schema.num_attributes(); ++i)
+  {
+    if (schema.attributes[i].type == AttributeType::BIT) continue;
+    ostream << " " << schema.attributes[i].name;
+  }
+  ostream <<  std::endl;
+
+  ostream << "SIZE";
+  if (schema.attributes[1].type == AttributeType::INT32) // LAS format
+    ostream << " 8 8 8";
+  else
+    ostream << " 4 4 4";
+  for (int i = 4; i < schema.num_attributes(); ++i)
+  {
+    if (schema.attributes[i].type == AttributeType::BIT) continue;
+    ostream << " " << schema.attributes[i].size;
+  }
+  ostream << std::endl;
+
+  ostream << "TYPE";
+  ostream << " F F F";
+  for (int i = 4; i < schema.num_attributes(); ++i)
+  {
+    if (schema.attributes[i].type == AttributeType::BIT) continue;
+    ostream << " " << attribute_type_code(schema.attributes[i].type);
+  }
+  ostream << std::endl;
+
+  ostream << "COUNT";
+  for (int i = 1; i < schema.num_attributes(); ++i)
+  {
+    if (schema.attributes[i].type == AttributeType::BIT) continue;
+    ostream << " 1";
+  }
+  ostream << std::endl;
+
+  ostream << "WIDTH " << header->number_of_point_records << "\n";
+  ostream << "HEIGHT 1\n";
+  ostream << "VIEWPOINT 0 0 0 1 0 0 0\n";
+  ostream << "POINTS " << header->number_of_point_records << "\n";
+
+  if (is_binary)
+    ostream << "DATA binary\n";
+  else
+    ostream << "DATA ascii\n";
+
+  if (is_binary)
+    write = &PCDio::write_binary_point;
+  else
+    write = &PCDio::write_ascii_point;
+
+  npoints = 0;
+
+  return true;
 }
+
 
 bool PCDio::init(const Header* header)
 {
-  last_error = "Writing PCD file is not supported yet";
-  return false;
+  this->header = header;
+  return true;
 }
-bool PCDio::write_point(Point* p)
+
+char PCDio::attribute_type_code(AttributeType type)
 {
-  last_error = "Writing PCD file is not supported yet";
-  return false;
+  switch (type)
+  {
+  case AttributeType::FLOAT:
+  case AttributeType::DOUBLE:
+    return 'F';
+  case AttributeType::INT8:
+  case AttributeType::INT16:
+  case AttributeType::INT32:
+  case AttributeType::INT64:
+    return 'I';
+  case AttributeType::UINT8:
+  case AttributeType::UINT16:
+  case AttributeType::UINT32:
+  case AttributeType::UINT64:
+    return 'U';
+  default:
+    return '?';
+  }
+}
+
+void PCDio::set_binary_mode(bool b)
+{
+  is_binary = b;
 }
 

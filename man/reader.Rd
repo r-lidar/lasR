@@ -33,7 +33,7 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 \item{select}{character. Unused. Reserved for future versions.}
 
 \item{copc_depth}{integer. If the files are COPC file is is possible to read the point hierarchy
-up to a given level.}
+up to a given level. COPC hierarchy is 0-index. The first level is 0 not 1.}
 
 \item{...}{passed to other readers}
 

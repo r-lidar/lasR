@@ -37,6 +37,9 @@ LASio::LASio()
   synthetic_bit = AttributeAccessor("Synthetic");
   keypoint_bit = AttributeAccessor("Keypoint");
   overlap_bit = AttributeAccessor("Overlap");
+
+  copc_depth = -1;
+  copc_density = 256;
 }
 
 LASio::LASio(Progress* progress) : LASio()
@@ -183,6 +186,14 @@ bool LASio::create(const std::string& file)
     return false; // # nocov
   }
 
+  laswriter->set_copc_depth(copc_depth);
+  if (copc_density <= 64)
+    laswriter->set_copc_sparse();
+  else if ((copc_density > 64) && (copc_density <= 128))
+    laswriter->set_copc_normal();
+  else
+    laswriter->set_copc_dense();
+
   return true;
 }
 
@@ -307,6 +318,61 @@ bool LASio::populate_header(Header* header, bool read_first_point)
 
   header->spatial_index = (lasreader->get_index() != nullptr) || (lasreader->get_copcindex() != nullptr);
 
+
+  // COPC info
+  COPCindex* copc_index = lasreader->get_copcindex();
+  if (copc_index)
+  {
+    if (lasreader->header.vlr_copc_info)
+      header->copc_root_spacing = lasreader->header.vlr_copc_info->spacing;
+
+    if (lasreader->header.vlr_copc_info && lasreader->header.vlr_copc_entries)
+    {
+      I32 max_octree_level = 0;
+      for (U32 j = 0 ; j < lasreader->header.number_of_copc_entries ; j++)
+      {
+        if (lasreader->header.vlr_copc_entries[j].key.depth > max_octree_level)
+          max_octree_level = lasreader->header.vlr_copc_entries[j].key.depth;
+      }
+      header->copc_points_per_level.resize(max_octree_level+1);
+      header->copc_voxels_per_level.resize(max_octree_level+1);
+
+      for (U32 j = 0 ; j < lasreader->header.number_of_copc_entries ; j++)
+      {
+        header->copc_points_per_level[lasreader->header.vlr_copc_entries[j].key.depth] += lasreader->header.vlr_copc_entries[j].point_count;
+        header->copc_voxels_per_level[lasreader->header.vlr_copc_entries[j].key.depth]++;
+      }
+    }
+  }
+
+  // Copy VLRS
+  header->vlrs.reserve(lasreader->header.number_of_variable_length_records);
+  for (unsigned int i = 0; i < lasreader->header.number_of_variable_length_records; i++)
+  {
+    LASvlr& src = lasreader->header.vlrs[i];
+    VLR vlr;
+
+    vlr.reserved = src.reserved;
+    memcpy(vlr.user_id, src.user_id, 16);
+    vlr.record_id = src.record_id;
+    vlr.record_length_after_header = src.record_length_after_header;
+    memcpy(vlr.description, src.description, 32);
+
+    if (src.record_length_after_header > 0)
+    {
+      vlr.data = new unsigned char[src.record_length_after_header];
+      if (!vlr.data)
+      {
+        last_error= "VLR memory allocation failled";
+        return false;
+      }
+
+      memcpy(vlr.data, src.data, src.record_length_after_header);
+    }
+
+    header->vlrs.emplace_back(vlr);
+  }
+
   if (read_first_point)
   {
     lasreader->read_point();
@@ -350,8 +416,8 @@ bool LASio::init(const Header* header)
   lasheader->version_minor        = version_minor;
   lasheader->header_size          = get_header_size(version_minor);
   lasheader->offset_to_point_data = get_header_size(version_minor);
-  lasheader->file_creation_year   = 0;
-  lasheader->file_creation_day    = 0;
+  lasheader->file_creation_year   = header->file_creation_year;
+  lasheader->file_creation_day    = header->file_creation_day;
   lasheader->point_data_format    = pdf;
   lasheader->point_data_record_length = get_point_data_record_length(lasheader->point_data_format);
   lasheader->x_scale_factor       = header->schema.attributes[AttributeCore::X].scale_factor;
@@ -365,9 +431,24 @@ bool LASio::init(const Header* header)
   lasheader->min_y                = ymin;
   lasheader->max_x                = xmax;
   lasheader->max_y                = ymax;*/
+  std::strncpy(lasheader->generating_software, "lasR with LASlib", 32);
 
   if (header->adjusted_standard_gps_time)
     lasheader->set_global_encoding_bit(0);
+
+  // COPY VLRs
+  for (const auto& vlr : header->vlrs)
+  {
+    unsigned char* data = new unsigned char[vlr.record_length_after_header];
+    if (!data)
+    {
+      last_error= "VLR memory allocation failled";
+      return false;
+    }
+
+    memcpy(data, vlr.data, vlr.record_length_after_header);
+    lasheader->add_vlr(vlr.user_id, vlr.record_id, vlr.record_length_after_header, data, TRUE, vlr.description);
+  }
 
   reset_accessor();
 
@@ -707,4 +788,13 @@ int LASio::get_point_data_record_length(int point_data_format, int num_extrabyte
   case 10: return 67 + num_extrabytes; break;
   default: return 0; break;
   }
+}
+
+void LASio::set_copc_max_depth(int depth)
+{
+  copc_depth = depth;
+}
+void LASio::set_copc_density(int density)
+{
+  copc_density = density;
 }

@@ -65,6 +65,11 @@ public:
   virtual I64 close(BOOL update_npoints=TRUE) = 0;
   virtual I64 tell() { return 0; };
 
+  virtual void set_copc_depth(int depth) { return; };
+  virtual void set_copc_sparse() { return; };
+  virtual void set_copc_normal() { return; };
+  virtual void set_copc_dense()  { return; };
+
   void dealloc();
 
   LASwriter() { npoints = 0; p_count = 0; };

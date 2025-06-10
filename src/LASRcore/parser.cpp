@@ -34,6 +34,7 @@
 #include "writelas.h"
 #include "writelax.h"
 #include "writevpc.h"
+#include "writepcd.h"
 
 // If compiled as an R package include R's header, special R stages and helper functions
 #ifdef USING_R
@@ -110,7 +111,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"transform_with",       create_instance<LASRtransformwith>},
     {"triangulate",          create_instance<LASRtriangulate>},
     {"write_las",            create_instance<LASRlaswriter>},
-    {"write_vpc",            create_instance<LASRvpcwriter>}
+    {"write_vpc",            create_instance<LASRvpcwriter>},
+    {"write_pcd",            create_instance<LASRpcdwriter>}
     #ifdef USING_R
     ,{"aggregate",           create_instance<LASRaggregate>},
     {"callback",             create_instance<LASRcallback>},
@@ -497,7 +499,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
 
       // Write lax is the very first stage. Even before read_las. It is called
       // only if needed.
-      if (!catalog->check_spatial_index() && !indexer)
+      if (!catalog->check_spatial_index() && !indexer && catalog->get_format() == LASFILE)
       {
         bool onthefly = catalog->get_number_files() > 1;
         auto v = std::make_unique<LASRlaxwriter>(false, false, onthefly);

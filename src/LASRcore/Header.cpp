@@ -127,3 +127,100 @@ std::string Header::get_wkt() const
   return(wkt);
 #endif
 }
+
+// Default constructor
+VLR::VLR()
+{
+  reserved = 0;
+  record_id = 0;
+  record_length_after_header = 0;
+  std::memset(user_id, 0, sizeof(user_id));
+  std::memset(description, 0, sizeof(description));
+  data = nullptr;
+}
+
+// Copy constructor
+VLR::VLR(const VLR& other)
+{
+  reserved = other.reserved;
+  record_id = other.record_id;
+  record_length_after_header = other.record_length_after_header;
+  std::memcpy(user_id, other.user_id, sizeof(user_id));
+  std::memcpy(description, other.description, sizeof(description));
+  data = nullptr;
+
+  if (other.record_length_after_header > 0 && other.data)
+  {
+    data = new unsigned char[other.record_length_after_header];
+    std::memcpy(data, other.data, other.record_length_after_header);
+  }
+}
+
+// Copy assignment operator
+VLR& VLR::operator=(const VLR& other)
+{
+  if (this == &other) return *this;  // Self-assignment check
+
+  // Clean up old data
+  delete[] data;
+
+  reserved = other.reserved;
+  record_id = other.record_id;
+  record_length_after_header = other.record_length_after_header;
+  std::memcpy(user_id, other.user_id, sizeof(user_id));
+  std::memcpy(description, other.description, sizeof(description));
+
+  // Allocate new data
+  data = nullptr;
+  if (other.record_length_after_header > 0 && other.data)
+  {
+    data = new unsigned char[other.record_length_after_header];
+    std::memcpy(data, other.data, other.record_length_after_header);
+  }
+
+  return *this;
+}
+
+// Move constructor
+VLR::VLR(VLR&& other) noexcept
+{
+  reserved = other.reserved;
+  record_id = other.record_id;
+  record_length_after_header = other.record_length_after_header;
+  std::memcpy(user_id, other.user_id, sizeof(user_id));
+  std::memcpy(description, other.description, sizeof(description));
+  data = other.data;
+
+  // Null out the source object
+  other.data = nullptr;
+  other.record_length_after_header = 0;
+}
+
+// Move assignment operator
+VLR& VLR::operator=(VLR&& other) noexcept
+{
+  if (this == &other) return *this;  // Self-assignment check
+
+  // Clean up old data
+  delete[] data;
+
+  reserved = other.reserved;
+  record_id = other.record_id;
+  record_length_after_header = other.record_length_after_header;
+  std::memcpy(user_id, other.user_id, sizeof(user_id));
+  std::memcpy(description, other.description, sizeof(description));
+
+  // Steal data from the source object
+  data = other.data;
+  other.data = nullptr;
+  other.record_length_after_header = 0;
+
+  return *this;
+}
+
+// Destructor
+VLR::~VLR()
+{
+  delete[] data;  // Free allocated memory
+}
+

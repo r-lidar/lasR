@@ -36,7 +36,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> attribute
   {"PointSourceID", {"PointSourceID", "point_source", "point_source_id", "pointsourceid", "psid", "p"}},
   {"EdgeOfFlightline", {"EdgeOfFlightline", "edgeofflightline", "e"}},
   {"ScanDirectionFlag", {"ScanDirectionFlag", "scandirectionflag", "d"}},
-  {"ScanAngle", {"angle", "Angle", "ScanAngle", "ScanAngleRank", "scan_angle", "a"}},
+  {"ScanAngle", {"angle", "Angle", "ScanAngle", "ScanAngleRank", "scananglerank", "scan_angle", "a"}},
   {"R", {"R", "Red", "red"}},
   {"G", {"G", "Green", "green"}},
   {"B", {"B", "Blue", "blue"}},
@@ -108,6 +108,16 @@ struct Attribute
     default: return "Unknown";
     }
   }
+
+  bool operator==(const Attribute& other) const
+  {
+    return name == other.name && size == other.size && type == other.type && scale_factor == other.scale_factor && value_offset == other.value_offset && description == other.description;
+  }
+
+  bool operator!=(const Attribute& other) const
+  {
+    return !(*this == other);
+  }
 };
 
 struct AttributeSchema
@@ -136,7 +146,13 @@ struct Point
   Point(AttributeSchema* schema) : own_data(true), data(new unsigned char[schema->total_point_size]), schema(schema) { zero(); }
   Point(unsigned char* ptr, const AttributeSchema* schema) : own_data(false), data(ptr), schema(schema) {}
   ~Point() {if (own_data && data) { delete[] data; data = nullptr; }; }
-  void dump() const { print("%.2lf %.2lf %.2lf\n", get_x(), get_y(), get_z()); };
+  void dump() const
+  {
+    for (size_t i = 0 ; i < schema->attributes.size() ; i++)
+    {
+      print("%s %.2lf\n",  schema->attributes[i].name.c_str(), get_attribute_as_double(i));
+    }
+  };
 
   Point(const Point& other) : own_data(other.own_data), data(other.own_data ? new unsigned char[other.schema->total_point_size] : other.data), schema(other.schema)
   {
@@ -259,7 +275,7 @@ struct Point
   inline void set_buffered(bool value = true) { set_flag(1, value); }
   inline void zero() { memset(data, 0, schema->total_point_size); }
 
-  inline double get_attribute_as_double(int index)
+  inline double get_attribute_as_double(int index) const
   {
     const auto& attr = schema->attributes[index];
     unsigned char* pointer = data + attr.offset;
@@ -313,6 +329,12 @@ public:
   void operator()(Point* point, double value);
   bool exist() { return attribute != nullptr; }
   void reset() { init = false; attribute = nullptr; };
+  void dump()
+  {
+    print("Accessor to %s\n", name.c_str());
+    print("Init %s\n", (init) ? "true" : "false");
+    if (attribute) attribute->dump(true);
+  }
 
 protected:
   std::string name;
