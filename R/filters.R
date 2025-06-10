@@ -7,7 +7,7 @@
 #' The supported attributes are any names of the attributes of the point cloud such as `X`, `Y`, `Z`, `Intensity`,
 #' `gpstime`, `UserData`, `ReturnNumber`, `ScanAngle`, `Amplitude` and so on.\cr\cr
 #' Valid filter strings are e.g. `Z > 2.5`, `UserData == 2`, `Classification %in% 1 2 3`, `Z %between 1 4`.
-#' Multiple conditions can be combined with `c("Z >= 1", "Z <= 4)`.\cr\cr.
+#' Multiple conditions can be combined with `c("Z >= 1", "Z <= 4)`.\cr\cr
 #' Note that filters never fail. If a filter references an attribute not present in the point cloud
 #' (e.g., `Intensity < 50` in a point cloud without intensity data), the attribute is treated as if it
 #' has a value of 0. This behavior can impact conditions like `Intensity < 50` where all points would pass
@@ -16,7 +16,7 @@
 #' the appropriate filter string. Points that satisfy the specified condition **are retained** for
 #' processing, while others are ignored for the current stage.
 #'
-#' @param x numeric or integer as a function of the filter used.
+#' @param x,y numeric or integer as a function of the filter used.
 #' @param e1,e2 lasR objects.
 #' @param ... Unused.
 #'
@@ -82,6 +82,14 @@ keep_z_below = function(x) { make_filter(paste("Z <", x[1]))}
 #' @rdname filters
 #' @export
 drop_z_below = function(x) { make_filter(paste("Z >=", x[1]))}
+
+#' @rdname filters
+#' @export
+keep_z_between = function(x,y) { make_filter(c(paste("Z >=", x[1]), paste("Z <=", y[1]))) }
+
+#' @rdname filters
+#' @export
+drop_z_between = function(x,y) { make_filter(c(paste("Z <", x[1]), paste("Z >", y[1]))) }
 
 #' @rdname filters
 #' @export

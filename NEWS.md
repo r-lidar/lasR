@@ -2,6 +2,7 @@
 
 - New: stage `edit_attribute()`
 - New: stage `remove_attribute()`
+- New: filters `keep_z_between()` and `drop_z_between()`
 - Doc: enhanced documentation for the `filter` argument
 - Doc: revise the documentation of `add_extrabytes()`
 

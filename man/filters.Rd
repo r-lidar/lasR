@@ -15,6 +15,8 @@
 \alias{drop_z_above}
 \alias{keep_z_below}
 \alias{drop_z_below}
+\alias{keep_z_between}
+\alias{drop_z_between}
 \alias{drop_duplicates}
 \alias{print.laslibfilter}
 \alias{+.laslibfilter}
@@ -46,6 +48,10 @@ keep_z_below(x)
 
 drop_z_below(x)
 
+keep_z_between(x, y)
+
+drop_z_between(x, y)
+
 drop_duplicates()
 
 \method{print}{laslibfilter}(x, ...)
@@ -53,7 +59,7 @@ drop_duplicates()
 \method{+}{laslibfilter}(e1, e2)
 }
 \arguments{
-\item{x}{numeric or integer as a function of the filter used.}
+\item{x, y}{numeric or integer as a function of the filter used.}
 
 \item{...}{Unused.}
 
@@ -67,7 +73,7 @@ The available conditions include \code{>}, \code{<}, \code{>=}, \code{<=}, \code
 The supported attributes are any names of the attributes of the point cloud such as \code{X}, \code{Y}, \code{Z}, \code{Intensity},
 \code{gpstime}, \code{UserData}, \code{ReturnNumber}, \code{ScanAngle}, \code{Amplitude} and so on.\cr\cr
 Valid filter strings are e.g. \code{Z > 2.5}, \code{UserData == 2}, \verb{Classification \%in\% 1 2 3}, \verb{Z \%between 1 4}.
-Multiple conditions can be combined with \verb{c("Z >= 1", "Z <= 4)}.\cr\cr.
+Multiple conditions can be combined with \verb{c("Z >= 1", "Z <= 4)}.\cr\cr
 Note that filters never fail. If a filter references an attribute not present in the point cloud
 (e.g., \code{Intensity < 50} in a point cloud without intensity data), the attribute is treated as if it
 has a value of 0. This behavior can impact conditions like \code{Intensity < 50} where all points would pass

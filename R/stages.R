@@ -1044,7 +1044,7 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
 #' @rdname add_attribute
 remove_attribute = function(name)
 {
-  if (attribute %in% c("x", "X", "y", "Y", "z", "Z"))
+  if (name %in% c("x", "X", "y", "Y", "z", "Z"))
     stop("Removing point coordinates is not allowed")
 
   ans <- list(algoname = "remove_attribute", name = name)
