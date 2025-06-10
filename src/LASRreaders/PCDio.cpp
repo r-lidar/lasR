@@ -586,7 +586,11 @@ bool PCDio::create(const std::string& file)
 
   this->file = file;
 
-  ostream.open(file);
+  if (is_binary)
+    ostream.open(file, std::ios::out | std::ios::binary);
+  else
+    ostream.open(file);
+
   if (!ostream.is_open())
   {
     last_error = "Failed to open file for writing: " + file;
