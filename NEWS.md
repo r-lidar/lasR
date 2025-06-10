@@ -1,3 +1,8 @@
+# lasR 0.16.0
+
+- New: stage `edit_attribute()`
+- Doc: enhanced documentation for the `filter` argument
+
 # lasR 0.15.1
 
 - Fix #146 fix memory layout after adding new attributes

@@ -367,6 +367,32 @@ delete_ground = function()
   delete_points(drop_ground())
 }
 
+# ===== E =====
+
+#' Edit an attribute of the points
+#'
+#' Edit an attribute of the points by filtering the point based on criteria.
+#' @template param-filter
+#' @param attribute string. The name of an attribute to edit
+#' @param value numeric. The value to assign. Be careful, if the user try to assign a value out of
+#' range of representable value for a given data type it will be clamped.
+#' @export
+#' @examples
+#' f <- system.file("extdata", "Example.las", package="lasR")
+#'
+#' edit = edit_attribute(filter = c("Z < 975", "Z > 974"), attribute = "UserData", value = 2)
+#' io = write_las(templas())
+#' pipeline = edit + io
+#' ans = exec(pipeline, on = f)
+edit_attribute = function(filter = "", attribute = "", value = 0)
+{
+  if (attribute %in% c("x", "X", "y", "Y", "z", "Z"))
+    stop("Editing point coordinates is not allowed")
+
+  ans <- list(algoname = "edit_attribute", attribute = attribute, value = value, filter = filter)
+  set_lasr_class(ans)
+}
+
 # ===== F =====
 
 #' Select highest or lowest points

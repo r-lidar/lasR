@@ -9,6 +9,7 @@
 #include "boundaries.h"
 #include "breakif.h"
 #include "csf.h"
+#include "edit.h"
 #include "filter.h"
 #include "focal.h"
 #include "info.h"
@@ -89,6 +90,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"classify_with_csf",    create_instance<LASRcsf>},
     {"classify_with_ivf",    create_instance<LASRivf>},
     {"classify_with_sor",    create_instance<LASRsor>},
+    {"edit_attribute",       create_instance<LASRedit>},
     {"filter",               create_instance<LASRfilter>},
     {"filter_grid",          create_instance<LASRfiltergrid>},
     {"focal",                create_instance<LASRfocal>},

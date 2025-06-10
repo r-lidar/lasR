@@ -62,13 +62,16 @@ drop_duplicates()
 \description{
 Filters are strings used in the \code{filter} argument of \code{lasR} stages to process only the points of
 interest. Filters follow the format 'Attribute condition value(s)', e.g.: \code{Z > 2}, \code{Intensity < 155},
-\code{Classification == 2}, or \code{ReturnNumber == 1}. \cr
+\code{Classification == 2}, or \code{ReturnNumber == 1}. \cr\cr
 The available conditions include \code{>}, \code{<}, \code{>=}, \code{<=}, \code{==}, \code{!=}, \code{\%in\%}, \verb{\%out\%}, and \verb{\%between\%}.
 The supported attributes are any names of the attributes of the point cloud such as \code{X}, \code{Y}, \code{Z}, \code{Intensity},
-\code{gpstime}, \code{UserData}, \code{ReturnNumber}, \code{ScanAngle}, \code{Amplitude} and so on.\cr
+\code{gpstime}, \code{UserData}, \code{ReturnNumber}, \code{ScanAngle}, \code{Amplitude} and so on.\cr\cr
+Valid filter strings are e.g. \code{Z > 2.5}, \code{UserData == 2}, \verb{Classification \%in\% 1 2 3}, \verb{Z \%between 1 4}.
+Multiple conditions can be combined with \verb{c("Z >= 1", "Z <= 4)}.\cr\cr.
 Note that filters never fail. If a filter references an attribute not present in the point cloud
 (e.g., \code{Intensity < 50} in a point cloud without intensity data), the attribute is treated as if it
-has a value of 0. This behavior can impact conditions like \code{Intensity < 50}.\cr
+has a value of 0. This behavior can impact conditions like \code{Intensity < 50} where all points would pass
+the test.\cr\cr
 For convenience, the most commonly used filters have corresponding helper functions that return
 the appropriate filter string. Points that satisfy the specified condition \strong{are retained} for
 processing, while others are ignored for the current stage.
@@ -76,7 +79,7 @@ processing, while others are ignored for the current stage.
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 gnd = keep_class(c(2,9))
-reader_las(gnd)
+reader(gnd)
 triangulate(filter = keep_ground())
 rasterize(1, "max", filter = "Z > 5")
 }

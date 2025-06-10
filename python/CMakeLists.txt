@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 get_filename_component(LASR_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 message(STATUS "LASR_SOURCE_DIR: ${LASR_SOURCE_DIR}")
 
-# OpenMP configuration for macOS 
+# OpenMP configuration for macOS
 if(APPLE)
     # We need a different approach for macOS with Apple Clang
     execute_process(
@@ -17,26 +17,26 @@ if(APPLE)
         OUTPUT_VARIABLE HOMEBREW_LIBOMP_PREFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    
+
     message(STATUS "OpenMP homebrew prefix: ${HOMEBREW_LIBOMP_PREFIX}")
-    
+
     # Use a simpler approach for Apple Clang
     if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
         set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
-        
+
         # Include and lib directories
         set(OpenMP_CXX_INCLUDE_DIRS "${HOMEBREW_LIBOMP_PREFIX}/include")
         set(OpenMP_C_INCLUDE_DIRS "${HOMEBREW_LIBOMP_PREFIX}/include")
-        
+
         # Link explicitly with libomp
         set(OpenMP_CXX_LIBRARIES "-L${HOMEBREW_LIBOMP_PREFIX}/lib -lomp")
         set(OpenMP_C_LIBRARIES "-L${HOMEBREW_LIBOMP_PREFIX}/lib -lomp")
-        
+
         # Ensure we can find libomp at runtime
         set(CMAKE_INSTALL_RPATH "${HOMEBREW_LIBOMP_PREFIX}/lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-        
+
         # Define the OpenMP variables manually so find_package(OpenMP) succeeds
         set(OpenMP_CXX_FOUND TRUE)
         set(OpenMP_C_FOUND TRUE)
@@ -49,7 +49,7 @@ if(USE_OPENMP)
     if(NOT (APPLE AND (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")))
         find_package(OpenMP)
     endif()
-    
+
     if(OpenMP_CXX_FOUND)
         message(STATUS "OpenMP found and enabled")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -155,7 +155,7 @@ add_library(laszip STATIC
 # Enable PIC for laszip since it's used in a shared library
 set_target_properties(laszip PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_compile_definitions(laszip PRIVATE 
+target_compile_definitions(laszip PRIVATE
   COMPILATION_CLOSED=1
   NDEBUG=1
   UNORDERED=1
@@ -163,11 +163,11 @@ target_compile_definitions(laszip PRIVATE
 )
 
 # Create the Python extension module
-pybind11_add_module(pylasr 
+pybind11_add_module(pylasr
   # Core bindings
   bindings.cpp
   export_python.cpp
-  
+
   # Core implementation
   ${LASR_SOURCE_DIR}/src/process.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/RAM.cpp
@@ -195,11 +195,11 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRcore/Vector.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/parser.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/pipeline.cpp
-  
+
   # I/O implementation
   ${LASR_SOURCE_DIR}/src/LASRreaders/LASio.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/PCDio.cpp
-  
+
   # Stages implementation
   ${LASR_SOURCE_DIR}/src/LASRstages/info.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/filter.cpp
@@ -208,6 +208,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/boundaries.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/breakif.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/csf.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/edit.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/focal.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/ivf.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/loadmatrix.cpp
@@ -231,7 +232,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/writepcd.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writevpc.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/summary.cpp
-  
+
   # Vendor implementations
   ${LASR_SOURCE_DIR}/src/vendor/delaunator/delaunator.cpp
   ${LASR_SOURCE_DIR}/src/vendor/csf/CSF.cpp
@@ -242,7 +243,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/vendor/csf/c2cdist.cpp
   ${LASR_SOURCE_DIR}/src/vendor/csf/point_cloud.cpp
   ${LASR_SOURCE_DIR}/src/vendor/geophoton/chm_prep.cpp
-  
+
   # LASlib vendor files
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasreader.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasreader_las.cpp
@@ -278,7 +279,7 @@ pybind11_add_module(pylasr
 # Link libraries
 target_link_libraries(pylasr PRIVATE laszip ${GDAL_LIBRARIES})
 
-target_compile_definitions(pylasr PRIVATE 
+target_compile_definitions(pylasr PRIVATE
   USING_PYTHON=1
   NDEBUG=1
   UNORDERED=1
@@ -287,20 +288,20 @@ target_compile_definitions(pylasr PRIVATE
 
 # Set the output directory and output name for different platforms
 if(APPLE)
-  set_target_properties(pylasr PROPERTIES 
+  set_target_properties(pylasr PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     OUTPUT_NAME "pylasr"
     SUFFIX ".so"  # Use .so extension even on macOS
   )
 elseif(WIN32)
-  set_target_properties(pylasr PROPERTIES 
+  set_target_properties(pylasr PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     OUTPUT_NAME "pylasr"
     SUFFIX ".pyd"  # Windows Python extension
   )
 else()
-  set_target_properties(pylasr PROPERTIES 
+  set_target_properties(pylasr PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     OUTPUT_NAME "pylasr"
   )
