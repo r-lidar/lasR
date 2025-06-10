@@ -305,12 +305,11 @@ bool LASRcallback::process(PointCloud*& las)
     if (!error)
     {
       // Update the LAS
+      int i = 0;
       while (las->read_point())
       {
         bool buffer = las->point.inside_buffer(xmin, ymin, xmax, ymax, circular);
         if (drop_buffer && buffer) continue;
-
-        int i = las->current_point;
 
         // for each element of the list
         for (int j = 0 ; j < Rf_length(res) ; j++)
@@ -355,6 +354,8 @@ bool LASRcallback::process(PointCloud*& las)
           else
             accessors[j](&las->point, (double)INTEGER(vector)[i]);
         }
+
+        i++;
       }
     }
 

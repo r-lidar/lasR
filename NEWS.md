@@ -1,8 +1,9 @@
-# lasR 0.15.0
+# lasR 0.15.1
 
 - Fix #146 fix memory layout after adding new attributes
 - Fix #146 `add_attribute()` overwrite previous attribute rather that duplicating them.
 - Fix #135 write valid WKT string in COPC files
+- Fix #151 memory corruption when calling `callback` with deleted points
 
 # lasR 0.15.0
 
