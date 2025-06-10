@@ -5,9 +5,12 @@ Classification == 2, or ReturnNumber == 1.
 The available conditions include &amp;gt;, &amp;lt;, &amp;gt;=, &amp;lt;=, ==, !=, %in%, %out%, and %between%.
 The supported attributes are any names of the attributes of the point cloud such as X, Y, Z, Intensity,
 gpstime, UserData, ReturnNumber, ScanAngle, Amplitude and so on.
+Valid filter strings are e.g. Z &amp;gt; 2.5, UserData == 2, Classification %in% 1 2 3, Z %between 1 4.
+Multiple conditions can be combined with c(&quot;Z &amp;gt;= 1&quot;, &quot;Z &amp;lt;= 4).
 Note that filters never fail. If a filter references an attribute not present in the point cloud
 (e.g., Intensity &amp;lt; 50 in a point cloud without intensity data), the attribute is treated as if it
-has a value of 0. This behavior can impact conditions like Intensity &amp;lt; 50.
+has a value of 0. This behavior can impact conditions like Intensity &amp;lt; 50 where all points would pass
+the test.
 For convenience, the most commonly used filters have corresponding helper functions that return
 the appropriate filter string. Points that satisfy the specified condition are retained for
 processing, while others are ignored for the current stage."><meta property="og:description" content="Filters are strings used in the filter argument of lasR stages to process only the points of
@@ -16,9 +19,12 @@ Classification == 2, or ReturnNumber == 1.
 The available conditions include &amp;gt;, &amp;lt;, &amp;gt;=, &amp;lt;=, ==, !=, %in%, %out%, and %between%.
 The supported attributes are any names of the attributes of the point cloud such as X, Y, Z, Intensity,
 gpstime, UserData, ReturnNumber, ScanAngle, Amplitude and so on.
+Valid filter strings are e.g. Z &amp;gt; 2.5, UserData == 2, Classification %in% 1 2 3, Z %between 1 4.
+Multiple conditions can be combined with c(&quot;Z &amp;gt;= 1&quot;, &quot;Z &amp;lt;= 4).
 Note that filters never fail. If a filter references an attribute not present in the point cloud
 (e.g., Intensity &amp;lt; 50 in a point cloud without intensity data), the attribute is treated as if it
-has a value of 0. This behavior can impact conditions like Intensity &amp;lt; 50.
+has a value of 0. This behavior can impact conditions like Intensity &amp;lt; 50 where all points would pass
+the test.
 For convenience, the most commonly used filters have corresponding helper functions that return
 the appropriate filter string. Points that satisfy the specified condition are retained for
 processing, while others are ignored for the current stage."></head><body>
@@ -71,13 +77,16 @@ processing, while others are ignored for the current stage."></head><body>
     <div class="ref-description section level2">
     <p>Filters are strings used in the <code>filter</code> argument of <code>lasR</code> stages to process only the points of
 interest. Filters follow the format 'Attribute condition value(s)', e.g.: <code>Z &gt; 2</code>, <code>Intensity &lt; 155</code>,
-<code>Classification == 2</code>, or <code>ReturnNumber == 1</code>. <br>
+<code>Classification == 2</code>, or <code>ReturnNumber == 1</code>. <br><br>
 The available conditions include <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code>, <code>%in%</code>, <code>%out%</code>, and <code>%between%</code>.
 The supported attributes are any names of the attributes of the point cloud such as <code>X</code>, <code>Y</code>, <code>Z</code>, <code>Intensity</code>,
-<code>gpstime</code>, <code>UserData</code>, <code>ReturnNumber</code>, <code>ScanAngle</code>, <code>Amplitude</code> and so on.<br>
+<code>gpstime</code>, <code>UserData</code>, <code>ReturnNumber</code>, <code>ScanAngle</code>, <code>Amplitude</code> and so on.<br><br>
+Valid filter strings are e.g. <code>Z &gt; 2.5</code>, <code>UserData == 2</code>, <code>Classification %in% 1 2 3</code>, <code>Z %between 1 4</code>.
+Multiple conditions can be combined with <code>c("Z &gt;= 1", "Z &lt;= 4)</code>.<br><br>
 Note that filters never fail. If a filter references an attribute not present in the point cloud
 (e.g., <code>Intensity &lt; 50</code> in a point cloud without intensity data), the attribute is treated as if it
-has a value of 0. This behavior can impact conditions like <code>Intensity &lt; 50</code>.<br>
+has a value of 0. This behavior can impact conditions like <code>Intensity &lt; 50</code> where all points would pass
+the test.<br><br>
 For convenience, the most commonly used filters have corresponding helper functions that return
 the appropriate filter string. Points that satisfy the specified condition <strong>are retained</strong> for
 processing, while others are ignored for the current stage.</p>
@@ -111,6 +120,10 @@ processing, while others are ignored for the current stage.</p>
 <span></span>
 <span><span class="fu">drop_z_below</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu">keep_z_between</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">drop_z_between</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu">drop_duplicates</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'laslibfilter'</span></span>
@@ -124,7 +137,7 @@ processing, while others are ignored for the current stage.</p>
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
+<dl><dt id="arg-x-y">x, y<a class="anchor" aria-label="anchor" href="#arg-x-y"></a></dt>
 <dd><p>numeric or integer as a function of the filter used.</p></dd>
 
 
@@ -141,15 +154,15 @@ processing, while others are ignored for the current stage.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">gnd</span> <span class="op">=</span> <span class="fu">keep_class</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">9</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="deprecated.html">reader_las</a></span><span class="op">(</span><span class="va">gnd</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">gnd</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> reader (uid:5541)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> reader (uid:eb34)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter : Classification %in% 2 9 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   output :  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
 <span class="r-in"><span><span class="fu"><a href="triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu">keep_ground</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> triangulate (uid:38ec)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> triangulate (uid:7550)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   max_edge : 0 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter : Classification == 2 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   output :  </span>
@@ -157,12 +170,12 @@ processing, while others are ignored for the current stage.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
 <span class="r-in"><span><span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"max"</span>, filter <span class="op">=</span> <span class="st">"Z &gt; 5"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:6b06)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:c78e)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   method : max </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   filter : Z &gt; 5 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpUpacju/file25357b9d8da.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/Rtmp23MLBW/file24d28dfa2e5.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
 </code></pre></div>
     </div>

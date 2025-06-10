@@ -11,7 +11,7 @@
 <url><loc>https://r-lidar.github.io/lasR/authors.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/index.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/news/index.html</loc></url>
-<url><loc>https://r-lidar.github.io/lasR/reference/add_extrabytes.html</loc></url>
+<url><loc>https://r-lidar.github.io/lasR/reference/add_attribute.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/add_rgb.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/callback.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/classify_with_csf.html</loc></url>
@@ -21,6 +21,7 @@
 <url><loc>https://r-lidar.github.io/lasR/reference/deprecated.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/dsm.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/dtm.html</loc></url>
+<url><loc>https://r-lidar.github.io/lasR/reference/edit_attribute.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/exec.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/filter_with_grid.html</loc></url>
 <url><loc>https://r-lidar.github.io/lasR/reference/filters.html</loc></url>
