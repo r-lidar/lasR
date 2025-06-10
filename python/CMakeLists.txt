@@ -167,6 +167,7 @@ pybind11_add_module(pylasr
   # Core bindings
   bindings.cpp
   export_python.cpp
+  lasr_stages.h
   
   # Core implementation
   ${LASR_SOURCE_DIR}/src/process.cpp
