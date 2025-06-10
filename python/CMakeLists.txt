@@ -228,6 +228,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/triangulate.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writelas.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writelax.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/writepcd.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writevpc.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/summary.cpp
   
@@ -267,7 +268,6 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/laswriter_wrl.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasutility.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/laskdtree.cpp
-  ${LASR_SOURCE_DIR}/src/vendor/LASlib/geoprojectionconverter.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasfilter.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasignore.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/fopen_compressed.cpp
