@@ -32,3 +32,25 @@ bool LASRaddattribute::set_parameters(const nlohmann::json& stage)
 
   return true;
 }
+
+LASRremoveattribute::LASRremoveattribute()
+{
+}
+
+bool LASRremoveattribute::process(PointCloud*& las)
+{
+  return las->remove_attribute(name);
+}
+
+bool LASRremoveattribute::set_parameters(const nlohmann::json& stage)
+{
+  name = stage.at("name");
+  if (name == "x" || name == "X" ||
+      name == "y" || name == "Y" ||
+      name == "z" || name == "Z")
+  {
+    last_error = "Removing point coordinates is not allowed";
+    return false;
+  }
+  return true;
+}

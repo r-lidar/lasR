@@ -2,29 +2,31 @@
 % Please edit documentation in R/stages.R
 \name{add_extrabytes}
 \alias{add_extrabytes}
-\title{Add attributes to a LAS file}
+\alias{remove_attribute}
+\title{Add attributes to a point cloud}
 \usage{
 add_extrabytes(data_type, name, description, scale = 1, offset = 0)
+
+remove_attribute(name)
 }
 \arguments{
 \item{data_type}{character. The data type of the extra bytes attribute. Can be "uchar", "char", "ushort",
 "short", "uint", "int", "uint64", "int64", "float", "double".}
 
-\item{name}{character. The name of the extra bytes attribute to add to the file.}
+\item{name}{character. The name of the extra bytes attribute to add or remove to the file.}
 
 \item{description}{character. A short description of the extra bytes attribute to add to the file (32 characters).}
 
-\item{scale, offset}{numeric. The scale and offset of the data. See LAS specification.}
+\item{scale, offset}{numeric. The scale and offset of the data. See LAS specification. Leave unchanged
+if not working with LAS files.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.
 }
 \description{
-According to the \href{https://www.asprs.org/a/society/committees/standards/LAS_1_4_r13.pdf}{LAS specifications},
-a LAS file contains a core of defined attributes, such as XYZ coordinates, intensity, return number,
-and so on, for each point. It is possible to add supplementary attributes. This stages adds an
-extra bytes attribute to the points. Values are zeroed: the underlying point cloud is edited to support
-a new extrabyte attribute. This new attribute can be populated later in another stage
+Modify the memory layout of the point cloud to add an attributes to a point cloud. Values are
+zeroed: the underlying point cloud is edited to support a new extrabyte attribute. This new
+attribute can be populated later in another stage
 }
 \examples{
 f <- system.file("extdata", "Example.las", package = "lasR")

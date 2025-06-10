@@ -647,6 +647,40 @@ bool PointCloud::add_attribute(const Attribute& attribute)
   return true;
 }
 
+bool PointCloud::remove_attribute(const std::string& name)
+{
+  // Find attribute
+  const Attribute* attr = header->schema.find_attribute(name);
+  if (!attr) return true; // nothing to remove
+
+  size_t offset = attr->offset;
+  size_t size_to_remove = attr->size;
+  size_t old_point_size = header->schema.total_point_size;
+  size_t new_point_size = old_point_size - size_to_remove;
+  size_t tail_size = old_point_size - (offset + size_to_remove);
+
+  // For each point from last to first:
+  // We copy head bytes before attribute, then tail bytes after attribute,
+  // packed together tightly in new_point_size bytes.
+  for (size_t i = 0; i < npoints ; ++i)
+  {
+    unsigned char* src = buffer + i * old_point_size;
+    unsigned char* dst = buffer + i * new_point_size;
+
+    // Copy head bytes (before removed attribute)
+    if (offset > 0) memmove(dst, src, offset);
+
+    // Copy tail bytes (after removed attribute)
+    if (tail_size > 0) memmove(dst + offset, src + offset + size_to_remove, tail_size);
+  }
+
+  // Update schema
+  header->schema.remove_attribute(name);
+
+  return true;
+}
+
+
 bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 {
   size_t previous_size = header->schema.total_point_size;

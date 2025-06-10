@@ -9,7 +9,7 @@ public:
   LASRaddattribute();
   bool process(PointCloud*& las) override;
   bool set_parameters(const nlohmann::json&) override;
-  std::string get_name() const override { return "add_extrabytes"; };
+  std::string get_name() const override { return "add_attribute"; };
 
   // multi-threading
   LASRaddattribute* clone() const override { return new LASRaddattribute(*this); };
@@ -20,6 +20,21 @@ private:
   double offset;
   std::string name;
   std::string description;
+};
+
+class LASRremoveattribute: public Stage
+{
+public:
+  LASRremoveattribute();
+  bool process(PointCloud*& las) override;
+  bool set_parameters(const nlohmann::json&) override;
+  std::string get_name() const override { return "remove_attribute"; };
+
+  // multi-threading
+  LASRremoveattribute* clone() const override { return new LASRremoveattribute(*this); };
+
+private:
+  std::string name;
 };
 
 #endif

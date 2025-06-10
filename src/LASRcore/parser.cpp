@@ -85,7 +85,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
   // Create a map of type names to functions that create instances
   std::unordered_map<std::string, std::function<std::unique_ptr<Stage>()>> factory_map =
   {
-    {"add_extrabytes",       create_instance<LASRaddattribute>},
+    {"add_attribute",        create_instance<LASRaddattribute>},
     {"add_rgb",              create_instance<LASRaddrgb>},
     {"classify_with_csf",    create_instance<LASRcsf>},
     {"classify_with_ivf",    create_instance<LASRivf>},
@@ -103,6 +103,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"nothing",              create_instance<LASRnothing>},
     {"pit_fill",             create_instance<LASRpitfill>},
     {"rasterize",            create_instance<LASRrasterize>},
+    {"remove_attribute",     create_instance<LASRremoveattribute>},
     {"sampling_pixel",       create_instance<LASRsamplingpixels>},
     {"sampling_poisson",     create_instance<LASRsamplingpoisson>},
     {"sampling_voxel",       create_instance<LASRsamplingvoxels>},

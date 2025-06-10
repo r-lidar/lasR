@@ -1,21 +1,20 @@
 # ===== A =====
 
-#' Add attributes to a LAS file
+#' Add attributes to a point cloud
 #'
-#' According to the \href{https://www.asprs.org/a/society/committees/standards/LAS_1_4_r13.pdf}{LAS specifications},
-#' a LAS file contains a core of defined attributes, such as XYZ coordinates, intensity, return number,
-#' and so on, for each point. It is possible to add supplementary attributes. This stages adds an
-#' extra bytes attribute to the points. Values are zeroed: the underlying point cloud is edited to support
-#' a new extrabyte attribute. This new attribute can be populated later in another stage
+#' Modify the memory layout of the point cloud to add an attributes to a point cloud. Values are
+#' zeroed: the underlying point cloud is edited to support a new extrabyte attribute. This new
+#' attribute can be populated later in another stage
 #'
-#' @param name character. The name of the extra bytes attribute to add to the file.
+#' @param name character. The name of the extra bytes attribute to add or remove to the file.
 #' @param description character. A short description of the extra bytes attribute to add to the file (32 characters).
 #' @param data_type character. The data type of the extra bytes attribute. Can be "uchar", "char", "ushort",
 #' "short", "uint", "int", "uint64", "int64", "float", "double".
-#' @param scale,offset numeric. The scale and offset of the data. See LAS specification.
+#' @param scale,offset numeric. The scale and offset of the data. See LAS specification. Leave unchanged
+#' if not working with LAS files.
 #' @template return-pointcloud
 #' @export
-#'
+#' @rdname add_attribute
 #' @examples
 #' f <- system.file("extdata", "Example.las", package = "lasR")
 #' fun <- function(data) { data$RAND <- runif(nrow(data), 0, 100); return(data) }
@@ -29,7 +28,7 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
   data_type <- match.arg(data_type, types)
   #data_type <- which(data_type == types)
 
-  ans <- list(algoname = "add_extrabytes", data_type = data_type, name = name, description = description, scale = scale, offset = offset)
+  ans <- list(algoname = "add_attribute", data_type = data_type, name = name, description = description, scale = scale, offset = offset)
   set_lasr_class(ans)
 }
 
@@ -384,6 +383,7 @@ delete_ground = function()
 #' io = write_las(templas())
 #' pipeline = edit + io
 #' ans = exec(pipeline, on = f)
+#' @template return-pointcloud
 edit_attribute = function(filter = "", attribute = "", value = 0)
 {
   if (attribute %in% c("x", "X", "y", "Y", "z", "Z"))
@@ -1039,6 +1039,18 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
   ans <- list(algoname = "region_growing", connect1 = seeds[["uid"]], connect2 = raster[["uid"]], th_tree = th_tree, th_seed = th_seed, th_cr = th_cr, max_cr = max_cr, output = ofile)
   set_lasr_class(ans, raster = TRUE)
 }
+
+#' @export
+#' @rdname add_attribute
+remove_attribute = function(name)
+{
+  if (attribute %in% c("x", "X", "y", "Y", "z", "Z"))
+    stop("Removing point coordinates is not allowed")
+
+  ans <- list(algoname = "remove_attribute", name = name)
+  set_lasr_class(ans)
+}
+
 
 # ==== S =====
 

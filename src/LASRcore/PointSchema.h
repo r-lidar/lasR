@@ -133,6 +133,7 @@ struct AttributeSchema
   int num_attributes() const { return attributes.size(); };
   void add_attribute(const Attribute& attribute);
   void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
+  void remove_attribute(const std::string& attribute);
   void dump(bool verbose = false) const;
 };
 

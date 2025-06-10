@@ -1,7 +1,9 @@
 # lasR 0.16.0
 
 - New: stage `edit_attribute()`
+- New: stage `remove_attribute()`
 - Doc: enhanced documentation for the `filter` argument
+- Doc: revise the documentation of `add_extrabytes()`
 
 # lasR 0.15.1
 

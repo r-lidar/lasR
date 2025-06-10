@@ -76,6 +76,27 @@ void AttributeSchema::add_attribute(const std::string& name, AttributeType type,
   add_attribute(attr);
 }
 
+void AttributeSchema::remove_attribute(const std::string& attribute_name)
+{
+  int idx = get_attribute_index(attribute_name);
+  if (idx < 0) return;
+
+  const Attribute& attr_to_remove = attributes[idx];
+  size_t size_to_remove = attr_to_remove.size;
+
+  // Erase the attribute from the vector
+  attributes.erase(attributes.begin() + idx);
+
+  // Adjust offsets of subsequent attributes
+  for (size_t i = idx; i < attributes.size(); ++i)
+  {
+    attributes[i].offset -= size_to_remove;
+  }
+
+  // Update total point size
+  total_point_size -= size_to_remove;
+}
+
 const Attribute* AttributeSchema::find_attribute(const std::string& name) const
 {
   for (auto& attribute : attributes)

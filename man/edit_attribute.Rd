@@ -17,6 +17,9 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 \item{value}{numeric. The value to assign. Be careful, if the user try to assign a value out of
 range of representable value for a given data type it will be clamped.}
 }
+\value{
+This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+}
 \description{
 Edit an attribute of the points by filtering the point based on criteria.
 }
