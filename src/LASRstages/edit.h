@@ -11,6 +11,7 @@ public:
   bool process(PointCloud*& las) override;
   bool set_parameters(const nlohmann::json&) override;
   bool is_streamable() const override { return true; };
+  void clear(bool last) override;
   std::string get_name() const override { return "edit"; };
 
   // multi-threading

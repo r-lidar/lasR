@@ -50,3 +50,8 @@ bool LASRedit::set_parameters(const nlohmann::json& stage)
   accessor = AttributeAccessor(attribute);
   return true;
 }
+
+void LASRedit::clear(bool last)
+{
+  accessor.reset();
+}
