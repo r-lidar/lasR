@@ -20,13 +20,15 @@ Depends: R (>= 3.6.0)
 Imports: 
     methods,
     utils,
-    stats
+    stats,
+    Rcpp
 Suggests: 
     knitr,
     rmarkdown,
     sf,
     terra,
     testthat (>= 3.0.0),
+LinkingTo: Rcpp
 RoxygenNote: 7.3.2
 SystemRequirements: C++17, GDAL (>= 2.2.3), GEOS (>= 3.4.0), PROJ (>= 4.9.3), sqlite3, GNU make
 Encoding: UTF-8
@@ -34,6 +36,7 @@ Language: en-US
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Collate: 
+    'RcppExports.R'
     'stages.R'
     'deprecated.R'
     'doc.R'

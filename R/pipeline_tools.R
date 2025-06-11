@@ -100,7 +100,7 @@ get_pipeline_info = function(pipeline)
 {
   pipeline = list(processing = list(), pipeline = pipeline)
   json_file = write_json(pipeline)
-  ans = .Call(`C_get_pipeline_info`, json_file)
+  ans = cpp_get_pipeline_info(json_file)
   if (inherits(ans, "error")) { stop(ans) }
   return(ans)
 }
@@ -111,8 +111,7 @@ is_indexed = function(files)
   for (i in seq_along(files))
   {
     file = files[i]
-    indexed = .Call(`C_is_indexed`, file)
-    if (inherits(ans, "error")) { stop(indexed) } # nocov
+    indexed = .APIUTILS$is_indexed(file)
     ans[i] = indexed
   }
 
@@ -121,6 +120,25 @@ is_indexed = function(files)
 
 address = function(x)
 {
-  .Call(`C_address`, x)
+  .APIOPERATIONS$get_address(x)
+}
+
+
+#' @export
+#' @method print PipelinePtr
+print.PipelinePtr <- function(x, ...)
+{
+  .APIOPERATIONS$print_pipeline(x)
+}
+
+#' @rdname tools
+#' @export
+`+.PipelinePtr` <- function(e1, e2)
+{
+  if (!methods::is(e1, "PipelinePtr") || !methods::is(e2, "PipelinePtr"))
+    stop("Both operands must be of class PipelinePtr") # nocov
+
+  ans = .APIOPERATIONS$merge_pipeline(e1, e2);
+  return(ans)
 }
 

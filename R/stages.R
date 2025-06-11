@@ -1150,7 +1150,7 @@ sampling_poisson = function(distance = 2, filter = "", ...)
 }
 
 
-#' Stop the pipeline if a conditionally
+#' Stop the pipeline conditionally
 #'
 #' Stop the pipeline conditionally. The stages after a `stop_if` stage are skipped if the condition is
 #' met. This allows to process a subset of the dataset of to skip some stages conditionally. This DOES

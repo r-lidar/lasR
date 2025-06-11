@@ -181,7 +181,7 @@ void Progress::set_ncpu(int n)
     this->ncpu = n;
 }
 
-void Progress::set_async_message_file(std::string& file)
+void Progress::set_async_message_file(const std::string& file)
 {
   if (file.size() > 0)
   {
