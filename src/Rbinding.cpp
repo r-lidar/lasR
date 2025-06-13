@@ -59,20 +59,29 @@ RCPP_MODULE(utils)
 RCPP_MODULE(stages)
 {
   // STAGES
-  function("add_extrabytes", &api::add_attribute, "Add an attribute to the point cloud");
+  function("add_attribute", &api::add_attribute, "Add an attribute to the point cloud");
   function("add_rgb", &api::add_rgb, "Add rgb attributes to the point cloud");
+  function("aggregate", &api::aggregate, "Rasterize with R expression");
+  function("callback", &api::callback, "Callback R function on the point cloud");
   function("classify_with_sor", &api::classify_with_sor, "Classify noise with SOR");
   function("classify_with_ivf", &api::classify_with_ivf, "Classify noise with IVF");
-  function("classify_with_csf", &api::classify_with_ivf, "Classify ground with CSF");
+  function("classify_with_csf", &api::classify_with_csf, "Classify ground with CSF");
   function("delete_points", &api::delete_points, "Delete points that match criteria");
   function("edit_attribute", &api::edit_attribute, "Edit an attribute of the points");
   function("filter_with_grid", &api::filter_with_grid, "Filter points with a grid layout");
   function("focal", &api::focal, "Focal operation on a raster");
-  function("hull", &api::hull, "Compute hull of a point cloud or a triangulation");
+  function("geometry_feature", &api::geometry_features, "SVD decomposition and metrics");
+  function("hull", &api::hull, "Compute hull of a point cloud");
+  function("hull_triangulation", &api::hull_triangulation, "Compute hull of a triangulation");
   function("info", &api::info, "Filter points with a grid layout");
   function("load_raster", &api::load_raster, "Load a raster from file");
   function("load_matrix", &api::load_matrix, "Load a 4x4 matrix");
-  function("local_maximum", &api::local_maximum, "Local maximum filter");
+  function("local_maximum", &api::local_maximum, "Local maximum filter on a point cloud");
+  function("local_maximum_raster", &api::local_maximum_raster, "Local maximum filter on a raster");
+  function("nothing", &api::nothing, "A debugging stage");
+  function("pit_fill", &api::pit_fill, "CHM enhancement");
+  function("rasterize", &api::rasterize, "Rasterize point cloud");
+  function("rasterize_triangulation", &api::rasterize_triangulation, "Rasterize a triangulation");
   function("reader_coverage", &api::reader_coverage, "Read points coverage");
   function("reader_circles", &api::reader_circles, "Read points within circles");
   function("reader_rectangles", &api::reader_rectangles, "Read points within rectangles");
@@ -96,6 +105,31 @@ RCPP_MODULE(stages)
   function("write_lax", &api::write_lax, "Write a LAX spatial index for LAS and LAZ files");
 }
 
+Rcpp::List get_stage_info(SEXP ptr)
+{
+  if (R_ExternalPtrAddr(ptr) == nullptr)
+    Rf_error("Invalid external pointer: nullptr");
+
+  void* raw_ptr = R_ExternalPtrAddr(ptr);
+  auto* p = dynamic_cast<api::Pipeline*>(static_cast<api::Pipeline*>(raw_ptr));
+
+  if (p == nullptr)
+    Rf_error("Invalid external pointer: not a pointer on Pipeline");
+
+  auto stages = p->get_stages();
+  if (stages.size() != 1)
+    throw std::invalid_argument(std::string("Invalid number of stages: input pipeline has ") + std::to_string(stages.size()) + " stages. Expected 1.");
+
+  const api::Stage& s = *stages.begin();
+
+  return Rcpp::List::create(
+    _["name"] = s.get_name(),
+    _["uid"] = s.get_uid(),
+    _["raster"] = s.is_raster(),
+    _["matrix"] = s.is_matrix(),
+    _["vector"] = s.is_vector());
+}
+
 SEXP print_pipeline(SEXP ptr)
 {
   if (R_ExternalPtrAddr(ptr) == nullptr)
@@ -112,7 +146,7 @@ SEXP print_pipeline(SEXP ptr)
   return R_NilValue;
 }
 
-SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on)
+SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on, double buffer, double chunk, int ncores, bool verbose, bool progress)
 {
   if (R_ExternalPtrAddr(ptr) == nullptr)
     Rf_error("Invalid external pointer: nullptr");
@@ -124,6 +158,14 @@ SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on)
     Rf_error("Invalid external pointer: not a pointer on Pipeline");
 
   s->set_files(on);
+  s->set_ncores(1);
+  //s->set_strategy();
+  s->set_verbose(verbose);
+  s->set_buffer(buffer);
+  s->set_progress(progress);
+  s->set_chunk(chunk);
+  s->set_profile_file("");
+
   std::string f = s->write_json();
 
   return api::execute(f);
@@ -184,6 +226,7 @@ RCPP_MODULE(operations)
   function("merge_pipeline", &merge_pipeline, "Concatenate pipelines");
   function("print_pipeline", &print_pipeline, "Print pipelines");
   function("get_address", &get_address, "Get address of a SEXP");
+  function("get_stage_info", &get_stage_info, "Get stage info");
 }
 
 #endif

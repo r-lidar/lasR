@@ -92,6 +92,8 @@ public:
   std::string write_json(const std::string& path = "") const;
   nlohmann::json generate_json() const;
 
+  const std::list<Stage>& get_stages() { return stages; };
+
 private:
   bool has_reader() const;
 
@@ -112,13 +114,15 @@ private:
 Pipeline add_attribute(std::string data_type, std::string name, std::string description, double scale = 1, double offset = 0);
 Pipeline add_rgb();
 Pipeline classify_with_sor(int k = 8, int m = 6, int classification = 18);
-Pipeline classify_with_ivf(double res = 5, int n = 6, int classificatiob = 18);
+Pipeline classify_with_ivf(double res = 5, int n = 6, int classification = 18);
+Pipeline classify_with_csf(bool slope_smooth = false, double class_threshold = 0.5, double cloth_resolution = 0.5, int rigidness = 1, int iterations = 500, double time_step = 0.65, int classification = 2L, std::vector<std::string> filter = {""});
 Pipeline geometry_features(int k, double r, std::string features = "");
 Pipeline delete_points(std::vector<std::string> filter = {""});
 Pipeline edit_attribute(std::vector<std::string> filter = {""}, std::string attribute = "", double value = 0);
 Pipeline filter_with_grid(double res, std::string operation = "min", std::vector<std::string> filter = {""});
 Pipeline focal(std::string connect_uid, double size, std::string fun = "mean", std::string ofile = "");
-Pipeline hull(std::string connect_uid = "", std::string ofile = "");
+Pipeline hull(std::string ofile = "");
+Pipeline hull_triangulation(std::string connect_uid, std::string ofile = "");
 Pipeline info();
 Pipeline load_raster(std::string file, int band = 1L);
 Pipeline load_matrix(std::vector<double> matrix, bool check = true);
@@ -127,7 +131,8 @@ Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_hei
 //Pipeline neighborhood_metrics();
 Pipeline nothing(bool read = false, bool stream = false, bool loop = false);
 Pipeline pit_fill(std::string connect_uid, int lap_size = 3, double thr_lap = 0.1, double thr_spk = -0.1, int med_size = 3, int dil_radius = 0, std::string ofile = "");
-//Pipeline rasterize();
+Pipeline rasterize(double res, double window, std::vector<std::string> operators = {"max"}, std::vector<std::string> filter = {""}, std::string ofile = "", double default_value = -99999);
+Pipeline rasterize_triangulation(std::string connect_uid, double res, std::string ofile = "");
 Pipeline reader_coverage(std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
 Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
 Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
@@ -153,8 +158,8 @@ Pipeline write_lax(bool embedded = false, bool overwrite = false);
 ReturnType execute(const std::string& config_file, const std::string& async_communication_file = "");
 
 #ifdef USING_R
-//Pipeline aggregate();
-//Pipeline callback();
+Pipeline aggregate(double res, int nmetrics, double window, std::string call_ptr, std::string env_ptr, std::vector<std::string> filter = {""}, std::string ofile = "");
+Pipeline callback(std::string ptr, std::string args, std::string expose = "", bool drop_buffer = false, bool no_las_update = false);
 #endif
 } // namespace api
 

@@ -50,7 +50,7 @@ bool Pipeline::has_reader() const
 {
   for (const auto& stage : stages)
   {
-    if (stage.get_name().substr(0, 5) == "reader")
+    if (stage.get_name() == "reader")
       return true;
   }
 
@@ -117,7 +117,7 @@ nlohmann::json Pipeline::generate_json() const
   for (const auto& stage : p.stages)
     j["pipeline"].push_back(stage.to_json());
 
-  std::cout << std::setw(2) << j << std::endl;
+  //std::cout << std::setw(2) << j << std::endl;
 
   return j;
 }

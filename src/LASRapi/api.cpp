@@ -74,6 +74,9 @@ Pipeline geometry_features(int k, double r, std::string features)
 
 Pipeline delete_points(std::vector<std::string> filter)
 {
+  if (filter.size() == 0 || (filter.size() == 1 && filter[0] == ""))
+    throw std::invalid_argument("A filter is mandatory in 'delete_points");
+
   Stage s("filter");
   s.set("filter", filter);
 
@@ -112,12 +115,13 @@ Pipeline focal(std::string connect_uid, double size, std::string fun, std::strin
 {
   static const std::vector<std::string> choices = {"mean", "median", "min", "max", "sum"};
   auto it = std::find(choices.begin(), choices.end(), fun);
-  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'operation'. Available options are 'mean', 'median', 'min', 'max', 'sum'");
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'operation'. Available options are 'mean', 'median', 'min', 'max', 'sum'");
 
   if (size <= 0) throw std::invalid_argument("Size must be positive");
 
   Stage s("focal");
   s.set("connect", connect_uid);
+  s.set("size", size);
   s.set("fun", fun);
   s.set("output", ofile);
   s.set_raster();
@@ -125,12 +129,19 @@ Pipeline focal(std::string connect_uid, double size, std::string fun, std::strin
   return Pipeline(s);
 }
 
-Pipeline hull(std::string connect_uid, std::string ofile)
+Pipeline hull(std::string ofile)
 {
   Stage s("hulls");
   s.set("output", ofile);
-  if (connect_uid != "")
-    s.set("connect", connect_uid);
+
+  return Pipeline(s);
+}
+
+Pipeline hull_triangulation(std::string connect_uid, std::string ofile)
+{
+  Stage s("hulls");
+  s.set("output", ofile);
+  s.set("connect", connect_uid);
 
   return Pipeline(s);
 }
@@ -180,7 +191,7 @@ Pipeline local_maximum(double ws, double min_height, std::vector<std::string> fi
 
 Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_height, std::vector<std::string> filter, std::string ofile)
 {
-  Stage s("local_maximum_raster");
+  Stage s("local_maximum");
   s.set("connect", connect_uid);
   s.set("ws", ws);
   s.set("min_height", min_height);
@@ -211,6 +222,36 @@ Pipeline pit_fill(std::string connect_uid, int lap_size, double thr_lap, double 
   s.set("thr_spk", thr_spk);
   s.set("dil_radius", dil_radius);
   s.set("output", ofile);
+  s.set_raster();
+
+  return Pipeline(s);
+}
+
+Pipeline rasterize(double res, double window, std::vector<std::string> operators, std::vector<std::string> filter, std::string ofile, double default_value)
+{
+  Stage s("rasterize");
+  s.set("res", res);
+  s.set("window", window);
+  s.set("method", operators);
+  s.set("filter", filter);
+  s.set("output", ofile);
+  s.set_raster();
+
+  if (default_value != -99999)
+  {
+    s.set("default_value", default_value);
+  }
+
+  return Pipeline(s);
+}
+
+Pipeline rasterize_triangulation(std::string connect_uid, double res, std::string ofile)
+{
+  Stage s("rasterize");
+  s.set("res", res);
+  s.set("connect", connect_uid);
+  s.set("output", ofile);
+  s.set_raster();
 
   return Pipeline(s);
 }
@@ -229,7 +270,6 @@ Pipeline reader_coverage(std::vector<std::string> filter, std::string select, in
 
 Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter, std::string select, int copc_depth)
 {
-
   if (xc.size() != yc.size())
     throw std::invalid_argument("xc and yc must have the same length");
 
@@ -249,7 +289,7 @@ Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vec
   Stage s("reader");
   s.set("filter", filter);
   s.set("xcenter", xc);
-  s.set("ycenter", xc);
+  s.set("ycenter", yc);
   s.set("radius", r);
 
   return Pipeline(s);
@@ -380,7 +420,7 @@ Pipeline summarise(double zwbin, double iwbin, std::vector<std::string> metrics,
   s.set("zwbin", zwbin);
   s.set("iwbin", iwbin);
   s.set("filter", filter);
-  if (metrics.size() == 0)
+  if (metrics.size() > 0)
     s.set("metrics", metrics);
 
   return Pipeline(s);
@@ -471,5 +511,34 @@ Pipeline write_lax(bool embedded, bool overwrite)
 
   return Pipeline(s);
 }
+
+#ifdef USING_R
+Pipeline aggregate(double res, int nmetrics, double window, std::string call_ptr, std::string env_ptr, std::vector<std::string> filter, std::string ofile)
+{
+  Stage s("aggregate");
+  s.set("res", res);
+  s.set("nmetrics", nmetrics);
+  s.set("window", window);
+  s.set("call", call_ptr);
+  s.set("env", env_ptr);
+  s.set("filter", filter);
+  s.set("output", ofile);
+  s.set_raster();
+
+  return Pipeline(s);
+}
+
+Pipeline callback(std::string fun_ptr, std::string args_ptr, std::string expose, bool drop_buffer, bool no_las_update)
+{
+  Stage s("callback");
+  s.set("fun", fun_ptr);
+  s.set("args", args_ptr);
+  s.set("expose", expose);
+  s.set("drop_buffer", drop_buffer);
+  s.set("no_las_update", no_las_update);
+
+  return Pipeline(s);
+}
+#endif
 
 } // namespace api
