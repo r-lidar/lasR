@@ -73,6 +73,11 @@ RCPP_MODULE(stages)
   function("load_raster", &api::load_raster, "Load a raster from file");
   function("load_matrix", &api::load_matrix, "Load a 4x4 matrix");
   function("local_maximum", &api::local_maximum, "Local maximum filter");
+  function("reader_coverage", &api::reader_coverage, "Read points coverage");
+  function("reader_circles", &api::reader_circles, "Read points within circles");
+  function("reader_rectangles", &api::reader_rectangles, "Read points within rectangles");
+  // function("region_growing", &api::region_growing, "Region growing segmentation tree segmentation");
+  function("remove_attribute", &api::remove_attribute, "Remove a named attribute from the point cloud");
   function("set_crs_epsg", &api::set_crs_epsg, "Set CRS using an EPSG code");
   function("set_crs_wkt", &api::set_crs_wkt, "Set CRS using a WKT string");
   function("sampling_voxel", &api::sampling_voxel, "Sample the point cloud using voxel-based sampling");
@@ -83,7 +88,6 @@ RCPP_MODULE(stages)
   function("sort_points", &api::sort_points, "Sort points spatially and/or in temporarly");
   function("summarise", &api::summarise, "Summarise metrics in vertical and intensity bins");
   function("triangulate", &api::triangulate, "Generate a triangulation from the point cloud");
-
   function("transform_with", &api::transform_with, "Transform the point cloud with");
   function("write_las", &api::write_las, "Write a LAS or LAZ file");
   function("write_copc", &api::write_copc, "Write a LAS or LAZ file");

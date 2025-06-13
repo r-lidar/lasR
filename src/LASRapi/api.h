@@ -128,12 +128,11 @@ Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_hei
 Pipeline nothing(bool read = false, bool stream = false, bool loop = false);
 Pipeline pit_fill(std::string connect_uid, int lap_size = 3, double thr_lap = 0.1, double thr_spk = -0.1, int med_size = 3, int dil_radius = 0, std::string ofile = "");
 //Pipeline rasterize();
-//Pipeline reader();
-//Pipeline reader_coverage();
-//Pipeline reader_circles();
-//Pipeline reader_rectangles();
+Pipeline reader_coverage(std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
+Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
+Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
 //Pipeline region_growing();
-//Pipeline remove_attribute();
+Pipeline remove_attribute(std::string name);
 Pipeline set_crs_epsg(int epsg);
 Pipeline set_crs_wkt(std::string wkt);
 Pipeline sampling_voxel(double res = 2, std::vector<std::string> filter = {""}, std::string method = "random", int shuffle_size = std::numeric_limits<int>::max());

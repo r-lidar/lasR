@@ -215,6 +215,77 @@ Pipeline pit_fill(std::string connect_uid, int lap_size, double thr_lap, double 
   return Pipeline(s);
 }
 
+Pipeline reader_coverage(std::vector<std::string> filter, std::string select, int copc_depth)
+{
+  Stage s("reader");
+
+  if (copc_depth >= 0)
+    filter.push_back("-max_depth " + std::to_string(copc_depth));
+
+  s.set("filter", filter);
+
+  return Pipeline(s);
+}
+
+Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter, std::string select, int copc_depth)
+{
+
+  if (xc.size() != yc.size())
+    throw std::invalid_argument("xc and yc must have the same length");
+
+  if (r.size() == 1)
+  {
+    r = std::vector<double>(xc.size(), r[0]); // replicate r[0] to match xc size
+  }
+  else if (r.size() > 1)
+  {
+    if (xc.size() != r.size())
+      throw std::invalid_argument("xc and r must have the same length when r has more than one value");
+  }
+
+  if (copc_depth >= 0)
+    filter.push_back("-max_depth " + std::to_string(copc_depth));
+
+  Stage s("reader");
+  s.set("filter", filter);
+  s.set("xcenter", xc);
+  s.set("ycenter", xc);
+  s.set("radius", r);
+
+  return Pipeline(s);
+}
+
+Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter, std::string select, int copc_depth)
+{
+  size_t n = xmin.size();
+  if (ymin.size() != n || xmax.size() != n || ymax.size() != n)
+    throw std::invalid_argument("xmin, ymin, xmax, and ymax must all have the same length");
+
+  if (copc_depth >= 0)
+    filter.push_back("-max_depth " + std::to_string(copc_depth));
+
+  Stage s("reader");
+  s.set("filter", filter);
+  s.set("xmin", xmin);
+  s.set("xmax", xmax);
+  s.set("ymin", ymin);
+  s.set("ymax", ymax);
+
+  return Pipeline(s);
+}
+
+Pipeline remove_attribute(std::string name)
+{
+  static const std::vector<std::string> choices = {"x", "X", "y", "Y", "z", "Z"};
+  auto it = std::find(choices.begin(), choices.end(), name);
+  if (it != choices.end()) throw std::invalid_argument("Removing point coordinates is not allowed");
+
+  Stage s("pit_fill");
+  s.set("name", name);
+
+  return Pipeline(s);
+}
+
 Pipeline set_crs_epsg(int epsg)
 {
   Stage s("set_crs");
@@ -237,7 +308,7 @@ Pipeline sampling_voxel(double res, std::vector<std::string> filter, std::string
 {
   static const std::vector<std::string> choices = {"random"};
   auto it = std::find(choices.begin(), choices.end(), method);
-  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom'");
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom'");
 
   Stage s("sampling_voxel");
   s.set("res", res);
@@ -252,7 +323,7 @@ Pipeline sampling_pixel(double res,  std::vector<std::string> filter, std::strin
 {
   static const std::vector<std::string> choices = {"random", "max", "min"};
   auto it = std::find(choices.begin(), choices.end(), method);
-  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom', 'min', 'max'.");
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom', 'min', 'max'.");
 
   Stage s("sampling_voxel");
   s.set("res", res);
@@ -353,7 +424,7 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
 
   static const std::vector<std::string> choices = {"sparse", "normal", "dense", "denser"};
   auto it = std::find(choices.begin(), choices.end(), density);
-  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'density'. Available options are 'sparse'', 'normal', 'dense', 'denser'");
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'density'. Available options are 'sparse'', 'normal', 'dense', 'denser'");
 
   int d = 256;
   if (density == "sparse") d = 64;
