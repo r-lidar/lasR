@@ -151,6 +151,8 @@ Pipeline write_pcd(std::string ofile, bool binary = true);
 Pipeline write_vpc(std::string ofile, bool absolute_path = false, bool use_gpstime = false);
 Pipeline write_lax(bool embedded = false, bool overwrite = false);
 
+ReturnType execute(const std::string& config_file, const std::string& async_communication_file = "");
+
 #ifdef USING_R
 //Pipeline aggregate();
 //Pipeline callback();

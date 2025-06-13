@@ -22,7 +22,7 @@
 #include "error.h"
 #include "print.h"
 
-#include "pipeline.h"
+#include "Engine.h"
 #include "FileCollection.h"
 
 #include "DrawflowParser.h"
@@ -129,7 +129,7 @@ bool process(const std::string& config_file)
 
   try
   {
-    Pipeline pipeline;
+    Engine pipeline;
 
     if (!pipeline.parse(json_pipeline, progrss))
     {
@@ -217,7 +217,7 @@ bool process(const std::string& config_file)
         // We need a copy of the pipeline. The copy constructor of the pipeline and stages
         // ensure that shared resources are protected (such as connection to output files)
         // and private data are copied.
-        Pipeline private_pipeline(pipeline);
+        Engine private_pipeline(pipeline);
 
         #pragma omp for schedule(dynamic)
         for (int i = 0 ; i < n ; ++i)
@@ -391,7 +391,7 @@ SEXP get_pipeline_info(SEXP sexp_config_file)
     nlohmann::json json_pipeline = json["pipeline"];
 
 
-    Pipeline pipeline;
+    Engine pipeline;
     if (!pipeline.parse(json_pipeline))
     {
       throw last_error;

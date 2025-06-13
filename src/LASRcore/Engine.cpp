@@ -1,4 +1,4 @@
-#include "pipeline.h"
+#include "Engine.h"
 #include "PointCloud.h"
 #include "FileCollection.h"
 #include "Stage.h"
@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-Pipeline::Pipeline()
+Engine::Engine()
 {
   ncpu = 1;
   parsed = false;
@@ -30,7 +30,7 @@ Pipeline::Pipeline()
 // The copy constructor is used for multi-threading. It creates a copy of the pipeline
 // where each stage is deep copied but with shared resources  such as file connection and
 // gdal datasets
-Pipeline::Pipeline(const Pipeline& other)
+Engine::Engine(const Engine& other)
 {
   ncpu = other.ncpu;
   parsed = other.parsed;
@@ -71,12 +71,12 @@ Pipeline::Pipeline(const Pipeline& other)
   }
 }
 
-Pipeline::~Pipeline()
+Engine::~Engine()
 {
   clean();
 }
 
-bool Pipeline::pre_run()
+bool Engine::pre_run()
 {
   FileCollection* ctg = catalog.get();
   for (auto&& stage : pipeline)
@@ -92,7 +92,7 @@ bool Pipeline::pre_run()
   return true;
 }
 
-bool Pipeline::run()
+bool Engine::run()
 {
   bool success;
 
@@ -107,7 +107,7 @@ bool Pipeline::run()
   return success;
 }
 
-bool Pipeline::run_streamed()
+bool Engine::run_streamed()
 {
   bool success;
   bool last_point = false;
@@ -189,7 +189,7 @@ bool Pipeline::run_streamed()
   return true;
 }
 
-bool Pipeline::run_loaded()
+bool Engine::run_loaded()
 {
   bool success;
 
@@ -279,7 +279,7 @@ bool Pipeline::run_loaded()
   return true;
 }
 
-void Pipeline::merge(const Pipeline& other)
+void Engine::merge(const Engine& other)
 {
   order.insert(order.end(), other.order.begin(), other.order.end());
   profiler.profiles.insert(profiler.profiles.end(), other.profiler.profiles.begin(), other.profiler.profiles.end());
@@ -295,7 +295,7 @@ void Pipeline::merge(const Pipeline& other)
   }
 }
 
-bool Pipeline::set_chunk(Chunk& chunk)
+bool Engine::set_chunk(Chunk& chunk)
 {
   order.push_back(chunk.id);
 
@@ -328,12 +328,12 @@ bool Pipeline::set_chunk(Chunk& chunk)
   return true;
 }
 
-void Pipeline::set_progress(Progress* progress)
+void Engine::set_progress(Progress* progress)
 {
   for (auto&& stage : pipeline) stage->set_progress(progress);
 }
 
-void Pipeline::set_ncpu(int ncpu)
+void Engine::set_ncpu(int ncpu)
 {
   if (ncpu > available_threads())
   {
@@ -345,19 +345,19 @@ void Pipeline::set_ncpu(int ncpu)
   for (auto&& stage : pipeline) stage->set_ncpu(ncpu);
 }
 
-void Pipeline::set_ncpu_concurrent_files(int ncpu)
+void Engine::set_ncpu_concurrent_files(int ncpu)
 {
   for (auto&& stage : pipeline) stage->set_ncpu_concurrent_files(ncpu);
 }
 
 
-void Pipeline::set_verbose(bool verbose)
+void Engine::set_verbose(bool verbose)
 {
   this->verbose = verbose;
   for (auto&& stage : pipeline) stage->set_verbose(verbose);
 }
 
-bool Pipeline::is_streamable() const
+bool Engine::is_streamable() const
 {
   bool b = true;
   for (auto&& stage : pipeline)
@@ -372,7 +372,7 @@ bool Pipeline::is_streamable() const
   return b;
 }
 
-bool Pipeline::is_parallelizable() const
+bool Engine::is_parallelizable() const
 {
   bool b = true;
   for (auto&& stage : pipeline)
@@ -387,7 +387,7 @@ bool Pipeline::is_parallelizable() const
   return b;
 }
 
-bool Pipeline::is_parallelized() const
+bool Engine::is_parallelized() const
 {
   bool b = false;
   for (auto&& stage : pipeline)
@@ -402,7 +402,7 @@ bool Pipeline::is_parallelized() const
   return b;
 }
 
-bool Pipeline::use_rcapi() const
+bool Engine::use_rcapi() const
 {
   bool b = false;
   for (auto&& stage : pipeline)
@@ -417,7 +417,7 @@ bool Pipeline::use_rcapi() const
   return b;
 }
 
-bool Pipeline::need_points() const
+bool Engine::need_points() const
 {
   bool b = false;
   for (auto&& stage : pipeline)
@@ -432,7 +432,7 @@ bool Pipeline::need_points() const
   return b;
 }
 
-double Pipeline::need_buffer()
+double Engine::need_buffer()
 {
   for (auto&& stage : pipeline)
   {
@@ -445,7 +445,7 @@ double Pipeline::need_buffer()
   return buffer;
 }
 
-void Pipeline::sort()
+void Engine::sort()
 {
   // The vector 'order' contain the chunk IDs in the order they were computed. In sequential processing
   // this order is trivially 1 2 3 4 5 ... but in parallel the order is unpredictable like 1 5 3 2 4.
@@ -465,7 +465,7 @@ void Pipeline::sort()
   for (auto&& stage : pipeline) stage->sort(order);
 }
 
-void Pipeline::clear(bool last)
+void Engine::clear(bool last)
 {
   for (auto&& stage : pipeline)
   {
@@ -473,7 +473,7 @@ void Pipeline::clear(bool last)
   }
 }
 
-void Pipeline::clean()
+void Engine::clean()
 {
   if (!point_cloud_ownership_transfered) delete las;
   header = nullptr;
@@ -482,7 +482,7 @@ void Pipeline::clean()
 }
 
 #ifdef USING_R
-SEXP Pipeline::to_R()
+SEXP Engine::to_R()
 {
   SEXP ans = PROTECT(Rf_allocVector(VECSXP, pipeline.size()));
   SEXP names = PROTECT(Rf_allocVector(STRSXP, pipeline.size()));
@@ -500,7 +500,7 @@ SEXP Pipeline::to_R()
 }
 #endif
 
-nlohmann::json Pipeline::to_json()
+nlohmann::json Engine::to_json()
 {
   nlohmann::json ans;
 
@@ -514,7 +514,7 @@ nlohmann::json Pipeline::to_json()
 }
 
 
-/*void Pipeline::show()
+/*void Engine::show()
 {
   // # nocov start
   #pragma

@@ -24,13 +24,16 @@
 #include "error.h"
 #include "print.h"
 
-#include "pipeline.h"
+#include "Engine.h"
 #include "FileCollection.h"
 
 #include "DrawflowParser.h"
 #include "nlohmann/json.hpp"
 
-api::ReturnType execute(const std::string& config_file, const std::string& async_communication_file)
+namespace api
+{
+
+ReturnType execute(const std::string& config_file, const std::string& async_communication_file)
 {
   // Open the JSON file
   std::ifstream fjson(config_file);
@@ -108,7 +111,7 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
   //uintptr_t original_CStackLimit = R_CStackLimit;
   //#endif
 
-    Pipeline pipeline;
+    Engine pipeline;
 
     if (!pipeline.parse(json_pipeline, progrss))
     {
@@ -196,7 +199,7 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
         // We need a copy of the pipeline. The copy constructor of the pipeline and stages
         // ensure that shared resources are protected (such as connection to output files)
         // and private data are copied.
-        Pipeline private_pipeline(pipeline);
+        Engine private_pipeline(pipeline);
 
         #pragma omp for schedule(dynamic)
         for (int i = 0 ; i < n ; ++i)
@@ -327,3 +330,5 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
     return false;
   #endif
 }
+
+} // namespace api

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <limits>
 
-#include "pipeline.h"
+#include "Engine.h"
 #include "FileCollection.h"
 
 #include "addattribute.h"
@@ -65,7 +65,7 @@ static std::unique_ptr<Stage> create_instance()
   return std::make_unique<T>();
 }
 
-bool Pipeline::parse(const nlohmann::json& json, bool progress)
+bool Engine::parse(const nlohmann::json& json, bool progress)
 {
   int num_stages = json.size();
 

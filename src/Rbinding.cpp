@@ -32,7 +32,6 @@ namespace Rcpp
 
 #include <Rcpp.h>
 
-api::ReturnType execute(const std::string& config_file, const std::string& async_communication_file = "");
 SEXP process(SEXP, SEXP);
 SEXP get_pipeline_info(SEXP);
 
@@ -123,7 +122,7 @@ SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on)
   s->set_files(on);
   std::string f = s->write_json();
 
-  return execute(f);
+  return api::execute(f);
 }
 
 SEXP get_address(SEXP obj)
