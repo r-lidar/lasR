@@ -5,9 +5,9 @@ namespace api
 Stage::Stage(const std::string& algoname)
 {
   set("algoname", algoname);
-  set("uid", generate_uid());
+  set("uid", generate_uid(12));
   set("output", "");
-  set("filter", "");
+  set("filter", std::vector<std::string>());
 }
 
 void Stage::set(const std::string& key, const Value& value)
@@ -97,7 +97,7 @@ std::string Stage::to_string() const
 
 std::string Stage::generate_uid(int size)
 {
-  static const char chars[] = "abcdef012345678";
+  static const char chars[] = "abcdef0123456789";
   std::string result;
   result.reserve(size);
   for (int i = 0; i < size; ++i)
