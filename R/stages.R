@@ -1190,6 +1190,14 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
   set_lasr_class(ans)
 }
 
+
+stop_if_chunk_id_below = function(index)
+{
+  index <- as.integer(index)
+  ans <- list(algoname = "stop_if", condition = "chunk_id_below", index = index)
+  set_lasr_class(ans)
+}
+
 #' Sort points in the point cloud
 #'
 #' This stage sorts points spatially. A grid of 50 meters is applied, and points are sorted within
@@ -1205,13 +1213,6 @@ stop_if_outside = function(xmin, ymin, xmax, ymax)
 sort_points = function()
 {
   ans <- list(algoname = "sort", spatial = TRUE)
-  set_lasr_class(ans)
-}
-
-stop_if_chunk_id_below = function(index)
-{
-  index <- as.integer(index)
-  ans <- list(algoname = "stop_if", condition = "chunk_id_below", index = index)
   set_lasr_class(ans)
 }
 

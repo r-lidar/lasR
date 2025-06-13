@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <limits>
 #include <list>
 #include <variant>
 #include <nlohmann/json.hpp>
@@ -133,15 +134,16 @@ Pipeline pit_fill(std::string connect_uid, int lap_size = 3, double thr_lap = 0.
 //Pipeline reader_rectangles();
 //Pipeline region_growing();
 //Pipeline remove_attribute();
-//Pipeline set_crs();
-//Pipeline sampling_voxel();
-//Pipeline sampling_pixel();
-//Pipeline sampling_poisson();
-//Pipeline stop_if_outside();
-//Pipeline stop_if_chunk_id_below();
-//Pipeline sort_points();
-//Pipeline summarise();
-//Pipeline triangulate();
+Pipeline set_crs_epsg(int epsg);
+Pipeline set_crs_wkt(std::string wkt);
+Pipeline sampling_voxel(double res = 2, std::vector<std::string> filter = {""}, std::string method = "random", int shuffle_size = std::numeric_limits<int>::max());
+Pipeline sampling_pixel(double res = 2,  std::vector<std::string> filter = {""}, std::string method = "random", std::string use_attribute = "Z", int shuffle_size = std::numeric_limits<int>::max());
+Pipeline sampling_poisson(double distance = 2,  std::vector<std::string> filter = {""}, int shuffle_size = std::numeric_limits<int>::max());
+Pipeline stop_if_outside(double xmin, double ymin, double xmax, double ymax);
+Pipeline stop_if_chunk_id_below(int index);
+Pipeline sort_points(bool spatial = true);
+Pipeline summarise(double zwbin = 2, double iwbin = 50, std::vector<std::string> metrics = {},  std::vector<std::string> filter = {""});
+Pipeline triangulate(double max_edge = 0, std::vector<std::string> filter = {""}, std::string ofile = "", std::string use_attribute = "Z");
 Pipeline transform_with(std::string connect_uid, std::string operation = "-", std::string store_in_attribute = "", bool bilinear = true);
 Pipeline write_las(std::string ofile, std::vector<std::string> filter = {""}, bool keep_buffer = false);
 Pipeline write_copc(std::string ofile, std::vector<std::string> filter = {""}, bool keep_buffer = false, int max_depth = -1, std::string density = "dense");

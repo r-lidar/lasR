@@ -135,16 +135,6 @@ Pipeline hull(std::string connect_uid, std::string ofile)
   return Pipeline(s);
 }
 
-Pipeline transform_with(std::string connect_uid, std::string operation, std::string store_in_attribute, bool bilinear)
-{
-  Stage s("transform_with");
-  s.set("connect", connect_uid);
-  s.set("operator", operation);
-  s.set("bilinear", bilinear);
-
-  return Pipeline(s);
-}
-
 Pipeline info()
 {
   Stage s("info");
@@ -221,6 +211,127 @@ Pipeline pit_fill(std::string connect_uid, int lap_size, double thr_lap, double 
   s.set("thr_spk", thr_spk);
   s.set("dil_radius", dil_radius);
   s.set("output", ofile);
+
+  return Pipeline(s);
+}
+
+Pipeline set_crs_epsg(int epsg)
+{
+  Stage s("set_crs");
+  s.set("epsg", epsg);
+  s.set("wkt", "");
+
+  return Pipeline(s);
+}
+
+Pipeline set_crs_wkt(std::string wkt)
+{
+  Stage s("set_crs");
+  s.set("epsg", 0);
+  s.set("wkt", wkt);
+
+  return Pipeline(s);
+}
+
+Pipeline sampling_voxel(double res, std::vector<std::string> filter, std::string method, int shuffle_size)
+{
+  static const std::vector<std::string> choices = {"random"};
+  auto it = std::find(choices.begin(), choices.end(), method);
+  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom'");
+
+  Stage s("sampling_voxel");
+  s.set("res", res);
+  s.set("filter", filter);
+  s.set("method", method);
+  s.set("shuffle_size", shuffle_size);
+
+  return Pipeline(s);
+}
+
+Pipeline sampling_pixel(double res,  std::vector<std::string> filter, std::string method, std::string use_attribute, int shuffle_size)
+{
+  static const std::vector<std::string> choices = {"random", "max", "min"};
+  auto it = std::find(choices.begin(), choices.end(), method);
+  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom', 'min', 'max'.");
+
+  Stage s("sampling_voxel");
+  s.set("res", res);
+  s.set("filter", filter);
+  s.set("method", method);
+  s.set("use_attribute", use_attribute);
+  s.set("shuffle_size", shuffle_size);
+
+  return Pipeline(s);
+}
+
+Pipeline sampling_poisson(double distance,  std::vector<std::string> filter, int shuffle_size)
+{
+  Stage s("sampling_poisson");
+  s.set("distance", distance);
+  s.set("filter", filter);
+  s.set("shuffle_size", shuffle_size);
+
+  return Pipeline(s);
+}
+
+Pipeline stop_if_outside(double xmin, double ymin, double xmax, double ymax)
+{
+  Stage s("stop_if");
+  s.set("condition", "outside_bbox");
+  s.set("xmin", xmin);
+  s.set("xmax", xmax);
+  s.set("ymin", ymin);
+  s.set("ymax", ymax);
+
+  return Pipeline(s);
+}
+
+Pipeline stop_if_chunk_id_below(int index)
+{
+  Stage s("stop_if");
+  s.set("condition", "chunk_id_below");
+  s.set("index", index);
+
+  return Pipeline(s);
+}
+
+Pipeline sort_points(bool spatial)
+{
+  Stage s("sort");
+  s.set("spatial", spatial);
+
+  return Pipeline(s);
+}
+
+Pipeline summarise(double zwbin, double iwbin, std::vector<std::string> metrics,  std::vector<std::string> filter)
+{
+  Stage s("summarise");
+  s.set("zwbin", zwbin);
+  s.set("iwbin", iwbin);
+  s.set("filter", filter);
+  if (metrics.size() == 0)
+    s.set("metrics", metrics);
+
+  return Pipeline(s);
+}
+
+Pipeline triangulate(double max_edge, std::vector<std::string> filter, std::string ofile, std::string use_attribute)
+{
+  Stage s("triangulate");
+  s.set("max_edge", max_edge);
+  s.set("filter", filter);
+  s.set("output", ofile);
+  s.set("use_attribute", use_attribute);
+
+  return Pipeline(s);
+}
+
+Pipeline transform_with(std::string connect_uid, std::string operation, std::string store_in_attribute, bool bilinear)
+{
+  Stage s("transform_with");
+  s.set("connect", connect_uid);
+  s.set("operator", operation);
+  s.set("bilinear", bilinear);
 
   return Pipeline(s);
 }

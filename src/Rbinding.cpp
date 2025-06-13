@@ -10,14 +10,18 @@ namespace Rcpp
 {
   template <> SEXP wrap(const api::Pipeline& pipeline)
   {
+    // Create a deep copy allocated on the heap to ensure the object survives in the R session
+    // and expose a pointer
     api::Pipeline* s = new api::Pipeline(pipeline);
     SEXP extptr = R_MakeExternalPtr(static_cast<void*>(s), R_NilValue, R_NilValue);
 
+    // Register the R method to delete the point with GC
     R_RegisterCFinalizerEx(extptr, [](SEXP p) {
       api::Pipeline* s = static_cast<api::Pipeline*>(R_ExternalPtrAddr(p));
       if (s) delete s;
     }, TRUE);
 
+    // Assign a class to the pointer for S3 overload
     SEXP cls = PROTECT(Rf_mkString("PipelinePtr"));
     Rf_setAttrib(extptr, R_ClassSymbol, cls);
     UNPROTECT(1);
@@ -70,6 +74,17 @@ RCPP_MODULE(stages)
   function("load_raster", &api::load_raster, "Load a raster from file");
   function("load_matrix", &api::load_matrix, "Load a 4x4 matrix");
   function("local_maximum", &api::local_maximum, "Local maximum filter");
+  function("set_crs_epsg", &api::set_crs_epsg, "Set CRS using an EPSG code");
+  function("set_crs_wkt", &api::set_crs_wkt, "Set CRS using a WKT string");
+  function("sampling_voxel", &api::sampling_voxel, "Sample the point cloud using voxel-based sampling");
+  function("sampling_pixel", &api::sampling_pixel, "Sample the point cloud using pixel-based sampling");
+  function("sampling_poisson", &api::sampling_poisson, "Sample the point cloud using Poisson disk sampling");
+  function("stop_if_outside", &api::stop_if_outside, "Stop processing if the chunk is outside given bounds");
+  function("stop_if_chunk_id_below", &api::stop_if_chunk_id_below, "Stop processing if chunk ID is below threshold");
+  function("sort_points", &api::sort_points, "Sort points spatially and/or in temporarly");
+  function("summarise", &api::summarise, "Summarise metrics in vertical and intensity bins");
+  function("triangulate", &api::triangulate, "Generate a triangulation from the point cloud");
+
   function("transform_with", &api::transform_with, "Transform the point cloud with");
   function("write_las", &api::write_las, "Write a LAS or LAZ file");
   function("write_copc", &api::write_copc, "Write a LAS or LAZ file");
