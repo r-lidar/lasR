@@ -331,4 +331,34 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
   #endif
 }
 
+PipelineInfo pipeline_info(const std::string& config_file)
+{
+  std::ifstream fjson(config_file);
+  if (!fjson.is_open())
+  {
+    throw std::runtime_error("Could not open the json file containing the pipeline");
+  }
+
+  nlohmann::json json;
+  fjson >> json;
+
+  nlohmann::json json_pipeline = json["pipeline"];
+  Engine pipeline;
+  if (!pipeline.parse(json_pipeline))
+  {
+    throw std::runtime_error(last_error);
+  }
+
+  PipelineInfo info;
+  info.streamable      = pipeline.is_streamable();
+  info.read_points     = pipeline.need_points();
+  info.buffer          = pipeline.need_buffer();
+  info.parallelizable  = pipeline.is_parallelizable();
+  info.parallelized    = pipeline.is_parallelized();
+  info.use_rcapi       = pipeline.use_rcapi();
+
+  return info;
+}
+
+
 } // namespace api

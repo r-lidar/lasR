@@ -29,6 +29,16 @@ void lasfilterusage();
 void lastransformusage();
 bool is_indexed(std::string);
 
+struct PipelineInfo
+{
+  bool streamable;
+  bool read_points;
+  double buffer;
+  bool parallelizable;
+  bool parallelized;
+  bool use_rcapi;
+};
+
 class Stage
 {
 public:
@@ -111,6 +121,9 @@ private:
   std::string opt_profiling_file = "";
 };
 
+ReturnType execute(const std::string& config_file, const std::string& async_communication_file = "");
+PipelineInfo pipeline_info(const std::string& config_file);
+
 Pipeline add_attribute(std::string data_type, std::string name, std::string description, double scale = 1, double offset = 0);
 Pipeline add_rgb();
 Pipeline classify_with_sor(int k = 8, int m = 6, int classification = 18);
@@ -136,7 +149,7 @@ Pipeline rasterize_triangulation(std::string connect_uid, double res, std::strin
 Pipeline reader_coverage(std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
 Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
 Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
-//Pipeline region_growing();
+Pipeline region_growing(std::string connect_uid_raster, std::string connect_uid_seeds, double th_tree = 2, double th_seed = 0.45, double th_cr = 0.55, double max_cr = 20, std::string ofile = "");
 Pipeline remove_attribute(std::string name);
 Pipeline set_crs_epsg(int epsg);
 Pipeline set_crs_wkt(std::string wkt);
@@ -154,8 +167,6 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter = {""}, b
 Pipeline write_pcd(std::string ofile, bool binary = true);
 Pipeline write_vpc(std::string ofile, bool absolute_path = false, bool use_gpstime = false);
 Pipeline write_lax(bool embedded = false, bool overwrite = false);
-
-ReturnType execute(const std::string& config_file, const std::string& async_communication_file = "");
 
 #ifdef USING_R
 Pipeline aggregate(double res, int nmetrics, double window, std::string call_ptr, std::string env_ptr, std::vector<std::string> filter = {""}, std::string ofile = "");

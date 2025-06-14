@@ -33,13 +33,9 @@ namespace Rcpp
 #include <Rcpp.h>
 
 SEXP process(SEXP, SEXP);
-SEXP get_pipeline_info(SEXP);
 
 // [[Rcpp::export]]
 SEXP cpp_process(SEXP args, SEXP async) { return process(args, async); } // old API to be removed
-
-// [[Rcpp::export]]
-SEXP cpp_get_pipeline_info(SEXP pipeline) { return get_pipeline_info(pipeline); } // old API to be removed
 
 using namespace Rcpp;
 
@@ -85,7 +81,7 @@ RCPP_MODULE(stages)
   function("reader_coverage", &api::reader_coverage, "Read points coverage");
   function("reader_circles", &api::reader_circles, "Read points within circles");
   function("reader_rectangles", &api::reader_rectangles, "Read points within rectangles");
-  // function("region_growing", &api::region_growing, "Region growing segmentation tree segmentation");
+  function("region_growing", &api::region_growing, "Region growing segmentation tree segmentation");
   function("remove_attribute", &api::remove_attribute, "Remove a named attribute from the point cloud");
   function("set_crs_epsg", &api::set_crs_epsg, "Set CRS using an EPSG code");
   function("set_crs_wkt", &api::set_crs_wkt, "Set CRS using a WKT string");
@@ -105,16 +101,23 @@ RCPP_MODULE(stages)
   function("write_lax", &api::write_lax, "Write a LAX spatial index for LAS and LAZ files");
 }
 
-Rcpp::List get_stage_info(SEXP ptr)
+inline api::Pipeline* as_pipeline(SEXP ptr)
 {
   if (R_ExternalPtrAddr(ptr) == nullptr)
-    Rf_error("Invalid external pointer: nullptr");
+    throw std::invalid_argument("Invalid external pointer: nullptr");
 
   void* raw_ptr = R_ExternalPtrAddr(ptr);
   auto* p = dynamic_cast<api::Pipeline*>(static_cast<api::Pipeline*>(raw_ptr));
 
   if (p == nullptr)
-    Rf_error("Invalid external pointer: not a pointer on Pipeline");
+    throw std::invalid_argument("Invalid external pointer: not a pointer on Pipeline");
+
+  return p;
+}
+
+Rcpp::List get_stage_info(SEXP ptr)
+{
+  api::Pipeline* p = as_pipeline(ptr);
 
   auto stages = p->get_stages();
   if (stages.size() != 1)
@@ -132,41 +135,27 @@ Rcpp::List get_stage_info(SEXP ptr)
 
 SEXP print_pipeline(SEXP ptr)
 {
-  if (R_ExternalPtrAddr(ptr) == nullptr)
-    Rf_error("Invalid external pointer: nullptr");
+  api::Pipeline* p = as_pipeline(ptr);
 
-  void* raw_ptr = R_ExternalPtrAddr(ptr);
-  auto* s = dynamic_cast<api::Pipeline*>(static_cast<api::Pipeline*>(raw_ptr));
-
-  if (s == nullptr)
-    Rf_error("Invalid external pointer: not a pointer on Pipeline");
-
-  std::string out = s->to_string();
+  std::string out = p->to_string();
   Rprintf("%s\n", out.c_str());
   return R_NilValue;
 }
 
 SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on, double buffer, double chunk, int ncores, bool verbose, bool progress)
 {
-  if (R_ExternalPtrAddr(ptr) == nullptr)
-    Rf_error("Invalid external pointer: nullptr");
+  api::Pipeline* p = as_pipeline(ptr);
 
-  void* raw_ptr = R_ExternalPtrAddr(ptr);
-  auto* s = dynamic_cast<api::Pipeline*>(static_cast<api::Pipeline*>(raw_ptr));
+  p->set_files(on);
+  p->set_ncores(1);
+  //p->set_strategy();
+  p->set_verbose(verbose);
+  p->set_buffer(buffer);
+  p->set_progress(progress);
+  p->set_chunk(chunk);
+  p->set_profile_file("");
 
-  if (s == nullptr)
-    Rf_error("Invalid external pointer: not a pointer on Pipeline");
-
-  s->set_files(on);
-  s->set_ncores(1);
-  //s->set_strategy();
-  s->set_verbose(verbose);
-  s->set_buffer(buffer);
-  s->set_progress(progress);
-  s->set_chunk(chunk);
-  s->set_profile_file("");
-
-  std::string f = s->write_json();
+  std::string f = p->write_json();
 
   return api::execute(f);
 }
@@ -180,24 +169,29 @@ SEXP get_address(SEXP obj)
 
 SEXP merge_pipeline(SEXP e1, SEXP e2)
 {
-  if (R_ExternalPtrAddr(e1) == nullptr)
-    Rf_error("Invalid external pointer: nullptr");
-
-  if (R_ExternalPtrAddr(e2) == nullptr)
-    Rf_error("Invalid external pointer: nullptr");
-
-  void* ptr1 = R_ExternalPtrAddr(e1);
-  auto* s1 = dynamic_cast<api::Pipeline*>(static_cast<api::Pipeline*>(ptr1));
-  if (s1 == nullptr) Rf_error("Invalid external pointer: not a pointer on Pipeline");
-
-  void* ptr2 = R_ExternalPtrAddr(e2);
-  auto* s2 = dynamic_cast<api::Pipeline*>(static_cast<api::Pipeline*>(ptr2));
-  if (s2 == nullptr) Rf_error("Invalid external pointer: not a pointer on Pipeline");
-
-  api::Pipeline p = *s1 + *s2;
-
+  api::Pipeline* p1 = as_pipeline(e1);
+  api::Pipeline* p2 = as_pipeline(e2);
+  api::Pipeline p = *p1 + *p2;
   return wrap(p);
 }
+
+SEXP pipeline_info(SEXP ptr)
+{
+  api::Pipeline* p = as_pipeline(ptr);
+
+  std::string f = p->write_json();
+  api::PipelineInfo info = api::pipeline_info(f);
+
+  return List::create(
+    _["streamable"]     = info.streamable,
+    _["read_points"]    = info.read_points,
+    _["buffer"]         = info.buffer,
+    _["parallelizable"] = info.parallelizable,
+    _["parallelized"]   = info.parallelized,
+    _["R_API"]          = info.use_rcapi
+  );
+}
+
 
 SEXP test(std::vector<std::string> on)
 {
@@ -227,6 +221,7 @@ RCPP_MODULE(operations)
   function("print_pipeline", &print_pipeline, "Print pipelines");
   function("get_address", &get_address, "Get address of a SEXP");
   function("get_stage_info", &get_stage_info, "Get stage info");
+  function("get_pipeline_info", &pipeline_info, "Get pipeline info");
 }
 
 #endif
