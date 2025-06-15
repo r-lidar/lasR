@@ -88,6 +88,7 @@ public:
   Pipeline operator+(const Pipeline& other) const;
   Pipeline& operator+=(const Stage& s);
   Pipeline& operator+=(const Pipeline& other);
+  Pipeline operator[](std::size_t index) const;
 
   void set_files(const std::vector<std::string>& files) { this->files = files; };
   void set_ncores(int n) { if (n > 0) opt_ncores = n; };
@@ -98,14 +99,14 @@ public:
   void set_chunk(double val) { if(val> 0) opt_chunk = val; };
   void set_profile_file(const std::string& path) { opt_profiling_file = path; };
 
+  bool has_reader() const;
+  bool has_catalog() const;
+
   std::string to_string() const;
   std::string write_json(const std::string& path = "") const;
   nlohmann::json generate_json() const;
 
-  const std::list<Stage>& get_stages() { return stages; };
-
-private:
-  bool has_reader() const;
+  std::list<Stage>& get_stages() { return stages; };
 
 private:
   std::list<Stage> stages;
@@ -141,8 +142,6 @@ Pipeline load_raster(std::string file, int band = 1L);
 Pipeline load_matrix(std::vector<double> matrix, bool check = true);
 Pipeline local_maximum(double ws, double min_height = 2, std::vector<std::string> filter = {""}, std::string ofile = "", std::string use_attribute = "Z", bool record_attributes = false);
 Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_height = 2, std::vector<std::string> filter = {""}, std::string ofile = "");
-//Pipeline neighborhood_metrics();
-Pipeline nothing(bool read = false, bool stream = false, bool loop = false);
 Pipeline pit_fill(std::string connect_uid, int lap_size = 3, double thr_lap = 0.1, double thr_spk = -0.1, int med_size = 3, int dil_radius = 0, std::string ofile = "");
 Pipeline rasterize(double res, double window, std::vector<std::string> operators = {"max"}, std::vector<std::string> filter = {""}, std::string ofile = "", double default_value = -99999);
 Pipeline rasterize_triangulation(std::string connect_uid, double res, std::string ofile = "");
@@ -172,6 +171,13 @@ Pipeline write_lax(bool embedded = false, bool overwrite = false);
 Pipeline aggregate(double res, int nmetrics, double window, std::string call_ptr, std::string env_ptr, std::vector<std::string> filter = {""}, std::string ofile = "");
 Pipeline callback(std::string ptr, std::string args, std::string expose = "", bool drop_buffer = false, bool no_las_update = false);
 #endif
+} // namespace api
+
+// These are not supposed to be exposed or not fully completed
+namespace nonapi
+{
+api::Pipeline neighborhood_metrics(std::string connect_uid, std::vector<std::string> metrics, int k = 10, double r = 0, std::string ofile = "");
+api::Pipeline nothing(bool read = false, bool stream = false, bool loop = false);
 } // namespace api
 
 #endif // API_H

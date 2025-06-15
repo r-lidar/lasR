@@ -74,7 +74,8 @@ RCPP_MODULE(stages)
   function("load_matrix", &api::load_matrix, "Load a 4x4 matrix");
   function("local_maximum", &api::local_maximum, "Local maximum filter on a point cloud");
   function("local_maximum_raster", &api::local_maximum_raster, "Local maximum filter on a raster");
-  function("nothing", &api::nothing, "A debugging stage");
+  function("neighborhood_metrics", &nonapi::neighborhood_metrics, "Local metrics");
+  function("nothing", &nonapi::nothing, "A debugging stage");
   function("pit_fill", &api::pit_fill, "CHM enhancement");
   function("rasterize", &api::rasterize, "Rasterize point cloud");
   function("rasterize_triangulation", &api::rasterize_triangulation, "Rasterize a triangulation");
@@ -178,7 +179,6 @@ SEXP merge_pipeline(SEXP e1, SEXP e2)
 SEXP pipeline_info(SEXP ptr)
 {
   api::Pipeline* p = as_pipeline(ptr);
-
   std::string f = p->write_json();
   api::PipelineInfo info = api::pipeline_info(f);
 
@@ -190,6 +190,121 @@ SEXP pipeline_info(SEXP ptr)
     _["parallelized"]   = info.parallelized,
     _["R_API"]          = info.use_rcapi
   );
+}
+
+SEXP get_stage_by_index(SEXP ptr, int i)
+{
+  api::Pipeline* p = as_pipeline(ptr);
+  api::Pipeline res = (*p)[i];
+  return wrap(res);
+}
+
+bool has_reader(SEXP ptr)
+{
+  api::Pipeline* p = as_pipeline(ptr);
+  return p->has_reader();
+}
+
+SEXP cast_pipeline_to_dataframe_compatible(SEXP ptr, std::string addr, std::string crs, std::vector<double> accuracy)
+{
+  api::Pipeline* tmp = as_pipeline(ptr);
+
+  // Deep copy;
+  api::Pipeline p(*tmp);
+
+  if (!p.has_reader())
+    throw std::runtime_error("Cannot cast a pipeline without reader");
+
+  auto& stages = p.get_stages();
+
+  for (auto& stage : stages)
+  {
+    if (stage.get_name() == "reader")
+    {
+      stage.set("dataframe", addr);
+      stage.set("crs", crs);
+      stage.set("accuracy", accuracy);
+      break;
+    }
+  }
+
+  api::Stage s("build_catalog");
+  s.set("dataframe", addr);
+  s.set("crs", crs);
+  s.set("type", "dataframe");
+
+  api::Pipeline out = api::Pipeline(s);
+  out += p;
+  return wrap(out);
+}
+
+SEXP cast_pipeline_to_xptr_compatible(SEXP ptr, std::string addr, std::string crs, std::vector<double> accuracy)
+{
+  api::Pipeline* tmp = as_pipeline(ptr);
+
+  // Deep copy;
+  api::Pipeline p(*tmp);
+
+  if (p.has_reader())
+    throw std::runtime_error("Cannot cast a pipeline without reader");
+
+  auto& stages = p.get_stages();
+
+  for (auto& stage : stages)
+  {
+    if (stage.get_name() == "reader")
+    {
+      stage.set("externalptr", addr);
+      break;
+    }
+  }
+
+  api::Stage s("build_catalog");
+  s.set("externalptr", addr);
+  s.set("type", "externalptr");
+
+  api::Pipeline out = api::Pipeline(s);
+  out += p;
+  return wrap(out);
+}
+
+
+void cast_reader_to_xptr_reader()
+{
+
+}
+
+
+SEXP make_stage(std::string stage_name, Rcpp::List opts)
+{
+  api::Stage s(stage_name);
+  Rcpp::CharacterVector names = opts.names();
+
+  for (int i = 0; i < opts.size(); ++i)
+  {
+    std::string key = Rcpp::as<std::string>(names[i]);
+    Rcpp::RObject obj = opts[i];
+
+    if (Rcpp::is<int>(obj))
+      s.set(key, Rcpp::as<int>(obj));
+    else if (Rcpp::is<double>(obj))
+      s.set(key, Rcpp::as<double>(obj));
+    else if (Rcpp::is<bool>(obj))
+      s.set(key, Rcpp::as<bool>(obj));
+    else if (Rcpp::is<std::string>(obj))
+      s.set(key, Rcpp::as<std::string>(obj));
+    else if (Rcpp::is<Rcpp::IntegerVector>(obj))
+      s.set(key, Rcpp::as<std::vector<int>>(obj));
+    else if (Rcpp::is<Rcpp::NumericVector>(obj))
+      s.set(key, Rcpp::as<std::vector<double>>(obj));
+    else if (Rcpp::is<Rcpp::CharacterVector>(obj))
+      s.set(key, Rcpp::as<std::vector<std::string>>(obj));
+    else
+      Rcpp::stop("Unsupported type for key: " + key);
+  }
+
+  api::Pipeline p(s);
+  return wrap(p);
 }
 
 
@@ -222,6 +337,10 @@ RCPP_MODULE(operations)
   function("get_address", &get_address, "Get address of a SEXP");
   function("get_stage_info", &get_stage_info, "Get stage info");
   function("get_pipeline_info", &pipeline_info, "Get pipeline info");
+  function("get_stage_by_index", &get_stage_by_index, "Get stage by index");
+  function("make_stage", &make_stage, "Make a custom stage");
+  function("cast_pipeline_to_dataframe_compatible", &cast_pipeline_to_dataframe_compatible, "");
+  function("cast_pipeline_to_xptr_compatible", &cast_pipeline_to_xptr_compatible, "");
 }
 
 #endif

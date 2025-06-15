@@ -202,16 +202,6 @@ Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_hei
   return Pipeline(s);
 }
 
-Pipeline nothing(bool read, bool stream, bool loop)
-{
-  Stage s("nothing");
-  s.set("read", read);
-  s.set("stream", stream);
-  s.set("loop", loop);
-
-  return Pipeline(s);
-}
-
 Pipeline pit_fill(std::string connect_uid, int lap_size, double thr_lap, double thr_spk, int med_size, int dil_radius, std::string ofile)
 {
   Stage s("pit_fill");
@@ -459,6 +449,7 @@ Pipeline transform_with(std::string connect_uid, std::string operation, std::str
   s.set("connect", connect_uid);
   s.set("operator", operation);
   s.set("bilinear", bilinear);
+  s.set("store_in_attribute", store_in_attribute);
 
   return Pipeline(s);
 }
@@ -556,5 +547,33 @@ Pipeline callback(std::string fun_ptr, std::string args_ptr, std::string expose,
   return Pipeline(s);
 }
 #endif
+
+} // namespace api
+
+namespace nonapi
+{
+
+api::Pipeline nothing(bool read, bool stream, bool loop)
+{
+  api::Stage s("nothing");
+  s.set("read", read);
+  s.set("stream", stream);
+  s.set("loop", loop);
+
+  return api::Pipeline(s);
+}
+
+api::Pipeline neighborhood_metrics(std::string connect_uid, std::vector<std::string> metrics, int k, double r, std::string ofile)
+{
+  api::Stage s("neighborhood_metrics");
+  s.set("connect", connect_uid);
+  s.set("k", k);
+  s.set("r", r);
+  s.set("metrics", metrics);
+  s.set("output", ofile);
+
+  return api::Pipeline(s);
+}
+
 
 } // namespace api
