@@ -102,4 +102,9 @@ test_that("callback and add_attribute work with EB of any type",
   expect_true(is.double(data$attr7))
 })
 
+test_that("Cannot add an attribute with reserved keyword",
+{
+  pipeline <- lasR::reader() + lasR::add_extrabytes("float", "angle", "Random numbers")
+  expect_error(lasR::exec(pipeline, on = f), "is a reserved word interpreted as 'ScanAngle'")
+})
 
