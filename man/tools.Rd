@@ -7,6 +7,7 @@
 \alias{+.LASRpipeline}
 \alias{c.LASRpipeline}
 \alias{+.PipelinePtr}
+\alias{[[.PipelinePtr}
 \title{Tools inherited from base R}
 \usage{
 \method{print}{LASRalgorithm}(x, ...)
@@ -18,6 +19,8 @@
 \method{c}{LASRpipeline}(...)
 
 \method{+}{PipelinePtr}(e1, e2)
+
+\method{[[}{PipelinePtr}(x, i, ...)
 }
 \arguments{
 \item{x, e1, e2}{lasR objects}

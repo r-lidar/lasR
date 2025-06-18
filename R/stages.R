@@ -24,12 +24,7 @@
 #' exec(pipeline, on = f)
 add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 {
-  types <- c("uchar", "char", "ushort", "short", "uint", "int", "uint64", "int64", "float", "double")
-  data_type <- match.arg(data_type, types)
-  #data_type <- which(data_type == types)
-
-  ans <- list(algoname = "add_attribute", data_type = data_type, name = name, description = description, scale = scale, offset = offset)
-  set_lasr_class(ans)
+  return(.APISTAGES$add_attribute(data_type, name, description, scale, offset))
 }
 
 #' Add RGB attributes to a LAS file
@@ -49,8 +44,7 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
 #' @export
 add_rgb = function()
 {
-  ans <- list(algoname = "add_rgb")
-  set_lasr_class(ans)
+  return(.APISTAGES$add_rgb())
 }
 
 #' Aggregate a point cloud and compute metrics for each group
@@ -99,8 +93,16 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
     if (is.na(nmetrics)) stop(paste0("Cannot evaluate the number of metrics returned by ", deparse(call)))
   }
 
-  ans <- list(algoname = "aggregate", res = res_raster, nmetrics = nmetrics, window = res_window, call = call, filter = filter, output = ofile, env = env)
-  set_lasr_class(ans, raster = TRUE)
+  call_addr = .APIOPERATIONS$get_address(call)
+  env_addr = .APIOPERATIONS$get_address(env)
+
+  s = .APISTAGES$aggregate(res_raster, nmetrics, res_window, call_addr, env_addr, filter, ofile)
+
+  # Ensure these are not garbage collected by registering attributes
+  attr(s, "call") = call
+  attr(s, "env") = env
+
+  return(s)
 }
 
 # ===== B =====
@@ -191,8 +193,16 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
   fargs <- fargs[-1]
   fargs[names(args)] <- args
 
-  ans <- list(algoname = "callback", fun = fun, expose = expose, drop_buffer = drop_buffer, no_las_update = no_las_update, args = fargs)
-  set_lasr_class(ans)
+  func_addr = .APIOPERATIONS$get_address(fun)
+  args_addr = .APIOPERATIONS$get_address(fargs)
+
+  s = .APISTAGES$callback(func_addr, args_addr, expose, drop_buffer, no_las_update)
+
+  # Ensure these are not garbage collected by registering attributes
+  attr(s, "func") = fun
+  attr(s, "args") = fargs
+
+  return(s)
 }
 
 #' Classify noise points
@@ -209,11 +219,7 @@ callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update
 #' @template return-pointcloud
 #'
 #' @export
-classify_with_sor = function(k = 8, m = 6, class = 18L)
-{
-  ans <- list(algoname = "classify_with_sor", k = k, m = m, class = class)
-  set_lasr_class(ans)
-}
+classify_with_sor = function(k = 8, m = 6, class = 18L) { .APISTAGES$classify_with_sor(k, m, class) }
 
 #' Classify noise points
 #'
@@ -228,11 +234,7 @@ classify_with_sor = function(k = 8, m = 6, class = 18L)
 #' @template return-pointcloud
 #'
 #' @export
-classify_with_ivf = function(res = 5, n = 6L, class = 18L)
-{
-  ans <- list(algoname = "classify_with_ivf", res = res, n = n, class = class)
-  set_lasr_class(ans)
-}
+classify_with_ivf = function(res = 5, n = 6L, class = 18L) { .APISTAGES$classify_with_ivf(res, n, class) }
 
 #' Classify ground points
 #'
@@ -272,8 +274,7 @@ classify_with_ivf = function(res = 5, n = 6L, class = 18L)
 #' ans = exec(pipeline, on = f, progress = TRUE)
 classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_resolution = 0.5, rigidness = 1L, iterations = 500L, time_step = 0.65, ..., class = 2L, filter = "")
 {
-  ans <- list(algoname = "classify_with_csf", slope_smooth = slope_smooth, class_threshold = class_threshold, cloth_resolution = cloth_resolution, rigidness = rigidness, iterations = iterations, time_step = time_step, class = class, filter = filter)
-  set_lasr_class(ans)
+  .APISTAGES$classify_with_csf(slope_smooth, class_threshold, cloth_resolution, rigidness, iterations, time_step, class, filter)
 }
 
 # ===== G =====
@@ -318,11 +319,9 @@ geometry_features = function(k, r, features = "")
 {
   if (missing(k) && missing(r))  stop("'k' and 'r' are missing", call. = FALSE)
   if (!missing(r) && !missing(k)) { } # knn + radius
-  if (!missing(k) && missing(r))  { r <- 0 }   # knn
+  if (!missing(k) && missing(r))  { r <- 0 }  # knn
   if (!missing(r) && missing(k)) { k <- 0 }   # radius
-
-  ans <- list(algoname = "svd", k = k, r = r, features = features)
-  set_lasr_class(ans)
+  .APISTAGES$geometry_feature(k, r, features)
 }
 
 
@@ -345,26 +344,15 @@ geometry_features = function(k, r, features = "")
 #' pipeline <- read + summarise() + filter + summarise()
 #' exec(pipeline, on = f)
 #' @export
-delete_points = function(filter = "")
-{
-  stopifnot(filter != "")
-  ans = list(algoname = "filter", filter = filter)
-  set_lasr_class(ans)
-}
+delete_points = function(filter = "") { .APISTAGES$delete_points(filter) }
 
 #' @export
 #' @rdname delete_points
-delete_noise = function()
-{
-  delete_points(drop_noise())
-}
+delete_noise = function() { delete_points(drop_noise()) }
 
 #' @export
 #' @rdname delete_points
-delete_ground = function()
-{
-  delete_points(drop_ground())
-}
+delete_ground = function() { delete_points(drop_ground()) }
 
 # ===== E =====
 
@@ -384,14 +372,7 @@ delete_ground = function()
 #' pipeline = edit + io
 #' ans = exec(pipeline, on = f)
 #' @template return-pointcloud
-edit_attribute = function(filter = "", attribute = "", value = 0)
-{
-  if (attribute %in% c("x", "X", "y", "Y", "z", "Z"))
-    stop("Editing point coordinates is not allowed")
-
-  ans <- list(algoname = "edit_attribute", attribute = attribute, value = value, filter = filter)
-  set_lasr_class(ans)
-}
+edit_attribute = function(filter = "", attribute = "", value = 0) { .APISTAGES$edit_attribute(filter, attribute, value) }
 
 # ===== F =====
 
@@ -404,12 +385,7 @@ edit_attribute = function(filter = "", attribute = "", value = 0)
 #' @template param-filter
 #' @md
 #' @export
-filter_with_grid = function(res, operator = "min", filter = "")
-{
-  operator = match.arg(operator, c("min", "max"))
-  ans <- list(algoname = "filter_grid", res = res, operator = operator, filter = filter)
-  set_lasr_class(ans)
-}
+filter_with_grid = function(res, operator = "min", filter = "") { .APISTAGES$filter_with_grid(res, operator, filter) }
 
 #' Calculate focal ("moving window") values for each cell of a raster
 #'
@@ -438,13 +414,11 @@ filter_with_grid = function(res, operator = "min", filter = "")
 #' @export
 focal = function(raster, size, fun = "mean", ofile = temptif())
 {
-  raster = get_stage(raster)
-  if (!methods::is(raster, "LASRraster")) stop("'raster' must be a raster stage")  # nocov
+  info = .APIOPERATIONS$get_stage_info(raster)
+  if (!info$raster) stop("'raster' must be a raster stage")  # nocov
+  ofile = normalizePath(ofile, mustWork = FALSE)
 
-  stopifnot(size > 0)
-
-  ans = list(algoname = "focal",  connect = raster[["uid"]], size = size, fun = fun, output = ofile)
-  set_lasr_class(ans, raster = TRUE)
+  .APISTAGES$focal(info[["uid"]], size, fun, ofile)
 }
 
 # ===== H =====
@@ -480,16 +454,14 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 {
   if (!is.null(mesh))
   {
-    mesh = get_stage(mesh)
-    if (mesh$algoname != "triangulate") stop("the stage must be 'triangulate'")  # nocov
-    ans <- list(algoname = "hulls", connect = mesh[["uid"]], output = ofile)
+    info = .APIOPERATIONS$get_stage_info(mesh)
+    if (info$name != "triangulate") stop("the stage must be 'triangulate'")  # nocov
+    return(.APISTAGES$hull_triangulation(info[["uid"]], ofile))
   }
   else
   {
-    ans <- list(algoname = "hulls", output = ofile)
+    return(.APISTAGES$hull(ofile))
   }
-
-  set_lasr_class(ans, vector = TRUE)
 }
 
 # ==== I ======
@@ -519,18 +491,13 @@ hulls = function(mesh = NULL, ofile = tempgpkg())
 #' info(g)
 info = function(f)
 {
-  if (missing(f))
-  {
-    ans <- list(algoname = "info")
-    return(set_lasr_class(ans))
-  }
-  else
-  {
-    exec(info(), on = f)
+  if (missing(f))  {
+    return(.APISTAGES$info())
+  } else {
+    execute(info(), on = f)
     return(invisible())
   }
 }
-
 
 # ===== L =====
 
@@ -558,8 +525,7 @@ info = function(f)
 load_raster = function(file, band = 1L)
 {
   file <- normalizePath(file)
-  ans <- list(algoname = "load_raster", file = file, band = band)
-  set_lasr_class(ans, raster = TRUE)
+  .APISTAGES$load_raster(file, band)
 }
 
 #' Load a matrix for later use
@@ -592,9 +558,7 @@ load_matrix = function(matrix, check = TRUE)
   if (!is.matrix(matrix)) stop("'matrix' is not a matrix")
   if (dim(matrix)[1] != 4) stop("'matrix' is not a 4x4 matrix")
   if (dim(matrix)[2] != 4) stop("'matrix' is not a 4x4 matrix")
-
-  ans <- list(algoname = "load_matrix", matrix = as.numeric(t(matrix)), check = check)
-  set_lasr_class(ans, matrix = TRUE)
+  .APISTAGES$load_matrix(as.numeric(t(matrix)), check)
 }
 
 #' Local Maximum
@@ -634,20 +598,18 @@ load_matrix = function(matrix, check = TRUE)
 #' @md
 local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z", record_attributes = FALSE)
 {
-  ans <- list(algoname = "local_maximum", ws = ws, min_height = min_height, filter = filter, output = ofile, use_attribute = use_attribute, record_attributes = record_attributes)
-  set_lasr_class(ans, vector = TRUE)
+  return(.APISTAGES$local_maximum(ws, min_height, filter,  ofile, use_attribute, record_attributes))
 }
 
 #' @export
 #' @rdname local_maximum
 local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile = tempgpkg())
 {
-  raster = get_stage(raster)
+  info = .APIOPERATIONS$get_stage_info(raster)
+  if (!info$raster)  stop("the stage must be a raster stage")
+  ofile = normalizePath(ofile, mustWork = FALSE)
 
-  if (!methods::is(raster, "LASRraster"))  stop("the stage must be a raster stage")
-
-  ans <- list(algoname = "local_maximum", connect = raster[["uid"]], ws = ws, min_height = min_height, filter = filter, output = ofile)
-  set_lasr_class(ans, vector = TRUE)
+  .APISTAGES$local_maximum_raster(connect = info[["uid"]], ws, min_height, filter, ofile)
 }
 
 # ===== N ====
@@ -694,18 +656,13 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
 #' @noRd
 neighborhood_metrics = function(neighborhood, metrics, k = 10, r = 0, ofile = tempgpkg())
 {
-  nn = get_stage(neighborhood)
-  if (nn$algoname != "local_maximum") stop("the stage must be a local_maximum stage")
-
-  ans <- list(algoname = "neighborhood_metrics", connect = nn[["uid"]], k = k, r = r, metrics = metrics, output = ofile)
-  set_lasr_class(ans)
+  nn = .APIOPERATIONS$get_stage_info(neighborhood)
+  if (nn$name != "local_maximum") stop("the stage must be a local_maximum stage")
+  ofile = normalizePath(ofile, mustWork = FALSE)
+  .APISTAGES$neighborhood_metrics(nn[["uid"]], metrics, k, r, ofile)
 }
 
-nothing = function(read = FALSE, stream = FALSE, loop = FALSE)
-{
-  ans <- list(algoname = "nothing", read = read, stream = stream, loop = loop)
-  set_lasr_class(ans)
-}
+nothing = function(read = FALSE, stream = FALSE, loop = FALSE) { .APISTAGES$nothing(read, stream, loop) }
 
 # ===== P ====
 
@@ -747,11 +704,10 @@ nothing = function(read = FALSE, stream = FALSE, loop = FALSE)
 #' @export
 pit_fill = function(raster, lap_size = 3L, thr_lap = 0.1, thr_spk = -0.1, med_size = 3L, dil_radius = 0L, ofile = temptif())
 {
-  raster = get_stage(raster)
-  if (!methods::is(raster, "LASRraster")) stop("'raster' must be a raster stage")  # nocov
-
-  ans <- list(algoname = "pit_fill", connect = raster[["uid"]],  lap_size = lap_size, thr_lap = thr_lap, thr_spk = thr_spk, med_size = med_size, dil_radius = dil_radius, output = ofile)
-  set_lasr_class(ans, raster = TRUE)
+  info = .APIOPERATIONS$get_stage_info(raster)
+  if (!info$raster) stop("'raster' must be a raster stage")  # nocov
+  ofile = normalizePath(ofile, mustWork = FALSE)
+  .APISTAGES$pit_fill(info[["uid"]],   lap_size, thr_lap,  thr_spk,  med_size, dil_radius, ofile)
 }
 
 # ===== R =====
@@ -850,6 +806,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 
   p = list(...)
   default_value = p$default_value
+  if (is.null(default_value)) default_value = -99999;
 
   res_raster  <- res[1]
   res_window <- res[1]
@@ -862,33 +819,35 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
     return(aggregate_q(res, substitute(operators), filter, ofile, env))
   }
 
-  if (methods::is(operators, "LASRpipeline") || methods::is(operators, "LASRalgorithm"))
+  if (methods::is(operators, "PipelinePtr"))
   {
-    operators = get_stage(operators)
-    ans <- list(algoname = "rasterize", res = res_raster, connect = operators[["uid"]], filter = filter, output = ofile)
+    info = .APIOPERATIONS$get_stage_info(operators)
+    if (info$name != "triangulate")
+      stop("'operator' must be a triangulation stage")
+
+    return(.APISTAGES$rasterize_triangulation(info[["uid"]], res, ofile))
   }
   else if (is.character(operators))
   {
+    # ----------------------
     # backward compatibility
     former_operators <- c("max", "min", "count", "zmax", "zmin", "zmean", "zmedian", "zsd", "zcv", "zabove", "zp", "imax", "imin", "imean", "imedian", "isd", "icv", "iabove", "ip")
     new_operators <- c("max", "min", "count", "z_max", "z_min", "z_mean", "z_median", "z_sd", "z_cv", "z_above", "z_p", "i_max", "i_min", "i_mean", "i_median", "i_sd", "i_cv", "i_above", "i_p")
-    replace_names <- function(x, old_names, new_names)
-    {
-      for (i in seq_along(old_names))
-      {
+    replace_names <- function(x, old_names, new_names) {
+      for (i in seq_along(old_names)) {
         x <- gsub(old_names[i], new_names[i], x)
       }
       return(x)
     }
     operators <- replace_names(operators, former_operators, new_operators)
+    # ----------------------
 
-    ans <- list(algoname = "rasterize", res = res_raster, window = res_window, method = operators, filter = filter, output = ofile, default_value = default_value)
+    return(.APISTAGES$rasterize(res_raster, res_window, operators, filter, ofile, default_value))
   }
   else
   {
     stop("Invalid operators") # nocov
   }
-  set_lasr_class(ans, raster = TRUE)
 }
 
 #' Initialize the pipeline
@@ -950,43 +909,26 @@ reader = function(filter = "", select = "*", copc_depth = NULL, ...)
 #' @rdname reader
 reader_coverage = function(filter = "", select = "*", copc_depth = NULL, ...)
 {
-  if (!is.null(copc_depth))
-  {
-    stopifnot(is.numeric(copc_depth), copc_depth >= 0)
-    filter = c(filter, paste0("-max_depth ", copc_depth))
-  }
-  ans <- list(algoname = "reader", filter = filter)
-  attr(ans, "laslib") = TRUE
-  set_lasr_class(ans)
+  validate_filter(filter, TRUE)
+  if (is.null(copc_depth)) copc_depth = -1
+  .APISTAGES$reader_coverage(filter, select, copc_depth)
 }
 
 #' @export
 #' @rdname reader
 reader_circles = function(xc, yc, r, filter = "", select = "*", copc_depth = NULL, ...)
 {
-  stopifnot(length(xc) == length(yc))
-  if (length(r) == 1) r <- rep(r, length(xc))
-  if (length(r) > 1) stopifnot(length(xc) == length(r))
-
-  ans <- reader_coverage(filter, select, copc_depth, ...)
-  ans[[1]]$xcenter <- xc
-  ans[[1]]$ycenter <- yc
-  ans[[1]]$radius <- r
-  ans
+  validate_filter(filter, TRUE)
+  if (is.null(copc_depth)) copc_depth = -1
+  .APISTAGES$reader_circles(xc, yc, r, filter, select, copc_depth)
 }
 
 #' @export
 #' @rdname reader
 reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", copc_depth = NULL, ...)
 {
-  stopifnot(length(xmin) == length(ymin), length(xmin) == length(xmax), length(xmin) == length(ymax))
-
-  ans <- reader_coverage(filter, select, copc_depth, ...)
-  ans[[1]]$xmin <- xmin
-  ans[[1]]$ymin <- ymin
-  ans[[1]]$xmax <- xmax
-  ans[[1]]$ymax <- ymax
-  ans
+  if (is.null(copc_depth)) copc_depth = -1
+  .APISTAGES$reader_rectangles(xmin, ymin, xmax, ymax, filter, select, copc_depth)
 }
 
 #' Region growing
@@ -1034,22 +976,15 @@ reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", 
 #' @md
 region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.55, max_cr = 20, ofile = temptif())
 {
-  raster <- get_stage(raster)
-  seeds <- get_stage(seeds)
-  ans <- list(algoname = "region_growing", connect1 = seeds[["uid"]], connect2 = raster[["uid"]], th_tree = th_tree, th_seed = th_seed, th_cr = th_cr, max_cr = max_cr, output = ofile)
-  set_lasr_class(ans, raster = TRUE)
+  rinfo = .APIOPERATIONS$get_stage_info(raster)
+  sinfo = .APIOPERATIONS$get_stage_info(seeds)
+  ofile = normalizePath(ofile, mustWork = FALSE)
+  .APISTAGES$region_growing(rinfo[["uid"]], sinfo[["uid"]], th_tree, th_seed, th_cr, max_cr, ofile)
 }
 
 #' @export
 #' @rdname add_attribute
-remove_attribute = function(name)
-{
-  if (name %in% c("x", "X", "y", "Y", "z", "Z"))
-    stop("Removing point coordinates is not allowed")
-
-  ans <- list(algoname = "remove_attribute", name = name)
-  set_lasr_class(ans)
-}
+remove_attribute = function(name) { .APISTAGES$remove_attribute(name) }
 
 
 # ==== S =====
@@ -1073,12 +1008,9 @@ remove_attribute = function(name)
 #' pipeline = set_crs(2044) + hmax + set_crs(2004) + local_maximum(5) + set_crs(2949) + write_las()
 set_crs = function(x)
 {
-  epsg = 0
-  wkt = ""
-  if (is.numeric(x)) { epsg = x }
-  if (is.character(x)) { wkt = x }
-  ans <- list(algoname = "set_crs", epsg = epsg, wkt = wkt)
-  set_lasr_class(ans)
+  if (is.numeric(x)) { return(.APISTAGES$set_crs_epsg(x)) }
+  if (is.character(x)) { return(.APISTAGES$set_crs_wkt(x)) }
+  stop("Invalid argument")
 }
 
 #' Sample the point cloud
@@ -1184,19 +1116,10 @@ sampling_poisson = function(distance = 2, filter = "", ...)
 #' plot(ans2$hulls$geom, axes = TRUE)
 #' terra::plot(ans1$rasterize, add = TRUE, legend = FALSE)
 #' @export
-stop_if_outside = function(xmin, ymin, xmax, ymax)
-{
-  ans <- list(algoname = "stop_if", condition = "outside_bbox", xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax)
-  set_lasr_class(ans)
-}
+stop_if_outside = function(xmin, ymin, xmax, ymax) { .APISTAGES$stop_if_outside(xmin, ymin, xmax, ymax) }
 
 
-stop_if_chunk_id_below = function(index)
-{
-  index <- as.integer(index)
-  ans <- list(algoname = "stop_if", condition = "chunk_id_below", index = index)
-  set_lasr_class(ans)
-}
+stop_if_chunk_id_below = function(index) { .APISTAGES$stop_if_chunk_id_below(index) }
 
 #' Sort points in the point cloud
 #'
@@ -1210,11 +1133,7 @@ stop_if_chunk_id_below = function(index)
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' exec(sort_points(), on = f)
 #' @export
-sort_points = function()
-{
-  ans <- list(algoname = "sort", spatial = TRUE)
-  set_lasr_class(ans)
-}
+sort_points = function() { .APISTAGES$sort_points(TRUE) }
 
 #' Summary
 #'
@@ -1245,8 +1164,8 @@ sort_points = function()
 #' @md
 summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 {
-  ans <- list(algoname = "summarise", filter = filter, zwbin = zwbin, iwbin = iwbin, metrics = metrics)
-  set_lasr_class(ans)
+  if (is.null(metrics)) metrics = character()
+  return(.APISTAGES$summarise(zwbin, iwbin, metrics, filter))
 }
 
 # ===== T =====
@@ -1278,8 +1197,7 @@ summarise = function(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
 #' @export
 triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z")
 {
-  ans <- list(algoname = "triangulate", max_edge = max_edge, filter = filter, output = ofile, use_attribute = use_attribute)
-  set_lasr_class(ans, vector = TRUE)
+  .APISTAGES$triangulate(max_edge, filter, ofile, use_attribute)
 }
 
 #' Transform a Point Cloud Using Another Stage
@@ -1342,14 +1260,16 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
     stage <- load_matrix(stage)
   }
 
-  s <- get_stage(stage)
+  if (!methods::is(stage, "PipelinePtr"))
+    stop("The stage stage must be a 'PipelinePtr'")
+
+  s <- .APIOPERATIONS$get_stage_info(stage)
 
   # Valid stage are all raster stages or triangulate
-  if (s$algoname != "triangulate" && !methods::is(s, "LASRraster") && !methods::is(s, "LASRmatrix"))
+  if (s$name != "triangulate" && !s$raster && !info$matrix)
       stop("The stage must be a triangulation or a raster stage or a matrix stage.")
 
-  ans <- list(algoname = "transform_with", connect = s[["uid"]], operator = operator, store_in_attribute = store_in_attribute, bilinear = bilinear)
-  ans <- set_lasr_class(ans)
+  ans = .APISTAGES$transform_with(s[["uid"]], operator, store_in_attribute, bilinear)
 
   if (use_matrix)
     ans = stage + ans
@@ -1394,8 +1314,8 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' @rdname write
 write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE)
 {
-  ans <- list(algoname = "write_las", filter = filter, output = ofile, keep_buffer = keep_buffer)
-  set_lasr_class(ans)
+  validate_filter(filter)
+  return(.APISTAGES$write_las(ofile, filter, keep_buffer))
 }
 
 #' @export
@@ -1406,21 +1326,9 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' is light. Normal is 128, dense is 256.
 write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense")
 {
-  ext = substr(ofile, nchar(ofile)-8, nchar(ofile))
-  stopifnot(ext == ".copc.laz")
-  density = match.arg(density, c("sparse", "normal", "dense", "denser"))
-
-  if (density == "sparse") density = 64
-  if (density == "normal") density = 128
-  if (density == "dense")  density = 256
-  if (density == "denser") density = 512
-
-  stage = write_las(ofile, filter, keep_buffer)
-
-  if (!is.null(max_depth) &&  !is.na(max_depth))
-    stage$write_las$max_depth = max_depth
-
-  stage$write_las$density = density
+  ofile = normalizePath(ofile, mustWork = FALSE)
+  if (is.na(max_depth)) max_depth = -1
+  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density)
   return(stage)
 }
 
@@ -1428,8 +1336,8 @@ write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", kee
 #' @rdname write
 write_pcd = function(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
 {
-  ans <- list(algoname = "write_pcd", output = ofile, binary = binary)
-  set_lasr_class(ans)
+  ofile = normalizePath(ofile, mustWork = FALSE)
+  .APISTAGES$write_pcd(ofile, binary)
 }
 
 #' Write a Virtual Point Cloud
@@ -1458,8 +1366,8 @@ write_pcd = function(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
 #' @export
 write_vpc = function(ofile, absolute_path = FALSE, use_gpstime = FALSE)
 {
-  ans <- list(algoname = "write_vpc", output = ofile, absolute = absolute_path, use_gpstime = use_gpstime)
-  set_lasr_class(ans)
+  ofile = normalizePath(ofile, mustWork = FALSE)
+  .APISTAGES$write_vpc(ofile, absolute_path, use_gpstime)
 }
 
 #' Write spatial indexing .lax files
@@ -1492,8 +1400,7 @@ write_vpc = function(ofile, absolute_path = FALSE, use_gpstime = FALSE)
 #' }
 write_lax = function(embedded = FALSE, overwrite = FALSE)
 {
-  ans <- list(algoname = "write_lax", embedded = embedded, overwrite = overwrite)
-  set_lasr_class(ans)
+  .APISTAGES$write_lax(embedded, overwrite)
 }
 
 # ==== INTERNALS =====

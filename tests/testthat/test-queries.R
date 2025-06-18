@@ -74,8 +74,8 @@ test_that("reader_circle works with a buffer (#141)",
   read <- lasR::reader_circles(xc = 481305, yc = 3812966, r = 50)
   pipeline = read + summarise() + lasR::write_las(ofile = paste0(tempfile(), ".las"))
 
-  res1 <- lasR::exec(pipeline, on = file, buffer = 0)
-  res2 <- lasR::exec(pipeline, on = file, buffer = 30)
+  res1 <- exec(pipeline, on = file, buffer = 0)
+  res2 <- exec(pipeline, on = file, buffer = 30)
 
   res1 = read_las(res1$write_las)
   res2 = read_las(res2$write_las)
@@ -91,7 +91,7 @@ test_that("circle buffer is removed #142",
   read_small <- reader_circles(xc = 684876.6, yc = 5017902, r = 10)
   chm <- lasR::chm(res = 1)
 
-  ans <- lasR::exec(read_small + chm, on = file)
+  ans <- exec(read_small + chm, on = file)
 
   expect_equal(sum(is.na(ans[])), 157)
   expect_equal(terra::xmin(ans), 684876 - 10)
@@ -99,7 +99,7 @@ test_that("circle buffer is removed #142",
   expect_equal(terra::ymin(ans), 5017902 - 10)
   expect_equal(terra::ymax(ans), 5017902 + 11)
 
-  ans <- lasR::exec(read_small + chm, on = file, buffer = 10)
+  ans <- exec(read_small + chm, on = file, buffer = 10)
 
   expect_equal(sum(is.na(ans[])), 146)
   expect_equal(terra::xmin(ans), 684876 - 10)
@@ -109,7 +109,7 @@ test_that("circle buffer is removed #142",
 
   read_large <- lasR::reader_circles(xc = 684876.6, yc = 5017902, r = 80)
 
-  ans <- lasR::exec(read_large + chm, on = file)
+  ans <- exec(read_large + chm, on = file)
 
   expect_equal(sum(is.na(ans[])), 7756)
   expect_equal(terra::xmin(ans), 684876 - 80)

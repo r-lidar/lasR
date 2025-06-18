@@ -27,8 +27,6 @@ exec = function(pipeline, on, with = NULL, ...)
     # stage is modified to call R specific stages that are not compiled outside of R
     if (methods::is(on, "LAS") || is.data.frame(on))
     {
-      stop("Not supported yet in the new api")
-
       accuracy = c(0,0,0)
 
       if (methods::is(on, "LAS"))
@@ -40,13 +38,20 @@ exec = function(pipeline, on, with = NULL, ...)
         attr(on, "crs") <- crs
       }
 
-      crs <- attr(on, "crs")
+      dataframe = on
+      on = character()
+
+      crs <- attr(dataframe, "crs")
       if (is.null(crs)) crs = ""
       if (!is.character(crs) & length(crs != 1)) stop("The CRS of this data.frame is not a WKT string")
 
-      acc <- attr(on, "accuracy")
+      acc <- attr(dataframe, "accuracy")
       if (is.null(acc)) acc = c(0, 0, 0)
       if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
+
+      addr = .APIOPERATIONS$get_address(dataframe)
+      pipeline = .APIOPERATIONS$cast_pipeline_to_dataframe_compatible(pipeline, addr, crs, accuracy)
+      on_is_valid = TRUE
     }
 
     # If 'on' is a LAScatalog, for convenient compatibility with lidR we pick-up the file names
@@ -57,19 +62,18 @@ exec = function(pipeline, on, with = NULL, ...)
 
     if (methods::is(on, "lasrcloud"))
     {
-      stop("Not supported yet in the new api")
+      xptr = on
+      on = character()
+      addr = .APIOPERATIONS$get_address(on)
+      pipeline = .APIOPERATIONS$cast_pipeline_to_xptr_compatible(addr)
+      on_is_valid = TRUE
     }
 
     # If 'on' is character, this is the default behavior.
     if (is.character(on))
     {
       stopifnot(length(on) > 0)
-
-      #pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
-      #pipeline$build_catalog$buffer <- with$buffer
-      #pipeline$build_catalog$noprocess <- with$noprocess
-      #pipeline$build_catalog$type = "files"
-
+      on <- normalizePath(on, mustWork = FALSE)
       on_is_valid = TRUE
     }
 

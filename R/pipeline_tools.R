@@ -98,11 +98,7 @@ print.LASRpipeline = function(x, ...)
 
 get_pipeline_info = function(pipeline)
 {
-  pipeline = list(processing = list(), pipeline = pipeline)
-  json_file = write_json(pipeline)
-  ans = cpp_get_pipeline_info(json_file)
-  if (inherits(ans, "error")) { stop(ans) }
-  return(ans)
+  .APIOPERATIONS$get_pipeline_info(pipeline)
 }
 
 is_indexed = function(files)
@@ -140,5 +136,18 @@ print.PipelinePtr <- function(x, ...)
 
   ans = .APIOPERATIONS$merge_pipeline(e1, e2);
   return(ans)
+}
+
+#' @rdname tools
+#' @export
+`[[.PipelinePtr` <- function(x, i, ...) {
+  # Example: Access an element by name or index
+  if (is.character(i)) {
+    stop("Extraction by name not supported")
+  } else if (is.numeric(i)) {
+    return(.APIOPERATIONS$get_stage_by_index(x, i-1))
+  } else {
+    stop("Index must be character or numeric")
+  }
 }
 

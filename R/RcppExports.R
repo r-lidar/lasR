@@ -5,7 +5,3 @@ cpp_process <- function(args, async) {
     .Call(`_lasR_cpp_process`, args, async)
 }
 
-cpp_get_pipeline_info <- function(pipeline) {
-    .Call(`_lasR_cpp_get_pipeline_info`, pipeline)
-}
-

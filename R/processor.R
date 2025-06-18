@@ -31,7 +31,7 @@
 #' }
 #' @md
 #' @export
-exec = function(pipeline, on, with = NULL, ...)
+old_exec = function(pipeline, on, with = NULL, ...)
 {
   args = list(...)
   fjson = args$json
