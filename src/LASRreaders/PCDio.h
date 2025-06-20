@@ -11,7 +11,7 @@
 
 class Progress;
 class Header;
-class Point;
+struct Point;
 
 class PCDio : public Fileio
 {
