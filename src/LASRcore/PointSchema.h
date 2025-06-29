@@ -15,7 +15,7 @@ static const std::set<std::string> lascoreattributes = {
   "X", "Y", "Z", "Intensity", "ReturnNumber",
   "NumberOfReturns", "ScanDirectionFlag", "EdgeOfFlightline",
   "Classification", "UserData", "ScanAngleRank", "PointSourceID",
-  "gpstime", "ScannerChannel", "ScanAngle", "R", "G", "B", "flags",
+  "gpstime", "ScannerChannel", "ScanAngle", "R", "G", "B",  "NIR", "flags",
   "Withheld", "Synthetic", "Keypoint", "Overlap"
 };
 

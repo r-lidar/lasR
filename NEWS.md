@@ -1,6 +1,7 @@
 # lasR 0.16.1
 
 - Fix #160 crash with empty folder
+- Fix the NIR attribute is recognized as part of the LAS specifications
 
 # lasR 0.16.0
 
