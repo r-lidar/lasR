@@ -47,7 +47,6 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 
   for (auto& file : files)
   {
-
     pb++;
     pb.show();
     PathType type = parse_path(file);
@@ -110,6 +109,13 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
   }
 
   pb.done();
+
+  // Fix #160 with empty folders
+  if (this->files.size() == 0)
+  {
+    last_error = "There is no file to read";
+    return false;
+  }
 
   // Check if all headers have the same signature
   const std::string& referenceSignature = headers[0].signature; // Take the CRS of the first header

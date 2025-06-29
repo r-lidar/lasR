@@ -1,3 +1,7 @@
+# lasR 0.16.1
+
+- Fix #160 crash with empty folder
+
 # lasR 0.16.0
 
 - New: stage `edit_attribute()`
