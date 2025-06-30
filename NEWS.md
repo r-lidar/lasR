@@ -1,5 +1,6 @@
 # lasR 0.16.1
 
+- Fix #158 triangulation with less than 3 points
 - Fix #160 crash with empty folder
 - Fix the NIR attribute is recognized as part of the LAS specifications
 - Fix #161 `reader_circles()` and `reader_rectangles()` are skipping queries outside the file collection.
