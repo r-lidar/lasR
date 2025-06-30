@@ -235,6 +235,14 @@ bool process(const std::string& config_file)
             continue;
           }
 
+          // This is a special case when processing with a query that fall outside the collection
+          // of files. This fixes #161 and prevent a failure when only a warning is necessary
+          if (chunk.is_empty())
+          {
+            if (verbose) print("Empty chunk skipped\n");
+            continue;
+          }
+
           if (verbose)
           {
             print("Processing chunk %d/%d in thread %d: %s\n", i+1, n, omp_get_thread_num(), chunk.name.c_str()); // # nocov
