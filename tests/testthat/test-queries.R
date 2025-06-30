@@ -39,10 +39,50 @@ test_that("reader_circle perform a queries",
   ans = exec(pipeline, f, buffer = 5)
   expect_equal(dim(ans), c(5028L, 6L))
   expect_equal(sum(ans$Buffer), 2415L)
+})
 
+test_that("reader_circle works with no match",
+{
   # no match
   pipeline = reader_las_circles(8850000, 629400, 20) + read()
-  expect_error(exec(pipeline, f, buffer = 5), "cannot find")
+  expect_null(exec(pipeline, f, buffer = 5))
+
+  pois <- data.frame(name = c("inside", "outside"), x = c(273500, 280000), y = c(5274500, 5280000))
+
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+
+  # all point outside extent
+  pipeline = reader_circles(xc = pois$x[2], yc = pois$y[2], 20) + rasterize(2, "zmax")
+  u <- exec(pipeline, on = f)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u),  c("z_max"))
+  expect_equal(dim(u), c(144, 144, 1))
+  expect_equal(sum(is.na(u[])), 144*144)
+
+  # all point outside extent on file
+  pipeline = reader_circles(xc = pois$x[2], yc = pois$y[2], 20) + rasterize(2, "zmax", ofile = paste0(tempdir(), "/*.tif"))
+  u <- exec(pipeline, on = f)
+
+  expect_null(u)
+
+  # one point inside one point outside extent
+  pipeline = reader_circles(xc = pois$x, yc = pois$y, 20) + rasterize(2, "zmax")
+  u <- exec(pipeline, on = f)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u),  c("z_max"))
+  expect_equal(dim(u), c(21, 21, 1))
+  expect_equal(sum(!is.na(u[])), 315)
+
+  # one point inside and one point outside extent on files
+  pipeline = reader_circles(xc = pois$x, yc = pois$y, 20) + rasterize(2, "zmax", ofile = paste0(tempdir(), "/*.tif"))
+  u <- exec(pipeline, on = f)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u),  c("z_max"))
+  expect_equal(dim(u), c(21, 21, 1))
+  expect_equal(sum(is.na(u[])), 126)
 })
 
 test_that("reader_circle creates raster with minimal bbox",

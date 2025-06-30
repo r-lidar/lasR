@@ -17,7 +17,9 @@ test_that("temp files",
 
 test_that("empty folder #160",
 {
-  expect_error(lasR::exec(lasR:::nothing(), on = tempdir()), "There is no file to read")
+  dir = tempfile()
+  dir.create(dir)
+  expect_error(lasR::exec(lasR:::nothing(), on = dir), "There is no file to read")
 })
 
 test_that(".onLoad",
