@@ -6,6 +6,13 @@ LASRaddattribute::LASRaddattribute()
 
 bool LASRaddattribute::process(PointCloud*& las)
 {
+  std::string standard_name = map_attribute(name);
+  if (standard_name != name && las->header->schema.has_attribute(standard_name))
+  {
+    last_error = std::string("The attribute '") + name + "' is a reserved word interpreted as '" + standard_name + "'. This point cloud has already an attribute named '" + standard_name + "' thus adding this attribute is failing";
+    return false;
+  }
+
   Attribute attr(name, data_type, scale, offset, description);
   return las->add_attribute(attr);
 }

@@ -113,7 +113,7 @@ bool LASRsvd::process(PointCloud*& las)
   if (ft_o) attributes.push_back(Attribute("omnivariance", AttributeType::FLOAT, 1, 0, "omnivariance"));
   if (ft_c) attributes.push_back(Attribute("curvature", AttributeType::FLOAT, 1, 0, "curvature"));
   if (ft_e) attributes.push_back(Attribute("eigensum", AttributeType::FLOAT, 1, 0, "sum of eigen values"));
-  if (ft_i) attributes.push_back(Attribute("angle", AttributeType::FLOAT, 1, 0, "azimutal angle (degree)"));
+  if (ft_i) attributes.push_back(Attribute("inclination", AttributeType::FLOAT, 1, 0, "angle with vertical (degree)"));
   if (ft_n)
   {
     attributes.push_back(Attribute("normalX", AttributeType::FLOAT, 1, 0, "x component of normal vector"));
@@ -153,7 +153,7 @@ bool LASRsvd::process(PointCloud*& las)
   AttributeAccessor set_omnivariance("omnivariance");
   AttributeAccessor set_curvature("curvature");
   AttributeAccessor set_eigensum("eigensum");
-  AttributeAccessor set_angle("angle");
+  AttributeAccessor set_angle("inclination");
 
   AttributeAccessor set_normalX("normalX");
   AttributeAccessor set_normalY("normalY");

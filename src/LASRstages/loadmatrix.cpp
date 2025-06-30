@@ -24,7 +24,7 @@ bool LASRloadmatrix::set_parameters(const nlohmann::json& stage)
     auto R = matrix;
 
     // Calculate R^T * R
-    double identity[3][3] = {0};  // Should be close to identity if R is a valid rotation matrix
+    double identity[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}; // Should be approx identity if R is a valid rotation matrix
 
     // Multiply R^T * R
     for (int i = 0; i < 3; ++i)

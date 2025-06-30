@@ -290,38 +290,47 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
               return false;
             }
           }
+
           double temp_xmin = std::numeric_limits<double>::max();
           double temp_ymin = std::numeric_limits<double>::max();
           double temp_xmax = std::numeric_limits<double>::lowest();
           double temp_ymax = std::numeric_limits<double>::lowest();
 
-          // Special treatment of the reader to find the potential queries in the catalog
-          // If we have query we also recompute the bounding box in order to create outputs
-          // with the minimal bounding box
+          bool has_valid_query = false;
+
           if (stage.contains("xcenter"))
           {
             std::vector<double> xcenter = get_vector<double>(stage["xcenter"]);
             std::vector<double> ycenter = get_vector<double>(stage["ycenter"]);
-            std::vector<double> radius = get_vector<double>(stage["radius"]);
+            std::vector<double> radius  = get_vector<double>(stage["radius"]);
 
-            for (size_t j = 0 ; j <  xcenter.size() ; ++j)
+            for (size_t j = 0; j < xcenter.size(); ++j)
             {
               double x = xcenter[j];
               double y = ycenter[j];
               double r = radius[j];
 
+              double qminx = x - r;
+              double qminy = y - r;
+              double qmaxx = x + r;
+              double qmaxy = y + r;
+
+              // Adding the query even if it is an invalid query outside the point cloud coverage.
+              // The engine will take care of invalid queries.
               catalog->add_query(x, y, r);
 
-              temp_xmin = MIN(temp_xmin, x-r);
-              temp_ymin = MIN(temp_ymin, y-r);
-              temp_xmax = MAX(temp_xmax, x+r);
-              temp_ymax = MAX(temp_ymax, y+r);
-            }
+              // Check if the query box intersects the original bbox
+              bool intersects = !(qmaxx < xmin || qminx > xmax || qmaxy < ymin || qminy > ymax);
+              if (!intersects) continue;
 
-            xmin = MAX(xmin, temp_xmin);
-            ymin = MAX(ymin, temp_ymin);
-            xmax = MIN(xmax, temp_xmax);
-            ymax = MIN(ymax, temp_ymax);
+              // Clamp to original bounding box and accumulate for temp bbox
+              temp_xmin = std::min(temp_xmin, std::max(qminx, xmin));
+              temp_ymin = std::min(temp_ymin, std::max(qminy, ymin));
+              temp_xmax = std::max(temp_xmax, std::min(qmaxx, xmax));
+              temp_ymax = std::max(temp_ymax, std::min(qmaxy, ymax));
+
+              has_valid_query = true;
+            }
           }
 
           if (stage.contains("xmin"))
@@ -331,20 +340,35 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
             std::vector<double> bbxmax = get_vector<double>(stage["xmax"]);
             std::vector<double> bbymax = get_vector<double>(stage["ymax"]);
 
-            for (size_t j = 0 ; j <  bbxmin.size() ; ++j)
+            for (size_t j = 0; j < bbxmin.size(); ++j)
             {
-              catalog->add_query(bbxmin[j], bbymin[j], bbxmax[j], bbymax[j]);
+              double qminx = bbxmin[j];
+              double qminy = bbymin[j];
+              double qmaxx = bbxmax[j];
+              double qmaxy = bbymax[j];
 
-              temp_xmin = MIN(temp_xmin, bbxmin[j]);
-              temp_ymin = MIN(temp_ymin, bbymin[j]);
-              temp_xmax = MAX(temp_xmax, bbxmax[j]);
-              temp_ymax = MAX(temp_ymax, bbymax[j]);
+              catalog->add_query(qminx, qminy, qmaxx, qmaxy);
+
+              // Check if the query box intersects the original bbox
+              bool intersects = !(qmaxx < xmin || qminx > xmax || qmaxy < ymin || qminy > ymax);
+              if (!intersects)  continue;
+
+              // Clamp to original bounding box and accumulate
+              temp_xmin = std::min(temp_xmin, std::max(qminx, xmin));
+              temp_ymin = std::min(temp_ymin, std::max(qminy, ymin));
+              temp_xmax = std::max(temp_xmax, std::min(qmaxx, xmax));
+              temp_ymax = std::max(temp_ymax, std::min(qmaxy, ymax));
+
+              has_valid_query = true;
             }
+          }
 
-            xmin = MAX(xmin, temp_xmin);
-            ymin = MAX(ymin, temp_ymin);
-            xmax = MIN(xmax, temp_xmax);
-            ymax = MIN(ymax, temp_ymax);
+          if (has_valid_query)
+          {
+            xmin = temp_xmin;
+            ymin = temp_ymin;
+            xmax = temp_xmax;
+            ymax = temp_ymax;
           }
         }
       }

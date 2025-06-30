@@ -299,7 +299,7 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' attribute. Use 'C' for the 9 principal component coefficients, 'E' for the 3 eigenvalues of the
 #' covariance matrix, 'a' for anisotropy, 'p' for planarity, 's' for sphericity, 'l' for linearity,
 #' 'o' for omnivariance, 'c' for curvature, 'e' for the sum of eigenvalues, 'i' for the angle
-#' (inclination in degrees relative to the azimuth), and 'n' for the 3 components of the normal vector.
+#' (inclination in degrees relative to the vertical), and 'n' for the 3 components of the normal vector.
 #' Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 #' Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 #' The order of the flags does not matter and the features are recorded in the order mentioned above.
