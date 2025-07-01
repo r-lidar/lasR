@@ -82,7 +82,7 @@ exec = function(pipeline, on, with = NULL, ...)
     if (!on_is_valid) stop("Invalid argument 'on'.")
   }
 
-  ans <- .APIOPERATIONS$excecute_pipeline(pipeline, on, with$buffer, with$chunk, with$ncores, with$verbose, with$progress)
+  ans <- .APIOPERATIONS$excecute_pipeline(pipeline, on, with)
 
   if (!with$noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)

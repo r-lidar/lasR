@@ -32,11 +32,6 @@ namespace Rcpp
 
 #include <Rcpp.h>
 
-SEXP process(SEXP, SEXP);
-
-// [[Rcpp::export]]
-SEXP cpp_process(SEXP args, SEXP async) { return process(args, async); } // old API to be removed
-
 using namespace Rcpp;
 
 // Generic tools that could be used by any API
@@ -103,6 +98,12 @@ RCPP_MODULE(stages)
   function("xptr", &api::xptr, "Reserved for internal use only");
 }
 
+/* ==========================================
+ *  FROM HERE, ONLY VERY R SPECIFIC TOOLS
+ *  EXPOSED FOR THE R API
+ *  =========================================
+ */
+
 inline api::Pipeline* as_pipeline(SEXP ptr)
 {
   if (R_ExternalPtrAddr(ptr) == nullptr)
@@ -117,6 +118,10 @@ inline api::Pipeline* as_pipeline(SEXP ptr)
   return p;
 }
 
+/*
+ * Get some info about a stage such as the names, uid and class. This allow
+ * to throw error at R level when connecting stages.
+ */
 Rcpp::List get_stage_info(SEXP ptr)
 {
   api::Pipeline* p = as_pipeline(ptr);
@@ -135,6 +140,21 @@ Rcpp::List get_stage_info(SEXP ptr)
     _["vector"] = s.is_vector());
 }
 
+/*
+ * R wrapper allowing to access a stage by index like a list
+ * pipeline[[2]]. It could be used like that: transform_with(dtm[[2]])
+ * where dtm is actually triangulate + rasterize
+ */
+SEXP get_stage_by_index(SEXP ptr, int i)
+{
+  api::Pipeline* p = as_pipeline(ptr);
+  api::Pipeline res = (*p)[i];
+  return wrap(res);
+}
+
+/*
+ * R print
+ */
 SEXP print_pipeline(SEXP ptr)
 {
   api::Pipeline* p = as_pipeline(ptr);
@@ -144,25 +164,62 @@ SEXP print_pipeline(SEXP ptr)
   return R_NilValue;
 }
 
-SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on, double buffer, double chunk, int ncores, bool verbose, bool progress)
+/*
+ * R wrapper to the execute function
+ */
+SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on, Rcpp::List with)
 {
-  api::Pipeline* tmp = as_pipeline(ptr);
-  api::Pipeline p(*tmp); // Deep copy. We do not want to modify in place because the R side must stay untouched
+  // Initialize with default values
+  double buffer = 0.0;
+  double chunk = 0.0;
+  int ncores = 1;
+  bool verbose = false;
+  bool progress = true;
+  std::vector<bool> noprocess;
 
+  // Override if present and not null
+  if (with.containsElementNamed("buffer") && !Rf_isNull(with["buffer"]))
+    buffer = Rcpp::as<double>(with["buffer"]);
+
+  if (with.containsElementNamed("chunk") && !Rf_isNull(with["chunk"]))
+    chunk = Rcpp::as<double>(with["chunk"]);
+
+  if (with.containsElementNamed("ncores") && !Rf_isNull(with["ncores"]))
+    ncores = Rcpp::as<int>(with["ncores"]);
+
+  if (with.containsElementNamed("verbose") && !Rf_isNull(with["verbose"]))
+    verbose = Rcpp::as<bool>(with["verbose"]);
+
+  if (with.containsElementNamed("progress") && !Rf_isNull(with["progress"]))
+    progress = Rcpp::as<bool>(with["progress"]);
+
+  if (with.containsElementNamed("noprocess") && !Rf_isNull(with["noprocess"]))
+    noprocess = Rcpp::as<std::vector<bool>>(with["noprocess"]);
+
+  // Retrieve pipeline and make a deep copy
+  api::Pipeline* tmp = as_pipeline(ptr);
+  api::Pipeline p(*tmp);
+
+  // Set parameters
   p.set_files(on);
-  p.set_ncores(1);
-  //p->set_strategy();
+  p.set_ncores(ncores);
+  // p.set_strategy();
   p.set_verbose(verbose);
   p.set_buffer(buffer);
   p.set_progress(progress);
   p.set_chunk(chunk);
   p.set_profile_file("");
+  p.set_noprocess(noprocess);
 
+  // Generate and execute the pipeline
   std::string f = p.write_json();
-
   return api::execute(f);
 }
 
+/*
+ * Get the address of a SEXP in order to pass the address of an xptr or a data.frame
+ * via the json file
+ */
 SEXP get_address(SEXP obj)
 {
   char address[20];
@@ -170,6 +227,10 @@ SEXP get_address(SEXP obj)
   return Rf_mkString(address);
 }
 
+/*
+ * R wrapper to concatenate pipelines. It allows to write
+ * pipeline = stage1 + stage2 at R level
+ */
 SEXP merge_pipeline(SEXP e1, SEXP e2)
 {
   api::Pipeline* p1 = as_pipeline(e1);
@@ -178,6 +239,9 @@ SEXP merge_pipeline(SEXP e1, SEXP e2)
   return wrap(p);
 }
 
+/*
+ * R wrapper to pipeline_info()
+ */
 SEXP pipeline_info(SEXP ptr)
 {
   api::Pipeline* p = as_pipeline(ptr);
@@ -194,19 +258,11 @@ SEXP pipeline_info(SEXP ptr)
   );
 }
 
-SEXP get_stage_by_index(SEXP ptr, int i)
-{
-  api::Pipeline* p = as_pipeline(ptr);
-  api::Pipeline res = (*p)[i];
-  return wrap(res);
-}
-
-bool has_reader(SEXP ptr)
-{
-  api::Pipeline* p = as_pipeline(ptr);
-  return p->has_reader();
-}
-
+/*
+ * Special function for the R API that allow to deal with LAS object from lidR
+ * It custom edits the reader stage and add a build_catalog stage that enable to deal
+ * with a data.frame in a completely non api way.
+ */
 SEXP cast_pipeline_to_dataframe_compatible(SEXP ptr, std::string addr, std::string crs, std::vector<double> accuracy)
 {
   api::Pipeline* tmp = as_pipeline(ptr);
@@ -243,12 +299,16 @@ SEXP cast_pipeline_to_dataframe_compatible(SEXP ptr, std::string addr, std::stri
   return wrap(out);
 }
 
+/*
+ * Special function for the R API that allow to deal with external pointers
+ * and point clouds loaded in memory as external pointers. It custom edits the
+ * reader stage and add a build_catalog stage that enable to deal with xptr
+ * in a completely non api way.
+ */
 SEXP cast_pipeline_to_xptr_compatible(SEXP ptr, std::string addr)
 {
   api::Pipeline* tmp = as_pipeline(ptr);
-
-  // Deep copy;
-  api::Pipeline p(*tmp);
+  api::Pipeline p(*tmp); // Deep copy;
 
   if (!p.has_reader())
   {
@@ -276,13 +336,11 @@ SEXP cast_pipeline_to_xptr_compatible(SEXP ptr, std::string addr)
   return wrap(out);
 }
 
-
-void cast_reader_to_xptr_reader()
-{
-
-}
-
-
+/*
+ * This is used to create non API stages at R level without being constrained
+ * by the C++ API. We can basically build any stage including invalid stages
+ * for debugging purpose.
+ */
 SEXP make_stage(std::string stage_name, Rcpp::List opts)
 {
   api::Stage s(stage_name);
@@ -315,7 +373,9 @@ SEXP make_stage(std::string stage_name, Rcpp::List opts)
   return wrap(p);
 }
 
-
+/*
+ * This is useless and exists only for testing if it compiles and works
+ */
 SEXP test(std::vector<std::string> on)
 {
   using namespace api;
@@ -344,8 +404,8 @@ RCPP_MODULE(operations)
   function("print_pipeline", &print_pipeline, "Print pipelines");
   function("get_address", &get_address, "Get address of a SEXP");
   function("get_stage_info", &get_stage_info, "Get stage info");
+  function("get_stage_by_index", &get_stage_by_index, "Operator [[]]");
   function("get_pipeline_info", &pipeline_info, "Get pipeline info");
-  function("get_stage_by_index", &get_stage_by_index, "Get stage by index");
   function("make_stage", &make_stage, "Make a custom stage");
   function("cast_pipeline_to_dataframe_compatible", &cast_pipeline_to_dataframe_compatible, "");
   function("cast_pipeline_to_xptr_compatible", &cast_pipeline_to_xptr_compatible, "");

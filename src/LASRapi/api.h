@@ -44,10 +44,11 @@ class Stage
 public:
   using Value = std::variant<
     int,
-    double,
     bool,
+    double,
     std::string,
     std::vector<int>,
+    std::vector<bool>,
     std::vector<double>,
     std::vector<std::string>>;
 
@@ -98,6 +99,7 @@ public:
   void set_progress(bool b) { opt_progress = b; };
   void set_chunk(double val) { if(val> 0) opt_chunk = val; };
   void set_profile_file(const std::string& path) { opt_profiling_file = path; };
+  void set_noprocess(const std::vector<bool>&);
 
   bool has_reader() const;
   bool has_catalog() const;
@@ -119,6 +121,7 @@ private:
   bool opt_progress = false;
   double opt_chunk = 0;
   bool opt_verbose = false;
+  std::vector<bool> opt_noprocess;
   std::string opt_profiling_file = "";
 };
 

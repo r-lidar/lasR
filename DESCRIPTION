@@ -36,7 +36,6 @@ Language: en-US
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Collate: 
-    'RcppExports.R'
     'stages.R'
     'deprecated.R'
     'doc.R'

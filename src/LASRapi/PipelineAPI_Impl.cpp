@@ -136,6 +136,8 @@ nlohmann::json Pipeline::generate_json() const
       catalog.set("files", files);
       catalog.set("buffer", opt_buffer);
       catalog.set("chunk", opt_chunk);
+      if (!opt_noprocess.empty())
+        catalog.set("noprocess", opt_noprocess);
       p.stages.push_front(catalog);
     }
     else
@@ -165,6 +167,15 @@ nlohmann::json Pipeline::generate_json() const
     j["pipeline"].push_back(stage.to_json());
 
   return j;
+}
+
+
+void Pipeline::set_noprocess(const std::vector<bool>& b)
+{
+  if ((b.size() > 0) && (files.size() != b.size()))
+    throw std::invalid_argument("'noprocess' and 'on' have different length");
+
+  this->opt_noprocess = b;
 }
 
 

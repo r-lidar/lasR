@@ -73,6 +73,7 @@ std::string Stage::to_string() const
         ss << (val ? "true" : "false");
       }
       else if constexpr (std::is_same_v<T, std::vector<int>> ||
+                         std::is_same_v<T, std::vector<bool>> ||
                          std::is_same_v<T, std::vector<double>> ||
                          std::is_same_v<T, std::vector<std::string>>)
       {
