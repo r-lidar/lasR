@@ -100,7 +100,7 @@ std::string Pipeline::write_json(const std::string& path) const
   file << generate_json();
   file.close();
 
-  return temp_file;
+  return temp_file.string();
 }
 
 nlohmann::json Pipeline::generate_json() const
