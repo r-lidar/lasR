@@ -23,6 +23,14 @@ exec = function(pipeline, on, with = NULL, ...)
   {
     on_is_valid = FALSE
 
+    # If 'on' is character, this is the default behavior.
+    if (is.character(on))
+    {
+      stopifnot(length(on) > 0)
+      on <- normalizePath(on, mustWork = FALSE)
+      on_is_valid = TRUE
+    }
+
     # If 'on' is a LAS from lidR or a data.frame. Compatibility mode for R exclusively. The reader_las
     # stage is modified to call R specific stages that are not compiled outside of R
     if (methods::is(on, "LAS") || is.data.frame(on))
@@ -58,22 +66,16 @@ exec = function(pipeline, on, with = NULL, ...)
     if (methods::is(on, "LAScatalog"))
     {
       on <- on$filename
+      on <- normalizePath(on, mustWork = FALSE)
+      on_is_valid = TRUE
     }
 
     if (methods::is(on, "lasrcloud"))
     {
-      xptr = on
+      xptr = on[[1]]
       on = character()
-      addr = .APIOPERATIONS$get_address(on)
-      pipeline = .APIOPERATIONS$cast_pipeline_to_xptr_compatible(addr)
-      on_is_valid = TRUE
-    }
-
-    # If 'on' is character, this is the default behavior.
-    if (is.character(on))
-    {
-      stopifnot(length(on) > 0)
-      on <- normalizePath(on, mustWork = FALSE)
+      addr = .APIOPERATIONS$get_address(xptr)
+      pipeline = .APIOPERATIONS$cast_pipeline_to_xptr_compatible(pipeline, addr)
       on_is_valid = TRUE
     }
 

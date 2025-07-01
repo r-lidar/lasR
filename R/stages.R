@@ -1051,8 +1051,7 @@ sampling_voxel = function(res = 2, filter = "", ...)
   p = list(...)
   if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
 
-  ans <- list(algoname = "sampling_voxel", res = res, filter = filter, shuffle_size = shuffle_size)
-  set_lasr_class(ans)
+  .APISTAGES$sampling_voxel(res, filter, "random", shuffle_size)
 }
 
 #' @export
@@ -1065,8 +1064,7 @@ sampling_pixel = function(res = 2, filter = "", method = "random", use_attribute
   p = list(...)
   if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
 
-  ans <- list(algoname = "sampling_pixel", res = res, filter = filter, method = method, use_attribute = use_attribute, shuffle_size = shuffle_size)
-  set_lasr_class(ans)
+  .APISTAGES$sampling_pixel(res, filter, method, use_attribute, shuffle_size)
 }
 
 #' @export
@@ -1077,8 +1075,7 @@ sampling_poisson = function(distance = 2, filter = "", ...)
   p = list(...)
   if (!is.null(p$shuffle_size)) shuffle_size = p$shuffle_size
 
-  ans <- list(algoname = "sampling_poisson", distance = distance, filter = filter, shuffle_size = shuffle_size)
-  set_lasr_class(ans)
+  .APISTAGES$sampling_poisson(distance, filter, shuffle_size)
 }
 
 
@@ -1266,7 +1263,7 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
   s <- .APIOPERATIONS$get_stage_info(stage)
 
   # Valid stage are all raster stages or triangulate
-  if (s$name != "triangulate" && !s$raster && !info$matrix)
+  if (s$name != "triangulate" && !s$raster && !s$matrix)
       stop("The stage must be a triangulation or a raster stage or a matrix stage.")
 
   ans = .APISTAGES$transform_with(s[["uid"]], operator, store_in_attribute, bilinear)

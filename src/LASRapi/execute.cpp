@@ -184,7 +184,7 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
     // write_vpc() and write_lax() are the only stage that can processed the FileCollection
     if (!pipeline.pre_run())
     {
-      throw last_error;
+      throw std::runtime_error(last_error);
     }
 
     progress.show();
@@ -214,6 +214,14 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
           if (!lascatalog->get_chunk(i, chunk))
           {
             failure = true;
+            continue;
+          }
+
+          // This is a special case when processing with a query that fall outside the collection
+          // of files. This fixes #161 and prevent a failure when only a warning is necessary
+          if (chunk.is_empty())
+          {
+            if (verbose) print("Empty chunk skipped\n");
             continue;
           }
 

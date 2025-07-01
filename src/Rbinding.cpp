@@ -100,6 +100,7 @@ RCPP_MODULE(stages)
   function("write_pcd", &api::write_pcd, "Write a PCD file");
   function("write_vpc", &api::write_vpc, "Write a VPC file");
   function("write_lax", &api::write_lax, "Write a LAX spatial index for LAS and LAZ files");
+  function("xptr", &api::xptr, "Reserved for internal use only");
 }
 
 inline api::Pipeline* as_pipeline(SEXP ptr)
@@ -145,18 +146,19 @@ SEXP print_pipeline(SEXP ptr)
 
 SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on, double buffer, double chunk, int ncores, bool verbose, bool progress)
 {
-  api::Pipeline* p = as_pipeline(ptr);
+  api::Pipeline* tmp = as_pipeline(ptr);
+  api::Pipeline p(*tmp); // Deep copy. We do not want to modify in place because the R side must stay untouched
 
-  p->set_files(on);
-  p->set_ncores(1);
+  p.set_files(on);
+  p.set_ncores(1);
   //p->set_strategy();
-  p->set_verbose(verbose);
-  p->set_buffer(buffer);
-  p->set_progress(progress);
-  p->set_chunk(chunk);
-  p->set_profile_file("");
+  p.set_verbose(verbose);
+  p.set_buffer(buffer);
+  p.set_progress(progress);
+  p.set_chunk(chunk);
+  p.set_profile_file("");
 
-  std::string f = p->write_json();
+  std::string f = p.write_json();
 
   return api::execute(f);
 }
@@ -213,7 +215,10 @@ SEXP cast_pipeline_to_dataframe_compatible(SEXP ptr, std::string addr, std::stri
   api::Pipeline p(*tmp);
 
   if (!p.has_reader())
-    throw std::runtime_error("Cannot cast a pipeline without reader");
+  {
+    api::Pipeline reader = api::reader_coverage();
+    p = reader + p;
+  }
 
   auto& stages = p.get_stages();
 
@@ -238,15 +243,18 @@ SEXP cast_pipeline_to_dataframe_compatible(SEXP ptr, std::string addr, std::stri
   return wrap(out);
 }
 
-SEXP cast_pipeline_to_xptr_compatible(SEXP ptr, std::string addr, std::string crs, std::vector<double> accuracy)
+SEXP cast_pipeline_to_xptr_compatible(SEXP ptr, std::string addr)
 {
   api::Pipeline* tmp = as_pipeline(ptr);
 
   // Deep copy;
   api::Pipeline p(*tmp);
 
-  if (p.has_reader())
-    throw std::runtime_error("Cannot cast a pipeline without reader");
+  if (!p.has_reader())
+  {
+    api::Pipeline reader = api::reader_coverage();
+    p = reader + p;
+  }
 
   auto& stages = p.get_stages();
 

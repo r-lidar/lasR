@@ -54,17 +54,16 @@ test_that("rasterize fails",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  met = rasterize(5, c("count"))
-  met[[1]]$method = "z_p101"
+  met = rasterize(5, c("z_p101"))
   expect_error(exec(met, on = f), "Percentile out of range")
 
-  met[[1]]$method = "i_p101"
+  met = rasterize(5, c("i_p101"))
   expect_error(exec(met, on = f), "Percentile out of range")
 
-  met[[1]]$method = "jlop"
+  met = rasterize(5, c("jlop"))
   expect_error(exec(met, on = f), "Invalid metric name: jlop")
 
-  met[[1]]$method = "zup"
+  met = rasterize(5, c("zup"))
   expect_error(exec(met, on = f), "Invalid metric name: zup")
 })
 

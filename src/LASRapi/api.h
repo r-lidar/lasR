@@ -170,6 +170,7 @@ Pipeline write_lax(bool embedded = false, bool overwrite = false);
 #ifdef USING_R
 Pipeline aggregate(double res, int nmetrics, double window, std::string call_ptr, std::string env_ptr, std::vector<std::string> filter = {""}, std::string ofile = "");
 Pipeline callback(std::string ptr, std::string args, std::string expose = "", bool drop_buffer = false, bool no_las_update = false);
+Pipeline xptr();
 #endif
 } // namespace api
 
