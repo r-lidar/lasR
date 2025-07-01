@@ -2,21 +2,12 @@
 % Please edit documentation in R/pipeline_tools.R
 \name{tools}
 \alias{tools}
-\alias{print.LASRalgorithm}
-\alias{print.LASRpipeline}
-\alias{+.LASRpipeline}
-\alias{c.LASRpipeline}
+\alias{print.PipelinePtr}
 \alias{+.PipelinePtr}
 \alias{[[.PipelinePtr}
 \title{Tools inherited from base R}
 \usage{
-\method{print}{LASRalgorithm}(x, ...)
-
-\method{print}{LASRpipeline}(x, ...)
-
-\method{+}{LASRpipeline}(e1, e2)
-
-\method{c}{LASRpipeline}(...)
+\method{print}{PipelinePtr}(x, ...)
 
 \method{+}{PipelinePtr}(e1, e2)
 

@@ -1400,59 +1400,6 @@ write_lax = function(embedded = FALSE, overwrite = FALSE)
   .APISTAGES$write_lax(embedded, overwrite)
 }
 
-# ==== INTERNALS =====
-
-generate_uid <- function(size = 8)
-{
-  paste(sample(c(letters[1:6], as.character(0:8)), size, replace = TRUE), collapse = "")
-}
-
-set_lasr_class = function(x, raster = FALSE, vector = FALSE, matrix = FALSE)
-{
-  x[["uid"]] = generate_uid()
-
-  if (is.null(x[["output"]])) x[["output"]] = ""
-  if (is.null(x[["filter"]])) x[["filter"]] = ""
-
-  allow_laslib_filter = !is.null(attr(x, "laslib"))
-
-  validate_filter(x[["filter"]], allow_laslib_filter)
-
-  x <- Filter(Negate(is.null), x)
-
-  x[["output"]] = normalizePath(x[["output"]], mustWork = FALSE)
-  x[["filter"]] = as.character(x[["filter"]])
-
-  cl <- c("LASRalgorithm", "list")
-  if (raster) cl <- c(cl, "LASRraster")
-  if (vector) cl <- c(cl, "LASRvector")
-  if (matrix) cl <- c(cl, "LASRmatrix")
-
-  class(x) <- cl
-  x <- list(x)
-  names(x) <- x[[1]][["algoname"]]
-  class(x) <- c("LASRpipeline", "list")
-  return(x)
-}
-
-get_stage = function(x)
-{
-  call = deparse(substitute(x))
-
-  if (methods::is(x, "LASRalgorithm"))
-    return(x)
-
-  if (methods::is(x, "LASRpipeline"))
-  {
-    if (length(x) != 1L)
-      stop(paste("Cannot input a complex pipeline.", call, "has", length(x), "stages"))
-
-    return(x[[1]])
-  }
-
-  stop(paste("The stage", call, "must be a 'LASRalgorithm'"))
-}
-
 LASATTRIBUTES <- c("X", "Y", "Z", "Intensity",
                    "ReturnNumber", "NumberOfReturns",
                    "ScanDirectionFlag", "EdgeOfFlightline",

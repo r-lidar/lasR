@@ -31,11 +31,10 @@
 #' }
 #' @md
 #' @export
-old_exec = function(pipeline, on, with = NULL, ...)
+exec = function(pipeline, on, with = NULL, ...)
 {
-  args = list(...)
-  fjson = args$json
   async_com = ""
+  json_file = ""
 
   # Parse options and give precedence to 1. global options 2. LAScatalog 3. with arguments 4. ... arguments
   with = parse_options(on, with, ...)
@@ -52,18 +51,17 @@ old_exec = function(pipeline, on, with = NULL, ...)
     writeLines(processed_content, json_file)
     async_com = tempfile(fileext = ".tmp")
   }
-  else if (methods::is(pipeline, "LASRpipeline"))
+  else if (methods::is(pipeline, "PipelinePtr"))
   {
-    # A reader stage is mandatory. It is allowed to omit it, the engine adds it.
-    if (is_reader_missing(pipeline))
-    {
-      pipeline = reader() + pipeline
-    }
-
-    # A build_catalog stage is automatically added. Users do not need to take care of that one
-    pipeline = build_catalog(on, with) + pipeline
-
     on_is_valid = FALSE
+
+    # If 'on' is character, this is the default behavior.
+    if (is.character(on))
+    {
+      stopifnot(length(on) > 0)
+      on <- normalizePath(on, mustWork = FALSE)
+      on_is_valid = TRUE
+    }
 
     # If 'on' is a LAS from lidR or a data.frame. Compatibility mode for R exclusively. The reader_las
     # stage is modified to call R specific stages that are not compiled outside of R
@@ -80,24 +78,19 @@ old_exec = function(pipeline, on, with = NULL, ...)
         attr(on, "crs") <- crs
       }
 
-      crs <- attr(on, "crs")
+      dataframe = on
+      on = character()
+
+      crs <- attr(dataframe, "crs")
       if (is.null(crs)) crs = ""
       if (!is.character(crs) & length(crs != 1)) stop("The CRS of this data.frame is not a WKT string")
 
-      acc <- attr(on, "accuracy")
+      acc <- attr(dataframe, "accuracy")
       if (is.null(acc)) acc = c(0, 0, 0)
       if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
 
-      pipeline[[1]]$dataframe = on
-      pipeline[[1]]$crs = crs
-      pipeline[[1]]$files = NULL
-      pipeline[[1]]$type = "dataframe"
-
-      ind = get_reader_index(pipeline)
-      pipeline[[ind]]$dataframe = on
-      pipeline[[ind]]$accuracy = acc
-      pipeline[[ind]]$crs = crs
-
+      addr = .APIOPERATIONS$get_address(dataframe)
+      pipeline = .APIOPERATIONS$cast_pipeline_to_dataframe_compatible(pipeline, addr, crs, accuracy)
       on_is_valid = TRUE
     }
 
@@ -105,54 +98,25 @@ old_exec = function(pipeline, on, with = NULL, ...)
     if (methods::is(on, "LAScatalog"))
     {
       on <- on$filename
+      on <- normalizePath(on, mustWork = FALSE)
+      on_is_valid = TRUE
     }
 
     if (methods::is(on, "lasrcloud"))
     {
-      pipeline[[1]]$files = NULL
-      pipeline[[1]]$externalptr = on[[1]]
-      pipeline[[1]]$type = "externalptr"
-
-      ind = get_reader_index(pipeline)
-      pipeline[[ind]]$externalptr = on[[1]]
-
-      on_is_valid = TRUE
-    }
-
-    # If 'on' is character, this is the default behavior.
-    if (is.character(on))
-    {
-      stopifnot(length(on) > 0)
-
-      pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
-      pipeline$build_catalog$buffer <- with$buffer
-      pipeline$build_catalog$noprocess <- with$noprocess
-      pipeline$build_catalog$type = "files"
-
-      # 'noprocess' is a hidden and not documented options to be compatible with LAScatalog$processed
-      if (!is.null(with$noprocess))
-      {
-        if (length(with$noprocess) != length(on))
-          stop("'noprocess' and 'on' have different length")
-      }
-
+      xptr = on[[1]]
+      on = character()
+      addr = .APIOPERATIONS$get_address(xptr)
+      pipeline = .APIOPERATIONS$cast_pipeline_to_xptr_compatible(pipeline, addr)
       on_is_valid = TRUE
     }
 
     if (!on_is_valid) stop("Invalid argument 'on'.")
 
-    # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
-    # sent to the processor
-    pipeline = list(processing = with, pipeline = pipeline)
-    json_file = write_json(pipeline)
-    if (!is.null(fjson)) file.copy(json_file, normalizePath(fjson, mustWork = FALSE))
+    json_file <- .APIOPERATIONS$generate_json(pipeline, on, with)
   }
 
-  ans <- cpp_process(json_file, async_com)
-
-  #file.remove(json_file)
-
-  if (inherits(ans, "error")) stop(ans)
+  ans  <- .APIOPERATIONS$excecute_pipeline(json_file, async_com)
 
   if (!with$noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)
@@ -165,35 +129,6 @@ old_exec = function(pipeline, on, with = NULL, ...)
   else
     return(ans)
 }
-
-is_reader_missing = function(pipeline)
-{
-  for (stage in pipeline)
-  {
-    if (substr(stage$algoname, 1, 6) == "reader")
-    {
-      return(FALSE)
-    }
-  }
-  return(TRUE)
-}
-
-get_reader_index = function(pipeline)
-{
-  i = 1
-  for (stage in pipeline)
-  {
-    if (stage$algoname == "reader")
-    {
-      return(i)
-    }
-
-    i = i+1
-  }
-
-  return(i)
-}
-
 
 read_as_common_r_object = function(ans)
 {

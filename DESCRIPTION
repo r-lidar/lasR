@@ -39,7 +39,6 @@ Collate:
     'stages.R'
     'deprecated.R'
     'doc.R'
-    'execute.R'
     'filters.R'
     'internals.R'
     'json.R'

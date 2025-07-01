@@ -163,11 +163,10 @@ SEXP print_pipeline(SEXP ptr)
   Rprintf("%s\n", out.c_str());
   return R_NilValue;
 }
-
 /*
  * R wrapper to the execute function
  */
-SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on, Rcpp::List with)
+std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with)
 {
   // Initialize with default values
   double buffer = 0.0;
@@ -213,7 +212,12 @@ SEXP excecute_pipeline(SEXP ptr, std::vector<std::string> on, Rcpp::List with)
 
   // Generate and execute the pipeline
   std::string f = p.write_json();
-  return api::execute(f);
+  return f;
+}
+
+SEXP execute_pipeline(std::string f, std::string async_com)
+{
+  return api::execute(f, async_com);
 }
 
 /*
@@ -399,7 +403,8 @@ SEXP test(std::vector<std::string> on)
 
 RCPP_MODULE(operations)
 {
-  function("excecute_pipeline", &excecute_pipeline, "Execute pipeline");
+  function("generate_json", &generate_json, "Write JSON on disk");
+  function("excecute_pipeline", &execute_pipeline, "Execute pipeline");
   function("merge_pipeline", &merge_pipeline, "Concatenate pipelines");
   function("print_pipeline", &print_pipeline, "Print pipelines");
   function("get_address", &get_address, "Get address of a SEXP");
