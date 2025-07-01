@@ -1,6 +1,7 @@
 #include "api.h"
 
 #include <sstream>
+#include <random>
 
 namespace api
 {
@@ -97,14 +98,16 @@ std::string Stage::to_string() const
   return ss.str();
 }
 
-
 std::string Stage::generate_uid(int size)
 {
   static const char chars[] = "abcdef0123456789";
+  static thread_local std::mt19937 generator(std::random_device{}());
+  static thread_local std::uniform_int_distribution<int> distribution(0, sizeof(chars) - 2); // -2 to exclude null terminator
+
   std::string result;
   result.reserve(size);
   for (int i = 0; i < size; ++i)
-    result += chars[rand() % (sizeof(chars) - 1)];
+    result += chars[distribution(generator)];
 
   return result;
 }

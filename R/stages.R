@@ -494,7 +494,7 @@ info = function(f)
   if (missing(f))  {
     return(.APISTAGES$info())
   } else {
-    execute(info(), on = f)
+    exec(info(), on = f)
     return(invisible())
   }
 }

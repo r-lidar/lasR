@@ -394,7 +394,7 @@ SEXP test(std::vector<std::string> on)
 
   p += info();
   p += delete_points({"Z > 1.37"});
-  p += write_las(temp_file);
+  p += write_las(temp_file.string());
 
   std::string file = p.write_json();
 
