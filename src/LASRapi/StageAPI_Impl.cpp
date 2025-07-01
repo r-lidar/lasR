@@ -1,5 +1,7 @@
 #include "api.h"
 
+#include <sstream>
+
 namespace api
 {
 Stage::Stage(const std::string& algoname)
