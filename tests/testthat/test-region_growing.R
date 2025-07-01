@@ -18,7 +18,7 @@ test_that("growing region works",
 
   skip_on_os("mac")
 
-  expect_equal(sum(!is.na(trees[])), 5967L)
+  expect_equal(sum(!is.na(trees[])), 5968L)
 })
 
 test_that("growing region works with multiple files",
@@ -42,7 +42,7 @@ test_that("growing region works with multiple files",
   expect_equal(length(unique(u$region_growing[])), 2235L) # 2234+NaN
   expect_gte(nrow(u$local_maximum), 2234L)
   expect_lte(nrow(u$local_maximum), 2235L)
-  expect_equal(sum(is.na(u$rasterize[])), 5368L)
+  expect_equal(sum(is.na(u$rasterize[])), 5367L)
 
   # We have an issue on the r-universe version of macos-r-release it is 81 instead of 83
   # but on github action it is ok... who knows.

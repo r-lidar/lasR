@@ -3,6 +3,7 @@
 #' Tools inherited from base R
 #'
 #' @param x,e1,e2 lasR objects
+#' @param i index
 #' @param ... lasR objects. Is equivalent to +
 #' @examples
 #' algo1 <- rasterize(1, "max")

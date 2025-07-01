@@ -17,6 +17,8 @@
 \item{x, e1, e2}{lasR objects}
 
 \item{...}{lasR objects. Is equivalent to +}
+
+\item{i}{index}
 }
 \description{
 Tools inherited from base R
