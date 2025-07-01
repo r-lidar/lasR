@@ -105,14 +105,6 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
   return(s)
 }
 
-# ===== B =====
-
-build_catalog = function(files, with)
-{
-  ans <- list(algoname = "build_catalog",  files = files, buffer = with$buffer, chunk = with$chunk, noprocess = with$noprocess)
-  set_lasr_class(ans)
-}
-
 # ===== C =====
 
 
