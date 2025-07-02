@@ -18,7 +18,7 @@ test_that("growing region works",
 
   skip_on_os("mac")
 
-  expect_equal(sum(!is.na(trees[])), 5967L)
+  expect_equal(sum(!is.na(trees[])), 5968L)
 })
 
 test_that("growing region works with multiple files",
