@@ -144,6 +144,9 @@ bool process(const std::string& config_file)
 
     int n = lascatalog->get_number_chunks();
 
+    if (n == 1 && ncpu_outer_loop > 0)
+      std::swap(ncpu_outer_loop, ncpu_inner_loops);
+
     // Check some multi-threading stuff
     if (ncpu_outer_loop > n) ncpu_outer_loop = n;
     if (!is_parallelized && ncpu_inner_loops > 1) ncpu_inner_loops = 1;
