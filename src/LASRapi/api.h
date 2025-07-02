@@ -92,8 +92,10 @@ public:
   Pipeline operator[](std::size_t index) const;
 
   void set_files(const std::vector<std::string>& files) { this->files = files; };
-  void set_ncores(int n) { if (n > 0) opt_ncores = n; };
-  void set_strategy();
+  void set_sequential_strategy();
+  void set_concurrent_points_strategy(int ncores);
+  void set_concurrent_files_strategy(int ncores);
+  void set_nested_strategy(int ncores1, int ncores2);
   void set_verbose(bool b) { opt_verbose = b; };
   void set_buffer(double val) { opt_buffer = val; };
   void set_progress(bool b) { opt_progress = b; };
@@ -115,7 +117,7 @@ private:
 
   // Processing options
   std::vector<std::string> files;
-  int opt_ncores = 1;
+  std::vector<int> opt_ncores = {1, 0};
   std::string opt_strategy  = "concurrent-points";
   double opt_buffer = 0;
   bool opt_progress = false;

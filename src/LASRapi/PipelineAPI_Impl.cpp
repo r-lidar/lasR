@@ -49,6 +49,30 @@ Pipeline Pipeline::operator[](std::size_t index) const
   return Pipeline(s);
 }
 
+void Pipeline::set_sequential_strategy()
+{
+  opt_ncores = {1, 0};
+  opt_strategy = "sequential";
+}
+
+void Pipeline::set_concurrent_points_strategy(int ncores)
+{
+  opt_ncores = {ncores, 0};
+  opt_strategy = "concurrent-points";
+}
+
+void Pipeline::set_concurrent_files_strategy(int ncores)
+{
+  opt_ncores = {ncores, 0};
+  opt_strategy = "concurrent-files";
+}
+
+void Pipeline::set_nested_strategy(int ncores1, int ncores2)
+{
+  opt_ncores = {ncores1, ncores2};
+  opt_strategy = "nested";
+}
+
 std::string Pipeline::to_string() const
 {
   std::string out;
@@ -153,7 +177,7 @@ nlohmann::json Pipeline::generate_json() const
   nlohmann::json j;
 
   // Add global processing options
-  j["processing"]["ncore"]     = opt_ncores;
+  j["processing"]["ncores"]     = opt_ncores;
   j["processing"]["strategy"]  = opt_strategy;
   j["processing"]["buffer"]    = opt_buffer;
   j["processing"]["progress"]  = opt_progress;

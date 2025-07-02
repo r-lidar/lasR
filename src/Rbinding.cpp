@@ -163,17 +163,19 @@ SEXP print_pipeline(SEXP ptr)
   Rprintf("%s\n", out.c_str());
   return R_NilValue;
 }
+
 /*
- * R wrapper to the execute function
+ * R wrapper to generate the json file
  */
 std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with)
 {
   // Initialize with default values
   double buffer = 0.0;
   double chunk = 0.0;
-  int ncores = 1;
   bool verbose = false;
   bool progress = true;
+  std::string strategy = "concurrent-points";
+  std::vector<int> ncores = {1, 0};
   std::vector<bool> noprocess;
 
   // Override if present and not null
@@ -184,7 +186,7 @@ std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with
     chunk = Rcpp::as<double>(with["chunk"]);
 
   if (with.containsElementNamed("ncores") && !Rf_isNull(with["ncores"]))
-    ncores = Rcpp::as<int>(with["ncores"]);
+    ncores = Rcpp::as<std::vector<int>>(with["ncores"]);
 
   if (with.containsElementNamed("verbose") && !Rf_isNull(with["verbose"]))
     verbose = Rcpp::as<bool>(with["verbose"]);
@@ -195,14 +197,16 @@ std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with
   if (with.containsElementNamed("noprocess") && !Rf_isNull(with["noprocess"]))
     noprocess = Rcpp::as<std::vector<bool>>(with["noprocess"]);
 
+  if (with.containsElementNamed("strategy") && !Rf_isNull(with["strategy"]))
+    strategy = Rcpp::as<std::string>(with["strategy"]);
+
+
   // Retrieve pipeline and make a deep copy
   api::Pipeline* tmp = as_pipeline(ptr);
   api::Pipeline p(*tmp);
 
   // Set parameters
   p.set_files(on);
-  p.set_ncores(ncores);
-  // p.set_strategy();
   p.set_verbose(verbose);
   p.set_buffer(buffer);
   p.set_progress(progress);
@@ -210,11 +214,25 @@ std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with
   p.set_profile_file("");
   p.set_noprocess(noprocess);
 
+  if (strategy == "sequential")
+    p.set_sequential_strategy();
+  else if (strategy == "concurrent-points")
+    p.set_concurrent_points_strategy(ncores[0]);
+  else if (strategy == "concurrent-files")
+    p.set_concurrent_files_strategy(ncores[0]);
+  else if(strategy == "nested")
+    p.set_nested_strategy(ncores[0], ncores[1]);
+  else
+    throw std::invalid_argument("Invalid strategy");
+
   // Generate and execute the pipeline
   std::string f = p.write_json();
   return f;
 }
 
+/*
+ * R wrapper to execute the json file
+ */
 SEXP execute_pipeline(std::string f, std::string async_com)
 {
   return api::execute(f, async_com);
@@ -389,7 +407,7 @@ SEXP test(std::vector<std::string> on)
 
   Pipeline p;
   p.set_files(on);
-  p.set_ncores(8);
+  p.set_concurrent_points_strategy(8);
   p.set_progress(true);
 
   p += info();
