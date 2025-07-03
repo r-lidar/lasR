@@ -10,13 +10,8 @@
 #' @importFrom Rcpp loadModule
 "_PACKAGE"
 
-#' @export
 .APISTAGES <- Rcpp::Module("stages", PACKAGE = "lasR")
-
-#' @export
 .APIUTILS <- Rcpp::Module("utils", PACKAGE = "lasR")
-
-#' @export
 .APIOPERATIONS <- Rcpp::Module("operations", PACKAGE = "lasR")
 
 .onAttach <- function(libname, pkgname)
