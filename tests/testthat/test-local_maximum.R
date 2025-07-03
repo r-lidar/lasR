@@ -69,7 +69,7 @@ test_that("local maximum works with a raster",
   expect_equal(dim(ans[[4]]), c(220L, 1L))
 })
 
-test_that("growing region works with a raster with multiple files",
+test_that("local maximum works with a raster with multiple files",
 {
   f = paste0(system.file(package="lasR"), "/extdata/bcts/")
   f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)

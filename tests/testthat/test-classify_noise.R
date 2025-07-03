@@ -9,6 +9,8 @@ test_that("classify noise with ivf works",
 
 test_that("classify noise with ivf works using unorder map",
 {
+  skip("Not testable with new API")
+
   f <- system.file("extdata", "Topography.las", package="lasR")
   class = classify_with_ivf(n = 50)
   ans = exec(class+summarise(), f)

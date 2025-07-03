@@ -95,9 +95,9 @@ drop_z_between = function(x,y) { make_filter(c(paste("Z <", x[1]), paste("Z >", 
 #' @export
 drop_duplicates = function() { make_filter("-drop_duplicates")}
 
-filter_usage <- function() { invisible(.Call(`C_lasfilterusage`)) }
+filter_usage <- function() { invisible(.APIUTILS$lasfilterusage()) }
 
-transform_usage <- function() { invisible(.Call(`C_lastransformusage`)) }
+transform_usage <- function() { invisible(.APIUTILS$lastransformusage()) }
 
 make_filter = function(x)
 {
