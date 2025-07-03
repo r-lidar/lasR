@@ -1,206 +1,297 @@
-# LASR Python API
+# LASR Python Bindings
 
-This Python API for LASR follows the unified C++ API approach suggested in [GitHub issue #155](https://github.com/r-lidar/lasR/issues/155). This ensures consistency between the R and Python APIs and reduces maintenance overhead.
+Python bindings for the LASR (pronounced "laser") library - a high-performance LiDAR point cloud processing library.
 
-## Architecture
+## Overview
 
-The Python bindings now use the C++ API layer (`src/LASRapi/api.h`) instead of directly binding to the core LASR classes. This provides several benefits:
+The LASR Python bindings provide a clean, Pythonic interface to the powerful LASR C++ library for processing large-scale LiDAR point clouds. The API closely mirrors the R API, ensuring consistency across language bindings.
 
-1. **Consistency**: The Python API mirrors the R API exactly
-2. **Maintainability**: Only one API needs to be updated when new features are added
-3. **Stability**: The C++ API provides a stable interface that won't change frequently
-4. **Feature Parity**: New stages added to the C++ API are automatically available in Python
+## Features
 
-## Key Classes
+- **High Performance**: Direct bindings to optimized C++ code
+- **Complete API Coverage**: All LASR stages and operations available
+- **Pythonic Interface**: Natural Python syntax with operator overloading
+- **Pipeline Processing**: Chain operations for efficient processing
+- **Multi-threading Support**: Leverage multiple cores for processing
+- **Memory Efficient**: Minimal memory overhead through C++ backend
 
-### `Pipeline`
-The main class for building and executing processing pipelines.
+## Installation
+
+### Prerequisites
+
+- Python 3.7+
+- pybind11
+- C++17 compatible compiler
+- GDAL (>= 2.2.3)
+- GEOS (>= 3.4.0)
+- PROJ (>= 4.9.3)
+
+### Build from Source
+
+```bash
+cd python
+pip install -e .
+```
+
+or using setuptools directly:
+
+```bash
+cd python
+python setup.py build_ext --inplace
+```
+
+## Quick Start
 
 ```python
 import pylasr
 
-# Create a pipeline
-pipeline = pylasr.Pipeline()
+# Create a simple processing pipeline
+pipeline = (pylasr.info() + 
+           pylasr.classify_with_sor(k=10) + 
+           pylasr.delete_points(["Classification == 18"]) +
+           pylasr.write_las("cleaned.las"))
 
-# Configure processing options
-pipeline.set_ncores(4)
-pipeline.set_verbose(True)
-pipeline.set_buffer(50.0)  # 50m buffer
-
-# Add stages
-pipeline += pylasr.info()
-pipeline += pylasr.classify_with_sor(k=10, m=8)
-pipeline += pylasr.write_las("output.las")
+# Set processing options
+pipeline.set_concurrent_points_strategy(4)
+pipeline.set_progress(True)
 
 # Execute on files
-files = ["input1.las", "input2.las"]
+files = ["input.las", "input2.las"]
 success = pipeline.execute(files)
 ```
 
-### `Stage`
-Individual processing stages that can be combined into pipelines.
+## API Structure
+
+### Core Classes
+
+#### `Stage`
+Represents a single processing stage with configurable parameters.
 
 ```python
 # Create a stage manually
 stage = pylasr.Stage("classify_with_sor")
 stage.set("k", 12)
-stage.set("m", 6)
-stage.set("classification", 18)
+stage.set("m", 8)
 
-# Add to pipeline
-pipeline = pylasr.Pipeline(stage)
+# Or use convenience functions
+stage = pylasr.classify_with_sor(k=12, m=8)
+```
+
+#### `Pipeline`
+Container for multiple stages with execution management.
+
+```python
+# Create empty pipeline
+pipeline = pylasr.Pipeline()
+
+# Add stages
+pipeline += pylasr.info()
+pipeline += pylasr.classify_with_sor()
+
+# Set processing strategy
+pipeline.set_concurrent_files_strategy(2)
+
+# Execute
+pipeline.execute(["file1.las", "file2.las"])
+```
+
+### Processing Strategies
+
+LASR supports different parallelization strategies:
+
+```python
+# Sequential processing
+pipeline.set_sequential_strategy()
+
+# Concurrent points (single file, multiple cores)
+pipeline.set_concurrent_points_strategy(ncores=4)
+
+# Concurrent files (multiple files, single core each)
+pipeline.set_concurrent_files_strategy(ncores=2)
+
+# Nested strategy (multiple files, multiple cores each)
+pipeline.set_nested_strategy(ncores1=2, ncores2=4)
 ```
 
 ## Available Stages
 
-The Python API exposes all stages available in the C++ API:
-
-### Point Cloud Processing
-- `info()` - Get point cloud information
-- `delete_points(filter)` - Delete points matching criteria
-- `edit_attribute(filter, attribute, value)` - Edit point attributes
-- `add_attribute(data_type, name, description, scale, offset)` - Add new attributes
-- `add_rgb()` - Add RGB attributes
-
 ### Classification
-- `classify_with_sor(k, m, classification)` - Statistical Outlier Removal
-- `classify_with_ivf(res, n, classification)` - Isolated Voxel Filter
+- `classify_with_sor()` - Statistical Outlier Removal
+- `classify_with_ivf()` - Isolated Voxel Filter  
+- `classify_with_csf()` - Cloth Simulation Filter
 
-### Spatial Operations
-- `filter_with_grid(res, operation, filter)` - Grid-based filtering
-- `local_maximum(ws, min_height, filter, ofile, use_attribute, record_attributes)` - Find local maxima
-- `geometry_features(k, r, features)` - Compute geometric features
+### Point Operations
+- `delete_points()` - Remove points by filter
+- `edit_attribute()` - Modify attribute values
+- `filter_with_grid()` - Grid-based filtering
+- `sort_points()` - Sort points spatially
 
-### Raster Operations
-- `load_raster(file, band)` - Load raster from file
-- `focal(connect_uid, size, fun, ofile)` - Apply focal operations
-- `pit_fill(connect_uid, lap_size, thr_lap, thr_spk, med_size, dil_radius, ofile)` - Fill pits
-- `transform_with(connect_uid, operation, store_in_attribute, bilinear)` - Transform using raster/matrix
+### Sampling
+- `sampling_voxel()` - Voxel-based sampling
+- `sampling_pixel()` - Pixel-based sampling
+- `sampling_poisson()` - Poisson disk sampling
 
-### Output
-- `write_las(ofile, filter, keep_buffer)` - Write LAS/LAZ files
-- `write_copc(ofile, filter, keep_buffer, max_depth, density)` - Write COPC files
-- `write_pcd(ofile, binary)` - Write PCD files
-- `write_vpc(ofile, absolute_path, use_gpstime)` - Write VPC files
-- `write_lax(embedded, overwrite)` - Write LAX spatial index
+### Rasterization
+- `rasterize()` - Convert points to raster
+- `rasterize_triangulation()` - Rasterize triangulated surface
 
-### Utilities
-- `load_matrix(matrix, check)` - Load transformation matrix
-- `hull(connect_uid, ofile)` - Compute convex hull
-- `nothing(read, stream, loop)` - No-op stage for testing
+### Geometric Analysis
+- `geometry_features()` - Compute geometric features
+- `local_maximum()` - Find local maxima
+- `triangulate()` - Triangulation
+- `hull()` - Convex hull
+
+### I/O Operations
+- `write_las()` - Write LAS/LAZ files
+- `write_copc()` - Write COPC files
+- `write_pcd()` - Write PCD files
+- `write_vpc()` - Write VPC catalogs
+- `write_lax()` - Write spatial index
+
+### Coordinate Systems
+- `set_crs_epsg()` - Set CRS by EPSG code
+- `set_crs_wkt()` - Set CRS by WKT string
+
+### Data Loading
+- `load_raster()` - Load raster data
+- `load_matrix()` - Load transformation matrix
+
+## Examples
+
+### Basic DTM/CHM Generation
+
+```python
+import pylasr
+
+# Ground classification and DTM generation
+dtm_pipeline = (pylasr.classify_with_csf() +
+               pylasr.rasterize(1.0, 1.0, ["min"], 
+                              ["Classification == 2"], 
+                              "dtm.tif"))
+
+# Canopy height model
+chm_pipeline = pylasr.rasterize(0.5, 0.5, ["max"], 
+                               ["Classification != 2"], 
+                               "chm.tif")
+
+# Combine pipelines
+full_pipeline = dtm_pipeline + chm_pipeline
+full_pipeline.set_concurrent_points_strategy(4)
+
+files = ["forest.las"]
+success = full_pipeline.execute(files)
+```
+
+### Advanced Processing Workflow
+
+```python
+# Multi-stage processing
+pipeline = pylasr.Pipeline()
+
+# Noise removal and ground classification
+pipeline += pylasr.classify_with_sor(k=8, m=6)
+pipeline += pylasr.classify_with_csf()
+pipeline += pylasr.delete_points(["Classification == 18"])
+
+# Height normalization
+dtm = pylasr.rasterize(1.0, 1.0, ["min"], ["Classification == 2"])
+pipeline += dtm
+pipeline += pylasr.transform_with(dtm.get_uid(), "-", "HeightAboveGround")
+
+# Tree detection
+chm = pylasr.rasterize(0.5, 0.5, ["max"], ["Classification != 2"])
+pipeline += chm
+pipeline += pylasr.local_maximum_raster(chm.get_uid(), 3.0, 2.0, 
+                                       ofile="trees.shp")
+
+# Final output
+pipeline += pylasr.write_las("processed.las")
+
+# Execute with nested parallelism
+pipeline.set_nested_strategy(2, 4)
+pipeline.execute(input_files)
+```
+
+### Format Conversion
+
+```python
+# Convert between formats
+converter = (pylasr.write_las("output.laz") +
+            pylasr.write_pcd("output.pcd") +
+            pylasr.write_copc("output.copc.laz") +
+            pylasr.write_lax())
+
+converter.execute(["input.las"])
+```
 
 ## System Information
 
 ```python
 import pylasr
 
-# Get system information
+# Check system capabilities
 print(f"Available threads: {pylasr.available_threads()}")
 print(f"OpenMP support: {pylasr.has_omp_support()}")
-print(f"Available RAM: {pylasr.get_available_ram() / (1024**3):.2f} GB")
-
-# Display LAS utilities
-pylasr.las_filter_usage()
-pylasr.las_transform_usage()
+print(f"Available RAM: {pylasr.get_available_ram() / (1024**3):.1f} GB")
 
 # Check if file is indexed
 indexed = pylasr.is_indexed("file.las")
 ```
 
-## Pipeline Execution
-
-There are two ways to execute pipelines:
-
-### Method 1: Direct execution
-```python
-pipeline = pylasr.Pipeline()
-pipeline += pylasr.info()
-pipeline += pylasr.write_las("output.las")
-
-files = ["input.las"]
-success = pipeline.execute(files)
-```
-
-### Method 2: JSON-based execution
-```python
-pipeline = pylasr.Pipeline()
-pipeline.set_files(["input.las"])
-pipeline += pylasr.info()
-pipeline += pylasr.write_las("output.las")
-
-# Write to JSON and execute
-json_file = pipeline.write_json("pipeline.json")
-success = pylasr.execute(json_file)
-```
-
-## Pipeline Combination
-
-Pipelines can be combined using the `+` operator:
+## Pipeline Introspection
 
 ```python
-# Create preprocessing pipeline
-preprocess = pylasr.Pipeline()
-preprocess += pylasr.info()
-preprocess += pylasr.classify_with_sor()
+# Save pipeline as JSON
+pipeline = pylasr.classify_with_sor() + pylasr.write_las("out.las")
+json_file = pipeline.write_json("my_pipeline.json")
 
-# Create output pipeline
-output = pylasr.Pipeline()
-output += pylasr.write_las("output.las")
-
-# Combine
-full_pipeline = preprocess + output
+# Get pipeline information
+info = pylasr.pipeline_info(json_file)
+print(f"Streamable: {info.streamable}")
+print(f"Buffer needed: {info.buffer}")
+print(f"Parallelizable: {info.parallelizable}")
 ```
 
 ## Error Handling
 
-The API uses exceptions for error handling:
-
 ```python
 try:
-    pipeline = pylasr.Pipeline()
-    pipeline += pylasr.info()
-    success = pipeline.execute(["nonexistent.las"])
-except RuntimeError as e:
-    print(f"Pipeline execution failed: {e}")
+    success = pipeline.execute(files)
+    if not success:
+        print("Pipeline execution failed")
+except Exception as e:
+    print(f"Error: {e}")
 ```
+
+## Performance Tips
+
+1. **Use appropriate parallelization strategy** based on your data and hardware
+2. **Set buffer size** for algorithms that need neighborhood information
+3. **Chain operations** in pipelines to minimize I/O
+4. **Use spatial indexing** with `write_lax()` for faster access
+5. **Sort points** spatially with `sort_points()` for better cache performance
 
 ## Comparison with R API
 
 The Python API closely mirrors the R API structure:
 
-**R:**
-```r
-library(lasR)
+| R | Python |
+|---|--------|
+| `exec(pipeline, on = files)` | `pipeline.execute(files)` |
+| `pipeline + stage` | `pipeline + stage` |
+| `with = list(ncores = 4)` | `pipeline.set_concurrent_points_strategy(4)` |
+| `filter = "Z > 10"` | `filter = ["Z > 10"]` |
 
-pipeline <- info() + 
-           classify_with_sor(k=10) + 
-           write_las("output.las")
+## Contributing
 
-execute(pipeline, on = "input.las")
-```
+See the main LASR repository for contribution guidelines.
 
-**Python:**
-```python
-import pylasr
+## License
 
-pipeline = pylasr.info() + \
-           pylasr.classify_with_sor(k=10) + \
-           pylasr.write_las("output.las")
+GPL-3 - see LICENSE file for details.
 
-pipeline.execute(["input.las"])
-```
+## Links
 
-## Building
-
-The Python bindings require:
-- pybind11
-- C++17 compiler
-- LASR C++ API compiled with `USING_PYTHON=1`
-
-Build configuration should define `USING_PYTHON` to enable Python-specific code paths in the C++ API.
-
-## Future Development
-
-When new stages are added to the C++ API (`src/LASRapi/api.h`), they can be easily exposed to Python by adding the corresponding function binding in `bindings.cpp`. The stage implementation and JSON serialization are handled by the C++ API layer.
-
-This approach ensures that the Python API stays in sync with the R API and reduces the maintenance burden significantly. 
+- [Main LASR Repository](https://github.com/r-lidar/lasR)
+- [LASR Documentation](https://r-lidar.github.io/lasR/)
+- [Issue Tracker](https://github.com/r-lidar/lasR/issues)
