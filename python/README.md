@@ -163,11 +163,17 @@ The `examples/` directory contains several scripts to help you get started:
 ### 🚀 Running Examples
 
 ```bash
-# Basic usage examples
+# Basic usage examples (no data processing)
 python examples/basic_usage.py
 
-# Complete feature demonstration  
+# Basic usage with your data
+python examples/basic_usage.py your_file.las
+
+# Complete feature demonstration
 python examples/complete_example.py
+
+# Complete workflow with your data
+python examples/complete_example.py your_file.las
 
 # Create pipeline JSON files
 python examples/create_pipelines.py
@@ -176,7 +182,7 @@ python examples/create_pipelines.py
 python examples/lasr_cli.py info_pipeline.json
 
 # Process files with pipelines
-python examples/lasr_cli.py info_pipeline.json data.las
+python examples/lasr_cli.py info_pipeline.json your_data.las
 python examples/lasr_cli.py terrain_pipeline.json file1.las file2.las
 ```
 
@@ -188,7 +194,7 @@ Simple examples covering the most common use cases:
 - Basic pipeline creation
 - Configuration options
 - JSON export
-- Data processing (if example data available)
+- Data processing (provide your own .las file as argument)
 
 #### `complete_example.py`
 Comprehensive demonstration of all major features:
@@ -196,7 +202,8 @@ Comprehensive demonstration of all major features:
 - Processing configuration
 - Convenience functions
 - Manual stage creation
-- Error handling
+- Multithreading comparison
+- Error handling (provide your own .las file as argument)
 
 #### `create_pipelines.py`
 Creates various pipeline JSON files for different workflows:
