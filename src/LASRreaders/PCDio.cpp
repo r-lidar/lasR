@@ -5,6 +5,7 @@
 
 #include <limits>
 #include <iomanip> // For std::setprecision
+#include <sstream>
 
 PCDio::PCDio()
 {

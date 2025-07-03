@@ -10,37 +10,12 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// cpp_process
-SEXP cpp_process(SEXP args, SEXP async);
-RcppExport SEXP _lasR_cpp_process(SEXP argsSEXP, SEXP asyncSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type args(argsSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type async(asyncSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_process(args, async));
-    return rcpp_result_gen;
-END_RCPP
-}
-// cpp_get_pipeline_info
-SEXP cpp_get_pipeline_info(SEXP pipeline);
-RcppExport SEXP _lasR_cpp_get_pipeline_info(SEXP pipelineSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type pipeline(pipelineSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_get_pipeline_info(pipeline));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 RcppExport SEXP _rcpp_module_boot_utils();
 RcppExport SEXP _rcpp_module_boot_stages();
 RcppExport SEXP _rcpp_module_boot_operations();
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_lasR_cpp_process", (DL_FUNC) &_lasR_cpp_process, 2},
-    {"_lasR_cpp_get_pipeline_info", (DL_FUNC) &_lasR_cpp_get_pipeline_info, 1},
     {"_rcpp_module_boot_utils", (DL_FUNC) &_rcpp_module_boot_utils, 0},
     {"_rcpp_module_boot_stages", (DL_FUNC) &_rcpp_module_boot_stages, 0},
     {"_rcpp_module_boot_operations", (DL_FUNC) &_rcpp_module_boot_operations, 0},

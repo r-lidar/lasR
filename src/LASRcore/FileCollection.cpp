@@ -47,7 +47,6 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 
   for (auto& file : files)
   {
-
     pb++;
     pb.show();
     PathType type = parse_path(file);
@@ -110,6 +109,13 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
   }
 
   pb.done();
+
+  // Fix #160 with empty folders
+  if (this->files.size() == 0)
+  {
+    last_error = "There is no file to read";
+    return false;
+  }
 
   // Check if all headers have the same signature
   const std::string& referenceSignature = headers[0].signature; // Take the CRS of the first header
@@ -709,17 +715,22 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   std::vector<int> indexes = file_index.get_overlaps(minx - buffer, miny - buffer,  maxx + buffer, maxy + buffer);
   if (indexes.empty())
   {
-    char buff[64];
-    snprintf(buff, sizeof(buff), "cannot find any file in [%.1lf, %.1lf %.1lf, %.1lf]", minx, miny,  maxx, maxy);
-    last_error = buff;
-    return false;
+    // There is no match, create a placeholder that won't be read
+    chunk.clear();
+    char buff[128];
+    snprintf(buff, sizeof(buff), "cannot find any file in [%.1lf, %.1lf, %.1lf, %.1lf]\n", minx, miny,  maxx, maxy);
+    warning(buff);
+    return true;
+  }
+  else
+  {
+    // There is a match we can update the chunk
+    chunk.xmin = minx;
+    chunk.ymin = miny;
+    chunk.xmax = maxx;
+    chunk.ymax = maxy;
   }
 
-  // There is a match we can update the chunk
-  chunk.xmin = minx;
-  chunk.ymin = miny;
-  chunk.xmax = maxx;
-  chunk.ymax = maxy;
   if (chunk.xmin < xmin) chunk.xmin = xmin;
   if (chunk.xmax > xmax) chunk.xmax = xmax;
   if (chunk.ymin < ymin) chunk.ymin = ymin;
@@ -727,7 +738,7 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   chunk.buffer = buffer;
   chunk.shape = q->type();
 
-  // With an R data.frame there is no file and thus no neighbouring files. We can exit.
+  // With an R data.frame there is no file and thus no neighboring files. We can exit.
   if (use_dataframe)
   {
     chunk.main_files.push_back("dataframe");
@@ -735,7 +746,7 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
     return true;
   }
 
-  // We are working with a single file there is no neighbouring files. We can exit.
+  // We are working with a single file there is no neighboring files. We can exit.
   if (get_number_files() == 1)
   {
     chunk.main_files.push_back(files[0].string());

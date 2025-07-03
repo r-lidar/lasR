@@ -39,10 +39,50 @@ test_that("reader_circle perform a queries",
   ans = exec(pipeline, f, buffer = 5)
   expect_equal(dim(ans), c(5028L, 6L))
   expect_equal(sum(ans$Buffer), 2415L)
+})
 
+test_that("reader_circle works with no match",
+{
   # no match
   pipeline = reader_las_circles(8850000, 629400, 20) + read()
-  expect_error(exec(pipeline, f, buffer = 5), "cannot find")
+  expect_null(exec(pipeline, f, buffer = 5))
+
+  pois <- data.frame(name = c("inside", "outside"), x = c(273500, 280000), y = c(5274500, 5280000))
+
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+
+  # all point outside extent
+  pipeline = reader_circles(xc = pois$x[2], yc = pois$y[2], 20) + rasterize(2, "zmax")
+  u <- exec(pipeline, on = f)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u),  c("z_max"))
+  expect_equal(dim(u), c(144, 144, 1))
+  expect_equal(sum(is.na(u[])), 144*144)
+
+  # all point outside extent on file
+  pipeline = reader_circles(xc = pois$x[2], yc = pois$y[2], 20) + rasterize(2, "zmax", ofile = paste0(tempdir(), "/*.tif"))
+  u <- exec(pipeline, on = f)
+
+  expect_null(u)
+
+  # one point inside one point outside extent
+  pipeline = reader_circles(xc = pois$x, yc = pois$y, 20) + rasterize(2, "zmax")
+  u <- exec(pipeline, on = f)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u),  c("z_max"))
+  expect_equal(dim(u), c(21, 21, 1))
+  expect_equal(sum(!is.na(u[])), 315)
+
+  # one point inside and one point outside extent on files
+  pipeline = reader_circles(xc = pois$x, yc = pois$y, 20) + rasterize(2, "zmax", ofile = paste0(tempdir(), "/*.tif"))
+  u <- exec(pipeline, on = f)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u),  c("z_max"))
+  expect_equal(dim(u), c(21, 21, 1))
+  expect_equal(sum(is.na(u[])), 126)
 })
 
 test_that("reader_circle creates raster with minimal bbox",
@@ -74,8 +114,8 @@ test_that("reader_circle works with a buffer (#141)",
   read <- lasR::reader_circles(xc = 481305, yc = 3812966, r = 50)
   pipeline = read + summarise() + lasR::write_las(ofile = paste0(tempfile(), ".las"))
 
-  res1 <- lasR::exec(pipeline, on = file, buffer = 0)
-  res2 <- lasR::exec(pipeline, on = file, buffer = 30)
+  res1 <- exec(pipeline, on = file, buffer = 0)
+  res2 <- exec(pipeline, on = file, buffer = 30)
 
   res1 = read_las(res1$write_las)
   res2 = read_las(res2$write_las)
@@ -91,7 +131,7 @@ test_that("circle buffer is removed #142",
   read_small <- reader_circles(xc = 684876.6, yc = 5017902, r = 10)
   chm <- lasR::chm(res = 1)
 
-  ans <- lasR::exec(read_small + chm, on = file)
+  ans <- exec(read_small + chm, on = file)
 
   expect_equal(sum(is.na(ans[])), 157)
   expect_equal(terra::xmin(ans), 684876 - 10)
@@ -99,7 +139,7 @@ test_that("circle buffer is removed #142",
   expect_equal(terra::ymin(ans), 5017902 - 10)
   expect_equal(terra::ymax(ans), 5017902 + 11)
 
-  ans <- lasR::exec(read_small + chm, on = file, buffer = 10)
+  ans <- exec(read_small + chm, on = file, buffer = 10)
 
   expect_equal(sum(is.na(ans[])), 146)
   expect_equal(terra::xmin(ans), 684876 - 10)
@@ -109,7 +149,7 @@ test_that("circle buffer is removed #142",
 
   read_large <- lasR::reader_circles(xc = 684876.6, yc = 5017902, r = 80)
 
-  ans <- lasR::exec(read_large + chm, on = file)
+  ans <- exec(read_large + chm, on = file)
 
   expect_equal(sum(is.na(ans[])), 7756)
   expect_equal(terra::xmin(ans), 684876 - 80)

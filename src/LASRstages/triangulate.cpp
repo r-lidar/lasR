@@ -49,9 +49,8 @@ bool LASRtriangulate::process(PointCloud*& las)
     npoints++;
   }
 
-  // Does not fail because contour can work with d == nullptr
-  // However 'interpolate' will handle the case and fail
-  if (coords.size() < 3) return true;
+  // Other stage that use the triangulation should handle d == nullptr
+  if (coords.size() < 6) return true;
 
   d = new delaunator::Delaunator(coords);
 

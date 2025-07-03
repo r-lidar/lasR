@@ -127,3 +127,4 @@ test_that("reader_dataframe propagates the CRS",
 
   expect_equal(terra::crs(u), wkt)
 })
+

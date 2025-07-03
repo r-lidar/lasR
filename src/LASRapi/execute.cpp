@@ -24,13 +24,16 @@
 #include "error.h"
 #include "print.h"
 
-#include "pipeline.h"
+#include "Engine.h"
 #include "FileCollection.h"
 
 #include "DrawflowParser.h"
 #include "nlohmann/json.hpp"
 
-api::ReturnType execute(const std::string& config_file, const std::string& async_communication_file)
+namespace api
+{
+
+ReturnType execute(const std::string& config_file, const std::string& async_communication_file)
 {
   // Open the JSON file
   std::ifstream fjson(config_file);
@@ -108,7 +111,7 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
   //uintptr_t original_CStackLimit = R_CStackLimit;
   //#endif
 
-    Pipeline pipeline;
+    Engine pipeline;
 
     if (!pipeline.parse(json_pipeline, progrss))
     {
@@ -122,6 +125,9 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
     FileCollection* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
 
     int n = lascatalog->get_number_chunks();
+
+    if (n == 1 && ncpu_outer_loop > 0)
+      std::swap(ncpu_outer_loop, ncpu_inner_loops);
 
     // Check some multi-threading stuff
     if (ncpu_outer_loop > n) ncpu_outer_loop = n;
@@ -181,7 +187,7 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
     // write_vpc() and write_lax() are the only stage that can processed the FileCollection
     if (!pipeline.pre_run())
     {
-      throw last_error;
+      throw std::runtime_error(last_error);
     }
 
     progress.show();
@@ -196,7 +202,7 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
         // We need a copy of the pipeline. The copy constructor of the pipeline and stages
         // ensure that shared resources are protected (such as connection to output files)
         // and private data are copied.
-        Pipeline private_pipeline(pipeline);
+        Engine private_pipeline(pipeline);
 
         #pragma omp for schedule(dynamic)
         for (int i = 0 ; i < n ; ++i)
@@ -211,6 +217,14 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
           if (!lascatalog->get_chunk(i, chunk))
           {
             failure = true;
+            continue;
+          }
+
+          // This is a special case when processing with a query that fall outside the collection
+          // of files. This fixes #161 and prevent a failure when only a warning is necessary
+          if (chunk.is_empty())
+          {
+            if (verbose) print("Empty chunk skipped\n");
             continue;
           }
 
@@ -327,3 +341,35 @@ api::ReturnType execute(const std::string& config_file, const std::string& async
     return false;
   #endif
 }
+
+PipelineInfo pipeline_info(const std::string& config_file)
+{
+  std::ifstream fjson(config_file);
+  if (!fjson.is_open())
+  {
+    throw std::runtime_error("Could not open the json file containing the pipeline");
+  }
+
+  nlohmann::json json;
+  fjson >> json;
+
+  nlohmann::json json_pipeline = json["pipeline"];
+  Engine pipeline;
+  if (!pipeline.parse(json_pipeline))
+  {
+    throw std::runtime_error(last_error);
+  }
+
+  PipelineInfo info;
+  info.streamable      = pipeline.is_streamable();
+  info.read_points     = pipeline.need_points();
+  info.buffer          = pipeline.need_buffer();
+  info.parallelizable  = pipeline.is_parallelizable();
+  info.parallelized    = pipeline.is_parallelized();
+  info.use_rcapi       = pipeline.use_rcapi();
+
+  return info;
+}
+
+
+} // namespace api

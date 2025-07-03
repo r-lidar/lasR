@@ -1,13 +1,16 @@
 #include "api.h"
 
+#include <sstream>
+#include <random>
+
 namespace api
 {
 Stage::Stage(const std::string& algoname)
 {
   set("algoname", algoname);
-  set("uid", generate_uid());
+  set("uid", generate_uid(12));
   set("output", "");
-  set("filter", "");
+  set("filter", std::vector<std::string>());
 }
 
 void Stage::set(const std::string& key, const Value& value)
@@ -73,6 +76,7 @@ std::string Stage::to_string() const
         ss << (val ? "true" : "false");
       }
       else if constexpr (std::is_same_v<T, std::vector<int>> ||
+                         std::is_same_v<T, std::vector<bool>> ||
                          std::is_same_v<T, std::vector<double>> ||
                          std::is_same_v<T, std::vector<std::string>>)
       {
@@ -94,14 +98,16 @@ std::string Stage::to_string() const
   return ss.str();
 }
 
-
 std::string Stage::generate_uid(int size)
 {
-  static const char chars[] = "abcdef012345678";
+  static const char chars[] = "abcdef0123456789";
+  static thread_local std::mt19937 generator(std::random_device{}());
+  static thread_local std::uniform_int_distribution<int> distribution(0, sizeof(chars) - 2); // -2 to exclude null terminator
+
   std::string result;
   result.reserve(size);
   for (int i = 0; i < size; ++i)
-    result += chars[rand() % (sizeof(chars) - 1)];
+    result += chars[distribution(generator)];
 
   return result;
 }

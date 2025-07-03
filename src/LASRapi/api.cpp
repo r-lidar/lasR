@@ -74,6 +74,9 @@ Pipeline geometry_features(int k, double r, std::string features)
 
 Pipeline delete_points(std::vector<std::string> filter)
 {
+  if (filter.size() == 0 || (filter.size() == 1 && filter[0] == ""))
+    throw std::invalid_argument("A filter is mandatory in 'delete_points");
+
   Stage s("filter");
   s.set("filter", filter);
 
@@ -98,7 +101,7 @@ Pipeline filter_with_grid(double res, std::string operation, std::vector<std::st
 {
   static const std::vector<std::string> choices = {"min", "max"};
   auto it = std::find(choices.begin(), choices.end(), operation);
-  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'operation'. Available options are 'min', 'max'.");
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'operation'. Available options are 'min', 'max'.");
 
   Stage s("filter_grid");
   s.set("res", res);
@@ -112,12 +115,13 @@ Pipeline focal(std::string connect_uid, double size, std::string fun, std::strin
 {
   static const std::vector<std::string> choices = {"mean", "median", "min", "max", "sum"};
   auto it = std::find(choices.begin(), choices.end(), fun);
-  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'operation'. Available options are 'mean', 'median', 'min', 'max', 'sum'");
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'operation'. Available options are 'mean', 'median', 'min', 'max', 'sum'");
 
   if (size <= 0) throw std::invalid_argument("Size must be positive");
 
   Stage s("focal");
   s.set("connect", connect_uid);
+  s.set("size", size);
   s.set("fun", fun);
   s.set("output", ofile);
   s.set_raster();
@@ -125,22 +129,19 @@ Pipeline focal(std::string connect_uid, double size, std::string fun, std::strin
   return Pipeline(s);
 }
 
-Pipeline hull(std::string connect_uid, std::string ofile)
+Pipeline hull(std::string ofile)
 {
   Stage s("hulls");
   s.set("output", ofile);
-  if (connect_uid != "")
-    s.set("connect", connect_uid);
 
   return Pipeline(s);
 }
 
-Pipeline transform_with(std::string connect_uid, std::string operation, std::string store_in_attribute, bool bilinear)
+Pipeline hull_triangulation(std::string connect_uid, std::string ofile)
 {
-  Stage s("transform_with");
+  Stage s("hulls");
+  s.set("output", ofile);
   s.set("connect", connect_uid);
-  s.set("operator", operation);
-  s.set("bilinear", bilinear);
 
   return Pipeline(s);
 }
@@ -190,23 +191,13 @@ Pipeline local_maximum(double ws, double min_height, std::vector<std::string> fi
 
 Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_height, std::vector<std::string> filter, std::string ofile)
 {
-  Stage s("local_maximum_raster");
+  Stage s("local_maximum");
   s.set("connect", connect_uid);
   s.set("ws", ws);
   s.set("min_height", min_height);
   s.set("filter", filter);
   s.set("output", ofile);
   s.set_vector();
-
-  return Pipeline(s);
-}
-
-Pipeline nothing(bool read, bool stream, bool loop)
-{
-  Stage s("nothing");
-  s.set("read", read);
-  s.set("stream", stream);
-  s.set("loop", loop);
 
   return Pipeline(s);
 }
@@ -221,6 +212,244 @@ Pipeline pit_fill(std::string connect_uid, int lap_size, double thr_lap, double 
   s.set("thr_spk", thr_spk);
   s.set("dil_radius", dil_radius);
   s.set("output", ofile);
+  s.set_raster();
+
+  return Pipeline(s);
+}
+
+Pipeline rasterize(double res, double window, std::vector<std::string> operators, std::vector<std::string> filter, std::string ofile, double default_value)
+{
+  Stage s("rasterize");
+  s.set("res", res);
+  s.set("window", window);
+  s.set("method", operators);
+  s.set("filter", filter);
+  s.set("output", ofile);
+  s.set_raster();
+
+  if (default_value != -99999)
+  {
+    s.set("default_value", default_value);
+  }
+
+  return Pipeline(s);
+}
+
+Pipeline rasterize_triangulation(std::string connect_uid, double res, std::string ofile)
+{
+  Stage s("rasterize");
+  s.set("res", res);
+  s.set("connect", connect_uid);
+  s.set("output", ofile);
+  s.set_raster();
+
+  return Pipeline(s);
+}
+
+Pipeline reader_coverage(std::vector<std::string> filter, std::string select, int copc_depth)
+{
+  Stage s("reader");
+
+  if (copc_depth >= 0)
+    filter.push_back("-max_depth " + std::to_string(copc_depth));
+
+  s.set("filter", filter);
+
+  return Pipeline(s);
+}
+
+Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter, std::string select, int copc_depth)
+{
+  if (xc.size() != yc.size())
+    throw std::invalid_argument("xc and yc must have the same length");
+
+  if (r.size() == 1)
+  {
+    r = std::vector<double>(xc.size(), r[0]); // replicate r[0] to match xc size
+  }
+  else if (r.size() > 1)
+  {
+    if (xc.size() != r.size())
+      throw std::invalid_argument("xc and r must have the same length when r has more than one value");
+  }
+
+  if (copc_depth >= 0)
+    filter.push_back("-max_depth " + std::to_string(copc_depth));
+
+  Stage s("reader");
+  s.set("filter", filter);
+  s.set("xcenter", xc);
+  s.set("ycenter", yc);
+  s.set("radius", r);
+
+  return Pipeline(s);
+}
+
+Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter, std::string select, int copc_depth)
+{
+  size_t n = xmin.size();
+  if (ymin.size() != n || xmax.size() != n || ymax.size() != n)
+    throw std::invalid_argument("xmin, ymin, xmax, and ymax must all have the same length");
+
+  if (copc_depth >= 0)
+    filter.push_back("-max_depth " + std::to_string(copc_depth));
+
+  Stage s("reader");
+  s.set("filter", filter);
+  s.set("xmin", xmin);
+  s.set("xmax", xmax);
+  s.set("ymin", ymin);
+  s.set("ymax", ymax);
+
+  return Pipeline(s);
+}
+
+Pipeline region_growing(std::string connect_uid_raster, std::string connect_uid_seeds, double th_tree, double th_seed, double th_cr, double max_cr, std::string ofile)
+{
+  Stage s("region_growing");
+  s.set("connect1", connect_uid_raster);
+  s.set("connect2", connect_uid_seeds);
+  s.set("th_tree", th_tree);
+  s.set("th_seed", th_seed);
+  s.set("th_cr", th_cr);
+  s.set("max_cr", max_cr);
+  s.set("output", ofile);
+  s.set_raster();
+
+  return Pipeline(s);
+}
+
+Pipeline remove_attribute(std::string name)
+{
+  static const std::vector<std::string> choices = {"x", "X", "y", "Y", "z", "Z"};
+  auto it = std::find(choices.begin(), choices.end(), name);
+  if (it != choices.end()) throw std::invalid_argument("Removing point coordinates is not allowed");
+
+  Stage s("remove_attribute");
+  s.set("name", name);
+
+  return Pipeline(s);
+}
+
+Pipeline set_crs_epsg(int epsg)
+{
+  Stage s("set_crs");
+  s.set("epsg", epsg);
+  s.set("wkt", "");
+
+  return Pipeline(s);
+}
+
+Pipeline set_crs_wkt(std::string wkt)
+{
+  Stage s("set_crs");
+  s.set("epsg", 0);
+  s.set("wkt", wkt);
+
+  return Pipeline(s);
+}
+
+Pipeline sampling_voxel(double res, std::vector<std::string> filter, std::string method, int shuffle_size)
+{
+  static const std::vector<std::string> choices = {"random"};
+  auto it = std::find(choices.begin(), choices.end(), method);
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom'");
+
+  Stage s("sampling_voxel");
+  s.set("res", res);
+  s.set("filter", filter);
+  s.set("method", method);
+  s.set("shuffle_size", shuffle_size);
+
+  return Pipeline(s);
+}
+
+Pipeline sampling_pixel(double res,  std::vector<std::string> filter, std::string method, std::string use_attribute, int shuffle_size)
+{
+  static const std::vector<std::string> choices = {"random", "max", "min"};
+  auto it = std::find(choices.begin(), choices.end(), method);
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom', 'min', 'max'.");
+
+  Stage s("sampling_pixel");
+  s.set("res", res);
+  s.set("filter", filter);
+  s.set("method", method);
+  s.set("use_attribute", use_attribute);
+  s.set("shuffle_size", shuffle_size);
+
+  return Pipeline(s);
+}
+
+Pipeline sampling_poisson(double distance,  std::vector<std::string> filter, int shuffle_size)
+{
+  Stage s("sampling_poisson");
+  s.set("distance", distance);
+  s.set("filter", filter);
+  s.set("shuffle_size", shuffle_size);
+
+  return Pipeline(s);
+}
+
+Pipeline stop_if_outside(double xmin, double ymin, double xmax, double ymax)
+{
+  Stage s("stop_if");
+  s.set("condition", "outside_bbox");
+  s.set("xmin", xmin);
+  s.set("xmax", xmax);
+  s.set("ymin", ymin);
+  s.set("ymax", ymax);
+
+  return Pipeline(s);
+}
+
+Pipeline stop_if_chunk_id_below(int index)
+{
+  Stage s("stop_if");
+  s.set("condition", "chunk_id_below");
+  s.set("index", index);
+
+  return Pipeline(s);
+}
+
+Pipeline sort_points(bool spatial)
+{
+  Stage s("sort");
+  s.set("spatial", spatial);
+
+  return Pipeline(s);
+}
+
+Pipeline summarise(double zwbin, double iwbin, std::vector<std::string> metrics,  std::vector<std::string> filter)
+{
+  Stage s("summarise");
+  s.set("zwbin", zwbin);
+  s.set("iwbin", iwbin);
+  s.set("filter", filter);
+  if (metrics.size() > 0)
+    s.set("metrics", metrics);
+
+  return Pipeline(s);
+}
+
+Pipeline triangulate(double max_edge, std::vector<std::string> filter, std::string ofile, std::string use_attribute)
+{
+  Stage s("triangulate");
+  s.set("max_edge", max_edge);
+  s.set("filter", filter);
+  s.set("output", ofile);
+  s.set("use_attribute", use_attribute);
+  s.set_vector();
+
+  return Pipeline(s);
+}
+
+Pipeline transform_with(std::string connect_uid, std::string operation, std::string store_in_attribute, bool bilinear)
+{
+  Stage s("transform_with");
+  s.set("connect", connect_uid);
+  s.set("operator", operation);
+  s.set("bilinear", bilinear);
+  s.set("store_in_attribute", store_in_attribute);
 
   return Pipeline(s);
 }
@@ -242,7 +471,7 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
 
   static const std::vector<std::string> choices = {"sparse", "normal", "dense", "denser"};
   auto it = std::find(choices.begin(), choices.end(), density);
-  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'density'. Available options are 'sparse'', 'normal', 'dense', 'denser'");
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'density'. Available options are 'sparse'', 'normal', 'dense', 'denser'");
 
   int d = 256;
   if (density == "sparse") d = 64;
@@ -289,5 +518,69 @@ Pipeline write_lax(bool embedded, bool overwrite)
 
   return Pipeline(s);
 }
+
+#ifdef USING_R
+Pipeline aggregate(double res, int nmetrics, double window, std::string call_ptr, std::string env_ptr, std::vector<std::string> filter, std::string ofile)
+{
+  Stage s("aggregate");
+  s.set("res", res);
+  s.set("nmetrics", nmetrics);
+  s.set("window", window);
+  s.set("call", call_ptr);
+  s.set("env", env_ptr);
+  s.set("filter", filter);
+  s.set("output", ofile);
+  s.set_raster();
+
+  return Pipeline(s);
+}
+
+Pipeline callback(std::string fun_ptr, std::string args_ptr, std::string expose, bool drop_buffer, bool no_las_update)
+{
+  Stage s("callback");
+  s.set("fun", fun_ptr);
+  s.set("args", args_ptr);
+  s.set("expose", expose);
+  s.set("drop_buffer", drop_buffer);
+  s.set("no_las_update", no_las_update);
+
+  return Pipeline(s);
+}
+
+Pipeline xptr()
+{
+  Stage s("xptr");
+
+  return Pipeline(s);
+}
+#endif
+
+} // namespace api
+
+namespace nonapi
+{
+
+api::Pipeline nothing(bool read, bool stream, bool loop)
+{
+  api::Stage s("nothing");
+  s.set("read", read);
+  s.set("stream", stream);
+  s.set("loop", loop);
+
+  return api::Pipeline(s);
+}
+
+api::Pipeline neighborhood_metrics(std::string connect_uid, std::vector<std::string> metrics, int k, double r, std::string ofile)
+{
+  api::Stage s("neighborhood_metrics");
+  s.set("connect", connect_uid);
+  s.set("k", k);
+  s.set("r", r);
+  s.set("metrics", metrics);
+  s.set("output", ofile);
+
+  return api::Pipeline(s);
+}
+
 
 } // namespace api

@@ -7,7 +7,7 @@ test_that("geometry_features works",
 
   attr = c("coeff00", "coeff01", "coeff02", "coeff10", "coeff11","coeff12","coeff20", "coeff21","coeff22",
             "lambda1", "lambda2", "lambda3",
-            "anisotropy", "planarity", "sphericity", "linearity", "omnivariance", "curvature", "eigensum", "angle",
+            "anisotropy", "planarity", "sphericity", "linearity", "omnivariance", "curvature", "eigensum", "inclination",
             "normalX", "normalY", "normalZ")
 
   expect_true(all(attr %in% names(las)))
@@ -16,7 +16,7 @@ test_that("geometry_features works",
   expect_equal(mean(las$coeff02), -0.04826465, tolerance = 1e-3)
   expect_equal(mean(las$lambda1), 1.0659, tolerance = 1e-3)
   expect_equal(mean(las$anisotropy), 0.9724, tolerance = 1e-3)
-  expect_equal(mean(las$angle), 80.6690, tolerance = 1e-3)
+  expect_equal(mean(las$inclination), 80.6690, tolerance = 1e-3)
 })
 
 test_that("geometry_features overwrites",
@@ -28,7 +28,7 @@ test_that("geometry_features overwrites",
 
   attr = c("coeff00", "coeff01", "coeff02", "coeff10", "coeff11","coeff12","coeff20", "coeff21","coeff22",
            "lambda1", "lambda2", "lambda3",
-           "anisotropy", "planarity", "sphericity", "linearity", "omnivariance", "curvature", "eigensum", "angle",
+           "anisotropy", "planarity", "sphericity", "linearity", "omnivariance", "curvature", "eigensum", "inclination",
            "normalX", "normalY", "normalZ")
 
   expect_true(all(attr %in% names(las)))
@@ -37,13 +37,13 @@ test_that("geometry_features overwrites",
   expect_equal(mean(las$coeff02), -0.04826465, tolerance = 1e-3)
   expect_equal(mean(las$lambda1), 1.0659, tolerance = 1e-3)
   expect_equal(mean(las$anisotropy), 0.9724, tolerance = 1e-3)
-  expect_equal(mean(las$angle), 83.6690, tolerance = 1e-3)
+  expect_equal(mean(las$inclination), 83.6690, tolerance = 1e-3)
 })
 
 test_that("geometry_features overwrites",
 {
   f <- system.file("extdata", "Example.las", package = "lasR")
-  pipeline <- add_extrabytes("int", "angle", "desc")  + geometry_features(k = 10, features = "i")
-  expect_error(exec(pipeline, on = f), "Cannot add a second attribute 'angle'")
+  pipeline <- add_extrabytes("int", "inclination", "desc")  + geometry_features(k = 10, features = "i")
+  expect_error(exec(pipeline, on = f), "Cannot add a second attribute 'inclination'")
 })
 
