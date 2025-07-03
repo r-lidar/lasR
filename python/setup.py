@@ -130,42 +130,13 @@ class CMakeBuild(build_ext):
 
 setup(
     name="pylasr",
-    version="0.3.17",
+    version="0.17.0",
     description="Python bindings for LASR library",
     author="LASR Team",
     ext_modules=[CMakeExtension("pylasr")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     python_requires=">=3.9",
-    include_package_data=True,
-    # Add a custom PyPI classifier for easy identification
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Topic :: Scientific/Engineering :: GIS",
-    ],
-    long_description="""
-    Python bindings for LASR library.
-
-    This package includes several third-party open source libraries:
-    - Eigen: Linear Algebra library (MPL2) - https://eigen.tuxfamily.org/
-    - LASlib/LASzip: LAS/LAZ file handling (LGPL) - https://github.com/LAStools/LAStools
-    - CSF: Cloth Simulation Filter - https://github.com/jianboqi/CSF
-    - Delaunator: Delaunay triangulation - https://github.com/delfrrr/delaunator-cpp
-    - Geophoton: CHM enhancement - https://github.com/Geophoton-inc/chm_prep
-
-    Please refer to the individual LICENSE files in the src/vendor directory for detailed license information.
-    """,
-    url="https://github.com/r-lidar/lasR",  # Your project URL
-    project_urls={
-        "Bug Tracker": "https://github.com/r-lidar/lasR/issues",
-        "Documentation": "https://r-lidar.github.io/lasR/",
-        "Source Code": "https://github.com/r-lidar/lasR",
-    },
+    py_modules=[],  # Explicitly set to avoid auto-discovery issues
+    packages=[],    # No Python packages, just the C++ extension
 )
