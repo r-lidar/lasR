@@ -156,30 +156,78 @@ pipeline.set_nested_strategy(ncores1=2, ncores2=4)
 - `load_raster()` - Load raster data
 - `load_matrix()` - Load transformation matrix
 
-## Examples
+## Examples and Getting Started
 
-### Basic DTM/CHM Generation
+The `examples/` directory contains several scripts to help you get started:
+
+### 🚀 Running Examples
+
+```bash
+# Basic usage examples
+python examples/basic_usage.py
+
+# Complete feature demonstration  
+python examples/complete_example.py
+
+# Create pipeline JSON files
+python examples/create_pipelines.py
+
+# Inspect pipeline JSON files
+python examples/lasr_cli.py info_pipeline.json
+
+# Process files with pipelines
+python examples/lasr_cli.py info_pipeline.json data.las
+python examples/lasr_cli.py terrain_pipeline.json file1.las file2.las
+```
+
+### 📋 Example Scripts
+
+#### `basic_usage.py`
+Simple examples covering the most common use cases:
+- System information
+- Basic pipeline creation
+- Configuration options
+- JSON export
+- Data processing (if example data available)
+
+#### `complete_example.py`
+Comprehensive demonstration of all major features:
+- Advanced pipeline workflows
+- Processing configuration
+- Convenience functions
+- Manual stage creation
+- Error handling
+
+#### `create_pipelines.py`
+Creates various pipeline JSON files for different workflows:
+- Info pipeline
+- Cleaning pipeline (noise removal)
+- Terrain analysis (DTM/CHM)
+- Point sampling
+- Classification workflows
+
+#### `lasr_cli.py`
+Enhanced command-line tool for pipeline inspection and processing:
+- Display pipeline information
+- Execute pipelines with input files
+- Show processing timing and results
+- Support for multithreading configuration
+
+### 🔧 Basic DTM/CHM Generation
 
 ```python
 import pylasr
 
-# Ground classification and DTM generation
-dtm_pipeline = (pylasr.classify_with_csf() +
-               pylasr.rasterize(1.0, 1.0, ["min"], 
-                              ["Classification == 2"], 
-                              "dtm.tif"))
+# Use convenience functions for common workflows
+dtm_pipeline = pylasr.dtm_pipeline(1.0, "dtm.tif")
+chm_pipeline = pylasr.chm_pipeline(0.5, "chm.tif")
 
-# Canopy height model
-chm_pipeline = pylasr.rasterize(0.5, 0.5, ["max"], 
-                               ["Classification != 2"], 
-                               "chm.tif")
+# Combine workflows
+terrain_analysis = dtm_pipeline + chm_pipeline
+terrain_analysis.set_concurrent_files_strategy(2)
 
-# Combine pipelines
-full_pipeline = dtm_pipeline + chm_pipeline
-full_pipeline.set_concurrent_points_strategy(4)
-
-files = ["forest.las"]
-success = full_pipeline.execute(files)
+# Process data
+success = terrain_analysis.execute(["forest.las"])
 ```
 
 ### Advanced Processing Workflow
