@@ -5,6 +5,7 @@
 - Fix the NIR attribute is recognized as part of the LAS specifications
 - Fix #161 `reader_circles()` and `reader_rectangles()` are skipping queries outside the file collection.
 - Fix #166 `sort_points()` with deleted points in previous stages
+- Fix #170 `classify_with_sor()` is flagged as parallelized and should use multiples cores
 
 # lasR 0.16.0
 
