@@ -48,7 +48,7 @@ bool LASRsort::process(PointCloud*& las)
     }
   }
 
-  if (order.size() != las->npoints)
+  if (order.size() != las->header->number_of_point_records)
   {
     last_error = "Internal error. Invalid order size";
     return false;
