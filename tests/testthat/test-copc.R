@@ -19,6 +19,13 @@ test_that("Max depth in COPC",
   expect_equal(ans$npoints, 131060L)
 })
 
+test_that("works with COPC",
+{
+     f = system.file("extdata", "Megaplot.las", package="lasR")
+     o = tempfile(fileext = ".copc.laz")
+     expect_error(exec(write_copc(o), f), NA)
+})
+
 test_that("Write COPC",
 {
   skip_if(Sys.info()[["user"]] != "jr")
@@ -44,5 +51,4 @@ test_that("Write COPC",
   pipeline = reader_las() + summarise()
   ans = exec(pipeline, on = o)
   expect_equal(ans$npoints, 577636L, tolerance = 0.000002) # 36 or 37
-
 })

@@ -466,7 +466,7 @@ Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep
 
 Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density)
 {
-  std::string ext = ofile.substr(ofile.size()-8, ofile.size());
+  std::string ext = ofile.substr(ofile.size()-9, ofile.size());
   if (ext != ".copc.laz") throw std::invalid_argument("File must be .copc.laz");
 
   static const std::vector<std::string> choices = {"sparse", "normal", "dense", "denser"};

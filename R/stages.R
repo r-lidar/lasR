@@ -1318,7 +1318,6 @@ write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", kee
   ofile = normalizePath(ofile, mustWork = FALSE)
   if (is.na(max_depth)) max_depth = -1
   .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density)
-  return(stage)
 }
 
 #' @export
