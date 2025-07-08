@@ -126,7 +126,7 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
 
     int n = lascatalog->get_number_chunks();
 
-    if (n == 1 && ncpu_outer_loop > 0)
+    if (n == 1 && ncpu_outer_loop > 1)
       std::swap(ncpu_outer_loop, ncpu_inner_loops);
 
     // Check some multi-threading stuff
