@@ -121,7 +121,7 @@ std::string Pipeline::write_json(const std::string& path) const
   std::ofstream file(temp_file);
   if (!file) throw std::runtime_error("Failed to open file: " + temp_file.string());
 
-  file << generate_json();
+  file << generate_json().dump(2);
   file.close();
 
   return temp_file.string();
