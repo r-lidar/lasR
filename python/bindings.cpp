@@ -14,6 +14,33 @@
 
 namespace py = pybind11;
 
+py::dict get_stage_info(api::Pipeline pipeline) {
+    auto stages = pipeline.get_stages();
+    if (stages.size() != 1)
+        throw std::invalid_argument("Invalid number of stages: input pipeline has " + std::to_string(stages.size()) + " stages. Expected 1.");
+
+    const api::Stage& s = *stages.begin();
+
+    py::dict info;
+    info["name"] = s.get_name();
+    info["uid"] = s.get_uid();
+    info["raster"] = s.is_raster();
+    info["matrix"] = s.is_matrix();
+    info["vector"] = s.is_vector();
+    return info;
+}
+
+std::string extract_uid(py::object connect_uid) {
+    if (py::isinstance<api::Pipeline>(connect_uid)) {
+        auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
+        return info["uid"].cast<std::string>();
+    } else if (py::isinstance<py::str>(connect_uid)) {
+        return connect_uid.cast<std::string>();
+    } else {
+        throw std::invalid_argument("connect_uid must be a Pipeline or a string uid");
+    }
+}
+
 PYBIND11_MODULE(pylasr, m) {
     m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing"; 
     m.attr("__version__") = "0.17.0";
@@ -259,20 +286,28 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "",
           py::arg("default_value") = -99999.0);
 
-    m.def("rasterize_triangulation", &api::rasterize_triangulation,
-          "Rasterize triangulated surface",
-          py::arg("connect_uid"), py::arg("res"), py::arg("ofile") = "");
+    m.def("rasterize_triangulation", [](py::object connect_uid, double res, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::rasterize_triangulation(uid, res, ofile);
+    },
+    "Rasterize triangulated surface",
+    py::arg("connect_uid"), py::arg("res"), py::arg("ofile") = "");
 
     // Raster operations
-    m.def("focal", &api::focal,
-          "Apply focal operation",
-          py::arg("connect_uid"), py::arg("size"), py::arg("fun") = "mean", py::arg("ofile") = "");
+    m.def("focal", [](py::object connect_uid, int size, std::string fun, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::focal(uid, size, fun, ofile);
+    },
+    "Apply focal operation",
+    py::arg("connect_uid"), py::arg("size"), py::arg("fun") = "mean", py::arg("ofile") = "");
 
-    m.def("pit_fill", &api::pit_fill,
-          "Fill pits in raster",
-          py::arg("connect_uid"), py::arg("lap_size") = 3, py::arg("thr_lap") = 0.1,
-          py::arg("thr_spk") = -0.1, py::arg("med_size") = 3, py::arg("dil_radius") = 0,
-          py::arg("ofile") = "");
+    m.def("pit_fill", [](py::object connect_uid, int lap_size, double thr_lap, double thr_spk, int med_size, int dil_radius, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::pit_fill(uid, lap_size, thr_lap, thr_spk, med_size, dil_radius, ofile);
+    },
+    "Fill pits in raster",
+    py::arg("connect_uid"), py::arg("lap_size") = 3, py::arg("thr_lap") = 0.1,
+    py::arg("thr_spk") = -0.1, py::arg("med_size") = 3, py::arg("dil_radius") = 0, py::arg("ofile") = "");
 
     // Loading data
     m.def("load_raster", &api::load_raster,
@@ -305,10 +340,13 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "",
           py::arg("use_attribute") = "Z", py::arg("record_attributes") = false);
 
-    m.def("local_maximum_raster", &api::local_maximum_raster,
-          "Find local maxima in raster",
-          py::arg("connect_uid"), py::arg("ws"), py::arg("min_height") = 2.0,
-          py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "");
+    m.def("local_maximum_raster", [](py::object connect_uid, int ws, double min_height, std::vector<std::string> filter, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::local_maximum_raster(uid, ws, min_height, filter, ofile);
+    },
+    "Find local maxima in raster",
+    py::arg("connect_uid"), py::arg("ws"), py::arg("min_height") = 2.0,
+    py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "");
 
     // Triangulation and hulls
     m.def("triangulate", &api::triangulate,
@@ -320,22 +358,39 @@ PYBIND11_MODULE(pylasr, m) {
           "Compute convex hull",
           py::arg("ofile") = "");
 
-    m.def("hull_triangulation", &api::hull_triangulation,
-          "Compute hull from triangulation",
-          py::arg("connect_uid"), py::arg("ofile") = "");
+    m.def("hull_triangulation", [](py::object connect_uid, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::hull_triangulation(uid, ofile);
+    },
+    "Compute hull from triangulation",
+    py::arg("connect_uid"), py::arg("ofile") = "");
 
     // Region growing
-    m.def("region_growing", &api::region_growing,
-          "Perform region growing segmentation",
-          py::arg("connect_uid_raster"), py::arg("connect_uid_seeds"),
-          py::arg("th_tree") = 2.0, py::arg("th_seed") = 0.45, py::arg("th_cr") = 0.55,
-          py::arg("max_cr") = 20.0, py::arg("ofile") = "");
+    m.def("region_growing", [](py::object connect_uid_raster, py::object connect_uid_seeds, double th_tree, double th_seed, double th_cr, double max_cr, std::string ofile) {
+        std::string uid_raster = extract_uid(connect_uid_raster);
+        std::string uid_seeds = extract_uid(connect_uid_seeds);
+        return api::region_growing(uid_raster, uid_seeds, th_tree, th_seed, th_cr, max_cr, ofile);
+    },
+    "Perform region growing segmentation",
+    py::arg("connect_uid_raster"), py::arg("connect_uid_seeds"),
+    py::arg("th_tree") = 2.0, py::arg("th_seed") = 0.45, py::arg("th_cr") = 0.55,
+    py::arg("max_cr") = 20.0, py::arg("ofile") = "");
 
     // Transformations
-    m.def("transform_with", &api::transform_with,
-          "Transform points using raster or matrix",
-          py::arg("connect_uid"), py::arg("operation") = "-", 
-          py::arg("store_in_attribute") = "", py::arg("bilinear") = true);
+    m.def("transform_with", [](py::object connect_uid, const std::string& operation, const std::string& store_in_attribute, bool bilinear) {
+        std::string uid = extract_uid(connect_uid);
+        // Проверка на тип стадии (triangulate/raster/matrix) как раньше
+        if (py::isinstance<api::Pipeline>(connect_uid)) {
+            auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
+            std::string name = info["name"].cast<std::string>();
+            bool is_raster = info["raster"].cast<bool>();
+            bool is_matrix = info["matrix"].cast<bool>();
+            if (name != "triangulate" && !is_raster && !is_matrix)
+                throw std::invalid_argument("The stage must be a triangulation or a raster stage or a matrix stage.");
+        }
+        return api::transform_with(uid, operation, store_in_attribute, bilinear);
+    }, "Transform points using raster or matrix",
+    py::arg("connect_uid"), py::arg("operation") = "-", py::arg("store_in_attribute") = "", py::arg("bilinear") = true);
 
     // CRS operations
     m.def("set_crs_epsg", &api::set_crs_epsg,
@@ -390,9 +445,12 @@ PYBIND11_MODULE(pylasr, m) {
           "Do nothing (for testing)",
           py::arg("read") = false, py::arg("stream") = false, py::arg("loop") = false);
 
-    m.def("neighborhood_metrics", &nonapi::neighborhood_metrics,
-          "Compute neighborhood metrics",
-          py::arg("connect_uid"), py::arg("metrics"), py::arg("k") = 10, py::arg("r") = 0.0, py::arg("ofile") = "");
+    m.def("neighborhood_metrics", [](py::object connect_uid, std::vector<std::string> metrics, int k, double r, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return nonapi::neighborhood_metrics(uid, metrics, k, r, ofile);
+    },
+    "Compute neighborhood metrics",
+    py::arg("connect_uid"), py::arg("metrics"), py::arg("k") = 10, py::arg("r") = 0.0, py::arg("ofile") = "");
 
     // Convenience functions
     m.def("create_pipeline", []() -> api::Pipeline {
