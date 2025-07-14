@@ -393,13 +393,19 @@ PYBIND11_MODULE(pylasr, m) {
     py::arg("connect_uid"), py::arg("operation") = "-", py::arg("store_in_attribute") = "", py::arg("bilinear") = true);
 
     // CRS operations
-    m.def("set_crs_epsg", &api::set_crs_epsg,
-          "Set CRS using EPSG code",
-          py::arg("epsg"));
-
-    m.def("set_crs_wkt", &api::set_crs_wkt,
-          "Set CRS using WKT string",
-          py::arg("wkt"));
+      m.def("set_crs", [](py::object crs) -> api::Pipeline {
+      api::Stage s("set_crs");
+      if (py::isinstance<py::int_>(crs)) {
+            s.set("epsg", crs.cast<int>());
+            s.set("wkt", "");
+      } else if (py::isinstance<py::str>(crs)) {
+            s.set("epsg", 0);
+            s.set("wkt", crs.cast<std::string>());
+      } else {
+            throw std::invalid_argument("crs must be either EPSG code (int) or WKT string");
+      }
+      return api::Pipeline(s);
+      }, "Set CRS using EPSG code or WKT string", py::arg("crs"));
 
     // Stop conditions
     m.def("stop_if_outside", &api::stop_if_outside,
