@@ -89,79 +89,6 @@ PYBIND11_MODULE(pylasr, m) {
           "Get pipeline information from a JSON configuration file",
           py::arg("config_file"));
 
-    // Export Stage class from the C++ API
-    py::class_<api::Stage>(m, "Stage")
-        .def(py::init<const std::string&>(), "Create a stage with algorithm name", py::arg("algoname"))
-        .def("set", [](api::Stage& self, const std::string& key, py::object value) {
-            // Handle different Python types and convert to Stage::Value
-            if (py::isinstance<py::int_>(value)) {
-                self.set(key, value.cast<int>());
-            } else if (py::isinstance<py::float_>(value)) {
-                self.set(key, value.cast<double>());
-            } else if (py::isinstance<py::bool_>(value)) {
-                self.set(key, value.cast<bool>());
-            } else if (py::isinstance<py::str>(value)) {
-                self.set(key, value.cast<std::string>());
-            } else if (py::isinstance<py::list>(value)) {
-                // Try to determine the list type
-                py::list lst = value.cast<py::list>();
-                if (lst.size() > 0) {
-                    if (py::isinstance<py::int_>(lst[0])) {
-                        self.set(key, value.cast<std::vector<int>>());
-                    } else if (py::isinstance<py::float_>(lst[0])) {
-                        self.set(key, value.cast<std::vector<double>>());
-                    } else if (py::isinstance<py::bool_>(lst[0])) {
-                        self.set(key, value.cast<std::vector<bool>>());
-                    } else if (py::isinstance<py::str>(lst[0])) {
-                        self.set(key, value.cast<std::vector<std::string>>());
-                    }
-                } else {
-                    // Empty list - default to vector<string>
-                    self.set(key, std::vector<std::string>());
-                }
-            } else {
-                throw std::runtime_error("Unsupported value type for stage parameter");
-            }
-        }, "Set a parameter value", py::arg("key"), py::arg("value"))
-        .def("has", &api::Stage::has, "Check if parameter exists", py::arg("key"))
-        .def("get", [](const api::Stage& self, const std::string& key) -> py::object {
-            if (!self.has(key)) {
-                return py::none();
-            }
-            auto value = self.get(key);
-            return std::visit([](auto&& arg) -> py::object {
-                using T = std::decay_t<decltype(arg)>;
-                if constexpr (std::is_same_v<T, int>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, double>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, bool>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::string>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::vector<int>>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::vector<bool>>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::vector<double>>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
-                    return py::cast(arg);
-                } else {
-                    return py::none();
-                }
-            }, value);
-        }, "Get a parameter value", py::arg("key"))
-        .def("get_name", &api::Stage::get_name, "Get the stage algorithm name")
-        .def("get_uid", &api::Stage::get_uid, "Get the stage unique identifier")
-        .def("to_string", &api::Stage::to_string, "Get string representation")
-        .def("set_raster", &api::Stage::set_raster, "Set stage as raster output")
-        .def("set_matrix", &api::Stage::set_matrix, "Set stage as matrix output")
-        .def("set_vector", &api::Stage::set_vector, "Set stage as vector output")
-        .def("is_raster", &api::Stage::is_raster, "Check if stage outputs raster")
-        .def("is_matrix", &api::Stage::is_matrix, "Check if stage outputs matrix")
-        .def("is_vector", &api::Stage::is_vector, "Check if stage outputs vector");
-
     // Export Pipeline class from the C++ API
     py::class_<api::Pipeline>(m, "Pipeline")
         .def(py::init<>(), "Create an empty pipeline")
@@ -462,10 +389,6 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("create_pipeline", []() -> api::Pipeline {
         return api::Pipeline();
     }, "Create a new empty pipeline");
-
-    m.def("create_stage", [](const std::string& algoname) -> api::Stage {
-        return api::Stage(algoname);
-    }, "Create a new stage with algorithm name", py::arg("algoname"));
 
     // Helper function for common DTM pipeline
     m.def("dtm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
