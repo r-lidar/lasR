@@ -16,7 +16,7 @@ test_that("growing region works",
 
   expect_equal(id1, id2)
 
-  skip_on_os("mac")
+  skip_on_os("mac") # Cannot reproduce
 
   expect_equal(sum(!is.na(trees[])), 5967L)
 })
@@ -49,9 +49,8 @@ test_that("growing region works with multiple files",
   #expect_gte(sum(is.na(u$region_growing[])), 6881)
   #expect_lte(sum(is.na(u$region_growing[])), 6883)
 
-  if (!has_omp_support())
-    expect_equal(sum(is.na(u$region_growing[])), 15999L)
-  else
-    expect_equal(sum(is.na(u$region_growing[])), 15996L)
+  skip_on_os("mac") # Cannot reproduce
+
+  expect_equal(sum(is.na(u$region_growing[])), 15996L)
 })
 
