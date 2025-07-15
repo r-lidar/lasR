@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,12 +47,13 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.16.1" id="lasr-0161">lasR 0.16.1<a class="anchor" aria-label="anchor" href="#lasr-0161"></a></h2>
-<ul><li>Fix <a href="https://github.com/r-lidar/lasR/issues/158" class="external-link">#158</a> triangulation with less than 3 points</li>
-<li>Fix <a href="https://github.com/r-lidar/lasR/issues/160" class="external-link">#160</a> crash with empty folder</li>
-<li>Fix the NIR attribute is recognized as part of the LAS specifications</li>
-<li>Fix <a href="https://github.com/r-lidar/lasR/issues/161" class="external-link">#161</a> <code><a href="../reference/reader.html">reader_circles()</a></code> and <code><a href="../reference/reader.html">reader_rectangles()</a></code> are skipping queries outside the file collection.</li>
-<li>Fix <a href="https://github.com/r-lidar/lasR/issues/166" class="external-link">#166</a> <code><a href="../reference/sort_points.html">sort_points()</a></code> with deleted points in previous stages</li>
-<li>Fix <a href="https://github.com/r-lidar/lasR/issues/170" class="external-link">#170</a> <code><a href="../reference/classify_with_sor.html">classify_with_sor()</a></code> is flagged as parallelized and should use multiples cores</li>
+<ul><li>Fix <a href="https://github.com/r-lidar/lasR/issues/158" class="external-link">#158</a>: triangulation with fewer than 3 points</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/160" class="external-link">#160</a>: crash with empty folder</li>
+<li>Fix: the NIR attribute is now recognized as part of the LAS specification</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/161" class="external-link">#161</a>: <code><a href="../reference/reader.html">reader_circles()</a></code> and <code><a href="../reference/reader.html">reader_rectangles()</a></code> are skipping queries outside the file collection</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/166" class="external-link">#166</a>: <code><a href="../reference/sort_points.html">sort_points()</a></code> works with deleted points in previous stages</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/170" class="external-link">#170</a>: <code><a href="../reference/classify_with_sor.html">classify_with_sor()</a></code> is flagged as parallelized and should use multiple cores</li>
+<li>Fix <a href="https://github.com/r-lidar/lasR/issues/170" class="external-link">#170</a>: KNN search has been rewritten using <code>nanoflann</code>; stages relying on KNN search are now much faster</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.16.0" id="lasr-0160">lasR 0.16.0<a class="anchor" aria-label="anchor" href="#lasr-0160"></a></h2>
@@ -63,10 +64,10 @@
 <li>New: filters <code><a href="../reference/filters.html">keep_z_between()</a></code> and <code><a href="../reference/filters.html">drop_z_between()</a></code>
 </li>
 <li>Doc: enhanced documentation for the <code>filter</code> argument</li>
-<li>Doc: revise the documentation of <code><a href="../reference/add_attribute.html">add_extrabytes()</a></code>
+<li>Doc: revised documentation for <code><a href="../reference/add_attribute.html">add_extrabytes()</a></code>
 </li>
-<li>Change: <code>add_attributes()</code>checks for reserved names <a href="https://github.com/r-lidar/lasR/issues/159" class="external-link">#159</a></li>
-<li>Change: the angle computed by <code>geometry_feature()</code> is no longer called <code>angle</code>but <code>inclination</code> because <code>angle</code> is a reserved name.</li>
+<li>Change: <code>add_attributes()</code> checks for reserved names (<a href="https://github.com/r-lidar/lasR/issues/159" class="external-link">#159</a>)</li>
+<li>Change: the angle computed by <code>geometry_feature()</code> is now called <code>inclination</code> instead of <code>angle</code>, as <code>angle</code> is a reserved name</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.15.1" id="lasr-0151">lasR 0.15.1<a class="anchor" aria-label="anchor" href="#lasr-0151"></a></h2>
