@@ -359,6 +359,8 @@ bool LASRdataframereader::process(PointCloud*& las)
     las->add_point(*p);
   }
 
+  las->build_spatialindex();
+
   return true;
 }
 
