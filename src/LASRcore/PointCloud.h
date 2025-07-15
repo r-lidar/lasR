@@ -7,6 +7,9 @@
 #include "PointFilter.h"
 #include "Header.h"
 
+#ifdef PI
+#undef PI
+#endif
 #include "nanoflann/nanoflann.h"
 
 #include <vector>
@@ -43,7 +46,7 @@ struct PointCloudAdaptor
   }
 
   template<class BBOX>
-  bool kdtree_get_bbox(BBOX& bb) const {return false; };
+  bool kdtree_get_bbox(BBOX& bb) const { return false; }
 };
 
 using KDTree = nanoflann::KDTreeSingleIndexAdaptor<nanoflann::L2_Simple_Adaptor<double, PointCloudAdaptor>, PointCloudAdaptor, 3>;

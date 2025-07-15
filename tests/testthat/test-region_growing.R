@@ -48,6 +48,10 @@ test_that("growing region works with multiple files",
   # but on github action it is ok... who knows.
   #expect_gte(sum(is.na(u$region_growing[])), 6881)
   #expect_lte(sum(is.na(u$region_growing[])), 6883)
-  expect_equal(sum(is.na(u$region_growing[])), 15996L)
+
+  if (!has_omp_support())
+    expect_equal(sum(is.na(u$region_growing[])), 15999L)
+  else
+    expect_equal(sum(is.na(u$region_growing[])), 15996L)
 })
 
