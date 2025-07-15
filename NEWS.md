@@ -1,11 +1,12 @@
 # lasR 0.16.1
 
-- Fix #158 triangulation with less than 3 points
-- Fix #160 crash with empty folder
-- Fix the NIR attribute is recognized as part of the LAS specifications
-- Fix #161 `reader_circles()` and `reader_rectangles()` are skipping queries outside the file collection.
-- Fix #166 `sort_points()` with deleted points in previous stages
-- Fix #170 `classify_with_sor()` is flagged as parallelized and should use multiples cores
+- Fix #158: triangulation with fewer than 3 points
+- Fix #160: crash with empty folder
+- Fix: the NIR attribute is now recognized as part of the LAS specification
+- Fix #161: `reader_circles()` and `reader_rectangles()` are skipping queries outside the file collection
+- Fix #166: `sort_points()` works with deleted points in previous stages
+- Fix #170: `classify_with_sor()` is flagged as parallelized and should use multiple cores
+- Fix #170: KNN search has been rewritten using `nanoflann`; stages relying on KNN search are now much faster
 
 # lasR 0.16.0
 
@@ -13,9 +14,9 @@
 - New: stage `remove_attribute()`
 - New: filters `keep_z_between()` and `drop_z_between()`
 - Doc: enhanced documentation for the `filter` argument
-- Doc: revise the documentation of `add_extrabytes()`
-- Change: `add_attributes()`checks for reserved names #159
-- Change: the angle computed by `geometry_feature()` is no longer called `angle`but `inclination` because `angle` is a reserved name.  
+- Doc: revised documentation for `add_extrabytes()`
+- Change: `add_attributes()` checks for reserved names (#159)
+- Change: the angle computed by `geometry_feature()` is now called `inclination` instead of `angle`, as `angle` is a reserved name
 
 # lasR 0.15.1
 

@@ -100,6 +100,8 @@ bool LASRpcdreader::process(PointCloud*& las)
 
   if (verbose) print(" Number of point read %d\n", las->npoints);
 
+  las->build_spatialindex();
+
   return true;
 }
 
