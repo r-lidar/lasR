@@ -65,7 +65,6 @@ public:
   bool read_point(bool include_withhelded = false);
   void set_file(const std::string& file) { this->file = file; };
   void update_header();
-  bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
   void delete_point(Point* p = nullptr);
   bool delete_deleted();
@@ -73,6 +72,8 @@ public:
   bool sort(const std::vector<int>& order);
 
   // Thread safe queries
+  bool build_kdtree();
+  bool build_partition();
   bool get_point(size_t pos, Point* p, PointFilter* const filter = nullptr) const;
   bool query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
@@ -83,7 +84,6 @@ public:
 
   // Spatial queries
   void set_inside(Shape* shape);
-  void build_spatialindex();
 
   // Non spatial queries
   void set_intervals_to_read(const std::vector<Interval>& intervals);
@@ -113,7 +113,7 @@ private:
 
   // For spatial indexed search
   PointCloudAdaptor adaptor;
-  GridPartition* index;
+  GridPartition* gridpartition;
   KDTree* kdtree;
   int current_interval;
   std::vector<Interval> intervals_to_read;

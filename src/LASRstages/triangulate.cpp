@@ -4,7 +4,7 @@
 #include "openmp.h"
 #include "NA.h"
 
-#include "lastransform.hpp"
+#include "FastGridPartition2D.h"
 
 #include "delaunator/delaunator.hpp"
 
@@ -80,7 +80,9 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
 
-  // 1. loop through the triangles, search the point inside triangle, interpolate
+  FastGridPartition2D index(*las);
+
+  // 1. loop through the triangles, search the points inside triangle, interpolate
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < d->triangles.size() ; i+=3)
   {
@@ -137,15 +139,14 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
       }
       else
       {
-        std::vector<Point> points;
-        las->query(&triangle, points);
+        std::vector<PointXYI> points;
+        index.lookup<TriangleXYZ>(triangle, points);
 
         for (auto& pt : points)
         {
-          PointXYZ p(pt.get_x(), pt.get_y());
+          PointXYZ p(pt.x, pt.y);
           triangle.linear_interpolation(p);
-          int index = las->get_index(&pt);
-          res[index] = p.z;
+          res[pt.i] = p.z;
         }
       }
     }

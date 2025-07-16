@@ -90,7 +90,6 @@ bool LASRlasreader::process(PointCloud*& las)
   }
 
   las->update_header();
-  las->build_spatialindex();
 
   progress->done();
 
