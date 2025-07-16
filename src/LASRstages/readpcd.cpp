@@ -97,9 +97,10 @@ bool LASRpcdreader::process(PointCloud*& las)
   las->update_header();
 
   progress->done();
-
   if (verbose) print(" Number of point read %d\n", las->npoints);
 
+  if (verbose) print("Building a spatial index\n");
+  las->update_header();
   las->build_spatialindex();
 
   return true;
