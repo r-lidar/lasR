@@ -141,8 +141,24 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("add_rgb", &api::add_rgb,
           "Add RGB attributes to the point cloud");
 
-    m.def("info", &api::info,
-          "Get point cloud information");
+    m.def("info", [](py::object file = py::none()) -> py::object {
+    auto stage = api::info();
+    if (file.is_none()) {
+        // Return stage for pipeline
+        api::Pipeline pipeline(stage);
+        return py::cast(pipeline);
+    } else if (py::isinstance<py::str>(file)) {
+        // If a string is provided, execute the pipeline for a single file
+        std::string file_path = file.cast<std::string>();
+        api::Pipeline pipeline(stage);
+        pipeline.set_files({file_path});
+        std::string json_file = pipeline.write_json();
+        api::execute(json_file);
+        return py::none();
+    } else {
+        throw std::invalid_argument("info() accepts only a string file path or nothing");
+    }
+      }, py::arg("file") = py::none(), "Get point cloud information or execute info pipeline on a file");
 
     // Classification functions
     m.def("classify_with_sor", &api::classify_with_sor,
