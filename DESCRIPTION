@@ -12,9 +12,7 @@ Authors@R: c(
     person("Authors of", "Eigen", role = "cph", comment = "Authorship and copyright in included Eigen library as detailed in inst/COPYRIGHTS"),
     person("Marius", "Muja", email = "mariusm@cs.ubc.ca", role = "cph", comment = "Is an author of the included nanoflann library"),
     person("David G.", "Lowe", email = "lowe@cs.ubc.ca", role = "cph", comment = "Is an author of the included nanoflann library"),
-    person("Jose L.", "Blanco", email = "joseluisblancoc@gmail.com", role = "cph", comment = "Is an author of the included nanoflann library")
-)
-
+    person("Jose L.", "Blanco", email = "joseluisblancoc@gmail.com", role = "cph", comment = "Is an author of the included nanoflann library"))
 Description: Fast and pipeable airborne lidar processing tools. Read/write 
     'las' and 'laz' files, computation of metrics in area based approach, point filtering, normalization,
     individual tree segmentation and other manipulations in a powerful and versatile processing chain.
