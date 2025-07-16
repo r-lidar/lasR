@@ -511,7 +511,7 @@ bool PointCloud::knn(const Point& xyz, int k, std::vector<Point>& res, PointFilt
 
   // Count the actual number of point queried.
   // kdtree will always find the k-nn but some of these points
-  // may actually be filtered out or be flagged as delete. The query
+  // may actually be filtered out or be flagged as deleted. The query
   // is thus not actually k points
   int n = 0;
 
@@ -520,7 +520,7 @@ bool PointCloud::knn(const Point& xyz, int k, std::vector<Point>& res, PointFilt
   int current_k = k;
   std::vector<KDTree::IndexType> indices(current_k);
   std::vector<KDTree::DistanceType> dists(current_k);
-  while (n < k && n < npoints)
+  while (n < k && n < get_true_number_of_points())
   {
     // Perform knn search (returns the number of valid neighbors found)
     size_t found = kdtree->knnSearch(query_pt, current_k, indices.data(), dists.data());
@@ -539,6 +539,7 @@ bool PointCloud::knn(const Point& xyz, int k, std::vector<Point>& res, PointFilt
       {
         res.push_back(p);
         n++;
+        if (n >= k) break;
       }
     }
 
