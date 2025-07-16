@@ -935,7 +935,7 @@ class PooledAllocator
             void* m = ::malloc(blocksize);
             if (!m)
             {
-                REprintf("Failed to allocate memory.\n");
+                fprintf(stderr, "Failed to allocate memory.\n");
                 throw std::bad_alloc();
             }
 
