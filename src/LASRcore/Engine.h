@@ -1,5 +1,5 @@
-#ifndef LASRPIPELINE_H
-#define LASRPIPELINE_H
+#ifndef LASRENGINE_H
+#define LASRENGINE_H
 
 // R
 #ifdef USING_R
@@ -25,16 +25,16 @@ class LASpoint;
 class LASheader;
 class Progress;
 
-class Pipeline
+class Engine
 {
 public:
-  Pipeline();
-  Pipeline(const Pipeline& other);
-  ~Pipeline();
+  Engine();
+  Engine(const Engine& other);
+  ~Engine();
   bool parse(const nlohmann::json&, bool progress = false); // implemented in parser.cpp
   bool pre_run();
   bool run();
-  void merge(const Pipeline& other);
+  void merge(const Engine& other);
   void clear(bool last = false);
   bool is_parallelizable() const;
   bool is_parallelized() const;
@@ -74,10 +74,10 @@ private:
   double chunk_size;
   std::vector<int> order;
 
-  PointCloud* las;                             // owned by this
-  Point* point;                         // owned by las or by reader_las in streaming mode
-  Header* header;                       // owned by las or by reader_las in streaming mode
-  std::shared_ptr<FileCollection> catalog;  // owned by this and shared in cloned pipelines
+  PointCloud* las;                           // owned by this
+  Point* point;                              // owned by las or by reader_las in streaming mode
+  Header* header;                            // owned by las or by reader_las in streaming mode
+  std::shared_ptr<FileCollection> catalog;   // owned by this and shared in cloned pipelines
   bool point_cloud_ownership_transfered;
 
   std::list<std::unique_ptr<Stage>> pipeline;

@@ -1,6 +1,6 @@
 Package: lasR
 Type: Package
-Version: 0.16.2
+Version: 0.17.0
 Title: Fast and Pipeable Airborne LiDAR Data Tools
 Authors@R: c(
     person("Jean-Romain", "Roussel", email = "info@r-lidar.com", role = c("aut", "cre", "cph")),
@@ -23,13 +23,15 @@ Depends: R (>= 3.6.0)
 Imports: 
     methods,
     utils,
-    stats
+    stats,
+    Rcpp
 Suggests: 
     knitr,
     rmarkdown,
     sf,
     terra,
     testthat (>= 3.0.0),
+LinkingTo: Rcpp
 RoxygenNote: 7.3.2
 SystemRequirements: C++17, GDAL (>= 2.2.3), GEOS (>= 3.4.0), PROJ (>= 4.9.3), sqlite3, GNU make
 Encoding: UTF-8

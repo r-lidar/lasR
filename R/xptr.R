@@ -16,8 +16,7 @@ read_cloud = function(file, progress = TRUE)
 {
   stopifnot(all(file.exists(file)), length(file) == 1, is.character(file))
   file = normalizePath(file)
-  xptr <- list(algoname = "xptr")
-  xptr = set_lasr_class(xptr)
+  xptr <- .APISTAGES$xptr()
   ans = exec(xptr, on = file, noread = T, progress = progress)
   ans = list(ans)
   class(ans) = "lasrcloud"
