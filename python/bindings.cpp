@@ -14,6 +14,33 @@
 
 namespace py = pybind11;
 
+py::dict get_stage_info(api::Pipeline pipeline) {
+    auto stages = pipeline.get_stages();
+    if (stages.size() != 1)
+        throw std::invalid_argument("Invalid number of stages: input pipeline has " + std::to_string(stages.size()) + " stages. Expected 1.");
+
+    const api::Stage& s = *stages.begin();
+
+    py::dict info;
+    info["name"] = s.get_name();
+    info["uid"] = s.get_uid();
+    info["raster"] = s.is_raster();
+    info["matrix"] = s.is_matrix();
+    info["vector"] = s.is_vector();
+    return info;
+}
+
+std::string extract_uid(py::object connect_uid) {
+    if (py::isinstance<api::Pipeline>(connect_uid)) {
+        auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
+        return info["uid"].cast<std::string>();
+    } else if (py::isinstance<py::str>(connect_uid)) {
+        return connect_uid.cast<std::string>();
+    } else {
+        throw std::invalid_argument("connect_uid must be a Pipeline or a string uid");
+    }
+}
+
 PYBIND11_MODULE(pylasr, m) {
     m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing"; 
     m.attr("__version__") = "0.17.0";
@@ -61,79 +88,6 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("pipeline_info", &api::pipeline_info,
           "Get pipeline information from a JSON configuration file",
           py::arg("config_file"));
-
-    // Export Stage class from the C++ API
-    py::class_<api::Stage>(m, "Stage")
-        .def(py::init<const std::string&>(), "Create a stage with algorithm name", py::arg("algoname"))
-        .def("set", [](api::Stage& self, const std::string& key, py::object value) {
-            // Handle different Python types and convert to Stage::Value
-            if (py::isinstance<py::int_>(value)) {
-                self.set(key, value.cast<int>());
-            } else if (py::isinstance<py::float_>(value)) {
-                self.set(key, value.cast<double>());
-            } else if (py::isinstance<py::bool_>(value)) {
-                self.set(key, value.cast<bool>());
-            } else if (py::isinstance<py::str>(value)) {
-                self.set(key, value.cast<std::string>());
-            } else if (py::isinstance<py::list>(value)) {
-                // Try to determine the list type
-                py::list lst = value.cast<py::list>();
-                if (lst.size() > 0) {
-                    if (py::isinstance<py::int_>(lst[0])) {
-                        self.set(key, value.cast<std::vector<int>>());
-                    } else if (py::isinstance<py::float_>(lst[0])) {
-                        self.set(key, value.cast<std::vector<double>>());
-                    } else if (py::isinstance<py::bool_>(lst[0])) {
-                        self.set(key, value.cast<std::vector<bool>>());
-                    } else if (py::isinstance<py::str>(lst[0])) {
-                        self.set(key, value.cast<std::vector<std::string>>());
-                    }
-                } else {
-                    // Empty list - default to vector<string>
-                    self.set(key, std::vector<std::string>());
-                }
-            } else {
-                throw std::runtime_error("Unsupported value type for stage parameter");
-            }
-        }, "Set a parameter value", py::arg("key"), py::arg("value"))
-        .def("has", &api::Stage::has, "Check if parameter exists", py::arg("key"))
-        .def("get", [](const api::Stage& self, const std::string& key) -> py::object {
-            if (!self.has(key)) {
-                return py::none();
-            }
-            auto value = self.get(key);
-            return std::visit([](auto&& arg) -> py::object {
-                using T = std::decay_t<decltype(arg)>;
-                if constexpr (std::is_same_v<T, int>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, double>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, bool>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::string>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::vector<int>>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::vector<bool>>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::vector<double>>) {
-                    return py::cast(arg);
-                } else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
-                    return py::cast(arg);
-                } else {
-                    return py::none();
-                }
-            }, value);
-        }, "Get a parameter value", py::arg("key"))
-        .def("get_name", &api::Stage::get_name, "Get the stage algorithm name")
-        .def("get_uid", &api::Stage::get_uid, "Get the stage unique identifier")
-        .def("to_string", &api::Stage::to_string, "Get string representation")
-        .def("set_raster", &api::Stage::set_raster, "Set stage as raster output")
-        .def("set_matrix", &api::Stage::set_matrix, "Set stage as matrix output")
-        .def("set_vector", &api::Stage::set_vector, "Set stage as vector output")
-        .def("is_raster", &api::Stage::is_raster, "Check if stage outputs raster")
-        .def("is_matrix", &api::Stage::is_matrix, "Check if stage outputs matrix")
-        .def("is_vector", &api::Stage::is_vector, "Check if stage outputs vector");
 
     // Export Pipeline class from the C++ API
     py::class_<api::Pipeline>(m, "Pipeline")
@@ -187,8 +141,24 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("add_rgb", &api::add_rgb,
           "Add RGB attributes to the point cloud");
 
-    m.def("info", &api::info,
-          "Get point cloud information");
+    m.def("info", [](py::object file = py::none()) -> py::object {
+    auto stage = api::info();
+    if (file.is_none()) {
+        // Return stage for pipeline
+        api::Pipeline pipeline(stage);
+        return py::cast(pipeline);
+    } else if (py::isinstance<py::str>(file)) {
+        // If a string is provided, execute the pipeline for a single file
+        std::string file_path = file.cast<std::string>();
+        api::Pipeline pipeline(stage);
+        pipeline.set_files({file_path});
+        std::string json_file = pipeline.write_json();
+        api::execute(json_file);
+        return py::none();
+    } else {
+        throw std::invalid_argument("info() accepts only a string file path or nothing");
+    }
+      }, py::arg("file") = py::none(), "Get point cloud information or execute info pipeline on a file");
 
     // Classification functions
     m.def("classify_with_sor", &api::classify_with_sor,
@@ -259,20 +229,28 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "",
           py::arg("default_value") = -99999.0);
 
-    m.def("rasterize_triangulation", &api::rasterize_triangulation,
-          "Rasterize triangulated surface",
-          py::arg("connect_uid"), py::arg("res"), py::arg("ofile") = "");
+    m.def("rasterize_triangulation", [](py::object connect_uid, double res, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::rasterize_triangulation(uid, res, ofile);
+    },
+    "Rasterize triangulated surface",
+    py::arg("connect_uid"), py::arg("res"), py::arg("ofile") = "");
 
     // Raster operations
-    m.def("focal", &api::focal,
-          "Apply focal operation",
-          py::arg("connect_uid"), py::arg("size"), py::arg("fun") = "mean", py::arg("ofile") = "");
+    m.def("focal", [](py::object connect_uid, int size, std::string fun, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::focal(uid, size, fun, ofile);
+    },
+    "Apply focal operation",
+    py::arg("connect_uid"), py::arg("size"), py::arg("fun") = "mean", py::arg("ofile") = "");
 
-    m.def("pit_fill", &api::pit_fill,
-          "Fill pits in raster",
-          py::arg("connect_uid"), py::arg("lap_size") = 3, py::arg("thr_lap") = 0.1,
-          py::arg("thr_spk") = -0.1, py::arg("med_size") = 3, py::arg("dil_radius") = 0,
-          py::arg("ofile") = "");
+    m.def("pit_fill", [](py::object connect_uid, int lap_size, double thr_lap, double thr_spk, int med_size, int dil_radius, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::pit_fill(uid, lap_size, thr_lap, thr_spk, med_size, dil_radius, ofile);
+    },
+    "Fill pits in raster",
+    py::arg("connect_uid"), py::arg("lap_size") = 3, py::arg("thr_lap") = 0.1,
+    py::arg("thr_spk") = -0.1, py::arg("med_size") = 3, py::arg("dil_radius") = 0, py::arg("ofile") = "");
 
     // Loading data
     m.def("load_raster", &api::load_raster,
@@ -305,10 +283,13 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "",
           py::arg("use_attribute") = "Z", py::arg("record_attributes") = false);
 
-    m.def("local_maximum_raster", &api::local_maximum_raster,
-          "Find local maxima in raster",
-          py::arg("connect_uid"), py::arg("ws"), py::arg("min_height") = 2.0,
-          py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "");
+    m.def("local_maximum_raster", [](py::object connect_uid, int ws, double min_height, std::vector<std::string> filter, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::local_maximum_raster(uid, ws, min_height, filter, ofile);
+    },
+    "Find local maxima in raster",
+    py::arg("connect_uid"), py::arg("ws"), py::arg("min_height") = 2.0,
+    py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "");
 
     // Triangulation and hulls
     m.def("triangulate", &api::triangulate,
@@ -320,31 +301,54 @@ PYBIND11_MODULE(pylasr, m) {
           "Compute convex hull",
           py::arg("ofile") = "");
 
-    m.def("hull_triangulation", &api::hull_triangulation,
-          "Compute hull from triangulation",
-          py::arg("connect_uid"), py::arg("ofile") = "");
+    m.def("hull_triangulation", [](py::object connect_uid, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return api::hull_triangulation(uid, ofile);
+    },
+    "Compute hull from triangulation",
+    py::arg("connect_uid"), py::arg("ofile") = "");
 
     // Region growing
-    m.def("region_growing", &api::region_growing,
-          "Perform region growing segmentation",
-          py::arg("connect_uid_raster"), py::arg("connect_uid_seeds"),
-          py::arg("th_tree") = 2.0, py::arg("th_seed") = 0.45, py::arg("th_cr") = 0.55,
-          py::arg("max_cr") = 20.0, py::arg("ofile") = "");
+    m.def("region_growing", [](py::object connect_uid_raster, py::object connect_uid_seeds, double th_tree, double th_seed, double th_cr, double max_cr, std::string ofile) {
+        std::string uid_raster = extract_uid(connect_uid_raster);
+        std::string uid_seeds = extract_uid(connect_uid_seeds);
+        return api::region_growing(uid_raster, uid_seeds, th_tree, th_seed, th_cr, max_cr, ofile);
+    },
+    "Perform region growing segmentation",
+    py::arg("connect_uid_raster"), py::arg("connect_uid_seeds"),
+    py::arg("th_tree") = 2.0, py::arg("th_seed") = 0.45, py::arg("th_cr") = 0.55,
+    py::arg("max_cr") = 20.0, py::arg("ofile") = "");
 
     // Transformations
-    m.def("transform_with", &api::transform_with,
-          "Transform points using raster or matrix",
-          py::arg("connect_uid"), py::arg("operation") = "-", 
-          py::arg("store_in_attribute") = "", py::arg("bilinear") = true);
+    m.def("transform_with", [](py::object connect_uid, const std::string& operation, const std::string& store_in_attribute, bool bilinear) {
+        std::string uid = extract_uid(connect_uid);
+        // Проверка на тип стадии (triangulate/raster/matrix) как раньше
+        if (py::isinstance<api::Pipeline>(connect_uid)) {
+            auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
+            std::string name = info["name"].cast<std::string>();
+            bool is_raster = info["raster"].cast<bool>();
+            bool is_matrix = info["matrix"].cast<bool>();
+            if (name != "triangulate" && !is_raster && !is_matrix)
+                throw std::invalid_argument("The stage must be a triangulation or a raster stage or a matrix stage.");
+        }
+        return api::transform_with(uid, operation, store_in_attribute, bilinear);
+    }, "Transform points using raster or matrix",
+    py::arg("connect_uid"), py::arg("operation") = "-", py::arg("store_in_attribute") = "", py::arg("bilinear") = true);
 
     // CRS operations
-    m.def("set_crs_epsg", &api::set_crs_epsg,
-          "Set CRS using EPSG code",
-          py::arg("epsg"));
-
-    m.def("set_crs_wkt", &api::set_crs_wkt,
-          "Set CRS using WKT string",
-          py::arg("wkt"));
+      m.def("set_crs", [](py::object crs) -> api::Pipeline {
+      api::Stage s("set_crs");
+      if (py::isinstance<py::int_>(crs)) {
+            s.set("epsg", crs.cast<int>());
+            s.set("wkt", "");
+      } else if (py::isinstance<py::str>(crs)) {
+            s.set("epsg", 0);
+            s.set("wkt", crs.cast<std::string>());
+      } else {
+            throw std::invalid_argument("crs must be either EPSG code (int) or WKT string");
+      }
+      return api::Pipeline(s);
+      }, "Set CRS using EPSG code or WKT string", py::arg("crs"));
 
     // Stop conditions
     m.def("stop_if_outside", &api::stop_if_outside,
@@ -390,22 +394,21 @@ PYBIND11_MODULE(pylasr, m) {
           "Do nothing (for testing)",
           py::arg("read") = false, py::arg("stream") = false, py::arg("loop") = false);
 
-    m.def("neighborhood_metrics", &nonapi::neighborhood_metrics,
-          "Compute neighborhood metrics",
-          py::arg("connect_uid"), py::arg("metrics"), py::arg("k") = 10, py::arg("r") = 0.0, py::arg("ofile") = "");
+    m.def("neighborhood_metrics", [](py::object connect_uid, std::vector<std::string> metrics, int k, double r, std::string ofile) {
+        std::string uid = extract_uid(connect_uid);
+        return nonapi::neighborhood_metrics(uid, metrics, k, r, ofile);
+    },
+    "Compute neighborhood metrics",
+    py::arg("connect_uid"), py::arg("metrics"), py::arg("k") = 10, py::arg("r") = 0.0, py::arg("ofile") = "");
 
     // Convenience functions
     m.def("create_pipeline", []() -> api::Pipeline {
         return api::Pipeline();
     }, "Create a new empty pipeline");
 
-    m.def("create_stage", [](const std::string& algoname) -> api::Stage {
-        return api::Stage(algoname);
-    }, "Create a new stage with algorithm name", py::arg("algoname"));
-
     // Helper function for common DTM pipeline
     m.def("dtm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        return api::classify_with_csf() + api::rasterize(resolution, resolution, {"min"}, {"Classification == 2"}, ofile);
+        return api::classify_with_csf() + api::rasterize(resolution, resolution, {"min"}, {"Classification %in% 2 9"}, ofile);
     }, "Create a DTM pipeline", py::arg("resolution"), py::arg("ofile"));
 
     // Helper function for common CHM pipeline  
