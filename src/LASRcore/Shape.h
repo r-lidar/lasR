@@ -21,6 +21,15 @@ struct PointXY
   //bool operator<(const PointXY& other) const;
 };
 
+
+struct PointXYI : public PointXY
+{
+  PointXYI();
+  PointXYI(double x, double y);
+  PointXYI(double x, double y, unsigned int i);
+  unsigned int i;
+};
+
 struct PointXYZ : public PointXY
 {
   double z;

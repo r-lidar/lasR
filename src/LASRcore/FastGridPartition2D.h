@@ -3,15 +3,8 @@
 
 #include <vector>
 
+#include "Shape.h"
 #include "PointCloud.h"
-
-struct PointXYI
-{
-  PointXYI(double x, double y, size_t i) : x(x), y(y), i(i) {};
-  double x;
-  double y;
-  unsigned int i;
-};
 
 class FastGridPartition2D
 {
