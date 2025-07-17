@@ -18,6 +18,13 @@ Files: src/vendor/nlohmann/*
 Lohmann, N. (2023). JSON for Modern C++ (Version 3.11.3) [Computer software]. https://github.com/nlohmann
 Licence: MIT
 
+Files: src/vendor/nanoflann/*
+Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
+Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
+Copyright 2011 Jose L. Blanco (joseluisblancoc@gmail.com). All rights reserved.
+nanoflann: a {C}++ header-only fork of {FLANN}, a library for Nearest Neighbor ({NN}) with KD-trees
+Licence: BSD
+
 Files: src/vendor/Eigen/* src/vendor/unsupported/Eigen/*
 Copyright: 2006 - 2012  Gael Guennebaud, Benoit Jacob
 License: MPL-2
