@@ -101,7 +101,6 @@ bool LASRpcdreader::process(PointCloud*& las)
 
   if (verbose) print("Building a spatial index\n");
   las->update_header();
-  las->build_spatialindex();
 
   return true;
 }

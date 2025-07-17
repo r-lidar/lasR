@@ -1,3 +1,12 @@
+# lasR 0.16.2
+
+- Fix #164: `lasR` is now as fast as it should be. For an unknown reason, it had become extremely slow with some stages
+  involving spatial queries such as `normalize()`, `transform_with()`, `sor()`, and `geometry_feature()`. `lasR` 
+  performance has been restored.
+- Enhancement: building a `kdtree` for spatial indexing can take significant time (several seconds). Spatial 
+  indexes are now built only when required. Thus, a pipeline using only `rasterize()` will no longer build a spatial index.
+- Regression: we regained the full speed of `lasR` at the cost of increased memory usage. `lasR` now consumes more memory.
+
 # lasR 0.16.1
 
 - Fix #158: triangulation with fewer than 3 points

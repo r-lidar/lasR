@@ -55,6 +55,9 @@ bool LASRnnmetrics::process(PointCloud*& las)
 
   lm.resize(maxima.size());
 
+  if (verbose) print("Building KDtree spatial index\n");
+  las->build_kdtree();
+
   #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
   for (size_t i = 0 ; i < maxima.size() ; i++)
   {
