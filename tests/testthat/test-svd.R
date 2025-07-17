@@ -40,6 +40,16 @@ test_that("geometry_features overwrites",
   expect_equal(mean(las$inclination), 83.6690, tolerance = 1e-3)
 })
 
+test_that("geometry_features works with radius",
+{
+  f <- system.file("extdata", "Example.las", package = "lasR")
+  pipeline <- geometry_features(k = 8, r = 0.01, features = "E") + write_las()
+  ans <- exec(pipeline, on = f)
+  las = read_las(ans)
+
+  expect_equal(sum(is.nan(las$lambda1)), 24)
+})
+
 test_that("geometry_features overwrites",
 {
   f <- system.file("extdata", "Example.las", package = "lasR")

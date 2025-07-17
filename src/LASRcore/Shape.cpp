@@ -43,6 +43,10 @@ bool PointXY::operator==(const PointXY& other) const
   return (x == other.x) && (y == other.y);
 }
 
+PointXYI::PointXYI() : PointXY(), i(0) {}
+PointXYI::PointXYI(double x, double y) : PointXY(x,y), i(0) {}
+PointXYI::PointXYI(double x, double y, unsigned int i) : PointXY(x,y), i(i) {}
+
 PointXYZ::PointXYZ() : PointXY(), z(0) {}
 PointXYZ::PointXYZ(double x, double y) : PointXY(x,y), z(0) {}
 PointXYZ::PointXYZ(double x, double y, double z) : PointXY(x,y), z(z) {}

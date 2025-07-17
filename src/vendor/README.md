@@ -9,6 +9,8 @@ This directory contains third-party open source libraries and tools that are ess
 3. **csf**: Cloth Simulation Filter. https://github.com/jianboqi/CSF
 4. **delaunator**: Delaunay triangulation. https://github.com/delfrrr/delaunator-cpp
 5. **geophoton**: chm enhamcement. https://github.com/Geophoton-inc/chm_prep
+6. **nanoflann**: kdtree. https://github.com/jlblancoc/nanoflann
+7. **nlohmann**: JSON parser. https://github.com/nlohmann/json
 
 ## Notes
 - These libraries are external and are maintained independently of the `lasR` package.
@@ -26,6 +28,7 @@ Please refer to the individual LICENSE files in each subdirectory for terms and 
 - Replaced some occurrences of `strncpy` with `memcpy` to bypass false-positive warnings from the CRAN compiler regarding non-null-terminated strings.
 - Fixed various memory leaks (specific locations not remembered).
 - Changed `stdout` usage to `return true` in `bytestreamount_file.hpp` (see L134) to comply with CRAN policies.
+- Add two files LASwriterCOPC.h and LASwriterCOPC.cpp as well as other modifications in the code to add a new COPC writer.
 
 All modifications are provided under the LGPL license.
 

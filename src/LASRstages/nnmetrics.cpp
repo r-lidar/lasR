@@ -22,8 +22,6 @@ bool LASRnnmetrics::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
-  if (mode == PUREKNN) this->r = std::numeric_limits<double>::max();
-
   if (!metrics.parse(methods)) return false;
 
   vector = Vector(xmin, ymin, xmax, ymax);
@@ -57,6 +55,9 @@ bool LASRnnmetrics::process(PointCloud*& las)
 
   lm.resize(maxima.size());
 
+  if (verbose) print("Building KDtree spatial index\n");
+  las->build_kdtree();
+
   #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
   for (size_t i = 0 ; i < maxima.size() ; i++)
   {
@@ -64,19 +65,18 @@ bool LASRnnmetrics::process(PointCloud*& las)
 
     const PointLAS& p = maxima[i];
 
+    Point pp(&las->header->schema);
+    pp.set_x(p.x);
+    pp.set_y(p.y);
+    pp.set_z(p.z);
+
     std::vector<Point> pts;
-    if (mode == PURERADIUS)
+    switch (mode)
     {
-      Sphere s(p.x, p.y, p.z, r);
-      las->query(&s, pts, &pointfilter);
-    }
-    else
-    {
-      Point pt(&las->header->schema);
-      pt.set_x(p.x);
-      pt.set_y(p.y);
-      pt.set_z(p.z);
-      las->knn(pt, k, r, pts, &pointfilter);
+      case PURERADIUS: { las->query_sphere(pp, r, pts, nullptr); break; }
+      case PUREKNN:    { las->knn(pp, k, pts, nullptr); break; }
+      case KNNRADIUS:  { las->rknn(pp, k, r, pts, nullptr); break; }
+      default: { break; }
     }
 
     PointXYZAttrs pt(p.x, p.y, p.z);

@@ -88,6 +88,10 @@ bool LASRlocalmaximum::process(PointCloud*& las)
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
 
+  if (verbose) print("Building grid partition spatial index\n");
+  las->build_partition();
+
+
   #pragma omp parallel for num_threads(ncpu)
   for (size_t i = 0 ; i < las->npoints ; ++i)
   {

@@ -20,8 +20,8 @@ PointCloud::PointCloud(Header* header)
   read_started = false;
 
   // For spatial indexing
-  double res = GridPartition::guess_resolution_from_density(header->density());
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
+  gridpartition = nullptr;
+  kdtree = nullptr;
   current_interval = 0;
   shape = nullptr;
   inside = false;
@@ -44,14 +44,7 @@ PointCloud::PointCloud(const Raster& raster)
 
   // Convert the raster to a PointCloud
   header = new Header;
-  /*header->file_source_ID       = 0;
-  header->version_major        = 1;
-  header->version_minor        = 2;
-  header->header_size          = 227;
-  header->offset_to_point_data = 227;
-  header->file_creation_year   = 0;
-  header->file_creation_day    = 0;
-  header->point_data_format    = 0;*/
+  header->signature = "From Raster";
   header->x_scale_factor       = 0.001;
   header->y_scale_factor       = 0.001;
   header->z_scale_factor       = 0.001;
@@ -72,9 +65,10 @@ PointCloud::PointCloud(const Raster& raster)
   current_interval = 0;
   shape = nullptr;
   inside = false;
-  index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, raster.get_xres()*4);
-
-  point = Point(&header->schema);
+  gridpartition = nullptr;
+  kdtree = nullptr;
+  Point p(&header->schema);
+  point.set_schema(&header->schema);
 
   for (int i = 0 ; i < raster.get_ncells() ; i++)
   {
@@ -85,11 +79,11 @@ PointCloud::PointCloud(const Raster& raster)
     double x = raster.x_from_cell(i);
     double y = raster.y_from_cell(i);
 
-    point.set_x(x);
-    point.set_y(y);
-    point.set_z(z);
+    p.set_x(x);
+    p.set_y(y);
+    p.set_z(z);
 
-    add_point(point);
+    add_point(p);
   }
 
   header->number_of_point_records = npoints;
@@ -98,6 +92,16 @@ PointCloud::PointCloud(const Raster& raster)
 
 PointCloud::~PointCloud()
 {
+  /*print("Destructor\n===========\n");
+  header->schema.dump();
+  print("npoints %lu\n", npoints);
+  print("Buffer range:\n");
+  print("%p %p\n", buffer, buffer + npoints*header->schema.total_point_size);
+  print("%p %p\n", buffer, buffer  + capacity);
+  print("Point adress %p\n", point.data);
+  print("Point belong in the buffer?: %s\n",(point.data >= buffer && point.data < buffer + npoints*header->schema.total_point_size)?"true":"false");
+  print("Point belong in the data?: %s\n", (point.data >= buffer && point.data < buffer + capacity)?"true":"false");
+  print("Distance %lu\n", std::distance(buffer, point.data));*/
   if (header)
   {
     delete header;
@@ -148,7 +152,7 @@ bool PointCloud::add_point(const Point& p)
   memcpy(buffer + npoints * header->schema.total_point_size, p.data, header->schema.total_point_size);
   npoints++;
 
-  index->insert(p.get_x(), p.get_y());
+  //index->insert(p.get_x(), p.get_y());
 
   return true;
 }
@@ -196,7 +200,7 @@ bool PointCloud::read_point(bool include_withhelded)
     if (!inside)
       intervals_to_read.push_back({0, (int)npoints-1});
     else if (inside && shape)
-      index->query(shape->xmin(), shape->ymin(), shape->xmax(), shape->ymax(), intervals_to_read);
+      gridpartition->query(shape->xmin(), shape->ymin(), shape->xmax(), shape->ymax(), intervals_to_read);
     else
     {
       // Nothing to do.
@@ -290,8 +294,9 @@ bool PointCloud::delete_deleted()
   }
   npoints = j;
 
-  // Rebuild the spatial index;
-  build_spatialindex();
+  // Delete spatial index it is invalidated. It will be reconstructed in the
+  // next stage that will need it
+  clean_spatialindex();
 
   // We move the point in the buffer, but the memory is still allocated. We recompute the capacity
   // and realloc the memory for this new capacity.
@@ -402,8 +407,6 @@ bool PointCloud::sort(const std::vector<int>& order)
 
   free(temp);
 
-  build_spatialindex();
-
   return true;
 }
 
@@ -442,13 +445,16 @@ void PointCloud::update_header()
 // Thread safe
 bool PointCloud::query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter) const
 {
+  if (gridpartition == nullptr)
+    throw std::runtime_error("Internal error: GridPartition spatial index not built");
+
   Point p;
   p.set_schema(&header->schema);
 
   addr.clear();
 
   std::vector<Interval> intervals;
-  index->query(shape->xmin(), shape->ymin(), shape->xmax(), shape->ymax(), intervals);
+  gridpartition->query(shape->xmin(), shape->ymin(), shape->xmax(), shape->ymax(), intervals);
 
   if (intervals.size() == 0) return false;
 
@@ -498,90 +504,123 @@ bool PointCloud::query(const std::vector<Interval>& intervals, std::vector<Point
 }
 
 // Thread safe
-bool PointCloud::knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter) const
+bool PointCloud::knn(const Point& xyz, int k, std::vector<Point>& res, PointFilter* const filter) const
 {
-  double x = xyz.get_x();
-  double y = xyz.get_y();
-  double z = xyz.get_z();
+  if (kdtree == nullptr)
+    throw std::runtime_error("Internal error: KDtree spatial index not built");
+
+  res.clear();
+  double query_pt[3] = { xyz.get_x(), xyz.get_y(), xyz.get_z() };
+
+  // Count the actual number of point queried.
+  // kdtree will always find the k-nn but some of these points
+  // may actually be filtered out or be flagged as delete. The query
+  // is thus not actually k points
+  int n = 0;
+
+  // While we do not have actually k points we search with bigger k until we do have the
+  // initial k request
+  int current_k = k;
+  std::vector<KDTree::IndexType> indices(current_k);
+  std::vector<KDTree::DistanceType> dists(current_k);
+  while (n < k && n < get_true_number_of_points())
+  {
+    // Perform knn search (returns the number of valid neighbors found)
+    size_t found = kdtree->knnSearch(query_pt, current_k, indices.data(), dists.data());
+
+    Point p;
+    p.set_schema(&header->schema);
+
+    for (size_t i = 0; i < found; ++i)
+    {
+      size_t idx = indices[i];
+      p.data = buffer + idx * header->schema.total_point_size;
+
+      if (filter && filter->filter(&p)) continue;
+
+      if (!p.get_deleted())
+      {
+        res.push_back(p);
+        n++;
+        if (n >= k) break;
+      }
+    }
+
+    if (n < k)
+    {
+      current_k *= 2;
+      indices.resize(current_k);
+      indices.resize(current_k);
+      res.clear();
+    }
+  }
+
+  return true;
+}
+
+bool PointCloud::rknn(const Point& xyz, int k, double r, std::vector<Point>& res, PointFilter* const filter) const
+{
+  if (kdtree == nullptr)
+    throw std::runtime_error("Internal error: KDtree spatial index not built");
+
+  if (r <= 0.0) return false;
+
+  res.clear();
+  double query_pt[3] = { xyz.get_x(), xyz.get_y(), xyz.get_z() };
+
+  std::vector<nanoflann::ResultItem<KDTree::IndexType, KDTree::DistanceType>> matches;
+  size_t found = kdtree->radiusSearch(query_pt, r, matches);
 
   Point p;
   p.set_schema(&header->schema);
 
-  double area = (header->max_x-header->min_x)*(header->max_y-header->min_y);
-  double density = get_true_number_of_points() / area;
-  double radius  = std::sqrt((double)k / (density * 3.14)) * 1.5;
+  // Sort by distance
+  std::sort(matches.begin(), matches.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
 
-  int n = 0;
-  std::vector<Interval> intervals;
-  if (radius < radius_max)
+  size_t count = 0;
+  for (const auto& match : matches)
   {
-    // While we do not have k points or we did not reached the max radius search we increment the radius
-    while (n < k && n < npoints && radius <= radius_max)
-    {
-      intervals.clear();
-      index->query(x-radius, y-radius, x+radius, y+radius, intervals);
+    if (count >= (size_t)k) break;
 
-      // In lasR we query intervals not points so we need to count the number of points in the interval
-      n = 0; for (const auto& interval : intervals) n += interval.end - interval.start + 1;
+    size_t idx = match.first;
+    p.data = buffer + idx * header->schema.total_point_size;
 
-      // If we have more than k points we may not have the knn because of the filter and withhelded points
-      // we need to fetch the points to actually count them
-      if (n >= k)
-      {
-        n = 0;
-        Sphere s(x,y,z, radius);
-        for (const auto& interval : intervals)
-        {
-          for (int i = interval.start ; i <= interval.end ; i++)
-          {
-            p.data = buffer + i * header->schema.total_point_size;
-            if (p.get_deleted()) continue;
-            //if (lasfilter && lasfilter->filter(&p)) continue;
-            if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
-            n++;
-          }
-        }
-      }
+    if (filter && filter->filter(&p)) continue;
+    if (p.get_deleted()) continue;
 
-      // After fetching the point
-      if (n < k) radius *= 1.5;
-    }
+    res.push_back(p);
+    count++;
   }
 
-  // We incremented the radius until we get k points. If the radius is bigger than the max radius we use radius = max radius
-  // and we may not have k points.
-  if (radius >= radius_max) radius = radius_max;
+  return true;
+}
 
-  // We perform the query for real
-  intervals.clear();
-  index->query(x-radius, y-radius, x+radius, y+radius, intervals);
+bool PointCloud::query_sphere(const Point& xyz, double r, std::vector<Point>& res, PointFilter* const filter) const
+{
+  if (kdtree == nullptr)
+    throw std::runtime_error("Internal error: KDtree spatial index not built");
+
+  if (r <= 0.0)  return false;
 
   res.clear();
-  Sphere s(x,y,z, radius);
-  for (const auto& interval : intervals)
+  double query_pt[3] = { xyz.get_x(), xyz.get_y(), xyz.get_z() };
+
+  std::vector<nanoflann::ResultItem<KDTree::IndexType, KDTree::DistanceType>> matches;
+  size_t found = kdtree->radiusSearch(query_pt, r, matches);
+
+  Point p;
+  p.set_schema(&header->schema);
+
+  for (const auto& match : matches)
   {
-    for (int i = interval.start ; i <= interval.end ; i++)
-    {
-      p.data = buffer + i * header->schema.total_point_size;
+    size_t idx = match.first;
+    p.data = buffer + idx * header->schema.total_point_size;
 
-      //if (lasfilter && lasfilter->filter(&p)) continue;
-      if (p.get_deleted()) continue;
-      if (!s.contains(p.get_x(), p.get_y(), p.get_z())) continue;
+    if (filter && filter->filter(&p)) continue;
+    if (p.get_deleted()) continue;
 
-      res.push_back(p);
-    }
+    res.push_back(p);
   }
-
-  // We sort the query by distance to (x,y)
-  std::sort(res.begin(), res.end(), [x,y,z](const Point& a, const Point& b)
-  {
-    double distA = (a.get_x() - x)*(a.get_x() - x) + (a.get_y() - y)*(a.get_y() - y) + (a.get_z() - z)*(a.get_z() - z);
-    double distB = (b.get_x() - x)*(b.get_x() - x) + (b.get_y() - y)*(b.get_y() - y) + (b.get_z() - z)*(b.get_z() - z);
-    return distA < distB;
-  });
-
-  // We keep the k first results into the result
-  if ((size_t)k < res.size()) res.resize(k);
 
   return true;
 }
@@ -643,6 +682,10 @@ bool PointCloud::add_attribute(const Attribute& attribute)
       memset(buffer + i * new_size + previous_size, 0, attribute.size); // zero the new data
     }
 
+    // We need to reset the underlying memory of the
+    // nanoflann adaptor
+    adaptor.data = buffer;
+    adaptor.schema = &header->schema;
   }
   return true;
 }
@@ -726,6 +769,11 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
     }
   }
 
+  // We need to reset the underlying memory of the
+  // nanoflann adaptor
+  adaptor.data = buffer;
+  adaptor.schema = &header->schema;
+
   return true;
 }
 
@@ -753,28 +801,51 @@ bool PointCloud::add_rgb()
   return true;
 }
 
-void PointCloud::build_spatialindex()
+bool PointCloud::build_kdtree()
 {
-  clean_spatialindex();
-  if (npoints > 0)
+  if (kdtree == nullptr)
+  {
+    adaptor = PointCloudAdaptor(buffer, npoints, &header->schema);
+    kdtree = new KDTree(3, adaptor, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    kdtree->buildIndex();
+  }
+
+  return true;
+}
+
+bool PointCloud::build_partition()
+{
+  if (gridpartition == nullptr)
   {
     double res = GridPartition::guess_resolution_from_density(header->density());
-    index = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
-    while (read_point()) index->insert(point.get_x(), point.get_y());
+
+    gridpartition = new GridPartition(header->min_x, header->min_y, header->max_x, header->max_y, res);
+    while (read_point()) gridpartition->insert(point.get_x(), point.get_y());
   }
-  else
-  {
-    index = new GridPartition(0, 0, 0, 0, 1);
-  }
+
+  return true;
 }
 
 void PointCloud::clean_spatialindex()
 {
   clean_query();
-  if (index)
+
+  if (gridpartition)
   {
-    delete index;
-    index = nullptr;
+    delete gridpartition;
+    gridpartition = nullptr;
+  }
+
+  if (kdtree)
+  {
+    delete kdtree;
+    kdtree = nullptr;
+  }
+
+  if (kdtree)
+  {
+    delete kdtree;
+    kdtree = nullptr;
   }
 }
 

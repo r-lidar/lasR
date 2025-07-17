@@ -9,6 +9,7 @@ public:
   LASRsor() = default;
   bool process(PointCloud*& las) override;
   double need_buffer() const override { return 10; };
+  bool is_parallelized() const override { return true; };
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "sor"; };
 
