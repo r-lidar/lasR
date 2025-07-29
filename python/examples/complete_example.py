@@ -5,7 +5,7 @@ Complete example showing how to use pylasr for LiDAR processing
 This example demonstrates:
 - System information
 - Pipeline creation and configuration
-- JSON export and introspection
+- Pipeline introspection and direct execution
 - Data processing (if example data is provided)
 - Convenience functions
 - Manual stage creation
@@ -77,19 +77,14 @@ def main():
     print("✅ Processing options configured")
     print()
 
-    # 3. Export pipeline to JSON
-    print("💾 EXPORTING PIPELINE")
+    # 3. Pipeline introspection
+    print("💾 PIPELINE INTROSPECTION")
     print("-" * 30)
 
-    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
-        json_file = f.name
-
-    pipeline.write_json(json_file)
-    print(f"✅ Pipeline exported to: {os.path.basename(json_file)}")
-
-    # Get pipeline info
-    info = pylasr.pipeline_info(json_file)
-    print(f"✅ Pipeline info - Streamable: {info.streamable}, Buffer: {info.buffer}")
+    # Check pipeline properties directly
+    print(f"✅ Has reader: {pipeline.has_reader()}")
+    print(f"✅ Has catalog: {pipeline.has_catalog()}")
+    print(f"✅ Pipeline ready for execution")
     print()
 
     # 4. Show example with actual data (if available)
@@ -103,6 +98,7 @@ def main():
         print("🔄 Processing data...")
 
         try:
+            # Execute using the cleanest method: pipeline.execute(files)
             success = pipeline.execute([example_file])
             if success:
                 print("✅ Pipeline execution successful!")
@@ -148,13 +144,11 @@ def main():
     print("🔧 MANUAL STAGE CREATION")
     print("-" * 30)
 
-    manual_stage = pylasr.Stage("classify_with_sor")
-    manual_stage.set("k", 12)
-    manual_stage.set("m", 8)
-    manual_stage.set("classification", 18)
+    manual_stage = pylasr.classify_with_sor(k=12, m=8, classification=18)
 
-    print(f"✅ Manual stage: {manual_stage.get_name()}")
-    print(f"   Parameters: k={manual_stage.get('k')}, m={manual_stage.get('m')}")
+    print(f"✅ Manual stage created using convenience function")
+    print(f"   Stage type: {type(manual_stage).__name__}")
+    print(f"   Stage can be added to pipelines")
     print()
 
     # 7. Multithreading demonstration
@@ -183,6 +177,7 @@ def main():
 
             start_time = time.time()
             try:
+                # Execute using the cleanest method: pipeline.execute(files)
                 result = test_pipeline.execute([example_file])
                 end_time = time.time()
 
@@ -203,7 +198,6 @@ def main():
     # Clean up
     try:
         os.unlink(output_file)
-        os.unlink(json_file)
     except OSError:
         pass
 

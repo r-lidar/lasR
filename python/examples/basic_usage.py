@@ -79,15 +79,12 @@ def main():
     print("🔧 Example 4: Manual Stage Creation")
     print("-" * 40)
 
-    # Create stage manually for more control
-    sor_stage = pylasr.Stage("classify_with_sor")
-    sor_stage.set("k", 12)
-    sor_stage.set("m", 8)
-    sor_stage.set("classification", 18)
+    # Create stage using convenience function instead
+    sor_stage = pylasr.classify_with_sor(k=12, m=8, classification=18)
 
-    print(f"✅ Manual stage: {sor_stage.get_name()}")
-    print(f"   k parameter: {sor_stage.get('k')}")
-    print(f"   m parameter: {sor_stage.get('m')}")
+    print(f"✅ Manual stage created using convenience function")
+    print(f"   Stage type: {type(sor_stage).__name__}")
+    print(f"   Can be added to pipelines: {hasattr(sor_stage, 'get_name')}")
     print()
 
     # Example 5: Pipeline configuration
@@ -108,20 +105,14 @@ def main():
     print("✅ Buffer set to 10.0 units")
     print()
 
-    # Example 6: JSON export and introspection
-    print("💾 Example 6: Pipeline Export and Info")
+    # Example 6: Pipeline introspection
+    print("💾 Example 6: Pipeline Introspection")
     print("-" * 40)
 
-    # Export pipeline to JSON
-    json_file = "example_pipeline.json"
-    pipeline.write_json(json_file)
-
-    # Get pipeline information
-    info = pylasr.pipeline_info(json_file)
-
-    print(f"✅ Pipeline exported to: {json_file}")
-    print(f"   Streamable: {info.streamable}")
-    print(f"   Buffer needed: {info.buffer}")
+    # Check pipeline properties directly
+    print(f"✅ Has reader: {pipeline.has_reader()}")
+    print(f"✅ Has catalog: {pipeline.has_catalog()}")
+    print(f"✅ Pipeline ready to execute")
     print()
 
     # Example 7: Data processing (if data provided)
@@ -139,6 +130,7 @@ def main():
         simple_pipeline += pylasr.write_las("processed_output.las")
 
         try:
+            # Execute using the cleanest method: pipeline.execute(files)
             success = simple_pipeline.execute([example_file])
             if success:
                 print("✅ Processing successful!")
@@ -162,7 +154,6 @@ def main():
 
     # Cleanup
     try:
-        os.unlink(json_file)
         if os.path.exists("processed_output.las"):
             os.unlink("processed_output.las")
     except OSError:
@@ -172,7 +163,7 @@ def main():
     print()
     print("Next steps:")
     print("- See complete_example.py for advanced features")
-    print("- See create_pipelines.py for JSON pipeline creation")
+    print("- See create_pipelines.py for more pipeline examples")
     print("- Check the README.md for full documentation")
 
 

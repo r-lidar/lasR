@@ -55,7 +55,7 @@ pipeline = (pylasr.info() +
 pipeline.set_concurrent_points_strategy(4)
 pipeline.set_progress(True)
 
-# Execute on files
+# Execute pipeline (cleanest approach)
 files = ["input.las", "input2.las"]
 success = pipeline.execute(files)
 ```
@@ -91,7 +91,7 @@ pipeline += pylasr.classify_with_sor()
 # Set processing strategy
 pipeline.set_concurrent_files_strategy(2)
 
-# Execute
+# Execute pipeline
 pipeline.execute(["file1.las", "file2.las"])
 ```
 
@@ -175,15 +175,12 @@ python examples/complete_example.py
 # Complete workflow with your data
 python examples/complete_example.py your_file.las
 
-# Create pipeline JSON files
+# Create and use pipelines
 python examples/create_pipelines.py
 
-# Inspect pipeline JSON files
-python examples/lasr_cli.py info_pipeline.json
-
-# Process files with pipelines
-python examples/lasr_cli.py info_pipeline.json your_data.las
-python examples/lasr_cli.py terrain_pipeline.json file1.las file2.las
+# Use command-line tool with pipeline files
+python examples/lasr_cli.py your_data.las
+python examples/lasr_cli.py file1.las file2.las
 ```
 
 ### 📋 Example Scripts
@@ -193,7 +190,7 @@ Simple examples covering the most common use cases:
 - System information
 - Basic pipeline creation
 - Configuration options
-- JSON export
+- Direct pipeline execution
 - Data processing (provide your own .las file as argument)
 
 #### `complete_example.py`
@@ -206,7 +203,7 @@ Comprehensive demonstration of all major features:
 - Error handling (provide your own .las file as argument)
 
 #### `create_pipelines.py`
-Creates various pipeline JSON files for different workflows:
+Demonstrates various pipeline creation and execution workflows:
 - Info pipeline
 - Cleaning pipeline (noise removal)
 - Terrain analysis (DTM/CHM)
@@ -214,9 +211,8 @@ Creates various pipeline JSON files for different workflows:
 - Classification workflows
 
 #### `lasr_cli.py`
-Enhanced command-line tool for pipeline inspection and processing:
-- Display pipeline information
-- Execute pipelines with input files
+Enhanced command-line tool for data processing:
+- Execute common pipelines on input files
 - Show processing timing and results
 - Support for multithreading configuration
 
@@ -264,6 +260,7 @@ pipeline += pylasr.write_las("processed.las")
 
 # Execute with nested parallelism
 pipeline.set_nested_strategy(2, 4)
+input_files = ["file1.las", "file2.las"]
 pipeline.execute(input_files)
 ```
 
@@ -296,15 +293,16 @@ indexed = pylasr.is_indexed("file.las")
 ## Pipeline Introspection
 
 ```python
-# Save pipeline as JSON
+# Create pipeline and inspect properties directly
 pipeline = pylasr.classify_with_sor() + pylasr.write_las("out.las")
-json_file = pipeline.write_json("my_pipeline.json")
 
-# Get pipeline information
-info = pylasr.pipeline_info(json_file)
-print(f"Streamable: {info.streamable}")
-print(f"Buffer needed: {info.buffer}")
-print(f"Parallelizable: {info.parallelizable}")
+# Check pipeline properties
+print(f"Has reader: {pipeline.has_reader()}")
+print(f"Has catalog: {pipeline.has_catalog()}")
+print(f"Pipeline string: {pipeline.to_string()}")
+
+# Export to JSON if needed for debugging or external tools
+json_file = pipeline.write_json("my_pipeline.json")
 ```
 
 ## Error Handling

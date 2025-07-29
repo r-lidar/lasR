@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Create pipeline JSON files for various LiDAR processing workflows
+Create and demonstrate various LiDAR processing pipelines
 
-This script demonstrates how to create, configure, and export
-different types of processing pipelines to JSON format.
+This script demonstrates how to create, configure, and execute
+different types of processing pipelines directly.
 """
 
 import pylasr
@@ -14,8 +14,8 @@ def create_info_pipeline():
     pipeline = pylasr.Pipeline()
     pipeline += pylasr.info()
     
-    json_file = pipeline.write_json("info_pipeline.json")
-    return json_file
+    print(f"  ✅ Info pipeline ready")
+    return pipeline
 
 
 def create_cleaning_pipeline():
@@ -31,8 +31,8 @@ def create_cleaning_pipeline():
     pipeline.set_verbose(False)
     pipeline.set_buffer(10.0)
     
-    json_file = pipeline.write_json("cleaning_pipeline.json")
-    return json_file
+    print(f"  ✅ Cleaning pipeline ready (4 cores, 10.0 buffer)")
+    return pipeline
 
 
 def create_terrain_pipeline():
@@ -45,8 +45,8 @@ def create_terrain_pipeline():
     combined.set_concurrent_files_strategy(2)
     combined.set_buffer(15.0)
     
-    json_file = combined.write_json("terrain_pipeline.json")
-    return json_file
+    print(f"  ✅ Terrain analysis pipeline ready: DTM (1m) + CHM (0.5m)")
+    return combined
 
 
 def create_sampling_pipeline():
@@ -63,8 +63,8 @@ def create_sampling_pipeline():
     pipeline.set_sequential_strategy()
     pipeline.set_progress(True)
     
-    json_file = pipeline.write_json("sampling_pipeline.json")
-    return json_file
+    print(f"  ✅ Multi-stage sampling pipeline ready")
+    return pipeline
 
 
 def create_classification_pipeline():
@@ -83,12 +83,12 @@ def create_classification_pipeline():
     pipeline.set_nested_strategy(2, 4)
     pipeline.set_verbose(True)
     
-    json_file = pipeline.write_json("classification_pipeline.json")
-    return json_file
+    print(f"  ✅ Classification pipeline ready (nested 2x4 cores)")
+    return pipeline
 
 
 def main():
-    print("📋 CREATING PIPELINE JSON FILES")
+    print("📋 CREATING PIPELINE EXAMPLES")
     print("=" * 50)
     
     pipelines = [
@@ -99,33 +99,35 @@ def main():
         ("Classification", create_classification_pipeline),
     ]
     
-    created_files = []
+    created_pipelines = []
     
     for name, creator in pipelines:
         try:
-            json_file = creator()
-            created_files.append(json_file)
-            print(f"✅ {name}: {json_file}")
+            print(f"\n🔧 {name}:")
+            pipeline = creator()
+            created_pipelines.append((name, pipeline))
         except Exception as e:
             print(f"❌ {name}: Failed - {e}")
     
     print()
-    print(f"📁 Created {len(created_files)} pipeline files")
+    print(f"✅ Created {len(created_pipelines)} ready-to-use pipelines")
     print()
     
     print("💡 USAGE EXAMPLES:")
     print("-" * 30)
-    print("Inspect pipelines:")
-    for file in created_files:
-        print(f"  python examples/lasr_cli.py {file}")
-    
-    print()
-    print("Process data programmatically:")
+    print("Execute any pipeline directly:")
     print("  import pylasr")
-    print("  info = pylasr.pipeline_info('info_pipeline.json')")
-    print("  # Note: Use Pipeline.execute() method for actual processing")
+    print("  pipeline = create_info_pipeline()")
+    print("  success = pipeline.execute(['your_file.las'])")
     
     print()
+    print("Try with your data:")
+    for name, pipeline in created_pipelines:
+        print(f"  # {name}")
+        print(f"  success = pipeline.execute(['input.las'])")
+    
+    print()
+    print("🚀 No JSON files needed - just create and execute!")
     print("📖 See README.md for complete documentation")
 
 

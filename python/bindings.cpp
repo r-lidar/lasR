@@ -84,6 +84,18 @@ PYBIND11_MODULE(pylasr, m) {
           "Execute a pipeline from a JSON configuration file",
           py::arg("config_file"),
           py::arg("async_communication_file") = "");
+      
+      m.def("execute", [](api::Pipeline& pipeline, const std::vector<std::string>& files, const std::string& async_communication_file) -> bool {
+            // Make a copy of the pipeline and set files (similar to R API approach)
+            api::Pipeline p(pipeline);
+            p.set_files(files);
+            std::string json_file = p.write_json();
+            return api::execute(json_file, async_communication_file);
+      }, py::call_guard<py::gil_scoped_release>(),
+            "Execute a pipeline with specified files (mimics R API: exec(pipeline, on=files))",
+            py::arg("pipeline"),
+            py::arg("files"),
+            py::arg("async_communication_file") = "");
 
     m.def("pipeline_info", &api::pipeline_info,
           "Get pipeline information from a JSON configuration file",
