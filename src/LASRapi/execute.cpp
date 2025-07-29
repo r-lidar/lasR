@@ -41,6 +41,9 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
   {
     #ifdef USING_R
       return make_R_error("Could not open the json file containing the pipeline");
+    #elif defined(USING_PYTHON)
+      eprint("Could not open the json file containing the pipeline");
+      return std::make_pair(false, nlohmann::json{});
     #else
       eprint("Could not open the json file containing the pipeline");
       return false;
@@ -310,9 +313,15 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
 
     #ifdef USING_R
         return pipeline.to_R();
+    #elif defined(USING_PYTHON)
+        nlohmann::json ans = pipeline.to_json();
+        // For Python, return rich results directly
+        return std::make_pair(true, ans);
     #else
         nlohmann::json ans =  pipeline.to_json();
-        std::cout << ans.dump(4) << std::endl;
+        if (!ans.empty()) {
+            std::cout << ans.dump(4) << std::endl;
+        }
         return true;
 
         std::string filename = "/tmp/lasr_pipeline.json";
@@ -337,10 +346,13 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
 
   #ifdef USING_R
     return R_NilValue;
+  #elif defined(USING_PYTHON)
+    return std::make_pair(false, nlohmann::json{});
   #else
     return false;
   #endif
 }
+
 
 PipelineInfo pipeline_info(const std::string& config_file)
 {

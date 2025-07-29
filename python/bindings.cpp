@@ -41,6 +41,31 @@ std::string extract_uid(py::object connect_uid) {
     }
 }
 
+// Helper function to create rich results from execution results
+py::object create_result(bool success, const nlohmann::json& json_results, const std::string& json_config_path) {
+    if (!success) {
+        return py::none();
+    }
+    
+    // Return rich results with actual JSON data
+    auto results = py::dict();
+    results["success"] = true;
+    results["message"] = "Pipeline executed successfully";
+    results["json_config"] = json_config_path;
+    
+    // Convert JSON results to Python objects
+    if (!json_results.empty()) {
+        std::string json_str = json_results.dump();
+        py::object json_module = py::module_::import("json");
+        results["data"] = json_module.attr("loads")(json_str);
+    } else {
+        results["data"] = py::none();
+    }
+    
+    return results;
+}
+
+
 PYBIND11_MODULE(pylasr, m) {
     m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing"; 
     m.attr("__version__") = "0.17.0";
@@ -79,19 +104,30 @@ PYBIND11_MODULE(pylasr, m) {
         .def_readwrite("use_rcapi", &api::PipelineInfo::use_rcapi);
 
     // Core API functions
-    m.def("execute", &api::execute,
-          py::call_guard<py::gil_scoped_release>(),
-          "Execute a pipeline from a JSON configuration file",
-          py::arg("config_file"),
-          py::arg("async_communication_file") = "");
-      
-      m.def("execute", [](api::Pipeline& pipeline, const std::vector<std::string>& files, const std::string& async_communication_file) -> bool {
+    m.def("execute", [](const std::string& config_file, const std::string& async_communication_file) -> py::object {
+          // Execute the C++ pipeline without GIL for performance
+          auto [success, json_results] = [&]() {
+              py::gil_scoped_release release;
+              return api::execute(config_file, async_communication_file);
+          }();
+          
+          // Use helper to create rich results (GIL is now acquired for Python operations)
+          return create_result(success, json_results, config_file);
+      },
+      "Execute a pipeline from a JSON configuration file (files must be embedded in JSON)",
+      py::arg("config_file"),
+      py::arg("async_communication_file") = "");
+
+    m.def("execute", [](api::Pipeline& pipeline, const std::vector<std::string>& files, const std::string& async_communication_file) -> py::object {
             // Make a copy of the pipeline and set files (similar to R API approach)
             api::Pipeline p(pipeline);
             p.set_files(files);
             std::string json_file = p.write_json();
-            return api::execute(json_file, async_communication_file);
-      }, py::call_guard<py::gil_scoped_release>(),
+            
+            // Execute once and convert results (avoid double execution)
+            auto [success, json_results] = api::execute(json_file, async_communication_file);
+            return create_result(success, json_results, json_file);
+      },
             "Execute a pipeline with specified files (mimics R API: exec(pipeline, on=files))",
             py::arg("pipeline"),
             py::arg("files"),
@@ -135,11 +171,14 @@ PYBIND11_MODULE(pylasr, m) {
         .def("has_catalog", &api::Pipeline::has_catalog, "Check if pipeline has a catalog stage")
         .def("to_string", &api::Pipeline::to_string, "Get string representation")
         .def("write_json", &api::Pipeline::write_json, "Write pipeline to JSON file", py::arg("path") = "")
-        .def("execute", [](api::Pipeline& self, const std::vector<std::string>& files) -> bool {
+        .def("execute", [](api::Pipeline& self, const std::vector<std::string>& files) -> py::object {
             self.set_files(files);
             std::string json_file = self.write_json();
-            return api::execute(json_file);
-        }, py::call_guard<py::gil_scoped_release>(), "Execute the pipeline on files", py::arg("files"));
+
+            // Execute once and convert results (avoid double execution)
+            auto [success, json_results] = api::execute(json_file, "");
+            return create_result(success, json_results, json_file);
+        }, "Execute the pipeline on files and return results", py::arg("files"));
 
     // ==== STAGE CREATION FUNCTIONS ====
     // Following the exact C++ API signatures

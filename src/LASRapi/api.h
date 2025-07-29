@@ -20,7 +20,7 @@ namespace api
 #if defined(USING_R)
 using ReturnType = SEXP;
 #elif defined(USING_PYTHON)
-using ReturnType = bool;
+using ReturnType = std::pair<bool, nlohmann::json>;
 #else
 using ReturnType = bool;
 #endif
