@@ -89,12 +89,11 @@ bool LASRlasreader::process(PointCloud*& las)
     progress->show();
   }
 
-  las->update_header();
-  las->build_spatialindex();
-
   progress->done();
-
   if (verbose) print(" Number of point read %d\n", las->npoints);
+
+  if (verbose) print("Building a spatial index\n");
+  las->update_header();
 
   return true;
 }

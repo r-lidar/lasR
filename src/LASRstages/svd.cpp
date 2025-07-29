@@ -52,8 +52,6 @@ bool LASRsvd::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
-  if (mode == PUREKNN) r = std::numeric_limits<double>::max();
-
   // Parse feature = "*"
   std::string all = "CEapslocein";
   size_t pos = features.find('*');
@@ -164,6 +162,9 @@ bool LASRsvd::process(PointCloud*& las)
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
 
+  if (verbose) print("Building KDtree spatial index\n");
+  las->build_kdtree();
+
   #pragma omp parallel for num_threads(ncpu)
   for (size_t i = 0 ; i < las->npoints ; i++)
   {
@@ -175,14 +176,12 @@ bool LASRsvd::process(PointCloud*& las)
     if (!las->get_point(i, &p)) continue;
 
     std::vector<Point> pts;
-    if (mode == PURERADIUS)
+    switch (mode)
     {
-        Sphere s(p.get_x(), p.get_y(), p.get_z(), r);
-        las->query(&s, pts, &pointfilter);
-    }
-    else
-    {
-        las->knn(p, k, r, pts, &pointfilter);
+      case PURERADIUS: { las->query_sphere(p, r, pts, nullptr); break; }
+      case PUREKNN:    { las->knn(p, k, pts, nullptr); break; }
+      case KNNRADIUS:  { las->rknn(p, k, r, pts, nullptr); break; }
+      default: { break; }
     }
 
     Eigen::MatrixXd A(pts.size(), 3);

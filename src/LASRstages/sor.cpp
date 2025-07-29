@@ -14,6 +14,9 @@ bool LASRsor::process(PointCloud*& las)
   std::vector<double> distances;
   distances.reserve(las->npoints);
 
+  if (verbose) print("Building KDtree spatial index\n");
+  las->build_kdtree();
+
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < las->npoints ; i++)
   {
@@ -26,7 +29,7 @@ bool LASRsor::process(PointCloud*& las)
     if (!las->get_point(i, &p)) continue;
 
     std::vector<Point> pts;
-    las->knn(p, k+1, std::numeric_limits<double>::max(), pts, &pointfilter);
+    las->knn(p, k+1, pts, &pointfilter);
 
     double dsum = 0;
     for (size_t i = 1; i < pts.size(); ++i) dsum += std::sqrt(std::pow(p.get_x() - pts[i].get_x(), 2) + std::pow(p.get_y() - pts[i].get_y(), 2) + std::pow(p.get_z() - pts[i].get_z(), 2));

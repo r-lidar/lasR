@@ -7,13 +7,49 @@
 #include "PointFilter.h"
 #include "Header.h"
 
+#ifdef PI
+#undef PI
+#endif
+#include "nanoflann/nanoflann.h"
+
 #include <vector>
 #include <string>
 
 class GridPartition;
 class Raster;
-class LASfilter;
-class LASheader;
+
+struct PointCloudAdaptor
+{
+  const unsigned char* data;
+  size_t npoints;
+  const AttributeSchema* schema;
+  PointCloudAdaptor() = default;
+  PointCloudAdaptor(const unsigned char* data, size_t npoints, const AttributeSchema* schema)
+  {
+    this->data = data;
+    this->npoints = npoints;
+    this->schema = schema;
+  }
+
+  inline size_t kdtree_get_point_count() const { return npoints; }
+  inline double kdtree_get_pt(const size_t idx, int dim) const
+  {
+    const unsigned char* ptr = data + idx * schema->total_point_size;
+    const auto& attr = schema->attributes[dim+1];
+    switch(attr.type)
+    {
+      case INT32:{ int value = *((int*)(ptr + attr.offset)); return attr.scale_factor * value + attr.value_offset; }
+      case FLOAT: { return *((float*)(ptr + attr.offset)); }
+      case DOUBLE: { return *((double*)(ptr + attr.offset)); }
+      default: return 0;
+    }
+  }
+
+  template<class BBOX>
+  bool kdtree_get_bbox(BBOX& bb) const { return false; }
+};
+
+using KDTree = nanoflann::KDTreeSingleIndexAdaptor<nanoflann::L2_Simple_Adaptor<double, PointCloudAdaptor>, PointCloudAdaptor, 3>;
 
 class PointCloud
 {
@@ -29,7 +65,6 @@ public:
   bool read_point(bool include_withhelded = false);
   void set_file(const std::string& file) { this->file = file; };
   void update_header();
-  bool is_indexed() { return index != 0; };
   bool is_attribute_loadable(int index);
   void delete_point(Point* p = nullptr);
   bool delete_deleted();
@@ -37,16 +72,18 @@ public:
   bool sort(const std::vector<int>& order);
 
   // Thread safe queries
+  bool build_kdtree();
+  bool build_partition();
   bool get_point(size_t pos, Point* p, PointFilter* const filter = nullptr) const;
   bool query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
-  bool knn(const Point& xyz, int k, double radius_max, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
-
+  bool query_sphere(const Point& xyz, double r, std::vector<Point>& res, PointFilter* const filter) const;
+  bool knn(const Point& xyz, int k, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
+  bool rknn(const Point& xyz, int k, double r, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
   int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/header->schema.total_point_size); }
 
   // Spatial queries
   void set_inside(Shape* shape);
-  void build_spatialindex();
 
   // Non spatial queries
   void set_intervals_to_read(const std::vector<Interval>& intervals);
@@ -75,7 +112,9 @@ private:
   int next_point;
 
   // For spatial indexed search
-  GridPartition* index;
+  PointCloudAdaptor adaptor;
+  GridPartition* gridpartition;
+  KDTree* kdtree;
   int current_interval;
   std::vector<Interval> intervals_to_read;
   bool read_started;

@@ -1,9 +1,77 @@
+# lasR 0.17.0
+
+`lasR 0.17.0` does not bring new features or bug fix. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And the upcoming `python` (`pylasr`) will be able to levrage the C++ API as well. It is possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding
+
+in C++:
+
+```cpp
+#incude "api.h"
+
+bool test(std::vector<std::string> on)
+{
+  using namespace api;
+
+  std::filesystem::path temp_dir = std::filesystem::temp_directory_path();  // platform independent
+  std::filesystem::path temp_file = temp_dir / "test.las";
+
+  Pipeline p;
+  p.set_files(on);
+  p.set_concurrent_files_strategy(8);
+  p.set_progress(true);
+
+  p += info() +
+    delete_points({"Z > 1.37"}) + 
+    write_las(temp_file);
+
+  std::string file = p.write_json();
+
+  return execute(file);
+}
+```
+
+in R:
+
+```r
+library(lasR)
+pipeline = info() + 
+   delete_points("Z > 1.37") +
+   write_las()
+
+execute(pipeline, on, ncores = 8, progress = TRUE);
+```
+
+in python (upcoming, it should look like):
+
+```py
+import pylasr
+pipeline = pylasr.info() + 
+  pylasr.delete_points(["Z > 1.37"]) + 
+  pylasr.write_las()
+  
+pipeline.set_progress(true)
+pipeline.set_concurrent_files_strategy(8)
+pipeline.execute(on)
+```
+
+
+# lasR 0.16.2
+
+- Fix #164: `lasR` is now as fast as it should be. For an unknown reason, it had become extremely slow with some stages
+  involving spatial queries such as `normalize()`, `transform_with()`, `sor()`, and `geometry_feature()`. `lasR` 
+  performance has been restored.
+- Enhancement: building a `kdtree` for spatial indexing can take significant time (several seconds). Spatial 
+  indexes are now built only when required. Thus, a pipeline using only `rasterize()` will no longer build a spatial index.
+- Regression: we regained the full speed of `lasR` at the cost of increased memory usage. `lasR` now consumes more memory.
+
 # lasR 0.16.1
 
-- Fix #158 triangulation with less than 3 points
-- Fix #160 crash with empty folder
-- Fix the NIR attribute is recognized as part of the LAS specifications
-- Fix #161 `reader_circles()` and `reader_rectangles()` are skipping queries outside the file collection.
+- Fix #158: triangulation with fewer than 3 points
+- Fix #160: crash with empty folder
+- Fix: the NIR attribute is now recognized as part of the LAS specification
+- Fix #161: `reader_circles()` and `reader_rectangles()` are skipping queries outside the file collection
+- Fix #166: `sort_points()` works with deleted points in previous stages
+- Fix #170: `classify_with_sor()` is flagged as parallelized and should use multiple cores
+- Fix #170: KNN search has been rewritten using `nanoflann`; stages relying on KNN search are now much faster
 
 # lasR 0.16.0
 
@@ -11,9 +79,9 @@
 - New: stage `remove_attribute()`
 - New: filters `keep_z_between()` and `drop_z_between()`
 - Doc: enhanced documentation for the `filter` argument
-- Doc: revise the documentation of `add_extrabytes()`
-- Change: `add_attributes()`checks for reserved names #159
-- Change: the angle computed by `geometry_feature()` is no longer called `angle`but `inclination` because `angle` is a reserved name.  
+- Doc: revised documentation for `add_extrabytes()`
+- Change: `add_attributes()` checks for reserved names (#159)
+- Change: the angle computed by `geometry_feature()` is now called `inclination` instead of `angle`, as `angle` is a reserved name
 
 # lasR 0.15.1
 
