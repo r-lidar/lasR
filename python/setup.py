@@ -138,5 +138,4 @@ setup(
     zip_safe=False,
     python_requires=">=3.9",
     py_modules=[],  # Explicitly set to avoid auto-discovery issues
-    packages=[],    # No Python packages, just the C++ extension
 )
