@@ -49,7 +49,6 @@ py::object create_result(bool success, const nlohmann::json& json_results, const
     
     if (success) {
         // Success case - return data without redundant message
-        results["message"] = "Pipeline executed successfully";
         if (!json_results.empty()) {
             std::string json_str = json_results.dump();
             py::object json_module = py::module_::import("json");
