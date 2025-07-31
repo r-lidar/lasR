@@ -215,9 +215,20 @@ class TestIntegrationWorkflows(unittest.TestCase):
 
         # Test execution (this will actually process data)
         try:
-            success = pipeline.execute([self.example_las])
-            self.assertTrue(success, "Pipeline execution failed")
+            result = pipeline.execute([self.example_las])
+            
+            # Validate new result structure
+            self.assertIsInstance(result, dict, "Result must be a dictionary")
+            self.assertIn('success', result, "Result must have 'success' field")  
+            self.assertIn('data', result, "Result must have 'data' field")
+            self.assertIn('json_config', result, "Result must have 'json_config' field")
+            
+            self.assertTrue(result['success'], "Pipeline execution failed")
             self.assertTrue(os.path.exists(output_file), "Output file was not created")
+            
+            # Validate data structure
+            if result['data']:
+                self.assertIsInstance(result['data'], list, "Data field must be a list")
         except Exception as e:
             self.fail(f"Pipeline execution raised an exception: {e}")
 

@@ -131,14 +131,17 @@ def main():
 
         try:
             # Execute using the cleanest method: pipeline.execute(files)
-            success = simple_pipeline.execute([example_file])
-            if success:
+            result = simple_pipeline.execute([example_file])
+            if result['success']:
                 print("✅ Processing successful!")
                 if os.path.exists("processed_output.las"):
                     output_size = os.path.getsize("processed_output.las")
                     print(f"📁 Output: processed_output.las ({output_size:,} bytes)")
+                if result['data']:
+                    print(f"📊 Stage results available: {len(result['data'])}")
             else:
                 print("❌ Processing failed")
+                print(f"Error: {result.get('message', 'Unknown error')}")
         except Exception as e:
             print(f"❌ Error: {e}")
     else:

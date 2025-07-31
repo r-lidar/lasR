@@ -99,16 +99,23 @@ def main():
 
         try:
             # Execute using the cleanest method: pipeline.execute(files)
-            success = pipeline.execute([example_file])
-            if success:
+            result = pipeline.execute([example_file])
+            if result['success']:
                 print("✅ Pipeline execution successful!")
                 print(f"📁 Output written to: {os.path.basename(output_file)}")
 
                 if os.path.exists(output_file):
                     size = os.path.getsize(output_file)
                     print(f"📊 Output file size: {size:,} bytes")
+                    
+                # Show stage data if available
+                if result['data']:
+                    print(f"📊 Processing stages completed: {len(result['data'])}")
+                    for i, stage_data in enumerate(result['data']):
+                        print(f"   Stage {i+1}: {list(stage_data.keys())}")
             else:
                 print("❌ Pipeline execution failed")
+                print(f"Error: {result.get('message', 'Unknown error')}")
         except Exception as e:
             print(f"❌ Error during processing: {e}")
     else:

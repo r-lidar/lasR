@@ -43,22 +43,23 @@ std::string extract_uid(py::object connect_uid) {
 
 // Helper function to create rich results from execution results
 py::object create_result(bool success, const nlohmann::json& json_results, const std::string& json_config_path) {
-    if (!success) {
-        return py::none();
-    }
-    
-    // Return rich results with actual JSON data
     auto results = py::dict();
-    results["success"] = true;
-    results["message"] = "Pipeline executed successfully";
+    results["success"] = success;
     results["json_config"] = json_config_path;
     
-    // Convert JSON results to Python objects
-    if (!json_results.empty()) {
-        std::string json_str = json_results.dump();
-        py::object json_module = py::module_::import("json");
-        results["data"] = json_module.attr("loads")(json_str);
+    if (success) {
+        // Success case - return data without redundant message
+        results["message"] = "Pipeline executed successfully";
+        if (!json_results.empty()) {
+            std::string json_str = json_results.dump();
+            py::object json_module = py::module_::import("json");
+            results["data"] = json_module.attr("loads")(json_str);
+        } else {
+            results["data"] = py::list();  // Empty list instead of None for consistency
+        }
     } else {
+        // Error case - include error message and no data
+        results["message"] = last_error.empty() ? "Pipeline execution failed" : last_error;
         results["data"] = py::none();
     }
     
