@@ -14,6 +14,8 @@ The LASR Python bindings provide a clean, Pythonic interface to the powerful LAS
 - **Pipeline Processing**: Chain operations for efficient processing
 - **Multi-threading Support**: Leverage multiple cores for processing
 - **Memory Efficient**: Minimal memory overhead through C++ backend
+- **Rich Results**: Access detailed stage outputs and processing statistics
+- **Structured Error Handling**: Comprehensive error information and debugging
 
 ## Installation
 
@@ -55,9 +57,9 @@ pipeline = (pylasr.info() +
 pipeline.set_concurrent_points_strategy(4)
 pipeline.set_progress(True)
 
-# Execute pipeline (cleanest approach)
+# Execute pipeline (returns rich results)
 files = ["input.las", "input2.las"]
-success = pipeline.execute(files)
+result = pipeline.execute(files)
 ```
 
 ## API Structure
@@ -91,8 +93,8 @@ pipeline += pylasr.classify_with_sor()
 # Set processing strategy
 pipeline.set_concurrent_files_strategy(2)
 
-# Execute pipeline
-pipeline.execute(["file1.las", "file2.las"])
+# Execute pipeline  
+result = pipeline.execute(["file1.las", "file2.las"])
 ```
 
 ### Processing Strategies
@@ -230,7 +232,7 @@ terrain_analysis = dtm_pipeline + chm_pipeline
 terrain_analysis.set_concurrent_files_strategy(2)
 
 # Process data
-success = terrain_analysis.execute(["forest.las"])
+result = terrain_analysis.execute(["forest.las"])
 ```
 
 ### Advanced Processing Workflow
@@ -261,7 +263,7 @@ pipeline += pylasr.write_las("processed.las")
 # Execute with nested parallelism
 pipeline.set_nested_strategy(2, 4)
 input_files = ["file1.las", "file2.las"]
-pipeline.execute(input_files)
+result = pipeline.execute(input_files)
 ```
 
 ### Format Conversion
@@ -273,7 +275,7 @@ converter = (pylasr.write_las("output.laz") +
             pylasr.write_copc("output.copc.laz") +
             pylasr.write_lax())
 
-converter.execute(["input.las"])
+result = converter.execute(["input.las"])
 ```
 
 ## System Information
@@ -305,15 +307,64 @@ print(f"Pipeline string: {pipeline.to_string()}")
 json_file = pipeline.write_json("my_pipeline.json")
 ```
 
-## Error Handling
+## Results and Error Handling
+
+### Result Format
+
+Pipeline execution now returns detailed structured results:
 
 ```python
 try:
-    success = pipeline.execute(files)
-    if not success:
-        print("Pipeline execution failed")
+    result = pipeline.execute(files)
+    
+    if result['success']:
+        print("✅ Pipeline executed successfully!")
+        print(f"Config saved to: {result['json_config']}")
+        
+        # Access stage results
+        if result['data']:
+            for stage_result in result['data']:
+                for stage_name, stage_data in stage_result.items():
+                    print(f"Stage '{stage_name}': {type(stage_data)}")
+                    
+                    # Example: Summary statistics
+                    if stage_name == 'summary':
+                        print(f"  Points: {stage_data['npoints']}")
+                        print(f"  CRS: EPSG:{stage_data['crs']['epsg']}")
+                    
+                    # Example: File outputs
+                    elif isinstance(stage_data, list):
+                        print(f"  Files created: {stage_data}")
+    else:
+        print(f"❌ Pipeline failed: {result.get('message', 'Unknown error')}")
+        
 except Exception as e:
-    print(f"Error: {e}")
+    print(f"❌ Exception during execution: {e}")
+```
+
+### Result Structure
+
+**Successful Execution:**
+```python
+{
+    "success": True,
+    "json_config": "/path/to/config.json",
+    "data": [
+        {"summary": {"npoints": 12345, "crs": {...}, ...}},
+        {"rasterize": ["/path/to/output.tif"]},
+        {"write_las": ["/path/to/output.las"]}
+    ]
+}
+```
+
+**Failed Execution:**
+```python
+{
+    "success": False, 
+    "message": "Error description",
+    "json_config": "/path/to/config.json",
+    "data": None
+}
 ```
 
 ## Performance Tips
