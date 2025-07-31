@@ -318,28 +318,10 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
         // For Python, return rich results directly
         return std::make_pair(true, ans);
     #else
-        nlohmann::json ans =  pipeline.to_json();
+        nlohmann::json ans = pipeline.to_json();
         if (!ans.empty()) {
             std::cout << ans.dump(4) << std::endl;
         }
-        return true;
-
-        std::string filename = "/tmp/lasr_pipeline.json";
-        std::ofstream file(filename);
-        if (!file.is_open())
-        {
-          last_error= "Error: Could not open the file for writing: " + filename;
-          throw std::runtime_error(last_error);
-        }
-
-        file << ans.dump(4);
-        file.close();  // Close the file
-        if (!file.good())
-        {
-          last_error = "Error: Writing to the file failed.";
-          throw std::runtime_error(last_error);
-        }
-
         return true;
     #endif
 
