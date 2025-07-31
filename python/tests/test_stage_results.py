@@ -62,7 +62,7 @@ class LasRComprehensiveTestSuite(unittest.TestCase):
         # Success must be True
         self.assertTrue(results['success'], "Success field must be True")
         
-        # Success results should NOT have redundant message field  
+        # Success results should NOT have redundant message field
         self.assertNotIn('message', results, "Success results should not have redundant 'message' field")
         
         # Data must be a list
