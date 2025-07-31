@@ -348,7 +348,7 @@ nlohmann::json LASRsummary::to_json() const
   }
 
   // Return the data wrapped with the stage name (following same pattern as other stages)
-  return {{get_name(), data}};
+  return {{"summary", data}};
 }
 
 void LASRsummary::reset_accessors()
