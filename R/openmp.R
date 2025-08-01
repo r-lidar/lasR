@@ -139,7 +139,7 @@ available_threads <- function() { .APIUTILS$available_threads() }
 
 get_ram <- function()
 {
-  avail = cpp_get_available_ram()
-  total = cpp_get_total_ram()
+  avail = .APIUTILS$getAvailableRAM()
+  total = .APIUTILS$getTotalRAM()
   c(avail, total)
 }

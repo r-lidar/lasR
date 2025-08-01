@@ -16,7 +16,7 @@
 
 namespace api
 {
-// MODIFY THIS FOR A PYTHON API
+
 #if defined(USING_R)
 using ReturnType = SEXP;
 #elif defined(USING_PYTHON)
