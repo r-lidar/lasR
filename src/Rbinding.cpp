@@ -226,7 +226,13 @@ std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with
     throw std::invalid_argument("Invalid strategy");
 
   // Generate and execute the pipeline
-  std::string f = p.write_json();
+  SEXP call = PROTECT(Rf_lang1(Rf_install("tempdir")));
+  SEXP result = PROTECT(Rf_eval(call, R_GlobalEnv));
+  const char* path_cstr = CHAR(STRING_ELT(result, 0));
+  std::string path(path_cstr);
+  UNPROTECT(2);
+  path += "/pipeline.json";
+  std::string f = p.write_json(path);
   return f;
 }
 

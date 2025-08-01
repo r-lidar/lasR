@@ -1,38 +1,39 @@
 # lasR 0.17.0
 
-`lasR 0.17.0` does not bring new features or bug fix. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And the upcoming `python` (`pylasr`) will be able to levrage the C++ API as well. It is possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding
+`lasR 0.17.0` does not bring new features or bug fix. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And we have now a `python` package (`pylasr`) that leverage the C++ API as well. It is now possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding
 
-in C++:
+Below a simple pipeline with 3 stage using the `C++`, `R` and python `API`. The variable `on` is a list of file on which to apply the pipeline.
+
+in `C++`:
 
 ```cpp
 #incude "api.h"
 
-bool test(std::vector<std::string> on)
-{
-  using namespace api;
+using namespace api;
 
-  std::filesystem::path temp_dir = std::filesystem::temp_directory_path();  // platform independent
-  std::filesystem::path temp_file = temp_dir / "test.las";
+// platform independent tmp file
+std::filesystem::path temp_dir = std::filesystem::temp_directory_path(); 
+std::filesystem::path temp_file = temp_dir / "test.las";
 
-  Pipeline p;
-  p.set_files(on);
-  p.set_concurrent_files_strategy(8);
-  p.set_progress(true);
+Pipeline p;
+p.set_files(on);
+p.set_concurrent_files_strategy(8);
+p.set_progress(true);
 
-  p += info() +
-    delete_points({"Z > 1.37"}) + 
-    write_las(temp_file);
+p += info() +
+  delete_points({"Z > 1.37"}) + 
+  write_las(temp_file);
 
-  std::string file = p.write_json();
+std::string file = p.write_json();
 
-  return execute(file);
-}
+execute(file);
 ```
 
-in R:
+in `R`:
 
 ```r
 library(lasR)
+
 pipeline = info() + 
    delete_points("Z > 1.37") +
    write_las()
@@ -40,7 +41,7 @@ pipeline = info() +
 execute(pipeline, on, ncores = 8, progress = TRUE);
 ```
 
-in python (upcoming, it should look like):
+in `python`:
 
 ```py
 import pylasr
@@ -50,7 +51,7 @@ pipeline = pylasr.info() +
   
 pipeline.set_progress(true)
 pipeline.set_concurrent_files_strategy(8)
-pipeline.execute(on)
+pipeline.execute()
 ```
 
 

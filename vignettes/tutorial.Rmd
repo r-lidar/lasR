@@ -49,6 +49,10 @@ print.list <- function(my_list, indent = 0) {
 }
 ```
 
+<blockquote style="background-color: #ffc5c5; border-left: 5px solid #ff2222; padding: 10px;font-size: 14px; border-radius: 5px;">
+This tutorial has been written with the R API (`lasR` package) and the codes are thus written in `R`. It should be very similar in `python`. This tutorial is more about the general concept than about coding.
+</blockquote>
+
 This tutorial is intended to be read in order. It introduces the available tools of the package in a specific order so that the reader can discover all the features of the package organically.
 
 <blockquote style="background-color: #d6e9f9; border-left: 5px solid #428bca; padding: 10px;font-size: 14px; border-radius: 5px;">
@@ -61,7 +65,7 @@ In `lasR`, the R functions provided to the user are not designed to process the 
 
 In the figure below, there are 4 LAS/LAZ files and a pipeline that (1) reads a file, (2) builds and writes a DTM on disk, (3) transforms the point cloud by normalizing the elevation, (4) builds a canopy height model using the transformed point cloud, and (5) transforms the point cloud by removing points below 5 m. The resulting version of the point cloud (points above 5m) is discarded and lost because there is no additional stage in this pipeline. However, other stages can be added, such as the application of a predictive model for points above 5 m or a stage that writes the point cloud to disk.
 
-Once the first file completes the entire pipeline, the second file is used, and the pipeline is applied to fill in the missing parts of the geospatial rasters or vectors produced by the pipeline. Each file is loaded with a buffer from neighboring files if needed.
+Once the first file completes the entire pipeline, the second file is used, and the pipeline is applied to fill in the missing parts of the geospatial rasters or vectors produced by the pipeline. **Each file is loaded with a buffer from neighboring files if needed**.
 
 A pipeline created from the R interface does nothing initially. After building the pipeline, users must call the `exec()` function on it to initiate the computation.
 
