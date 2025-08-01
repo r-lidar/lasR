@@ -2,13 +2,13 @@ name: pylasr Tests
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, devel ]
     paths:
       - 'python/**'
       - 'src/**'
       - '.github/workflows/pylasr.yaml'
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, devel ]
     paths:
       - 'python/**'
       - 'src/**'
