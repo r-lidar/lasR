@@ -4,7 +4,6 @@ project(pylasr)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
 # Get the parent directory
 get_filename_component(LASR_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 message(STATUS "LASR_SOURCE_DIR: ${LASR_SOURCE_DIR}")
@@ -79,6 +78,18 @@ if(HAS_FLTO_THIN)
 endif()
 
 # Find Python
+# Prefer the Python executable passed from setup.py
+if(DEFINED PYTHON_EXECUTABLE)
+  set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+  set(Python3_EXECUTABLE ${PYTHON_EXECUTABLE})
+endif()
+
+# Also honor Python_ROOT_DIR if set
+if(DEFINED ENV{Python_ROOT_DIR})
+  set(Python_ROOT_DIR $ENV{Python_ROOT_DIR})
+  set(Python3_ROOT_DIR $ENV{Python_ROOT_DIR})
+endif()
+
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 # Find pybind11 via CMake config (installed by pip)
@@ -112,7 +123,7 @@ else()
   add_definitions(-DGDAL_FOUND=0)
 endif()
 
-# Include directories
+# Include directories - Updated for new API structure
 include_directories(
   ${Python_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
@@ -123,6 +134,7 @@ include_directories(
   ${LASR_SOURCE_DIR}/src/vendor/LASzip
   ${LASR_SOURCE_DIR}/src/vendor/common
   ${LASR_SOURCE_DIR}/src/LASRcore
+  ${LASR_SOURCE_DIR}/src/LASRapi
   ${LASR_SOURCE_DIR}/src/LASRreaders
   ${LASR_SOURCE_DIR}/src/LASRstages
   ${GDAL_INCLUDE_DIRS}
@@ -160,16 +172,22 @@ target_compile_definitions(laszip PRIVATE
   NDEBUG=1
   UNORDERED=1
   USING_R=0
+  USING_PYTHON=1
 )
 
-# Create the Python extension module
+# Create the Python extension module - Updated for new API
 pybind11_add_module(pylasr
   # Core bindings
   bindings.cpp
-  export_python.cpp
 
-  # Core implementation
-  ${LASR_SOURCE_DIR}/src/process.cpp
+  # API implementation - NEW
+  ${LASR_SOURCE_DIR}/src/LASRapi/api.cpp
+  ${LASR_SOURCE_DIR}/src/LASRapi/execute.cpp
+  ${LASR_SOURCE_DIR}/src/LASRapi/tools.cpp
+  ${LASR_SOURCE_DIR}/src/LASRapi/PipelineAPI_Impl.cpp
+  ${LASR_SOURCE_DIR}/src/LASRapi/StageAPI_Impl.cpp
+
+  # Core implementation - Updated file names
   ${LASR_SOURCE_DIR}/src/LASRcore/RAM.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/openmp.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/error.cpp
@@ -194,7 +212,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRcore/Raster.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/Vector.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/parser.cpp
-  ${LASR_SOURCE_DIR}/src/LASRcore/pipeline.cpp
+  ${LASR_SOURCE_DIR}/src/LASRcore/Engine.cpp
 
   # I/O implementation
   ${LASR_SOURCE_DIR}/src/LASRreaders/LASio.cpp
@@ -286,26 +304,12 @@ target_compile_definitions(pylasr PRIVATE
   COMPILATION_CLOSED=1
 )
 
-# Set the output directory and output name for different platforms
-if(APPLE)
-  set_target_properties(pylasr PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    OUTPUT_NAME "pylasr"
-    SUFFIX ".so"  # Use .so extension even on macOS
-  )
-elseif(WIN32)
-  set_target_properties(pylasr PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    OUTPUT_NAME "pylasr"
-    SUFFIX ".pyd"  # Windows Python extension
-  )
-else()
-  set_target_properties(pylasr PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    OUTPUT_NAME "pylasr"
-  )
-endif()
+# Set the output directory for all platforms
+# pybind11 will automatically add the correct suffix
+set_target_properties(pylasr PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 # Print output information
 message(STATUS "Python module will be built to: ${CMAKE_CURRENT_SOURCE_DIR}/pylasr${CMAKE_SHARED_LIBRARY_SUFFIX}")
