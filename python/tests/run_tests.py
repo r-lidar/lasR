@@ -171,9 +171,9 @@ def run_quick_test():
         threads = pylasr.available_threads()
         print(f"✅ System info: {threads} threads available")
         
-        # Test stage creation
-        stage = pylasr.Stage("info")
-        print(f"✅ Stage creation: {stage.get_name()}")
+        # Test pipeline creation with info stage
+        pipeline = pylasr.info()
+        print(f"✅ Pipeline creation with info stage")
         
         # Test pipeline creation  
         pipeline = pylasr.Pipeline()

@@ -78,6 +78,18 @@ if(HAS_FLTO_THIN)
 endif()
 
 # Find Python
+# Prefer the Python executable passed from setup.py
+if(DEFINED PYTHON_EXECUTABLE)
+  set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+  set(Python3_EXECUTABLE ${PYTHON_EXECUTABLE})
+endif()
+
+# Also honor Python_ROOT_DIR if set
+if(DEFINED ENV{Python_ROOT_DIR})
+  set(Python_ROOT_DIR $ENV{Python_ROOT_DIR})
+  set(Python3_ROOT_DIR $ENV{Python_ROOT_DIR})
+endif()
+
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 # Find pybind11 via CMake config (installed by pip)
@@ -292,26 +304,12 @@ target_compile_definitions(pylasr PRIVATE
   COMPILATION_CLOSED=1
 )
 
-# Set the output directory and output name for different platforms
-if(APPLE)
-  set_target_properties(pylasr PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    OUTPUT_NAME "pylasr"
-    SUFFIX ".so"  # Use .so extension even on macOS
-  )
-elseif(WIN32)
-  set_target_properties(pylasr PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    OUTPUT_NAME "pylasr"
-    SUFFIX ".pyd"  # Windows Python extension
-  )
-else()
-  set_target_properties(pylasr PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    OUTPUT_NAME "pylasr"
-  )
-endif()
+# Set the output directory for all platforms
+# pybind11 will automatically add the correct suffix
+set_target_properties(pylasr PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 # Print output information
 message(STATUS "Python module will be built to: ${CMAKE_CURRENT_SOURCE_DIR}/pylasr${CMAKE_SHARED_LIBRARY_SUFFIX}")

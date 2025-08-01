@@ -32,6 +32,11 @@ class CMakeBuild(build_ext):
 
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
+        
+        # For --inplace builds, use the source directory instead
+        if self.inplace:
+            extdir = os.path.dirname(os.path.abspath(__file__))
+            print(f"Building in-place at: {extdir}")
 
         # Create build directory
         if not os.path.exists(self.build_temp):
@@ -115,7 +120,17 @@ class CMakeBuild(build_ext):
             # Print the output directory content
             print(f"\nFiles in output directory {extdir}:")
             for f in os.listdir(extdir):
-                print(f"  {f}")
+                if f.endswith('.so') or f.endswith('.pyd'):
+                    print(f"  {f} (Python extension module)")
+                    # Also check if it's the right Python version
+                    import sysconfig
+                    expected_suffix = sysconfig.get_config_var('EXT_SUFFIX')
+                    if expected_suffix and expected_suffix in f:
+                        print(f"    ✓ Matches expected suffix: {expected_suffix}")
+                    else:
+                        print(f"    ⚠ Expected suffix: {expected_suffix}")
+                else:
+                    print(f"  {f}")
 
         except subprocess.CalledProcessError as e:
             print(f"Build error: {str(e)}")

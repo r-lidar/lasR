@@ -77,12 +77,22 @@ jobs:
         export pybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
         echo "pybind11_DIR=$pybind11_DIR"
         python setup.py build_ext --inplace
+        
+        # List built modules to verify build succeeded
+        echo "\nBuilt modules:"
+        find . -name "*.so" -o -name "*.pyd" | head -20
 
     - name: Run tests
       working-directory: python
       run: |
         # Add current directory to Python path to find the built module
         export PYTHONPATH=$PWD:$PYTHONPATH
+        echo "PYTHONPATH=$PYTHONPATH"
+        
+        # Try importing pylasr directly first
+        python -c "import sys; print('Python path:', sys.path); import pylasr; print('pylasr imported successfully')" || echo "Failed to import pylasr"
+        
+        # Run the actual tests
         python tests/run_tests.py
 
     - name: Run quick smoke test
