@@ -307,34 +307,36 @@ SEXP LASRsummary::to_R()
 
 nlohmann::json LASRsummary::to_json() const
 {
-  nlohmann::json ans;
+  nlohmann::json data;
 
   bool use_metrics = metrics_engine.active();
 
   // Add basic stats
-  ans["npoints"] = npoints;
-  ans["nsingle"] = nsingle;
-  ans["nwithheld"] = nwithheld;
-  ans["nsynthetic"] = nsynthetic;
+  data["npoints"] = npoints;
+  data["nsingle"] = nsingle;
+  data["nwithheld"] = nwithheld;
+  data["nsynthetic"] = nsynthetic;
 
   // Convert maps to JSON objects
-  ans["npoints_per_return"] = nlohmann::json(npoints_per_return);
-  ans["npoints_per_class"] = nlohmann::json(npoints_per_class);
+  data["npoints_per_return"] = nlohmann::json(npoints_per_return);
+  data["npoints_per_class"] = nlohmann::json(npoints_per_class);
 
   // Convert zhistogram and ihistogram to JSON arrays
-  ans["z_histogram"] = nlohmann::json::array();
+  data["z_histogram"] = nlohmann::json::array();
   for (const auto& [key, value] : zhistogram) {
-    ans["z_histogram"].push_back({{"bin", key}, {"count", value}});
+    data["z_histogram"].push_back({{"bin", key}, {"count", value}});
   }
 
-  ans["i_histogram"] = nlohmann::json::array();
+  data["i_histogram"] = nlohmann::json::array();
   for (const auto& [key, value] : ihistogram) {
-    ans["i_histogram"].push_back({{"bin", key}, {"count", value}});
+    data["i_histogram"].push_back({{"bin", key}, {"count", value}});
   }
 
-  // Add CRS details (mocking crs.get_wkt() and crs.get_epsg())
-  ans["crs"]["wkt"] = crs.get_wkt(); // Replace with actual WKT value
-  ans["crs"]["epsg"] = crs.get_epsg(); // Replace with actual EPSG code
+  // Add CRS details as a nested object
+  nlohmann::json crs_obj;
+  crs_obj["wkt"] = crs.get_wkt();
+  crs_obj["epsg"] = crs.get_epsg();
+  data["crs"] = crs_obj;
 
   // Add metrics if active
   if (use_metrics) {
@@ -342,10 +344,11 @@ nlohmann::json LASRsummary::to_json() const
     for (const auto& [metricName, values] : metrics) {
       metricsJson[metricName] = values;
     }
-    ans["metrics"] = metricsJson;
+    data["metrics"] = metricsJson;
   }
 
-  return ans;
+  // Return the data wrapped with the stage name (following same pattern as other stages)
+  return {{"summary", data}};
 }
 
 void LASRsummary::reset_accessors()

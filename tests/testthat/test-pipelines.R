@@ -72,7 +72,7 @@ test_that("pipleline info works",
   expect_equal(info$buffer, 0)
   expect_equal(info$read_points, TRUE)
 
-  pipeline[[1]]$algoname = "plop"
+  pipeline = .APIOPERATIONS$make_stage("plop", list(a = 1))
   expect_error(lasR:::get_pipeline_info(pipeline), "Unsupported stage: plop")
 })
 

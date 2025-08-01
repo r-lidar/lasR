@@ -20,7 +20,7 @@ public:
   bool get_display() const { return display; };
   void set_total(uint64_t nmax);
   void set_ncpu(int ncpu);
-  void set_async_message_file(std::string& file);
+  void set_async_message_file(const std::string& file);
   void done(bool main = false);
   void show(bool flush = true);
 

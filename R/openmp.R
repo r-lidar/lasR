@@ -133,13 +133,13 @@ nested <- function(ncores = ncores()/4L, ncores2 = 2L)
 
 #' @rdname multithreading
 #' @export
-has_omp_support = function() { .Call(`C_has_omp_support`) }
+has_omp_support = function() { .APIUTILS$has_omp_support() }
 
-available_threads <- function() { .Call(`C_available_threads`) }
+available_threads <- function() { .APIUTILS$available_threads() }
 
 get_ram <- function()
 {
-  avail = .Call(`C_get_available_ram`)
-  total = .Call(`C_get_total_ram`)
+  avail = .APIUTILS$getAvailableRAM()
+  total = .APIUTILS$getTotalRAM()
   c(avail, total)
 }
