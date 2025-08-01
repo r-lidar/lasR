@@ -68,11 +68,14 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install "setuptools>=64.0.0" wheel numpy pybind11 "cmake>=3.18"
+        pip install setuptools wheel numpy pybind11
 
     - name: Build Python extension
       working-directory: python
       run: |
+        # Export pybind11 path for CMake to find it
+        export pybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
+        echo "pybind11_DIR=$pybind11_DIR"
         python setup.py build_ext --inplace
 
     - name: Run tests
@@ -84,11 +87,3 @@ jobs:
       working-directory: python
       run: |
         python tests/run_tests.py --quick
-
-    - name: Upload test results
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
-        path: python/tests/*.log
-        retention-days: 7
