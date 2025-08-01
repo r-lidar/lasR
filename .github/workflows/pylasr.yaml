@@ -81,9 +81,13 @@ jobs:
     - name: Run tests
       working-directory: python
       run: |
+        # Add current directory to Python path to find the built module
+        export PYTHONPATH=$PWD:$PYTHONPATH
         python tests/run_tests.py
 
     - name: Run quick smoke test
       working-directory: python
       run: |
+        # Add current directory to Python path to find the built module
+        export PYTHONPATH=$PWD:$PYTHONPATH
         python tests/run_tests.py --quick
