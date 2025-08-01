@@ -1,5 +1,3 @@
-name: pylasr Tests
-
 on:
   push:
     branches: [ main, master, devel ]
