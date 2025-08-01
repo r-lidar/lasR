@@ -292,7 +292,6 @@ class TestWriters(unittest.TestCase):
         pipeline = pylasr.write_las("output.las", filter=[""], keep_buffer=False)
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
-    @unittest.skip("COPC validation issue - skip for now")
     def test_write_copc(self):
         """Test write_copc pipeline creation"""
         pipeline = pylasr.write_copc(
