@@ -19,81 +19,7 @@ except ImportError as e:
     IMPORT_ERROR = str(e)
 
 
-class TestStageClass(unittest.TestCase):
-    """Test the Stage class functionality"""
-    
-    def setUp(self):
-        if not PYLASR_AVAILABLE:
-            self.skipTest("pylasr not available")
-    
-    def test_stage_creation(self):
-        """Test creating a stage"""
-        stage = pylasr.Stage("info")
-        self.assertEqual(stage.get_name(), "info")
-        self.assertIsInstance(stage.get_uid(), str)
-        self.assertGreater(len(stage.get_uid()), 0)
-    
-    def test_stage_parameters(self):
-        """Test setting and getting stage parameters"""
-        stage = pylasr.Stage("classify_with_sor")
-        
-        # Test integer parameter
-        stage.set("k", 10)
-        self.assertTrue(stage.has("k"))
-        self.assertEqual(stage.get("k"), 10)
-        
-        # Test double parameter
-        stage.set("threshold", 2.5)
-        self.assertTrue(stage.has("threshold"))
-        self.assertEqual(stage.get("threshold"), 2.5)
-        
-        # Test boolean parameter
-        stage.set("enabled", True)
-        self.assertTrue(stage.has("enabled"))
-        self.assertEqual(stage.get("enabled"), True)
-        
-        # Test string parameter
-        stage.set("method", "statistical")
-        self.assertTrue(stage.has("method"))
-        self.assertEqual(stage.get("method"), "statistical")
-        
-        # Test list parameters
-        stage.set("filter_list", ["Z > 10", "Classification != 18"])
-        self.assertTrue(stage.has("filter_list"))
-        self.assertEqual(stage.get("filter_list"), ["Z > 10", "Classification != 18"])
-        
-        # Test non-existent parameter
-        self.assertFalse(stage.has("nonexistent"))
-        self.assertIsNone(stage.get("nonexistent"))
-    
-    def test_stage_output_types(self):
-        """Test stage output type setting"""
-        stage = pylasr.Stage("test")
-        
-        # Test raster output
-        stage.set_raster()
-        self.assertTrue(stage.is_raster())
-        self.assertFalse(stage.is_matrix())
-        self.assertFalse(stage.is_vector())
-        
-        # Test matrix output
-        stage.set_matrix()
-        self.assertFalse(stage.is_raster())
-        self.assertTrue(stage.is_matrix())
-        self.assertFalse(stage.is_vector())
-        
-        # Test vector output
-        stage.set_vector()
-        self.assertFalse(stage.is_raster())
-        self.assertFalse(stage.is_matrix())
-        self.assertTrue(stage.is_vector())
-    
-    def test_stage_string_representation(self):
-        """Test stage string representation"""
-        stage = pylasr.Stage("info")
-        stage_str = stage.to_string()
-        self.assertIsInstance(stage_str, str)
-        self.assertIn("info", stage_str)
+# Stage class tests removed - Stage is no longer exposed in Python bindings
 
 
 class TestPipelineClass(unittest.TestCase):
@@ -110,29 +36,28 @@ class TestPipelineClass(unittest.TestCase):
     
     def test_pipeline_creation_with_stage(self):
         """Test creating a pipeline with a stage"""
-        stage = pylasr.Stage("info")
-        pipeline = pylasr.Pipeline(stage)
+        # Stage class no longer exposed - use stage functions instead
+        pipeline = pylasr.info()
         pipeline_str = pipeline.to_string()
         self.assertIsInstance(pipeline_str, str)
         self.assertIn("info", pipeline_str)
     
     def test_pipeline_addition_operators(self):
         """Test pipeline addition operators"""
-        info_stage = pylasr.Stage("info")
-        sor_stage = pylasr.Stage("classify_with_sor")
+        # Create pipelines using stage functions instead of Stage class
+        info_pipeline = pylasr.info()
+        sor_pipeline = pylasr.classify_with_sor(k=10, m=6)
         
-        # Test adding stage to pipeline
-        pipeline = pylasr.Pipeline()
-        pipeline += info_stage
-        
-        # Test chaining with + operator
-        pipeline2 = pipeline + sor_stage
+        # Test adding pipelines together
+        combined = info_pipeline + sor_pipeline
+        self.assertIsInstance(combined, pylasr.Pipeline)
         
         # Test in-place addition
-        pipeline += sor_stage
+        empty_pipeline = pylasr.Pipeline()
+        empty_pipeline += info_pipeline
         
         # Verify pipeline contains stages
-        pipeline_str = pipeline.to_string()
+        pipeline_str = combined.to_string()
         self.assertIn("info", pipeline_str)
         self.assertIn("classify_with_sor", pipeline_str)
     
@@ -181,8 +106,8 @@ class TestPipelineClass(unittest.TestCase):
     
     def test_pipeline_json_export(self):
         """Test pipeline JSON export"""
-        stage = pylasr.Stage("info")
-        pipeline = pylasr.Pipeline(stage)
+        # Create pipeline using stage functions
+        pipeline = pylasr.info()
         
         # Test JSON export
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
@@ -217,9 +142,9 @@ class TestConvenienceFunctions(unittest.TestCase):
     
     def test_create_stage(self):
         """Test create_stage convenience function"""
-        stage = pylasr.create_stage("info")
-        self.assertIsInstance(stage, type(pylasr.Stage("test")))
-        self.assertEqual(stage.get_name(), "info")
+        # create_stage no longer exists - use stage functions directly
+        pipeline = pylasr.info()
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
     
     def test_dtm_pipeline(self):
         """Test DTM pipeline convenience function"""

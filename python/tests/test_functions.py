@@ -269,14 +269,16 @@ class TestCRSOperations(unittest.TestCase):
             self.skipTest("pylasr not available")
 
     def test_set_crs_epsg(self):
-        """Test set_crs_epsg pipeline creation"""
-        pipeline = pylasr.set_crs_epsg(4326)
+        """Test set_crs with EPSG code"""
+        # set_crs_epsg no longer exists - use set_crs with EPSG code
+        pipeline = pylasr.set_crs("EPSG:4326")
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
     def test_set_crs_wkt(self):
-        """Test set_crs_wkt pipeline creation"""
+        """Test set_crs with WKT string"""
+        # set_crs_wkt no longer exists - use set_crs with WKT string
         wkt = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]]]'
-        pipeline = pylasr.set_crs_wkt(wkt)
+        pipeline = pylasr.set_crs(wkt)
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
 

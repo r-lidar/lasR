@@ -248,11 +248,12 @@ class TestErrorHandling(unittest.TestCase):
 
     def test_invalid_stage_parameters(self):
         """Test handling of invalid stage parameters"""
-        stage = pylasr.Stage("test")
-
-        # Test unsupported type (should raise exception)
-        with self.assertRaises(RuntimeError):
-            stage.set("invalid", {"dict": "not_supported"})
+        # Stage class no longer exposed - test invalid parameters with pipeline functions
+        # Most stage functions validate parameters when creating the pipeline
+        # Test with invalid parameter types
+        with self.assertRaises((TypeError, ValueError)):
+            # Try to create a pipeline with invalid parameters
+            pylasr.classify_with_sor(k="invalid", m="invalid")
 
 
 if __name__ == "__main__":
