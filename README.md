@@ -61,7 +61,7 @@ Pre-built packages will be available on PyPI in the future. For now, please buil
 To use `lasr` in a C++ program, it must be linked to `gdal` and `proj`. Other dependencies are provided in the `vendor` directory. Tools available to the public are given in [`api.h`](https://github.com/r-lidar/lasR/blob/main/src/LASRapi/api.h)
 
 ```cpp
-#incude "api.h"
+#include "api.h"
 
 using namespace api;
 
