@@ -12,7 +12,8 @@ The `lasr` library (pronounced "laser") is a C++ library for large scale point c
 
 `lasr` offers a range of tools to process massive volumes of lidar data efficiently in a production environment using either the `C++` API, the R API (`lasR` package) or the `python` (`pylasr` package) API.
 
-- 📖 Start with the [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) to learn how to use `lasR`.
+- 📖 Start with the [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) to learn how to use `lasR` in R.
+- 🐍 For Python users, see the [Python documentation](https://github.com/r-lidar/lasR/tree/main/python) and [examples](https://github.com/r-lidar/lasR/tree/main/python/examples).
 - 💵 [Sponsor `lasr`](https://github.com/sponsors/Jean-Romain). It is free and open source, but requires time and effort to develop and maintain.
 
 ## R API
@@ -33,11 +34,31 @@ library(lasR)
 
 ## Python API
 
-To install the `pylasr` python API [to be completed]
+`pylasr` is the Python API for `lasr`, providing a clean, Pythonic interface to the high-performance C++ library for processing large-scale LiDAR point clouds.
+
+### Installation
+
+#### Prerequisites
+
+- Python 3.9+
+- C++17 compatible compiler
+- GDAL (>= 2.2.3), GEOS (>= 3.4.0), PROJ (>= 4.9.3)
+
+#### Build from source
+
+```bash
+git clone https://github.com/r-lidar/lasR.git
+cd lasR/python
+pip install -e .
+```
+
+#### Pre-built packages
+
+Pre-built packages will be available on PyPI in the future. For now, please build from source.
 
 ## C++ API
 
-To use `lasr` in a C++ program, it must be linked to `gdal` and `proj`. Other dependencies are provided in the `vendor` directory. Tools available to the public are given in [`api.h`](hhttps://github.com/r-lidar/lasR/blob/main/src/LASRapi/api.h)
+To use `lasr` in a C++ program, it must be linked to `gdal` and `proj`. Other dependencies are provided in the `vendor` directory. Tools available to the public are given in [`api.h`](https://github.com/r-lidar/lasR/blob/main/src/LASRapi/api.h)
 
 ```cpp
 #incude "api.h"
@@ -79,13 +100,15 @@ exec(pipeline, on = folder, ncores = 16, progress = T)
 
 ```py
 import pylasr
-pipeline = pylasr.classify_with_sor() + 
-  pylasr.delete_noise() + 
-  pylasr.chm(1) + pylasr.dtm(1)
-  
-pipeline.set_progress(true)
+folder = "/folder/of/laz/tiles/"
+pipeline = (pylasr.classify_with_sor() + 
+            pylasr.delete_points(["Classification == 18"]) + 
+            pylasr.chm_pipeline(1, "chm.tif") + 
+            pylasr.dtm_pipeline(1, "dtm.tif"))
+
+pipeline.set_progress(True)
 pipeline.set_concurrent_files_strategy(8)
-pipeline.execute()
+result = pipeline.execute([folder])
 ```
 
 ## Main Differences with `lidR`
@@ -108,6 +131,9 @@ For more details, see the relevant [vignette](https://r-lidar.github.io/lasR/art
 
 - For `lasR`:
   - © 2023-2024 Jean-Romain Roussel
+  - Licence: GPL-3
+- For `pylasr` (Python bindings):
+  - © 2025 Alexey Grigoryev
   - Licence: GPL-3
 - For `LASlib` and `LASzip`:
   - © 2007-2021 Martin Isenburg - <http://rapidlasso.com>
