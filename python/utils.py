@@ -1,33 +1,74 @@
 import sys
-import json
 import urllib.request
 import warnings
+from warnings import warn
+from packaging.version import Version, InvalidVersion
 
 try:
     from importlib.metadata import version as get_version
 except ImportError:
     from pkg_resources import get_distribution as get_version
 
+
+def _format_warning(message, category, filename, lineno, line=None):
+    return f"{category.__name__}: {message}\n"
+warnings.formatwarning = _format_warning
+
+def _fetch_r_universe_packages(repo_url="https://r-lidar.r-universe.dev/src/contrib/PACKAGES"):
+    """
+    Downloads and parses the PACKAGES file from R-Universe into a list of dictionaries,
+    where each block represents a single package.
+    """
+    req = urllib.request.Request(
+        repo_url,
+        headers={"User-Agent": "pylasr-update-checker/1.0"}
+    )
+    with urllib.request.urlopen(req, timeout=2) as resp:
+        text = resp.read().decode('utf-8', errors='ignore')
+    pkgs = []
+    entry = {}
+    for line in text.splitlines():
+        if not line.strip():
+            if entry:
+                pkgs.append(entry)
+                entry = {}
+        else:
+            key, val = line.split(":", 1)
+            entry[key.strip()] = val.strip()
+    if entry:
+        pkgs.append(entry)
+    return pkgs
+
 def check_update():
     try:
-        # Get current version
         try:
-            curr_version = get_version("pylasr")
+            curr_str = get_version("pylasr")
         except Exception:
-            # If the package is not installed via pip, try to get the version from the binary module
             import pylasr
-            curr_version = getattr(pylasr, "__version__", None)
-            if curr_version is None:
-                return
+            curr_str = getattr(pylasr, "__version__", None)
 
-        # Get the latest version from PyPI
-        url = "https://pypi.org/pypi/pylasr/json"
-        with urllib.request.urlopen(url, timeout=2) as resp:
-            data = json.load(resp)
-            last_version = data["info"]["version"]
+        if not curr_str:
+            return
 
-        if last_version > curr_version:
-            msg = f"New version of pylasr {last_version} is available. You have {curr_version}.\nUpdate the package with the command: pip install -U pylasr"
-            warnings.warn(msg)
+        try:
+            curr_v = Version(curr_str)
+        except InvalidVersion:
+            return
+
+        pkgs = _fetch_r_universe_packages()
+        rec = next((p for p in pkgs if p.get("Package") == "lasR"), None)
+        if not rec or "Version" not in rec:
+            return
+
+        try:
+            latest_v = Version(rec["Version"])
+        except InvalidVersion:
+            return
+
+        if latest_v < curr_v and sys.stdout.isatty():
+            warnings.warn(
+                f"lasR {latest_v} is now available; you have {curr_v}.",
+                stacklevel=2
+            )
     except Exception:
         pass
