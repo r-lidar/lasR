@@ -459,11 +459,11 @@ PYBIND11_MODULE(pylasr, m) {
 
     // Helper function for common DTM pipeline
     m.def("dtm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        return api::classify_with_csf() + api::rasterize(resolution, resolution, {"min"}, {"Classification %in% 2 9"}, ofile);
+        return api::rasterize(resolution, resolution, {"min"}, {"Classification %in% 2 9"}, ofile);
     }, "Create a DTM pipeline", py::arg("resolution"), py::arg("ofile"));
 
     // Helper function for common CHM pipeline  
     m.def("chm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        return api::classify_with_csf() + api::rasterize(resolution, resolution, {"max"}, {"Classification != 2"}, ofile);
+        return api::rasterize(resolution, resolution, {"max"}, {"Classification != 2"}, ofile);
     }, "Create a CHM pipeline", py::arg("resolution"), py::arg("ofile"));
 }

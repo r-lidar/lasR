@@ -108,7 +108,6 @@ class TestIntegrationWorkflows(unittest.TestCase):
 
         # Test pipeline structure
         pipeline_str = full_pipeline.to_string()
-        self.assertIn("classify_with_csf", pipeline_str)
         self.assertIn("rasterize", pipeline_str)
 
         # Test JSON export
