@@ -23,7 +23,7 @@ def _fetch_r_universe_packages(repo_url="https://r-lidar.r-universe.dev/src/cont
         repo_url,
         headers={"User-Agent": "pylasr-update-checker/1.0"}
     )
-    with urllib.request.urlopen(req, timeout=2) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         text = resp.read().decode('utf-8', errors='ignore')
     pkgs = []
     entry = {}
@@ -33,8 +33,9 @@ def _fetch_r_universe_packages(repo_url="https://r-lidar.r-universe.dev/src/cont
                 pkgs.append(entry)
                 entry = {}
         else:
-            key, val = line.split(":", 1)
-            entry[key.strip()] = val.strip()
+            if ":" in line:
+                key, val = line.split(":", 1)
+                entry[key.strip()] = val.strip()
     if entry:
         pkgs.append(entry)
     return pkgs
@@ -65,7 +66,7 @@ def check_update():
         except InvalidVersion:
             return
 
-        if latest_v < curr_v and sys.stdout.isatty():
+        if latest_v > curr_v and sys.stdout.isatty():
             warnings.warn(
                 f"lasR {latest_v} is now available; you have {curr_v}.",
                 stacklevel=2

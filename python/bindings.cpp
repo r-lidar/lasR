@@ -468,7 +468,7 @@ PYBIND11_MODULE(pylasr, m) {
     }, "Create a CHM pipeline", py::arg("resolution"), py::arg("ofile"));
       // Check for updates
     try {
-          py::module_ utils = py::module_::import("utils");
+          py::module_ utils = py::module_::import("pylasr.utils");
           if (py::hasattr(utils, "check_update")) {
           utils.attr("check_update")();
           }
