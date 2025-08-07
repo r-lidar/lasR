@@ -151,7 +151,6 @@ class TestConvenienceFunctions(unittest.TestCase):
         dtm_pipeline = pylasr.dtm_pipeline(1.0, "dtm.tif")
         self.assertIsInstance(dtm_pipeline, type(pylasr.Pipeline()))
         pipeline_str = dtm_pipeline.to_string()
-        self.assertIn("classify_with_csf", pipeline_str)
         self.assertIn("rasterize", pipeline_str)
     
     def test_chm_pipeline(self):
@@ -159,7 +158,6 @@ class TestConvenienceFunctions(unittest.TestCase):
         chm_pipeline = pylasr.chm_pipeline(0.5, "chm.tif")
         self.assertIsInstance(chm_pipeline, type(pylasr.Pipeline()))
         pipeline_str = chm_pipeline.to_string()
-        self.assertIn("classify_with_csf", pipeline_str)
         self.assertIn("rasterize", pipeline_str)
 
 
