@@ -466,4 +466,13 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("chm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
         return api::classify_with_csf() + api::rasterize(resolution, resolution, {"max"}, {"Classification != 2"}, ofile);
     }, "Create a CHM pipeline", py::arg("resolution"), py::arg("ofile"));
+      // Check for updates
+    try {
+          py::module_ utils = py::module_::import("utils");
+          if (py::hasattr(utils, "check_update")) {
+          utils.attr("check_update")();
+          }
+    } catch (const std::exception &e) {
+          // Not critical, if it fails, just ignore it
+    }
 }
