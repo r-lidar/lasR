@@ -16,6 +16,7 @@ The LASR Python bindings provide a clean, Pythonic interface to the powerful LAS
 - **Memory Efficient**: Minimal memory overhead through C++ backend
 - **Rich Results**: Access detailed stage outputs and processing statistics
 - **Structured Error Handling**: Comprehensive error information and debugging
+- **Flexible Input Paths (new)**: Pass a directory/catalog or an iterable of path-like objects; only .las/.laz files are used
 
 ## Installation
 
@@ -58,8 +59,13 @@ pipeline.set_concurrent_points_strategy(4)
 pipeline.set_progress(True)
 
 # Execute pipeline (returns rich results)
-files = ["input.las", "input2.las"]
-result = pipeline.execute(files)
+# New: accept directories and path-like
+result = pipeline.execute("/data/catalog")             # directory (recursively finds .las/.laz)
+# or
+result = pipeline.execute(["file1.laz", "/data/dir"]) # mixed iterable of files/dirs
+# or
+from pathlib import Path
+result = pipeline.execute([Path("file1.las"), Path("/data/dir")])
 ```
 
 ## API Structure
@@ -94,7 +100,11 @@ pipeline += pylasr.classify_with_sor()
 pipeline.set_concurrent_files_strategy(2)
 
 # Execute pipeline  
+# Old: list of files
 result = pipeline.execute(["file1.las", "file2.las"])
+# New: directory or iterable of path-like
+result = pipeline.execute("/data/catalog")
+result = pipeline.execute(["/data/a.laz", "/data/catalog"])  # mixed
 ```
 
 ### Processing Strategies
@@ -151,8 +161,7 @@ pipeline.set_nested_strategy(ncores1=2, ncores2=4)
 - `write_lax()` - Write spatial index
 
 ### Coordinate Systems
-- `set_crs_epsg()` - Set CRS by EPSG code
-- `set_crs_wkt()` - Set CRS by WKT string
+- `set_crs()` - Set CRS using either EPSG code (int) or WKT string (str)
 
 ### Data Loading
 - `load_raster()` - Load raster data
@@ -168,14 +177,14 @@ The `examples/` directory contains several scripts to help you get started:
 # Basic usage examples (no data processing)
 python examples/basic_usage.py
 
-# Basic usage with your data
-python examples/basic_usage.py your_file.las
+# Basic usage with your data (file or directory)
+python examples/basic_usage.py /path/to/las_or_dir
 
 # Complete feature demonstration
 python examples/complete_example.py
 
-# Complete workflow with your data
-python examples/complete_example.py your_file.las
+# Complete workflow with your data (file or directory)
+python examples/complete_example.py /path/to/las_or_dir
 
 # Create and use pipelines
 python examples/create_pipelines.py
@@ -193,7 +202,7 @@ Simple examples covering the most common use cases:
 - Basic pipeline creation
 - Configuration options
 - Direct pipeline execution
-- Data processing (provide your own .las file as argument)
+- Data processing (provide your own .las file or directory)
 
 #### `complete_example.py`
 Comprehensive demonstration of all major features:
@@ -202,7 +211,7 @@ Comprehensive demonstration of all major features:
 - Convenience functions
 - Manual stage creation
 - Multithreading comparison
-- Error handling (provide your own .las file as argument)
+- Error handling (provide your own .las file or directory)
 
 #### `create_pipelines.py`
 Demonstrates various pipeline creation and execution workflows:
@@ -232,7 +241,7 @@ terrain_analysis = dtm_pipeline + chm_pipeline
 terrain_analysis.set_concurrent_files_strategy(2)
 
 # Process data
-result = terrain_analysis.execute(["forest.las"])
+result = terrain_analysis.execute("/data/catalog")  # directory
 ```
 
 ### Advanced Processing Workflow
@@ -262,8 +271,7 @@ pipeline += pylasr.write_las("processed.las")
 
 # Execute with nested parallelism
 pipeline.set_nested_strategy(2, 4)
-input_files = ["file1.las", "file2.las"]
-result = pipeline.execute(input_files)
+result = pipeline.execute(["file1.las", "/catalog"])  # mixed iterable
 ```
 
 ### Format Conversion
@@ -275,7 +283,7 @@ converter = (pylasr.write_las("output.laz") +
             pylasr.write_copc("output.copc.laz") +
             pylasr.write_lax())
 
-result = converter.execute(["input.las"])
+result = converter.execute(["input.las", "/data/catalog"])  # mixed
 ```
 
 ## System Information
@@ -315,7 +323,7 @@ Pipeline execution now returns detailed structured results:
 
 ```python
 try:
-    result = pipeline.execute(files)
+    result = pipeline.execute("/data/catalog")
     
     if result['success']:
         print("✅ Pipeline executed successfully!")
