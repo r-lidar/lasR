@@ -99,7 +99,7 @@ def main():
 
         try:
             # Execute using the cleanest method: pipeline.execute(files)
-            result = pipeline.execute([example_file])
+            result = pipeline.execute(example_file)
             if result['success']:
                 print("✅ Pipeline execution successful!")
                 print(f"📁 Output written to: {os.path.basename(output_file)}")
@@ -185,7 +185,7 @@ def main():
             start_time = time.time()
             try:
                 # Execute using the cleanest method: pipeline.execute(files)
-                result = test_pipeline.execute([example_file])
+                result = test_pipeline.execute(example_file)
                 end_time = time.time()
 
                 if result and os.path.exists(test_output):
