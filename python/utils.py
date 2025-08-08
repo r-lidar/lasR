@@ -26,7 +26,7 @@ def _fetch_r_universe_packages(repo_url="https://r-lidar.r-universe.dev/src/cont
         repo_url,
         headers={"User-Agent": "pylasr-update-checker/1.0"}
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    with urllib.request.urlopen(req, timeout=5) as resp:
         text = resp.read().decode('utf-8', errors='ignore')
     pkgs = []
     entry = {}
