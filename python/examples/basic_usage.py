@@ -7,11 +7,12 @@ with pylasr in a simple, easy-to-understand format.
 
 Usage:
     python basic_usage.py                    # Run without data processing
-    python basic_usage.py <path_to_las_file> # Run with data processing
+    python basic_usage.py <path_to_las_or_dir> # Run with data processing (file or directory)
 """
 
 import os
 import sys
+from pathlib import Path
 
 import pylasr
 
@@ -21,12 +22,12 @@ def main():
     print("=" * 50)
 
     # Check command line arguments
-    example_file = None
+    example_path = None
     if len(sys.argv) > 1:
-        example_file = sys.argv[1]
-        if not os.path.exists(example_file):
-            print(f"❌ Error: File '{example_file}' not found")
-            print("💡 Usage: python basic_usage.py [path_to_las_file]")
+        example_path = sys.argv[1]
+        if not os.path.exists(example_path):
+            print(f"❌ Error: Path '{example_path}' not found")
+            print("💡 Usage: python basic_usage.py [path_to_las_or_dir]")
             sys.exit(1)
 
     # System information
@@ -49,15 +50,11 @@ def main():
     print("-" * 40)
 
     cleaning_pipeline = pylasr.Pipeline()
-    # Note: For demonstration, we'll create a basic cleaning pipeline
-    # Real noise filtering would include:
-    # cleaning_pipeline += pylasr.classify_with_sor(k=10, m=6)
-    # cleaning_pipeline += pylasr.delete_points(["Classification == 18"])
-    cleaning_pipeline += pylasr.info()  # Show info instead for small example
+    cleaning_pipeline += pylasr.info()
     cleaning_pipeline += pylasr.write_las("cleaned.las")
 
     print("✅ Cleaning pipeline created")
-    print(f"   Number of stages: {len(cleaning_pipeline.to_string().split('\\n'))}")
+    print(f"   Number of stages: {len(cleaning_pipeline.to_string().split('\n'))}")
     print()
 
     # Example 3: DTM/CHM workflow
@@ -119,10 +116,15 @@ def main():
     print("📊 Example 7: Data Processing")
     print("-" * 40)
 
-    if example_file:
-        print(f"📂 Processing: {os.path.basename(example_file)}")
-        file_size = os.path.getsize(example_file)
-        print(f"   File size: {file_size:,} bytes")
+    if example_path:
+        path_obj = Path(example_path)
+        print(f"📂 Processing: {path_obj}")
+        if path_obj.is_file():
+            try:
+                size = os.path.getsize(path_obj)
+                print(f"   File size: {size:,} bytes")
+            except OSError:
+                pass
 
         # Simple processing pipeline
         simple_pipeline = pylasr.Pipeline()
@@ -130,8 +132,14 @@ def main():
         simple_pipeline += pylasr.write_las("processed_output.las")
 
         try:
-            # Execute using the cleanest method: pipeline.execute(files)
-            result = simple_pipeline.execute([example_file])
+            # New: accept file, directory, Path, or iterable
+            # 1) Single directory
+            if path_obj.is_dir():
+                result = simple_pipeline.execute(path_obj)
+            else:
+                # 2) Single file
+                result = simple_pipeline.execute([path_obj])
+
             if result['success']:
                 print("✅ Processing successful!")
                 if os.path.exists("processed_output.las"):
@@ -145,13 +153,9 @@ def main():
         except Exception as e:
             print(f"❌ Error: {e}")
     else:
-        print("📂 No input file provided")
+        print("📂 No input path provided")
         print("💡 To process your data:")
-        print("   python basic_usage.py your_file.las")
-        print()
-        print("💡 Example data locations:")
-        print("   - ../inst/extdata/Example.las (if running from lasR repo)")
-        print("   - Any .las or .laz file you have")
+        print("   python basic_usage.py /path/to/las_or_dir")
 
     print()
 
