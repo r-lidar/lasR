@@ -15,6 +15,8 @@ def _format_warning(message, category, filename, lineno, line=None):
     return f"{category.__name__}: {message}\n"
 warnings.formatwarning = _format_warning
 
+
+# TODO: Change for pypi when available
 def _fetch_r_universe_packages(repo_url="https://r-lidar.r-universe.dev/src/contrib/PACKAGES"):
     """
     Downloads and parses the PACKAGES file from R-Universe into a list of dictionaries,
@@ -46,7 +48,8 @@ def check_update():
     def _worker():
         try:
             try:
-                curr_str = get_version("pylasr")
+                curr = get_version("pylasr")
+                curr_str = curr.version if hasattr(curr, "version") else curr
             except Exception:
                 import pylasr
                 curr_str = getattr(pylasr, "__version__", None)
@@ -60,6 +63,7 @@ def check_update():
                 return
 
             pkgs = _fetch_r_universe_packages()
+            # TODO: Change for pypi when available
             rec = next((p for p in pkgs if p.get("Package") == "lasR"), None)
             if not rec or "Version" not in rec:
                 return
@@ -69,7 +73,7 @@ def check_update():
             except InvalidVersion:
                 return
 
-            if latest_v > curr_v and sys.stdout.isatty():
+            if latest_v > curr_v:
                 warnings.warn(
                     f"lasR {latest_v} is now available; you have {curr_v}.",
                     stacklevel=2
