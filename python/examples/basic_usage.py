@@ -131,7 +131,7 @@ def main():
 
         try:
             # Execute using the cleanest method: pipeline.execute(files)
-            result = simple_pipeline.execute([example_file])
+            result = simple_pipeline.execute(example_file)
             if result['success']:
                 print("✅ Processing successful!")
                 if os.path.exists("processed_output.las"):
