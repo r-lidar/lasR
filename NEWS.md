@@ -46,18 +46,16 @@ in `python`:
 ```py
 import pylasr
 
-# platform independent tmp file
-import tempfile
-temp_file = tempfile.NamedTemporaryFile(suffix='.las', delete=False).name
+# Use example file from the package
+example_file = "inst/extdata/Example.las"
+output_file = "filtered_output.las"
 
 pipeline = (pylasr.info() + 
             pylasr.delete_points(["Z > 1.37"]) + 
-            pylasr.write_las(temp_file))
+            pylasr.write_las(output_file))
 
-pipeline.set_files(on)
 pipeline.set_progress(True)
-pipeline.set_concurrent_files_strategy(8)
-result = pipeline.execute()
+result = pipeline.execute([example_file])
 ```
 
 
