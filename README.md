@@ -107,8 +107,8 @@ pipeline = (pylasr.classify_with_sor() +
             pylasr.dtm_pipeline(1, "dtm.tif"))
 
 pipeline.set_progress(True)
-pipeline.set_concurrent_files_strategy(8)
-result = pipeline.execute([folder])
+pipeline.set_concurrent_files_strategy(16)
+result = pipeline.execute(folder)
 ```
 
 ## Main Differences with `lidR`
