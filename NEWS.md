@@ -55,7 +55,7 @@ pipeline = (pylasr.info() +
             pylasr.write_las(output_file))
 
 pipeline.set_progress(True)
-result = pipeline.execute([example_file])
+result = pipeline.execute(example_file)
 ```
 
 
