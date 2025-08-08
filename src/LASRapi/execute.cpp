@@ -17,34 +17,33 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 
+#include "api.h"
 #include "openmp.h"
 #include "error.h"
 #include "print.h"
 
-#include "pipeline.h"
+#include "Engine.h"
 #include "FileCollection.h"
 
 #include "DrawflowParser.h"
 #include "nlohmann/json.hpp"
 
-#ifdef USING_R
-SEXP process(SEXP sexp_config_file, SEXP sexp_async_communication_file)
+namespace api
 {
-  std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
-  std::string async_communication_file = std::string(CHAR(STRING_ELT(sexp_async_communication_file, 0)));
 
-#else
-bool process(const std::string& config_file)
+ReturnType execute(const std::string& config_file, const std::string& async_communication_file)
 {
-#endif
-
   // Open the JSON file
   std::ifstream fjson(config_file);
   if (!fjson.is_open())
   {
     #ifdef USING_R
       return make_R_error("Could not open the json file containing the pipeline");
+    #elif defined(USING_PYTHON)
+      eprint("Could not open the json file containing the pipeline");
+      return std::make_pair(false, nlohmann::json{});
     #else
       eprint("Could not open the json file containing the pipeline");
       return false;
@@ -58,19 +57,7 @@ bool process(const std::string& config_file)
   // understandable by lasR
   if (json.contains("drawflow"))
   {
-    try
-    {
-      json = DrawflowParser::parse(json);
-    }
-    catch (std::exception& e)
-    {
-      #ifdef USING_R
-        return make_R_error(e.what());
-      #else
-        eprint(e.what());
-        return false;
-      #endif
-    }
+    json = DrawflowParser::parse(json);
   }
 
   // The JSON file is made of the processing options and the pipeline
@@ -127,13 +114,11 @@ bool process(const std::string& config_file)
   //uintptr_t original_CStackLimit = R_CStackLimit;
   //#endif
 
-  try
-  {
-    Pipeline pipeline;
+    Engine pipeline;
 
     if (!pipeline.parse(json_pipeline, progrss))
     {
-      throw last_error;
+      throw std::runtime_error(last_error);
     }
 
     bool use_rcapi = pipeline.use_rcapi();
@@ -205,7 +190,7 @@ bool process(const std::string& config_file)
     // write_vpc() and write_lax() are the only stage that can processed the FileCollection
     if (!pipeline.pre_run())
     {
-      throw last_error;
+      throw std::runtime_error(last_error);
     }
 
     progress.show();
@@ -220,7 +205,7 @@ bool process(const std::string& config_file)
         // We need a copy of the pipeline. The copy constructor of the pipeline and stages
         // ensure that shared resources are protected (such as connection to output files)
         // and private data are copied.
-        Pipeline private_pipeline(pipeline);
+        Engine private_pipeline(pipeline);
 
         #pragma omp for schedule(dynamic)
         for (int i = 0 ; i < n ; ++i)
@@ -319,7 +304,7 @@ bool process(const std::string& config_file)
 
     if (failure)
     {
-      throw last_error;
+      throw std::runtime_error(last_error);
     }
 
     pipeline.sort();
@@ -328,121 +313,57 @@ bool process(const std::string& config_file)
 
     #ifdef USING_R
         return pipeline.to_R();
+    #elif defined(USING_PYTHON)
+        nlohmann::json ans = pipeline.to_json();
+        // For Python, return rich results directly
+        return std::make_pair(true, ans);
     #else
-        nlohmann::json ans =  pipeline.to_json();
-        std::cout << ans.dump(4) << std::endl;
-        return true;
-
-        std::string filename = "/tmp/lasr_pipeline.json";
-        std::ofstream file(filename);
-        if (!file.is_open())
-        {
-          last_error= "Error: Could not open the file for writing: " + filename;
-          throw last_error;
+        nlohmann::json ans = pipeline.to_json();
+        if (!ans.empty()) {
+            std::cout << ans.dump(4) << std::endl;
         }
-
-        file << ans.dump(4);
-        file.close();  // Close the file
-        if (!file.good())
-        {
-          last_error = "Error: Writing to the file failed.";
-          throw last_error;
-        }
-
         return true;
     #endif
-  }
-  catch (std::string e)
-  {
-    #ifdef USING_R
-      //R_CStackLimit = original_CStackLimit;
-      return make_R_error(e.c_str());
-    #else
-      eprint(e.c_str());
-      return false;
-    #endif
-  }
-  catch(...)
-  {
-    // # nocov start
-    #ifdef USING_R
-      //R_CStackLimit = original_CStackLimit;
-      return make_R_error("c++ exception (unknown reason)");
-    #else
-      eprint("c++ exception (unknown reason)");
-      return false;
-    #endif
-    // # nocov end
-  }
+
 
   #ifdef USING_R
     return R_NilValue;
+  #elif defined(USING_PYTHON)
+    return std::make_pair(false, nlohmann::json{});
   #else
     return false;
   #endif
-
 }
 
-#ifdef USING_R
-SEXP get_pipeline_info(SEXP sexp_config_file)
+
+PipelineInfo pipeline_info(const std::string& config_file)
 {
-  std::string config_file = std::string(CHAR(STRING_ELT(sexp_config_file, 0)));
-
-  try
+  std::ifstream fjson(config_file);
+  if (!fjson.is_open())
   {
-    std::ifstream fjson(config_file);
-    if (!fjson.is_open())
-    {
-      last_error = "Could not open the json file containing the pipeline";
-      throw last_error;
-    }
-    nlohmann::json json;
-    fjson >> json;
-
-    nlohmann::json json_pipeline = json["pipeline"];
-
-
-    Pipeline pipeline;
-    if (!pipeline.parse(json_pipeline))
-    {
-      throw last_error;
-    }
-    bool is_streamable = pipeline.is_streamable();
-    bool is_parallelizable = pipeline.is_parallelizable();
-    bool is_parallelized = pipeline.is_parallelized();
-    bool read_points = pipeline.need_points();
-    bool use_rcapi = pipeline.use_rcapi();
-    double buffer = pipeline.need_buffer();
-
-    SEXP ans =  PROTECT(Rf_allocVector(VECSXP, 6));
-    SET_VECTOR_ELT(ans, 0, Rf_ScalarLogical(is_streamable));
-    SET_VECTOR_ELT(ans, 1, Rf_ScalarLogical(read_points));
-    SET_VECTOR_ELT(ans, 2, Rf_ScalarReal(buffer));
-    SET_VECTOR_ELT(ans, 3, Rf_ScalarLogical(is_parallelizable));
-    SET_VECTOR_ELT(ans, 4, Rf_ScalarLogical(is_parallelized));
-    SET_VECTOR_ELT(ans, 5, Rf_ScalarLogical(use_rcapi));
-
-    SEXP names = PROTECT(Rf_allocVector(STRSXP, 6));
-    SET_STRING_ELT(names, 0, Rf_mkChar("streamable"));
-    SET_STRING_ELT(names, 1, Rf_mkChar("read_points"));
-    SET_STRING_ELT(names, 2, Rf_mkChar("buffer"));
-    SET_STRING_ELT(names, 3, Rf_mkChar("parallelizable"));
-    SET_STRING_ELT(names, 4, Rf_mkChar("parallelized"));
-    SET_STRING_ELT(names, 5, Rf_mkChar("R_API"));
-    Rf_setAttrib(ans, R_NamesSymbol, names);
-
-    UNPROTECT(2);
-    return ans;
-  }
-  catch (std::string e)
-  {
-    return make_R_error(e.c_str());
-  }
-  catch(...)
-  {
-    return make_R_error("c++ exception (unknown reason)"); // # nocov
+    throw std::runtime_error("Could not open the json file containing the pipeline");
   }
 
-  return R_NilValue; // # nocov
+  nlohmann::json json;
+  fjson >> json;
+
+  nlohmann::json json_pipeline = json["pipeline"];
+  Engine pipeline;
+  if (!pipeline.parse(json_pipeline))
+  {
+    throw std::runtime_error(last_error);
+  }
+
+  PipelineInfo info;
+  info.streamable      = pipeline.is_streamable();
+  info.read_points     = pipeline.need_points();
+  info.buffer          = pipeline.need_buffer();
+  info.parallelizable  = pipeline.is_parallelizable();
+  info.parallelized    = pipeline.is_parallelized();
+  info.use_rcapi       = pipeline.use_rcapi();
+
+  return info;
 }
-#endif
+
+
+} // namespace api

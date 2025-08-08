@@ -1,3 +1,60 @@
+# lasR 0.17.0
+
+`lasR 0.17.0` does not bring new features or bug fix. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And we have now a `python` package (`pylasr`) that leverage the C++ API as well. It is now possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding
+
+Below a simple pipeline with 3 stage using the `C++`, `R` and python `API`. The variable `on` is a list of file on which to apply the pipeline.
+
+in `C++`:
+
+```cpp
+#incude "api.h"
+
+using namespace api;
+
+// platform independent tmp file
+std::filesystem::path temp_dir = std::filesystem::temp_directory_path(); 
+std::filesystem::path temp_file = temp_dir / "test.las";
+
+Pipeline p;
+p.set_files(on);
+p.set_concurrent_files_strategy(8);
+p.set_progress(true);
+
+p += info() +
+  delete_points({"Z > 1.37"}) + 
+  write_las(temp_file);
+
+std::string file = p.write_json();
+
+execute(file);
+```
+
+in `R`:
+
+```r
+library(lasR)
+
+pipeline = info() + 
+   delete_points("Z > 1.37") +
+   write_las()
+
+execute(pipeline, on, ncores = 8, progress = TRUE);
+```
+
+in `python`:
+
+```py
+import pylasr
+pipeline = pylasr.info() + 
+  pylasr.delete_points(["Z > 1.37"]) + 
+  pylasr.write_las()
+  
+pipeline.set_progress(true)
+pipeline.set_concurrent_files_strategy(8)
+pipeline.execute()
+```
+
+
 # lasR 0.16.2
 
 - Fix #164: `lasR` is now as fast as it should be. For an unknown reason, it had become extremely slow with some stages
