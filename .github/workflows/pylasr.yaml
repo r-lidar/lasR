@@ -59,8 +59,8 @@ jobs:
 
     - name: Configure pybind11 path on Ubuntu/macOS
       run: |
-        PYBIND11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
-        echo "pybind11_DIR=$PYBIND11_DIR" >> $GITHUB_ENV
+        pybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
+        echo "pybind11_DIR=$pybind11_DIR" >> $GITHUB_ENV
 
     - name: Build extension on Ubuntu/macOS
       run: |
