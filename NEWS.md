@@ -7,7 +7,7 @@ Below a simple pipeline with 3 stage using the `C++`, `R` and python `API`. The 
 in `C++`:
 
 ```cpp
-#incude "api.h"
+#include "api.h"
 
 using namespace api;
 
@@ -45,13 +45,17 @@ in `python`:
 
 ```py
 import pylasr
-pipeline = pylasr.info() + 
-  pylasr.delete_points(["Z > 1.37"]) + 
-  pylasr.write_las()
-  
-pipeline.set_progress(true)
-pipeline.set_concurrent_files_strategy(8)
-pipeline.execute()
+
+# Use example file from the package
+example_file = "inst/extdata/Example.las"
+output_file = "filtered_output.las"
+
+pipeline = (pylasr.info() + 
+            pylasr.delete_points(["Z > 1.37"]) + 
+            pylasr.write_las(output_file))
+
+pipeline.set_progress(True)
+result = pipeline.execute(example_file)
 ```
 
 

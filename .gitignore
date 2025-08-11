@@ -21,3 +21,4 @@ python/build
 *.bak*
 *.a
 *.pyc
+CLAUDE.md
