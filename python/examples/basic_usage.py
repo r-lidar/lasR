@@ -54,7 +54,7 @@ def main():
     cleaning_pipeline += pylasr.write_las("cleaned.las")
 
     print("✅ Cleaning pipeline created")
-    print(f"   Number of stages: {len(cleaning_pipeline.to_string().split('\n'))}")
+    print(f"   Number of stages: {len(cleaning_pipeline.to_string().splitlines())}")
     print()
 
     # Example 3: DTM/CHM workflow
