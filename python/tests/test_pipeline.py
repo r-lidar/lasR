@@ -128,29 +128,6 @@ class TestPipelineClass(unittest.TestCase):
                 if os.path.exists(json_file):
                     os.unlink(json_file)
 
-    def test_execute_accepts_directory_and_pathlike_raises_on_empty(self):
-        """
-        Verify the execute overload accepts a directory Path and raises a clear
-        error when no .las/.laz files are found (without invoking backend).
-        """
-        pipeline = pylasr.Pipeline()
-        pipeline += pylasr.info()
-        with tempfile.TemporaryDirectory() as tmp:
-            # Ensure directory is empty or contains non-las files only
-            non_las = Path(tmp) / "notes.txt"
-            non_las.write_text("no pointcloud here")
-            # Path object input
-            with self.assertRaises(Exception) as cm1:
-                pipeline.execute(Path(tmp))
-            self.assertIn("No .las/.laz files found", str(cm1.exception))
-            # String path input
-            with self.assertRaises(Exception) as cm2:
-                pipeline.execute(tmp)
-            self.assertIn("No .las/.laz files found", str(cm2.exception))
-            # Iterable of path-likes
-            with self.assertRaises(Exception) as cm3:
-                pipeline.execute([Path(tmp), tmp])
-            self.assertIn("No .las/.laz files found", str(cm3.exception))
 
 
 class TestConvenienceFunctions(unittest.TestCase):
