@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 #include <filesystem>
-#include <algorithm>
 
 // Include the C++ API
 #include "LASRapi/api.h"
@@ -40,64 +39,6 @@ std::string extract_uid(py::object connect_uid) {
     } else {
         throw std::invalid_argument("connect_uid must be a Pipeline or a string uid");
     }
-}
-
-// Normalize Python input (path-like, directory, or iterable of path-likes)
-// into a list of LAS/LAZ file paths (recursively when a directory is provided).
-static std::vector<std::string> normalize_files(py::object files_input) {
-    namespace fs = std::filesystem;
-
-    auto add_if_pointcloud = [](const fs::path &p, std::vector<std::string> &out) {
-        if (!fs::exists(p) || !fs::is_regular_file(p)) return;
-        auto ext = p.extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        if (ext == ".las" || ext == ".laz") {
-            out.push_back(p.string());
-        }
-    };
-
-    auto expand_path = [&](const std::string &path_str, std::vector<std::string> &out) {
-        fs::path p(path_str);
-        if (!fs::exists(p)) return; // ignore non-existing
-        if (fs::is_directory(p)) {
-            for (auto const &entry : fs::recursive_directory_iterator(p)) {
-                if (entry.is_regular_file()) add_if_pointcloud(entry.path(), out);
-            }
-        } else {
-            add_if_pointcloud(p, out);
-        }
-    };
-
-    std::vector<std::string> out;
-
-    // Try single path-like using os.fspath
-    try {
-        py::module_ os = py::module_::import("os");
-        py::object fspath = os.attr("fspath");
-        std::string p = py::str(fspath(files_input));
-        expand_path(p, out);
-        return out;
-    } catch (const py::error_already_set &) {
-        // fall through
-    }
-
-    // Try iterable of path-likes
-    if (py::isinstance<py::sequence>(files_input) && !py::isinstance<py::str>(files_input)) {
-        py::module_ os = py::module_::import("os");
-        py::object fspath = os.attr("fspath");
-        py::sequence seq = files_input.cast<py::sequence>();
-        for (py::handle h : seq) {
-            try {
-                std::string p = py::str(fspath(h));
-                expand_path(p, out);
-            } catch (const py::error_already_set &) {
-                // skip non-path-like entries
-            }
-        }
-        return out;
-    }
-
-    throw std::invalid_argument("files must be a path-like or an iterable of path-like objects");
 }
 
 // Helper function to create rich results from execution results
@@ -177,41 +118,32 @@ PYBIND11_MODULE(pylasr, m) {
       py::arg("config_file"),
       py::arg("async_communication_file") = "");
 
-    m.def("execute", [](api::Pipeline& pipeline, py::object files_input, const std::string& async_communication_file) -> py::object {
-            // Make a copy of the pipeline and set files (similar to R API approach)
-            auto files = normalize_files(files_input);
-            if (files.empty()) {
-                throw std::invalid_argument("No .las/.laz files found in the provided input");
-            }
-            api::Pipeline p(pipeline);
-            p.set_files(files);
-            std::string json_file = p.write_json();
-            
-            // Execute once and convert results (avoid double execution)
-            auto [success, json_results] = api::execute(json_file, async_communication_file);
-            return create_result(success, json_results, json_file);
-      },
-            "Execute a pipeline with specified files (mimics R API: exec(pipeline, on=files))",
-            py::arg("pipeline"),
-            py::arg("files"),
-            py::arg("async_communication_file") = "");
+      m.def("execute", [](api::Pipeline& pipeline, py::object files, const std::string& async_communication_file) -> py::object {
+                  // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
+                  std::vector<std::string> file_vec;
+                  if (py::isinstance<py::str>(files)) {
+                        file_vec.push_back(files.cast<std::string>());
+                  } else if (py::isinstance<py::list>(files) || py::isinstance<py::tuple>(files)) {
+                        for (auto item : py::iter(files)) {
+                              file_vec.push_back(py::cast<std::string>(item));
+                        }
+                  } else {
+                        throw std::invalid_argument("files must be a string or a list/tuple of strings");
+                  }
 
-    m.def("execute", [](api::Pipeline& pipeline, py::object files_input, const std::string& async_communication_file) -> py::object {
-            // Accept a path-like (file or directory) or an iterable of path-likes
-            auto files = normalize_files(files_input);
-            if (files.empty()) {
-                throw std::invalid_argument("No .las/.laz files found in the provided input");
-            }
-            api::Pipeline p(pipeline);
-            p.set_files(files);
-            std::string json_file = p.write_json();
-            auto [success, json_results] = api::execute(json_file, async_communication_file);
-            return create_result(success, json_results, json_file);
-      },
-            "Execute a pipeline with files or a catalog path (accepts path-like or iterable); only .las/.laz files are used",
-            py::arg("pipeline"),
-            py::arg("files"),
-            py::arg("async_communication_file") = "");
+                  // Make a copy of the pipeline and set files (similar to R API approach)
+                  api::Pipeline p(pipeline);
+                  p.set_files(file_vec);
+                  std::string json_file = p.write_json();
+            
+                  // Execute once and convert results (avoid double execution)
+                  auto [success, json_results] = api::execute(json_file, async_communication_file);
+                  return create_result(success, json_results, json_file);
+        },
+                  "Execute a pipeline with specified files (str or list[str]) (mimics R API: exec(pipeline, on=files))",
+                  py::arg("pipeline"),
+                  py::arg("files"),
+                  py::arg("async_communication_file") = "");
 
     m.def("pipeline_info", &api::pipeline_info,
           "Get pipeline information from a JSON configuration file",
@@ -251,25 +183,26 @@ PYBIND11_MODULE(pylasr, m) {
         .def("has_catalog", &api::Pipeline::has_catalog, "Check if pipeline has a catalog stage")
         .def("to_string", &api::Pipeline::to_string, "Get string representation")
         .def("write_json", &api::Pipeline::write_json, "Write pipeline to JSON file", py::arg("path") = "")
-        .def("execute", [](api::Pipeline& self, const std::vector<std::string>& files) -> py::object {
-            self.set_files(files);
+        .def("execute", [](api::Pipeline& self, py::object files) -> py::object {
+            // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
+            std::vector<std::string> file_vec;
+            if (py::isinstance<py::str>(files)) {
+                  file_vec.push_back(files.cast<std::string>());
+            } else if (py::isinstance<py::list>(files) || py::isinstance<py::tuple>(files)) {
+                  for (auto item : py::iter(files)) {
+                        file_vec.push_back(py::cast<std::string>(item));
+                  }
+            } else {
+                  throw std::invalid_argument("files must be a string or a list/tuple of strings");
+            }
+
+            self.set_files(file_vec);
             std::string json_file = self.write_json();
 
             // Execute once and convert results (avoid double execution)
             auto [success, json_results] = api::execute(json_file, "");
             return create_result(success, json_results, json_file);
-        }, "Execute the pipeline on files and return results", py::arg("files"))
-        .def("execute", [](api::Pipeline& self, py::object files_input, const std::string& async_communication_file) -> py::object {
-            auto files = normalize_files(files_input);
-            if (files.empty()) {
-                throw std::invalid_argument("No .las/.laz files found in the provided input");
-            }
-            self.set_files(files);
-            std::string json_file = self.write_json();
-            auto [success, json_results] = api::execute(json_file, async_communication_file);
-            return create_result(success, json_results, json_file);
-        }, "Execute the pipeline on a directory (catalog) or iterable of path-like; only .las/.laz are used",
-           py::arg("files"), py::arg("async_communication_file") = "");
+        }, "Execute the pipeline on files (str or list[str]) and return results", py::arg("files"));
 
     // ==== STAGE CREATION FUNCTIONS ====
     // Following the exact C++ API signatures
