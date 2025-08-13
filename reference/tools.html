@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,17 +52,14 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'LASRalgorithm'</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'PipelinePtr'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># S3 method for class 'LASRpipeline'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># S3 method for class 'LASRpipeline'</span></span>
+<span><span class="co"># S3 method for class 'PipelinePtr'</span></span>
 <span><span class="va">e1</span> <span class="op">+</span> <span class="va">e2</span></span>
 <span></span>
-<span><span class="co"># S3 method for class 'LASRpipeline'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># S3 method for class 'PipelinePtr'</span></span>
+<span><span class="va">x</span><span class="op">[[</span><span class="va">i</span>, <span class="va">...</span><span class="op">]</span><span class="op">]</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -76,6 +73,10 @@
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>lasR objects. Is equivalent to +</p></dd>
 
+
+<dt id="arg-i">i<a class="anchor" aria-label="anchor" href="#arg-i"></a></dt>
+<dd><p>index</p></dd>
+
 </dl></div>
 
     <div class="section level2">
@@ -83,31 +84,35 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">algo1</span> <span class="op">&lt;-</span> <span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"max"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">algo2</span> <span class="op">&lt;-</span> <span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">4</span>, <span class="st">"min"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">algo1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:a0ca)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   method : max </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   filter :  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpqjGZuc/file24ff7abcc3ca.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:7e0b7adc56ff)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   method : [max] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : [] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpgkeGLz/file255b510962c0.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
 <span class="r-in"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="va">algo1</span> <span class="op">+</span> <span class="va">algo2</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">pipeline</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:a0ca)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   method : max </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   filter :  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpqjGZuc/file24ff7abcc3ca.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:d7b3)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   res : 4 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 4 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   method : min </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   filter :  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpqjGZuc/file24ff7d1dab05.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:7e0b7adc56ff)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   method : [max] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : [] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpgkeGLz/file255b510962c0.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:ca083f22a156)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   method : [min] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 4.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   res : 4.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : [] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpgkeGLz/file255b30b0598e.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

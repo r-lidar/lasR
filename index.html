@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,18 +65,27 @@
 <div class="page-header"><h1 id="lasr-">lasR <img src="https://github.com/r-lidar/lasR/blob/main/man/figures/lasR200x231.png?raw=true" align="right"><a class="anchor" aria-label="anchor" href="#lasr-"></a>
 </h1></div>
 <p><img src="https://img.shields.io/badge/Licence-GPL--3-blue.svg" alt="license"><img src="https://img.shields.io/badge/Lifecycle-Maturing-339999" alt="Lifecycle:Maturing"><a href="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/r-lidar/lasR?branch=main" class="external-link"><img src="https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg" alt="Codecov test coverage"></a></p>
-<p><strong>R Package for Fast Airborne LiDAR Data Processing</strong></p>
-<p>The <code>lasR</code> package (pronounced “laser”) is an R package designed to provide a platform to share efficient implementation of tools designed with the <a href="https://github.com/r-lidar/lidR" class="external-link"><code>lidR</code></a> package. It enables the creation and execution of complex processing pipelines on massive lidar data. It can read and write <code>.las</code>, <code>.laz</code> and <code>.pcd</code> files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, thin point data, and process collections of files using multicore processing. <code>lasR</code> offers a range of tools to process massive volumes of lidar data efficiently in a production environment after the R&amp;D phase with <code>lidR</code>.</p>
-<ul>
-<li>📖 Start with the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html">tutorial</a> to learn how to use <code>lasR</code>.</li>
-<li>💻 Install <code>lasR</code> in R with: <code>install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')</code>.</li>
-<li>💵 <a href="https://github.com/sponsors/Jean-Romain" class="external-link">Sponsor <code>lasR</code></a>. It is free and open source, but requires time and effort to develop and maintain.</li>
-</ul>
-<p><code>lasR</code> <strong>is not intended</strong> to replace the <a href="https://github.com/r-lidar/lidR" class="external-link"><code>lidR</code></a> package. While <code>lidR</code> is tailored for academic research, <code>lasR</code> focuses on production scenarios, offering significantly higher efficiency compared to <code>lidR</code>. For more details, see the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html">comparison</a>.</p>
+<p><strong>Fast Airborne LiDAR Data Processing</strong></p>
+<p>The <code>lasr</code> library (pronounced “laser”) is a C++ library for large scale airborne point cloud processing with C++, R an Python APIs. It enables the creation and execution of <strong>complex processing pipelines</strong> on massive lidar data. It can read and write <code>.las</code>, <code>.laz</code> and <code>.pcd</code> files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, decimate point data, and process collections of files using multicore processing strategies.</p>
+<p><code>lasr</code> offers a range of tools to process massive volumes of lidar data efficiently in a production environment using either the <code>C++</code> API, the R API (<code>lasR</code> package) or the Pythong API (<code>pylasr</code> package).</p>
+<p>💵 <a href="https://github.com/sponsors/Jean-Romain" class="external-link">Sponsor <code>lasr</code></a>. It is free and open source, but requires time and effort to develop and maintain.</p>
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>There are no current plans to release <code>lasR</code> on CRAN. Instead, it is hosted on <code>r-universe</code>:</p>
+<ul>
+<li>📖 Start with the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html">tutorial</a> to learn how to use <code>lasR</code> in R.</li>
+<li>🐍 For Python users, see the <a href="https://github.com/r-lidar/lasR/tree/main/python" class="external-link">Python documentation</a> and <a href="https://github.com/r-lidar/lasR/tree/main/python/examples" class="external-link">examples</a>.</li>
+</ul>
+<p>The most comprehensive source of documentation is the <a href="https://r-lidar.github.io/lasR/">R package <code>lasR</code> documentation</a>,<br>
+as <code>lasr</code> is primarily an R package. Even Python users should start with the <a href="https://r-lidar.github.io/lasR/">R tutorial</a>, while the examples are written in R, the tutorial is more about the general concepts than about coding.</p>
+</div>
+<div class="section level2">
+<h2 id="apis">APIs<a class="anchor" aria-label="anchor" href="#apis"></a>
+</h2>
+<div class="section level3">
+<h3 id="r-api">R API<a class="anchor" aria-label="anchor" href="#r-api"></a>
+</h3>
+<p>There is no current plan to release <code>lasR</code> on CRAN. Instead, it is hosted on <code>r-universe</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'lasR'</span>, repos <span class="op">=</span> <span class="st">'https://r-lidar.r-universe.dev'</span><span class="op">)</span></span></code></pre></div>
 <p>Since <code>lasR</code> is not available on CRAN, users cannot rely on the CRAN versioning system or the RStudio update button to get the latest version. Instead, when <code>lasR</code> is loaded with <code><a href="https://github.com/r-lidar/lasR" class="external-link">library(lasR)</a></code>, an internal routine checks for the latest version and notifies the user if an update is available. This approach allows for more frequent updates, ensuring users have access to the newest features and bug fixes without waiting for a formal release cycle.</p>
@@ -85,21 +94,94 @@
 <span><span class="co">#&gt; lasR 0.1.3 is now available. You are using 0.1.1</span></span>
 <span><span class="co">#&gt; install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')</span></span></code></pre></div>
 </div>
+<div class="section level3">
+<h3 id="python-api">Python API<a class="anchor" aria-label="anchor" href="#python-api"></a>
+</h3>
+<p><code>pylasr</code> is the Python API for <code>lasr</code>, providing a clean, Pythonic interface to the high-performance C++ library for processing large-scale LiDAR point clouds.</p>
+<p>Prerequisites</p>
+<ul>
+<li>Python 3.9+</li>
+<li>C++17 compatible compiler</li>
+<li>GDAL (&gt;= 2.2.3), GEOS (&gt;= 3.4.0), PROJ (&gt;= 4.9.3)</li>
+</ul>
+<p>Build from source</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/r-lidar/lasR.git</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="bu">cd</span> lasR/python</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span></code></pre></div>
+<p>Pre-built packages will be available on PyPI in the future. For now, please build from source.</p>
+</div>
+<div class="section level3">
+<h3 id="c-api">C++ API<a class="anchor" aria-label="anchor" href="#c-api"></a>
+</h3>
+<p>To use <code>lasr</code> in a C++ program, it must be linked to <code>gdal</code> and <code>proj</code>. Other dependencies are provided in the <code>vendor</code> directory. Tools available to the public are given in <a href="https://github.com/r-lidar/lasR/blob/main/src/LASRapi/api.h" class="external-link"><code>api.h</code></a>.</p>
+</div>
+</div>
 <div class="section level2">
-<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+<h2 id="examples">Examples<a class="anchor" aria-label="anchor" href="#examples"></a>
 </h2>
-<p>Here is a simple example of how to classify outliers before to produce a Digital Surface Model (DSM) and a Digital Terrain Model (DTM) from a folder containing airborne LiDAR point clouds. For more examples see the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html">tutorial</a>.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>Below is a simple example of a pipeline that classifies and removed outliers before to produce a Digital Surface Model and a Digital Terrain Model from a folder containing airborne LiDAR point clouds. For more examples see the <a href="https://r-lidar.github.io/lasR/articles/tutorial.html">tutorial</a>.</p>
+<div class="section level3">
+<h3 id="r">R<a class="anchor" aria-label="anchor" href="#r"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lidar/lasR" class="external-link">lasR</a></span><span class="op">)</span></span>
 <span><span class="va">folder</span> <span class="op">=</span> <span class="st">"/folder/of/laz/tiles/"</span></span>
 <span><span class="va">pipeline</span> <span class="op">=</span> <span class="fu"><a href="reference/classify_with_sor.html">classify_with_sor</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/delete_points.html">delete_noise</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/dsm.html">chm</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/dtm.html">dtm</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">folder</span>, ncores <span class="op">=</span> <span class="fl">16</span>, progress <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/exec.html">exec</a></span><span class="op">(</span><span class="va">pipeline</span>, on <span class="op">=</span> <span class="va">folder</span>, ncores <span class="op">=</span> <span class="fl">16</span>, progress <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="python">Python<a class="anchor" aria-label="anchor" href="#python"></a>
+</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode py"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="im">import</span> pylasr</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>folder <span class="op">=</span> <span class="st">"/folder/of/laz/tiles/"</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>pipeline <span class="op">=</span> (pylasr.classify_with_sor() <span class="op">+</span> </span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>            pylasr.delete_points([<span class="st">"Classification == 18"</span>]) <span class="op">+</span> </span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>            pylasr.chm_pipeline(<span class="dv">1</span>, <span class="st">"chm.tif"</span>) <span class="op">+</span> </span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>            pylasr.dtm_pipeline(<span class="dv">1</span>, <span class="st">"dtm.tif"</span>))</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>pipeline.set_progress(<span class="va">True</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>pipeline.set_concurrent_files_strategy(<span class="dv">16</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>result <span class="op">=</span> pipeline.execute(folder)</span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="c">C++<a class="anchor" aria-label="anchor" href="#c"></a>
+</h3>
+<p>The C++ API is significantly more complex to use. The R and Python APIs aim to provide high-level interfaces in high-level languages, making usages simpler and more user-friendly. The low-level C++ API was never intended for standalone use; instead, it serves as a bridge for building other high-level APIs.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="pp">#include </span><span class="im">"api.h"</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> api<span class="op">;</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="bu">std::</span>string on <span class="op">=</span> <span class="st">"/folder/of/laz/tiles/"</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">// platform independent tmp files</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="bu">std::</span>filesystem::path temp_dir <span class="op">=</span> <span class="bu">std::</span>filesystem::temp_directory_path<span class="op">();</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="bu">std::</span>filesystem::path temp_dsm <span class="op">=</span> temp_dir <span class="op">/</span> <span class="st">"dsm.tif"</span><span class="op">;</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="bu">std::</span>filesystem::path temp_dtm <span class="op">=</span> temp_dir <span class="op">/</span> <span class="st">"dtm.tif"</span><span class="op">;</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>Pipeline tri <span class="op">=</span> triangulate<span class="op">(</span><span class="dv">0</span><span class="op">,</span> <span class="op">{</span><span class="st">"Classification </span><span class="sc">%i</span><span class="st">n% 2 9"</span><span class="op">});</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>Pipeline dtm <span class="op">=</span> rasterize_triangulation<span class="op">(</span>tri<span class="op">.</span>get_stages<span class="op">().</span>front<span class="op">().</span>get_uid<span class="op">(),</span> <span class="dv">1</span><span class="op">,</span> temp_dtm<span class="op">.</span>string<span class="op">());</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>Pipeline p<span class="op">;</span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>p <span class="op">+=</span> classify_with_sor<span class="op">();</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>p <span class="op">+=</span> delete_points<span class="op">({</span><span class="st">"Classification == 18"</span><span class="op">});</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>p <span class="op">+=</span> rasterize<span class="op">(</span><span class="dv">1</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="op">{</span><span class="st">"max"</span><span class="op">},</span> <span class="op">{</span><span class="st">""</span><span class="op">},</span> temp_dsm<span class="op">.</span>string<span class="op">());</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>p <span class="op">+=</span> tri<span class="op">;</span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>p <span class="op">+=</span> dtm<span class="op">;</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>p<span class="op">.</span>set_files<span class="op">(</span>on<span class="op">);</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>p<span class="op">.</span>set_concurrent_files_strategy<span class="op">(</span><span class="dv">8</span><span class="op">);</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>p<span class="op">.</span>set_progress<span class="op">(</span><span class="kw">false</span><span class="op">);</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="bu">std::</span>string file <span class="op">=</span> p<span class="op">.</span>write_json<span class="op">();</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="cf">return</span> execute<span class="op">(</span>file<span class="op">);</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="main-differences-with-lidr">Main Differences with <code>lidR</code>
 <a class="anchor" aria-label="anchor" href="#main-differences-with-lidr"></a>
 </h2>
-<p>The following benchmark compares the time and RAM usage of <code>lasR</code> and <code>lidR</code> for producing a Digital Terrain Model (DTM), a Canopy Height Model (CHM), and a raster containing two metrics derived from elevation (Z) and intensity. The test was conducted on 120 million points stored in 4 LAZ files. For more details, check out the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html">benchmark vignette</a>.</p>
+<p>The following benchmark compares the time and RAM usage of <code>lasR</code> (R API) and <code>lidR</code> for producing a Digital Terrain Model (DTM), a Canopy Height Model (CHM), and a raster containing two metrics derived from elevation (Z) and intensity. The test was conducted on 120 million points stored in 4 LAZ files. For more details, check out the <a href="https://r-lidar.github.io/lasR/articles/benchmarks.html">benchmark vignette</a>.</p>
 <p><img src="reference/figures/readme_benchmark.png" style="display: block; margin: auto;"></p>
 <ul>
 <li>
@@ -118,11 +200,23 @@
 <div class="section level2">
 <h2 id="copyright-information">Copyright Information<a class="anchor" aria-label="anchor" href="#copyright-information"></a>
 </h2>
-<p><code>lasR</code> is free and open source and relies on other free and open source tools.</p>
+<p><code>lasr</code> is free and open source and relies on other free and open source tools.</p>
 <ul>
-<li>For <code>lasR</code>:
+<li>For <code>lasr</code>:
 <ul>
-<li>© 2023-2024 Jean-Romain Roussel</li>
+<li>© 2023-2025 Jean-Romain Roussel</li>
+<li>Licence: GPL-3</li>
+</ul>
+</li>
+<li>For <code>lasR</code> (R bindings):
+<ul>
+<li>© 2023-2025 Jean-Romain Roussel</li>
+<li>Licence: GPL-3</li>
+</ul>
+</li>
+<li>For <code>pylasr</code> (Python bindings):
+<ul>
+<li>© 2025 Alexey Grigoryev</li>
 <li>Licence: GPL-3</li>
 </ul>
 </li>
@@ -175,8 +269,8 @@
 <div class="section level2">
 <h2 id="about">About<a class="anchor" aria-label="anchor" href="#about"></a>
 </h2>
-<p><code>lasR</code> is developed openly by <a href="https://www.r-lidar.com/" class="external-link">r-lidar</a>.</p>
-<p>The initial development of <code>lasR</code> was made possible through the financial support of <a href="https://www.ulaval.ca/en" class="external-link">Laval University</a>. To continue the development of this free software, we now offer consulting, programming, and training services. For more information, please visit <a href="https://www.r-lidar.com/" class="external-link">our website</a>.</p>
+<p><code>lasr</code> is developed openly by <a href="https://www.r-lidar.com/" class="external-link">r-lidar</a>.</p>
+<p>The initial development of <code>lasr</code> was made possible through the financial support of <a href="https://www.ulaval.ca/en" class="external-link">Laval University</a>. To continue the development of this free software, we now offer consulting, programming, and training services. For more information, please visit <a href="https://www.r-lidar.com/" class="external-link">our website</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="install-dependencies-on-gnulinux">Install dependencies on GNU/Linux<a class="anchor" aria-label="anchor" href="#install-dependencies-on-gnulinux"></a>

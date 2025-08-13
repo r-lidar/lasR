@@ -35,7 +35,7 @@ processing, while others are ignored for the current stage."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.16.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -155,28 +155,31 @@ processing, while others are ignored for the current stage.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Topography.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">gnd</span> <span class="op">=</span> <span class="fu">keep_class</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">9</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="reader.html">reader</a></span><span class="op">(</span><span class="va">gnd</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> reader (uid:fec5)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : Classification %in% 2 9 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> reader (uid:aeab1262b93f)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : [Classification %in% 2 9] </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   output :  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="fu"><a href="triangulate.html">triangulate</a></span><span class="op">(</span>filter <span class="op">=</span> <span class="fu">keep_ground</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> triangulate (uid:27ef)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   max_edge : 0 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : Classification == 2 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output :  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> triangulate (uid:e446d1abcfa3)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   use_attribute : Z </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   max_edge : 0.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : [Classification == 2] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output :  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">1</span>, <span class="st">"max"</span>, filter <span class="op">=</span> <span class="st">"Z &gt; 5"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  -----------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:fe51)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   method : max </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : Z &gt; 5 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpqjGZuc/file24ff228177c8.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> rasterize (uid:439e13f91471)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   method : [max] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   window : 1.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   res : 1.00 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   filter : [Z &gt; 5] </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   output : /tmp/RtmpgkeGLz/file255b1aa7e077.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
