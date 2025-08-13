@@ -21,7 +21,7 @@ p.set_concurrent_files_strategy(8);
 p.set_progress(true);
 
 p += info() +
-  delete_points({"Z > 1.37"}) + 
+  delete_points({"Z < 1.37"}) + 
   write_las(temp_file);
 
 std::string file = p.write_json();
@@ -35,7 +35,7 @@ in `R`:
 library(lasR)
 
 pipeline = info() + 
-   delete_points("Z > 1.37") +
+   delete_points("Z < 1.37") +
    write_las()
 
 execute(pipeline, on, ncores = 8, progress = TRUE);
@@ -51,20 +51,20 @@ example_file = "inst/extdata/Example.las"
 output_file = "filtered_output.las"
 
 pipeline = (pylasr.info() + 
-            pylasr.delete_points(["Z > 1.37"]) + 
+            pylasr.delete_points(["Z < 1.37"]) + 
             pylasr.write_las(output_file))
 
 pipeline.set_progress(True)
 result = pipeline.execute(example_file)
 ```
 
-## Breaking changes
+## Breaking Changes
 
-- The behavior of the stage `delete_points` has been inverted. `delete_points("Z < 4")` used to keep point below 4. This allowed to write meaningful commands like `delete_points(keep_z_below(4))`. But this is actually counter-intuitive. Now the `filter` argument respects the logic of the filter argument in other stages. Point that match the criteria are process. And in `delete_points()` processed means deleted.
+- **Inverted `delete_points` behavior**: The stage `delete_points` now works consistently with other stages’ `filter` arguments. Previously, `delete_points("Z < 4")` kept points below 4, which allowed for commands like `delete_points(keep_z_below(4))` but was counter-intuitive.Now, points matching the filter are *processed*. In the case of `delete_points()`, this means **deleted**.
 
-## Fix
+## Fixes
 
-- Fix crash in `geometry_feature` when processing after points being deleted by `delete_point()`
+- Fixed a crash in `geometry_features` when running after points had been deleted by `delete_points()`.
 
 
 # lasR 0.16.2
