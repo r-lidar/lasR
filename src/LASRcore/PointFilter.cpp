@@ -2,6 +2,7 @@
 
 #include <numeric>
 #include <stdexcept>
+#include <iterator>
 
 class ConditionKeepBelow : public Condition
 {
