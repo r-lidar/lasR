@@ -9,6 +9,16 @@
 #include <variant>
 #include <nlohmann/json.hpp>
 
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_num_threads() 1
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
+#define omp_get_thread_limit() 1
+#define omp_set_max_active_levels(x)
+#endif
+
 #ifdef USING_R
 #include <R.h>
 #include <Rinternals.h>
@@ -17,6 +27,11 @@
 namespace api
 {
 
+// Return type for the execute() function depends on the API.
+// - In the R API it returns a SEXP
+// - In the Python API it returns a pair
+// - If lasr is compiled as a standalone software it returns a bool
+// Other APIs could return other types
 #if defined(USING_R)
 using ReturnType = SEXP;
 #elif defined(USING_PYTHON)
@@ -25,10 +40,49 @@ using ReturnType = std::pair<bool, nlohmann::json>;
 using ReturnType = bool;
 #endif
 
+
+// Helper function for LASlib when reading LAS/LAZ files
 void lasfilterusage();
 void lastransformusage();
 bool is_indexed(std::string);
 
+// RAM tools
+unsigned long long getAvailableRAM();
+unsigned long long getTotalRAM();
+
+// OpenMP tools
+static int available_threads()
+{
+  int max = omp_get_max_threads();
+  int lim = omp_get_thread_limit();
+  int n = (max < lim) ? max : lim;
+  return n;
+}
+
+static bool has_omp_support()
+{
+  #ifdef _OPENMP
+    return true;
+  #else
+    return false;
+  #endif
+}
+
+// This is the return type for the function get_pipeline_info()
+// - streamable: indicates whether the pipeline is streamable. If true, only one point
+//   at a time is read and passed through the pipeline, and the entire point cloud
+//   is not loaded into memory.
+// - read_points: some pipelines have stages that do not require the point cloud to
+//   be read. In such cases, we may not need to read the points at all (only the header).
+//   For example, this applies to a pipeline consisting only of info() stages.
+// - buffer: the buffer size required for each processed chunk. Each stage requests a size,
+//   and the maximum is used. It can be 0 or more.
+// - parallelizable: the pipeline may not be parallelizable (concurrent-files) if it
+//   involves injected R code (R API only). It should always be true for other APIs
+// - parallelized: the pipeline contains at least one stage with concurrent-points
+//   parallelization.
+// - use_rcapi: the pipeline contains at least one stage that uses R's C API (R API only). Should
+//   be false for other APIs
 struct PipelineInfo
 {
   bool streamable;
