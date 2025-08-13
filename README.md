@@ -20,10 +20,10 @@ The `lasr` library (pronounced "laser") is a C++ library for large scale airborn
 - 🐍 For Python users, see the [Python documentation](https://github.com/r-lidar/lasR/tree/main/python) and [examples](https://github.com/r-lidar/lasR/tree/main/python/examples).
 
 The most comprehensive source of documentation is the [R package `lasR` documentation](https://r-lidar.github.io/lasR/),  
-as `lasr` is primarily an R package. Even Python users should start with the R documentation, while the examples are written in R, the logic and illustrations are very similar in the Python API.
+as `lasr` is primarily an R package. Even Python users should start with the [R tutorial](https://r-lidar.github.io/lasR/), while the examples are written in R, the tutorial is more about the general concepts than about coding.
 
 ## APIs
-##3 R API
+### R API
 
 There is no current plan to release `lasR` on CRAN. Instead, it is hosted on `r-universe`:
 
@@ -147,7 +147,7 @@ For more details, see the relevant [vignette](https://r-lidar.github.io/lasR/art
 - For `lasr`:
   - © 2023-2025 Jean-Romain Roussel
   - Licence: GPL-3
-- For `lasR` (R binding):
+- For `lasR` (R bindings):
   - © 2023-2025 Jean-Romain Roussel
   - Licence: GPL-3
 - For `pylasr` (Python bindings):
