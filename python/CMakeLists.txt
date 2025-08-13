@@ -188,7 +188,6 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRapi/StageAPI_Impl.cpp
 
   # Core implementation - Updated file names
-  ${LASR_SOURCE_DIR}/src/LASRcore/RAM.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/openmp.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/error.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/print.cpp
