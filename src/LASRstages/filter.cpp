@@ -2,7 +2,7 @@
 
 bool LASRfilter::process(Point*& p)
 {
-  if (pointfilter.filter(p))
+  if (!pointfilter.filter(p))
     p->set_deleted();
 
   return true;
@@ -10,17 +10,11 @@ bool LASRfilter::process(Point*& p)
 
 bool LASRfilter::process(PointCloud*& las)
 {
-  int n = 0;
   Point* p;
   while (las->read_point())
   {
     p = &las->point;
     process(p);
-    if (p->get_deleted())
-    {
-      las->delete_point();
-      n++;
-    }
   }
 
   las->update_header();

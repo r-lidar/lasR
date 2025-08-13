@@ -22,13 +22,14 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.
 }
 \description{
-Remove some points from the point cloud. This stage modifies the point cloud in the pipeline
-but does not produce any output.
+This stage modifies the point cloud in the pipeline but does not produce any output. Points
+matching the `filter` criteria are **processed**. In this case, it means they are deleted.
+**Note:** In versions < 0.17, the behavior was the opposite.
 }
 \examples{
 f <- system.file("extdata", "Megaplot.las", package="lasR")
 read <- reader()
-filter <- delete_points(keep_z_above(4))
+filter <- delete_points("Z < 4") # Remove points below 4
 
 pipeline <- read + summarise() + filter + summarise()
 exec(pipeline, on = f)

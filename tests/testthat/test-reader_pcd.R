@@ -1,7 +1,7 @@
 test_that("reader_pcd works (binary in memory)",
 {
   f <- system.file("extdata", "pcd_binary.pcd", package="lasR")
-  pipeline = summarise() + rasterize(0.25, "max") + rasterize(0.25, "max", filter = "Z < 16") + delete_points(filter = "Z < 16") + summarise() + lasR:::nothing(T,F,F)
+  pipeline = summarise() + rasterize(0.25, "max") + rasterize(0.25, "max", filter = "Z < 16") + delete_points(filter = "Z >= 16") + summarise() + lasR:::nothing(T,F,F)
   ans = exec(pipeline, on = f)
 
   #terra::plot(ans[[2]])
@@ -33,7 +33,7 @@ test_that("reader_pcd works (binary in memory)",
 test_that("reader_pcd works (ascii in memory)",
 {
   f <- system.file("extdata", "pcd_ascii.pcd", package="lasR")
-  pipeline = summarise() + rasterize(0.25, "max") + rasterize(0.25, "max", filter = "Z < 16") + delete_points(filter = "Z < 16") + summarise() + lasR:::nothing(T,F,F)
+  pipeline = summarise() + rasterize(0.25, "max") + rasterize(0.25, "max", filter = "Z < 16") + delete_points(filter = "Z >= 16") + summarise() + lasR:::nothing(T,F,F)
   ans = exec(pipeline, on = f)
 
   #terra::plot(ans[[2]])
@@ -54,7 +54,7 @@ test_that("reader_pcd works (ascii in memory)",
 test_that("reader_pcd works (binary streamable)",
 {
   f <- system.file("extdata", "pcd_binary.pcd", package="lasR")
-  pipeline = summarise() + rasterize(0.25, "max") + rasterize(0.25, "max", filter = "Z < 16") + delete_points(filter = "Z < 16") + summarise()
+  pipeline = summarise() + rasterize(0.25, "max") + rasterize(0.25, "max", filter = "Z < 16") + delete_points(filter = "Z >= 16") + summarise()
   ans = exec(pipeline, on = f)
 
   #terra::plot(ans[[2]])

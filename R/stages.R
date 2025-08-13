@@ -321,8 +321,9 @@ geometry_features = function(k, r, features = "")
 
 #' Filter and delete points
 #'
-#' Remove some points from the point cloud. This stage modifies the point cloud in the pipeline
-#' but does not produce any output.
+#' This stage modifies the point cloud in the pipeline but does not produce any output. Points
+#' matching the `filter` criteria are **processed**. In this case, it means they are deleted.
+#' **Note:** In versions < 0.17, the behavior was the opposite.
 #'
 #' @template param-filter
 #'
@@ -331,7 +332,7 @@ geometry_features = function(k, r, features = "")
 #' @examples
 #' f <- system.file("extdata", "Megaplot.las", package="lasR")
 #' read <- reader()
-#' filter <- delete_points(keep_z_above(4))
+#' filter <- delete_points("Z < 4") # Remove points below 4
 #'
 #' pipeline <- read + summarise() + filter + summarise()
 #' exec(pipeline, on = f)
@@ -340,11 +341,11 @@ delete_points = function(filter = "") { .APISTAGES$delete_points(filter) }
 
 #' @export
 #' @rdname delete_points
-delete_noise = function() { delete_points(drop_noise()) }
+delete_noise = function() { delete_points(keep_noise()) }
 
 #' @export
 #' @rdname delete_points
-delete_ground = function() { delete_points(drop_ground()) }
+delete_ground = function() { delete_points(keep_ground()) }
 
 # ===== E =====
 

@@ -57,3 +57,10 @@ test_that("geometry_features overwrites",
   expect_error(exec(pipeline, on = f), "Cannot add a second attribute 'inclination'")
 })
 
+test_that("knn with deleted points does not crash",
+{
+  f <- system.file("extdata", "MixedConifer.las", package="lasR")
+  pipeline = delete_points("Classification == 2") + geometry_features(k = 15 , features = "lps")
+  expect_error(exec(pipeline, on = f), NA)
+})
+
