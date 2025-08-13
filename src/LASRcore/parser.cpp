@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <limits>
 
-#include "pipeline.h"
+#include "Engine.h"
 #include "FileCollection.h"
 
 #include "addattribute.h"
@@ -65,7 +65,7 @@ static std::unique_ptr<Stage> create_instance()
   return std::make_unique<T>();
 }
 
-bool Pipeline::parse(const nlohmann::json& json, bool progress)
+bool Engine::parse(const nlohmann::json& json, bool progress)
 {
   int num_stages = json.size();
 
@@ -123,11 +123,14 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     #endif
   };
 
+  std::string current_stage;
+
   try
   {
     for (auto& [key, stage] : json.items())
     {
       std::string name = stage.at("algoname");
+      current_stage = name;
       std::string uid = stage.value("uid", "xxx-xxx");
 
       if (name == "reader_las") name = "reader"; // for backward compatibility with Drawflow
@@ -541,7 +544,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
   }
   catch (const std::exception& e)
   {
-    last_error = std::string("Error while parsing JSON pipeline: ") + e.what();
+    last_error = std::string("Error while parsing JSON pipeline in stage '") + current_stage + "': " + e.what();
     return false;
   }
 

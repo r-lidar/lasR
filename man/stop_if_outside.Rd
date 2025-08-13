@@ -2,7 +2,7 @@
 % Please edit documentation in R/stages.R
 \name{stop_if_outside}
 \alias{stop_if_outside}
-\title{Stop the pipeline if a conditionally}
+\title{Stop the pipeline conditionally}
 \usage{
 stop_if_outside(xmin, ymin, xmax, ymax)
 }

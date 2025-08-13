@@ -6,19 +6,26 @@ lasR <img src="https://github.com/r-lidar/lasR/blob/main/man/figures/lasR200x231
 [![R-CMD-check](https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/r-lidar/lasR/actions/workflows/R-CMD-check.yaml)
 [![Codecov test coverage](https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg)](https://app.codecov.io/gh/r-lidar/lasR?branch=main)
 
-**R Package for Fast Airborne LiDAR Data Processing**
+**Fast Airborne LiDAR Data Processing**
 
-The `lasR` package (pronounced "laser") is an R package designed to provide a platform to share efficient implementation of tools designed with the [`lidR`](https://github.com/r-lidar/lidR) package. It enables the creation and execution of complex processing pipelines on massive lidar data. It can read and write `.las`, `.laz` and `.pcd` files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, thin point data, and process collections of files using multicore processing. `lasR` offers a range of tools to process massive volumes of lidar data efficiently in a production environment after the R&D phase with `lidR`.
+The `lasr` library (pronounced "laser") is a C++ library for large scale airborne point cloud processing with C++, R an Python APIs. It enables the creation and execution of **complex processing pipelines** on massive lidar data. It can read and write `.las`, `.laz` and `.pcd` files, compute metrics using an area-based approach, generate digital canopy models, segment individual trees, decimate point data, and process collections of files using multicore processing strategies. 
 
-- 📖 Start with the [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) to learn how to use `lasR`.
-- 💻 Install `lasR` in R with: `install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')`.
-- 💵 [Sponsor `lasR`](https://github.com/sponsors/Jean-Romain). It is free and open source, but requires time and effort to develop and maintain.
+`lasr` offers a range of tools to process massive volumes of lidar data efficiently in a production environment using either the `C++` API, the R API (`lasR` package) or the Pythong API (`pylasr` package).
 
-`lasR` **is not intended** to replace the [`lidR`](https://github.com/r-lidar/lidR) package. While `lidR` is tailored for academic research, `lasR` focuses on production scenarios, offering significantly higher efficiency compared to `lidR`. For more details, see the [comparison](https://r-lidar.github.io/lasR/articles/benchmarks.html).
+💵 [Sponsor `lasr`](https://github.com/sponsors/Jean-Romain). It is free and open source, but requires time and effort to develop and maintain.
 
-## Installation
+## Documentation
 
-There are no current plans to release `lasR` on CRAN. Instead, it is hosted on `r-universe`:
+- 📖 Start with the [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html) to learn how to use `lasR` in R.
+- 🐍 For Python users, see the [Python documentation](https://github.com/r-lidar/lasR/tree/main/python) and [examples](https://github.com/r-lidar/lasR/tree/main/python/examples).
+
+The most comprehensive source of documentation is the [R package `lasR` documentation](https://r-lidar.github.io/lasR/),  
+as `lasr` is primarily an R package. Even Python users should start with the [R tutorial](https://r-lidar.github.io/lasR/), while the examples are written in R, the tutorial is more about the general concepts than about coding.
+
+## APIs
+### R API
+
+There is no current plan to release `lasR` on CRAN. Instead, it is hosted on `r-universe`:
 
 ```r
 install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')
@@ -32,20 +39,96 @@ library(lasR)
 #> install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')
 ```
 
-## Example
+### Python API
 
-Here is a simple example of how to classify outliers before to produce a Digital Surface Model (DSM) and a Digital Terrain Model (DTM) from a folder containing airborne LiDAR point clouds. For more examples see the  [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
+`pylasr` is the Python API for `lasr`, providing a clean, Pythonic interface to the high-performance C++ library for processing large-scale LiDAR point clouds.
+
+Prerequisites
+
+- Python 3.9+
+- C++17 compatible compiler
+- GDAL (>= 2.2.3), GEOS (>= 3.4.0), PROJ (>= 4.9.3)
+
+Build from source
+
+```bash
+git clone https://github.com/r-lidar/lasR.git
+cd lasR/python
+pip install -e .
+```
+
+Pre-built packages will be available on PyPI in the future. For now, please build from source.
+
+### C++ API
+
+To use `lasr` in a C++ program, it must be linked to `gdal` and `proj`. Other dependencies are provided in the `vendor` directory. Tools available to the public are given in [`api.h`](https://github.com/r-lidar/lasR/blob/main/src/LASRapi/api.h).
+
+## Examples
+
+Below is a simple example of a pipeline that classifies and removed outliers before to produce a Digital Surface Model and a Digital Terrain Model from a folder containing airborne LiDAR point clouds. For more examples see the  [tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
+
+### R
 
 ```r
 library(lasR)
 folder = "/folder/of/laz/tiles/"
 pipeline = classify_with_sor() + delete_noise() + chm(1) + dtm(1)
-exec(pipeline, on = folder, ncores = 16, progress = T)
+exec(pipeline, on = folder, ncores = 16, progress = TRUE)
+```
+
+### Python
+
+```py
+import pylasr
+folder = "/folder/of/laz/tiles/"
+pipeline = (pylasr.classify_with_sor() + 
+            pylasr.delete_points(["Classification == 18"]) + 
+            pylasr.chm_pipeline(1, "chm.tif") + 
+            pylasr.dtm_pipeline(1, "dtm.tif"))
+
+pipeline.set_progress(True)
+pipeline.set_concurrent_files_strategy(16)
+result = pipeline.execute(folder)
+```
+
+### C++
+
+The C++ API is significantly more complex to use. The R and Python APIs aim to provide high-level interfaces in high-level languages, making usages simpler and more user-friendly. The low-level C++ API was never intended for standalone use; instead, it serves as a bridge for building other high-level APIs.
+
+```cpp
+#include "api.h"
+
+using namespace api;
+
+std::string on = "/folder/of/laz/tiles/"
+
+// platform independent tmp files
+std::filesystem::path temp_dir = std::filesystem::temp_directory_path();
+std::filesystem::path temp_dsm = temp_dir / "dsm.tif";
+std::filesystem::path temp_dtm = temp_dir / "dtm.tif";
+
+Pipeline tri = triangulate(0, {"Classification %in% 2 9"});
+Pipeline dtm = rasterize_triangulation(tri.get_stages().front().get_uid(), 1, temp_dtm.string());
+
+Pipeline p;
+p += classify_with_sor();
+p += delete_points({"Classification == 18"});
+p += rasterize(1, 1, {"max"}, {""}, temp_dsm.string());
+p += tri;
+p += dtm;
+
+p.set_files(on);
+p.set_concurrent_files_strategy(8);
+p.set_progress(false);
+
+std::string file = p.write_json();
+
+return execute(file);
 ```
 
 ## Main Differences with `lidR`
 
-The following benchmark compares the time and RAM usage of `lasR` and `lidR` for producing a Digital Terrain Model (DTM), a Canopy Height Model (CHM), and a raster containing two metrics derived from elevation (Z) and intensity. The test was conducted on 120 million points stored in 4 LAZ files. For more details, check out the [benchmark vignette](https://r-lidar.github.io/lasR/articles/benchmarks.html).
+The following benchmark compares the time and RAM usage of `lasR` (R API) and `lidR` for producing a Digital Terrain Model (DTM), a Canopy Height Model (CHM), and a raster containing two metrics derived from elevation (Z) and intensity. The test was conducted on 120 million points stored in 4 LAZ files. For more details, check out the [benchmark vignette](https://r-lidar.github.io/lasR/articles/benchmarks.html).
 
 <img src="man/figures/readme_benchmark.png" style="display: block; margin: auto;" />
 
@@ -59,10 +142,16 @@ For more details, see the relevant [vignette](https://r-lidar.github.io/lasR/art
 
 ## Copyright Information
 
-`lasR` is free and open source and relies on other free and open source tools.
+`lasr` is free and open source and relies on other free and open source tools.
 
-- For `lasR`:
-  - © 2023-2024 Jean-Romain Roussel
+- For `lasr`:
+  - © 2023-2025 Jean-Romain Roussel
+  - Licence: GPL-3
+- For `lasR` (R bindings):
+  - © 2023-2025 Jean-Romain Roussel
+  - Licence: GPL-3
+- For `pylasr` (Python bindings):
+  - © 2025 Alexey Grigoryev
   - Licence: GPL-3
 - For `LASlib` and `LASzip`:
   - © 2007-2021 Martin Isenburg - <http://rapidlasso.com>
@@ -88,9 +177,9 @@ For more details, see the relevant [vignette](https://r-lidar.github.io/lasR/art
 
 ## About
 
-`lasR` is developed openly by [r-lidar](https://www.r-lidar.com/).
+`lasr` is developed openly by [r-lidar](https://www.r-lidar.com/).
 
-The initial development of `lasR` was made possible through the financial support of [Laval University](https://www.ulaval.ca/en). To continue the development of this free software, we now offer consulting, programming, and training services. For more information, please visit [our website](https://www.r-lidar.com/).
+The initial development of `lasr` was made possible through the financial support of [Laval University](https://www.ulaval.ca/en). To continue the development of this free software, we now offer consulting, programming, and training services. For more information, please visit [our website](https://www.r-lidar.com/).
 
 ## Install dependencies on GNU/Linux
 

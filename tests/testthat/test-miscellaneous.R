@@ -3,7 +3,7 @@ test_that("miscellaneous",
   dtm = triangulate() + hulls()
 
   expect_error(transform_with(dtm), "has 2 stages")
-  expect_error(transform_with(10), "The stage stage must be a 'LASRalgorithm'")
+  expect_error(transform_with(10), "The stage stage must be a 'PipelinePtr'")
 })
 
 test_that("temp files",
@@ -19,7 +19,7 @@ test_that("empty folder #160",
 {
   dir = tempfile()
   dir.create(dir)
-  expect_error(lasR::exec(lasR:::nothing(), on = dir), "There is no file to read")
+  expect_error(exec(lasR:::nothing(), on = dir), "There is no file to read")
 })
 
 test_that(".onLoad",

@@ -59,7 +59,7 @@ test_that("reader can read a folder",
 test_that("read_las works (in memory)",
 {
   f <- system.file("extdata", "Megaplot.las", package="lasR")
-  pipeline = summarise() + rasterize(2, "max") + rasterize(2, "max", filter = "Z < 16") + delete_points(filter = "Z < 16") + summarise() + lasR:::nothing(T,F,F)
+  pipeline = summarise() + rasterize(2, "max") + rasterize(2, "max", filter = "Z < 16") + delete_points(filter = "Z >= 16") + summarise() + lasR:::nothing(T,F,F)
   ans = exec(pipeline, on = f)
 
   expect_false(lasR:::get_pipeline_info(pipeline)$streamable)
@@ -79,7 +79,7 @@ test_that("read_las works (in memory)",
 test_that("reader_las works (streamable)",
 {
   f <- system.file("extdata", "Megaplot.las", package="lasR")
-  pipeline = summarise() + rasterize(2, "max") + rasterize(2, "max", filter = "Z < 16") + delete_points(filter = "Z < 16") + summarise()
+  pipeline = summarise() + rasterize(2, "max") + rasterize(2, "max", filter = "Z < 16") + delete_points(filter = "Z >= 16") + summarise()
   ans = exec(pipeline, on = f)
 
   expect_true(lasR:::get_pipeline_info(pipeline)$streamable)
@@ -99,7 +99,7 @@ test_that("reader_las works (streamable)",
 test_that("reader_las works (filter case sensitive)",
 {
   f <- system.file("extdata", "Megaplot.las", package="lasR")
-  pipeline = summarise() + rasterize(2, "max") + rasterize(2, "max", filter = "z < 16") + delete_points(filter = "z < 16") + summarise()
+  pipeline = summarise() + rasterize(2, "max") + rasterize(2, "max", filter = "z < 16") + delete_points(filter = "z >= 16") + summarise()
   ans = exec(pipeline, on = f)
 
   expect_true(lasR:::get_pipeline_info(pipeline)$streamable)

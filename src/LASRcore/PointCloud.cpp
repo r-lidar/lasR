@@ -550,7 +550,7 @@ bool PointCloud::knn(const Point& xyz, int k, std::vector<Point>& res, PointFilt
     {
       current_k *= 2;
       indices.resize(current_k);
-      indices.resize(current_k);
+      dists.resize(current_k);
       res.clear();
     }
   }

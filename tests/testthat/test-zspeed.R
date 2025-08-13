@@ -10,21 +10,21 @@ test_that("Computation speed is ok",
   las = read_cloud(file)
 
   dt = system.time(
-    ans <- lasR::exec(lasR::geometry_features(8, features = "E"), on = las, ncores = 6, noread = T)
+    ans <- lasR::exec(lasR::geometry_features(8, features = "E"), on = las, ncores = 6, noread = T, verbose = T, progress = T)
   )
 
   expect_lt(dt[3], 23)
 
   # The kdtree has already been built so the expected time is 19 down to 10
   dt = system.time(
-    lasR::exec(lasR::classify_with_sor(8,6), on = las, ncores = 6)
+    lasR::exec(lasR::classify_with_sor(8,6), on = las, ncores = 6, verbose = TRUE)
   )
 
   expect_lt(dt[3], 10)
 
   las = read_cloud(file)
   dt = system.time(
-    lasR::exec(lasR::normalize(), on = las, ncores = 6, progress = T)
+    lasR::exec(lasR::normalize(), on = las, ncores = 6, verbose = T, progress = T)
   )
 
   expect_lt(dt[3], 6)

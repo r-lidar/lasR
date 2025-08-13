@@ -20,3 +20,5 @@ python/dist
 python/build
 *.bak*
 *.a
+*.pyc
+CLAUDE.md

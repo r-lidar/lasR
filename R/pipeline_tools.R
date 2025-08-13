@@ -3,6 +3,7 @@
 #' Tools inherited from base R
 #'
 #' @param x,e1,e2 lasR objects
+#' @param i index
 #' @param ... lasR objects. Is equivalent to +
 #' @examples
 #' algo1 <- rasterize(1, "max")
@@ -16,93 +17,45 @@ NULL
 
 #' @rdname tools
 #' @export
-print.LASRalgorithm = function(x, ...)
+print.PipelinePtr <- function(x, ...)
 {
-  name <- x[["algoname"]]
-  uuid <- x[["uid"]]
-  args <- x[!names(x) %in% c( "uid", "algoname")]
-  cat(name, " (uid:", substr(uuid, 0, 4), ")\n", sep = "")
-  for (name in names(args))
-  {
-    if (name == "connect")
-    {
-      cat(" ", name, ": ")
-      cat("uid:", x[[name]], "\n", sep = "")
-    }
-    else if (name == "files")
-    {
-      cat(" ", name, ": ")
-      if (length(x[[name]]) > 5)
-      {
-        tmp = x[[name]][1:5]
-        cat(basename(tmp), " (...)\n", sep = "")
-      }
-      else
-      {
-        cat(basename(x[[name]]), "\n", sep = "")
-      }
-    }
-    else
-    {
-      cat(" ", name, ": ")
-      if (is.call(x[[name]]))
-        cat(deparse(x[[name]]), "\n", sep = "")
-      else if (is.environment(x[[name]]))
-        cat(utils::capture.output(print(x[[name]])), "\n")
-      else if (is.function(x[[name]]))
-        cat("<function>\n")
-      else if (methods::is(x[[name]], "externalptr"))
-        cat("<externalptr>\n")
-      else if (is.list(x[[name]]))
-        cat(names(x[[name]]), "\n")
-      else
-        cat(x[[name]], "\n", sep = " ")
-    }
-  }
+  .APIOPERATIONS$print_pipeline(x)
+}
+
+#' @export
+#' @method print PipelinePtr
+print.PipelinePtr <- function(x, ...)
+{
+  .APIOPERATIONS$print_pipeline(x)
 }
 
 #' @rdname tools
 #' @export
-print.LASRpipeline = function(x, ...)
+`+.PipelinePtr` <- function(e1, e2)
 {
-  cat(" -----------\n")
-  for (u in x) {
-    print(u)
-    cat("-----------\n")
-  }
-}
+  if (!methods::is(e1, "PipelinePtr") || !methods::is(e2, "PipelinePtr"))
+    stop("Both operands must be of class PipelinePtr") # nocov
 
-#' @rdname tools
-#' @export
-`+.LASRpipeline` <- function(e1, e2)
-{
-  if (!methods::is(e1, "LASRpipeline") || !methods::is(e2, "LASRpipeline"))
-    stop("Both operands must be of class LASRalgorithm") # nocov
-
-  ans <- c(e1, e2)
-  class(ans) <- c("LASRpipeline", "list")
+  ans = .APIOPERATIONS$merge_pipeline(e1, e2);
   return(ans)
 }
 
 #' @rdname tools
 #' @export
-`c.LASRpipeline` <- function(...)
-{
-  p <- list(...)
-  p <- lapply(p, function(x) { class(x) <- "list" ; x })
-  ans <- do.call(c, p)
-  names(ans) <- make.names(names(ans), unique = TRUE)
-  class(ans) <- c("LASRpipeline", "list")
-  return(ans)
+`[[.PipelinePtr` <- function(x, i, ...) {
+  # Example: Access an element by name or index
+  if (is.character(i)) {
+    stop("Extraction by name not supported")
+  } else if (is.numeric(i)) {
+    return(.APIOPERATIONS$get_stage_by_index(x, i-1))
+  } else {
+    stop("Index must be character or numeric")
+  }
 }
 
 get_pipeline_info = function(pipeline)
 {
-  pipeline = list(processing = list(), pipeline = pipeline)
-  json_file = write_json(pipeline)
-  ans = .Call(`C_get_pipeline_info`, json_file)
-  if (inherits(ans, "error")) { stop(ans) }
-  return(ans)
+  .APIOPERATIONS$get_pipeline_info(pipeline)
 }
 
 is_indexed = function(files)
@@ -111,8 +64,7 @@ is_indexed = function(files)
   for (i in seq_along(files))
   {
     file = files[i]
-    indexed = .Call(`C_is_indexed`, file)
-    if (inherits(ans, "error")) { stop(indexed) } # nocov
+    indexed = .APIUTILS$is_indexed(file)
     ans[i] = indexed
   }
 
@@ -121,6 +73,6 @@ is_indexed = function(files)
 
 address = function(x)
 {
-  .Call(`C_address`, x)
+  .APIOPERATIONS$get_address(x)
 }
 

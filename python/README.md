@@ -1,179 +1,402 @@
 # LASR Python Bindings
 
-This directory contains Python bindings for the LASR library.
+Python bindings for the LASR (pronounced "laser") library - a high-performance LiDAR point cloud processing library.
 
-## Prerequisites
+## Overview
 
-- Python 3.9 or higher
-- CMake 3.18 or higher
-- C++ compiler with C++17 support (gcc 7+, clang 5+, or MSVC 2017+)
-- GDAL library and development headers
+The LASR Python bindings provide a clean, Pythonic interface to the powerful LASR C++ library for processing large-scale LiDAR point clouds. The API closely mirrors the R API, ensuring consistency across language bindings.
 
-### Installing Prerequisites
+## Features
 
-#### Automated Setup (Linux, macOS)
-We provide a simplified setup script that will install GDAL and other dependencies automatically:
+- **High Performance**: Direct bindings to optimized C++ code
+- **Complete API Coverage**: All LASR stages and operations available
+- **Pythonic Interface**: Natural Python syntax with operator overloading
+- **Pipeline Processing**: Chain operations for efficient processing
+- **Multi-threading Support**: Leverage multiple cores for processing
+- **Memory Efficient**: Minimal memory overhead through C++ backend
+- **Rich Results**: Access detailed stage outputs and processing statistics
+- **Structured Error Handling**: Comprehensive error information and debugging
+- **Flexible Input Paths**: Pass a directory/catalog or an iterable of path-like objects; only .las/.laz files are used
 
-```bash
-cd python
-chmod +x setup_env.sh
-./setup_env.sh
-```
+## Installation
 
-This script will detect your OS, install GDAL and other required dependencies, and set up the environment for building the Python bindings.
+### Prerequisites
 
-#### Manual Installation
+- Python 3.7+
+- pybind11
+- C++17 compatible compiler
+- GDAL (>= 2.2.3)
+- GEOS (>= 3.4.0)
+- PROJ (>= 4.9.3)
 
-#### macOS
-```bash
-brew install gdal
-pip install --upgrade pip wheel setuptools cmake pybind11
-```
-
-#### Ubuntu/Debian
-```bash
-sudo apt-get install libgdal-dev
-pip install --upgrade pip wheel setuptools cmake pybind11
-```
-
-#### Windows
-Install GDAL using OSGeo4W installer from https://trac.osgeo.org/osgeo4w/
-```bash
-pip install --upgrade pip wheel setuptools cmake pybind11
-```
-
-## Building and Installing the Python Bindings
-
-After setting up the environment (either manually or using the setup script):
+### Build from Source
 
 ```bash
 cd python
 pip install -e .
 ```
 
-This will build the extension module and install it in development mode, so any changes to the source code will be immediately reflected without needing to reinstall.
-
-## Running the Examples
-
-Once the module is installed, you can run the example directly:
+or using setuptools directly:
 
 ```bash
 cd python
-python example.py advanced_pipeline.json
+python setup.py build_ext --inplace
 ```
 
-## API Reference
-
-The Python bindings provide the following functions:
-
-### Pipeline Processing
-
-- **pylasr.process(config_file)** - Process a pipeline configuration file
-  - Parameters:
-    - `config_file` (str): Path to the JSON configuration file
-  - Returns:
-    - `bool`: True if processing was successful, False otherwise
-
-- **pylasr.get_pipeline_info(config_file)** - Get information about a pipeline configuration
-  - Parameters:
-    - `config_file` (str): Path to the JSON configuration file
-  - Returns:
-    - `str`: JSON string containing pipeline information with the following properties:
-      - `streamable`: Whether the pipeline can be processed in a stream
-      - `read_points`: Whether the pipeline needs to read point data
-      - `buffer`: Buffer size needed for processing in spatial units
-      - `parallelizable`: Whether the pipeline can be parallelized
-      - `parallelized`: Whether the pipeline uses parallelization internally
-      - `R_API`: Whether the pipeline uses R API functionality
-
-### System Information
-
-- **pylasr.available_threads()** - Get the number of available threads
-  - Returns:
-    - `int`: Number of available threads
-
-- **pylasr.has_omp_support()** - Check if OpenMP support is available
-  - Returns:
-    - `bool`: True if OpenMP support is available, False otherwise
-
-- **pylasr.get_available_ram()** - Get the available RAM in bytes
-  - Returns:
-    - `int`: Available RAM in bytes
-
-- **pylasr.get_total_ram()** - Get the total RAM in bytes
-  - Returns:
-    - `int`: Total RAM in bytes
-
-## Usage Example
+## Quick Start
 
 ```python
 import pylasr
-import json
 
-# Print system information
-print(f"Available threads: {pylasr.available_threads()}")
-print(f"Has OpenMP support: {pylasr.has_omp_support()}")
-print(f"Available RAM: {pylasr.get_available_ram() / (1024**3):.2f} GB")
-print(f"Total RAM: {pylasr.get_total_ram() / (1024**3):.2f} GB")
+# Create a simple processing pipeline
+pipeline = (pylasr.info() + 
+           pylasr.classify_with_sor(k=10) + 
+           pylasr.delete_points(["Classification == 18"]) +
+           pylasr.write_las("cleaned.las"))
 
-# Get pipeline information
-config_file = "path/to/config.json"
-info_json = pylasr.get_pipeline_info(config_file)
-info = json.loads(info_json)
-print(json.dumps(info, indent=2))
+# Set processing options
+pipeline.set_concurrent_points_strategy(4)
+pipeline.set_progress(True)
 
-# Access specific pipeline properties
-print(f"Pipeline is streamable: {info['streamable']}")
-print(f"Pipeline needs buffer: {info['buffer']} units")
-print(f"Pipeline can be parallelized: {info['parallelizable']}")
-
-# Process the pipeline
-result = pylasr.process(config_file)
-print(f"Pipeline processing {'successful' if result else 'failed'}")
+# Execute pipeline (returns rich results)
+files = ["input.las", "input2.las"]
+result = pipeline.execute(files)
 ```
 
-## Troubleshooting
+## API Structure
 
-If you encounter any build issues:
+### Core Classes
 
-1. Make sure CMake is installed and in your PATH
-2. Ensure you have a C++ compiler installed with C++17 support
-3. Check that all required header files are available
-4. Make sure you're using a compatible Python version
-
-### Common Issues
-
-- **C++17 compiler required**: This project needs a compiler supporting C++17 features (gcc 7+, clang 5+, or MSVC 2017+)
-- **GDAL not found**: Ensure GDAL is properly installed with development headers. Set the `GDAL_DIR` environment variable to your GDAL installation directory.
-- **Header files not found**: Make sure all the LASR header files are in the correct location
-- **Linker errors**: You may need to add additional dependencies in CMakeLists.txt
-- **CMake errors**: Check that your CMake version is compatible
-- **Module not found**: If Python can't find the module, try using one of the methods described in the "Running the Examples" section
-
-For more information, please refer to the main LASR documentation. 
-
-## Command-line Usage
-
-The Python module can also be used from the command line through a Python script. Create a script like this:
+#### `Stage`
+Represents a single processing stage with configurable parameters.
 
 ```python
-#!/usr/bin/env python3
-import sys
-import pylasr
+# Create a stage manually
+stage = pylasr.Stage("classify_with_sor")
+stage.set("k", 12)
+stage.set("m", 8)
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <config_file.json>")
-        sys.exit(1)
-    
-    result = pylasr.process(sys.argv[1])
-    sys.exit(0 if result else 1)
+# Or use convenience functions
+stage = pylasr.classify_with_sor(k=12, m=8)
 ```
 
-Save this as `lasr_cli.py`, make it executable (`chmod +x lasr_cli.py`), and use it like:
+#### `Pipeline`
+Container for multiple stages with execution management.
+
+```python
+# Create empty pipeline
+pipeline = pylasr.Pipeline()
+
+# Add stages
+pipeline += pylasr.info()
+pipeline += pylasr.classify_with_sor()
+
+# Set processing strategy
+pipeline.set_concurrent_files_strategy(2)
+
+# Execute pipeline  
+result = pipeline.execute(["file1.las", "file2.las"])
+```
+
+### Processing Strategies
+
+LASR supports different parallelization strategies:
+
+```python
+# Sequential processing
+pipeline.set_sequential_strategy()
+
+# Concurrent points (single file, multiple cores)
+pipeline.set_concurrent_points_strategy(ncores=4)
+
+# Concurrent files (multiple files, single core each)
+pipeline.set_concurrent_files_strategy(ncores=2)
+
+# Nested strategy (multiple files, multiple cores each)
+pipeline.set_nested_strategy(ncores1=2, ncores2=4)
+```
+
+## Available Stages
+
+### Classification
+- `classify_with_sor()` - Statistical Outlier Removal
+- `classify_with_ivf()` - Isolated Voxel Filter  
+- `classify_with_csf()` - Cloth Simulation Filter
+
+### Point Operations
+- `delete_points()` - Remove points by filter
+- `edit_attribute()` - Modify attribute values
+- `filter_with_grid()` - Grid-based filtering
+- `sort_points()` - Sort points spatially
+
+### Sampling
+- `sampling_voxel()` - Voxel-based sampling
+- `sampling_pixel()` - Pixel-based sampling
+- `sampling_poisson()` - Poisson disk sampling
+
+### Rasterization
+- `rasterize()` - Convert points to raster
+- `rasterize_triangulation()` - Rasterize triangulated surface
+
+### Geometric Analysis
+- `geometry_features()` - Compute geometric features
+- `local_maximum()` - Find local maxima
+- `triangulate()` - Triangulation
+- `hull()` - Convex hull
+
+### I/O Operations
+- `write_las()` - Write LAS/LAZ files
+- `write_copc()` - Write COPC files
+- `write_pcd()` - Write PCD files
+- `write_vpc()` - Write VPC catalogs
+- `write_lax()` - Write spatial index
+
+### Coordinate Systems
+- `set_crs_epsg()` - Set CRS by EPSG code
+- `set_crs_wkt()` - Set CRS by WKT string
+
+### Data Loading
+- `load_raster()` - Load raster data
+- `load_matrix()` - Load transformation matrix
+
+## Examples and Getting Started
+
+The `examples/` directory contains several scripts to help you get started:
+
+### 🚀 Running Examples
 
 ```bash
-./lasr_cli.py path/to/config.json
+# Basic usage examples (no data processing)
+python examples/basic_usage.py
+
+# Basic usage with your data
+python examples/basic_usage.py your_file.las
+
+# Complete feature demonstration
+python examples/complete_example.py
+
+# Complete workflow with your data
+python examples/complete_example.py your_file.las
+
+# Create and use pipelines
+python examples/create_pipelines.py
+
+# Use command-line tool with pipeline files
+python examples/lasr_cli.py your_data.las
+python examples/lasr_cli.py file1.las file2.las
 ```
 
-This provides a simple command-line interface to process LASR pipelines without having to write Python code. 
+### 📋 Example Scripts
+
+#### `basic_usage.py`
+Simple examples covering the most common use cases:
+- System information
+- Basic pipeline creation
+- Configuration options
+- Direct pipeline execution
+- Data processing (provide your own .las file as argument)
+
+#### `complete_example.py`
+Comprehensive demonstration of all major features:
+- Advanced pipeline workflows
+- Processing configuration
+- Convenience functions
+- Manual stage creation
+- Multithreading comparison
+- Error handling (provide your own .las file as argument)
+
+#### `create_pipelines.py`
+Demonstrates various pipeline creation and execution workflows:
+- Info pipeline
+- Cleaning pipeline (noise removal)
+- Terrain analysis (DTM/CHM)
+- Point sampling
+- Classification workflows
+
+#### `lasr_cli.py`
+Enhanced command-line tool for data processing:
+- Execute common pipelines on input files
+- Show processing timing and results
+- Support for multithreading configuration
+
+### 🔧 Basic DTM/CHM Generation
+
+```python
+import pylasr
+
+# Use convenience functions for common workflows
+dtm_pipeline = pylasr.dtm_pipeline(1.0, "dtm.tif")
+chm_pipeline = pylasr.chm_pipeline(0.5, "chm.tif")
+
+# Combine workflows
+terrain_analysis = dtm_pipeline + chm_pipeline
+terrain_analysis.set_concurrent_files_strategy(2)
+
+# Process data
+result = terrain_analysis.execute(["forest.las"])
+```
+
+### Advanced Processing Workflow
+
+```python
+# Multi-stage processing
+pipeline = pylasr.Pipeline()
+
+# Noise removal and ground classification
+pipeline += pylasr.classify_with_sor(k=8, m=6)
+pipeline += pylasr.classify_with_csf()
+pipeline += pylasr.delete_points(["Classification == 18"])
+
+# Height normalization
+dtm = pylasr.rasterize(1.0, 1.0, ["min"], ["Classification == 2"])
+pipeline += dtm
+pipeline += pylasr.transform_with(dtm.get_uid(), "-", "HeightAboveGround")
+
+# Tree detection
+chm = pylasr.rasterize(0.5, 0.5, ["max"], ["Classification != 2"])
+pipeline += chm
+pipeline += pylasr.local_maximum_raster(chm.get_uid(), 3.0, 2.0, 
+                                       ofile="trees.shp")
+
+# Final output
+pipeline += pylasr.write_las("processed.las")
+
+# Execute with nested parallelism
+pipeline.set_nested_strategy(2, 4)
+input_files = ["file1.las", "file2.las"]
+result = pipeline.execute(input_files)
+```
+
+### Format Conversion
+
+```python
+# Convert between formats
+converter = (pylasr.write_las("output.laz") +
+            pylasr.write_pcd("output.pcd") +
+            pylasr.write_copc("output.copc.laz") +
+            pylasr.write_lax())
+
+result = converter.execute(["input.las"])
+```
+
+## System Information
+
+```python
+import pylasr
+
+# Check system capabilities
+print(f"Available threads: {pylasr.available_threads()}")
+print(f"OpenMP support: {pylasr.has_omp_support()}")
+print(f"Available RAM: {pylasr.get_available_ram() / (1024**3):.1f} GB")
+
+# Check if file is indexed
+indexed = pylasr.is_indexed("file.las")
+```
+
+## Pipeline Introspection
+
+```python
+# Create pipeline and inspect properties directly
+pipeline = pylasr.classify_with_sor() + pylasr.write_las("out.las")
+
+# Check pipeline properties
+print(f"Has reader: {pipeline.has_reader()}")
+print(f"Has catalog: {pipeline.has_catalog()}")
+print(f"Pipeline string: {pipeline.to_string()}")
+
+# Export to JSON if needed for debugging or external tools
+json_file = pipeline.write_json("my_pipeline.json")
+```
+
+## Results and Error Handling
+
+### Result Format
+
+Pipeline execution now returns detailed structured results:
+
+```python
+try:
+    result = pipeline.execute(files)
+    
+    if result['success']:
+        print("✅ Pipeline executed successfully!")
+        print(f"Config saved to: {result['json_config']}")
+        
+        # Access stage results
+        if result['data']:
+            for stage_result in result['data']:
+                for stage_name, stage_data in stage_result.items():
+                    print(f"Stage '{stage_name}': {type(stage_data)}")
+                    
+                    # Example: Summary statistics
+                    if stage_name == 'summary':
+                        print(f"  Points: {stage_data['npoints']}")
+                        print(f"  CRS: EPSG:{stage_data['crs']['epsg']}")
+                    
+                    # Example: File outputs
+                    elif isinstance(stage_data, list):
+                        print(f"  Files created: {stage_data}")
+    else:
+        print(f"❌ Pipeline failed: {result.get('message', 'Unknown error')}")
+        
+except Exception as e:
+    print(f"❌ Exception during execution: {e}")
+```
+
+### Result Structure
+
+**Successful Execution:**
+```python
+{
+    "success": True,
+    "json_config": "/path/to/config.json",
+    "data": [
+        {"summary": {"npoints": 12345, "crs": {...}, ...}},
+        {"rasterize": ["/path/to/output.tif"]},
+        {"write_las": ["/path/to/output.las"]}
+    ]
+}
+```
+
+**Failed Execution:**
+```python
+{
+    "success": False, 
+    "message": "Error description",
+    "json_config": "/path/to/config.json",
+    "data": None
+}
+```
+
+## Performance Tips
+
+1. **Use appropriate parallelization strategy** based on your data and hardware
+2. **Set buffer size** for algorithms that need neighborhood information
+3. **Chain operations** in pipelines to minimize I/O
+4. **Use spatial indexing** with `write_lax()` for faster access
+5. **Sort points** spatially with `sort_points()` for better cache performance
+
+## Comparison with R API
+
+The Python API closely mirrors the R API structure:
+
+| R | Python |
+|---|--------|
+| `exec(pipeline, on = files)` | `pipeline.execute(files)` |
+| `pipeline + stage` | `pipeline + stage` |
+| `with = list(ncores = 4)` | `pipeline.set_concurrent_points_strategy(4)` |
+| `filter = "Z > 10"` | `filter = ["Z > 10"]` |
+
+## Contributing
+
+See the main LASR repository for contribution guidelines.
+
+## License
+
+GPL-3 - see LICENSE file for details.
+
+## Links
+
+- [Main LASR Repository](https://github.com/r-lidar/lasR)
+- [LASR Documentation](https://r-lidar.github.io/lasR/)
+- [Issue Tracker](https://github.com/r-lidar/lasR/issues)

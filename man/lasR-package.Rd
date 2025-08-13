@@ -31,6 +31,9 @@ Other contributors:
   \item Volodymyr Bilonenko (Is the author of the included delaunator triangulation) [copyright holder]
   \item State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University (Is the copyright holder of the included CSF) [copyright holder]
   \item Authors of Eigen (Authorship and copyright in included Eigen library as detailed in inst/COPYRIGHTS) [copyright holder]
+  \item Marius Muja \email{mariusm@cs.ubc.ca} (Is an author of the included nanoflann library) [copyright holder]
+  \item David G. Lowe \email{lowe@cs.ubc.ca} (Is an author of the included nanoflann library) [copyright holder]
+  \item Jose L. Blanco \email{joseluisblancoc@gmail.com} (Is an author of the included nanoflann library) [copyright holder]
 }
 
 }

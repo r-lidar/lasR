@@ -101,7 +101,7 @@ Pipeline filter_with_grid(double res, std::string operation, std::vector<std::st
 {
   static const std::vector<std::string> choices = {"min", "max"};
   auto it = std::find(choices.begin(), choices.end(), operation);
-  if (it != choices.end()) throw std::invalid_argument("Invalid argument 'operation'. Available options are 'min', 'max'.");
+  if (it == choices.end()) throw std::invalid_argument("Invalid argument 'operation'. Available options are 'min', 'max'.");
 
   Stage s("filter_grid");
   s.set("res", res);
@@ -325,7 +325,7 @@ Pipeline remove_attribute(std::string name)
   auto it = std::find(choices.begin(), choices.end(), name);
   if (it != choices.end()) throw std::invalid_argument("Removing point coordinates is not allowed");
 
-  Stage s("pit_fill");
+  Stage s("remove_attribute");
   s.set("name", name);
 
   return Pipeline(s);
@@ -370,7 +370,7 @@ Pipeline sampling_pixel(double res,  std::vector<std::string> filter, std::strin
   auto it = std::find(choices.begin(), choices.end(), method);
   if (it == choices.end()) throw std::invalid_argument("Invalid argument 'method'. Available options are 'ramdom', 'min', 'max'.");
 
-  Stage s("sampling_voxel");
+  Stage s("sampling_pixel");
   s.set("res", res);
   s.set("filter", filter);
   s.set("method", method);
@@ -466,7 +466,7 @@ Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep
 
 Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density)
 {
-  std::string ext = ofile.substr(ofile.size()-8, ofile.size());
+  std::string ext = ofile.substr(ofile.size()-9, ofile.size());
   if (ext != ".copc.laz") throw std::invalid_argument("File must be .copc.laz");
 
   static const std::vector<std::string> choices = {"sparse", "normal", "dense", "denser"};
@@ -543,6 +543,13 @@ Pipeline callback(std::string fun_ptr, std::string args_ptr, std::string expose,
   s.set("expose", expose);
   s.set("drop_buffer", drop_buffer);
   s.set("no_las_update", no_las_update);
+
+  return Pipeline(s);
+}
+
+Pipeline xptr()
+{
+  Stage s("xptr");
 
   return Pipeline(s);
 }
