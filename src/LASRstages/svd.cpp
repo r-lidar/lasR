@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
 
 #include "Eigen/Dense"
 
@@ -124,12 +125,6 @@ bool LASRsvd::process(PointCloud*& las)
     return false;
   };
 
-  progress->reset();
-  progress->set_total(las->npoints);
-  progress->set_prefix("SVD/PCA");
-  progress->set_ncpu(ncpu);
-  progress->show();
-
   AttributeAccessor set_coeff00("coeff00");
   AttributeAccessor set_coeff01("coeff01");
   AttributeAccessor set_coeff02("coeff02");
@@ -162,8 +157,21 @@ bool LASRsvd::process(PointCloud*& las)
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
 
-  if (verbose) print("Building KDtree spatial index\n");
+  if (verbose) print("  Building KDtree spatial index\n");
+  auto start = std::chrono::high_resolution_clock::now();
+
   las->build_kdtree();
+
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = end - start;
+
+  if (verbose) print("  KDtree built in %.2lf seconds\n", elapsed.count());
+
+  progress->reset();
+  progress->set_total(las->npoints);
+  progress->set_prefix("SVD/PCA");
+  progress->set_ncpu(ncpu);
+  progress->show();
 
   #pragma omp parallel for num_threads(ncpu)
   for (size_t i = 0 ; i < las->npoints ; i++)
