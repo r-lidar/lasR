@@ -16,6 +16,7 @@ The LASR Python bindings provide a clean, Pythonic interface to the powerful LAS
 - **Memory Efficient**: Minimal memory overhead through C++ backend
 - **Rich Results**: Access detailed stage outputs and processing statistics
 - **Structured Error Handling**: Comprehensive error information and debugging
+- **Flexible Input Paths**: Pass a directory/catalog or an iterable of path-like objects; only .las/.laz files are used
 
 ## Installation
 
