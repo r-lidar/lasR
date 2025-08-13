@@ -1,6 +1,6 @@
 # lasR 0.17.0
 
-`lasR 0.17.0` does not bring new features or bug fix. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And we have now a `python` package (`pylasr`) that leverage the C++ API as well. It is now possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding
+`lasR 0.17.0` does not bring new features. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And we have now a `python` package (`pylasr`) that leverage the C++ API as well. It is now possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding
 
 Below a simple pipeline with 3 stage using the `C++`, `R` and python `API`. The variable `on` is a list of file on which to apply the pipeline.
 
@@ -57,6 +57,14 @@ pipeline = (pylasr.info() +
 pipeline.set_progress(True)
 result = pipeline.execute(example_file)
 ```
+
+## Breaking changes
+
+- The behavior of the stage `delete_points` has been inverted. `delete_points("Z < 4")` used to keep point below 4. This allowed to write meaningful commands like `delete_points(keep_z_below(4))`. But this is actually counter-intuitive. Now the `filter` argument respects the logic of the filter argument in other stages. Point that match the criteria are process. And in `delete_points()` processed means deleted.
+
+## Fix
+
+- Fix crash in `geometry_feature` when processing after points being deleted by `delete_point()`
 
 
 # lasR 0.16.2
