@@ -102,7 +102,7 @@ def main():
             if target.is_dir():
                 result = pipeline.execute(target)
             else:
-                # build mixed iterable demo
+                # Build mixed iterable demo
                 result = pipeline.execute([target, target.parent])
 
             if result['success']:

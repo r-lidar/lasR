@@ -65,6 +65,21 @@ py::object create_result(bool success, const nlohmann::json& json_results, const
     return results;
 }
 
+// Helper: normalize Python argument 'files' into std::vector<std::string>
+static std::vector<std::string> normalize_files_arg(const py::object& files) {
+      std::vector<std::string> file_vec;
+      if (py::isinstance<py::str>(files)) {
+            file_vec.push_back(files.cast<std::string>());
+      } else if (py::isinstance<py::list>(files) || py::isinstance<py::tuple>(files)) {
+            for (auto item : py::iter(files)) {
+                  file_vec.push_back(py::cast<std::string>(item));
+            }
+      } else {
+            throw std::invalid_argument("files must be a string or a list/tuple of strings");
+      }
+      return file_vec;
+}
+
 
 PYBIND11_MODULE(pylasr, m) {
     m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing"; 
@@ -119,31 +134,22 @@ PYBIND11_MODULE(pylasr, m) {
       py::arg("async_communication_file") = "");
 
       m.def("execute", [](api::Pipeline& pipeline, py::object files, const std::string& async_communication_file) -> py::object {
-                  // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
-                  std::vector<std::string> file_vec;
-                  if (py::isinstance<py::str>(files)) {
-                        file_vec.push_back(files.cast<std::string>());
-                  } else if (py::isinstance<py::list>(files) || py::isinstance<py::tuple>(files)) {
-                        for (auto item : py::iter(files)) {
-                              file_vec.push_back(py::cast<std::string>(item));
-                        }
-                  } else {
-                        throw std::invalid_argument("files must be a string or a list/tuple of strings");
-                  }
+            // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
+            std::vector<std::string> file_vec = normalize_files_arg(files);
 
-                  // Make a copy of the pipeline and set files (similar to R API approach)
-                  api::Pipeline p(pipeline);
-                  p.set_files(file_vec);
-                  std::string json_file = p.write_json();
-            
-                  // Execute once and convert results (avoid double execution)
-                  auto [success, json_results] = api::execute(json_file, async_communication_file);
-                  return create_result(success, json_results, json_file);
-        },
-                  "Execute a pipeline with specified files (str or list[str]) (mimics R API: exec(pipeline, on=files))",
-                  py::arg("pipeline"),
-                  py::arg("files"),
-                  py::arg("async_communication_file") = "");
+            // Make a copy of the pipeline and set files (similar to R API approach)
+            api::Pipeline p(pipeline);
+            p.set_files(file_vec);
+            std::string json_file = p.write_json();
+      
+            // Execute once and convert results (avoid double execution)
+            auto [success, json_results] = api::execute(json_file, async_communication_file);
+            return create_result(success, json_results, json_file);
+      },
+            "Execute a pipeline with specified files (str or list[str]) (mimics R API: exec(pipeline, on=files))",
+            py::arg("pipeline"),
+            py::arg("files"),
+            py::arg("async_communication_file") = "");
 
     m.def("pipeline_info", &api::pipeline_info,
           "Get pipeline information from a JSON configuration file",
@@ -185,16 +191,7 @@ PYBIND11_MODULE(pylasr, m) {
         .def("write_json", &api::Pipeline::write_json, "Write pipeline to JSON file", py::arg("path") = "")
         .def("execute", [](api::Pipeline& self, py::object files) -> py::object {
             // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
-            std::vector<std::string> file_vec;
-            if (py::isinstance<py::str>(files)) {
-                  file_vec.push_back(files.cast<std::string>());
-            } else if (py::isinstance<py::list>(files) || py::isinstance<py::tuple>(files)) {
-                  for (auto item : py::iter(files)) {
-                        file_vec.push_back(py::cast<std::string>(item));
-                  }
-            } else {
-                  throw std::invalid_argument("files must be a string or a list/tuple of strings");
-            }
+            std::vector<std::string> file_vec = normalize_files_arg(files);
 
             self.set_files(file_vec);
             std::string json_file = self.write_json();

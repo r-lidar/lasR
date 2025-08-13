@@ -7,7 +7,6 @@ import sys
 import os
 import tempfile
 import unittest
-from pathlib import Path
 
 # Add the parent directory to sys.path to import pylasr
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -127,7 +126,6 @@ class TestPipelineClass(unittest.TestCase):
                 # Clean up
                 if os.path.exists(json_file):
                     os.unlink(json_file)
-
 
 
 class TestConvenienceFunctions(unittest.TestCase):
