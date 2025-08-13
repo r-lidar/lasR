@@ -13,6 +13,7 @@
 .APISTAGES <- Rcpp::Module("stages", PACKAGE = "lasR")
 .APIUTILS <- Rcpp::Module("utils", PACKAGE = "lasR")
 .APIOPERATIONS <- Rcpp::Module("operations", PACKAGE = "lasR")
+.APITEST <- Rcpp::Module("tests", PACKAGE = "lasR")
 
 .onAttach <- function(libname, pkgname)
 {

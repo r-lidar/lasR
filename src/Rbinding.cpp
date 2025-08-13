@@ -401,29 +401,6 @@ SEXP make_stage(std::string stage_name, Rcpp::List opts)
   return wrap(p);
 }
 
-/*
- * This is useless and exists only for testing if it compiles and works
- */
-SEXP test(std::vector<std::string> on)
-{
-  using namespace api;
-
-  std::filesystem::path temp_dir = std::filesystem::temp_directory_path();  // platform independent
-  std::filesystem::path temp_file = temp_dir / "test.las";
-
-  Pipeline p;
-  p.set_files(on);
-  p.set_concurrent_points_strategy(8);
-  p.set_progress(true);
-
-  p += info();
-  p += delete_points({"Z > 1.37"});
-  p += write_las(temp_file.string());
-
-  std::string file = p.write_json();
-
-  return execute(file);
-}
 
 RCPP_MODULE(operations)
 {
@@ -439,5 +416,70 @@ RCPP_MODULE(operations)
   function("cast_pipeline_to_dataframe_compatible", &cast_pipeline_to_dataframe_compatible, "");
   function("cast_pipeline_to_xptr_compatible", &cast_pipeline_to_xptr_compatible, "");
 }
+
+
+/*
+ * This is useless and exists only for testing if it compiles and works
+ */
+SEXP cpp_test1(std::vector<std::string> on)
+{
+  using namespace api;
+
+  std::filesystem::path temp_dir = std::filesystem::temp_directory_path();  // platform independent
+  std::filesystem::path temp_file = temp_dir / "test.las";
+
+  Pipeline p;
+  p.set_files(on);
+  p.set_concurrent_points_strategy(8);
+  p.set_progress(false);
+
+  p += delete_points({"Z < 1.37"});
+  p += write_las(temp_file.string());
+
+  std::string file = p.write_json();
+
+  return execute(file);
+}
+
+
+/*
+ * This is useless and exists only for testing if it compiles and works
+ */
+SEXP cpp_test2(std::vector<std::string> on)
+{
+  using namespace api;
+
+  //std::string on = "/folder/of/laz/tiles/"
+
+  // platform independent tmp files
+  std::filesystem::path temp_dir = std::filesystem::temp_directory_path();
+  std::filesystem::path temp_dsm = temp_dir / "dsm.tif";
+  std::filesystem::path temp_dtm = temp_dir / "dtm.tif";
+
+  Pipeline tri = triangulate(0, {"Classification %in% 2 9"});
+  Pipeline dtm = rasterize_triangulation(tri.get_stages().front().get_uid(), 1, temp_dtm.string());
+
+  Pipeline p;
+  p += classify_with_sor();
+  p += delete_points({"Classification == 18"});
+  p += rasterize(1, 1, {"max"}, {""}, temp_dsm.string());
+  p += tri;
+  p += dtm;
+
+  p.set_files(on);
+  p.set_concurrent_files_strategy(8);
+  p.set_progress(false);
+
+  std::string file = p.write_json();
+
+  return execute(file);
+}
+
+RCPP_MODULE(tests)
+{
+  function("cpp_test1", &cpp_test1, "Test 1");
+  function("cpp_test2", &cpp_test2, "Test 2");
+}
+
 
 #endif
