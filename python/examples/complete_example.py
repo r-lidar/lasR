@@ -13,14 +13,13 @@ This example demonstrates:
 
 Usage:
     python complete_example.py                    # Run without data processing
-    python complete_example.py <path_to_las_or_dir> # Run with data processing (file or directory)
+    python complete_example.py <path_to_las_file> # Run with data processing
 """
 
 import os
 import sys
 import tempfile
 import time
-from pathlib import Path
 
 import pylasr
 
@@ -30,12 +29,12 @@ def main():
     print("=" * 50)
 
     # Check command line arguments
-    example_path = None
+    example_file = None
     if len(sys.argv) > 1:
-        example_path = sys.argv[1]
-        if not os.path.exists(example_path):
-            print(f"❌ Error: Path '{example_path}' not found")
-            print("💡 Usage: python complete_example.py [path_to_las_or_dir]")
+        example_file = sys.argv[1]
+        if not os.path.exists(example_file):
+            print(f"❌ Error: File '{example_file}' not found")
+            print("💡 Usage: python complete_example.py [path_to_las_file]")
             sys.exit(1)
 
     # Show system information
@@ -50,6 +49,12 @@ def main():
 
     pipeline = pylasr.Pipeline()
     pipeline += pylasr.info()
+
+    # Note: Aggressive filtering is commented out for the small example dataset
+    # With only 30 points, SOR noise classification might remove all points
+    # For larger datasets, you would typically include:
+    # pipeline += pylasr.classify_with_sor(k=8, m=6)  # Classify noise
+    # pipeline += pylasr.delete_points(["Classification == 18"])  # Remove noise
 
     # Add output
     with tempfile.NamedTemporaryFile(suffix=".las", delete=False) as f:
@@ -86,25 +91,15 @@ def main():
     print("📊 DATA PROCESSING EXAMPLE")
     print("-" * 30)
 
-    if example_path:
-        target = Path(example_path)
-        print(f"📂 Processing: {target}")
-        if target.is_file():
-            try:
-                file_size = os.path.getsize(target)
-                print(f"   File size: {file_size:,} bytes")
-            except OSError:
-                pass
+    if example_file:
+        print(f"📂 Processing: {os.path.basename(example_file)}")
+        file_size = os.path.getsize(example_file)
+        print(f"   File size: {file_size:,} bytes")
         print("🔄 Processing data...")
 
         try:
-            # New: accept dir, file, Path, iterable
-            if target.is_dir():
-                result = pipeline.execute(target)
-            else:
-                # Build mixed iterable demo
-                result = pipeline.execute([target, target.parent])
-
+            # Execute using the cleanest method: pipeline.execute(files)
+            result = pipeline.execute(example_file)
             if result['success']:
                 print("✅ Pipeline execution successful!")
                 print(f"📁 Output written to: {os.path.basename(output_file)}")
@@ -112,18 +107,25 @@ def main():
                 if os.path.exists(output_file):
                     size = os.path.getsize(output_file)
                     print(f"📊 Output file size: {size:,} bytes")
-                
+                    
+                # Show stage data if available
                 if result['data']:
                     print(f"📊 Processing stages completed: {len(result['data'])}")
+                    for i, stage_data in enumerate(result['data']):
+                        print(f"   Stage {i+1}: {list(stage_data.keys())}")
             else:
                 print("❌ Pipeline execution failed")
                 print(f"Error: {result.get('message', 'Unknown error')}")
         except Exception as e:
             print(f"❌ Error during processing: {e}")
     else:
-        print("📂 No input path provided")
+        print("📂 No input file provided")
         print("💡 To process your data:")
-        print("   python complete_example.py /path/to/las_or_dir")
+        print("   python complete_example.py your_file.las")
+        print()
+        print("💡 Example data locations:")
+        print("   - ../inst/extdata/Example.las (if running from lasR repo)")
+        print("   - Any .las or .laz file you have")
 
     print()
 
@@ -160,7 +162,7 @@ def main():
     print("🧵 MULTITHREADING DEMONSTRATION")
     print("-" * 30)
 
-    if example_path:
+    if example_file:
         print("Testing different threading strategies...")
 
         strategies = [
@@ -182,8 +184,8 @@ def main():
 
             start_time = time.time()
             try:
-                # New: pass Path directly
-                result = test_pipeline.execute(target if target.is_dir() else [target])
+                # Execute using the cleanest method: pipeline.execute(files)
+                result = test_pipeline.execute(example_file)
                 end_time = time.time()
 
                 if result and os.path.exists(test_output):
@@ -194,9 +196,9 @@ def main():
             except Exception as e:
                 print(f"❌ {name}: Error - {e}")
     else:
-        print("⏭️  Skipped (no input path provided)")
+        print("⏭️  Skipped (no input file provided)")
         print("💡 To test multithreading:")
-        print("   python complete_example.py /path/to/las_or_dir")
+        print("   python complete_example.py your_file.las")
 
     print()
 
