@@ -308,7 +308,6 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
     }
 
     pipeline.sort();
-
     pipeline.profiler.write(fprofiling);
 
     #ifdef USING_R
@@ -324,15 +323,6 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
         }
         return true;
     #endif
-
-
-  #ifdef USING_R
-    return R_NilValue;
-  #elif defined(USING_PYTHON)
-    return std::make_pair(false, nlohmann::json{});
-  #else
-    return false;
-  #endif
 }
 
 
