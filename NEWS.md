@@ -1,6 +1,7 @@
 # lasR 0.17.1
 
 - Fix: `info()` prints informations for each processed chunk. Not only the first one.
+- Fix: #196. ExtraBytes attributes were zeroed when reading two or more files (main file + buffer file)
 
 # lasR 0.17.0
 
