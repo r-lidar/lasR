@@ -1,3 +1,7 @@
+# lasR 0.17.1
+
+- Fix: `info()` prints informations for each processed chunk. Not only the first one.
+
 # lasR 0.17.0
 
 `lasR 0.17.0` does not bring new features. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And we have now a `python` package (`pylasr`) that leverage the C++ API as well. It is now possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding
