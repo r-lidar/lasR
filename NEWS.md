@@ -1,3 +1,7 @@
+# lasR 0.17.2
+
+- Fix: #198 LAS files with 0 points are discarded on-the-fly.
+
 # lasR 0.17.1
 
 - Fix: `info()` prints informations for each processed chunk. Not only the first one.

@@ -495,6 +495,12 @@ bool FileCollection::add_las_file(std::string file, bool noprocess)
   reader.populate_header(&header, true);
   reader.close();
 
+  if (header.number_of_point_records == 0)
+  {
+    warning("File %s containing 0 point was discarded.\n", file.c_str());
+    return true;
+  }
+
   add_header(header, noprocess);
   files.push_back(file);
 
