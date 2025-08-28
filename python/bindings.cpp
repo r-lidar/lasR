@@ -46,7 +46,7 @@ py::object create_result(bool success, const nlohmann::json& json_results, const
     auto results = py::dict();
     results["success"] = success;
     results["json_config"] = json_config_path;
-    
+
     if (success) {
         // Success case - return data without redundant message
         if (!json_results.empty()) {
@@ -61,7 +61,7 @@ py::object create_result(bool success, const nlohmann::json& json_results, const
         results["message"] = last_error.empty() ? "Pipeline execution failed" : last_error;
         results["data"] = py::none();
     }
-    
+
     return results;
 }
 
@@ -82,7 +82,7 @@ static std::vector<std::string> normalize_files_arg(const py::object& files) {
 
 
 PYBIND11_MODULE(pylasr, m) {
-    m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing"; 
+    m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing";
     m.attr("__version__") = "0.17.0";
 
     // System information functions
@@ -125,7 +125,7 @@ PYBIND11_MODULE(pylasr, m) {
               py::gil_scoped_release release;
               return api::execute(config_file, async_communication_file);
           }();
-          
+
           // Use helper to create rich results (GIL is now acquired for Python operations)
           return create_result(success, json_results, config_file);
       },
@@ -141,7 +141,7 @@ PYBIND11_MODULE(pylasr, m) {
             api::Pipeline p(pipeline);
             p.set_files(file_vec);
             std::string json_file = p.write_json();
-      
+
             // Execute once and convert results (avoid double execution)
             auto [success, json_results] = api::execute(json_file, async_communication_file);
             return create_result(success, json_results, json_file);
@@ -260,7 +260,7 @@ PYBIND11_MODULE(pylasr, m) {
 
     m.def("edit_attribute", &api::edit_attribute,
           "Edit attribute values",
-          py::arg("filter") = std::vector<std::string>{""}, 
+          py::arg("filter") = std::vector<std::string>{""},
           py::arg("attribute") = "", py::arg("value") = 0.0);
 
     m.def("remove_attribute", &api::remove_attribute,
@@ -274,24 +274,24 @@ PYBIND11_MODULE(pylasr, m) {
     // Filtering
     m.def("filter_with_grid", &api::filter_with_grid,
           "Filter points using grid-based approach",
-          py::arg("res"), py::arg("operation") = "min", 
+          py::arg("res"), py::arg("operation") = "min",
           py::arg("filter") = std::vector<std::string>{""});
 
     // Sampling
     m.def("sampling_voxel", &api::sampling_voxel,
           "Sample points using voxel-based approach",
-          py::arg("res") = 2.0, py::arg("filter") = std::vector<std::string>{""}, 
+          py::arg("res") = 2.0, py::arg("filter") = std::vector<std::string>{""},
           py::arg("method") = "random", py::arg("shuffle_size") = std::numeric_limits<int>::max());
 
     m.def("sampling_pixel", &api::sampling_pixel,
           "Sample points using pixel-based approach",
-          py::arg("res") = 2.0, py::arg("filter") = std::vector<std::string>{""}, 
+          py::arg("res") = 2.0, py::arg("filter") = std::vector<std::string>{""},
           py::arg("method") = "random", py::arg("use_attribute") = "Z",
           py::arg("shuffle_size") = std::numeric_limits<int>::max());
 
     m.def("sampling_poisson", &api::sampling_poisson,
           "Sample points using Poisson disk sampling",
-          py::arg("distance") = 2.0, py::arg("filter") = std::vector<std::string>{""}, 
+          py::arg("distance") = 2.0, py::arg("filter") = std::vector<std::string>{""},
           py::arg("shuffle_size") = std::numeric_limits<int>::max());
 
     // Rasterization
@@ -340,7 +340,7 @@ PYBIND11_MODULE(pylasr, m) {
 
     m.def("reader_circles", &api::reader_circles,
           "Read points from circular areas",
-          py::arg("xc"), py::arg("yc"), py::arg("r"), 
+          py::arg("xc"), py::arg("yc"), py::arg("r"),
           py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("copc_depth") = -1);
 
     m.def("reader_rectangles", &api::reader_rectangles,
@@ -353,7 +353,8 @@ PYBIND11_MODULE(pylasr, m) {
           "Find local maxima in point cloud",
           py::arg("ws"), py::arg("min_height") = 2.0,
           py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "",
-          py::arg("use_attribute") = "Z", py::arg("record_attributes") = false);
+          py::arg("use_attribute") = "Z", py::arg("record_attributes") = false,
+          py::arg("store_in_attributes") = "");
 
     m.def("local_maximum_raster", [](py::object connect_uid, int ws, double min_height, std::vector<std::string> filter, std::string ofile) {
         std::string uid = extract_uid(connect_uid);
@@ -366,7 +367,7 @@ PYBIND11_MODULE(pylasr, m) {
     // Triangulation and hulls
     m.def("triangulate", &api::triangulate,
           "Triangulate point cloud",
-          py::arg("max_edge") = 0.0, py::arg("filter") = std::vector<std::string>{""}, 
+          py::arg("max_edge") = 0.0, py::arg("filter") = std::vector<std::string>{""},
           py::arg("ofile") = "", py::arg("use_attribute") = "Z");
 
     m.def("hull", &api::hull,
@@ -434,19 +435,19 @@ PYBIND11_MODULE(pylasr, m) {
     // Summary statistics
     m.def("summarise", &api::summarise,
           "Compute summary statistics",
-          py::arg("zwbin") = 2.0, py::arg("iwbin") = 50.0, 
+          py::arg("zwbin") = 2.0, py::arg("iwbin") = 50.0,
           py::arg("metrics") = std::vector<std::string>{},
           py::arg("filter") = std::vector<std::string>{""});
 
     // Writers
     m.def("write_las", &api::write_las,
           "Write LAS/LAZ file",
-          py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""}, 
+          py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""},
           py::arg("keep_buffer") = false);
 
     m.def("write_copc", &api::write_copc,
           "Write COPC file",
-          py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""}, 
+          py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""},
           py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = "dense");
 
     m.def("write_pcd", &api::write_pcd,
@@ -483,7 +484,7 @@ PYBIND11_MODULE(pylasr, m) {
         return api::rasterize(resolution, resolution, {"min"}, {"Classification %in% 2 9"}, ofile);
     }, "Create a DTM pipeline", py::arg("resolution"), py::arg("ofile"));
 
-    // Helper function for common CHM pipeline  
+    // Helper function for common CHM pipeline
     m.def("chm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
         return api::rasterize(resolution, resolution, {"max"}, {"Classification != 2"}, ofile);
     }, "Create a CHM pipeline", py::arg("resolution"), py::arg("ofile"));
