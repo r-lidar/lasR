@@ -8,6 +8,7 @@ LASRlocalmaximum::LASRlocalmaximum()
   this->use_raster = false;
   this->counter = std::make_shared<unsigned int>(0);
   this->unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
+  this->attribute = "";
 }
 
 bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
@@ -17,6 +18,8 @@ bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
 
   use_attribute = stage.value("use_attribute", "Z");
   record_attributes = stage.value("record_attributes", false);
+
+  attribute = stage.value("store_in_attribute", "");
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
@@ -71,6 +74,25 @@ bool LASRlocalmaximum::process(PointCloud*& las)
   AttributeAccessor get_angle("Angle");
   AttributeAccessor get_return("ReturnNumber");
   AttributeAccessor get_number("NumberOfReturns");
+
+
+  bool store_in_attribute = !attribute.empty();
+  AttributeAccessor set_flag("");
+  if (store_in_attribute)
+  {
+    int index = las->header->schema.get_attribute_index(attribute);
+
+    if (index == -1)
+    {
+      last_error = attribute + " is not present in the point cloud";
+      return false;
+    }
+
+    Attribute* attr = &las->header->schema.attributes[index];
+    AttributeType data_type = attr->type;
+
+    set_flag = AttributeAccessor(attribute);
+  }
 
   progress->reset();
   progress->set_total(las->npoints);
@@ -161,6 +183,18 @@ bool LASRlocalmaximum::process(PointCloud*& las)
           lm.back().FID = it->second;
         }
       }
+    }
+  }
+
+  if (store_in_attribute)
+  {
+    for (size_t i = 0 ; i < las->npoints ; i++)
+    {
+      las->seek(i);
+      if (status[i] == LMX)
+        set_flag(&las->point, 1);
+      else
+        set_flag(&las->point, 0);
     }
   }
 
