@@ -572,7 +572,7 @@ load_matrix = function(matrix, check = TRUE)
 #' @param store_in_attribute In addition to producing a geospatial file with the local maxima,
 #' the points can also be flagged: 0 if the point is not a local maximum, and 1 if the
 #' point is a local maximum. If the attribute does not exist, it must first be created
-#' with \link{add_extrabyte} (see examples).
+#' with \link{add_extrabytes} (see examples).
 
 #'
 #' @template param-filter
