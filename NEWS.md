@@ -1,6 +1,7 @@
 # lasR 0.17.2
 
 - Fix: #198 LAS files with 0 points are discarded on-the-fly.
+- New: argument `store_in_attribute` in `local_maximum`
 
 # lasR 0.17.1
 
