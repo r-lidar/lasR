@@ -195,7 +195,7 @@ PYBIND11_MODULE(pylasr, m) {
             std::string json_file = self.write_json();
 
             // Execute once and convert results (avoid double execution)
-            auto [success, json_results] = api::execute(json_file, "");
+            auto [success, json_results] = api::execute(json_file);
             return create_result(success, json_results, json_file);
         }, "Execute the pipeline on files (str or list[str]) and return results", py::arg("files"));
 
