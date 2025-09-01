@@ -175,31 +175,30 @@ std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with
   bool verbose = false;
   bool progress = true;
   std::string strategy = "concurrent-points";
+  std::string profile_file = "";
+  std::string progress_file = "";
+  std::string log_file = "";
   std::vector<int> ncores = {1, 0};
   std::vector<bool> noprocess;
 
-  // Override if present and not null
-  if (with.containsElementNamed("buffer") && !Rf_isNull(with["buffer"]))
-    buffer = Rcpp::as<double>(with["buffer"]);
+  // Helper lambda to update a variable if present in 'with'
+  auto update_if_present = [&with](auto& var, const char* name) {
+    if (with.containsElementNamed(name) && !Rf_isNull(with[name])) {
+      var = Rcpp::as<std::decay_t<decltype(var)>>(with[name]);
+    }
+  };
 
-  if (with.containsElementNamed("chunk") && !Rf_isNull(with["chunk"]))
-    chunk = Rcpp::as<double>(with["chunk"]);
-
-  if (with.containsElementNamed("ncores") && !Rf_isNull(with["ncores"]))
-    ncores = Rcpp::as<std::vector<int>>(with["ncores"]);
-
-  if (with.containsElementNamed("verbose") && !Rf_isNull(with["verbose"]))
-    verbose = Rcpp::as<bool>(with["verbose"]);
-
-  if (with.containsElementNamed("progress") && !Rf_isNull(with["progress"]))
-    progress = Rcpp::as<bool>(with["progress"]);
-
-  if (with.containsElementNamed("noprocess") && !Rf_isNull(with["noprocess"]))
-    noprocess = Rcpp::as<std::vector<bool>>(with["noprocess"]);
-
-  if (with.containsElementNamed("strategy") && !Rf_isNull(with["strategy"]))
-    strategy = Rcpp::as<std::string>(with["strategy"]);
-
+  // Apply updates
+  update_if_present(buffer, "buffer");
+  update_if_present(chunk, "chunk");
+  update_if_present(verbose, "verbose");
+  update_if_present(progress, "progress");
+  update_if_present(strategy, "strategy");
+  update_if_present(profile_file, "profile_file");
+  update_if_present(progress_file, "progress_file");
+  update_if_present(log_file, "log_file");
+  update_if_present(ncores, "ncores");
+  update_if_present(noprocess, "noprocess");
 
   // Retrieve pipeline and make a deep copy
   api::Pipeline* tmp = as_pipeline(ptr);
@@ -213,6 +212,9 @@ std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with
   p.set_chunk(chunk);
   p.set_profile_file("");
   p.set_noprocess(noprocess);
+  p.set_log_file(log_file);
+  p.set_progress_file(progress_file);
+  p.set_profile_file(profile_file);
 
   if (strategy == "sequential")
     p.set_sequential_strategy();
@@ -239,9 +241,9 @@ std::string generate_json(SEXP ptr, std::vector<std::string> on, Rcpp::List with
 /*
  * R wrapper to execute the json file
  */
-SEXP execute_pipeline(std::string f, std::string async_com)
+SEXP execute_pipeline(std::string f)
 {
-  return api::execute(f, async_com);
+  return api::execute(f);
 }
 
 /*

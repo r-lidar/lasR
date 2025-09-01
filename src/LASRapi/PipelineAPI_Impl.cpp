@@ -183,7 +183,9 @@ nlohmann::json Pipeline::generate_json() const
   j["processing"]["progress"]  = opt_progress;
   j["processing"]["chunk"]     = opt_chunk;
   j["processing"]["verbose"]   = opt_verbose;
-  j["processing"]["profiling"] = opt_profiling_file;
+  j["processing"]["profile_file"] = opt_profiling_file;
+  j["processing"]["progress_file"] = opt_progress_file;
+  j["processing"]["log_file"] = opt_log_file;
 
   // Serialize the pipeline stages
   j["pipeline"] = nlohmann::json::array();

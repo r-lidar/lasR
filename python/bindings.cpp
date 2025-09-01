@@ -119,21 +119,20 @@ PYBIND11_MODULE(pylasr, m) {
         .def_readwrite("use_rcapi", &api::PipelineInfo::use_rcapi);
 
     // Core API functions
-    m.def("execute", [](const std::string& config_file, const std::string& async_communication_file) -> py::object {
+    m.def("execute", [](const std::string& config_file) -> py::object {
           // Execute the C++ pipeline without GIL for performance
           auto [success, json_results] = [&]() {
               py::gil_scoped_release release;
-              return api::execute(config_file, async_communication_file);
+              return api::execute(config_file);
           }();
 
           // Use helper to create rich results (GIL is now acquired for Python operations)
           return create_result(success, json_results, config_file);
       },
       "Execute a pipeline from a JSON configuration file (files must be embedded in JSON)",
-      py::arg("config_file"),
-      py::arg("async_communication_file") = "");
+      py::arg("config_file"));
 
-      m.def("execute", [](api::Pipeline& pipeline, py::object files, const std::string& async_communication_file) -> py::object {
+      m.def("execute", [](api::Pipeline& pipeline, py::object files) -> py::object {
             // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
             std::vector<std::string> file_vec = normalize_files_arg(files);
 
@@ -143,13 +142,12 @@ PYBIND11_MODULE(pylasr, m) {
             std::string json_file = p.write_json();
 
             // Execute once and convert results (avoid double execution)
-            auto [success, json_results] = api::execute(json_file, async_communication_file);
+            auto [success, json_results] = api::execute(json_file);
             return create_result(success, json_results, json_file);
       },
             "Execute a pipeline with specified files (str or list[str]) (mimics R API: exec(pipeline, on=files))",
             py::arg("pipeline"),
-            py::arg("files"),
-            py::arg("async_communication_file") = "");
+            py::arg("files"));
 
     m.def("pipeline_info", &api::pipeline_info,
           "Get pipeline information from a JSON configuration file",
