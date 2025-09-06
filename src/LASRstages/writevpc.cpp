@@ -2,7 +2,7 @@
 
 bool LASRvpcwriter::set_parameters(const nlohmann::json& stage)
 {
-  absolute_path = stage.value("absolute", false);
+  absolute_path = stage.value("absolute_path", false);
   use_gpstime = stage.value("use_gpstime", false);
   return true;
 }
