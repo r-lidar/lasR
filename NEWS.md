@@ -2,6 +2,15 @@
 
 - Fix: #198 LAS files with 0 points are discarded on-the-fly.
 - New: argument `store_in_attribute` in `local_maximum`
+- New: *undocumented* capacity at logging informations in files (log, progress). Accessible in R API via
+  ```r
+  exec(..., progress_file = "path/to/progress.ext", log_file = "path/to/log.ext")
+  ```
+  Accessible in the C++ API via two members
+  ```r
+  Pipeline::set_progress_file(std::string);
+  Pipeline::set_profile_file(std::string);
+  ```
 - Fix: #205 absolute in `write_vpc` was broken since 0.17.0
 - Fix: #207 `sor` when executed in parallel on multiple files.
 

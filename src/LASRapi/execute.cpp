@@ -33,14 +33,14 @@
 namespace api
 {
 
-ReturnType execute(const std::string& config_file, const std::string& async_communication_file)
+ReturnType execute(const std::string& config_file)
 {
   // Open the JSON file
   std::ifstream fjson(config_file);
   if (!fjson.is_open())
   {
     #ifdef USING_R
-      return make_R_error("Could not open the json file containing the pipeline");
+      throw std::runtime_error("Could not open the json file containing the pipeline");
     #elif defined(USING_PYTHON)
       eprint("Could not open the json file containing the pipeline");
       return std::make_pair(false, nlohmann::json{});
@@ -54,7 +54,8 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
   fjson >> json;
 
   // The json file is maybe a file produce by Drawflow. It must be converted into something
-  // understandable by lasR
+  // understandable by lasR. This is an experimental layer of compatibility for:
+  // https://github.com/r-lidar-lab/lasRui
   if (json.contains("drawflow"))
   {
     json = DrawflowParser::parse(json);
@@ -69,15 +70,40 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
   if (ncpu.size() == 0) ncpu.push_back(std::ceil((float)omp_get_num_threads()/2));
   std::string strategy = processing_options.value("strategy", "concurrent-points");
   bool progrss = processing_options.value("progress", true);
-  #ifdef USING_R
-  progrss = progrss && async_communication_file.empty();
-  #endif
   bool verbose = processing_options.value("verbose", false);
   double chunk_size = processing_options.value("chunk", 0);
-  std::string fprofiling = processing_options.value("profiling", "");
 
-  // build_catalog() has been added at R level because there are some subtleties to handle LAS and FileCollection
-  // object from lidR. If build_catalog is missing, add it because we are using an API that is not R
+  // Optional log files
+  std::string progress_file = processing_options.value("progress_file", "");
+  std::string log_file = processing_options.value("log_file", "");
+  std::string profile_file = processing_options.value("profile_file", "");
+
+  // Log file: is opened once for the time of the processing and we append content to log
+  // informations
+  FILE* flog = NULL;
+  if (!log_file.empty())
+  {
+    flog = fopen(log_file.c_str(), "w");
+    if (flog == NULL) throw std::runtime_error("Failed to open log file");
+  }
+
+  // Progress file: is opened and closed each time we update the main progress bar
+  auto write_progress = [](const std::string& filename, float percent)
+  {
+    if (filename.empty()) return;
+    std::ofstream f(filename, std::ios::trunc); // overwrite
+    if (!f) throw std::runtime_error("Cannot open progress file: " + filename);
+    f<< percent*100;
+    return;
+  };
+
+  // Profile file: is handled by the Engine to benchmark proccessing times.
+
+  // build_catalog() has been added at R level because there are some subtleties to handle LAS
+  // and FileCollection object from lidR. If build_catalog is missing: add it because we are using
+  // an API that is not R.
+  // TODO: I don't know if these lines of code are still useful and relevant since v0.17 with the new
+  // C++ API. `build_catalog` is added by the C++ API. Maybe for lasRui?? Not sure!!
   if (json_pipeline.empty() || json_pipeline[0]["algoname"] != "build_catalog")
   {
     nlohmann::json build_catalog = {
@@ -159,19 +185,14 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
     pipeline.set_ncpu(ncpu_inner_loops);
     pipeline.set_ncpu_concurrent_files(ncpu_outer_loop);
 
-    if (verbose)
-    {
-      // # nocov start
-      print("File processing options:\n");
-      print("  Read points: %s\n", pipeline.need_points() ? "true" : "false");
-      print("  Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
-      print("  Buffer: %.1lf\n", pipeline.need_buffer());
-      print("  Concurrent files: %d\n", ncpu_outer_loop);
-      print("  Concurrent points: %d\n", ncpu_inner_loops);
-      print("  Chunks: %d\n", n);
-      print("\n");
-      // # nocov end
-    }
+    log(flog, verbose, "File processing options:\n");
+    log(flog, verbose, "  Read points: %s\n", pipeline.need_points() ? "true" : "false");
+    log(flog, verbose, "  Streamable: %s\n", pipeline.is_streamable() ? "true" : "false");
+    log(flog, verbose, "  Buffer: %.1lf\n", pipeline.need_buffer());
+    log(flog, verbose, "  Concurrent files: %d\n", ncpu_outer_loop);
+    log(flog, verbose, "  Concurrent points: %d\n", ncpu_inner_loops);
+    log(flog, verbose, "  Chunks: %d\n", n);
+    log(flog, verbose, "\n");
 
     // Initialize progress bars
     Progress progress;
@@ -180,9 +201,6 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
     progress.set_display(progrss);
     progress.set_ncpu(ncpu_outer_loop);
     progress.create_subprocess();
-    #ifdef USING_R
-    progress.set_async_message_file(async_communication_file);
-    #endif
 
     pipeline.set_progress(&progress);
 
@@ -203,7 +221,7 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
       try
       {
         // We need a copy of the pipeline. The copy constructor of the pipeline and stages
-        // ensure that shared resources are protected (such as connection to output files)
+        // ensure that shared resources are protected (such as connections to output files)
         // and private data are copied.
         Engine private_pipeline(pipeline);
 
@@ -223,33 +241,32 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
             continue;
           }
 
-          // This is a special case when processing with a query that fall outside the collection
-          // of files. This fixes #161 and prevent a failure when only a warning is necessary
-          if (chunk.is_empty())
+          // chunk.is_empty() is a special case when processing with a query that fall outside the
+          // collection of files. This fixes #161 and prevent a failure when only a warning is necessary
+          //
+          // !chunk.process: the chunk is not flagged "process", it is a file that is only used as buffer
+          // we can skip the processing. This is a compatibility mode for lidR and LAScatalog. How
+          // to assign the flag is not documented. This is not part of public tools. By default they
+          // are all flagged for processing
+          if (chunk.is_empty() || !chunk.process)
           {
-            if (verbose) print("Empty chunk skipped\n");
-            continue;
-          }
-
-          if (verbose)
-          {
-            print("Processing chunk %d/%d in thread %d: %s\n", i+1, n, omp_get_thread_num(), chunk.name.c_str()); // # nocov
-          }
-
-          // If the chunk is not flagged "process" it is a file that is only used as buffer
-          // we can skip the processing
-          if (!chunk.process)
-          {
-            #pragma omp critical
+            #pragma omp critical (progressupdate)
             {
               k++;
               progress.update(k, true);
               progress.show();
-              if (verbose) print("Chunk %d is flagged for not being processed. Skipped.", i);
+              write_progress(progress_file, progress.get_percentage());
             }
+
+            if (chunk.is_empty())
+              log(flog, verbose, "Processing chunk %d/%d: empty chunk skipped\n", i+1, n);
+            else
+              log(flog, verbose, "Chunk %d is flagged for not being processed. Skipped.\n", i+1);
 
             continue;
           }
+
+          log(flog, verbose, "Processing chunk %d/%d in thread %d: %s\n", i+1, n, omp_get_thread_num(), chunk.name.c_str()); // # nocov
 
           // set_chunk() initialize the region we are working with which is a sub-part of the
           // overall processed region
@@ -268,20 +285,25 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
             continue;
           }
 
-          #pragma omp critical
+          #pragma omp critical (progressupdate)
           {
             k++;
             progress.update(k, true);
             progress.show();
+            write_progress(progress_file, progress.get_percentage());
           }
+
+          log(flog, verbose, "Chunk %d completed\n", i+1);
         }
 
         // We are outside the main loop. We can clear the pipeline with last = true;
+        // Pipelines can do something special or not (such a freeing resource) at the very end of
+        // the process.
         private_pipeline.clear(true);
 
         // We have multiple pipelines and each processed some chunks and each have a partial
         // output. We reduce in the main pipeline. To preserve the ordering of the output we
-        // well call sort() outside the paraellel region
+        // need to call sort() outside the parallel region later (L314)
         #pragma omp critical
         {
           pipeline.merge(private_pipeline);
@@ -290,6 +312,7 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
       catch (std::string e)
       {
         last_error = e;
+        log(flog, verbose, "ERROR: %s\n", last_error.c_str());
         failure = true;
       }
     }
@@ -302,6 +325,13 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
 
     progress.done(true);
 
+    // closing log files
+    if (flog)
+    {
+      fclose(flog);
+      flog = NULL;
+    }
+
     if (failure)
     {
       throw std::runtime_error(last_error);
@@ -309,30 +339,21 @@ ReturnType execute(const std::string& config_file, const std::string& async_comm
 
     pipeline.sort();
 
-    pipeline.profiler.write(fprofiling);
+    pipeline.profiler.write(profile_file);
 
     #ifdef USING_R
         return pipeline.to_R();
     #elif defined(USING_PYTHON)
         nlohmann::json ans = pipeline.to_json();
-        // For Python, return rich results directly
-        return std::make_pair(true, ans);
+        return std::make_pair(true, ans); // For Python, return rich results directly
     #else
+        // Placeholder with no real implementation yet.
         nlohmann::json ans = pipeline.to_json();
         if (!ans.empty()) {
             std::cout << ans.dump(4) << std::endl;
         }
         return true;
     #endif
-
-
-  #ifdef USING_R
-    return R_NilValue;
-  #elif defined(USING_PYTHON)
-    return std::make_pair(false, nlohmann::json{});
-  #else
-    return false;
-  #endif
 }
 
 
