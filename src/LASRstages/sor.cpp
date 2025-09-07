@@ -1,3 +1,4 @@
+#include "openmp.h"
 #include "sor.h"
 #include "Grid.h"
 
@@ -12,15 +13,17 @@ bool LASRsor::process(PointCloud*& las)
   double m0 = 0.0; // online mean
   double m2 = 0.0;
   std::vector<double> distances;
-  distances.reserve(las->npoints);
+  distances.resize(las->npoints);
+
+  // The next for loop is at the level a nested parallel region. Printing the progress bar
+  // is not thread safe. We first check that we are in outer thread 0
+  bool main_thread = omp_get_thread_num() == 0;
 
   if (verbose) print("Building KDtree spatial index\n");
   las->build_kdtree();
-
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < las->npoints ; i++)
   {
-    (*progress)++;
     if (progress->interrupted()) continue;
 
     Point p;
@@ -43,6 +46,12 @@ bool LASRsor::process(PointCloud*& las)
       double delta = dmean - m0;
       m0 += delta/n;
       m2 += delta*(dmean - m0);
+
+      if (main_thread)
+      {
+        (*progress)++;
+        progress->show();
+      }
     }
   }
 
