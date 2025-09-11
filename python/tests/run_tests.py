@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Test runner for pylasr tests with comprehensive reporting
 """
@@ -13,6 +14,23 @@ from io import StringIO
 # Add the parent directory to sys.path to import pylasr
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
+def safe_unlink(filepath):
+    """Safely delete a file with Windows compatibility"""
+    if not os.path.exists(filepath):
+        return
+    
+    try:
+        os.unlink(filepath)
+    except (PermissionError, OSError):
+        # On Windows, sometimes files are locked briefly
+        time.sleep(0.1)  # Brief delay
+        try:
+            os.unlink(filepath)
+        except (PermissionError, OSError):
+            # If still can't delete, continue silently
+            pass
+
 def run_all_tests():
     """Run all pylasr tests with detailed reporting"""
     
@@ -23,16 +41,16 @@ def run_all_tests():
     # Try to import pylasr first
     try:
         import pylasr
-        print(f"✅ pylasr imported successfully (version: {pylasr.__version__})")
+        print(f"[OK] pylasr imported successfully (version: {pylasr.__version__})")
     except ImportError as e:
-        print(f"❌ Failed to import pylasr: {e}")
+        print(f"[FAIL] Failed to import pylasr: {e}")
         print("\nMake sure pylasr is built and available in the current directory.")
         return False
     
     print()
     
     # System information
-    print("📊 SYSTEM INFORMATION")
+    print("SYSTEM INFORMATION")
     print("-" * 40)
     try:
         print(f"Available threads: {pylasr.available_threads()}")
@@ -40,7 +58,7 @@ def run_all_tests():
         print(f"Available RAM: {pylasr.get_available_ram() / (1024**3):.2f} GB")
         print(f"Total RAM: {pylasr.get_total_ram() / (1024**3):.2f} GB")
     except Exception as e:
-        print(f"⚠️  Could not retrieve system info: {e}")
+        print(f"[WARN] Could not retrieve system info: {e}")
     
     print()
     
@@ -56,7 +74,7 @@ def run_all_tests():
         'test_integration'
     ]
     
-    print("🧪 RUNNING TEST MODULES")
+    print("RUNNING TEST MODULES")
     print("-" * 40)
     
     for module_name in test_modules:
@@ -68,17 +86,17 @@ def run_all_tests():
             module_suite = test_loader.loadTestsFromModule(module)
             test_suite.addTest(module_suite)
             
-            print(f"✅ Loaded tests from {module_name}")
+            print(f"[OK] Loaded tests from {module_name}")
             
         except ImportError as e:
-            print(f"❌ Failed to load {module_name}: {e}")
+            print(f"[FAIL] Failed to load {module_name}: {e}")
         except Exception as e:
-            print(f"⚠️  Error loading {module_name}: {e}")
+            print(f"[WARN] Error loading {module_name}: {e}")
     
     print()
     
     # Run the tests
-    print("🏃 EXECUTING TESTS")
+    print("EXECUTING TESTS")
     print("-" * 40)
     
     # Custom test result class for better reporting
@@ -90,19 +108,19 @@ def run_all_tests():
         
         def addSuccess(self, test):
             super().addSuccess(test)
-            self.stream.write("✅ PASS\n")
+            self.stream.write("[PASS]\n")
         
         def addError(self, test, err):
             super().addError(test, err)
-            self.stream.write("❌ ERROR\n")
+            self.stream.write("[ERROR]\n")
         
         def addFailure(self, test, err):
             super().addFailure(test, err)
-            self.stream.write("❌ FAIL\n")
+            self.stream.write("[FAIL]\n")
         
         def addSkip(self, test, reason):
             super().addSkip(test, reason)
-            self.stream.write(f"⏭️  SKIP ({reason})\n")
+            self.stream.write(f"[SKIP] ({reason})\n")
     
     # Run tests with custom result handler
     runner = unittest.TextTestRunner(
@@ -116,7 +134,7 @@ def run_all_tests():
     end_time = time.time()
     
     print()
-    print("📈 TEST SUMMARY")
+    print("TEST SUMMARY")
     print("-" * 40)
     print(f"Tests run: {result.testsRun}")
     print(f"Failures: {len(result.failures)}")
@@ -127,7 +145,7 @@ def run_all_tests():
     
     # Report failures and errors
     if result.failures:
-        print("\n❌ FAILURES:")
+        print("\nFAILURES:")
         print("-" * 40)
         for test, traceback in result.failures:
             print(f"FAIL: {test}")
@@ -135,7 +153,7 @@ def run_all_tests():
             print()
     
     if result.errors:
-        print("\n💥 ERRORS:")
+        print("\nERRORS:")
         print("-" * 40)
         for test, traceback in result.errors:
             print(f"ERROR: {test}")
@@ -147,10 +165,10 @@ def run_all_tests():
     
     print("=" * 80)
     if success:
-        print("🎉 ALL TESTS PASSED!")
+        print("ALL TESTS PASSED!")
         print("The pylasr Python API is working correctly.")
     else:
-        print("⚠️  SOME TESTS FAILED")
+        print("SOME TESTS FAILED")
         print("Please review the failures and errors above.")
     print("=" * 80)
     
@@ -160,45 +178,50 @@ def run_all_tests():
 def run_quick_test():
     """Run a quick smoke test to verify basic functionality"""
     
-    print("🔥 PYLASR QUICK SMOKE TEST")
+    print("PYLASR QUICK SMOKE TEST")
     print("-" * 40)
     
     try:
         import pylasr
-        print("✅ Import successful")
+        print("[OK] Import successful")
         
         # Test basic system info
         threads = pylasr.available_threads()
-        print(f"✅ System info: {threads} threads available")
+        print(f"[OK] System info: {threads} threads available")
         
         # Test pipeline creation with info stage
         pipeline = pylasr.info()
-        print(f"✅ Pipeline creation with info stage")
+        print(f"[OK] Pipeline creation with info stage")
         
         # Test pipeline creation  
         pipeline = pylasr.Pipeline()
         pipeline += pylasr.info()
-        print("✅ Pipeline creation and stage addition")
+        print("[OK] Pipeline creation and stage addition")
         
         # Test JSON export
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json_file = pipeline.write_json(f.name)
+            temp_filename = f.name
+            
+        try:
+            json_file = pipeline.write_json(temp_filename)
             if os.path.exists(json_file):
-                print("✅ JSON export")
-                os.unlink(json_file)
+                print("[OK] JSON export")
             else:
-                print("❌ JSON export failed")
+                print("[FAIL] JSON export failed")
                 return False
+        finally:
+            # Clean up using Windows-compatible function
+            safe_unlink(temp_filename)
         
         # Test convenience functions
         dtm_pipeline = pylasr.dtm_pipeline(1.0, "test.tif")
-        print("✅ Convenience functions")
+        print("[OK] Convenience functions")
         
-        print("\n🎉 QUICK TEST PASSED - pylasr is working!")
+        print("\nQUICK TEST PASSED - pylasr is working!")
         return True
         
     except Exception as e:
-        print(f"❌ Quick test failed: {e}")
+        print(f"[FAIL] Quick test failed: {e}")
         return False
 
 
