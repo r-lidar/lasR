@@ -14,22 +14,9 @@ from io import StringIO
 # Add the parent directory to sys.path to import pylasr
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import shared test utilities
+from test_utils import safe_unlink
 
-def safe_unlink(filepath):
-    """Safely delete a file with Windows compatibility"""
-    if not os.path.exists(filepath):
-        return
-    
-    try:
-        os.unlink(filepath)
-    except (PermissionError, OSError):
-        # On Windows, sometimes files are locked briefly
-        time.sleep(0.1)  # Brief delay
-        try:
-            os.unlink(filepath)
-        except (PermissionError, OSError):
-            # If still can't delete, continue silently
-            pass
 
 def run_all_tests():
     """Run all pylasr tests with detailed reporting"""

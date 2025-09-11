@@ -7,10 +7,12 @@ import sys
 import os
 import tempfile
 import unittest
-import time
 
 # Add the parent directory to sys.path to import pylasr
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import shared test utilities
+from test_utils import safe_unlink
 
 try:
     import pylasr
@@ -20,24 +22,6 @@ except ImportError as e:
     IMPORT_ERROR = str(e)
 
 
-def safe_unlink(filepath):
-    """Safely delete a file with Windows compatibility"""
-    if not os.path.exists(filepath):
-        return
-    
-    try:
-        os.unlink(filepath)
-    except (PermissionError, OSError):
-        # On Windows, sometimes files are locked briefly
-        time.sleep(0.1)  # Brief delay
-        try:
-            os.unlink(filepath)
-        except (PermissionError, OSError) as e:
-            # If still can't delete, warn but don't fail
-            print(f"Warning: Could not delete file {filepath}: {e}")
-
-
-# Stage class tests removed - Stage is no longer exposed in Python bindings
 
 
 class TestPipelineClass(unittest.TestCase):
@@ -54,7 +38,6 @@ class TestPipelineClass(unittest.TestCase):
     
     def test_pipeline_creation_with_stage(self):
         """Test creating a pipeline with a stage"""
-        # Stage class no longer exposed - use stage functions instead
         pipeline = pylasr.info()
         pipeline_str = pipeline.to_string()
         self.assertIsInstance(pipeline_str, str)
@@ -144,7 +127,7 @@ class TestPipelineClass(unittest.TestCase):
             self.assertTrue(hasattr(info, 'parallelizable'))
         finally:
             # Clean up using Windows-compatible function
-            safe_unlink(temp_filename)
+            safe_unlink(temp_filename, warn=True)
 
 
 class TestConvenienceFunctions(unittest.TestCase):
@@ -161,7 +144,6 @@ class TestConvenienceFunctions(unittest.TestCase):
     
     def test_create_stage(self):
         """Test create_stage convenience function"""
-        # create_stage no longer exists - use stage functions directly
         pipeline = pylasr.info()
         self.assertIsInstance(pipeline, pylasr.Pipeline)
     
