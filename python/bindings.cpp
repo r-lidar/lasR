@@ -478,14 +478,18 @@ PYBIND11_MODULE(pylasr, m) {
     }, "Create a new empty pipeline");
 
     // Helper function for common DTM pipeline
-    m.def("dtm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        return api::rasterize(resolution, resolution, {"min"}, {"Classification %in% 2 9"}, ofile);
+        m.def("dtm", [](double resolution, const std::string& ofile) -> api::Pipeline {
+        api::Pipeline tin = api::triangulate({"Classification %in% 2 9"})
+        std::string uid = extract_uid(tin)
+        api::Pipeline dtm = api::rasterize_triangulation(uid, resolution, ofile);
+        return tin + dtm;
     }, "Create a DTM pipeline", py::arg("resolution"), py::arg("ofile"));
 
-    // Helper function for common CHM pipeline
-    m.def("chm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        return api::rasterize(resolution, resolution, {"max"}, {"Classification != 2"}, ofile);
-    }, "Create a CHM pipeline", py::arg("resolution"), py::arg("ofile"));
+    // Helper function for common DSM pipeline
+    m.def("dsm", [](double resolution, const std::string& ofile) -> api::Pipeline {
+        return api::rasterize(resolution, resolution, {"max"}, {""}, ofile);
+    }, "Create a DSM pipeline", py::arg("resolution"), py::arg("ofile"));
+
     // Check for updates in interactive sessions only
     try {
         py::module_ sys = py::module_::import("sys");
