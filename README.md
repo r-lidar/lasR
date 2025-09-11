@@ -83,8 +83,8 @@ import pylasr
 folder = "/folder/of/laz/tiles/"
 pipeline = (pylasr.classify_with_sor() + 
             pylasr.delete_points(["Classification == 18"]) + 
-            pylasr.chm_pipeline(1, "chm.tif") + 
-            pylasr.dtm_pipeline(1, "dtm.tif"))
+            pylasr.dsm(1, "dsm.tif") + 
+            pylasr.dtm(1, "dtm.tif"))
 
 pipeline.set_progress(True)
 pipeline.set_concurrent_files_strategy(16)

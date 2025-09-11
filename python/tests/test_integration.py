@@ -94,24 +94,24 @@ class TestIntegrationWorkflows(unittest.TestCase):
         pipeline.write_json(json_file)
         self.assertTrue(os.path.exists(json_file))
 
-    def test_dtm_chm_workflow(self):
-        """Test DTM/CHM workflow creation"""
+    def test_dtm_dsm_workflow(self):
+        """Test DTM/DSM workflow creation"""
         dtm_file = os.path.join(self.temp_dir, "dtm.tif")
-        chm_file = os.path.join(self.temp_dir, "chm.tif")
+        dsm_file = os.path.join(self.temp_dir, "dsm.tif")
 
-        # Create DTM and CHM pipelines
-        dtm_pipeline = pylasr.dtm_pipeline(1.0, dtm_file)
-        chm_pipeline = pylasr.chm_pipeline(0.5, chm_file)
+        # Create DTM and DSM pipelines
+        dtm_pipeline = pylasr.dtm(1.0, dtm_file)
+        dsm_pipeline = pylasr.dsm(0.5, dsm_file)
 
         # Combine pipelines
-        full_pipeline = dtm_pipeline + chm_pipeline
+        full_pipeline = dtm_pipeline + dsm_pipeline
 
         # Test pipeline structure
         pipeline_str = full_pipeline.to_string()
         self.assertIn("rasterize", pipeline_str)
 
         # Test JSON export
-        json_file = os.path.join(self.temp_dir, "dtm_chm_pipeline.json")
+        json_file = os.path.join(self.temp_dir, "dtm_dsm_pipeline.json")
         full_pipeline.write_json(json_file)
         self.assertTrue(os.path.exists(json_file))
 

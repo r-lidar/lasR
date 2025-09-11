@@ -191,7 +191,7 @@ def run_quick_test():
                 return False
         
         # Test convenience functions
-        dtm_pipeline = pylasr.dtm_pipeline(1.0, "test.tif")
+        dtm_pipeline = pylasr.dtm(1.0, "test.tif")
         print("✅ Convenience functions")
         
         print("\n🎉 QUICK TEST PASSED - pylasr is working!")
