@@ -393,7 +393,6 @@ PYBIND11_MODULE(pylasr, m) {
     // Transformations
     m.def("transform_with", [](py::object connect_uid, const std::string& operation, const std::string& store_in_attribute, bool bilinear) {
         std::string uid = extract_uid(connect_uid);
-        // Проверка на тип стадии (triangulate/raster/matrix) как раньше
         if (py::isinstance<api::Pipeline>(connect_uid)) {
             auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
             std::string name = info["name"].cast<std::string>();
@@ -479,8 +478,9 @@ PYBIND11_MODULE(pylasr, m) {
 
     // Helper function for common DTM pipeline
     m.def("dtm", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        api::Pipeline tin = api::triangulate({"Classification %in% 2 9"})
-        std::string uid = extract_uid(tin)
+        api::Pipeline tin = api::triangulate(0.0, {"Classification %in% 2 9"});
+        py::object tin_obj = py::cast(tin);
+        std::string uid = extract_uid(tin_obj);
         api::Pipeline dtm = api::rasterize_triangulation(uid, resolution, ofile);
         return tin + dtm;
     }, "Create a DTM pipeline", py::arg("resolution"), py::arg("ofile"));
