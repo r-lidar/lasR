@@ -478,7 +478,7 @@ PYBIND11_MODULE(pylasr, m) {
     }, "Create a new empty pipeline");
 
     // Helper function for common DTM pipeline
-        m.def("dtm", [](double resolution, const std::string& ofile) -> api::Pipeline {
+    m.def("dtm", [](double resolution, const std::string& ofile) -> api::Pipeline {
         api::Pipeline tin = api::triangulate({"Classification %in% 2 9"})
         std::string uid = extract_uid(tin)
         api::Pipeline dtm = api::rasterize_triangulation(uid, resolution, ofile);
