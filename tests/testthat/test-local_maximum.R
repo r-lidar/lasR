@@ -110,3 +110,15 @@ test_that("local maximum can flag the points",
   expect_equal(sum(res$lm), 177)
 })
 
+
+test_that("local maximum works with deleted points",
+{
+  f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+  del = delete_points("Z < 0.1")
+  lmf <- local_maximum(5)
+  pipeline <- del + lmf
+  ans <- exec(pipeline, on = f, ncores = 1)
+
+  expect_equal(nrow(ans), 177)
+})
+

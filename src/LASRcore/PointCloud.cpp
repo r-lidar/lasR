@@ -279,7 +279,8 @@ bool PointCloud::delete_deleted()
 
   // If more than 25% of deleted point then we reshaped the memory layout to free some memory
   // and reshape the spatial index. Otherwise no need to spend time on this task
-  if (ratio > 0.75) return true;
+  // Fix #206 by setting the threshold to 0. Deleted points are always removed from the memory layout
+  if (ratio == 0) return true;
 
   // Read all the points and move memory at the beginning of the buffer.
   int j = 0;

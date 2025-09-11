@@ -11,8 +11,9 @@
   Pipeline::set_progress_file(std::string);
   Pipeline::set_profile_file(std::string);
   ```
-- Fix: #205 absolute in `write_vpc` was broken since 0.17.0
+- Fix: #205 absolute paths in `write_vpc` were broken since 0.17.0
 - Fix: #207 `sor` when executed in parallel on multiple files.
+- Fix: #206 `local_maximum()` after `normalize()` or `delete_points()`
 
 # lasR 0.17.1
 
