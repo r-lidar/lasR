@@ -11,7 +11,8 @@ local_maximum(
   filter = "",
   ofile = tempgpkg(),
   use_attribute = "Z",
-  record_attributes = FALSE
+  record_attributes = FALSE,
+  store_in_attribute = ""
 )
 
 local_maximum_raster(
@@ -49,6 +50,11 @@ the internal engine will return 0 for the missing attribute.}
 It is also possible to record the attributes of theses points such as the intensity, return number, scan
 angle and so on.}
 
+\item{store_in_attribute}{In addition to producing a geospatial file with the local maxima,
+the points can also be flagged: 0 if the point is not a local maximum, and 1 if the
+point is a local maximum. If the attribute does not exist, it must first be created
+with \link{add_extrabytes} (see examples).}
+
 \item{raster}{LASRalgorithm. A stage that produces a raster.}
 }
 \value{
@@ -73,4 +79,15 @@ lmf <- local_maximum_raster(chm, 5)
 ans <- exec(read + chm + lmf, on = f)
 # terra::plot(ans$rasterize)
 # plot(ans$local_maximum, add = T, pch = 19)
+
+# Storing LM in UserData.
+lmf <- local_maximum(5, store_in_attribute = "UserData")
+ans <- exec(read + lmf + write_las(), on = f)
+ans
+
+# Storing in an new attribute without geospatial output
+attr <- add_extrabytes("uchar", "lm", "local maximum flag")
+lmf <- local_maximum(5, ofile = "", store_in_attribute = "lm")
+ans <- exec(attr + lmf + write_las(), on = f)
+ans
 }

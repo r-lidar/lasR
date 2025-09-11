@@ -109,6 +109,17 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
     // # nocov end
   }
 
+  // This fixes a bug in LASlib when using LASreaderMerged. If we use LASreaderMerged the
+  // attributer of the point is nullptr. This prevent extrabyte from being read since the
+  // points believe it has 0 extrabytes. But the header is correct and the memory layout is
+  // correct as well. So we can force the header to becomes the attributer of the point.
+  // TODO: fix in LASlib
+  if (lasreadopener->get_file_name_number() > 1)
+  {
+    LASattributer* lasattributer = static_cast<LASattributer*>(&lasreader->header);
+    lasreader->point.attributer = lasattributer;
+  }
+
   if (chunk.buffer == 0)
   {
     lasreader->header.clean_lasoriginal();

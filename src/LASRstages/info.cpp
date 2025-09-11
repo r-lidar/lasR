@@ -81,5 +81,6 @@ bool LASRinfo::process(Header*& h)
 bool LASRinfo::set_chunk(Chunk& chunk)
 {
   ifile = chunk.main_files[0];
+  printed = false;
   return true;
 }

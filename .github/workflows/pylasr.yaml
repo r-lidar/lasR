@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-unix:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -50,25 +50,25 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
-        brew install libomp gdal geos proj sqlite3 tbb cmake
+        brew install libomp gdal geos proj sqlite3 tbb
 
-    - name: Install Python dependencies on Ubuntu/macOS
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install setuptools wheel numpy pybind11
 
-    - name: Configure pybind11 path on Ubuntu/macOS
+    - name: Configure pybind11 path
       run: |
         pybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
         echo "pybind11_DIR=$pybind11_DIR" >> $GITHUB_ENV
 
-    - name: Build extension on Ubuntu/macOS
+    - name: Build extension
       run: |
         cd python
         python setup.py build_ext --inplace -vvv
         find . -name "*.so" | head -20
 
-    - name: Run tests on Ubuntu/macOS
+    - name: Run tests
       working-directory: python
       run: |
         # Add current directory to Python path to find the built module
@@ -84,6 +84,114 @@ jobs:
     - name: Run quick smoke test
       working-directory: python
       run: |
+        # Add current directory to Python path to find the built module
+        export PYTHONPATH=$PWD:$PYTHONPATH
+        python tests/run_tests.py --quick
+
+  test-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+        
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup MSYS2 and install dependencies
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          base-devel
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-gdal
+          mingw-w64-x86_64-proj
+          mingw-w64-x86_64-geos
+          mingw-w64-x86_64-sqlite3
+          mingw-w64-x86_64-tbb
+          mingw-w64-x86_64-python
+          mingw-w64-x86_64-python-pip
+
+    - name: Install Python packages
+      shell: msys2 {0}
+      run: |
+        # Check Python version and install packages
+        python --version
+        which python
+        python -m pip install --upgrade pip
+        python -m pip install setuptools wheel numpy pybind11
+
+    - name: Configure pybind11 path
+      shell: msys2 {0}
+      run: |
+        pybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
+        echo "pybind11_DIR=$pybind11_DIR" >> $GITHUB_ENV
+
+    - name: Build extension with MSYS2/MinGW
+      shell: msys2 {0}
+      run: |
+        cd python
+        
+        # Create a temporary patch for setup.py to use GCC flags
+        cp setup.py setup.py.backup
+        
+        # Replace MSVC-specific flags with GCC equivalents in setup.py
+        sed -i 's|/std:c++17|-std=c++17|g' setup.py
+        sed -i 's|/maxcpucount:|-j|g' setup.py
+        # Fix Unicode characters that cause encoding issues in setup.py
+        sed -i 's|\\u2713|[OK]|g' setup.py
+        
+        # Set MinGW-compatible environment variables
+        export CC=gcc
+        export CXX=g++
+        export CMAKE_GENERATOR="Unix Makefiles"
+        
+        # Set UTF-8 encoding to handle Unicode characters
+        export PYTHONIOENCODING=utf-8
+        export LC_ALL=C.UTF-8
+        
+        # Clear any conflicting environment variables
+        unset CXXFLAGS CFLAGS
+        
+        # Build with patched setup.py
+        python setup.py build_ext --inplace -vvv --compiler=mingw32
+        
+        # Restore original setup.py
+        mv setup.py.backup setup.py
+        
+        find . -name "*.pyd" -o -name "*.dll" -o -name "*.so" | head -20
+
+    - name: Run tests
+      shell: msys2 {0}
+      working-directory: python
+      run: |
+        # Set UTF-8 encoding to handle Unicode characters
+        export PYTHONIOENCODING=utf-8
+        export LC_ALL=C.UTF-8
+        
+        # Add current directory to Python path to find the built module
+        export PYTHONPATH=$PWD:$PYTHONPATH
+        echo "PYTHONPATH=$PYTHONPATH"
+        
+        # Try importing pylasr directly first
+        python -c "import sys; print('Python path:', sys.path); import pylasr; print('pylasr imported successfully')" || echo "Failed to import pylasr"
+        
+        # Run the actual tests
+        python tests/run_tests.py
+
+    - name: Run quick smoke test
+      shell: msys2 {0}
+      working-directory: python
+      run: |
+        # Set UTF-8 encoding to handle Unicode characters
+        export PYTHONIOENCODING=utf-8
+        export LC_ALL=C.UTF-8
+        
         # Add current directory to Python path to find the built module
         export PYTHONPATH=$PWD:$PYTHONPATH
         python tests/run_tests.py --quick

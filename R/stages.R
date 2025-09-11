@@ -569,6 +569,11 @@ load_matrix = function(matrix, check = TRUE)
 #' @param record_attributes The coordinates XYZ of points corresponding to the local maxima are recorded.
 #' It is also possible to record the attributes of theses points such as the intensity, return number, scan
 #' angle and so on.
+#' @param store_in_attribute In addition to producing a geospatial file with the local maxima,
+#' the points can also be flagged: 0 if the point is not a local maximum, and 1 if the
+#' point is a local maximum. If the attribute does not exist, it must first be created
+#' with \link{add_extrabytes} (see examples).
+
 #'
 #' @template param-filter
 #' @template param-ofile
@@ -587,11 +592,22 @@ load_matrix = function(matrix, check = TRUE)
 #' ans <- exec(read + chm + lmf, on = f)
 #' # terra::plot(ans$rasterize)
 #' # plot(ans$local_maximum, add = T, pch = 19)
+#'
+#' # Storing LM in UserData.
+#' lmf <- local_maximum(5, store_in_attribute = "UserData")
+#' ans <- exec(read + lmf + write_las(), on = f)
+#' ans
+#'
+#' # Storing in an new attribute without geospatial output
+#' attr <- add_extrabytes("uchar", "lm", "local maximum flag")
+#' lmf <- local_maximum(5, ofile = "", store_in_attribute = "lm")
+#' ans <- exec(attr + lmf + write_las(), on = f)
+#' ans
 #' @export
 #' @md
-local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z", record_attributes = FALSE)
+local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z", record_attributes = FALSE, store_in_attribute = "")
 {
-  return(.APISTAGES$local_maximum(ws, min_height, filter,  ofile, use_attribute, record_attributes))
+  return(.APISTAGES$local_maximum(ws, min_height, filter,  ofile, use_attribute, record_attributes, store_in_attribute))
 }
 
 #' @export

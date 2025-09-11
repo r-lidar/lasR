@@ -87,3 +87,38 @@ test_that("local maximum works with a raster with multiple files",
   expect_equal(nrow(u$local_maximum), 2099L)
 })
 
+test_that("local maximum can flag the points",
+{
+  f <- system.file("extdata", "MixedConifer.las", package="lasR")
+
+  # Store in 'UserData'
+  lmf <- local_maximum(5, ofile = "", store_in_attribute = "UserData")
+  ans <- exec(lmf + write_las(), on = f)
+  ans
+  res = read_las(ans)
+  expect_equal(sum(res$UserData), 177)
+
+  # Store in 'lm' but this attribute does not exist
+  lmf <- local_maximum(5, ofile = "", store_in_attribute = "lm")
+  expect_error(exec(lmf + write_las(), on = f))
+
+  # Store in 'lm' but add it first
+  attr <- add_extrabytes("uchar", "lm", "local maximum flag")
+  lmf <- local_maximum(5, ofile = "", store_in_attribute = "lm")
+  ans <- exec(attr + lmf + write_las(), on = f)
+  res = read_las(ans)
+  expect_equal(sum(res$lm), 177)
+})
+
+
+test_that("local maximum works with deleted points",
+{
+  f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+  del = delete_points("Z < 0.1")
+  lmf <- local_maximum(5)
+  pipeline <- del + lmf
+  ans <- exec(pipeline, on = f, ncores = 1)
+
+  expect_equal(nrow(ans), 177)
+})
+

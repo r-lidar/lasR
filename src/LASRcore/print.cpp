@@ -132,3 +132,28 @@ void warning(const char *format, ...)
 }
 
 #endif
+
+void log(FILE *fp, bool verbose, const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+
+  char buffer[1024];
+  vsnprintf(buffer, sizeof(buffer), format, args);
+
+  // Print to console if verbose
+  if (verbose) {
+    print("%s", buffer);
+  }
+
+  // Append to file safely
+  #pragma omp critical
+  {
+    if (fp != NULL) {
+      fprintf(fp, "%s", buffer);
+      fflush(fp);
+    }
+  }
+
+  va_end(args);
+}

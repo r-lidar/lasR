@@ -35,6 +35,7 @@ private:
   double ws;
   double min_height;
 
+  std::string attribute;
   std::string use_attribute;
   std::vector<PointLAS> lm;
 

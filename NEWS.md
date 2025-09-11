@@ -1,3 +1,25 @@
+# lasR 0.17.2
+
+- Fix: #198 LAS files with 0 points are discarded on-the-fly.
+- New: argument `store_in_attribute` in `local_maximum`
+- New: *undocumented* capacity at logging informations in files (log, progress). Accessible in R API via
+  ```r
+  exec(..., progress_file = "path/to/progress.ext", log_file = "path/to/log.ext")
+  ```
+  Accessible in the C++ API via two members
+  ```r
+  Pipeline::set_progress_file(std::string);
+  Pipeline::set_profile_file(std::string);
+  ```
+- Fix: #205 absolute paths in `write_vpc` were broken since 0.17.0
+- Fix: #207 `sor` when executed in parallel on multiple files.
+- Fix: #206 `local_maximum()` after `normalize()` or `delete_points()`
+
+# lasR 0.17.1
+
+- Fix: `info()` prints informations for each processed chunk. Not only the first one.
+- Fix: #196. ExtraBytes attributes were zeroed when reading two or more files (main file + buffer file)
+
 # lasR 0.17.0
 
 `lasR 0.17.0` does not bring new features. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And we have now a `python` package (`pylasr`) that leverage the C++ API as well. It is now possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding

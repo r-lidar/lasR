@@ -11,6 +11,9 @@ import unittest
 # Add the parent directory to sys.path to import pylasr
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import shared test utilities
+from test_utils import safe_unlink
+
 try:
     import pylasr
     PYLASR_AVAILABLE = True
@@ -19,7 +22,6 @@ except ImportError as e:
     IMPORT_ERROR = str(e)
 
 
-# Stage class tests removed - Stage is no longer exposed in Python bindings
 
 
 class TestPipelineClass(unittest.TestCase):
@@ -36,7 +38,6 @@ class TestPipelineClass(unittest.TestCase):
     
     def test_pipeline_creation_with_stage(self):
         """Test creating a pipeline with a stage"""
-        # Stage class no longer exposed - use stage functions instead
         pipeline = pylasr.info()
         pipeline_str = pipeline.to_string()
         self.assertIsInstance(pipeline_str, str)
@@ -111,21 +112,22 @@ class TestPipelineClass(unittest.TestCase):
         
         # Test JSON export
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json_file = pipeline.write_json(f.name)
-            self.assertEqual(json_file, f.name)
+            temp_filename = f.name
+        
+        try:
+            json_file = pipeline.write_json(temp_filename)
+            self.assertEqual(json_file, temp_filename)
             self.assertTrue(os.path.exists(json_file))
             
             # Test pipeline info
-            try:
-                info = pylasr.pipeline_info(json_file)
-                self.assertTrue(hasattr(info, 'streamable'))
-                self.assertTrue(hasattr(info, 'read_points'))
-                self.assertTrue(hasattr(info, 'buffer'))
-                self.assertTrue(hasattr(info, 'parallelizable'))
-            finally:
-                # Clean up
-                if os.path.exists(json_file):
-                    os.unlink(json_file)
+            info = pylasr.pipeline_info(json_file)
+            self.assertTrue(hasattr(info, 'streamable'))
+            self.assertTrue(hasattr(info, 'read_points'))
+            self.assertTrue(hasattr(info, 'buffer'))
+            self.assertTrue(hasattr(info, 'parallelizable'))
+        finally:
+            # Clean up using Windows-compatible function
+            safe_unlink(temp_filename, warn=True)
 
 
 class TestConvenienceFunctions(unittest.TestCase):
@@ -142,7 +144,6 @@ class TestConvenienceFunctions(unittest.TestCase):
     
     def test_create_stage(self):
         """Test create_stage convenience function"""
-        # create_stage no longer exists - use stage functions directly
         pipeline = pylasr.info()
         self.assertIsInstance(pipeline, pylasr.Pipeline)
     

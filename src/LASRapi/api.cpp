@@ -175,7 +175,7 @@ Pipeline load_matrix(std::vector<double> matrix, bool check)
   return Pipeline(s);
 }
 
-Pipeline local_maximum(double ws, double min_height, std::vector<std::string> filter, std::string ofile, std::string use_attribute, bool record_attributes)
+Pipeline local_maximum(double ws, double min_height, std::vector<std::string> filter, std::string ofile, std::string use_attribute, bool record_attributes, std::string store_in_attribute)
 {
   Stage s("local_maximum");
   s.set("ws", ws);
@@ -184,6 +184,7 @@ Pipeline local_maximum(double ws, double min_height, std::vector<std::string> fi
   s.set("output", ofile);
   s.set("use_attribute", use_attribute);
   s.set("record_attributes", record_attributes);
+  s.set("store_in_attribute", store_in_attribute);
   s.set_vector();
 
   return Pipeline(s);

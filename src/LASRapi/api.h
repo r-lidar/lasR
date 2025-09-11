@@ -155,6 +155,8 @@ public:
   void set_progress(bool b) { opt_progress = b; };
   void set_chunk(double val) { if(val> 0) opt_chunk = val; };
   void set_profile_file(const std::string& path) { opt_profiling_file = path; };
+  void set_progress_file(const std::string& path) { opt_progress_file = path; };
+  void set_log_file(const std::string& path) { opt_log_file = path; };
   void set_noprocess(const std::vector<bool>&);
 
   bool has_reader() const;
@@ -179,9 +181,11 @@ private:
   bool opt_verbose = false;
   std::vector<bool> opt_noprocess;
   std::string opt_profiling_file = "";
+  std::string opt_progress_file = "";
+  std::string opt_log_file = "";
 };
 
-ReturnType execute(const std::string& config_file, const std::string& async_communication_file = "");
+ReturnType execute(const std::string& config_file);
 PipelineInfo pipeline_info(const std::string& config_file);
 
 Pipeline add_attribute(std::string data_type, std::string name, std::string description, double scale = 1, double offset = 0);
@@ -199,7 +203,7 @@ Pipeline hull_triangulation(std::string connect_uid, std::string ofile = "");
 Pipeline info();
 Pipeline load_raster(std::string file, int band = 1L);
 Pipeline load_matrix(std::vector<double> matrix, bool check = true);
-Pipeline local_maximum(double ws, double min_height = 2, std::vector<std::string> filter = {""}, std::string ofile = "", std::string use_attribute = "Z", bool record_attributes = false);
+Pipeline local_maximum(double ws, double min_height = 2, std::vector<std::string> filter = {""}, std::string ofile = "", std::string use_attribute = "Z", bool record_attributes = false, std::string store_in_attribute = "");
 Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_height = 2, std::vector<std::string> filter = {""}, std::string ofile = "");
 Pipeline pit_fill(std::string connect_uid, int lap_size = 3, double thr_lap = 0.1, double thr_spk = -0.1, int med_size = 3, int dil_radius = 0, std::string ofile = "");
 Pipeline rasterize(double res, double window, std::vector<std::string> operators = {"max"}, std::vector<std::string> filter = {""}, std::string ofile = "", double default_value = -99999);
