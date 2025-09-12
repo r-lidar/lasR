@@ -153,7 +153,7 @@ unsigned long long getAvailableRAM()
                                  static_cast<unsigned long long>(page_size);
   
   // Return in MB
-  return available / 1e6;
+  return available / 1000000;
 }
 }
 
