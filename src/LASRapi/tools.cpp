@@ -53,7 +53,7 @@ unsigned long long getAvailableRAM()
   MEMORYSTATUSEX memoryStatus;
   memoryStatus.dwLength = sizeof(memoryStatus);
   GlobalMemoryStatusEx(&memoryStatus);
-  return memoryStatus.ullAvailPhys / 1e6;
+  return memoryStatus.ullAvailPhys / 1000000;
 }
 
 unsigned long long getTotalRAM()
@@ -61,7 +61,7 @@ unsigned long long getTotalRAM()
   MEMORYSTATUSEX memoryStatus;
   memoryStatus.dwLength = sizeof(memoryStatus);
   GlobalMemoryStatusEx(&memoryStatus);
-  return memoryStatus.ullTotalPhys / 1e6;
+  return memoryStatus.ullTotalPhys / 1000000;
 }
 }
 
@@ -126,7 +126,7 @@ unsigned long long getTotalRAM()
   uint64_t memory;
   size_t length = sizeof(memory);
   sysctl(mib, 2, &memory, &length, NULL, 0);
-  return memory / 1e6;
+  return memory / 1000000;
 }
 
 unsigned long long getAvailableRAM()
