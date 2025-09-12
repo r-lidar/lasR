@@ -61,7 +61,7 @@ unsigned long long getTotalRAM()
   MEMORYSTATUSEX memoryStatus;
   memoryStatus.dwLength = sizeof(memoryStatus);
   GlobalMemoryStatusEx(&memoryStatus);
-  return memoryStatus.ullTotalPhys/1e6;
+  return memoryStatus.ullTotalPhys / 1e6;
 }
 }
 
@@ -115,10 +115,12 @@ unsigned long long getTotalRAM()
 
 #elif __APPLE__
 #include <sys/sysctl.h>
+#include <mach/mach.h>
+#include <mach/mach_host.h>
 
 namespace api
 {
-unsigned long long getAvailableRAM()
+unsigned long long getTotalRAM()
 {
   int mib[] = {CTL_HW, HW_MEMSIZE};
   uint64_t memory;
@@ -127,13 +129,28 @@ unsigned long long getAvailableRAM()
   return memory / 1e6;
 }
 
-unsigned long long getTotalRAM()
+unsigned long long getAvailableRAM()
 {
-  int mib[] = {CTL_HW, HW_MEMSIZE};
-  uint64_t memory;
-  size_t length = sizeof(memory);
-  sysctl(mib, 2, &memory, &length, NULL, 0);
-  return memory;
+  vm_size_t page_size;
+  vm_statistics64_data_t vm_stat;
+  mach_port_t mach_port = mach_host_self();
+  mach_msg_type_number_t host_size = sizeof(vm_stat) / sizeof(natural_t);
+  
+  if (host_page_size(mach_port, &page_size) != KERN_SUCCESS) {
+    // Fallback to total RAM if we can't get available
+    return getTotalRAM();
+  }
+  
+  if (host_statistics64(mach_port, HOST_VM_INFO64, (host_info64_t)&vm_stat, &host_size) != KERN_SUCCESS) {
+    // Fallback to total RAM if we can't get statistics
+    return getTotalRAM();
+  }
+  
+  // Calculate available memory: free + inactive + purgeable pages
+  unsigned long long available = (vm_stat.free_count + vm_stat.inactive_count + vm_stat.purgeable_count) * page_size;
+  
+  // Return in MB
+  return available / 1e6;
 }
 }
 
