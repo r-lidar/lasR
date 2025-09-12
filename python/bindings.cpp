@@ -488,7 +488,7 @@ PYBIND11_MODULE(pylasr, m) {
 
     // Helper function for common DSM pipeline
     m.def("dsm", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        return api::rasterize(resolution, resolution, {"max"}, {""}, ofile);
+        return api::rasterize(resolution, resolution, {"max"}, std::vector<std::string>{""}, ofile);
     }, "Create a DSM pipeline", py::arg("resolution"), py::arg("ofile"));
 
     // Check for updates in interactive sessions only
