@@ -247,8 +247,6 @@ class TestErrorHandling(unittest.TestCase):
 
     def test_invalid_stage_parameters(self):
         """Test handling of invalid stage parameters"""
-        # Stage class no longer exposed - test invalid parameters with pipeline functions
-        # Most stage functions validate parameters when creating the pipeline
         # Test with invalid parameter types
         with self.assertRaises((TypeError, ValueError)):
             # Try to create a pipeline with invalid parameters

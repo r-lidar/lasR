@@ -196,6 +196,7 @@ bool LASRtransformwith::process(PointCloud*& las)
     }
 
     las->update_header();
+    las->delete_deleted();
 
     //if (deleted) warning("%u points outside delaunay triangulation were discarded\n", deleted);
     if (deleted == hag.size()) warning("No Delaunay triangulation. All points were discarded\n");
