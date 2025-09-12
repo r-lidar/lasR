@@ -147,7 +147,10 @@ unsigned long long getAvailableRAM()
   }
   
   // Calculate available memory: free + inactive + purgeable pages
-  unsigned long long available = (vm_stat.free_count + vm_stat.inactive_count + vm_stat.purgeable_count) * page_size;
+  unsigned long long available = (static_cast<unsigned long long>(vm_stat.free_count) +
+                                  static_cast<unsigned long long>(vm_stat.inactive_count) +
+                                  static_cast<unsigned long long>(vm_stat.purgeable_count)) *
+                                 static_cast<unsigned long long>(page_size);
   
   // Return in MB
   return available / 1e6;
