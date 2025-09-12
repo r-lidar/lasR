@@ -392,8 +392,8 @@ PYBIND11_MODULE(pylasr, m) {
 
     // Transformations
     m.def("transform_with", [](py::object connect_uid, const std::string& operation, const std::string& store_in_attribute, bool bilinear) {
+        // Extract the UID from the input object (can be a pipeline or a UID string). Stage type validation is performed below.
         std::string uid = extract_uid(connect_uid);
-        // Проверка на тип стадии (triangulate/raster/matrix) как раньше
         if (py::isinstance<api::Pipeline>(connect_uid)) {
             auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
             std::string name = info["name"].cast<std::string>();
@@ -478,14 +478,19 @@ PYBIND11_MODULE(pylasr, m) {
     }, "Create a new empty pipeline");
 
     // Helper function for common DTM pipeline
-    m.def("dtm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        return api::rasterize(resolution, resolution, {"min"}, {"Classification %in% 2 9"}, ofile);
+    m.def("dtm", [](double resolution, const std::string& ofile) -> api::Pipeline {
+        api::Pipeline tin = api::triangulate(0.0, {"Classification %in% 2 9"});
+        py::object tin_obj = py::cast(tin);
+        std::string uid = extract_uid(tin_obj);
+        api::Pipeline dtm = api::rasterize_triangulation(uid, resolution, ofile);
+        return tin + dtm;
     }, "Create a DTM pipeline", py::arg("resolution"), py::arg("ofile"));
 
-    // Helper function for common CHM pipeline
-    m.def("chm_pipeline", [](double resolution, const std::string& ofile) -> api::Pipeline {
-        return api::rasterize(resolution, resolution, {"max"}, {"Classification != 2"}, ofile);
-    }, "Create a CHM pipeline", py::arg("resolution"), py::arg("ofile"));
+    // Helper function for common DSM pipeline
+    m.def("dsm", [](double resolution, const std::string& ofile) -> api::Pipeline {
+        return api::rasterize(resolution, resolution, {"max"}, std::vector<std::string>{""}, ofile);
+    }, "Create a DSM pipeline", py::arg("resolution"), py::arg("ofile"));
+
     // Check for updates in interactive sessions only
     try {
         py::module_ sys = py::module_::import("sys");

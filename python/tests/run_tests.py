@@ -201,8 +201,9 @@ def run_quick_test():
             safe_unlink(temp_filename)
         
         # Test convenience functions
-        dtm_pipeline = pylasr.dtm_pipeline(1.0, "test.tif")
+        dtm_pipeline = pylasr.dtm(1.0, "test.tif")
         print("[OK] Convenience functions")
+
         
         print("\nQUICK TEST PASSED - pylasr is working!")
         return True
