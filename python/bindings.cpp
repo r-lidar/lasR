@@ -392,6 +392,7 @@ PYBIND11_MODULE(pylasr, m) {
 
     // Transformations
     m.def("transform_with", [](py::object connect_uid, const std::string& operation, const std::string& store_in_attribute, bool bilinear) {
+        // Extract the UID from the input object (can be a pipeline or a UID string). Stage type validation is performed below.
         std::string uid = extract_uid(connect_uid);
         if (py::isinstance<api::Pipeline>(connect_uid)) {
             auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
