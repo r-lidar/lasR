@@ -6,11 +6,7 @@
 #include <vector>
 #include <filesystem>
 
-// Include the C++ API
 #include "LASRapi/api.h"
-#include "LASRcore/RAM.h"
-#include "LASRcore/openmp.h"
-#include "LASRcore/error.h"
 
 namespace py = pybind11;
 
@@ -31,37 +27,35 @@ py::dict get_stage_info(api::Pipeline pipeline) {
 }
 
 std::string extract_uid(py::object connect_uid) {
-    if (py::isinstance<api::Pipeline>(connect_uid)) {
-        auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
-        return info["uid"].cast<std::string>();
-    } else if (py::isinstance<py::str>(connect_uid)) {
-        return connect_uid.cast<std::string>();
-    } else {
-        throw std::invalid_argument("connect_uid must be a Pipeline or a string uid");
+    try {
+        if (py::isinstance<api::Pipeline>(connect_uid)) {
+            auto info = get_stage_info(connect_uid.cast<api::Pipeline>());
+            return info["uid"].cast<std::string>();
+        } else if (py::isinstance<py::str>(connect_uid)) {
+            return connect_uid.cast<std::string>();
+        } else {
+            throw std::invalid_argument("connect_uid must be a Pipeline or a string uid");
+        }
+    } catch (const std::exception& e) {
+        throw py::value_error(e.what());
     }
 }
 
 // Helper function to create rich results from execution results
-py::object create_result(bool success, const nlohmann::json& json_results, const std::string& json_config_path) {
+// Since execute() now always throws on error, success will always be true
+py::object create_result(const nlohmann::json& json_results, const std::string& json_config_path) {
     auto results = py::dict();
-    results["success"] = success;
+    results["success"] = true;
     results["json_config"] = json_config_path;
-
-    if (success) {
-        // Success case - return data without redundant message
-        if (!json_results.empty()) {
-            std::string json_str = json_results.dump();
-            py::object json_module = py::module_::import("json");
-            results["data"] = json_module.attr("loads")(json_str);
-        } else {
-            results["data"] = py::list();  // Empty list instead of None for consistency
-        }
+    
+    if (!json_results.empty()) {
+        std::string json_str = json_results.dump();
+        py::object json_module = py::module_::import("json");
+        results["data"] = json_module.attr("loads")(json_str);
     } else {
-        // Error case - include error message and no data
-        results["message"] = last_error.empty() ? "Pipeline execution failed" : last_error;
-        results["data"] = py::none();
+        results["data"] = py::list();  // Empty list instead of None for consistency
     }
-
+    
     return results;
 }
 
@@ -86,17 +80,17 @@ PYBIND11_MODULE(pylasr, m) {
     m.attr("__version__") = "0.17.0";
 
     // System information functions
-    m.def("available_threads", &available_threads,
+    m.def("available_threads", &api::available_threads,
           "Get the number of available threads");
 
-    m.def("has_omp_support", &has_omp_support,
+    m.def("has_omp_support", &api::has_omp_support,
           "Check if OpenMP support is available");
 
-    m.def("get_available_ram", &getAvailableRAM,
-          "Get the available RAM in bytes");
+    m.def("get_available_ram", &api::getAvailableRAM,
+          "Get the available RAM in megabytes");
 
-    m.def("get_total_ram", &getTotalRAM,
-          "Get the total RAM in bytes");
+    m.def("get_total_ram", &api::getTotalRAM,
+          "Get the total RAM in megabytes");
 
     // LAS utility functions
     m.def("las_filter_usage", &api::lasfilterusage,
@@ -109,6 +103,69 @@ PYBIND11_MODULE(pylasr, m) {
           "Check if a LAS file is spatially indexed",
           py::arg("file"));
 
+
+    // Core API functions - with proper exception handling
+    m.def("execute", [](const std::string& config_file, const std::string& async_communication_file = "") -> py::object {
+          try {
+              // Execute the C++ pipeline without GIL for performance
+              auto [success, json_results] = [&]() {
+                  py::gil_scoped_release release;
+                  return api::execute(config_file);
+              }();
+
+              // Create rich results (success will always be true if we reach here)
+              return create_result(json_results, config_file);
+          }
+          catch (const std::exception& e) {
+              // Translate standard exceptions into Python exceptions
+              throw py::value_error(std::string("Execution failed: ") + e.what());
+          }
+          catch (...) {
+              // Catch-all for non-std exceptions
+              throw py::value_error("Execution failed: unknown error");
+          }
+      },
+      "Execute a pipeline from a JSON configuration file (files must be embedded in JSON)",
+      py::arg("config_file"),
+      py::arg("async_communication_file") = "");
+
+      m.def("execute", [](api::Pipeline& pipeline, py::object files) -> py::object {
+            try {
+                // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
+                std::vector<std::string> file_vec = normalize_files_arg(files);
+
+                // Make a copy of the pipeline and set files (similar to R API approach)
+                api::Pipeline p(pipeline);
+                p.set_files(file_vec);
+                std::string json_file = p.write_json();
+
+                // Execute and convert results
+                auto [success, json_results] = api::execute(json_file);
+                return create_result(json_results, json_file);
+            }
+            catch (const std::exception& e) {
+                // Translate standard exceptions into Python exceptions
+                throw py::value_error(std::string("Execution failed: ") + e.what());
+            }
+            catch (...) {
+                // Catch-all for non-std exceptions
+                throw py::value_error("Execution failed: unknown error");
+            }
+      },
+            "Execute a pipeline with specified files (str or list[str]) (mimics R API: exec(pipeline, on=files))",
+            py::arg("pipeline"),
+            py::arg("files"));
+
+    m.def("pipeline_info", [](const std::string& config_file) {
+          try {
+              return api::pipeline_info(config_file);
+          } catch (const std::exception& e) {
+              throw py::value_error(std::string("Failed to get pipeline info: ") + e.what());
+          }
+      },
+      "Get pipeline information from a JSON configuration file",
+      py::arg("config_file"));
+
     // Pipeline info structure
     py::class_<api::PipelineInfo>(m, "PipelineInfo")
         .def_readwrite("streamable", &api::PipelineInfo::streamable)
@@ -117,41 +174,6 @@ PYBIND11_MODULE(pylasr, m) {
         .def_readwrite("parallelizable", &api::PipelineInfo::parallelizable)
         .def_readwrite("parallelized", &api::PipelineInfo::parallelized)
         .def_readwrite("use_rcapi", &api::PipelineInfo::use_rcapi);
-
-    // Core API functions
-    m.def("execute", [](const std::string& config_file) -> py::object {
-          // Execute the C++ pipeline without GIL for performance
-          auto [success, json_results] = [&]() {
-              py::gil_scoped_release release;
-              return api::execute(config_file);
-          }();
-
-          // Use helper to create rich results (GIL is now acquired for Python operations)
-          return create_result(success, json_results, config_file);
-      },
-      "Execute a pipeline from a JSON configuration file (files must be embedded in JSON)",
-      py::arg("config_file"));
-
-      m.def("execute", [](api::Pipeline& pipeline, py::object files) -> py::object {
-            // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
-            std::vector<std::string> file_vec = normalize_files_arg(files);
-
-            // Make a copy of the pipeline and set files (similar to R API approach)
-            api::Pipeline p(pipeline);
-            p.set_files(file_vec);
-            std::string json_file = p.write_json();
-
-            // Execute once and convert results (avoid double execution)
-            auto [success, json_results] = api::execute(json_file);
-            return create_result(success, json_results, json_file);
-      },
-            "Execute a pipeline with specified files (str or list[str]) (mimics R API: exec(pipeline, on=files))",
-            py::arg("pipeline"),
-            py::arg("files"));
-
-    m.def("pipeline_info", &api::pipeline_info,
-          "Get pipeline information from a JSON configuration file",
-          py::arg("config_file"));
 
     // Export Pipeline class from the C++ API
     py::class_<api::Pipeline>(m, "Pipeline")
@@ -184,19 +206,28 @@ PYBIND11_MODULE(pylasr, m) {
         .def("set_profile_file", &api::Pipeline::set_profile_file, "Set profiling output file", py::arg("path"))
         .def("set_noprocess", &api::Pipeline::set_noprocess, "Set no-process flags", py::arg("noprocess"))
         .def("has_reader", &api::Pipeline::has_reader, "Check if pipeline has a reader stage")
-        .def("has_catalog", &api::Pipeline::has_catalog, "Check if pipeline has a catalog stage")
         .def("to_string", &api::Pipeline::to_string, "Get string representation")
         .def("write_json", &api::Pipeline::write_json, "Write pipeline to JSON file", py::arg("path") = "")
         .def("execute", [](api::Pipeline& self, py::object files) -> py::object {
-            // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
-            std::vector<std::string> file_vec = normalize_files_arg(files);
+            try {
+                // Normalize 'files' to a vector of strings (accept str or list/tuple of str)
+                std::vector<std::string> file_vec = normalize_files_arg(files);
 
-            self.set_files(file_vec);
-            std::string json_file = self.write_json();
+                self.set_files(file_vec);
+                std::string json_file = self.write_json();
 
-            // Execute once and convert results (avoid double execution)
-            auto [success, json_results] = api::execute(json_file);
-            return create_result(success, json_results, json_file);
+                // Execute and convert results
+                auto [success, json_results] = api::execute(json_file);
+                return create_result(json_results, json_file);
+            }
+            catch (const std::exception& e) {
+                // Translate standard exceptions into Python exceptions
+                throw py::value_error(std::string("Execution failed: ") + e.what());
+            }
+            catch (...) {
+                // Catch-all for non-std exceptions
+                throw py::value_error("Execution failed: unknown error");
+            }
         }, "Execute the pipeline on files (str or list[str]) and return results", py::arg("files"));
 
     // ==== STAGE CREATION FUNCTIONS ====

@@ -98,12 +98,9 @@ class TestPipelineClass(unittest.TestCase):
         """Test pipeline introspection methods"""
         pipeline = pylasr.Pipeline()
         
-        # Test reader and catalog detection
+        # Test reader detection
         has_reader = pipeline.has_reader()
-        has_catalog = pipeline.has_catalog()
-        
         self.assertIsInstance(has_reader, bool)
-        self.assertIsInstance(has_catalog, bool)
     
     def test_pipeline_json_export(self):
         """Test pipeline JSON export"""
