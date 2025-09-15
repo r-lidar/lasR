@@ -60,18 +60,18 @@ def main():
     print(f"   Number of stages: {len(cleaning_pipeline.to_string().split('\\n'))}")
     print()
 
-    # Example 3: DTM/CHM workflow
-    print("🗻 Example 3: DTM and CHM Generation")
+    # Example 3: DTM/DSM workflow
+    print("🗻 Example 3: DTM and DSM Generation")
     print("-" * 40)
 
-    dtm_pipeline = pylasr.dtm_pipeline(1.0, "dtm.tif")
-    chm_pipeline = pylasr.chm_pipeline(0.5, "chm.tif")
+    dtm_pipeline = pylasr.dtm(1.0, "dtm.tif")
+    dsm_pipeline = pylasr.dsm(0.5, "dsm.tif")
 
     # Combine workflows
-    terrain_pipeline = dtm_pipeline + chm_pipeline
+    terrain_pipeline = dtm_pipeline + dsm_pipeline
 
     print("✅ DTM pipeline created (1m resolution)")
-    print("✅ CHM pipeline created (0.5m resolution)")
+    print("✅ DSM pipeline created (0.5m resolution)")
     print("✅ Combined terrain analysis workflow")
     print()
 
