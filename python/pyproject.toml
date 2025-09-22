@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylasr"
-version = "0.17.0"
+version = "0.17.2"
 description = "Python bindings for LASR library"
 requires-python = ">=3.9"
 license = {text = "GPL-3.0"}
 authors = [
     {name = "Jean-Romain Roussel", email = "info@r-lidar.com"},
     {name = "Alexey Grigoryev", email = "agrigoriev@gmail.com"},
+    {name = "Kirill Semenov", email = "ksemchh@gmail.com"},
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
