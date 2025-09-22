@@ -129,8 +129,12 @@ class CMakeBuild(build_ext):
             source_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"pylasr{sysconfig.get_config_var('EXT_SUFFIX')}")
             if os.path.exists(source_file):
                 dest_file = os.path.join(extdir, os.path.basename(source_file))
-                print(f"Copying {source_file} to {dest_file}")
-                shutil.copy2(source_file, dest_file)
+                # Only copy if source and destination are different
+                if os.path.abspath(source_file) != os.path.abspath(dest_file):
+                    print(f"Copying {source_file} to {dest_file}")
+                    shutil.copy2(source_file, dest_file)
+                else:
+                    print(f"Source and destination are the same, skipping copy: {source_file}")
             
             # Print the output directory content
             print(f"\nFiles in output directory {extdir}:")
