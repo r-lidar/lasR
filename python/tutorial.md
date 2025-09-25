@@ -600,22 +600,6 @@ pipeline = triangulation + dtm + chm + summary
 result = pipeline.execute(files)
 ```
 
-## JSON configuration files
-
-Pipelines can also be executed from JSON configuration files:
-
-```python
-# Execute pipeline from JSON configuration
-config_file = "/path/to/pipeline_config.json"
-result = pylasr.execute(config_file)
-
-# Get pipeline information from JSON
-info = pylasr.pipeline_info(config_file)
-print(f"Pipeline is streamable: {info.streamable}")
-print(f"Pipeline reads points: {info.read_points}")
-print(f"Pipeline uses buffer: {info.buffer}")
-```
-
 ## Best practices
 
 1. **Use appropriate buffer sizes** - Ensure sufficient overlap between tiles to avoid edge artifacts
@@ -676,7 +660,6 @@ The modular design allows users to build custom workflows ranging from simple da
 
 ### Geometric analysis
 - `geometry_features()` - Compute geometric features (eigenvalues, etc.)
-- `neighborhood_metrics()` - Compute metrics in point neighborhoods
 
 ### Input/Output operations
 - `write_copc()` - Write Cloud Optimized Point Cloud files

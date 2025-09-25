@@ -304,8 +304,6 @@ print(f"Has reader: {pipeline.has_reader()}")
 print(f"Has catalog: {pipeline.has_catalog()}")
 print(f"Pipeline string: {pipeline.to_string()}")
 
-# Export to JSON if needed for debugging or external tools
-json_file = pipeline.write_json("my_pipeline.json")
 ```
 
 ## Results and Error Handling
