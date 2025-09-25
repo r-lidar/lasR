@@ -164,11 +164,44 @@ class CMakeBuild(build_ext):
             raise RuntimeError(f"Error: {str(e)}") from e
 
 
+# Read the long description from README.md
+def read_readme():
+    readme_path = os.path.join(os.path.dirname(__file__), "README.md")
+    if os.path.exists(readme_path):
+        with open(readme_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "Python bindings for LASR library - Fast Airborne LiDAR Data Processing"
+
+
 setup(
     name="pylasr",
-    version="0.17.0",
-    description="Python bindings for LASR library",
+    version="0.17.2",
+    description="Python bindings for LASR library - Fast Airborne LiDAR Data Processing",
+    long_description=read_readme(),
+    long_description_content_type="text/markdown",
     author="LASR Team",
+    author_email="",
+    url="https://github.com/r-lidar/lasR",
+    project_urls={
+        "Documentation": "https://r-lidar.github.io/lasR/",
+        "Source": "https://github.com/r-lidar/lasR",
+        "Bug Tracker": "https://github.com/r-lidar/lasR/issues",
+    },
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Topic :: Scientific/Engineering :: GIS",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+    ],
+    keywords="lidar, point cloud, gis, remote sensing, airborne laser scanning",
     ext_modules=[CMakeExtension("pylasr", sourcedir=".")],  # Explicit project root
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
