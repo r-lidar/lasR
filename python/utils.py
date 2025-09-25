@@ -16,32 +16,25 @@ def _format_warning(message, category, filename, lineno, line=None):
 warnings.formatwarning = _format_warning
 
 
-# TODO: Change for pypi when available
-def _fetch_r_universe_packages(repo_url="https://r-lidar.r-universe.dev/src/contrib/PACKAGES"):
+def _fetch_pypi_package_info(package_name="pylasr"):
     """
-    Downloads and parses the PACKAGES file from R-Universe into a list of dictionaries,
-    where each block represents a single package.
+    Fetches package information from PyPI API.
+    Returns the latest version information for the specified package.
     """
+    import json
+    
+    pypi_url = f"https://pypi.org/pypi/{package_name}/json"
     req = urllib.request.Request(
-        repo_url,
+        pypi_url,
         headers={"User-Agent": "pylasr-update-checker/1.0"}
     )
     with urllib.request.urlopen(req, timeout=5) as resp:
-        text = resp.read().decode('utf-8', errors='ignore')
-    pkgs = []
-    entry = {}
-    for line in text.splitlines():
-        if not line.strip():
-            if entry:
-                pkgs.append(entry)
-                entry = {}
-        else:
-            if ":" in line:
-                key, val = line.split(":", 1)
-                entry[key.strip()] = val.strip()
-    if entry:
-        pkgs.append(entry)
-    return pkgs
+        data = json.loads(resp.read().decode('utf-8'))
+    
+    return {
+        'version': data['info']['version'],
+        'name': data['info']['name']
+    }
 
 def check_update():
     """Check for updates asynchronously in a background thread."""
@@ -62,20 +55,18 @@ def check_update():
             except InvalidVersion:
                 return
 
-            pkgs = _fetch_r_universe_packages()
-            # TODO: Change for pypi when available
-            rec = next((p for p in pkgs if p.get("Package") == "lasR"), None)
-            if not rec or "Version" not in rec:
+            package_info = _fetch_pypi_package_info("pylasr")
+            if not package_info or "version" not in package_info:
                 return
 
             try:
-                latest_v = Version(rec["Version"])
+                latest_v = Version(package_info["version"])
             except InvalidVersion:
                 return
 
             if latest_v > curr_v:
                 warnings.warn(
-                    f"lasR {latest_v} is now available; you have {curr_v}.",
+                    f"pylasr {latest_v} is now available; you have {curr_v}.",
                     stacklevel=2
                 )
         except Exception:
