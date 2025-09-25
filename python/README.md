@@ -67,19 +67,6 @@ result = pipeline.execute(files)
 
 ### Core Classes
 
-#### `Stage`
-Represents a single processing stage with configurable parameters.
-
-```python
-# Create a stage manually
-stage = pylasr.Stage("classify_with_sor")
-stage.set("k", 12)
-stage.set("m", 8)
-
-# Or use convenience functions
-stage = pylasr.classify_with_sor(k=12, m=8)
-```
-
 #### `Pipeline`
 Container for multiple stages with execution management.
 
@@ -118,261 +105,73 @@ pipeline.set_nested_strategy(ncores1=2, ncores2=4)
 
 ## Available Stages
 
-### Classification
-- `classify_with_sor()` - Statistical Outlier Removal
-- `classify_with_ivf()` - Isolated Voxel Filter  
-- `classify_with_csf()` - Cloth Simulation Filter
+### Input/Reading
+- `reader()` - Basic point cloud reader
+- `reader_coverage()` - Read points from coverage area
+- `reader_circles()` - Read points within circular areas
+- `reader_rectangles()` - Read points within rectangular areas
 
-### Point Operations
-- `delete_points()` - Remove points by filter
-- `edit_attribute()` - Modify attribute values
-- `filter_with_grid()` - Grid-based filtering
-- `sort_points()` - Sort points spatially
+### Classification & Filtering
+- `classify_with_sor()` - Statistical Outlier Removal classification
+- `classify_with_ivf()` - Isolated Voxel Filter classification  
+- `classify_with_csf()` - Cloth Simulation Filter (ground classification)
+- `delete_points()` - Remove points by filter criteria
+- `delete_noise()` - Remove noise points (convenience function)
+- `delete_ground()` - Remove ground points (convenience function)
+- `filter_with_grid()` - Grid-based point filtering
 
-### Sampling
-- `sampling_voxel()` - Voxel-based sampling
-- `sampling_pixel()` - Pixel-based sampling
-- `sampling_poisson()` - Poisson disk sampling
+### Point Operations & Attributes
+- `edit_attribute()` - Modify point attribute values
+- `add_extrabytes()` - Add custom attributes to points
+- `add_rgb()` - Add RGB color information
+- `remove_attribute()` - Remove attributes from points
+- `sort_points()` - Sort points spatially for better performance
+- `transform_with()` - Transform points using raster operations
 
-### Rasterization
-- `rasterize()` - Convert points to raster
-- `rasterize_triangulation()` - Rasterize triangulated surface
+### Sampling & Decimation
+- `sampling_voxel()` - Voxel-based point sampling
+- `sampling_pixel()` - Pixel-based point sampling
+- `sampling_poisson()` - Poisson disk sampling for uniform distribution
 
-### Geometric Analysis
-- `geometry_features()` - Compute geometric features
-- `local_maximum()` - Find local maxima
-- `triangulate()` - Triangulation
-- `hull()` - Convex hull
+### Rasterization & Gridding
+- `rasterize()` - Convert points to raster grids (DTM, DSM, CHM, etc.)
+- `rasterize_triangulation()` - Rasterize triangulated surfaces
+- `focal()` - Apply focal operations on rasters
+- `pit_fill()` - Fill pits in canopy height models
+
+### Geometric Analysis & Features
+- `geometry_features()` - Compute geometric features (eigenvalues, etc.)
+- `local_maximum()` - Find local maxima in point clouds
+- `local_maximum_raster()` - Find local maxima in rasters (tree detection)
+- `triangulate()` - Delaunay triangulation of points  
+- `hulls()` - Compute convex hulls
+
+### Segmentation & Tree Detection
+- `region_growing()` - Region growing segmentation for tree detection
+
+### Data Loading & Transformation
+- `load_raster()` - Load external raster data
+- `load_matrix()` - Load transformation matrices
 
 ### I/O Operations
 - `write_las()` - Write LAS/LAZ files
-- `write_copc()` - Write COPC files
-- `write_pcd()` - Write PCD files
-- `write_vpc()` - Write VPC catalogs
-- `write_lax()` - Write spatial index
+- `write_copc()` - Write Cloud Optimized Point Cloud files
+- `write_pcd()` - Write Point Cloud Data files
+- `write_vpc()` - Write Virtual Point Cloud catalogs
+- `write_lax()` - Write spatial index files
 
 ### Coordinate Systems
-- `set_crs_epsg()` - Set CRS by EPSG code
-- `set_crs_wkt()` - Set CRS by WKT string
+- `set_crs()` - Set coordinate reference system
 
-### Data Loading
-- `load_raster()` - Load raster data
-- `load_matrix()` - Load transformation matrix
+### Information & Analysis  
+- `info()` - Get point cloud information and statistics
+- `summarise()` - Generate summary statistics
 
-## Examples and Getting Started
-
-The `examples/` directory contains several scripts to help you get started:
-
-### 🚀 Running Examples
-
-```bash
-# Basic usage examples (no data processing)
-python examples/basic_usage.py
-
-# Basic usage with your data
-python examples/basic_usage.py your_file.las
-
-# Complete feature demonstration
-python examples/complete_example.py
-
-# Complete workflow with your data
-python examples/complete_example.py your_file.las
-
-# Create and use pipelines
-python examples/create_pipelines.py
-
-# Use command-line tool with pipeline files
-python examples/lasr_cli.py your_data.las
-python examples/lasr_cli.py file1.las file2.las
-```
-
-### 📋 Example Scripts
-
-#### `basic_usage.py`
-Simple examples covering the most common use cases:
-- System information
-- Basic pipeline creation
-- Configuration options
-- Direct pipeline execution
-- Data processing (provide your own .las file as argument)
-
-#### `complete_example.py`
-Comprehensive demonstration of all major features:
-- Advanced pipeline workflows
-- Processing configuration
-- Convenience functions
-- Manual stage creation
-- Multithreading comparison
-- Error handling (provide your own .las file as argument)
-
-#### `create_pipelines.py`
-Demonstrates various pipeline creation and execution workflows:
-- Info pipeline
-- Cleaning pipeline (noise removal)
-- Terrain analysis (DTM/DSM)
-- Point sampling
-- Classification workflows
-
-#### `lasr_cli.py`
-Enhanced command-line tool for data processing:
-- Execute common pipelines on input files
-- Show processing timing and results
-- Support for multithreading configuration
-
-### 🔧 Basic DTM/DSM Generation
-
-```python
-import pylasr
-
-# Use convenience functions for common workflows
-dtm_pipeline = pylasr.dtm(1.0, "dtm.tif")
-dsm_pipeline = pylasr.dsm(0.5, "dsm.tif")
-
-# Combine them
-terrain_analysis = dtm_pipeline + dsm_pipeline
-terrain_analysis.set_concurrent_files_strategy(2)
-
-# Process data
-result = terrain_analysis.execute(["forest.las"])
-```
-
-### Advanced Processing Workflow
-
-```python
-# Multi-stage processing
-pipeline = pylasr.Pipeline()
-
-# Noise removal and ground classification
-pipeline += pylasr.classify_with_sor(k=8, m=6)
-pipeline += pylasr.classify_with_csf()
-pipeline += pylasr.delete_points(["Classification == 18"])
-
-# Height normalization
-dtm = pylasr.rasterize(1.0, 1.0, ["min"], ["Classification == 2"])
-pipeline += dtm
-pipeline += pylasr.transform_with(dtm.get_uid(), "-", "HeightAboveGround")
-
-# Tree detection
-chm = pylasr.rasterize(0.5, 0.5, ["max"], ["Classification != 2"])
-pipeline += chm
-pipeline += pylasr.local_maximum_raster(chm.get_uid(), 3.0, 2.0, 
-                                       ofile="trees.shp")
-
-# Final output
-pipeline += pylasr.write_las("processed.las")
-
-# Execute with nested parallelism
-pipeline.set_nested_strategy(2, 4)
-input_files = ["file1.las", "file2.las"]
-result = pipeline.execute(input_files)
-```
-
-### Format Conversion
-
-```python
-# Convert between formats
-converter = (pylasr.write_las("output.laz") +
-            pylasr.write_pcd("output.pcd") +
-            pylasr.write_copc("output.copc.laz") +
-            pylasr.write_lax())
-
-result = converter.execute(["input.las"])
-```
-
-## System Information
-
-```python
-import pylasr
-
-# Check system capabilities
-print(f"Available threads: {pylasr.available_threads()}")
-print(f"OpenMP support: {pylasr.has_omp_support()}")
-print(f"Available RAM: {pylasr.get_available_ram() / (1024**3):.1f} GB")
-
-# Check if file is indexed
-indexed = pylasr.is_indexed("file.las")
-```
-
-## Pipeline Introspection
-
-```python
-# Create pipeline and inspect properties directly
-pipeline = pylasr.classify_with_sor() + pylasr.write_las("out.las")
-
-# Check pipeline properties
-print(f"Has reader: {pipeline.has_reader()}")
-print(f"Has catalog: {pipeline.has_catalog()}")
-print(f"Pipeline string: {pipeline.to_string()}")
-
-```
-
-## Results and Error Handling
-
-### Result Format
-
-Pipeline execution now returns detailed structured results:
-
-```python
-try:
-    result = pipeline.execute(files)
-    
-    if result['success']:
-        print("✅ Pipeline executed successfully!")
-        print(f"Config saved to: {result['json_config']}")
-        
-        # Access stage results
-        if result['data']:
-            for stage_result in result['data']:
-                for stage_name, stage_data in stage_result.items():
-                    print(f"Stage '{stage_name}': {type(stage_data)}")
-                    
-                    # Example: Summary statistics
-                    if stage_name == 'summary':
-                        print(f"  Points: {stage_data['npoints']}")
-                        print(f"  CRS: EPSG:{stage_data['crs']['epsg']}")
-                    
-                    # Example: File outputs
-                    elif isinstance(stage_data, list):
-                        print(f"  Files created: {stage_data}")
-    else:
-        print(f"❌ Pipeline failed: {result.get('message', 'Unknown error')}")
-        
-except Exception as e:
-    print(f"❌ Exception during execution: {e}")
-```
-
-### Result Structure
-
-**Successful Execution:**
-```python
-{
-    "success": True,
-    "json_config": "/path/to/config.json",
-    "data": [
-        {"summary": {"npoints": 12345, "crs": {...}, ...}},
-        {"rasterize": ["/path/to/output.tif"]},
-        {"write_las": ["/path/to/output.las"]}
-    ]
-}
-```
-
-**Failed Execution:**
-```python
-{
-    "success": False, 
-    "message": "Error description",
-    "json_config": "/path/to/config.json",
-    "data": None
-}
-```
-
-## Performance Tips
-
-1. **Use appropriate parallelization strategy** based on your data and hardware
-2. **Set buffer size** for algorithms that need neighborhood information
-3. **Chain operations** in pipelines to minimize I/O
-4. **Use spatial indexing** with `write_lax()` for faster access
-5. **Sort points** spatially with `sort_points()` for better cache performance
+### Utility & Development
+- `callback()` - Custom callback functions for advanced processing
+- `nothing()` - No-operation stage for debugging
+- `stop_if_outside()` - Stop processing if outside bounds
+- `stop_if_chunk_id_below()` - Conditional processing based on chunk ID
 
 ## Comparison with R API
 
