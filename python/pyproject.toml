@@ -8,7 +8,7 @@ version = "0.17.2"
 description = "Python bindings for LASR library - Fast Airborne LiDAR Data Processing"
 readme = "README.md"
 requires-python = ">=3.9"
-license = "GPL-3.0"
+license = {text = "GPL-3.0"}
 authors = [
     {name = "Jean-Romain Roussel", email = "info@r-lidar.com"},
     {name = "Alexey Grigoryev", email = "agrigoriev@gmail.com"},
