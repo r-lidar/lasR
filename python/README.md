@@ -22,7 +22,7 @@ The LASR Python bindings provide a clean, Pythonic interface to the powerful LAS
 
 ### Prerequisites
 
-- Python 3.7+
+- Python 3.9+
 - pybind11
 - C++17 compatible compiler
 - GDAL (>= 2.2.3)
