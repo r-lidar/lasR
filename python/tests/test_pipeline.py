@@ -146,16 +146,16 @@ class TestConvenienceFunctions(unittest.TestCase):
     
     def test_dtm_pipeline(self):
         """Test DTM pipeline convenience function"""
-        dtm_pipeline = pylasr.dtm_pipeline(1.0, "dtm.tif")
+        dtm_pipeline = pylasr.dtm(1.0, "dtm.tif")
         self.assertIsInstance(dtm_pipeline, type(pylasr.Pipeline()))
         pipeline_str = dtm_pipeline.to_string()
         self.assertIn("rasterize", pipeline_str)
     
-    def test_chm_pipeline(self):
-        """Test CHM pipeline convenience function"""
-        chm_pipeline = pylasr.chm_pipeline(0.5, "chm.tif")
-        self.assertIsInstance(chm_pipeline, type(pylasr.Pipeline()))
-        pipeline_str = chm_pipeline.to_string()
+    def test_dsm_pipeline(self):
+        """Test DSM pipeline convenience function"""
+        dsm_pipeline = pylasr.dsm(0.5, "dsm.tif")
+        self.assertIsInstance(dsm_pipeline, type(pylasr.Pipeline()))
+        pipeline_str = dsm_pipeline.to_string()
         self.assertIn("rasterize", pipeline_str)
 
 
