@@ -1,6 +1,7 @@
 # lasR 0.17.3
 
 - Fix: #213 VPC 3D geometries.
+- Fix: `hulls()` is computed more robustly
 
 # lasR 0.17.2
 

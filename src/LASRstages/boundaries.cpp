@@ -51,44 +51,99 @@ bool LASRboundaries::process(PointCloud*& las)
     return false; // # nocov
   }
 
-  std::vector<Edge> edges;
-  std::unordered_map<PointXY, PointXY> unordered_contour;
+  struct pair_hash
+  {
+    std::size_t operator()(const std::pair<PointXY, PointXY>& p) const noexcept {
+      std::size_t h1 = p.first.hash();
+      std::size_t h2 = p.second.hash();
+      // same trick as in boost::hash_combine
+      return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    }
+  };
 
+  // Get the contour of the triangulation
+  std::vector<Edge> edges;
   p->contour(edges);
 
-  for (const auto& v : edges)
+  // Build adjacency list
+  std::unordered_map<PointXY, std::vector<PointXY>> adj;
+  adj.reserve(edges.size() * 2);
+
+  for (const auto& e : edges)
   {
-    unordered_contour.insert({v.A, v.B});
+    adj[e.A].push_back(e.B);
+    adj[e.B].push_back(e.A); // undirected
   }
 
-  edges.clear();
-  edges.shrink_to_fit();
+  // Track visited edges to avoid reusing them
+  std::unordered_set<std::pair<PointXY, PointXY>, pair_hash> visited;
 
-  while (!unordered_contour.empty())
+  std::vector<PolygonXY> rings;
+
+  // Helper lambda to normalize edge key
+  auto edge_key = [](const PointXY& a, const PointXY& b) {
+    return (a.hash() < b.hash()) ? std::make_pair(a, b)
+      : std::make_pair(b, a);
+  };
+
+  for (auto& [start, neighbors] : adj)
   {
-    PointXY p;
-    PolygonXY ordered_contour;
-
-    auto it = unordered_contour.cbegin();
-
-    do
+    for (const auto& n : neighbors)
     {
-      ordered_contour.push_back(it->first);
-      p = it->second;
-      unordered_contour.erase(it);
-      it = unordered_contour.find(p);
+      auto ek = edge_key(start, n);
+      if (visited.count(ek)) continue; // edge already walked
 
-    } while(it != unordered_contour.end());
+      // Walk new ring
+      PolygonXY poly;
+      PointXY current = start;
+      PointXY prev = n; // force starting direction
 
-    ordered_contour.close();
+      poly.push_back(current);
 
-    contour.push_back(ordered_contour);
+      do {
+        const auto& neigh = adj[current];
+        if (neigh.empty())
+          throw std::runtime_error("Broken polygon: dead end");
+
+        PointXY next;
+        if (neigh.size() == 1) {
+          next = neigh[0];
+        } else {
+          // pick neighbor different from prev
+          next = (neigh[0] == prev ? neigh[1] : neigh[0]);
+        }
+
+        // mark edge visited
+        visited.insert(edge_key(current, next));
+
+        poly.push_back(next);
+
+        prev = current;
+        current = next;
+      }
+      while (current != start);
+
+      poly.close();
+
+      rings.push_back(poly);
+    }
   }
 
-  // Sort the vector using is_clockwise such as the outer ring comes first to we spec compliant
-  std::sort(contour.begin(), contour.end(), [](const PolygonXY& a, const PolygonXY& b) {
-    return a.is_clockwise() < b.is_clockwise();
+  // Classify: outer = CCW, holes = CW
+  // Ensure orientation is OGC/WKT-compliant
+  for (auto& ring : rings)
+  {
+    if (ring.is_clockwise())
+      std::reverse(ring.coordinates.begin(), ring.coordinates.end());
+  }
+
+  // Sort: outer first (area largest)
+  std::sort(rings.begin(), rings.end(), [](const PolygonXY& a, const PolygonXY& b) {
+    return std::fabs(a.signed_area()) > std::fabs(b.signed_area());
   });
+
+  for (const auto& rings : rings)
+    contour.push_back(rings);
 
   return true;
 }

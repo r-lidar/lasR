@@ -18,6 +18,7 @@ struct PointXY
   PointXY(double x, double y);
   size_t hash() const;
   bool operator==(const PointXY& other) const;
+  bool operator!=(const PointXY& other) const { return !(*this == other); }
   //bool operator<(const PointXY& other) const;
 };
 
@@ -192,10 +193,8 @@ public:
   void push_back(const PointXY& p);
   bool is_closed() const;
   void close();
-  bool is_clockwise() const;
-
-private:
   double signed_area() const;
+  bool is_clockwise() const;
 };
 
 

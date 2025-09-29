@@ -20,7 +20,16 @@ test_that("hulls works with triangulation",
   ans
 
   expect_s3_class(ans, "sf")
+  expect_true(sf::st_is_valid(ans))
   expect_equal(dim(ans), c(1L,1L))
+
+  out = sf::st_exterior_ring(ans)
+
+  area1 = as.numeric(sf::st_area(ans))
+  area2 = as.numeric(sf::st_area(out))
+
+  expect_equal(area1, 65657.9700)
+  expect_equal(area2, 76306.8242)
   expect_equal(length(ans$geom[[1]]), 5L) # there are outer and inner rings
 })
 

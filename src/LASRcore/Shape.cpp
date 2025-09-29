@@ -258,20 +258,15 @@ void PolygonXY::close()
 
 bool PolygonXY::is_clockwise() const
 {
-  return signed_area() > 0;
+  return signed_area() < 0;
 }
 
 double PolygonXY::signed_area() const
 {
-  int n = coordinates.size();
-  double signed_area = 0.0;
-
-  for (int i = 0; i < n ; ++i)
-  {
-    const PointXY& current = coordinates[i];
-    const PointXY& next = coordinates[(i + 1) % n];
-    signed_area += (next.x - current.x) * (next.y + current.y);
+  if (coordinates.size() < 3) return 0.0;
+  double area = 0.0;
+  for (size_t i = 0, j = coordinates.size() - 1; i < coordinates.size(); j = i++) {
+    area += (coordinates[j].x * coordinates[i].y - coordinates[i].x * coordinates[j].y);
   }
-
-  return signed_area;
+  return 0.5 * area;
 }
