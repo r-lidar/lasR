@@ -95,20 +95,15 @@ bool LASRboundaries::process(PointCloud*& las)
     {
       OGRPolygon* ogrPoly = geom->toPolygon();
 
-      // --- Outer ring ---
       OGRLinearRing* exterior = ogrPoly->getExteriorRing();
       if (!exterior) continue;
 
       std::vector<PointXY> coords;
       int n = exterior->getNumPoints();
-      for (int j = 0; j < n - 1; ++j) // skip duplicate closing point
-      {
+      for (int j = 0 ; j < n ; j++)
         coords.emplace_back(PointXY{exterior->getX(j), exterior->getY(j)});
-      }
 
-      // If you want holes, store them inside PolygonXY as a vector of vector<PointXY>
       PolygonXY poly(coords);
-      poly.close();
       contour.push_back(poly);
     }
   }
