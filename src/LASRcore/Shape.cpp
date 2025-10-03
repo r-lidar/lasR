@@ -270,3 +270,62 @@ double PolygonXY::signed_area() const
   }
   return 0.5 * area;
 }
+
+
+void PolygonXY::make_clockwise() {
+  if (!is_clockwise()) {
+    std::reverse(coordinates.begin(), coordinates.end());
+  }
+}
+
+void PolygonXY::make_counterclockwise() {
+  if (is_clockwise()) {
+    std::reverse(coordinates.begin(), coordinates.end());
+  }
+}
+
+// Simple point-in-polygon check using ray casting
+bool PolygonXY::contains(const PointXY& p) const
+{
+  size_t n = coordinates.size();
+  if (n < 3) return false; // degenerate polygon
+
+  bool inside = false;
+  for (size_t i = 0, j = n - 1; i < n; j = i++)
+  {
+    const auto& pi = coordinates[i];
+    const auto& pj = coordinates[j];
+
+    // Check if point is on an edge (optional, can be treated as inside)
+    if ((std::min(pi.y, pj.y) <= p.y && p.y <= std::max(pi.y, pj.y)) &&
+        (std::min(pi.x, pj.x) <= p.x && p.x <= std::max(pi.x, pj.x)))
+    {
+      // Check if point is exactly on the line segment
+      double dx = pj.x - pi.x;
+      double dy = pj.y - pi.y;
+      if (std::abs(dy * (p.x - pi.x) - dx * (p.y - pi.y)) < 1e-12) {
+        return true; // point is on edge
+      }
+    }
+
+    // Ray casting
+    if ((pi.y > p.y) != (pj.y > p.y))
+    {
+      double x_intersect = pi.x + (p.y - pi.y) * (pj.x - pi.x) / (pj.y - pi.y);
+      if (p.x < x_intersect) inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
+
+bool PolygonXY::contains(const PolygonXY& other) const
+{
+  if (other.coordinates.empty()) return false;
+  for (const auto& pt : other.coordinates)
+  {
+    if (!contains(pt)) return false;
+  }
+  return true;
+}

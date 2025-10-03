@@ -195,6 +195,10 @@ public:
   void close();
   double signed_area() const;
   bool is_clockwise() const;
+  void make_clockwise();
+  void make_counterclockwise();
+  bool contains(const PointXY& p) const;
+  bool contains(const PolygonXY& other) const;
 };
 
 

@@ -5,6 +5,10 @@
 #include <unordered_map>
 #include <algorithm>
 
+#include <iostream>
+
+#include "ogrsf_frmts.h"
+
 bool LASRboundaries::set_parameters(const nlohmann::json& stage)
 {
   vector = Vector(xmin, ymin, xmax, ymax);
@@ -51,99 +55,100 @@ bool LASRboundaries::process(PointCloud*& las)
     return false; // # nocov
   }
 
-  struct pair_hash
-  {
-    std::size_t operator()(const std::pair<PointXY, PointXY>& p) const noexcept {
-      std::size_t h1 = p.first.hash();
-      std::size_t h2 = p.second.hash();
-      // same trick as in boost::hash_combine
-      return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
-    }
-  };
-
   // Get the contour of the triangulation
   std::vector<Edge> edges;
   p->contour(edges);
 
-  // Build adjacency list
-  std::unordered_map<PointXY, std::vector<PointXY>> adj;
-  adj.reserve(edges.size() * 2);
-
-  for (const auto& e : edges)
-  {
-    adj[e.A].push_back(e.B);
-    adj[e.B].push_back(e.A); // undirected
+  // Collect edges into OGRLineString and put in OGRGeometryCollection
+  OGRGeometryCollection gc;
+  for (const auto& e : edges) {
+    OGRLineString ls;
+    ls.addPoint(e.A.x, e.A.y);
+    ls.addPoint(e.B.x, e.B.y);
+    gc.addGeometry(&ls);
   }
 
-  // Track visited edges to avoid reusing them
-  std::unordered_set<std::pair<PointXY, PointXY>, pair_hash> visited;
+  OGRGeometry* polys = gc.Polygonize();
 
-  std::vector<PolygonXY> rings;
-
-  // Helper lambda to normalize edge key
-  auto edge_key = [](const PointXY& a, const PointXY& b) {
-    return (a.hash() < b.hash()) ? std::make_pair(a, b)
-      : std::make_pair(b, a);
-  };
-
-  for (auto& [start, neighbors] : adj)
+  if (!polys)
   {
-    for (const auto& n : neighbors)
+    last_error = "Polygonize failed";
+    return false;
+  }
+
+  if (wkbFlatten(polys->getGeometryType()) != wkbGeometryCollection)
+  {
+    last_error = "Polygonize returned unexpected geometry type";
+    OGRGeometryFactory::destroyGeometry(polys);
+    return false;
+  }
+
+  contour.clear();
+
+  OGRGeometryCollection* ogc = polys->toGeometryCollection();
+  for (int i = 0; i < ogc->getNumGeometries(); ++i)
+  {
+    OGRGeometry* geom = ogc->getGeometryRef(i);
+    if (!geom) continue;
+
+    if (wkbFlatten(geom->getGeometryType()) == wkbPolygon)
     {
-      auto ek = edge_key(start, n);
-      if (visited.count(ek)) continue; // edge already walked
+      OGRPolygon* ogrPoly = geom->toPolygon();
 
-      // Walk new ring
-      PolygonXY poly;
-      PointXY current = start;
-      PointXY prev = n; // force starting direction
+      // --- Outer ring ---
+      OGRLinearRing* exterior = ogrPoly->getExteriorRing();
+      if (!exterior) continue;
 
-      poly.push_back(current);
-
-      do {
-        const auto& neigh = adj[current];
-        if (neigh.empty())
-          throw std::runtime_error("Broken polygon: dead end");
-
-        PointXY next;
-        if (neigh.size() == 1) {
-          next = neigh[0];
-        } else {
-          // pick neighbor different from prev
-          next = (neigh[0] == prev ? neigh[1] : neigh[0]);
-        }
-
-        // mark edge visited
-        visited.insert(edge_key(current, next));
-
-        poly.push_back(next);
-
-        prev = current;
-        current = next;
+      std::vector<PointXY> coords;
+      int n = exterior->getNumPoints();
+      for (int j = 0; j < n - 1; ++j) // skip duplicate closing point
+      {
+        coords.emplace_back(PointXY{exterior->getX(j), exterior->getY(j)});
       }
-      while (current != start);
 
+      // If you want holes, store them inside PolygonXY as a vector of vector<PointXY>
+      PolygonXY poly(coords);
       poly.close();
-
-      rings.push_back(poly);
+      contour.push_back(poly);
     }
   }
 
-  // Classify: outer = CCW, holes = CW
-  // Ensure orientation is OGC/WKT-compliant
-  for (auto& ring : rings)
+  std::vector<bool> is_hole(contour.size(), false);
+
+  // First pass: determine which polygons are holes
+  for (size_t i = 0; i < contour.size(); i++)
   {
-    if (ring.is_clockwise())
-      std::reverse(ring.coordinates.begin(), ring.coordinates.end());
+    for (size_t j = 0; j < contour.size(); j++)
+    {
+      if (i == j) continue;
+
+      if (contour[j].contains(contour[i]))
+      {
+        is_hole[i] = true;
+        break;
+      }
+    }
   }
 
-  // Sort: outer first (area largest)
-  std::sort(rings.begin(), rings.end(), [](const PolygonXY& a, const PolygonXY& b) {
-    return std::fabs(a.signed_area()) > std::fabs(b.signed_area());
-  });
+  // Second pass: set orientation based on hole status
+  for (size_t i = 0; i < contour.size(); ++i)
+  {
+    if (is_hole[i])
+      contour[i].make_clockwise();
+    else
+      contour[i].make_counterclockwise();
+  }
 
-  for (const auto& rings : rings)
-    contour.push_back(rings);
+  // Third pass: move outer ring (first non-hole) to the front
+  for (size_t i = 0; i < contour.size(); ++i)
+  {
+    if (!is_hole[i])
+    {
+      if (i != 0)
+        std::swap(contour[0], contour[i]);
+      break;
+    }
+  }
 
   return true;
 }
