@@ -30,7 +30,7 @@ class LASRsamplingpoisson : public LASRsampling
 {
 public:
   LASRsamplingpoisson() = default;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   double need_buffer() const override { return distance; }
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "poisson_sampling"; }
@@ -48,7 +48,7 @@ class LASRsamplingvoxels : public LASRsampling
 {
 public:
   LASRsamplingvoxels() = default;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   double need_buffer() const override { return res; }
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "voxel_sampling"; }
@@ -66,7 +66,9 @@ class LASRsamplingpixels : public LASRsampling
 {
 public:
   LASRsamplingpixels() = default;
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
+  bool random(PointCloud*& las);
+  bool highest(PointCloud*& las, bool high = true);
   double need_buffer() const override { return res; }
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "pixel_sampling"; }
@@ -77,6 +79,8 @@ public:
 
 private:
   double res;
+  std::string method;
+  std::string use_attribute;
   int shuffle_size;
 };
 

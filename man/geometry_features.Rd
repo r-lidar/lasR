@@ -12,11 +12,11 @@ sphere. If k is given and r is missing, computes with the knn, if r is given and
 computes with a sphere neighborhood, if k and r are given computes with the knn and a limit on the
 search distance.}
 
-\item{features}{String. Geometric feature to export. Each feature is added into an extrabyte
+\item{features}{String. Geometric feature to export. Each feature is added into a new
 attribute. Use 'C' for the 9 principal component coefficients, 'E' for the 3 eigenvalues of the
 covariance matrix, 'a' for anisotropy, 'p' for planarity, 's' for sphericity, 'l' for linearity,
 'o' for omnivariance, 'c' for curvature, 'e' for the sum of eigenvalues, 'i' for the angle
-(inclination in degrees relative to the azimuth), and 'n' for the 3 components of the normal vector.
+(inclination in degrees relative to the vertical), and 'n' for the 3 components of the normal vector.
 Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 The order of the flags does not matter and the features are recorded in the order mentioned above.}
@@ -25,14 +25,15 @@ The order of the flags does not matter and the features are recorded in the orde
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.
 }
 \description{
-Compute pointwise geometry features based on local neighborhood. Each feature is added into an
-extrabyte attribute. The names of the extrabytes attributes (if recorded) are \code{coeff00}, \code{coeff01},
+Compute pointwise geometry features based on local neighborhood. Each feature is added into a new point
+attribute. The names of the new attributes (if recorded) are \code{coeff00}, \code{coeff01},
 \code{coeff02} and so on, \code{lambda1}, \code{lambda2}, \code{lambda3}, \code{anisotropy}, \code{planarity}, \code{sphericity}, \code{linearity},
 \code{omnivariance}, \code{curvature}, \code{eigensum}, \code{angle}, \code{normalX}, \code{normalY}, \code{normalZ} (recorded in this order).
 There is a total of 23 attributes that can be added. It is strongly discouraged to use them all.
 All the features are recorded with single precision floating points yet computing them all will triple
 the size of the point cloud. This stage modifies the point cloud in the pipeline but does not produce
-any output.
+any output. If a pipeline has two or more stages with this stage, then attribute with the same name are
+overwritten.
 }
 \examples{
 f <- system.file("extdata", "Example.las", package = "lasR")

@@ -1,11 +1,10 @@
 #include "triangulate.h"
-
 #include "Raster.h"
 #include "Shape.h"
 #include "openmp.h"
 #include "NA.h"
 
-#include "lastransform.hpp"
+#include "FastGridPartition2D.h"
 
 #include "delaunator/delaunator.hpp"
 
@@ -28,21 +27,8 @@ bool LASRtriangulate::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRtriangulate::process(LAS*& las)
+bool LASRtriangulate::process(PointCloud*& las)
 {
-  LAStransform* lastransform = nullptr;
-  if (use_attribute != "Z")
-  {
-    lastransform = las->make_z_transformer(use_attribute);
-    if (lastransform == nullptr)
-    {
-      char buffer[64];
-      snprintf(buffer, sizeof(buffer), "no extrabyte attribute '%s' found", use_attribute.c_str());
-      last_error = std::string(buffer);
-      return false;
-    }
-  }
-
   this->las = las;
 
   progress->reset();
@@ -52,23 +38,19 @@ bool LASRtriangulate::process(LAS*& las)
 
   std::vector<double> coords;
 
-  LASpoint* p;
+  Point* p;
   while (las->read_point())
   {
     p = &las->point;
-    if (lastransform) lastransform->transform(p);
-    if (!lasfilter.filter(p))
-    {
-      coords.push_back(p->get_x());
-      coords.push_back(p->get_y());
-      index_map.push_back(las->current_point);
-      npoints++;
-    }
+    if (pointfilter.filter(p)) continue;
+    coords.push_back(p->get_x());
+    coords.push_back(p->get_y());
+    index_map.push_back(las->current_point);
+    npoints++;
   }
 
-  // Does not fail because contour can work with d == nullptr
-  // However 'interpolate' will handle the case and fail
-  if (coords.size() < 3) return true;
+  // Other stage that use the triangulation should handle d == nullptr
+  if (coords.size() < 6) return true;
 
   d = new delaunator::Delaunator(coords);
 
@@ -79,25 +61,14 @@ bool LASRtriangulate::process(LAS*& las)
 
 bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster)
 {
+  AttributeAccessor accessor(use_attribute);
+
   int n = (raster == nullptr) ? las->npoints : raster->get_ncells();
   res.resize(n);
   std::fill(res.begin(), res.end(), NA_F64);
 
   if (d == nullptr) return true;
   if (res.size() == 0) return true; // Fix #40
-
-  LAStransform* lastransform = nullptr;
-  if (use_attribute != "Z")
-  {
-    lastransform = las->make_z_transformer(use_attribute);
-    if (lastransform == nullptr)
-    {
-      char buffer[64];
-      snprintf(buffer, sizeof(buffer), "no extrabyte attribute '%s' found", use_attribute.c_str());
-      last_error = std::string(buffer);
-      return false;
-    }
-  }
 
   progress->reset();
   progress->set_total(d->triangles.size()/3);
@@ -109,25 +80,34 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
 
-  // 1. loop through the triangles, search the point inside triangle, interpolate
+  FastGridPartition2D index(*las);
+
+  // 1. loop through the triangles, search the points inside triangle, interpolate
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < d->triangles.size() ; i+=3)
   {
     if (progress->interrupted()) continue;
 
     int id;
-    PointLAS A,B,C;
+    Point A,B,C;
+    A.set_schema(&las->header->schema);
+    B.set_schema(&las->header->schema);
+    C.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
-    las->get_point(id, A, nullptr, lastransform);
+    las->get_point(id, &A);
 
     id = index_map[d->triangles[i+1]];
-    las->get_point(id, B, nullptr, lastransform);
+    las->get_point(id, &B);
 
     id = index_map[d->triangles[i+2]];
-    las->get_point(id, C, nullptr, lastransform);
+    las->get_point(id, &C);
 
-    TriangleXYZ triangle(A, B, C);
+    PointXYZ a(A.get_x(), A.get_y(), accessor(&A));
+    PointXYZ b(B.get_x(), B.get_y(), accessor(&B));
+    PointXYZ c(C.get_x(), C.get_y(), accessor(&C));
+
+    TriangleXYZ triangle(a, b, c);
 
     // Interpolate in this triangle if the longest edge fulfill requirements
     bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
@@ -138,10 +118,10 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
         // Generate the raster points in this triangle
         double xres = raster->get_xres();
         double yres = raster->get_yres();
-        double minx = ROUNDANY(triangle.xmin() - 0.5 * xres, xres);
-        double miny = ROUNDANY(triangle.ymin() - 0.5 * yres, yres);
-        double maxx = ROUNDANY(triangle.xmax() - 0.5 * xres, xres) + xres;
-        double maxy = ROUNDANY(triangle.ymax() - 0.5 * yres, yres) + yres;
+        double minx = ROUNDANY(triangle.xmin(), xres) - 0.5 * xres;
+        double miny = ROUNDANY(triangle.ymin(), yres) - 0.5 * yres;
+        double maxx = ROUNDANY(triangle.xmax(), xres) + 0.5 * xres;
+        double maxy = ROUNDANY(triangle.ymax(), yres) + 0.5 * yres;
 
         for (double x = minx ; x <= maxx ; x += xres)
         {
@@ -159,13 +139,14 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
       }
       else
       {
-        std::vector<PointLAS> points;
-        las->query(&triangle, points, nullptr, lastransform);
+        std::vector<PointXYI> points;
+        index.lookup<TriangleXYZ>(triangle, points);
 
-        for (auto& p : points)
+        for (auto& pt : points)
         {
+          PointXYZ p(pt.x, pt.y);
           triangle.linear_interpolation(p);
-          res[p.FID] = p.z;
+          res[pt.i] = p.z;
         }
       }
     }
@@ -180,8 +161,6 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
       }
     }
   }
-
-  if (lastransform) delete lastransform;
 
   progress->done();
 
@@ -212,21 +191,21 @@ bool LASRtriangulate::contour(std::vector<Edge>& e) const
     if (progress->interrupted()) continue;
 
     int id;
-    double xyz[3];
+    Point a, b, c;
+    a.set_schema(&las->header->schema);
+    b.set_schema(&las->header->schema);
+    c.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
-    las->get_xyz(id, xyz);
-    PointXYZ A({xyz[0], xyz[1], xyz[2]});
+    las->get_point(id, &a);
 
     id = index_map[d->triangles[i+1]];
-    las->get_xyz(id, xyz);
-    PointXYZ B({xyz[0], xyz[1], xyz[2]});
+    las->get_point(id, &b);
 
     id = index_map[d->triangles[i+2]];
-    las->get_xyz(id, xyz);
-    PointXYZ C({xyz[0], xyz[1], xyz[2]});
+    las->get_point(id, &c);
 
-    TriangleXYZ triangle(A, B, C);
+    TriangleXYZ triangle(a, b, c);
 
     bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
     if (trim == 0 || keep_triangle)
@@ -265,18 +244,7 @@ bool LASRtriangulate::write()
 {
   if (ofile.empty()) return true;
 
-  LAStransform* lastransform = nullptr;
-  if (use_attribute != "Z")
-  {
-    lastransform = las->make_z_transformer(use_attribute);
-    if (lastransform == nullptr)
-    {
-      char buffer[64];
-      snprintf(buffer, sizeof(buffer), "no extrabyte attribute '%s' found", use_attribute.c_str());
-      last_error = std::string(buffer);
-      return false;
-    }
-  }
+  AttributeAccessor accessor(use_attribute);
 
   progress->set_total(d->triangles.size()/3);
   progress->set_prefix("Write triangulation");
@@ -289,16 +257,19 @@ bool LASRtriangulate::write()
   for (unsigned int i = 0 ; i < d->triangles.size(); i+=3)
   {
     int id;
-    PointLAS A,B,C;
+    Point A,B,C;
+    A.set_schema(&las->header->schema);
+    B.set_schema(&las->header->schema);
+    C.set_schema(&las->header->schema);
 
     id = index_map[d->triangles[i]];
-    las->get_point(id, A, nullptr, lastransform);
+    las->get_point(id, &A);
 
     id = index_map[d->triangles[i+1]];
-    las->get_point(id, B, nullptr, lastransform);
+    las->get_point(id, &B);
 
     id = index_map[d->triangles[i+2]];
-    las->get_point(id, C, nullptr, lastransform);
+    las->get_point(id, &C);
 
     TriangleXYZ triangle(A, B, C);
 
@@ -315,8 +286,6 @@ bool LASRtriangulate::write()
   }
 
   progress->done();
-
-  if (lastransform) delete lastransform;
 
   #pragma omp critical (write_triangulation)
   {

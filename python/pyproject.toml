@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64.0.0", "cmake>=3.18", "pybind11"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pylasr"
+version = "0.17.0"
+description = "Python bindings for LASR library"
+requires-python = ">=3.9"
+license = {text = "GPL-3.0"}
+authors = [
+    {name = "Jean-Romain Roussel", email = "info@r-lidar.com"},
+    {name = "Alexey Grigoryev", email = "agrigoriev@gmail.com"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+[project.urls]
+Homepage = "https://github.com/r-lidar/lasR"
+"Bug Tracker" = "https://github.com/r-lidar/lasR/issues"
+Documentation = "https://r-lidar.github.io/lasR/"
+"Source Code" = "https://github.com/r-lidar/lasR"

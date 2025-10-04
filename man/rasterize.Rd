@@ -17,9 +17,8 @@ LASRalgorithm for triangulation (see examples). Can also be a user-defined expre
 (see example and section 'Operators').}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
-interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processed.
-The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
@@ -49,7 +48,6 @@ Below are some examples of valid calls:
 rasterize(10, c("z_max", "c_count", "intensity_mean", "p95"))
 }\if{html}{\out{</div>}}
 
-\cr
 If \code{operators} is an R user-defined expression, the function should return either a vector of numbers
 or a \code{list} containing atomic numbers. To assign a band name to the raster, the vector or the \code{list}
 must be named accordingly. The following are valid operators:
@@ -81,7 +79,7 @@ in this case.
 
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader_las()
+read <- reader()
 tri  <- triangulate(filter = keep_ground())
 dtm  <- rasterize(1, tri) # input is a triangulation stage
 avgi <- rasterize(10, mean(Intensity)) # input is a user expression

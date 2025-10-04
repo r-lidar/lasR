@@ -6,8 +6,8 @@
 class LASRfilter : public Stage
 {
 public:
-  bool process(LASpoint*& p) override;
-  bool process(LAS*& las) override;
+  bool process(Point*& p) override;
+  bool process(PointCloud*& las) override;
   bool is_streamable() const override { return true; };
   std::string get_name() const override { return "filter"; };
 
@@ -18,7 +18,7 @@ public:
 class LASRfiltergrid : public Stage
 {
 public:
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   double need_buffer() const override { return res; };
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "grid filter"; };

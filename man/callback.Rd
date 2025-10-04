@@ -39,12 +39,11 @@ temporarily into a \code{data.frame} to apply a user-defined function.\cr\cr
 \strong{expose:} the 'expose' argument specifies the data that will actually be exposed to R. For example,
 'xyzia' means that the x, y, and z coordinates, the intensity, and the scan angle will be exposed.
 The supported entries are t - gpstime, a - scan angle, i - intensity, n - number of returns,
-r - return number, c - classification, s - synthetic flag, k - keypoint flag, w - withheld flag,
-o - overlap flag (format 6+), u - user data, p - point source ID, e - edge of flight line flag,
-d - direction of scan flag, R - red channel of RGB color, G - green channel of RGB color,
-B - blue channel of RGB color, N - near-infrared channel, C - scanner channel (format 6+)
-Also numbers from 1 to 9 for the extra bytes data numbers 1 to 9. 'E' enables all extra bytes to be
-loaded.  '*' is the wildcard that enables everything to be exposed from the LAS file.
+r - return number, c - classification, u - user data, p - point source ID, e - edge of flight line flag,
+R - red channel of RGB color, G - green channel of RGB color, B - blue channel of RGB color,
+N - near-infrared channel, C - scanner channel (format 6+)
+Also numbers from 1 to 9 for the extra attributes data numbers 1 to 9. 'E' enables all extra attribute to be
+loaded. '*' is the wildcard that enables everything to be exposed from the point cloud
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package = "lasR")
@@ -53,7 +52,7 @@ f <- system.file("extdata", "Topography.las", package = "lasR")
 read_las <- function(f)
 {
   load <- function(data) { return(data) }
-  read <- reader_las()
+  read <- reader()
   call <- callback(load, expose = "xyzi", no_las_update = TRUE)
   return (exec(read + call, on = f))
 }
@@ -70,7 +69,7 @@ convert_intensity_in_range <- function(data, min, max)
   return(data)
 }
 
-read <- reader_las()
+read <- reader()
 call <- callback(convert_intensity_in_range, expose = "i", min = 0, max = 255)
 write <- write_las()
 pipeline <- read + call + write

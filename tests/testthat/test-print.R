@@ -20,7 +20,7 @@ test_that("prints works with complex pipeline",
 test_that("convenient filters work",
 {
   filter = keep_class(c(2,4)) + keep_z_below(2)
-  expect_equal(as.character(filter), "-keep_class 2 4 -keep_z_below 2")
+  expect_equal(as.character(filter), c("Classification %in% 2 4", "Z < 2"))
 })
 
 test_that("filter_usage works",

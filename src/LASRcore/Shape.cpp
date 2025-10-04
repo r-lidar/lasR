@@ -43,6 +43,10 @@ bool PointXY::operator==(const PointXY& other) const
   return (x == other.x) && (y == other.y);
 }
 
+PointXYI::PointXYI() : PointXY(), i(0) {}
+PointXYI::PointXYI(double x, double y) : PointXY(x,y), i(0) {}
+PointXYI::PointXYI(double x, double y, unsigned int i) : PointXY(x,y), i(i) {}
+
 PointXYZ::PointXYZ() : PointXY(), z(0) {}
 PointXYZ::PointXYZ(double x, double y) : PointXY(x,y), z(0) {}
 PointXYZ::PointXYZ(double x, double y, double z) : PointXY(x,y), z(z) {}
@@ -87,6 +91,21 @@ Shape3D::~Shape3D() {}
 /* ====================
  * TRIANGLE
  * ====================*/
+
+TriangleXYZ::TriangleXYZ(const Point& a, const Point& b, const Point& c)
+{
+  A.x = a.get_x();
+  A.y = a.get_y();
+  A.z = a.get_z();
+
+  B.x = b.get_x();
+  B.y = b.get_y();
+  B.z = b.get_z();
+
+  C.x = c.get_x();
+  C.y = c.get_y();
+  C.z = c.get_z();
+}
 
 TriangleXYZ::TriangleXYZ(const PointXYZ& A, const PointXYZ& B, const PointXYZ& C)
 {

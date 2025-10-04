@@ -2,6 +2,8 @@
 #define SHAPES_H
 
 #include "macros.h"
+#include "PointSchema.h"
+
 #include <vector>
 #include <cstdlib>
 #include <string>
@@ -17,6 +19,15 @@ struct PointXY
   size_t hash() const;
   bool operator==(const PointXY& other) const;
   //bool operator<(const PointXY& other) const;
+};
+
+
+struct PointXYI : public PointXY
+{
+  PointXYI();
+  PointXYI(double x, double y);
+  PointXYI(double x, double y, unsigned int i);
+  unsigned int i;
 };
 
 struct PointXYZ : public PointXY
@@ -114,7 +125,7 @@ public:
   PointXYZ B;
   PointXYZ C;
 
-  TriangleXYZ() { }
+  TriangleXYZ(const Point& a, const Point& b, const Point& c);
   TriangleXYZ(const PointXYZ& A, const PointXYZ& B, const PointXYZ& C);
   void make_clock_wise();
   void make_counter_clock_wise();

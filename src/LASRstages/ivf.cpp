@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 
-bool LASRivf::process(LAS*& las)
+bool LASRivf::process(PointCloud*& las)
 {
   // Stores for a given voxel the number of point in its 27 voxels neighborhood
   std::unordered_map<Voxel, int, VoxelHash> uregistry;
@@ -24,10 +24,10 @@ bool LASRivf::process(LAS*& las)
   rymax = ROUNDANY(rymax + 0.5 * res, res);
   rzmax = ROUNDANY(rzmax + 0.5 * res, res);
 
-  size_t length = (rxmax - rxmin) / res;
-  size_t width  = (rymax - rymin) / res;
-  size_t height = (rzmax - rzmin) / res;
-  size_t nvoxels = length*width*height;
+  int length = (rxmax - rxmin) / res;
+  int width  = (rymax - rymin) / res;
+  int height = (rzmax - rzmin) / res;
+  size_t nvoxels = (size_t)length*(size_t)width*(size_t)height;
 
   if (!force_map && nvoxels < INT_MAX/sizeof(int)) // 256 MB
   {
@@ -84,6 +84,8 @@ bool LASRivf::process(LAS*& las)
     if (progress->interrupted()) break;
   }
 
+  AttributeAccessor set_and_get_classification("Classification");
+
   // Loop again through each point.
   // Check if the number of points in its neighbourhood is above the threshold
   while (las->read_point())
@@ -107,8 +109,7 @@ bool LASRivf::process(LAS*& las)
 
     if (count < n)
     {
-      las->point.set_classification(classification);
-      las->update_point();
+      set_and_get_classification(&las->point, classification);
     }
 
     progress->update(las->current_point + las->npoints);

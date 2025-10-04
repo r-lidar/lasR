@@ -7,7 +7,8 @@
 add_rgb()
 }
 \value{
-This stage transforms the point cloud in the pipeline. It consequently returns nothing.
+If this stage transforms the point cloud in the pipeline it returns nothing. Otherwise
+it returns the R object returned by the function 'fun'
 }
 \description{
 Modifies the LAS format to convert into a format with RGB attributes. Values are zeroed: the underlying

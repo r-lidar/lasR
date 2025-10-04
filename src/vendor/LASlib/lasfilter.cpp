@@ -427,6 +427,7 @@ private:
   I32 above_Z;
 };
 
+
 class LAScriterionKeepFirstReturn : public LAScriterion
 {
 public:
@@ -773,12 +774,12 @@ class LAScriterionKeepIntensity : public LAScriterion
 {
 public:
   inline const CHAR* name() const { return "keep_intensity"; };
-  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s %d %d ", name(), below_intensity, above_intensity); };
+  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s %d %d ", name(), below_intensity, above_return_number); };
   inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_INTENSITY; };
-  inline BOOL filter(const LASpoint* point) { return (point->get_intensity() < below_intensity) || (point->get_intensity() > above_intensity); };
-  LAScriterionKeepIntensity(U16 below_intensity, U16 above_intensity) { this->below_intensity = below_intensity; this->above_intensity = above_intensity; };
+  inline BOOL filter(const LASpoint* point) { return (point->get_intensity() < below_intensity) || (point->get_intensity() > above_return_number); };
+  LAScriterionKeepIntensity(U16 below_intensity, U16 above_return_number) { this->below_intensity = below_intensity; this->above_return_number = above_return_number; };
 private:
-  U16 below_intensity, above_intensity;
+  U16 below_intensity, above_return_number;
 };
 
 class LAScriterionKeepIntensityBelow : public LAScriterion
@@ -1330,46 +1331,6 @@ private:
   F32 fraction;
 };
 
-class LAScriterionDropDuplicates : public LAScriterion
-{
-  typedef std::array<I32,3> Triplet;
-
-public:
-  inline const CHAR* name() const { return "drop_duplicate"; };
-  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
-  inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY | LASZIP_DECOMPRESS_SELECTIVE_Z; };
-  inline BOOL filter(const LASpoint* point)
-  {
-    Triplet key = {point->get_Z(), point->get_Y(), point->get_Z()};
-    return !registry.insert(key).second;
-  };
-  void reset()
-  {
-    registry.clear();
-  };
-  LAScriterionDropDuplicates()
-  {
-  };
-  ~LAScriterionDropDuplicates(){ reset(); };
-
-private:
-  struct ArrayCompare
-  {
-    bool operator()(const Triplet& a, const Triplet& b) const
-    {
-      if (a[0] < b[0]) return true;
-      if (a[0] > b[0]) return false;
-
-      if (a[1] < b[1]) return true;
-      if (a[1] > b[1]) return false;
-
-      return a[2] < b[2];
-    }
-  };
-
-  std::set<Triplet, ArrayCompare> registry;
-};
-
 class LAScriterionThinWithGrid : public LAScriterion
 {
 public:
@@ -1653,6 +1614,46 @@ private:
   my_I64_set times;
 };
 
+class LAScriterionDropDuplicates : public LAScriterion
+{
+  typedef std::array<I32,3> Triplet;
+
+public:
+  inline const CHAR* name() const { return "drop_duplicate"; };
+  inline I32 get_command(CHAR* string) const { return snprintf(string, 256, "-%s ", name()); };
+  inline U32 get_decompress_selective() const { return LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY | LASZIP_DECOMPRESS_SELECTIVE_Z; };
+  inline BOOL filter(const LASpoint* point)
+  {
+    Triplet key = {point->get_Z(), point->get_Y(), point->get_Z()};
+    return !registry.insert(key).second;
+  };
+  void reset()
+  {
+    registry.clear();
+  };
+  LAScriterionDropDuplicates()
+  {
+  };
+  ~LAScriterionDropDuplicates(){ reset(); };
+
+private:
+  struct ArrayCompare
+  {
+    bool operator()(const Triplet& a, const Triplet& b) const
+    {
+      if (a[0] < b[0]) return true;
+      if (a[0] > b[0]) return false;
+
+      if (a[1] < b[1]) return true;
+      if (a[1] > b[1]) return false;
+
+      return a[2] < b[2];
+    }
+  };
+
+  std::set<Triplet, ArrayCompare> registry;
+};
+
 void LASfilter::clean()
 {
   U32 i;
@@ -1691,6 +1692,12 @@ void LASfilter::usage() const
   print("  -drop_xyz 620000 4830000 100 621000 4831000 200 (min_x min_y min_z max_x max_y max_z)\n");
   print("  -drop_duplicates\n");
   print("Filter points based on their return numbering.\n");
+  print("  -keep_return_below 3\n");
+  print("  -keep_return_above 2\n");
+  print("  -keep_return_between 1 2\n");
+  print("  -drop_return_below 2\n");
+  print("  -drop_return_above 1\n");
+  print("  -drop_return_between 3 2\n");
   print("  -keep_first -first_only -drop_first\n");
   print("  -keep_last -last_only -drop_last\n");
   print("  -keep_second_last -drop_second_last\n");
@@ -4493,7 +4500,7 @@ BOOL LASfilter::parse(CHAR* string)
 {
   int p = 0;
   int argc = 1;
-  char* argv[64];
+  char* argv[256];
   I32 len = (I32)strlen(string);
 
   while (p < len)

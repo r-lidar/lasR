@@ -8,6 +8,7 @@ LASRlocalmaximum::LASRlocalmaximum()
   this->use_raster = false;
   this->counter = std::make_shared<unsigned int>(0);
   this->unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
+  this->attribute = "";
 }
 
 bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
@@ -17,6 +18,8 @@ bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
 
   use_attribute = stage.value("use_attribute", "Z");
   record_attributes = stage.value("record_attributes", false);
+
+  attribute = stage.value("store_in_attribute", "");
 
   vector = Vector(xmin, ymin, xmax, ymax);
   vector.set_geometry_type(wkbPoint25D);
@@ -45,8 +48,8 @@ bool LASRlocalmaximum::process()
   const Raster& raster = p->get_raster();
 
   // Convert the raster to a LAS object to recycle the point cloud based local maximum
-  LAS las(raster);
-  LAS* ptr = &las;
+  PointCloud las(raster);
+  PointCloud* ptr = &las;
 
   // Process the LAS
   use_raster = false; // deactivate to process a LAS
@@ -56,7 +59,7 @@ bool LASRlocalmaximum::process()
   return success;
 }
 
-bool LASRlocalmaximum::process(LAS*& las)
+bool LASRlocalmaximum::process(PointCloud*& las)
 {
   if (use_raster) return true;
 
@@ -66,22 +69,35 @@ bool LASRlocalmaximum::process(LAS*& las)
     return false; // # nocov
   }
 
-  LAStransform* lastransform = nullptr;
-  if (use_attribute != "Z")
+  AttributeAccessor accessor(use_attribute);
+  AttributeAccessor get_intensity("Intensity");
+  AttributeAccessor get_angle("Angle");
+  AttributeAccessor get_return("ReturnNumber");
+  AttributeAccessor get_number("NumberOfReturns");
+
+
+  bool store_in_attribute = !attribute.empty();
+  AttributeAccessor set_flag("");
+  if (store_in_attribute)
   {
-    lastransform = las->make_z_transformer(use_attribute);
-    if (lastransform == nullptr)
+    int index = las->header->schema.get_attribute_index(attribute);
+
+    if (index == -1)
     {
-      char buffer[64];
-      snprintf(buffer, sizeof(buffer), "no extrabyte attribute '%s' found", use_attribute.c_str());
-      last_error = std::string(buffer);
+      last_error = attribute + " is not present in the point cloud";
       return false;
     }
+
+    Attribute* attr = &las->header->schema.attributes[index];
+    AttributeType data_type = attr->type;
+
+    set_flag = AttributeAccessor(attribute);
   }
 
   progress->reset();
   progress->set_total(las->npoints);
   progress->set_prefix("Local maximum");
+  progress->set_ncpu(ncpu);
 
   // Local maximum algorithm
   double hws = ws/2;
@@ -94,12 +110,17 @@ bool LASRlocalmaximum::process(LAS*& las)
   // is not thread safe. We first check that we are in outer thread 0
   bool main_thread = omp_get_thread_num() == 0;
 
+  if (verbose) print("Building grid partition spatial index\n");
+  las->build_partition();
+
+
   #pragma omp parallel for num_threads(ncpu)
-  for (auto i = 0 ; i < las->npoints ; ++i)
+  for (size_t i = 0 ; i < las->npoints ; ++i)
   {
     if (progress->interrupted()) continue;
 
-    PointLAS pp;
+    Point pp;
+    pp.set_schema(&las->header->schema);
 
     if (main_thread)
     {
@@ -111,21 +132,22 @@ bool LASRlocalmaximum::process(LAS*& las)
       }
     }
 
-    if (!las->get_point(i, pp, &lasfilter, lastransform)) { status[i] = NLM; } // The point was either filtered or withhelded
-    if (pp.z < min_height) { status[i] = NLM; }
+    if (!las->get_point(i, &pp, &pointfilter)) { status[i] = NLM; } // The point was either filtered or withhelded
+    if (accessor(&pp) < min_height) { status[i] = NLM; }
     if (status[i] == NLM) continue;
 
-    Circle windows(pp.x, pp.y, hws);
-    std::vector<PointLAS> points;
-    las->query(&windows, points, &lasfilter, lastransform);
+    Circle windows(pp.get_x(), pp.get_y(), hws);
+    std::vector<Point> points;
+    las->query(&windows, points, &pointfilter);
 
     // It seems there is a data race here but no. In the worst case updating status[pt.FID]
     // is non-synchronized with other iterations and it will simply prevent skipping one computation early
     for (auto& pt : points)
     {
-      if (pt.z == pp.z && (pt.x != pp.x || pt.y != pp.y) && status[pt.FID] == LMX) status[i] = NLM; // Handle duplicated height for different points
-      if (pt.z > pp.z) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
-      if (pt.z < pp.z) status[pt.FID] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
+      int fid = las->get_index(&pt);
+      if (accessor(&pt) == accessor(&pp) && (pt.get_x() != pp.get_x() || pt.get_y() != pp.get_y()) && status[fid] == LMX) status[i] = NLM; // Handle duplicated height for different points
+      if (accessor(&pt) > accessor(&pp)) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
+      if (accessor(&pt) < accessor(&pp)) status[fid] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
     }
 
     if (status[i] == UKN) status[i] = LMX; // If the status is still unknown it is a local max
@@ -137,25 +159,44 @@ bool LASRlocalmaximum::process(LAS*& las)
         // If the point is in the buffer we must guarantee it will be assigned the same ID the next
         // time we meet it. FID is a 64 bit geographic ID that is guaranteed to be unique. But we need
         // a 32 bit ID so we have a correspondence table.
-        uint64_t FID = ((uint64_t)las->point.quantizer->get_X(pp.x) << 32) | (uint64_t)(las->point.quantizer->get_Y(pp.y));
+        uint64_t FID = ((uint64_t)pp.get_X() << 32) | (uint64_t)(pp.get_Y());
         auto it = unicity_table->find(FID);
+
+        PointLAS plas;
+        plas.x = pp.get_x();
+        plas.y = pp.get_y();
+        plas.z = pp.get_z();
+        plas.intensity = get_intensity(&pp);
+        plas.return_number = get_return(&pp);
+        plas.scan_angle = get_angle(&pp);
+        plas.number_of_returns = get_number(&pp);
         if (it == unicity_table->end())
         {
           (*unicity_table)[FID] = *counter;
-          lm.push_back(std::move(pp));
+          lm.push_back(plas);
           lm.back().FID = *counter;
           (*counter)++;
         }
         else
         {
-          lm.push_back(std::move(pp));
+          lm.push_back(plas);
           lm.back().FID = it->second;
         }
       }
     }
   }
 
-  if (lastransform) delete lastransform;
+  if (store_in_attribute)
+  {
+    for (size_t i = 0 ; i < las->npoints ; i++)
+    {
+      las->seek(i);
+      if (status[i] == LMX)
+        set_flag(&las->point, 1);
+      else
+        set_flag(&las->point, 0);
+    }
+  }
 
   progress->done();
 
@@ -176,41 +217,31 @@ bool LASRlocalmaximum::write()
 {
   if (ofile.empty()) return true;
 
-  int dupfid= 0;
-  progress->reset();
-  progress->set_total(lm.size());
-  progress->set_prefix("Write local maxima on disk");
+  auto start_time = std::chrono::high_resolution_clock::now();
 
   if (lm.size() == 0) return true;
 
-  for (const auto& p : lm)
+  bool success;
+  #pragma omp critical (write_localmax)
   {
-    bool success;
-    #pragma omp critical (write_localmax)
-    {
-      success = vector.write(p, record_attributes);
-    }
-
-    if (!success)
-    {
-      // /!\ TODO: not thread safe
-      if (last_error_code != GDALdataset::DUPFID)
-      {
-        return false;
-      }
-      else
-      {
-        dupfid++;
-        last_error_code = 0;
-      }
-    }
-
-    (*progress)++;
-    progress->show();
+    success = vector.write(lm, record_attributes);
   }
 
-  if (dupfid)
-    print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
+  if (!success)
+    return false;
+
+  int dupfid = vector.get_dupfid();
+  if (dupfid) print("%d points skipped with duplicated FID. This may be due to overlapping tiles or duplicated points.\n", dupfid);
+
+  if (verbose)
+  {
+    // # nocov start
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    float second = (float)duration.count()/1000.0f;
+    print("  Local Maximum write took %.2f sec.\n", second);
+    // # nocov end
+  }
 
   return true;
 }

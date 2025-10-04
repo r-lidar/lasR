@@ -9,8 +9,8 @@ class LASRrasterize : public StageRaster
 {
 public:
   LASRrasterize() = default;
-  bool process(LASpoint*& p) override;
-  bool process(LAS*& las) override;
+  bool process(Point*& p) override;
+  bool process(PointCloud*& las) override;
   double need_buffer() const override { return MAX(raster.get_xres(), window); };
   bool is_streamable() const override { return streamable; };
   bool is_parallelized() const override { return !streamable; };
@@ -22,6 +22,7 @@ public:
   LASRrasterize* clone() const override { return new LASRrasterize(*this); };
 
 private:
+  std::vector<std::string> methods;
   bool streamable;
   double window;
   MetricManager metric_engine;

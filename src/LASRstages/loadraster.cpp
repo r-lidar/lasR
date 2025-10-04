@@ -25,7 +25,7 @@ bool LASRloadraster::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRloadraster::set_chunk(const Chunk& chunk)
+bool LASRloadraster::set_chunk(Chunk& chunk)
 {
   bool success;
   #pragma omp critical (load_raster)

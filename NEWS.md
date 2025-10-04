@@ -1,3 +1,272 @@
+# lasR 0.17.2
+
+- Fix: #198 LAS files with 0 points are discarded on-the-fly.
+- New: argument `store_in_attribute` in `local_maximum`
+- New: *undocumented* capacity at logging informations in files (log, progress). Accessible in R API via
+  ```r
+  exec(..., progress_file = "path/to/progress.ext", log_file = "path/to/log.ext")
+  ```
+  Accessible in the C++ API via two members
+  ```r
+  Pipeline::set_progress_file(std::string);
+  Pipeline::set_profile_file(std::string);
+  ```
+- Fix: #205 absolute paths in `write_vpc` were broken since 0.17.0
+- Fix: #207 `sor` when executed in parallel on multiple files.
+- Fix: #206 `local_maximum()` after `normalize()` or `delete_points()`
+
+# lasR 0.17.1
+
+- Fix: `info()` prints informations for each processed chunk. Not only the first one.
+- Fix: #196. ExtraBytes attributes were zeroed when reading two or more files (main file + buffer file)
+
+# lasR 0.17.0
+
+`lasR 0.17.0` does not bring new features. However it has been redesigned internally to provided a C++ API. The R API (the `lasR` package) now uses the C++ API. And we have now a `python` package (`pylasr`) that leverage the C++ API as well. It is now possible to integrate `lasR` into your own API in `matlab`, `julia`or any language that supports a C++ binding
+
+Below a simple pipeline with 3 stage using the `C++`, `R` and python `API`. The variable `on` is a list of file on which to apply the pipeline.
+
+in `C++`:
+
+```cpp
+#include "api.h"
+
+using namespace api;
+
+// platform independent tmp file
+std::filesystem::path temp_dir = std::filesystem::temp_directory_path(); 
+std::filesystem::path temp_file = temp_dir / "test.las";
+
+Pipeline p;
+p.set_files(on);
+p.set_concurrent_files_strategy(8);
+p.set_progress(true);
+
+p += info() +
+  delete_points({"Z < 1.37"}) + 
+  write_las(temp_file);
+
+std::string file = p.write_json();
+
+execute(file);
+```
+
+in `R`:
+
+```r
+library(lasR)
+
+pipeline = info() + 
+   delete_points("Z < 1.37") +
+   write_las()
+
+execute(pipeline, on, ncores = 8, progress = TRUE);
+```
+
+in `python`:
+
+```py
+import pylasr
+
+# Use example file from the package
+example_file = "inst/extdata/Example.las"
+output_file = "filtered_output.las"
+
+pipeline = (pylasr.info() + 
+            pylasr.delete_points(["Z < 1.37"]) + 
+            pylasr.write_las(output_file))
+
+pipeline.set_progress(True)
+result = pipeline.execute(example_file)
+```
+
+## Breaking Changes
+
+- **Inverted `delete_points` behavior**: The stage `delete_points` now works consistently with other stages’ `filter` arguments. Previously, `delete_points("Z < 4")` kept points below 4, which allowed for commands like `delete_points(keep_z_below(4))` but was counter-intuitive.Now, points matching the filter are *processed*. In the case of `delete_points()`, this means **deleted**.
+
+## Fixes
+
+- Fixed a crash in `geometry_features` when running after points had been deleted by `delete_points()`.
+
+
+# lasR 0.16.2
+
+- Fix #164: `lasR` is now as fast as it should be. For an unknown reason, it had become extremely slow with some stages
+  involving spatial queries such as `normalize()`, `transform_with()`, `sor()`, and `geometry_feature()`. `lasR` 
+  performance has been restored.
+- Enhancement: building a `kdtree` for spatial indexing can take significant time (several seconds). Spatial 
+  indexes are now built only when required. Thus, a pipeline using only `rasterize()` will no longer build a spatial index.
+- Regression: we regained the full speed of `lasR` at the cost of increased memory usage. `lasR` now consumes more memory.
+
+# lasR 0.16.1
+
+- Fix #158: triangulation with fewer than 3 points
+- Fix #160: crash with empty folder
+- Fix: the NIR attribute is now recognized as part of the LAS specification
+- Fix #161: `reader_circles()` and `reader_rectangles()` are skipping queries outside the file collection
+- Fix #166: `sort_points()` works with deleted points in previous stages
+- Fix #170: `classify_with_sor()` is flagged as parallelized and should use multiple cores
+- Fix #170: KNN search has been rewritten using `nanoflann`; stages relying on KNN search are now much faster
+
+# lasR 0.16.0
+
+- New: stage `edit_attribute()`
+- New: stage `remove_attribute()`
+- New: filters `keep_z_between()` and `drop_z_between()`
+- Doc: enhanced documentation for the `filter` argument
+- Doc: revised documentation for `add_extrabytes()`
+- Change: `add_attributes()` checks for reserved names (#159)
+- Change: the angle computed by `geometry_feature()` is now called `inclination` instead of `angle`, as `angle` is a reserved name
+
+# lasR 0.15.1
+
+- Fix #146 fix memory layout after adding new attributes
+- Fix #146 `add_attribute()` overwrite previous attribute rather that duplicating them.
+- Fix #135 write valid WKT string in COPC files
+- Fix #151 memory corruption when calling `callback` with deleted points
+
+# lasR 0.15.0
+
+- New: `lasR` now supports the PCD format. The `reader()` function can read PCD files, and a new stage, `write_pcd()`, is available. However, due to the current state of the software and limitations of the format itself, functionality is restricted: `lasR` cannot read multiple PCD files, and thus cannot buffer or merge them. Additionally, `write_pcd()` does not support streaming data.
+- New: #140 `info()` now prints useful COPC metadata.
+- Fix: #142 circular buffers are now handled properly.
+- Change: #139 the `chm()` function has been replaced by `dsm()`.
+
+# lasR 0.14.1
+
+- Fix: #141 `write_las()` drops circular buffers properly
+- Fix: #136 `write_las()` preserves dates and writes generating software
+- Enhance: #137 a pipeline preserve VLR attributes of a LAS files
+
+# lasR 0.14.0
+
+- Doc: Documented that lasR can write COPC files.
+- New: Added `write_copc()` function with extra arguments to control hierarchy depth and density.
+- Fix: Fixed unmapped memory issue when writing COPC files.
+
+# lasR 0.13.9
+
+- Fix: #113 `geometry_feature()` overwrite attributes if they are already existing.
+- Fix: a very serious bug where memory may be corrupted after deleting points leading to unexpected results or crash.
+
+# lasR 0.13.8
+
+- New argument `check` in `load_matrix()` to disable orthogonality check
+- Enhancement: `info()` is reporting the point density.
+- Enhancement: incorrect extension for raster of vector files outputs now returns a helpful error. Previously using e.g. `.tif` for a local maximum output instead of `.shp`or `gpkg` returned a non helpful error:
+  *Erreur : error 1 while creating GDAL dataset. Attempt to create 0x0 dataset is illegal,sizes must be larger than zero.* It now returns  *Expecting a vector format for: file.tif*
+
+# lasR 0.13.7
+
+- Fix: #123 `filter` argument with negative numbers
+- Fix: #124 `exec()` with 0 file no longer crashes.
+- New: new stage `load_matrix()`
+
+# lasR 0.13.6
+
+- Fix: #120 fix `write_las()` properly writes return number and number of return in LAS 1.4 format 6
+- Fix: `info()` no longer prints for every point in streamable pipelines
+- Enhancement: better support of LAS format in `write_las()`. It will write the same LAS file version and format than the input.
+- Enhancement: `info()` prints the source format (`LAS`, `PCD`) and its version (`1.4`, `0.7`).
+
+# lasR 0.13.5
+
+- New: in `transform_with` when used with a raster, bilinear interpolation can be deactivated
+- Fix: #118 one pixel shift in the DTM alignment
+
+# lasR 0.13.4
+
+- New: Added metrics `skew` and `kurt` in the metric engine.
+- New: [#110] For LAS files, the bit flags are now read as bit attributes. This feature was lost in version 0.13.0.
+- New: [#110] `write_las()` now automatically writes LAS 1.4 format if required.
+- Fix: Resolved floating-point inaccuracy in `region_growing()` that could cause edge effects across two tiles or chunks effectively splitting some trees in two parts with different IDs in high-resolution CHM.
+- Fix: The documentation for `region_growing()` states that the `max_cr` parameter represents the _"Maximum value of the crown **diameter** of a detected tree"_. In practice, it was used as the maximum **radius**, resulting in trees larger than expected. This has been corrected.
+
+# lasR 0.13.3
+
+- Fix: #105 invalid read of extrabytes
+- Change: memory is reallocated and freed when many points are deleted in a stage (not visible for users)
+- Change: adaptive indexation of the point cloud should speed up some process for some low or high density point clouds.
+
+# lasR 0.13.2
+
+- Fix: internal function `update_header()` updates the bounding box. Bug probably invisible to users.
+
+# lasR 0.13.1
+
+- Fix #103: A very silly typo bug that caused the buffering feature to be lost.
+- Fix #104: crash with deprecated extrabytes in LAS format
+
+# lasR 0.13.0
+
+`lasR 0.13.0` is a massive rewrite of the internal engine to conform to third-party libraries licenses. With this version `lasR` is no longer tight to the LAS/LAZ format and will be able to support any point cloud format. It already partially supports the PCD file format.
+
+I'm expecting users to encounter some bugs in the near future. However, all the unit tests are passing.
+
+### Breaking Changes
+
+- It is no longer possible to use `LASlib` filters such as `-drop_z_above 5` in the stages (except the reader stage). Users must use conditional commands introduced in 0.12.0, such as `"Z > 5"`.
+- The reader no longer reads the bit flags from the LAS/LAZ files, as they are never used anyway.
+- `sort_points()` no longer sorts by GPS time and return number. It performs a spatial sort only, and the parameter `spatial` has been removed.
+- `classify_with_csf()` no longer uses the last return only.
+- `write_las()` no longer preserves VLR and EVLR. This will be fixed later.
+- There are likely other changes as I rewrote thousands of lines of code.
+
+### New Features
+
+- New: Ability to pre-read a point cloud in R using an external pointer. See `?read_cloud()`. See [the tutorial](https://r-lidar.github.io/lasR/articles/tutorial.html).
+- New: Stages can now be applied one by one to a point cloud loaded in memory.
+
+  ```r
+  f <- system.file("extdata", "Topography.las", package="lasR")
+  pc <- read_cloud(f)
+  u = exec(chm(5), on = pc)
+  ```
+- New: `reader()` replace `reader_las()` because `lasR` is not intended to be limited to LAS/LAZ. `reader_las()` is deprecated. `reader()` is supposed to support any format in the future.
+- New: `reader()` has a new argument `copc_depth`  
+
+# lasR 0.12.1
+
+- Fix: critical bug on windows #96
+
+# lasR 0.12.0
+
+- Fix: In sampling stages, the filter argument previously discarded all points that did not pass the test. The updated behavior processes only the points that pass the test while leaving others untouched. For example:  
+  ```r
+  sampling_poisson(1, filter = keep_ground())
+  ```
+  Previously, this filtered the point cloud to retain only Poisson-sampled ground points. Now, it correctly Poisson-samples the ground points while preserving all other points.
+- New: Added a new stage, `info()`, to print useful information about a file.  
+- New: Command-line utility introduced. Users can now execute simple pipelines from the terminal. First, use `install_cmd_tools()`, then commands like these become available:  
+  ```bash
+  lasr info -i path/to/file.las
+  lasr vpc -i path/to/folder 
+  lasr lax -i path/to/folder -ncores 8
+  lasr help
+  lasr chm -i path/to/folder -o path/to/chm.tif -res 1 -ncore 4
+  lasr dtm -i path/to/folder -o path/to/chm.tif -res 0.5 -ncore 4
+  ```
+- New: `transform_with()` now supports a 4x4 Affine Transformation Matrix to translate and rotate the point cloud.  
+- Change: The `Eigen` library has replaced the `Armadillo` library for linear algebra. This change may affect the sign of some vectors in `geometry_feature()`.  
+- New: The `filter` argument, available in many stages, now accepts programming-style strings such as `Z < 3`, `Classification == 2`, `UserData == 0`, `Intensity > 100`, `Classification %in% 2 3 4`, and `Classification %out% 0 1 2`. This approach is now the preferred way to assign filters, allowing filtering on extrabyte attributes by name, e.g., `Amplitude > 10`.  
+- Change: `transform_with()` a raster (typically normalization) now performs bilinear interpolation.
+- New: stages that have a `use_attribute` argument now accept any attribute including extrabytes attribute.
+- New: `sampling_pixel()` gained an argument `method` and `use_attribute` to retain specific points of interest.
+ 
+# lasR 0.10.3
+
+Change: `normalize()` loose its argument `extrabytes` in favor of a new function `hag()` that is equivalent to `normalize(TRUE)`
+New: add stages `delete_noise()`, `delete_ground()`
+
+# lasR 0.10.2
+
+Fix: The `local_maximum` function previously experienced significant delays when writing points to disk, taking up to 2 seconds on Linux and up to 30 seconds on Windows. This issue severely hindered parallelization capabilities. The new fix dramatically reduces the write time to around 0.1 seconds, greatly improving overall performance.
+
+# lasR 0.10.1
+
+- Fix #91: Resolved a critical memory addressing issue when handling very large point clouds.
+- Fix: Improved pipeline efficiency by preventing the reading of buffer tiles in pipelines using `stop_if()` before `reader_las()`. Previously, the buffer was being read even when points were meant to be skipped, leading to unnecessary processing time (a few seconds per skipped file).
+
 # lasR 0.10.0
 
 - New: new stage `classify_with_sor()` to classify outliers with statistical outlier removal.

@@ -1,5 +1,6 @@
 #include "sampling.h"
 #include "Grid.h"
+#include "openmp.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -22,12 +23,12 @@ bool LASRsamplingpoisson::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingpoisson::process(LAS*& las)
+bool LASRsamplingpoisson::process(PointCloud*& las)
 {
   double r_square = distance*distance;
   double res = distance; // Cell size for the grid
 
-  std::unordered_map<Voxel, std::vector<PointXYZ>, VoxelHash> uregistry;
+  std::unordered_map<int, std::vector<PointXYZ>> uregistry;
   std::vector<std::vector<PointXYZ>> vregistry;
   bool use_vregistry = false;
 
@@ -70,10 +71,10 @@ bool LASRsamplingpoisson::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->point.get_withheld_flag() != 0) continue;
-    if (lasfilter.filter(&las->point))
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point))
     {
-      las->remove_point();
+      //las->delete_point();
       continue;
     }
 
@@ -86,9 +87,7 @@ bool LASRsamplingpoisson::process(LAS*& las)
     int ny = std::floor((py - rymin) / res);
     int nz = std::floor((pz - rzmin) / res);
 
-    int vkey;
-    Voxel ukey;
-
+    int vkey = nx + ny*length + nz*length*width;
     // Do we retain this point? We will look into the 27 neighbors to find if it is not too close to an already inserted points
     bool valid = true;
 
@@ -96,11 +95,9 @@ bool LASRsamplingpoisson::process(LAS*& las)
     // >>>>>
     if (use_vregistry)
     {
-      vkey = nx + ny*length + nz*length*width;
-
-      for (const auto& neighbor : vregistry[vkey])
+      for (const auto& p : vregistry[vkey])
       {
-        double dist_square = (px - neighbor.x) * (px - neighbor.x) +  (py - neighbor.y) * (py - neighbor.y) + (pz - neighbor.z) * (pz - neighbor.z);
+        double dist_square = (px - p.x) * (px - p.x) +  (py - p.y) * (py - p.y) + (pz - p.z) * (pz - p.z);
         if (dist_square < r_square)
         {
           valid = false;
@@ -110,13 +107,12 @@ bool LASRsamplingpoisson::process(LAS*& las)
     }
     else
     {
-      ukey = {nx, ny, nz};
-
-      if (uregistry.find(ukey) != uregistry.end())
+      auto it = uregistry.find(vkey);
+      if (it != uregistry.end())
       {
-        for (const auto& neighbor : uregistry[ukey])
+        for (const auto& p : it->second)
         {
-          double dist_square = (px - neighbor.x) * (px - neighbor.x) +  (py - neighbor.y) * (py - neighbor.y) + (pz - neighbor.z) * (pz - neighbor.z);
+          double dist_square = (px - p.x) * (px - p.x) +  (py - p.y) * (py - p.y) + (pz - p.z) * (pz - p.z);
           if (dist_square < r_square)
           {
             valid = false;
@@ -127,44 +123,45 @@ bool LASRsamplingpoisson::process(LAS*& las)
     }
     // >>>>>
 
-    for (int dx = -1; dx <= 1 && valid; ++dx)
+    if (valid)
     {
-      for (int dy = -1; dy <= 1 && valid; ++dy)
+      for (int dx = -1; dx <= 1 && valid; ++dx)
       {
-        for (int dz = -1; dz <= 1; ++dz)
+        for (int dy = -1; dy <= 1 && valid; ++dy)
         {
-          if (dx == 0 && dy == 0 && dz == 0) continue;
-
-          // If there are points the voxel
-          if (use_vregistry)
+          for (int dz = -1; dz <= 1; ++dz)
           {
-            int key2 = (nx+dx) + (ny+dy)*length + (nz+dz)*length*width;
+            if (dx == 0 && dy == 0 && dz == 0) continue;
 
+            int key2 = (nx+dx) + (ny+dy)*length + (nz+dz)*length*width;
             if (key2 < 0 || key2 >= (int)vregistry.size()) continue; // This happens at the edges where the voxels are not allocated
 
-            for (const auto& neighbor : vregistry[key2])
+            // If there are points the voxel
+            if (use_vregistry)
             {
-              double dist_square = (px - neighbor.x) * (px - neighbor.x) +  (py - neighbor.y) * (py - neighbor.y) + (pz - neighbor.z) * (pz - neighbor.z);
-              if (dist_square < r_square)
+              for (const auto& p : vregistry[key2])
               {
-                valid = false;
-                break;
-              }
-            }
-          }
-          else
-          {
-            Voxel key2(nx+dx, ny+dy, nz+dz);
-
-            if (uregistry.find(key2) != uregistry.end())
-            {
-              for (const auto& neighbor : uregistry[key2])
-              {
-                double dist_square = (px - neighbor.x) * (px - neighbor.x) +  (py - neighbor.y) * (py - neighbor.y) + (pz - neighbor.z) * (pz - neighbor.z);
+                double dist_square = (px - p.x) * (px - p.x) +  (py - p.y) * (py - p.y) + (pz - p.z) * (pz - p.z);
                 if (dist_square < r_square)
                 {
                   valid = false;
                   break;
+                }
+              }
+            }
+            else
+            {
+              auto it = uregistry.find(vkey);
+              if (it != uregistry.end())
+              {
+                for (const auto& p : it->second)
+                {
+                  double dist_square = (px - p.x) * (px - p.x) +  (py - p.y) * (py - p.y) + (pz - p.z) * (pz - p.z);
+                  if (dist_square < r_square)
+                  {
+                    valid = false;
+                    goto insert;
+                  }
                 }
               }
             }
@@ -173,18 +170,20 @@ bool LASRsamplingpoisson::process(LAS*& las)
       }
     }
 
+    insert:
+
     if (valid)
     {
       if (use_vregistry)
         vregistry[vkey].emplace_back(px, py, pz);
       else
-        uregistry[ukey].emplace_back(px, py, pz);
+        uregistry[vkey].emplace_back(px, py, pz);
 
       n++;
     }
     else
     {
-      las->remove_point();
+      las->point.set_deleted();
     }
 
     (*progress)++;
@@ -195,18 +194,9 @@ bool LASRsamplingpoisson::process(LAS*& las)
   progress->done();
 
   las->update_header();
+  las->delete_deleted();
 
   if (verbose) print(" sampling retained %d points\n", n);
-
-  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  double ratio = (double)n/(double)las->npoints;
-  if (ratio > 1/3)
-  {
-    if (!las->delete_withheld()) return false;
-    if (verbose) print(" memory layout reallocated\n");
-  }
 
   return true;
 }
@@ -219,9 +209,9 @@ bool LASRsamplingvoxels::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsamplingvoxels::process(LAS*& las)
+bool LASRsamplingvoxels::process(PointCloud*& las)
 {
-  std::unordered_set<Voxel, VoxelHash> uregistry;
+  std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
   bool use_bitregistry = false;
 
@@ -263,10 +253,10 @@ bool LASRsamplingvoxels::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->point.get_withheld_flag() != 0) continue;
-    if (lasfilter.filter(&las->point))
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point))
     {
-      las->remove_point();
+      //las->delete_point();
       continue;
     }
 
@@ -274,12 +264,11 @@ bool LASRsamplingvoxels::process(LAS*& las)
     int nx = std::floor((las->point.get_x() - rxmin) / res);
     int ny = std::floor((las->point.get_y() - rymin) / res);
     int nz = std::floor((las->point.get_z() - rzmin) / res);
+    int key = nx + ny*length + nz*length*width;
 
     // Do we retain this point ? We look into the registry to know if the voxel exist. If not, we retain the point.
     if (use_bitregistry)
     {
-       int key = nx + ny*length + nz*length*width;
-
       if (!bitregistry[key])
       {
         bitregistry[key] = true;
@@ -287,17 +276,15 @@ bool LASRsamplingvoxels::process(LAS*& las)
       }
       else
       {
-        las->remove_point();
+        las->delete_point();
       }
     }
     else
     {
-      Voxel key(nx, ny, nz);
-
       if (uregistry.insert(key).second)
         n++;
       else
-        las->remove_point();
+        las->delete_point();
     }
 
     (*progress)++;
@@ -308,18 +295,9 @@ bool LASRsamplingvoxels::process(LAS*& las)
   progress->done();
 
   las->update_header();
+  las->delete_deleted();
 
   if (verbose) print(" sampling retained %d points\n", n);
-
-  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  double ratio = (double)n/(double)las->npoints;
-  if (ratio > 1/3)
-  {
-    if (!las->delete_withheld()) return false;
-    if (verbose) print(" memory layout reallocated\n");
-  }
 
   return true;
 }
@@ -328,11 +306,28 @@ bool LASRsamplingvoxels::process(LAS*& las)
 bool LASRsamplingpixels::set_parameters(const nlohmann::json& stage)
 {
   res = stage.at("res");
+  method = stage.value("method", "random");
+  use_attribute = stage.value("use_attribute", "Z");
   shuffle_size = stage.value("shuffle_size", 10000);
+
+  if (method != "random" && method != "min" && method != "max")
+  {
+    last_error = "Invalid method " + method;
+    return false;
+  }
+
   return true;
 }
 
-bool LASRsamplingpixels::process(LAS*& las)
+bool LASRsamplingpixels::process(PointCloud*& las)
+{
+  if (method == "random") return random(las);
+  if (method == "max") return highest(las);
+  if (method == "min") return highest(las, false);
+  return true;
+}
+
+bool LASRsamplingpixels::random(PointCloud*& las)
 {
   std::unordered_set<int> uregistry;
   std::vector<bool> bitregistry;
@@ -363,12 +358,8 @@ bool LASRsamplingpixels::process(LAS*& las)
   for (int i : index)
   {
     las->seek(i);
-    if (las->point.get_withheld_flag() != 0) continue;
-    if (lasfilter.filter(&las->point))
-    {
-      las->remove_point();
-      continue;
-    }
+    if (las->point.get_deleted()) continue;
+    if (pointfilter.filter(&las->point)) continue;
 
     // Pixel of this point
     int key = grid.cell_from_xy(las->point.get_x(), las->point.get_y());
@@ -383,7 +374,7 @@ bool LASRsamplingpixels::process(LAS*& las)
       }
       else
       {
-        las->remove_point();
+        las->delete_point();
       }
     }
     else
@@ -391,7 +382,7 @@ bool LASRsamplingpixels::process(LAS*& las)
       if (uregistry.insert(key).second)
         n++;
       else
-        las->remove_point();
+        las->delete_point();
     }
 
     (*progress)++;
@@ -402,18 +393,72 @@ bool LASRsamplingpixels::process(LAS*& las)
   progress->done();
 
   las->update_header();
+  las->delete_deleted();
 
   if (verbose) print(" sampling retained %d points\n", n);
 
-  // In lasR, deleted points are not actually deleted. They are withhelded, skipped by each stage but kept
-  // to avoid the cost of memory reallocation and memmove. Here, if we remove more than 33% of the points
-  // actually remove the points. This will save some computation later.
-  double ratio = (double)n/(double)las->npoints;
-  if (ratio > 1/3)
+  return true;
+}
+
+bool LASRsamplingpixels::highest(PointCloud*& las, bool high)
+{
+  int n = las->npoints;
+
+  std::vector<std::pair<int, double>> registry;
+
+  double rxmin = las->header->min_x;
+  double rymin = las->header->min_y;
+  double rxmax = las->header->max_x;
+  double rymax = las->header->max_y;
+  Grid grid(rxmin, rymin, rxmax, rymax, res);
+
+  size_t npixels = grid.get_ncells();
+  if (npixels < INT_MAX) // Cells numbers are stored has int
   {
-    if (!las->delete_withheld()) return false;
-    if (verbose) print(" memory layout reallocated\n");
+    registry.resize(npixels);
+
+    if (high)
+      std::fill(registry.begin(), registry.end(), std::make_pair(0, -std::numeric_limits<double>::infinity()));
+    else
+      std::fill(registry.begin(), registry.end(), std::make_pair(0, std::numeric_limits<double>::infinity()));
   }
+  else
+  {
+    last_error = "Too many cells";
+    return false;
+  }
+
+  AttributeAccessor accessor(use_attribute);
+
+  while (las->read_point())
+  {
+    if (pointfilter.filter(&las->point)) continue;
+
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    double z = accessor(&las->point);
+    int cell = grid.cell_from_xy(x,y);
+
+    if ((high && registry[cell].second < z) || (!high && registry[cell].second > z))
+      registry[cell] = {las->current_point, z};
+  }
+
+  while (las->read_point())
+  {
+    if (pointfilter.filter(&las->point)) continue;
+
+    double x = las->point.get_x();
+    double y = las->point.get_y();
+    int cell = grid.cell_from_xy(x,y);
+
+    if (registry[cell].first != las->current_point)
+      las->point.set_deleted();
+  }
+
+  las->update_header();
+  las->delete_deleted();
+
+  if (verbose) print(" sampling retained %d points\n", n);
 
   return true;
 }

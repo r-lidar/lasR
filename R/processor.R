@@ -8,7 +8,7 @@
 #' @param on Can be the paths of the files to use, the path of the folder in which the files are stored,
 #' the path to a [virtual point cloud](https://www.lutraconsulting.co.uk/blog/2023/06/08/virtual-point-clouds/)
 #' file or a `data.frame` containing the point cloud. It supports also a `LAScatalog` or a `LAS` objects
-#' from `lidR`.
+#' from `lidR`. It supports PCD, LAS, LAZ file formats.
 #' @param with list. A list of options to control how the pipeline is executed. This includes options to
 #' control parallel processing, progress bar display, tile buffering and so on. See \link{set_exec_options}
 #' for more details on the available options.
@@ -33,13 +33,11 @@
 #' @export
 exec = function(pipeline, on, with = NULL, ...)
 {
-  args = list(...)
-  fjson = args$json
-  async_com = ""
-
   # Parse options and give precedence to 1. global options 2. LAScatalog 3. with arguments 4. ... arguments
   with = parse_options(on, with, ...)
 
+  # String to a file. Special case for experimental lasRui: github.com/r-lidar/lasRui
+  # No documented, experimental, very hacky
   if (is.character(pipeline))
   {
     if (!file.exists(pipeline))
@@ -50,20 +48,20 @@ exec = function(pipeline, on, with = NULL, ...)
     processed_content <- do.call(c, processed_content)
     json_file <- tempfile(fileext = ".json")
     writeLines(processed_content, json_file)
-    async_com = tempfile(fileext = ".tmp")
+    with$progress_file = tempfile(fileext = ".tmp")
   }
-  else if (methods::is(pipeline, "LASRpipeline"))
+  # Normal case
+  else if (methods::is(pipeline, "PipelinePtr"))
   {
-    # A reader stage is mandatory. It is allowed to omit it the engine adds it.
-    if (is_reader_missing(pipeline))
-    {
-      pipeline = reader_las() + pipeline
-    }
-
-    # A build_catalog stage is automatically added. Users do not need to take care of that one
-    pipeline = build_catalog(on, with) + pipeline
-
     on_is_valid = FALSE
+
+    # If 'on' is character, this is the default behavior.
+    if (is.character(on))
+    {
+      stopifnot(length(on) > 0)
+      on <- normalizePath(on, mustWork = FALSE)
+      on_is_valid = TRUE
+    }
 
     # If 'on' is a LAS from lidR or a data.frame. Compatibility mode for R exclusively. The reader_las
     # stage is modified to call R specific stages that are not compiled outside of R
@@ -80,24 +78,19 @@ exec = function(pipeline, on, with = NULL, ...)
         attr(on, "crs") <- crs
       }
 
-      crs <- attr(on, "crs")
+      dataframe = on
+      on = character()
+
+      crs <- attr(dataframe, "crs")
       if (is.null(crs)) crs = ""
       if (!is.character(crs) & length(crs != 1)) stop("The CRS of this data.frame is not a WKT string")
 
-      acc <- attr(on, "accuracy")
+      acc <- attr(dataframe, "accuracy")
       if (is.null(acc)) acc = c(0, 0, 0)
       if (!is.numeric(acc) & length(acc) != 3L) stop("The accuracy of this data.frame is not valid")
 
-      pipeline[[1]]$dataframe = on
-      pipeline[[1]]$crs = crs
-      pipeline[[1]]$files = NULL
-
-      ind = get_reader_index(pipeline)
-      pipeline[[ind]]$algoname = "reader_dataframe"
-      pipeline[[ind]]$dataframe = on
-      pipeline[[ind]]$accuracy = acc
-      pipeline[[ind]]$crs = crs
-
+      addr = .APIOPERATIONS$get_address(dataframe)
+      pipeline = .APIOPERATIONS$cast_pipeline_to_dataframe_compatible(pipeline, addr, crs, accuracy)
       on_is_valid = TRUE
     }
 
@@ -105,39 +98,26 @@ exec = function(pipeline, on, with = NULL, ...)
     if (methods::is(on, "LAScatalog"))
     {
       on <- on$filename
+      on <- normalizePath(on, mustWork = FALSE)
+      on_is_valid = TRUE
     }
 
-    # If 'on' is character, this is the default behavior.
-    if (is.character(on))
+    # Special case for the R API
+    if (methods::is(on, "lasrcloud"))
     {
-      pipeline$build_catalog$files <- normalizePath(on, mustWork = FALSE)
-      pipeline$build_catalog$buffer <- with$buffer
-      pipeline$build_catalog$noprocess <- with$noprocess
-
-      # 'noprocess' is a hidden and not documented options to be compatible with LAScatalog$processed
-      if (!is.null(with$noprocess))
-      {
-        if (length(with$noprocess) != length(on))
-          stop("'noprocess' and 'on' have different length")
-      }
-
+      xptr = on[[1]]
+      on = character()
+      addr = .APIOPERATIONS$get_address(xptr)
+      pipeline = .APIOPERATIONS$cast_pipeline_to_xptr_compatible(pipeline, addr)
       on_is_valid = TRUE
     }
 
     if (!on_is_valid) stop("Invalid argument 'on'.")
 
-    # The pipeline is a 'list' and is serialized in a JSON file. The path to the JSON file is
-    # sent to the processor
-    pipeline = list(processing = with, pipeline = pipeline)
-    json_file = write_json(pipeline)
-    if (!is.null(fjson)) file.copy(json_file, normalizePath(fjson, mustWork = FALSE))
+    json_file <- .APIOPERATIONS$generate_json(pipeline, on, with)
   }
 
-  ans <- .Call(`C_process`, json_file, async_com)
-
-  #file.remove(json_file)
-
-  if (inherits(ans, "error")) stop(ans)
+  ans  <- .APIOPERATIONS$excecute_pipeline(json_file)
 
   if (!with$noread) ans <- read_as_common_r_object(ans)
   ans <- Filter(Negate(is.null), ans)
@@ -150,35 +130,6 @@ exec = function(pipeline, on, with = NULL, ...)
   else
     return(ans)
 }
-
-is_reader_missing = function(pipeline)
-{
-  for (stage in pipeline)
-  {
-    if (stage$algoname == "reader_las")
-    {
-      return(FALSE)
-    }
-  }
-  return(TRUE)
-}
-
-get_reader_index = function(pipeline)
-{
-  i = 1
-  for (stage in pipeline)
-  {
-    if (stage$algoname == "reader_las")
-    {
-      return(i)
-    }
-
-    i = i+1
-  }
-
-  return(i)
-}
-
 
 read_as_common_r_object = function(ans)
 {
@@ -201,7 +152,7 @@ read_as_common_r_object = function(ans)
         }
         else if (ext %in% c("bna", "csv", "e00", "fgb", "gdb", "geojson", "gml", "gmt", "gpkg", "gps", "gpx", "gtm", "gxt", "jml", "kml", "map", "mdb", "nc", "ods", "osm", "pbf", "shp", "sqlite", "vdv", "xls", "xlsx"))
         {
-          return(vreader(x))
+          return(vreader(x, as_tibble = FALSE))
         }
         else if (ext %in% c("las", "laz"))
         {
@@ -238,40 +189,55 @@ parse_options = function(on, with, ...)
   noprocess <- NULL
   verbose <- FALSE
   noread <- FALSE
-  profiling <- ""
+  profile_file <- ""
+  progress_file <- ""
+  log_file <- ""
 
   # Explicit options
-  if (!is.null(dots$buffer)) buffer <- dots$buffer
-  if (!is.null(dots$chunk))  chunk <- dots$chunk
-  if (!is.null(dots$progress)) progress <- dots$progress
-  if (!is.null(dots$ncores)) ncores <- dots$ncores
-  if (!is.null(dots$noprocess)) noprocess <- dots$noprocess
-  if (!is.null(dots$verbose)) verbose <- dots$verbose
-  if (!is.null(dots$noread)) noread <- dots$noread
-  if (!is.null(dots$profiling)) profiling <- dots$profiling
+  if (!is.null(dots[["buffer"]])) buffer <- dots[["buffer"]]
+  if (!is.null(dots[["chunk"]]))  chunk <- dots[["chunk"]]
+  if (!is.null(dots[["progress"]])) progress <- dots[["progress"]]
+  if (!is.null(dots[["ncores"]])) ncores <- dots[["ncores"]]
+  if (!is.null(dots[["noprocess"]])) noprocess <- dots[["noprocess"]]
+  if (!is.null(dots[["verbose"]])) verbose <- dots[["verbose"]]
+  if (!is.null(dots[["noread"]])) noread <- dots[["noread"]]
+  if (!is.null(dots[["profile_file"]])) profile_file <- dots[["profile_file"]]
+  if (!is.null(dots[["progress_file"]])) progress_file <- dots[["progress_file"]]
+  if (!is.null(dots[["log_file"]])) log_file <- dots[["log_file"]]
 
   # 'with' list has precedence
-  if (!is.null(with$buffer)) buffer <- with$buffer
-  if (!is.null(with$chunk))  chunk <- with$chunk
-  if (!is.null(with$progress)) progress <- with$progress
-  if (!is.null(with$ncores))  ncores <- with$ncores
-  if (!is.null(with$noprocess)) noprocess <- with$noprocess
-  if (!is.null(with$verbose)) verbose <- with$verbose
-  if (!is.null(with$noread)) noread <- with$noread
-  if (!is.null(with$profiling)) profiling <- with$profiling
+  if (!is.null(with[["buffer"]])) buffer <- with[["buffer"]]
+  if (!is.null(with[["chunk"]]))  chunk <- with[["chunk"]]
+  if (!is.null(with[["progress"]])) progress <- with[["progress"]]
+  if (!is.null(with[["ncores"]]))  ncores <- with[["ncores"]]
+  if (!is.null(with[["noprocess"]])) noprocess <- with[["noprocess"]]
+  if (!is.null(with[["verbose"]])) verbose <- with[["verbose"]]
+  if (!is.null(with[["noread"]])) noread <- with[["noread"]]
+  if (!is.null(with[["profile_file"]])) profile_file <- with[["profile_file"]]
+  if (!is.null(with[["progress_file"]])) progress_file <- with[["progress_file"]]
+  if (!is.null(with[["log_file"]])) log_file <- with[["log_file"]]
 
   if (!missing(on))
   {
     # If 'on' is a LAScatalog it has the precedence on the 'with' list
     if (methods::is(on, "LAScatalog"))
     {
-      chunk <- on@chunk_options$size
-      buffer <- on@chunk_options$buffer
-      alignment <- on@chunk_options$alignment
-      progress <- on@processing_options$progress
-      processed <- on$processed
+      chunk <- on@chunk_options[["size"]]
+      buffer <- on@chunk_options[["buffer"]]
+      alignment <- on@chunk_options[["alignment"]]
+      progress <- on@processing_options[["progress"]]
+      processed <- on[["processed"]]
       if (!is.null(processed)) noprocess <- !processed
-      if (on@input_options$filter != "") warning(paste0("This LAScatalog has filter = \"", on@input_options$filter, "\" but this option is not automatically propagated to the 'reader_las()' stage.") , call. = FALSE, immediate. = TRUE)
+      if (on@input_options[["filter"]] != "")
+        warning(
+          paste0(
+            "This LAScatalog has filter = \"",
+            on@input_options[["filter"]],
+            "\" but this option is not automatically propagated to the 'reader_las()' stage."
+          ),
+          call. = FALSE,
+          immediate. = TRUE
+        )
     }
   }
 
@@ -283,13 +249,15 @@ parse_options = function(on, with, ...)
   mode <- match.arg(mode, modes)
 
   # Global options have precedence on everything
-  if (!is.null(LASROPTIONS$buffer)) buffer <- LASROPTIONS$buffer
-  if (!is.null(LASROPTIONS$chunk))  chunk <- LASROPTIONS$chunk
-  if (!is.null(LASROPTIONS$progress)) progress <- LASROPTIONS$progress
-  if (!is.null(LASROPTIONS$ncores)) ncores <- LASROPTIONS$ncores
-  if (!is.null(LASROPTIONS$strategy)) mode <- LASROPTIONS$strategy
-  if (!is.null(LASROPTIONS$verbose)) verbose <- LASROPTIONS$verbose
-  if (!is.null(LASROPTIONS$noread)) noread <- LASROPTIONS$noread
+  if (!is.null(LASROPTIONS[["buffer"]])) buffer <- LASROPTIONS[["buffer"]]
+  if (!is.null(LASROPTIONS[["chunk"]]))  chunk <- LASROPTIONS[["chunk"]]
+  if (!is.null(LASROPTIONS[["progress"]])) progress <- LASROPTIONS[["progress"]]
+  if (!is.null(LASROPTIONS[["ncores"]])) ncores <- LASROPTIONS[["ncores"]]
+  if (!is.null(LASROPTIONS[["strategy"]])) mode <- LASROPTIONS[["strategy"]]
+  if (!is.null(LASROPTIONS[["verbose"]])) verbose <- LASROPTIONS[["verbose"]]
+  if (!is.null(LASROPTIONS[["noread"]])) noread <- LASROPTIONS[["noread"]]
+  if (!is.null(LASROPTIONS[["progress_file"]])) progress_file <- LASROPTIONS[["progress_file"]]
+  if (!is.null(LASROPTIONS[["log_file"]])) log_file <- LASROPTIONS[["log_file"]]
 
   if (!has_omp_support())
   {
@@ -305,19 +273,27 @@ parse_options = function(on, with, ...)
   stopifnot(is.character(mode))
   stopifnot(is.logical(verbose))
   stopifnot(is.logical(noread))
+  stopifnot(is.character(progress_file))
+  stopifnot(is.character(log_file))
+  stopifnot(is.character(profile_file))
 
-  ret = list(ncores = ncores,
-             strategy = mode,
-             buffer = buffer,
-             progress = progress,
-             noprocess = noprocess,
-             chunk = chunk,
-             noread = noread,
-             verbose = verbose,
-             profiling = profiling)
+  ret = list(
+    ncores = ncores,
+    strategy = mode,
+    buffer = buffer,
+    progress = progress,
+    noprocess = noprocess,
+    chunk = chunk,
+    noread = noread,
+    verbose = verbose,
+    profile_file = profile_file,
+    progress_file = progress_file,
+    log_file = log_file
+  )
 
   return(ret)
 }
+
 
 #' Set global processing options
 #'
@@ -411,12 +387,13 @@ write_json = function(config)
       stage$call <- address(stage$call)
       stage$env <- address(stage$env)
     }
-    else if (stage$algoname == "reader_dataframe" || stage$algoname == "build_catalog")
+    else if (stage$algoname == "reader" || stage$algoname == "build_catalog")
     {
       if (!is.null(stage$dataframe))
-      {
         stage$dataframe = address(stage$dataframe)
-      }
+
+      if (!is.null(stage$externalptr))
+        stage$externalptr = address(stage$externalptr)
     }
 
     config$pipeline[[i]] <- stage

@@ -12,10 +12,10 @@ class LASRpdt : public StageVector
 {
 public:
   LASRpdt();
-  bool process(LAS*& las) override;
+  bool process(PointCloud*& las) override;
   double need_buffer() const override { return 30.0; }
   void clear(bool last) override;
-  bool write() override;
+  //bool write() override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "pdt"; }
 
@@ -24,7 +24,7 @@ public:
 
 private:
   void interpolate(Raster* r) const;
-  void interpolate(std::vector<double>& x) const;
+  //void interpolate(std::vector<double>& x) const;
 
 private:
   double seed_resolution_search;
@@ -37,7 +37,7 @@ private:
 
   std::vector<int> index_map;
   Triangulation* d;
-  LAS* las;
+  PointCloud* las;
 };
 
 #endif

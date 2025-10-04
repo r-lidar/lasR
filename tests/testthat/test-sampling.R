@@ -24,8 +24,8 @@ test_that("voxel sampling respect filter",
 
   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
 
-  expect_equal(ans$summary$npoints, 7668L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 7668L))
+  expect_equal(ans$summary$npoints, 27533L)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 7668, `2` = 15828, `3` = 3569, `4` = 451, `5` = 16, `6` = 1))
 })
 
 
@@ -55,9 +55,34 @@ test_that("pixel sampling respect filter",
 
   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
 
-  expect_equal(ans$summary$npoints, 3042L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 3042L))
+  expect_equal(ans$summary$npoints, 22907)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 3042, `2` = 15828, `3` = 3569, `4` = 451, `5` = 16, `6` = 1))
 })
+
+test_that("pixel sampling using max intensity",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+
+  vox = sampling_pixel(50, method = "max", use_attribute = "Intensity")
+  pipeline = vox + summarise()
+  ans = exec(pipeline, on = f)
+
+  expect_equal(ans$npoints, 36L)
+  expect_equal(ans$i_histogram[1], c(`1500` = 17))
+  expect_equal(ans$i_histogram[20], c(`2450` = 1))
+
+  f = system.file("extdata", "Topography.las", package="lasR")
+  vox = sampling_pixel(50, method = "min", use_attribute = "Intensity")
+  pipeline = vox + summarise()
+  ans = exec(pipeline, on = f)
+
+  expect_equal(ans$npoints, 36L)
+  expect_equal(ans$i_histogram[1], c(`50` = 18))
+  expect_equal(ans$i_histogram[2], c(`100` = 18))
+
+  expect_error(sampling_pixel(50, method = "plop", use_attribute = "Intensity"))
+})
+
 
 test_that("poisson sampling works",
 {
@@ -70,8 +95,8 @@ test_that("poisson sampling works",
 
   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
 
-  expect_equal(ans$summary$npoints, 4136L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 3153, `2` = 758, `3` = 193, `4` = 30, `5` = 2))
+  expect_equal(ans$summary$npoints, 4669L)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 3596, `2` = 785, `3` = 238, `4` = 48, `5` = 1, `6` = 1))
 })
 
 test_that("poisson sampling respect filter",
@@ -85,7 +110,7 @@ test_that("poisson sampling respect filter",
 
   skip_on_os("mac") # because shuffle has different implementation and lead to slightly different valid outcomes
 
-  expect_equal(ans$summary$npoints, 3928L)
-  expect_equal(ans$summary$npoints_per_return, c(`1` = 3928L))
+  expect_equal(ans$summary$npoints, 24281L)
+  expect_equal(ans$summary$npoints_per_return, c(`1` = 4416, `2` = 15828, `3` = 3569, `4` = 451, `5` = 16, `6` = 1))
 })
 

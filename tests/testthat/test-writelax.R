@@ -15,7 +15,8 @@ test_that("write lax works on-the-fly",
   expect_equal(indexed, c(F,F,F,F))
 
   # between two tiles with a buffer
-  pipeline = reader_las_circles(885150, 629400, 10, buffer = 5L) + lasR:::nothing()
+  # write lax if > 1 query
+  pipeline = reader_las_circles(c(885150, 885150), c(629400, 629400), 10, buffer = 5L) + lasR:::nothing()
   ans = exec(pipeline, on = f)
 
   indexed = lasR:::is_indexed(f)
@@ -25,7 +26,8 @@ test_that("write lax works on-the-fly",
   expect_length(lax, 2L)
 
   # between two tiles no buffer
-  pipeline = reader_las_circles(885150, 630100, 10) + lasR:::nothing()
+  # write lax if > 1 query
+  pipeline = reader_las_circles(c(885150,885150), c(630100,630100), 10) + lasR:::nothing()
   ans = exec(pipeline, on = f)
 
   indexed = lasR:::is_indexed(f)

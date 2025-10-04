@@ -26,7 +26,6 @@ test_that("triangulate works with multiple files",
   #plot(u)
 })
 
-
 test_that("triangulate works with intensity",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
@@ -36,14 +35,26 @@ test_that("triangulate works with intensity",
   rast = rasterize(5, tri)
   u = exec(read + tri + rast, on = f)
 
-  expect_equal(range(u$rasterize[], na.rm = T), c(165.72, 2368.14), tolerance = 0.01)
+  expect_equal(range(u$rasterize[], na.rm = T), c(191.3, 2033.3), tolerance = 0.01)
+})
+
+test_that("triangulate works with gpstime",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+
+  read = reader_las(filter = "-keep_class 2 -drop_random_fraction 0.5")
+  tri = triangulate(15, use_attribute = "gpstime", ofile = tempgpkg())
+  rast = rasterize(5, tri)
+  u = exec(read + tri + rast, on = f)
+
+  expect_equal(range(u$rasterize[], na.rm = T), c(220367376.0, 220367392.0), tolerance = 0.01)
 })
 
 
 test_that("interpolation fails with 0 points",
 {
   f <- system.file("extdata", "Topography.las", package="lasR")
-  mesh  = triangulate(50, filter = "-keep_class 24")
+  mesh  = triangulate(50, filter = keep_class(24))
   trans = transform_with(mesh)
   rr = rasterize(2, mesh)
 

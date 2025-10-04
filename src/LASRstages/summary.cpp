@@ -9,7 +9,11 @@ LASRsummary::LASRsummary()
   nsingle = 0;
   nwithheld = 0;
   nsynthetic = 0;
-  //npoints_per_sdf = {0,0};
+
+  get_intensity = AttributeAccessor("Intensity");
+  get_returnnumber = AttributeAccessor("ReturnNumber");
+  get_classification = AttributeAccessor("Classification");
+  get_number_of_returns = AttributeAccessor("NumberOfReturns");
 }
 
 bool LASRsummary::set_parameters(const nlohmann::json& stage)
@@ -25,34 +29,37 @@ bool LASRsummary::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRsummary::process(LASpoint*& p)
+bool LASRsummary::process(Point*& p)
 {
-  if (p->get_withheld_flag() != 0) return true;
-  if (lasfilter.filter(p)) return true;
+  if (p->get_deleted()) return true;
+  if (pointfilter.filter(p)) return true;
   if (p->inside_buffer(xmin, ymin, xmax, ymax, circular)) return true; // avoid counting buffer points
 
   npoints++;
-  npoints_per_return[p->get_return_number()]++;
-  npoints_per_class[p->get_classification()]++;
+  npoints_per_return[get_returnnumber(p)]++;
+  npoints_per_class[get_classification(p)]++;
 
-  if (p->get_number_of_returns() == 1) nsingle++;
-  if (p->get_withheld_flag() == 1) nwithheld++;
+  if (get_number_of_returns(p) == 1) nsingle++;
 
   //(p->get_scan_direction_flag() == 0) ? npoints_per_sdf.first++ : npoints_per_sdf.second++;
 
   int z = (int) std::round(p->get_z() / zwbin ) * zwbin;
-  int i = (int) std::round(p->get_intensity() / iwbin) * iwbin;
+  int i = (int) std::round(get_intensity(p) / iwbin) * iwbin;
   (zhistogram.find(z) == zhistogram.end()) ?  zhistogram[z] = 1 : zhistogram[z]++;
   (ihistogram.find(i) == ihistogram.end()) ?  ihistogram[i] = 1 : ihistogram[i]++;
 
-  if (metrics_engine.active())  cloud.push_back(PointLAS(p));
+  if (metrics_engine.active())  cloud.push_back(*p);
 
   return true;
 }
 
-bool LASRsummary::process(LAS*& las)
+bool LASRsummary::process(PointCloud*& las)
 {
-  LASpoint* p;
+  reset_accessors();
+
+  metrics_engine.reset();
+
+  Point* p;
   while (las->read_point())
   {
     p = &las->point;
@@ -298,5 +305,57 @@ SEXP LASRsummary::to_R()
 
 #endif
 
+nlohmann::json LASRsummary::to_json() const
+{
+  nlohmann::json data;
 
+  bool use_metrics = metrics_engine.active();
+
+  // Add basic stats
+  data["npoints"] = npoints;
+  data["nsingle"] = nsingle;
+  data["nwithheld"] = nwithheld;
+  data["nsynthetic"] = nsynthetic;
+
+  // Convert maps to JSON objects
+  data["npoints_per_return"] = nlohmann::json(npoints_per_return);
+  data["npoints_per_class"] = nlohmann::json(npoints_per_class);
+
+  // Convert zhistogram and ihistogram to JSON arrays
+  data["z_histogram"] = nlohmann::json::array();
+  for (const auto& [key, value] : zhistogram) {
+    data["z_histogram"].push_back({{"bin", key}, {"count", value}});
+  }
+
+  data["i_histogram"] = nlohmann::json::array();
+  for (const auto& [key, value] : ihistogram) {
+    data["i_histogram"].push_back({{"bin", key}, {"count", value}});
+  }
+
+  // Add CRS details as a nested object
+  nlohmann::json crs_obj;
+  crs_obj["wkt"] = crs.get_wkt();
+  crs_obj["epsg"] = crs.get_epsg();
+  data["crs"] = crs_obj;
+
+  // Add metrics if active
+  if (use_metrics) {
+    nlohmann::json metricsJson;
+    for (const auto& [metricName, values] : metrics) {
+      metricsJson[metricName] = values;
+    }
+    data["metrics"] = metricsJson;
+  }
+
+  // Return the data wrapped with the stage name (following same pattern as other stages)
+  return {{"summary", data}};
+}
+
+void LASRsummary::reset_accessors()
+{
+  get_intensity.reset();
+  get_returnnumber.reset();
+  get_classification.reset();
+  get_number_of_returns.reset();
+}
 

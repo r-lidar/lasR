@@ -1,16 +1,20 @@
 #include <algorithm>
+#include <limits>
 
-#include "pipeline.h"
-#include "LAScatalog.h"
+#include "Engine.h"
+#include "FileCollection.h"
 
 #include "addattribute.h"
 #include "addrgb.h"
 #include "boundaries.h"
 #include "breakif.h"
 #include "csf.h"
+#include "edit.h"
 #include "filter.h"
 #include "focal.h"
+#include "info.h"
 #include "ivf.h"
+#include "loadmatrix.h"
 #include "loadraster.h"
 #include "localmaximum.h"
 #include "nnmetrics.h"
@@ -20,6 +24,7 @@
 #include "rasterize.h"
 #include "sampling.h"
 #include "readlas.h"
+#include "readpcd.h"
 #include "regiongrowing.h"
 #include "setcrs.h"
 #include "sor.h"
@@ -31,6 +36,7 @@
 #include "writelas.h"
 #include "writelax.h"
 #include "writevpc.h"
+#include "writepcd.h"
 
 // If compiled as an R package include R's header, special R stages and helper functions
 #ifdef USING_R
@@ -42,6 +48,7 @@
 #include "aggregate.h"
 #include "callback.h"
 #include "readdataframe.h"
+#include "xptr.h"
 
 static SEXP get_element(SEXP list, const char *str)
 {
@@ -59,7 +66,7 @@ static std::unique_ptr<Stage> create_instance()
   return std::make_unique<T>();
 }
 
-bool Pipeline::parse(const nlohmann::json& json, bool progress)
+bool Engine::parse(const nlohmann::json& json, bool progress)
 {
   int num_stages = json.size();
 
@@ -79,22 +86,26 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
   // Create a map of type names to functions that create instances
   std::unordered_map<std::string, std::function<std::unique_ptr<Stage>()>> factory_map =
   {
-    {"add_extrabytes",       create_instance<LASRaddattribute>},
+    {"add_attribute",        create_instance<LASRaddattribute>},
     {"add_rgb",              create_instance<LASRaddrgb>},
     {"classify_with_csf",    create_instance<LASRcsf>},
     {"classify_with_pdt",    create_instance<LASRpdt>},
     {"classify_with_ivf",    create_instance<LASRivf>},
     {"classify_with_sor",    create_instance<LASRsor>},
+    {"edit_attribute",       create_instance<LASRedit>},
     {"filter",               create_instance<LASRfilter>},
     {"filter_grid",          create_instance<LASRfiltergrid>},
     {"focal",                create_instance<LASRfocal>},
     {"hulls",                create_instance<LASRboundaries>},
+    {"info",                 create_instance<LASRinfo>},
+    {"load_matrix",          create_instance<LASRloadmatrix>},
     {"load_raster",          create_instance<LASRloadraster>},
     {"local_maximum",        create_instance<LASRlocalmaximum>},
     {"neighborhood_metrics", create_instance<LASRnnmetrics>},
     {"nothing",              create_instance<LASRnothing>},
     {"pit_fill",             create_instance<LASRpitfill>},
     {"rasterize",            create_instance<LASRrasterize>},
+    {"remove_attribute",     create_instance<LASRremoveattribute>},
     {"sampling_pixel",       create_instance<LASRsamplingpixels>},
     {"sampling_poisson",     create_instance<LASRsamplingpoisson>},
     {"sampling_voxel",       create_instance<LASRsamplingvoxels>},
@@ -105,24 +116,33 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
     {"transform_with",       create_instance<LASRtransformwith>},
     {"triangulate",          create_instance<LASRtriangulate>},
     {"write_las",            create_instance<LASRlaswriter>},
-    {"write_vpc",            create_instance<LASRvpcwriter>}
+    {"write_vpc",            create_instance<LASRvpcwriter>},
+    {"write_pcd",            create_instance<LASRpcdwriter>}
     #ifdef USING_R
     ,{"aggregate",           create_instance<LASRaggregate>},
-    {"callback",             create_instance<LASRcallback>}
+    {"callback",             create_instance<LASRcallback>},
+    {"xptr",                 create_instance<LASRxptr>}
     #endif
   };
+
+  std::string current_stage;
 
   try
   {
     for (auto& [key, stage] : json.items())
     {
       std::string name = stage.at("algoname");
+      current_stage = name;
       std::string uid = stage.value("uid", "xxx-xxx");
+
+      if (name == "reader_las") name = "reader"; // for backward compatibility with Drawflow
 
       auto iter = factory_map.find(name);
       if (iter != factory_map.end())
       {
         pipeline.push_back(iter->second());
+
+        if (name == "xptr") point_cloud_ownership_transfered = true;
       }
       else if (name == "build_catalog")
       {
@@ -134,14 +154,15 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         // stage tells us 50.
         buffer = stage.value("buffer", 0.0);
         chunk_size = stage.value("chunk", 0.0);
+        std::string type = stage.value("type", "files");
 
-        // No element 'dataframe'? We are processing some files. Otherwise with have a compatibility layer
+        // We are processing some files. Otherwise with have a compatibility layer
         // with lidR to process LAS objects
-        if (!stage.contains("dataframe"))
+        if (type == "files")
         {
           std::vector<std::string> files = get_vector<std::string>(stage["files"]);
 
-          catalog = std::make_shared<LAScatalog>();
+          catalog = std::make_shared<FileCollection>();
           if (!catalog->read(files, progress))
           {
             last_error = "In the parser while reading the file collection: " + last_error; // # nocov
@@ -165,7 +186,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           ymax = catalog->get_ymax();
         }
         #ifdef USING_R
-        else
+        else if (type == "dataframe")
         {
           std::string address_dataframe_str = stage.at("dataframe");
           SEXP dataframe = string_address_to_sexp(address_dataframe_str);
@@ -176,10 +197,10 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           // This is not checked at R level. Anyway get_element() will throw an exception
           SEXP X = get_element(dataframe, "X");
           SEXP Y = get_element(dataframe, "Y");
-          xmin = F64_MAX;
-          ymin = F64_MAX;
-          xmax = F64_MIN;
-          ymax = F64_MIN;
+          xmin = std::numeric_limits<double>::max();
+          ymin = std::numeric_limits<double>::max();
+          xmax = -std::numeric_limits<double>::max();
+          ymax = -std::numeric_limits<double>::max();
           for (int k = 0 ; k < Rf_length(X) ; ++k)
           {
             if (REAL(X)[k] < xmin) xmin = REAL(X)[k];
@@ -188,13 +209,36 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
             if (REAL(Y)[k] > ymax) ymax = REAL(Y)[k];
           }
 
-          catalog = std::make_shared<LAScatalog>();
-          catalog->add_bbox(xmin, ymin, xmax, ymax, Rf_length(X));
+          catalog = std::make_shared<FileCollection>();
+          catalog->add_dataframe(xmin, ymin, xmax, ymax, Rf_length(X));
           catalog->set_crs(CRS(wkt));
         }
+        else if (type == "externalptr")
+        {
+          std::string address_ptr = stage.at("externalptr");
+          SEXP sexplas = string_address_to_sexp(address_ptr);
+          las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
+          if (las == nullptr)
+          {
+            last_error = "invalid external pointer";
+            return false;
+          }
+          xmin = las->header->min_x;
+          ymin = las->header->min_y;
+          xmax = las->header->max_x;
+          ymax = las->header->max_y;
+
+          catalog = std::make_shared<FileCollection>();
+          catalog->add_xptr(*las->header);
+        }
         #endif
+        else
+        {
+          last_error = "Internal error: bad build_catalog stage";
+          return false;
+        }
       }
-      else if (name.substr(0,6) == "reader")
+      else if (name == "reader")
       {
         if (reader)
         {
@@ -203,54 +247,92 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         }
         reader = true;
 
-        if (name == "reader_las")
-        {
-          auto v = std::make_unique<LASRlasreader>();
-          pipeline.push_back(std::move(v));
-        }
-
-        #ifdef USING_R
-        if (name == "reader_dataframe")
-        {
-          auto v = std::make_unique<LASRdataframereader>();
-          pipeline.push_back(std::move(v));
-        }
-        #endif
-
         if (catalog != nullptr)
         {
+          switch(catalog->get_format())
+          {
+            case LASFILE:
+            {
+              auto v = std::make_unique<LASRlasreader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            case PCDFILE:
+            {
+              auto v = std::make_unique<LASRpcdreader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            #ifdef USING_R
+            case DATAFRAME:
+            {
+              auto v = std::make_unique<LASRdataframereader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            case XPTR:
+            {
+              std::string address_ptr = stage.at("externalptr");
+              SEXP sexplas = string_address_to_sexp(address_ptr);
+              las = static_cast<PointCloud*>(R_ExternalPtrAddr(sexplas));
+              if (las == nullptr)
+              {
+                last_error = "invalid external pointer";
+                return false;
+              }
+              auto v = std::make_unique<LASRreaderxptr>(las);
+              pipeline.push_back(std::move(v));
+              point_cloud_ownership_transfered = true;
+              break;
+            }
+            #endif
+            default:
+            {
+              last_error = "Invalid catalog";
+              return false;
+            }
+          }
+
           double temp_xmin = std::numeric_limits<double>::max();
           double temp_ymin = std::numeric_limits<double>::max();
           double temp_xmax = std::numeric_limits<double>::lowest();
           double temp_ymax = std::numeric_limits<double>::lowest();
 
-          // Special treatment of the reader to find the potential queries in the catalog
-          // If we have query we also recompute the bounding box in order to create outputs
-          // with the minimal bounding box
+          bool has_valid_query = false;
+
           if (stage.contains("xcenter"))
           {
             std::vector<double> xcenter = get_vector<double>(stage["xcenter"]);
             std::vector<double> ycenter = get_vector<double>(stage["ycenter"]);
-            std::vector<double> radius = get_vector<double>(stage["radius"]);
+            std::vector<double> radius  = get_vector<double>(stage["radius"]);
 
-            for (size_t j = 0 ; j <  xcenter.size() ; ++j)
+            for (size_t j = 0; j < xcenter.size(); ++j)
             {
               double x = xcenter[j];
               double y = ycenter[j];
               double r = radius[j];
 
+              double qminx = x - r;
+              double qminy = y - r;
+              double qmaxx = x + r;
+              double qmaxy = y + r;
+
+              // Adding the query even if it is an invalid query outside the point cloud coverage.
+              // The engine will take care of invalid queries.
               catalog->add_query(x, y, r);
 
-              temp_xmin = MIN(temp_xmin, x-r);
-              temp_ymin = MIN(temp_ymin, y-r);
-              temp_xmax = MAX(temp_xmax, x+r);
-              temp_ymax = MAX(temp_ymax, y+r);
-            }
+              // Check if the query box intersects the original bbox
+              bool intersects = !(qmaxx < xmin || qminx > xmax || qmaxy < ymin || qminy > ymax);
+              if (!intersects) continue;
 
-            xmin = MAX(xmin, temp_xmin);
-            ymin = MAX(ymin, temp_ymin);
-            xmax = MIN(xmax, temp_xmax);
-            ymax = MIN(ymax, temp_ymax);
+              // Clamp to original bounding box and accumulate for temp bbox
+              temp_xmin = std::min(temp_xmin, std::max(qminx, xmin));
+              temp_ymin = std::min(temp_ymin, std::max(qminy, ymin));
+              temp_xmax = std::max(temp_xmax, std::min(qmaxx, xmax));
+              temp_ymax = std::max(temp_ymax, std::min(qmaxy, ymax));
+
+              has_valid_query = true;
+            }
           }
 
           if (stage.contains("xmin"))
@@ -260,20 +342,35 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
             std::vector<double> bbxmax = get_vector<double>(stage["xmax"]);
             std::vector<double> bbymax = get_vector<double>(stage["ymax"]);
 
-            for (size_t j = 0 ; j <  bbxmin.size() ; ++j)
+            for (size_t j = 0; j < bbxmin.size(); ++j)
             {
-              catalog->add_query(bbxmin[j], bbymin[j], bbxmax[j], bbymax[j]);
+              double qminx = bbxmin[j];
+              double qminy = bbymin[j];
+              double qmaxx = bbxmax[j];
+              double qmaxy = bbymax[j];
 
-              temp_xmin = MIN(temp_xmin, bbxmin[j]);
-              temp_ymin = MIN(temp_ymin, bbymin[j]);
-              temp_xmax = MAX(temp_xmax, bbxmax[j]);
-              temp_ymax = MAX(temp_ymax, bbymax[j]);
+              catalog->add_query(qminx, qminy, qmaxx, qmaxy);
+
+              // Check if the query box intersects the original bbox
+              bool intersects = !(qmaxx < xmin || qminx > xmax || qmaxy < ymin || qminy > ymax);
+              if (!intersects)  continue;
+
+              // Clamp to original bounding box and accumulate
+              temp_xmin = std::min(temp_xmin, std::max(qminx, xmin));
+              temp_ymin = std::min(temp_ymin, std::max(qminy, ymin));
+              temp_xmax = std::max(temp_xmax, std::min(qmaxx, xmax));
+              temp_ymax = std::max(temp_ymax, std::min(qmaxy, ymax));
+
+              has_valid_query = true;
             }
+          }
 
-            xmin = MAX(xmin, temp_xmin);
-            ymin = MAX(ymin, temp_ymin);
-            xmax = MIN(xmax, temp_xmax);
-            ymax = MIN(ymax, temp_ymax);
+          if (has_valid_query)
+          {
+            xmin = temp_xmin;
+            ymin = temp_ymin;
+            xmax = temp_xmax;
+            ymax = temp_ymax;
           }
         }
       }
@@ -341,6 +438,8 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           return false;
         }
 
+        it->get_extent(xmin, ymin, xmax, ymax);
+
         // If we intend to actually process the point cloud we check that a reader stage is present if needed
         if (catalog != nullptr && it->need_points() && !reader)
         {
@@ -367,7 +466,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
 
       num_stages--;
       catalog->set_buffer(need_buffer()); // We parsed the pipeline so we know if we need a buffer
-      catalog->build_index(); // The catalog is built, we have the bbox of all the LAS files. We can build a spatial index
+      //catalog->build_index(); // The catalog is built, we have the bbox of all the LAS files. We can build a spatial index
       if (!catalog->set_chunk_size(chunk_size)) return false;
 
       // We iterate over all the stage again to assign the filter, the crs and the output file.
@@ -385,7 +484,29 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
           continue;
         }
 
-        std::string filter = stage.value("filter", "");
+        std::vector<std::string> filters;
+        if (stage.contains("filter"))
+        {
+          if (stage["filter"].is_array())
+          {
+            // If 'filter' is an array of strings, iterate over the array
+            for (const auto& item : stage["filter"])
+            {
+              if (item.is_string()) {
+                filters.push_back(item.get<std::string>());
+              }
+            }
+          }
+          else
+          {
+            filters.push_back(stage["filter"].get<std::string>());
+          }
+        }
+        else
+        {
+          filters.push_back("");
+        }
+
         std::string output = stage.value("output", "");
 
         if (catalog->file_exists(output))
@@ -399,7 +520,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
         const auto p = it->get();
         p->set_crs(current_crs);
         current_crs = p->get_crs();
-        p->set_filter(filter);
+        p->set_filter(filters);
 
         // Create empty files that will be filled later during the processing
         if (!p->set_output_file(output)) return false;
@@ -410,7 +531,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
 
       // Write lax is the very first stage. Even before read_las. It is called
       // only if needed.
-      if (!catalog->check_spatial_index() && !indexer)
+      if (!catalog->check_spatial_index() && !indexer && catalog->get_format() == LASFILE)
       {
         bool onthefly = catalog->get_number_files() > 1;
         auto v = std::make_unique<LASRlaxwriter>(false, false, onthefly);
@@ -425,7 +546,7 @@ bool Pipeline::parse(const nlohmann::json& json, bool progress)
   }
   catch (const std::exception& e)
   {
-    last_error = std::string("Error while parsing JSON pipeline: ") + e.what();
+    last_error = std::string("Error while parsing JSON pipeline in stage '") + current_stage + "': " + e.what();
     return false;
   }
 

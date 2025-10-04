@@ -104,6 +104,67 @@ std::vector<int> Grid::get_adjacent_cells(int cell, Contiguity n) const
   return cells;
 }
 
+// Used for bilinear interpolation
+std::vector<int> Grid::four_local_neighbours(double x, double y) const
+{
+  // Calculate the row and column of the cell containing (x, y)
+  int cell = cell_from_xy(x, y);
+  int col = col_from_cell(cell);
+  int row = row_from_cell(cell);
+
+  // Calculate distances to the cell centers
+  double x_cell_center = x_from_col(col);
+  double y_cell_center = y_from_row(row);
+
+  // Determine relative position within the cell
+  bool right = (x >= x_cell_center); // Is x to the right of the center?
+  bool down = (y <= y_cell_center);  // Is y below the center? (assuming y increases downward)
+
+  // Lambda to safely add neighbors if within grid bounds
+  std::vector<int> neighbors;
+  neighbors.reserve(5);
+  auto add_neighbor = [&](int r, int c)
+  {
+    if (r >= 0 && r < nrows && c >= 0 && c < ncols)
+      neighbors.push_back(cell_from_row_col(r, c));
+    else
+      neighbors.push_back(-1);
+  };
+
+  // Assign neighbors based on position
+  if (right && down) {
+    // Bottom-right quadrant
+    add_neighbor(row, col);
+    add_neighbor(row, col + 1);
+    add_neighbor(row + 1, col);
+    add_neighbor(row + 1, col + 1);
+    neighbors.push_back(0);
+  } else if (!right && down) {
+    // Bottom-left quadrant
+    add_neighbor(row, col - 1);
+    add_neighbor(row, col);
+    add_neighbor(row + 1, col - 1);
+    add_neighbor(row + 1, col);
+    neighbors.push_back(1);
+  } else if (right && !down) {
+    // Top-right quadrant
+    add_neighbor(row - 1, col);
+    add_neighbor(row - 1, col + 1);
+    add_neighbor(row, col);
+    add_neighbor(row, col + 1);
+    neighbors.push_back(2);
+  } else {
+    // Top-left quadrant
+    add_neighbor(row - 1, col - 1);
+    add_neighbor(row - 1, col);
+    add_neighbor(row, col - 1);
+    add_neighbor(row, col);
+    neighbors.push_back(3);
+  }
+
+  return neighbors;
+}
+
 int Grid::cell_from_xy(double x, double y) const
 {
   if (x < xmin || x > xmax || y < ymin || y > ymax)
@@ -113,7 +174,7 @@ int Grid::cell_from_xy(double x, double y) const
   int row = std::floor((ymax - y) / yres);
   if (y == ymin) row = nrows-1;
   if (x == xmax) col = ncols-1;
-  return row * ncols + col;
+  return cell_from_row_col(row, col);
 }
 
 void Grid::get_cells(double xmin, double ymin, double xmax, double ymax, std::vector<int>& cells) const

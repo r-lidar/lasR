@@ -2,7 +2,7 @@
 % Please edit documentation in R/stages.R
 \name{stop_if_outside}
 \alias{stop_if_outside}
-\title{Stop the pipeline if a conditionally}
+\title{Stop the pipeline conditionally}
 \usage{
 stop_if_outside(xmin, ymin, xmax, ymax)
 }
@@ -22,7 +22,7 @@ f <- system.file("extdata", "bcts/", package="lasR")
 # This bounding box encompasses only one of the four files
 stopif = stop_if_outside(884800, 620000, 885400, 629200)
 
-read = reader_las()
+read = reader()
 hll = hulls()
 tri = triangulate(filter = keep_ground())
 dtm = rasterize(1, tri)

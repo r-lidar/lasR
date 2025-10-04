@@ -1,40 +1,38 @@
-#' Normalize the point cloud
+#' Height Above Ground (HAG)
 #'
-#' Normalize the point cloud using \link{triangulate} and \link{transform_with}. It triangulates the
-#' ground points and then applies `transform_with` to linearly interpolate the elevation of each point
-#' within each triangle.
-#'
-#' @param extrabytes bool. If FALSE the coordinate Z of the point cloud is modified and becomes the
-#' height above ground (HAG). If TRUE the coordinate Z is not modified and a new extrabytes attribute
-#' named 'HAG' is added to the point cloud.
-#'
+#' Normalize the point cloud using \link{triangulate} and \link{transform_with}. This process involves
+#' triangulating the ground points and then using `transform_with` to linearly interpolate the elevation
+#' for each point within the corresponding triangles. The `normalize()` function modifies the Z elevation
+#' values, effectively flattening the topography and normalizing the point cloud based on Height Above Ground (HAG).
+#' In contrast, the `hag()` function records the HAG in an extrabyte attribute named 'HAG', while preserving
+#' the original Z coordinates (Height Above Sea Level).
+
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader_las() + normalize() + write_las()
+#' pipeline <- reader() + normalize() + write_las()
 #' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
 #' \link{transform_with}
 #' @export
 #' @md
-normalize = function(extrabytes = FALSE)
+#' @rdname hag
+normalize = function()
 {
   tri <- triangulate(filter = keep_ground_and_water())
-  pipeline <- tri
-
-  if (extrabytes)
-  {
-    extra <- add_extrabytes("int", "HAG", "Height Above Ground")
-    trans <- transform_with(tri, store_in_attribute = "HAG")
-    pipeline <- pipeline + extra + trans
-  }
-  else
-  {
-    trans <- transform_with(tri)
-    pipeline <- pipeline + trans
-  }
-
+  trans <- transform_with(tri)
+  pipeline <- tri + trans
   return(pipeline)
+}
+
+#' @rdname hag
+#' @export
+hag = function()
+{
+  tri <- triangulate(filter = keep_ground_and_water())
+  extra <- add_extrabytes("int", "HAG", "Height Above Ground")
+  trans <- transform_with(tri, store_in_attribute = "HAG")
+  pipeline <- tri + extra + trans
 }
 
 
@@ -49,7 +47,7 @@ normalize = function(extrabytes = FALSE)
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader_las() + dtm()
+#' pipeline <- reader() + dtm()
 #' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
@@ -64,26 +62,29 @@ dtm = function(res = 1, add_class = NULL, ofile = temptif())
   return(tin+chm)
 }
 
-#' Canopy Height Model
+#' Digital Surface Model
 #'
-#' Create a Canopy Height Model using \link{triangulate} and \link{rasterize}.
+#' Digital Surface Model using \link{triangulate} and \link{rasterize}. `chm()` is a alias to `dsm()`
+#' but is misleading because it actually computes a DSM and does not include a normalization step.
+#' `chm()` is deprecated. Technically `dsm(tin = TRUE)` is simply the association of the stage `triangulate()`
+#' and `rasterize()` while `dsm(tin = FALSE)` is simply an alias to `rasterize("max")`.
 #'
 #' @param res numeric. The resolution of the raster.
-#' @param tin bool. By default the CHM is a point-to-raster based methods i.e. each pixel is
+#' @param tin bool. By default the DSM is a point-to-raster based methods i.e. each pixel is
 #' assigned the elevation of the highest point. If `tin = TRUE` the CHM is a triangulation-based
 #' model. The first returns are triangulated and interpolated.
 #' @template param-ofile
 #'
 #' @examples
 #' f <- system.file("extdata", "Topography.las", package="lasR")
-#' pipeline <- reader_las() + chm()
+#' pipeline <- reader() + dsm()
 #' exec(pipeline, on = f)
 #' @seealso
 #' \link{triangulate}
 #' \link{rasterize}
 #' @export
 #' @md
-chm = function(res = 1, tin = FALSE, ofile = tempfile(fileext = ".tif"))
+dsm = function(res = 1, tin = FALSE, ofile = tempfile(fileext = ".tif"))
 {
   if (tin)
   {
@@ -98,3 +99,7 @@ chm = function(res = 1, tin = FALSE, ofile = tempfile(fileext = ".tif"))
 
   return(pipeline)
 }
+
+#' @export
+#' @rdname dsm
+chm = dsm

@@ -36,12 +36,7 @@ Stage::Stage(const Stage& other)
   progress = other.progress;
   connections = other.connections;
   crs = other.crs;
-
-  // Special treatment for LASfilter which is why we need a copy constructor
-  // LASfilter is full of pointer, pointer on pointers without copy constructor.
-  // We are better to build a new one for each copy.
-  lasfilter = LASfilter();
-  set_filter(other.filter);
+  set_filter(other.filters);
 
   #ifdef USING_R
   nsexpprotected = 0;
@@ -55,20 +50,30 @@ Stage::~Stage()
   #endif
 }
 
-bool Stage::set_chunk(const Chunk& chunk)
+bool Stage::set_chunk(Chunk& chunk)
 {
   set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
   if (chunk.shape == ShapeType::CIRCLE) circular = true;
+  buffer = chunk.buffer;
   return true;
 }
 
-void Stage::set_filter(const std::string& f)
+void Stage::set_filter(const std::vector<std::string>& f)
+{
+  filters = f;
+
+  for (auto c : f)
+    pointfilter.add_condition(c);
+
+}
+
+/*void Stage::set_filter(const std::string& f)
 {
   filter = f;
   std::string cpy = f;
   char* s = const_cast<char*>(cpy.c_str());
-  lasfilter.parse(s);
-}
+  if (!lasfilter.parse(s)) throw std::string("Invalid filter detected");
+}*/
 
 #ifdef USING_R
 SEXP Stage::to_R()
@@ -81,6 +86,13 @@ SEXP Stage::to_R()
   return R_string_vector;
 }
 #endif
+
+nlohmann::json Stage::to_json() const
+{
+  nlohmann::json ans;
+  if (ofile.empty()) return ans;
+  return {{get_name(), ofile}};
+}
 
 void Stage::set_connection(Stage* stage)
 {
@@ -186,6 +198,14 @@ SEXP StageWriter::to_R()
 }
 #endif
 
+nlohmann::json StageWriter::to_json() const
+{
+  nlohmann::json ans;
+  if (written.empty()) return ans;
+  for (size_t i = 0; i < written.size(); i++) ans.push_back(written[i]);
+  return {{get_name(), ans}};
+}
+
 
 /* ==============
  *  RASTER
@@ -206,7 +226,7 @@ StageRaster::~StageRaster()
 
 }
 
-bool StageRaster::set_chunk(const Chunk& chunk)
+bool StageRaster::set_chunk(Chunk& chunk)
 {
   Stage::set_chunk(chunk);
 
@@ -301,7 +321,7 @@ StageVector::~StageVector()
 
 }
 
-bool StageVector::set_chunk(const Chunk& chunk)
+bool StageVector::set_chunk(Chunk& chunk)
 {
   Stage::set_chunk(chunk);
 
@@ -367,6 +387,99 @@ void StageVector::set_crs(const CRS& crs)
     vector.close();
   }
 }*/
+
+/* ==============
+ *  MATRIX
+ * ============= */
+
+StageMatrix::StageMatrix()
+{
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      matrix[i][j] = 0;
+    }
+  }
+}
+
+StageMatrix::StageMatrix(const StageMatrix& other)
+{
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      matrix[i][j] = other.matrix[i][j];
+    }
+  }
+}
+
+void StageMatrix::transform(double& x, double& y, double& z)
+{
+  double point[4] = {x, y, z, 1}; // Homogeneous coordinates
+  double tpoint[4] = {0, 0, 0, 0}; // Transformed coordinates
+
+  for (int i = 0; i < 4; ++i)
+  {
+    for (int j = 0; j < 4; ++j)
+    {
+      tpoint[i] += matrix[i][j] * point[j]; // Matrix-vector multiplication
+    }
+  }
+
+  x = tpoint[0]; // Update x
+  y = tpoint[1]; // Update y
+  z = tpoint[2]; // Update z
+}
+
+
+void StageMatrix::merge(const Stage* other)
+{
+  const StageMatrix* o = dynamic_cast<const StageMatrix*>(other);
+
+  for (int i = 0; i < 4; ++i)
+  {
+    for (int j = 0; j < 4; ++j)
+    {
+      matrix[i][j] = o->matrix[i][j];
+    }
+  }
+}
+
+#ifdef USING_R
+SEXP StageMatrix::to_R()
+{
+  SEXP H = PROTECT(Rf_allocVector(REALSXP, 16)); nsexpprotected++;
+
+  double* Hptr = REAL(H);
+  for (int i = 0; i < 4; ++i)
+  {
+    for (int j = 0; j < 4; ++j)
+    {
+      Hptr[i + 4 * j] = matrix[i][j];
+    }
+  }
+
+  SEXP dim = PROTECT(Rf_allocVector(INTSXP, 2)); nsexpprotected++;
+  INTEGER(dim)[0] = 4;
+  INTEGER(dim)[1] = 4;
+  Rf_setAttrib(H, R_DimSymbol, dim);
+
+  return H;
+}
+#endif
+
+nlohmann::json StageMatrix::to_json() const
+{
+  nlohmann::json j_matrix = nlohmann::json::array();
+
+  for (int i = 0; i < 4; ++i)
+  {
+    nlohmann::json row = nlohmann::json::array();
+    for (int j = 0; j < 4; ++j)
+    {
+      row.push_back(matrix[i][j]);
+    }
+    j_matrix.push_back(row);
+  }
+  return j_matrix;
+}
 
 #ifdef USING_R
 SEXP string_address_to_sexp(const std::string& addr)

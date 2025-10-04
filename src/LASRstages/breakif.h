@@ -22,7 +22,7 @@ class LASRbreakoutsidebbox : public LASRbreak
 public:
   LASRbreakoutsidebbox();
   bool set_parameters(const nlohmann::json&) override;
-  bool set_chunk(const Chunk& chunk) override;
+  bool set_chunk(Chunk& chunk) override;
   LASRbreakoutsidebbox* clone() const override { return new LASRbreakoutsidebbox(*this); };
 };
 
@@ -31,7 +31,7 @@ class LASRbreakbeforechunk : public LASRbreak
 public:
   LASRbreakbeforechunk() { };
   bool set_parameters(const nlohmann::json&) override;
-  bool set_chunk(const Chunk& chunk) override;
+  bool set_chunk(Chunk& chunk) override;
   LASRbreakbeforechunk* clone() const override { return new LASRbreakbeforechunk(*this); };
 
 private:

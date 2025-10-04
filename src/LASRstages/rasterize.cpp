@@ -9,7 +9,7 @@ bool LASRrasterize::set_parameters(const nlohmann::json& stage)
 
   if (connections.size() == 0)
   {
-    std::vector<std::string> methods = get_vector<std::string>(stage["method"]);
+    methods = get_vector<std::string>(stage["method"]);
 
     window = stage.value("window", res);
     window = (window > res) ? (window-res)/2 : 0;
@@ -38,11 +38,11 @@ bool LASRrasterize::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRrasterize::process(LASpoint*& p)
+bool LASRrasterize::process(Point*& p)
 {
   if (!metric_engine.is_streamable())  return true;
-  if (p->get_withheld_flag() != 0) return true;
-  if (lasfilter.filter(p)) return true;
+  if (p->get_deleted() != 0) return true;
+  if (pointfilter.filter(p)) return true;
 
   double x = p->get_x();
   double y = p->get_y();
@@ -67,13 +67,13 @@ bool LASRrasterize::process(LASpoint*& p)
   return true;
 }
 
-bool LASRrasterize::process(LAS*& las)
+bool LASRrasterize::process(PointCloud*& las)
 {
   // Streamable metrics:
   // but we are in a non streamble pipeline. We can call streamable code
   if (streamable)
   {
-    LASpoint* p;
+    Point* p;
     while (las->read_point())
     {
       p = &las->point;
@@ -143,6 +143,7 @@ bool LASRrasterize::process(LAS*& las)
   progress->reset();
   progress->set_total(n);
   progress->set_prefix("Rasterization");
+  progress->set_ncpu(ncpu);
 
   // The next for loop is at the level 2 of a nested parallel region. Printing the progress bar
   // is not thread safe. We first check that we are in outer thread 0
@@ -157,9 +158,9 @@ bool LASRrasterize::process(LAS*& las)
   {
     if (progress->interrupted()) continue;
 
-    std::vector<PointLAS> pts;
+    std::vector<Point> pts;
     int cell = keys[i];
-    las->query(*intervals[i], pts, &lasfilter);
+    las->query(*intervals[i], pts, &pointfilter);
 
     for (int i = 0 ; i < metric_engine.size() ; i++)
     {

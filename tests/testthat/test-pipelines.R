@@ -16,7 +16,7 @@ test_that("buffer tiles",
   area2 = as.numeric(sum(sf::st_area(cont2)))
 
   expect_equal(area1, 206788.110)
-  expect_equal(area2, 236796.375)
+  expect_equal(area2, 236802.182)
 })
 
 test_that("normalize & dtm",
@@ -34,7 +34,7 @@ test_that("normalize & dtm",
 
   expect_equal(mean(x*w/sum(w)), 0.31, tolerance = 0.01)
 
-  pipeline = reader_las() + dtm(add_class = 9) + normalize(TRUE) + summarise() + chm(1, TRUE)
+  pipeline = reader_las() + dtm(add_class = 9) + hag() + summarise() + chm(1, TRUE)
   suppressWarnings(ans <- exec(pipeline, on = f))
 
   expect_length(ans, 3L)
@@ -72,7 +72,7 @@ test_that("pipleline info works",
   expect_equal(info$buffer, 0)
   expect_equal(info$read_points, TRUE)
 
-  pipeline[[1]]$algoname = "plop"
+  pipeline = .APIOPERATIONS$make_stage("plop", list(a = 1))
   expect_error(lasR:::get_pipeline_info(pipeline), "Unsupported stage: plop")
 })
 
@@ -80,15 +80,6 @@ test_that("processor does not fails without reader",
 {
   f <- system.file("extdata", "bcts/", package="lasR")
 
-  #expect_error(exec(hulls(), on = f), "The pipeline must have a readers stage")
-  expect_error(exec(local_maximum(10) + reader_las(f), on = f),  "not preceded by a reader stage")
-  expect_error(exec(hulls() + reader_las(f), on = f),  "A 'reader' stage is missing or is at an incorrect position in the pipeline")
+  expect_error(exec(local_maximum(10) + reader_las(), on = f),  "not preceded by a reader stage")
+  expect_error(exec(hulls() + reader_las(), on = f),  "A 'reader' stage is missing or is at an incorrect position in the pipeline")
 })
-
-test_that("delete point memory reallocation works",
-{
-  f <- system.file("extdata", "MixedConifer.las", package="lasR")
-  pipeline = delete_points(filter = keep_ground()) + geometry_features(k = 15 , features = "lps") + write_las()
-  expect_error(exec(pipeline, on = f), NA)
-})
-

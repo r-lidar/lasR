@@ -1,31 +1,33 @@
 #include "writelas.h"
 
-#include "laswriter.hpp"
+#include "LASio.h"
 
 LASRlaswriter::LASRlaswriter()
 {
-  laswriter = nullptr;
-  lasheader = nullptr;
+  lasio = nullptr;
+}
+
+LASRlaswriter::~LASRlaswriter()
+{
+  if (lasio)
+  {
+    // # nocov start
+    warning("internal error: please report, a LASwriter is still opened when destructing LASRlaswriter. The LAS or LAZ file written may be corrupted\n");
+    lasio->close();
+    delete lasio;
+    lasio = nullptr;
+    // # nocov end
+  }
 }
 
 bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
 {
   keep_buffer = stage.value("keep_buffer", false);
+  copc_density = stage.value("density", 256);
+  copc_depth = stage.value("max_depth", -1);
   return true;
 }
 
-LASRlaswriter::~LASRlaswriter()
-{
-  if (laswriter)
-  {
-    // # nocov start
-    warning("internal error: please report, a LASwriter is still opened when destructing LASRlaswriter. The LAS or LAZ file written may be corrupted\n");
-    laswriter->close();
-    delete laswriter;
-    laswriter = nullptr;
-    // # nocov end
-  }
-}
 
 bool LASRlaswriter::set_input_file_name(const std::string& file)
 {
@@ -55,78 +57,60 @@ bool LASRlaswriter::set_output_file(const std::string& file)
   return true;
 }
 
-bool LASRlaswriter::process(LASpoint*& p)
+bool LASRlaswriter::process(Point*& p)
 {
-  if (p->get_withheld_flag() != 0) return true;
+  // In streaming mode the point is owned by reader_las. Desallocating it stops the pipeline
+  if (p == nullptr) return true;
+  if (p->get_deleted()) return true;
 
   // No writer initialized? Create a writer.
-  if (!laswriter)
+  if (!lasio->is_opened())
   {
-    LASwriteOpener laswriteopener;
-    laswriteopener.set_file_name(ofile.c_str());
-    laswriter = laswriteopener.open(lasheader);
-
-    offsets[0] = p->quantizer->x_offset;
-    offsets[1] = p->quantizer->y_offset;
-    offsets[2] = p->quantizer->z_offset;
-    scales[0] = p->quantizer->x_scale_factor;
-    scales[1] = p->quantizer->y_scale_factor;
-    scales[2] = p->quantizer->z_scale_factor;
-
-    if (!laswriter)
-    {
-      last_error = "LASlib internal error. Cannot open LASwriter."; // # nocov
-      return false; // # nocov
-    }
-
+    if (!lasio->create(ofile)) return false;
     written.push_back(ofile);
   }
 
   //  If the point in not in the buffer we can write it
   if (keep_buffer || !p->inside_buffer(xmin, ymin, xmax, ymax, circular))
   {
-    if (!lasfilter.filter(p))
+    if (!pointfilter.filter(p))
     {
-      //print("Before %d %d %d \n", p->get_X(), p->get_Y(), p->get_Z());
-
       // If we write in a merged file the points may come from different file formats
-      if (merged)
-      {
-        if (p->quantizer->x_offset != offsets[0] || p->quantizer->x_scale_factor != scales[0])
-        {
-          double coordinate = (p->get_x() - offsets[0])/scales[0];
-          p->set_X(I32_QUANTIZE(coordinate));
-        }
+      /*if (merged)
+       {
+       if (p->quantizer->x_offset != offsets[0] || p->quantizer->x_scale_factor != scales[0])
+       {
+       double coordinate = (p->get_x() - offsets[0])/scales[0];
+       p->set_X(I32_QUANTIZE(coordinate));
+       }
 
-        if (p->quantizer->y_offset != offsets[1] || p->quantizer->y_scale_factor != scales[1])
-        {
-          double coordinate = (p->get_y() - offsets[1])/scales[1];
-          p->set_Y(I32_QUANTIZE(coordinate));
-        }
+       if (p->quantizer->y_offset != offsets[1] || p->quantizer->y_scale_factor != scales[1])
+       {
+       double coordinate = (p->get_y() - offsets[1])/scales[1];
+       p->set_Y(I32_QUANTIZE(coordinate));
+       }
 
-        if (p->quantizer->z_offset != offsets[2] || p->quantizer->z_scale_factor != scales[2])
-        {
-          double coordinate = (p->get_z() - offsets[2])/scales[2];
-          p->set_Z(I32_QUANTIZE(coordinate));
-        }
-      }
+       if (p->quantizer->z_offset != offsets[2] || p->quantizer->z_scale_factor != scales[2])
+       {
+       double coordinate = (p->get_z() - offsets[2])/scales[2];
+       p->set_Z(I32_QUANTIZE(coordinate));
+       }
+       }*/
 
-      //print("After %d %d %d \n\n", p->get_X(), p->get_Y(), p->get_Z());
-      laswriter->write_point(p);
-      laswriter->update_inventory(p);
+      lasio->write_point(p);
     }
   }
 
   return true;
 }
 
-bool LASRlaswriter::process(LAS*& las)
+bool LASRlaswriter::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_prefix("Write LAS");
   progress->set_total(las->npoints);
 
-  LASpoint* p;
+  Point* p;
   while (las->read_point())
   {
     p = &las->point;
@@ -142,21 +126,45 @@ bool LASRlaswriter::process(LAS*& las)
   return true;
 }
 
-void LASRlaswriter::set_header(LASheader*& header)
+void LASRlaswriter::set_header(Header*& header)
 {
-  lasheader = header;
+  // We are receiving a new header because a reader start reading a new file
+
+  // If we still have an interface this means that we are merging multiple files
+  // We don't need to create a new writer.
+  if (lasio)
+  {
+    lasio->reset_accessor();
+    return;
+  }
+
+  lasio = new LASio(progress);
+  lasio->init(header);
+  lasio->set_copc_max_depth(copc_depth);
+  lasio->set_copc_density(copc_density);
+}
+
+bool LASRlaswriter::set_chunk(Chunk& chunk)
+{
+  Stage::set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
+  if (chunk.buffer == 0) keep_buffer = true;
+  circular = chunk.shape == ShapeType::CIRCLE;
+  return true;
 }
 
 void LASRlaswriter::clear(bool last)
 {
+  // In clear we are testing:
+  // - is it the last call to clear? If yes we can clear everything
+  // - are we writing in merge mode? If yes we need to keep the LASwriter. Otherwise we can clean
+  //   a new writer will be created at next iteration
   if (!merged || last)
   {
-    if (laswriter)
+    if (lasio)
     {
-      laswriter->update_header(lasheader, true);
-      laswriter->close();
-      delete laswriter;
-      laswriter = nullptr;
+      lasio->close();
+      delete lasio;
+      lasio = nullptr;
     }
   }
 }

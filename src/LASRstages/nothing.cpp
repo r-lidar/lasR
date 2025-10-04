@@ -16,7 +16,7 @@ bool LASRnothing::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRnothing::process(LAS*& las)
+bool LASRnothing::process(PointCloud*& las)
 {
   if (!loop) return true;
 

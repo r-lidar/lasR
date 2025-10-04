@@ -11,6 +11,11 @@ struct Chunk
     clear();
   };
 
+  bool is_empty()
+  {
+    return main_files.empty();
+  }
+
   void clear()
   {
     xmin = 0;

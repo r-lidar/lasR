@@ -3,7 +3,7 @@ test_that("stages are skipping withhelded points (streaming)", {
   f <- system.file("extdata", "Megaplot.las", package="lasR")
   olas <- templas()
   read <- reader_las()
-  filter <- delete_points(keep_z_above(10))
+  filter <- delete_points("Z < 10")
   pipeline <- read + filter + summarise() + rasterize(10, "min") + write_las(olas)
 
   ans = exec(pipeline, on = f)
@@ -23,7 +23,7 @@ test_that("stages are skipping withhelded points (batch)", {
   olas <- templas()
   otri <- tempgpkg()
   read <- reader_las()
-  filter <- delete_points(keep_z_above(20))
+  filter <- delete_points("Z < 20")
   pipeline <- read + filter + triangulate(-10, ofile = otri) + summarise() + rasterize(10, "min") + write_las(olas)
 
   ans = exec(pipeline, on = f)
@@ -44,14 +44,14 @@ test_that("stages are skipping withhelded points (2) (batch)", {
   olas <- templas()
   otri <- tempgpkg()
   read <- reader_las()
-  filter <- delete_points(keep_z_below(10))
+  filter <- delete_points("Z >= 10")
   dtm = dtm()
-  pipeline <- read + filter + local_maximum(5) + dtm + transform_with(dtm[[2]]) + summarise()
+  pipeline <- read + filter + local_maximum(5) + dtm + transform_with(dtm[[2]]) + lasR::summarise()
 
   set_parallel_strategy(sequential())
-  ans = exec(pipeline, on = f) |> suppressWarnings()
+  ans = exec(pipeline, on = f)
 
-  expect_equal(ans$summary$npoints, 25215L)
+  expect_equal(ans$summary$npoints, 25379L)
   expect_equal(nrow(ans$local_maximum), 1516L)
 })
 

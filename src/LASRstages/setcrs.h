@@ -8,7 +8,7 @@ class LASRsetcrs: public Stage
 {
 public:
   LASRsetcrs();
-  bool process(LASheader*& p) override;
+  bool process(Header*& p) override;
   void set_crs(const CRS& crs) override { return; };
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "set_crs"; }

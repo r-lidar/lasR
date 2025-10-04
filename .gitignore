@@ -14,3 +14,11 @@ docs
 /Meta/
 bin
 .vscode
+python/build
+python/pylasr.egg-info
+python/dist
+python/build
+*.bak*
+*.a
+*.pyc
+CLAUDE.md

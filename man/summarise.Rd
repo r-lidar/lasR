@@ -14,9 +14,8 @@ as many others (see \link{metric_engine}). If \code{NULL} nothing is computed. I
 metrics are computed for each chunk loaded. A chunk might be a file but may also be a plot (see examples).}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
-interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processed.
-The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
 }
 \description{
@@ -27,13 +26,13 @@ This stage does not modify the point cloud. It produces a summary as a \code{lis
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader_las()
+read <- reader()
 pipeline <- read + summarise()
 ans <- exec(pipeline, on = f)
 ans
 
 # Compute metrics for each plot
-read = reader_las_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
+read = reader_circles(c(273400, 273500), c(5274450, 5274550), 11.28)
 metrics = summarise(metrics = c("z_mean", "z_p95", "i_median", "count"))
 pipeline = read + metrics
 ans = exec(pipeline, on = f)

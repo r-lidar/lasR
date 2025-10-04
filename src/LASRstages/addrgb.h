@@ -6,7 +6,7 @@
 class LASRaddrgb: public Stage
 {
 public:
-  bool process(LAS*& las) override { return las->add_rgb(); };
+  bool process(PointCloud*& las) override { return las->add_rgb(); };
   std::string get_name() const override { return "add_rgb"; };
   LASRaddrgb* clone() const override { return new LASRaddrgb(*this); };
 };

@@ -11,7 +11,8 @@ local_maximum(
   filter = "",
   ofile = tempgpkg(),
   use_attribute = "Z",
-  record_attributes = FALSE
+  record_attributes = FALSE,
+  store_in_attribute = ""
 )
 
 local_maximum_raster(
@@ -30,9 +31,8 @@ the input data (usually meters).}
 local maximum. Default is 2.}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
-interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processed.
-The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
 
 \item{ofile}{character. Full outputs are always stored on disk. If \code{ofile = ""}
@@ -40,13 +40,20 @@ then the stage will not store the result on disk and will return nothing. It wil
 hold partial output results temporarily in memory. This is useful for stage that are only
 intermediate stage.}
 
-\item{use_attribute}{character. By default the local maximum is performed on the coordinate Z. Can also be
-the name of an extra bytes attribute such as 'HAG' if it exists. Can also be 'Intensity' but there is
-probably no use case for that one.}
+\item{use_attribute}{character. Specifies the attribute to use for the operation, with "Z" (the coordinate) as the default.
+Alternatively, this can be the name of any other attribute, such as "Intensity", "gpstime", "ReturnNumber", or "HAG", if it exists.
+Note: The function does not fail if the specified attribute does not exist in the point cloud.
+For example, if "Intensity" is requested but not present, or "HAG" is specified but unavailable,
+the internal engine will return 0 for the missing attribute.}
 
 \item{record_attributes}{The coordinates XYZ of points corresponding to the local maxima are recorded.
 It is also possible to record the attributes of theses points such as the intensity, return number, scan
 angle and so on.}
+
+\item{store_in_attribute}{In addition to producing a geospatial file with the local maxima,
+the points can also be flagged: 0 if the point is not a local maximum, and 1 if the
+point is a local maximum. If the attribute does not exist, it must first be created
+with \link{add_extrabytes} (see examples).}
 
 \item{raster}{LASRalgorithm. A stage that produces a raster.}
 }
@@ -62,7 +69,7 @@ in vector format. The function \code{local_maximum_raster} applies on a raster i
 }
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package = "lasR")
-read <- reader_las()
+read <- reader()
 lmf <- local_maximum(5)
 ans <- exec(read + lmf, on = f)
 ans
@@ -72,4 +79,15 @@ lmf <- local_maximum_raster(chm, 5)
 ans <- exec(read + chm + lmf, on = f)
 # terra::plot(ans$rasterize)
 # plot(ans$local_maximum, add = T, pch = 19)
+
+# Storing LM in UserData.
+lmf <- local_maximum(5, store_in_attribute = "UserData")
+ans <- exec(read + lmf + write_las(), on = f)
+ans
+
+# Storing in an new attribute without geospatial output
+attr <- add_extrabytes("uchar", "lm", "local maximum flag")
+lmf <- local_maximum(5, ofile = "", store_in_attribute = "lm")
+ans <- exec(attr + lmf + write_las(), on = f)
+ans
 }

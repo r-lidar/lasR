@@ -7,11 +7,18 @@
 #' efficiently.
 #'
 #' @useDynLib lasR, .registration = TRUE
+#' @importFrom Rcpp loadModule
 "_PACKAGE"
+
+.APISTAGES <- Rcpp::Module("stages", PACKAGE = "lasR")
+.APIUTILS <- Rcpp::Module("utils", PACKAGE = "lasR")
+.APIOPERATIONS <- Rcpp::Module("operations", PACKAGE = "lasR")
+.APITEST <- Rcpp::Module("tests", PACKAGE = "lasR")
 
 .onAttach <- function(libname, pkgname)
 {
   check_update()
+
 }
 
 .onLoad <- function(libname, pkgname)
@@ -47,7 +54,7 @@ check_update = function()
 
   last  <- get_latest_version()
   curr <- utils::packageVersion("lasR")
-  new_version = !is.null(last) && last > curr
+  new_version = !is.null(last) && last[1] > curr[1]
   dev_version = is_dev_version(curr)
 
   # nocov start

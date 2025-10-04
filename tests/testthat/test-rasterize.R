@@ -16,7 +16,7 @@ test_that("rasterize streamed works",
 test_that("rasterize works with extrabyte",
 {
   f = system.file("extdata", "Topography.las", package="lasR")
-  norm = normalize(TRUE)
+  norm = hag()
   met = rasterize(5, c("HAG_mean", "HAG_max", "plop_sum"))
   u = exec(norm+met, on = f)
 
@@ -24,8 +24,8 @@ test_that("rasterize works with extrabyte",
   expect_equal(names(u), c("HAG_mean", "HAG_max", "plop_sum"))
   expect_equal(dim(u), c(58, 58, 3))
   expect_equal(mean(u[[1]][], na.rm = T), 3.149584, tolerance = 1e-6)
-  expect_equal(mean(u[[2]][], na.rm = T), 7.95203, tolerance = 1e-6)
-  expect_true(all(is.nan(u[[3]][])))
+  expect_equal(mean(u[[2]][], na.rm = T), 7.952026, tolerance = 1e-6)
+  expect_equal(mean(u[[3]][], na.rm = T), 0)
 })
 
 test_that("rasterize non streamed works",
@@ -54,17 +54,16 @@ test_that("rasterize fails",
 {
   f = system.file("extdata", "Example.las", package="lasR")
 
-  met = rasterize(5, c("count"))
-  met[[1]]$method = "z_p101"
+  met = rasterize(5, c("z_p101"))
   expect_error(exec(met, on = f), "Percentile out of range")
 
-  met[[1]]$method = "i_p101"
+  met = rasterize(5, c("i_p101"))
   expect_error(exec(met, on = f), "Percentile out of range")
 
-  met[[1]]$method = "jlop"
+  met = rasterize(5, c("jlop"))
   expect_error(exec(met, on = f), "Invalid metric name: jlop")
 
-  met[[1]]$method = "zup"
+  met = rasterize(5, c("zup"))
   expect_error(exec(met, on = f), "Invalid metric name: zup")
 })
 
@@ -143,8 +142,8 @@ test_that("rasterize triangulation works with 1 file",
 
   expect_s4_class(u, "SpatRaster")
   expect_equal(dim(u), c(58, 58, 1))
-  expect_equal(mean(u[], na.rm = T), 805.4077, tolerance = 1e-6)
-  expect_equal(sum(is.na(u[])), 713)
+  expect_equal(mean(u[], na.rm = T), 805.390, tolerance = 1e-6)
+  expect_equal(sum(is.na(u[])), 769L)
   #terra::plot(u[[2]])
 })
 
@@ -165,8 +164,8 @@ test_that("rasterize triangulation works with 4 files",
   expect_equal(dim(dtm), c(213, 42, 1))
 
   payload = u[]
-  expect_equal(mean(payload, na.rm = TRUE), 341.4095, tolerance = 1e-6)
-  expect_equal(sum(is.na(payload)), 876)
+  expect_equal(mean(payload, na.rm = TRUE), 341.2918, tolerance = 1e-6)
+  expect_equal(sum(is.na(payload)), 909)
   #terra::plot(u)
 })
 
@@ -202,3 +201,4 @@ test_that("rasterize splits the raster on demand",
   expect_equal(mean(r1[], na.rm = T), 338.619, tolerance = 0.00001)
   expect_equal(mean(r2[], na.rm = T), 337.441, tolerance = 0.00001)
 })
+

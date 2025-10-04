@@ -2,28 +2,34 @@
 % Please edit documentation in R/stages.R
 \name{delete_points}
 \alias{delete_points}
+\alias{delete_noise}
+\alias{delete_ground}
 \title{Filter and delete points}
 \usage{
 delete_points(filter = "")
+
+delete_noise()
+
+delete_ground()
 }
 \arguments{
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
-interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processed.
-The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.
 }
 \description{
-Remove some points from the point cloud. This stage modifies the point cloud in the pipeline
-but does not produce any output.
+This stage modifies the point cloud in the pipeline but does not produce any output. Points
+matching the `filter` criteria are **processed**. In this case, it means they are deleted.
+**Note:** In versions < 0.17, the behavior was the opposite.
 }
 \examples{
 f <- system.file("extdata", "Megaplot.las", package="lasR")
-read <- reader_las()
-filter <- delete_points(keep_z_above(4))
+read <- reader()
+filter <- delete_points("Z < 4") # Remove points below 4
 
 pipeline <- read + summarise() + filter + summarise()
 exec(pipeline, on = f)

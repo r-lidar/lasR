@@ -1,20 +1,20 @@
 test_that("R convient filters work", {
-  expect_equal(as.character(keep_class(c(5,7))), "-keep_class 5 7")
-  expect_equal(as.character(drop_class(c(5,7))), "-drop_class 5 7")
-  expect_equal(as.character(keep_first()), "-keep_first")
-  expect_equal(as.character(drop_first()), "-drop_first")
-  expect_equal(as.character(keep_ground()), "-keep_class 2")
-  expect_equal(as.character(drop_ground()), "-drop_class 2")
-  expect_equal(as.character(keep_noise()), "-keep_class 18")
-  expect_equal(as.character(drop_noise()), "-drop_class 18")
-  expect_equal(as.character(keep_z_above(7)), "-keep_z_above 7")
-  expect_equal(as.character(keep_z_below(7)), "-keep_z_below 7")
-  expect_equal(as.character(drop_z_above(7)), "-drop_z_above 7")
-  expect_equal(as.character(drop_z_below(7)), "-drop_z_below 7")
-  expect_equal(as.character(drop_duplicates()), "-drop_duplicates")
-  expect_equal(as.character(keep_ground()+keep_z_above(7)), "-keep_class 2 -keep_z_above 7")
+  v = lasR:::validate_filter
+  expect_equal(as.character(v(keep_class(c(5,7)))), "-lasr_class_in 5 7")
+  expect_equal(as.character(v(drop_class(c(5,7)))), "-lasr_class_out 5 7")
+  expect_equal(as.character(v(keep_first())), "-lasr_return_equal 1")
+  expect_equal(as.character(v(drop_first())), "-lasr_return_different 1")
+  expect_equal(as.character(v(keep_ground())), "-lasr_class_equal 2")
+  expect_equal(as.character(v(drop_ground())), "-lasr_class_different 2")
+  expect_equal(as.character(v(keep_noise())), "-lasr_class_equal 18")
+  expect_equal(as.character(v(drop_noise())), "-lasr_class_different 18")
+  expect_equal(as.character(v(keep_z_above(7))), "-lasr_z_aboveeq 7")
+  expect_equal(as.character(v(keep_z_below(7))), "-lasr_z_below 7")
+  expect_equal(as.character(v(drop_z_above(7))), "-lasr_z_below 7")
+  expect_equal(as.character(v(drop_z_below(7))), "-lasr_z_aboveeq 7")
+  #expect_equal(as.character(v(drop_duplicates())), "-drop_duplicates")
+  expect_equal(as.character(v(keep_ground()+keep_z_above(7))), c("-lasr_class_equal 2",  "-lasr_z_aboveeq 7"))
   expect_error(keep_ground()+ "-keep_class 2")
-
 })
 
 test_that("Usage works", {
@@ -26,6 +26,51 @@ test_that("Usage works", {
   sink(NULL)
 })
 
+test_that("Various filter tests",
+{
+  test = function(filter)
+  {
+    f <- system.file("extdata", "Example.las", package = "lasR")
+    exec(reader_las(filter) + summarise(), on = f)
+  }
+
+  expect_equal(test("Z > 976")$npoints, 12L)
+  expect_equal(test("Classification == 2")$npoints, 3L)
+  expect_equal(test("Intensity < 107")$npoints, 27L)
+  expect_equal(test("Intensity <= 107")$npoints, 28L)
+  expect_equal(test("UserData == 32")$npoints, 30L)
+  expect_equal(test("ReturnNumber != 1")$npoints, 4L)
+  expect_equal(test("gpstime %between% 269347.4 269347.6")$npoints, 17L)
+  expect_equal(test("z %between% 974 975")$npoints, 10L)
+  expect_equal(test("Intensity %in% 107 113")$npoints, 2L)
+  expect_equal(test("Intensity %out% 107 113")$npoints, 28L)
+})
+
+test_that("Various filter tests with extra attributes",
+{
+  test = function(filter)
+  {
+    f <- system.file("extdata", "extra_byte.las", package = "lasR")
+    exec(reader_las(filter) + summarise(), on = f)
+  }
+
+  expect_equal(test("Amplitude < 10")$npoints, 27L)
+  expect_equal(test("Amplitude == 8.27")$npoints, 2L)
+  expect_equal(test("Amplitude %between% 10 8")$npoints, 8L)
+  expect_equal(test("Plop > 0")$npoints, 0L)
+})
+
+test_that("Filters errors",
+{
+  test = function(filter)
+  {
+    f <- system.file("extdata", "Example.las", package = "lasR")
+    exec(reader_las(filter) + summarise(), on = f)
+  }
+
+  expect_error(test("Z > 976 546")$npoints)
+  expect_error(test("3 == 4")$npoints)
+})
 
 test_that("rasterize works with a filter (#29)",
 {

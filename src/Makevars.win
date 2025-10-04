@@ -4,9 +4,9 @@ TARGET = lib$(subst gcc,,$(COMPILED_BY))$(R_ARCH)
 
 PKG_CPPFLAGS =\
 	-I$(RWINLIB)/include \
--I./ -I./LASRcore/ -I./LASRstages/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ \
+-I./ -I./LASRcore/ -I./LASRstages/ -I./LASRreaders/ -I./LASRapi/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ \
 	-DHAVE_PROJ_H \
-	-DNDEBUG -DUNORDERED -DHAVE_UNORDERED_MAP -DUSING_R
+	-DNDEBUG -DUSING_R
 
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 
@@ -24,7 +24,7 @@ PKG_LIBS = \
 
 CXX_STD=CXX17
 
-SOURCES = $(wildcard LASRcore/*.cpp LASRstages/*.cpp vendor/*/*.cpp ./*.cpp)
+SOURCES = $(wildcard LASRcore/*.cpp LASRstages/*.cpp LASRreaders/*.cpp LASRapi/*.cpp vendor/*/*.cpp ./*.cpp)
 TEMP1   = $(SOURCES:.cpp=.o)
 OBJECTS = $(TEMP1:.c=.o)
 

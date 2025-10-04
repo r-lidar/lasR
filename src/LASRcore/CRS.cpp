@@ -21,8 +21,7 @@ CRS::CRS(int code, bool err)
   {
     char buffer[512];
     snprintf(buffer, sizeof(buffer), "EPSG:%d %s\n", epsg, CPLGetLastErrorMsg());
-    last_error = std::string(buffer);
-    if (err) throw last_error;
+    if (err) throw std::runtime_error(buffer);
     return;
   }
 
@@ -52,10 +51,9 @@ CRS::CRS(const std::string& str, bool err)
 
   if (oSRS.importFromWkt(wkt.c_str()) != OGRERR_NONE)
   {
-    char buffer[512];
+    char buffer[2048];
     snprintf(buffer, sizeof(buffer), "WKT string: %s", CPLGetLastErrorMsg());
-    last_error = std::string(buffer);
-    if (err) throw last_error;
+    if (err) throw std::runtime_error(buffer);
     return;
   }
 
@@ -98,6 +96,11 @@ bool CRS::is_feets() const
   return std::fabs(value - 0.3048) < 1e-4;
 }
 
+bool CRS::operator==(const CRS& other) const
+{
+  return epsg == other.epsg && valid == other.valid && wkt == other.wkt;
+}
+
 // # nocov start
 void CRS::dump() const
 {
@@ -123,3 +126,4 @@ void CRS::dump() const
 }
 
 // # nocov end
+

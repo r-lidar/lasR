@@ -8,7 +8,13 @@
 \usage{
 sampling_voxel(res = 2, filter = "", ...)
 
-sampling_pixel(res = 2, filter = "", ...)
+sampling_pixel(
+  res = 2,
+  filter = "",
+  method = "random",
+  use_attribute = "Z",
+  ...
+)
 
 sampling_poisson(distance = 2, filter = "", ...)
 }
@@ -16,12 +22,21 @@ sampling_poisson(distance = 2, filter = "", ...)
 \item{res}{numeric. pixel/voxel resolution}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
-interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processed.
-The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
 
 \item{...}{unused}
+
+\item{method}{string can be "random" to retain one random point or "min" or "max" to retain
+the highest and lowest points respectively. For min and max users can use the argument `use_attribute`
+to select the highest intensity or highest Z, or highest gpstime or any other attributes.}
+
+\item{use_attribute}{character. Specifies the attribute to use for the operation, with "Z" (the coordinate) as the default.
+Alternatively, this can be the name of any other attribute, such as "Intensity", "gpstime", "ReturnNumber", or "HAG", if it exists.
+Note: The function does not fail if the specified attribute does not exist in the point cloud.
+For example, if "Intensity" is requested but not present, or "HAG" is specified but unavailable,
+the internal engine will return 0 for the missing attribute.}
 
 \item{distance}{numeric. Minimum distance between points for poisson sampling.}
 }
@@ -30,13 +45,22 @@ This stage transforms the point cloud in the pipeline. It consequently returns n
 }
 \description{
 Sample the point cloud, keeping one random point per pixel or per voxel or perform a poisson sampling.
-This stages modify the point cloud in the pipeline but do not produce any output.
+This stages modify the point cloud in the pipeline but do not produce any output. When used with a
+'filter' argument, only points that match the criteria are subsampled. Other point are kept as is
+in the point cloud.
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
-read <- reader_las()
-vox <- sampling_voxel(5)
+
+read <- reader()
+vox <- sampling_voxel(5) # sample 1 random points per voxel
 write <- write_las()
 pipeline <- read + vox + write
-exec(pipeline, on = f)
+ans = exec(pipeline, on = f)
+
+# Only ground points are poisson sampled. Other point are kept
+vox <- sampling_poisson(10, filter = "Classification == 2")
+write <- write_las()
+pipeline <- read + vox + write
+ans = exec(pipeline, on = f)
 }

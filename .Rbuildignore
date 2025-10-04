@@ -30,6 +30,8 @@
 ^vignettes/articles$
 ^inst/gdal$
 ^inst/proj$
+^inst/extdata/autzen-classified.copc.laz$
 ^bin$
 ^Makefile$
 ^.vscode$
+^python$

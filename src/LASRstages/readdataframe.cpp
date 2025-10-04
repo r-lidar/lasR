@@ -18,13 +18,10 @@ LASRdataframereader::LASRdataframereader(const LASRdataframereader& other) : Sta
   offset[0] = other.offset[0];
   offset[1] = other.offset[1];
   offset[2] = other.offset[2];
-  has_gps = other.has_gps;
-  has_nir = other.has_nir;
-  has_rgb = other.has_rgb;
-  is_extended = other.is_extended;
   current_point = other.current_point;
-  num_extrabytes = other.num_extrabytes;
   npoints = other.npoints;
+  header = nullptr;
+  streaming = true;
 }
 
 bool LASRdataframereader::set_parameters(const nlohmann::json& stage)
@@ -39,12 +36,7 @@ bool LASRdataframereader::set_parameters(const nlohmann::json& stage)
   offset[0] = xmin;
   offset[1] = ymin;
   offset[2] = 0;
-  has_gps = false;
-  has_nir = false;
-  has_rgb = false;
-  is_extended = false;
   current_point = 0;
-  num_extrabytes = 0;
   npoints = Rf_length(VECTOR_ELT(dataframe, 0));
 
   wkt = stage.at("crs");
@@ -52,71 +44,27 @@ bool LASRdataframereader::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRdataframereader::set_chunk(const Chunk& chunk)
+bool LASRdataframereader::set_chunk(Chunk& chunk)
 {
-  const char* tmp = filter.c_str();
-  int n = strlen(tmp)+1;
-  char* filtercpy = (char*)malloc(n); memcpy(filtercpy, tmp, n);
-
-  lasfilter.clean();
-  lasfilter.parse(filtercpy);
-
-  if (chunk.shape == ShapeType::RECTANGLE)
-    lasfilter.addClipBox(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, F64_MIN, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON, F64_MAX);
-  else if (chunk.shape == ShapeType::CIRCLE)
-    lasfilter.addClipCircle((chunk.xmin+chunk.xmax)/2, (chunk.ymin+chunk.ymax)/2,  (chunk.xmax-chunk.xmin)/2 + chunk.buffer + EPSILON);
-  else
-    lasfilter.addClipBox(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, F64_MIN, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON, F64_MAX);
-
+  Stage::set_chunk(chunk);
+  pointfilter.add_clip(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer- EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON, circular);
   return true;
 }
 
-bool LASRdataframereader::process(LASheader*& header)
+bool LASRdataframereader::process(Header*& header)
 {
   if (header != nullptr) return true;
 
-  col_names.resize(Rf_length(dataframe));
   SEXP names_attr = Rf_getAttrib(dataframe, R_NamesSymbol);
 
-  // Check the name and find to which LAS attributes it corresponds
-  for (int i = 0; i <  Rf_length(dataframe); i++)
-  {
-    std::string sname(CHAR(STRING_ELT(names_attr, i)));
-    if (sname == "X") col_names[i] = attributes::X;
-    else if (sname == "Y") col_names[i] = attributes::Y;
-    else if (sname == "Z") col_names[i] = attributes::Z;
-    else if (sname == "Intensity") col_names[i] = attributes::I;
-    else if (sname == "gpstime") { col_names[i] = attributes::T; has_gps = true; }
-    else if (sname == "ReturnNumber") col_names[i] = attributes::RN;
-    else if (sname == "NumberOfReturns") col_names[i] = attributes::NOR;
-    else if (sname == "ScanDirectionFlag") col_names[i] = attributes::SDF;
-    else if (sname == "EdgeOfFlightline") col_names[i] = attributes::EoF;
-    else if (sname == "Classification") col_names[i] = attributes::CLASS;
-    else if (sname == "Synthetic") col_names[i] = attributes::SYNT;
-    else if (sname == "Keypoint") col_names[i] = attributes::KEYP;
-    else if (sname == "Withheld") col_names[i] = attributes::WITH;
-    else if (sname == "Overlap") { col_names[i] = attributes::OVER; is_extended = true; }
-    else if (sname == "ScanAngle") col_names[i] = attributes::SA;
-    else if (sname == "UserData") col_names[i] = attributes::UD;
-    else if (sname == "PointSourceID") col_names[i] = attributes::PSID;
-    else if (sname == "R") { col_names[i] = attributes::R; has_rgb = true; }
-    else if (sname == "G") { col_names[i] = attributes::G; has_rgb = true; }
-    else if (sname == "B") { col_names[i] = attributes::B; has_rgb = true; }
-    else if (sname == "NIR") { col_names[i] = attributes::NIR; has_nir = true; }
-    else if (sname == "Channel") { col_names[i] = attributes::CHAN; is_extended = true; }
-    else if (sname == "Buffer") col_names[i] = attributes::BUFF;
-    // Compatibility with lidR and rlas
-    else if (sname == "ScanAngleRank") col_names[i] = attributes::SAR; // # nocov
-    else if (sname == "Synthetic_flag") col_names[i] = attributes::SYNT; // # nocov
-    else if (sname == "Keypoint_flag") col_names[i] = attributes::KEYP; // # nocov
-    else if (sname == "Withheld_flag") col_names[i] = attributes::WITH;// # nocov
-    else if (sname == "Overlap_flag") { col_names[i] = attributes::OVER; is_extended = true; } // # nocov
-    else
-    {
-      col_names[i] = num_extrabytes+100;
-      num_extrabytes++;
-    }
-  }
+  header = new Header;
+  header->signature = "data.frame";
+  header->min_x = xmin;
+  header->min_y = ymin;
+  header->max_x = xmax;
+  header->max_y = ymax;
+  header->number_of_point_records = npoints;
+  header->crs = CRS(wkt);
 
   if (scale[0] == 0)
   {
@@ -124,84 +72,235 @@ bool LASRdataframereader::process(LASheader*& header)
     {
       SEXP vector = VECTOR_ELT(dataframe, j);
 
-      switch(col_names[j])
+      std::string sname(CHAR(STRING_ELT(names_attr, j)));
+
+      if (sname == "X") scale[0] = guess_accuracy(vector);
+      if (sname == "Y") scale[1] = guess_accuracy(vector);
+      if (sname == "Z") scale[2] = guess_accuracy(vector);
+    }
+  }
+
+  Attribute attrf("flags", AttributeType::INT8);
+  header->add_attribute(attrf);
+
+  Attribute attrx("X", AttributeType::INT32, scale[0], offset[0]);
+  header->add_attribute(attrx);
+  accessors.push_back(AttributeAccessor("X"));
+
+  Attribute attry("Y", AttributeType::INT32, scale[1], offset[1]);
+  header->add_attribute(attry);
+  accessors.push_back(AttributeAccessor("Y"));
+
+  Attribute attrz("Z", AttributeType::INT32, scale[2], offset[2]);
+  header->add_attribute(attrz);
+  accessors.push_back(AttributeAccessor("Z"));
+
+  // Check the name and find to which LAS attributes it corresponds
+  for (int i = 0; i <  Rf_length(dataframe); i++)
+  {
+    std::string sname(CHAR(STRING_ELT(names_attr, i)));
+    SEXP vector = VECTOR_ELT(dataframe, i);
+    int type = TYPEOF(vector);
+
+
+    if (sname == "X")
+    {
+      continue;
+    }
+    else if (sname == "Y")
+    {
+      continue;
+    }
+    else if (sname == "Z")
+    {
+      continue;
+    }
+    else if (sname == "Intensity")
+    {
+      Attribute attr("Intensity", AttributeType::UINT16);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "gpstime")
+    {
+      Attribute attr("gpstime", AttributeType::DOUBLE);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "ReturnNumber")
+    {
+      Attribute attr("ReturnNumber", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "NumberOfReturns")
+    {
+      Attribute attr("NumberOfReturns", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "ScanDirectionFlag")
+    {
+      Attribute attr("ScanDirectionFlag", AttributeType::BIT);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "EdgeOfFlightline")
+    {
+      Attribute attr("EdgeOfFlightline", AttributeType::BIT);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Classification")
+    {
+      Attribute attr("Classification", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Synthetic")
+    {
+      Attribute attr("Synthetic", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Keypoint")
+    {
+      Attribute attr("Keypoint", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Withheld")
+    {
+      Attribute attr("Withheld", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Overlap")
+    {
+      Attribute attr("Overlap", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "ScanAngle")
+    {
+      Attribute attr("ScanAngle", AttributeType::FLOAT);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "UserData")
+    {
+      Attribute attr("UserData", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "PointSourceID")
+    {
+      Attribute attr("PointSourceID", AttributeType::UINT16);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "R")
+    {
+      Attribute attr("R", AttributeType::UINT16);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "G")
+    {
+      Attribute attr("G", AttributeType::UINT16);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "B")
+    {
+      Attribute attr("B", AttributeType::UINT16);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "NIR")
+    {
+      Attribute attr("NIR", AttributeType::UINT16);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Channel")
+    {
+      Attribute attr("Channel", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Buffer")
+    {
+      Attribute attr("Buffer", AttributeType::UINT8);
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "ScanAngleRank") {
+      Attribute attr("ScanAngleRank", AttributeType::INT8); // # nocov
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Synthetic_flag")
+    {
+      Attribute attr("Synthetic", AttributeType::BIT); // # nocov
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Keypoint_flag") {
+      Attribute attr("Keypoint", AttributeType::BIT); // # nocov
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Withheld_flag")
+    {
+      Attribute attr("Withheld", AttributeType::BIT); // # nocov
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else if (sname == "Overlap_flag")
+    {
+      Attribute attr("Overlap", AttributeType::BIT); // # nocov
+      header->add_attribute(attr);
+      accessors.push_back(AttributeAccessor(sname));
+    }
+    else
+    {
+      if (type == REALSXP)
       {
-        case attributes::X: scale[0] = guess_accuracy(vector); break;
-        case attributes::Y: scale[1] = guess_accuracy(vector); break;
-        case attributes::Z: scale[2] = guess_accuracy(vector); break;
-        default: break;
+        Attribute attr(sname, AttributeType::DOUBLE);
+        header->add_attribute(attr);
+        accessors.push_back(AttributeAccessor(sname));
+      }
+      else if (type == INTSXP)
+      {
+        Attribute attr(sname, AttributeType::INT32);
+        header->add_attribute(attr);
+        accessors.push_back(AttributeAccessor(sname));
+      }
+      else
+      {
+        Attribute attr(sname, AttributeType::INT8);
+        header->add_attribute(attr);
+        accessors.push_back(AttributeAccessor(sname));
       }
     }
   }
 
-  int version_minor = 2;
-  if (is_extended) version_minor = 4;
+  this->header = header;
 
-  lasheader.file_source_ID       = 0;
-  lasheader.version_major        = 1;
-  lasheader.version_minor        = version_minor;
-  lasheader.header_size          = LAS::get_header_size(version_minor);
-  lasheader.offset_to_point_data = LAS::get_header_size(version_minor);
-  lasheader.file_creation_year   = 0;
-  lasheader.file_creation_day    = 0;
-  lasheader.point_data_format    = LAS::guess_point_data_format(has_gps, has_rgb, has_nir);
-  lasheader.x_scale_factor       = scale[0];
-  lasheader.y_scale_factor       = scale[1];
-  lasheader.z_scale_factor       = scale[2];
-  lasheader.x_offset             = offset[0];
-  lasheader.y_offset             = offset[1];
-  lasheader.z_offset             = offset[2];
-  lasheader.number_of_point_records = npoints;
-  lasheader.min_x                = xmin;
-  lasheader.min_y                = ymin;
-  lasheader.max_x                = xmax;
-  lasheader.max_y                = ymax;
-  lasheader.point_data_record_length = LAS::get_point_data_record_length(lasheader.point_data_format, num_extrabytes);
-
-  // Add extrabytes
-  for (int i = 0; i <  Rf_length(dataframe); i++)
-  {
-    if (col_names[i] >= 100)
-    {
-      int data_type = LAS::LONG;
-      SEXP vector = VECTOR_ELT(dataframe, i);
-      if (TYPEOF(vector) == REALSXP) data_type = LAS::DOUBLE;
-      const char* name = CHAR(STRING_ELT(names_attr, i));
-      LASattribute lasattribute(data_type-1, name, name);
-      lasheader.add_attribute(lasattribute);
-      lasheader.update_extra_bytes_vlr();
-      lasheader.point_data_record_length += lasattribute.get_size();
-    }
-  }
-
-  //lasheader.set_global_encoding_bit(0); // GPS Time Type
-  //lasheader.set_global_encoding_bit(1); // Waveform Data Packets Internal
-  //lasheader.set_global_encoding_bit(2); // Waveform Data Packets External
-  //lasheader.set_global_encoding_bit(3); // Synthetic Return Numbers
-  if (!wkt.empty())
-  {
-    lasheader.set_global_encoding_bit(4); // WKT
-    lasheader.set_geo_ogc_wkt(1, wkt.c_str());
-  }
-  //lasheader.set_global_encoding_bit(5); // Aggregate Model
-
-  strcpy(lasheader.generating_software, "lasR R package");
-
-  laspoint.init(&lasheader, lasheader.point_data_format, lasheader.point_data_record_length, &lasheader);
-
-  header = &lasheader;
   return true;
 }
 
-bool LASRdataframereader::process(LASpoint*& point)
+bool LASRdataframereader::process(Point*& point)
 {
   if (point == nullptr)
-  {
-    point = &laspoint;
-  }
+    point = new Point(&header->schema);
+  else
+    point->zero();
 
   if (current_point >= npoints)
   {
+    delete point;
     point = nullptr;
     return true;
   }
@@ -214,111 +313,66 @@ bool LASRdataframereader::process(LASpoint*& point)
       SEXP vector = VECTOR_ELT(dataframe, j);
       int type = TYPEOF(vector);
 
-      switch(col_names[j])
-      {
-        case attributes::X: laspoint.set_x(REAL(vector)[current_point]); break;
-        case attributes::Y: laspoint.set_y(REAL(vector)[current_point]); break;
-        case attributes::Z: laspoint.set_z(REAL(vector)[current_point]); break;
-        case attributes::I: laspoint.set_intensity(INTEGER(vector)[current_point]); break;
-        case attributes::T: laspoint.set_gps_time(REAL(vector)[current_point]); break;
-        case attributes::RN: laspoint.set_return_number(INTEGER(vector)[current_point]); break;
-        case attributes::NOR: laspoint.set_number_of_returns(INTEGER(vector)[current_point]); break;
-        case attributes::EoF: laspoint.set_edge_of_flight_line(INTEGER(vector)[current_point]); break;
-        case attributes::SDF:
-        {
-          // For compatibility with lidR and rlas
-          if (TYPEOF(vector) == INTSXP)
-            laspoint.set_scan_direction_flag(INTEGER(vector)[current_point]);
-          else
-            laspoint.set_scan_direction_flag(LOGICAL(vector)[current_point]);
-
-          break;
-        }
-        case attributes::CLASS: laspoint.set_classification(INTEGER(vector)[current_point]); break;
-        case attributes::SYNT: laspoint.set_synthetic_flag(LOGICAL(vector)[current_point]); break;
-        case attributes::KEYP: laspoint.set_keypoint_flag(LOGICAL(vector)[current_point]); break;
-        case attributes::WITH: laspoint.set_withheld_flag(LOGICAL(vector)[current_point]); break;
-        case attributes::OVER: laspoint.set_extended_overlap_flag(LOGICAL(vector)[current_point]); break;
-        case attributes::SA: laspoint.set_scan_angle(REAL(vector)[current_point]); break;
-        case attributes::SAR: laspoint.set_scan_angle(INTEGER(vector)[current_point]); break;
-        case attributes::UD: laspoint.set_user_data(INTEGER(vector)[current_point]); break;
-        case attributes::PSID: laspoint.set_point_source_ID(INTEGER(vector)[current_point]); break;
-        case attributes::R: laspoint.set_R(INTEGER(vector)[current_point]); break;
-        case attributes::G: laspoint.set_G(INTEGER(vector)[current_point]); break;
-        case attributes::B: laspoint.set_B(INTEGER(vector)[current_point]); break;
-        case attributes::NIR: laspoint.set_NIR(INTEGER(vector)[current_point]); break;
-        case attributes::CHAN: laspoint.set_extended_scanner_channel(INTEGER(vector)[current_point]); break;
-        case attributes::BUFF: break;
-        case -1: break;
-        default: //extrabytes
-        {
-          int attr_index = col_names[j]-100;
-          //LASattribute attr = laspoint.attributer->attributes[attr_index];
-
-          if (type == INTSXP)
-          {
-            int val = INTEGER(vector)[current_point];
-            laspoint.set_attribute(attr_index, (U8*)&val); break;
-
-            // No other possible cases because LASRdataframereader::process(LASheader*& header)
-            // assigns either LAS::LONG or LAS::DOUBLE
-            /*switch(attr.data_type)
-            {
-            case LAS::UCHAR:  { U8 u  = U8_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; } //
-            case LAS::CHAR:   { I8 u  = I8_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::USHORT: { U16 u = U16_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::SHORT:  { I16 u = I16_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::LONG:   { I32 u = I32_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            }*/
-          }
-          else if (type ==  REALSXP)
-          {
-            double val = REAL(vector)[current_point];
-            laspoint.set_attribute(attr_index, (U8*)&val);
-
-            // No other possible cases because LASRdataframereader::process(LASheader*& header)
-            // assigns either LAS::LONG or LAS::DOUBLE
-            // TODO: support other options for compatibility with lidR
-            /*val = (val - attr.offset[0])/attr.scale[0];
-            switch(attr.data_type)
-            {
-            case LAS::UCHAR:  { U8  u = U8_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::CHAR:   { I8  u = I8_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::USHORT: { U16 u = U16_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::SHORT:  { I16 u = I16_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::LONG:   { I32 u = I32_CLAMP(val); laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::FLOAT:  { F32 u = (F32)val; laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            case LAS::DOUBLE: { F64 u = (F64)val; laspoint.set_attribute(attr_index, (U8*)&u); break; }
-            }*/
-          }
-
-          break;
-        }
-      }
+      if (type == REALSXP)
+        accessors[j](point, REAL(vector)[current_point]);
+      else if (type == INTSXP)
+        accessors[j](point, INTEGER(vector)[current_point]);
+      else
+        accessors[j](point, LOGICAL(vector)[current_point]);
     }
 
     current_point++;
 
-    if (!lasfilter.filter(&laspoint))
+    if (!pointfilter.filter(point))
+    {
       return true;
+    }
   }
 
-  point = nullptr;
+  // The last point
+  if (current_point == npoints && pointfilter.filter(point))
+  {
+    delete point;
+    point = nullptr;
+  }
+
   return true;
 }
 
-bool LASRdataframereader::process(LAS*& las)
+bool LASRdataframereader::process(PointCloud*& las)
 {
-  if (las != nullptr) { delete las; las = nullptr; }
-  if (las == nullptr) las = new LAS(&lasheader);
+  streaming = false;
 
-  LASpoint* p = nullptr;
+  if (las != nullptr)
+  {
+    delete las;
+    las = nullptr;
+  }
+
+  if (las == nullptr)
+    las = new PointCloud(header);
+
+  Point* p = nullptr;
   while (process(p))
   {
     if (p == nullptr) break;
     las->add_point(*p);
   }
+
+  if (verbose) print("Building a spatial index\n");
+  las->update_header();
+
   return true;
+}
+
+void LASRdataframereader::clear(bool)
+{
+  // Called at the end of the pipeline. We can delete the header
+  if (streaming && header)
+  {
+    delete header;
+    header = nullptr;
+  }
 }
 
 double LASRdataframereader::guess_accuracy(SEXP x) const
