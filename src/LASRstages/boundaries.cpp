@@ -5,6 +5,10 @@
 #include <unordered_map>
 #include <algorithm>
 
+#include <iostream>
+
+#include "ogrsf_frmts.h"
+
 bool LASRboundaries::set_parameters(const nlohmann::json& stage)
 {
   vector = Vector(xmin, ymin, xmax, ymax);
@@ -51,44 +55,95 @@ bool LASRboundaries::process(PointCloud*& las)
     return false; // # nocov
   }
 
+  // Get the contour of the triangulation
   std::vector<Edge> edges;
-  std::unordered_map<PointXY, PointXY> unordered_contour;
-
   p->contour(edges);
 
-  for (const auto& v : edges)
-  {
-    unordered_contour.insert({v.A, v.B});
+  // Collect edges into OGRLineString and put in OGRGeometryCollection
+  OGRGeometryCollection gc;
+  for (const auto& e : edges) {
+    OGRLineString ls;
+    ls.addPoint(e.A.x, e.A.y);
+    ls.addPoint(e.B.x, e.B.y);
+    gc.addGeometry(&ls);
   }
 
-  edges.clear();
-  edges.shrink_to_fit();
+  OGRGeometry* polys = gc.Polygonize();
 
-  while (!unordered_contour.empty())
+  if (!polys)
   {
-    PointXY p;
-    PolygonXY ordered_contour;
+    last_error = "Polygonize failed";
+    return false;
+  }
 
-    auto it = unordered_contour.cbegin();
+  if (wkbFlatten(polys->getGeometryType()) != wkbGeometryCollection)
+  {
+    last_error = "Polygonize returned unexpected geometry type";
+    OGRGeometryFactory::destroyGeometry(polys);
+    return false;
+  }
 
-    do
+  contour.clear();
+
+  OGRGeometryCollection* ogc = polys->toGeometryCollection();
+  for (int i = 0; i < ogc->getNumGeometries(); ++i)
+  {
+    OGRGeometry* geom = ogc->getGeometryRef(i);
+    if (!geom) continue;
+
+    if (wkbFlatten(geom->getGeometryType()) == wkbPolygon)
     {
-      ordered_contour.push_back(it->first);
-      p = it->second;
-      unordered_contour.erase(it);
-      it = unordered_contour.find(p);
+      OGRPolygon* ogrPoly = geom->toPolygon();
 
-    } while(it != unordered_contour.end());
+      OGRLinearRing* exterior = ogrPoly->getExteriorRing();
+      if (!exterior) continue;
 
-    ordered_contour.close();
+      std::vector<PointXY> coords;
+      int n = exterior->getNumPoints();
+      for (int j = 0 ; j < n ; j++)
+        coords.emplace_back(PointXY{exterior->getX(j), exterior->getY(j)});
 
-    contour.push_back(ordered_contour);
+      PolygonXY poly(coords);
+      contour.push_back(poly);
+    }
   }
 
-  // Sort the vector using is_clockwise such as the outer ring comes first to we spec compliant
-  std::sort(contour.begin(), contour.end(), [](const PolygonXY& a, const PolygonXY& b) {
-    return a.is_clockwise() < b.is_clockwise();
-  });
+  std::vector<bool> is_hole(contour.size(), false);
+
+  // First pass: determine which polygons are holes
+  for (size_t i = 0; i < contour.size(); i++)
+  {
+    for (size_t j = 0; j < contour.size(); j++)
+    {
+      if (i == j) continue;
+
+      if (contour[j].contains(contour[i]))
+      {
+        is_hole[i] = true;
+        break;
+      }
+    }
+  }
+
+  // Second pass: set orientation based on hole status
+  for (size_t i = 0; i < contour.size(); ++i)
+  {
+    if (is_hole[i])
+      contour[i].make_clockwise();
+    else
+      contour[i].make_counterclockwise();
+  }
+
+  // Third pass: move outer ring (first non-hole) to the front
+  for (size_t i = 0; i < contour.size(); ++i)
+  {
+    if (!is_hole[i])
+    {
+      if (i != 0)
+        std::swap(contour[0], contour[i]);
+      break;
+    }
+  }
 
   return true;
 }

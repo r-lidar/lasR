@@ -1,3 +1,5 @@
+#include <random>
+
 #include "triangulate.h"
 #include "Raster.h"
 #include "Shape.h"
@@ -38,13 +40,22 @@ bool LASRtriangulate::process(PointCloud*& las)
 
   std::vector<double> coords;
 
+  // Add an angstrom of noise to fix #217
+  // Honnextly I don't now why.
+  std::default_random_engine gen(std::random_device{}());
+  std::normal_distribution<double> noise(0.0, 1e-10);
+
+  // For numerical stability
+  double xoffset = (las->header->min_x+las->header->max_x)/2;
+  double yoffset = (las->header->min_y+las->header->max_y)/2;
+
   Point* p;
   while (las->read_point())
   {
     p = &las->point;
     if (pointfilter.filter(p)) continue;
-    coords.push_back(p->get_x());
-    coords.push_back(p->get_y());
+    coords.push_back(p->get_x() - xoffset + noise(gen));
+    coords.push_back(p->get_y() - yoffset + noise(gen));
     index_map.push_back(las->current_point);
     npoints++;
   }
@@ -52,7 +63,16 @@ bool LASRtriangulate::process(PointCloud*& las)
   // Other stage that use the triangulation should handle d == nullptr
   if (coords.size() < 6) return true;
 
-  d = new delaunator::Delaunator(coords);
+  try
+  {
+    d = new delaunator::Delaunator(coords);
+  }
+  catch(const std::exception& e)
+  {
+    last_error = std::string("In delaunator: ") + e.what();
+    progress->done();
+    return false;
+  }
 
   progress->done();
 
