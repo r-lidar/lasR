@@ -18,13 +18,13 @@ LASRpdt::LASRpdt()
 
 bool LASRpdt::set_parameters(const nlohmann::json& stage)
 {
-  max_iteration_distance = stage.value("distance", 1);
-  max_iteration_angle = stage.value("angle", 15);
-  seed_resolution_search = stage.value("res", 50);
+  this->max_iteration_distance = stage.value("distance", 1);
+  this->max_iteration_angle = stage.value("angle", 15);
+  this->seed_resolution_search = stage.value("res", 50);
   double min_size = stage.value("min_size", 0.1);
-  min_triangle_size = min_size*min_size;
-  offset = stage.value("offset", 0.05);
-  classification = stage.value("class", 2);
+  this->min_triangle_size = min_size*min_size;
+  this->offset = stage.value("offset", 0.05);
+  this->classification = stage.value("class", 2);
 
   return true;
 }
@@ -32,16 +32,27 @@ bool LASRpdt::set_parameters(const nlohmann::json& stage)
 bool LASRpdt::process(PointCloud*& las)
 {
   this->las = las;
+  this->x_offset = las->header->min_x;
+  this->y_offset = las->header->min_y;
+  this->z_offset = las->header->min_z;
 
-  double xmin = las->header->min_x;
-  double ymin = las->header->min_y;
-  double zmin = las->header->min_z;
-  double inf  = std::numeric_limits<double>::max();
+  size_t n = las->npoints;
 
+  // Used to discard candidate points quickly and save computationally demanding tests
   Raster dtm(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 1);
 
-  // Use to retain if a point is already part of the triangulation
-  std::vector<bool> inserted(las->npoints, false);
+  // Used to retain if a point is already part of the triangulation
+  std::vector<bool> inserted(n, false);
+
+  if (verbose) print("Sorting points:\n");
+
+  // Records Z to sort index by Z in order to loop from lowest to highest
+  std::vector<float> height; height.reserve(n);
+  std::vector<unsigned int> index(n);
+  std::iota(index.begin(), index.end(), 0);
+  while (las->read_point()) height.push_back(las->point.get_z());
+  std::sort(index.begin(), index.end(), [&height](unsigned int i1, unsigned int i2) { return height[i1] < height[i2]; });
+  height.clear(); height.shrink_to_fit();
 
   Profiler prof;
   prof.tic();
@@ -60,7 +71,7 @@ bool LASRpdt::process(PointCloud*& las)
   Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, seed_resolution_search);
   std::vector<PointLAS> seeds;
   seeds.resize(grid.get_ncells());
-  for (auto& seed : seeds) seed.z = inf;
+  for (auto& seed : seeds) seed.z =  std::numeric_limits<double>::max();
 
   int counter = 0;
   while (las->read_point())
@@ -73,7 +84,7 @@ bool LASRpdt::process(PointCloud*& las)
     double y = las->point.get_y();
     double z = las->point.get_z();
     unsigned int id = las->current_point;
-    int cell = grid.cell_from_xy(x,y);
+    int cell = grid.cell_from_xy(x, y);
 
     PointLAS& p = seeds[cell];
     if (z < p.z)
@@ -98,9 +109,8 @@ bool LASRpdt::process(PointCloud*& las)
   // Sort descending to insert higher seeds first in order to reduce the chance to insert a low outlier first
   std::sort(seeds.begin(), seeds.end(), [](const PointXYZ& a, const PointXYZ& b) { return a.z > b.z; });
 
-  double zmean = 0.0f;
-  for (const auto& point : seeds) zmean += point.z;
-  zmean /= (double)seeds.size();
+  // In the triangulation the 4 first default points at infinity need a Z value. We will use mean z of seeds
+  z_default = std::accumulate(seeds.begin(), seeds.end(), 0.0, [](double sum, const PointXYZ& p) { return sum + p.z; }) / seeds.size();
 
   // ============================
   // Triangulate the seed points
@@ -112,7 +122,6 @@ bool LASRpdt::process(PointCloud*& las)
   // to get rid of low outliers.
   // ---------------------------------------------------------
 
-  // By default the triangulation has 4 points defining a bbox at +/- 1e8
   d = new Triangulation();
 
   int count = 0;
@@ -122,94 +131,34 @@ bool LASRpdt::process(PointCloud*& las)
   for (auto& seed : seeds)
   {
     // Reoffset to fit in the bounding box of the triangulation which is +/- 1e8
-    Vec2 pt(seed.x-xmin, seed.y-ymin);
+    Vec2 pt(seed.x - x_offset, seed.y - y_offset);
 
     // Find in which triangle to insert the point
     tri_index = d->findContainerTriangle(pt, tri_index);
-
-    // The point has already been inserted, it is a point of the triangulation
     if (tri_index < 0) continue;
 
-    // Find the index of the vertices
-    int idA = d->triangles[tri_index].v[0];
-    int idB = d->triangles[tri_index].v[1];
-    int idC = d->triangles[tri_index].v[2];
+    // Retrieve the vertices of the triangle
+    TriangleXYZ triangle = get_triangle(tri_index);
 
-    // The index may map one of the 4 additional points that are not actually in the point cloud and
-    // that serve as bounding box. Otherwise retrieve the coordinates in the point cloud.
-    auto query_coordinates = [&](int id, PointXYZ& p)
-    {
-      if (id < 4)
-      {
-        p.x = d->vertices[id].pos.x + xmin;
-        p.y = d->vertices[id].pos.y + ymin;
-        p.z = zmean;
-      }
-      else
-      {
-        Point tmp;
-        tmp.set_schema(&las->header->schema);
-        las->get_point(index_map[id-4], &tmp);
-        p.x = tmp.get_x();
-        p.y = tmp.get_y();
-        p.z = tmp.get_z();
-      }
-    };
-
-    PointXYZ A,B,C;
-    query_coordinates(idA, A);
-    query_coordinates(idB, B);
-    query_coordinates(idC, C);
-
-    // This is the triangle in which we are supposed to insert the point
-    TriangleXYZ triangle(A,B,C);
-
-    // If the triangle is < x cm, stop subdividing. This is computationally demanding for no
-    // significant improvement
+    // Skip too small triangles. Small triangle are freezed and cannot be subdivided.
     if (triangle.square_max_edge_size() < min_triangle_size) continue;
 
-    // Compute the normal
-    PointXYZ n = triangle.normal();
-
-    // Angle of the triangle in degrees
-    double triangle_angle = std::acos(n.z) * (180.0 / M_PI);
-
-    // Calculate the perpendicular projection of seed onto the triangle
-    // and the distance d from seed to the Projection (figure 3 in Axelsson's paper)
-    PointXYZ v = seed - A;
-    double dist_d = v.dot(n);
-    PointXYZ P_proj = seed - n * dist_d;
-    dist_d = std::abs(dist_d);
-
-    if (!triangle.contains(P_proj)) continue;
-
-    // Calculate the distances from seed to the three vertices of the triangle
-    double dist_P0 = seed.distance(triangle.A);
-    double dist_P1 = seed.distance(triangle.B);
-    double dist_P2 = seed.distance(triangle.C);
-
-    // Convert the angles to radians
-    // (figure 3 in Axelsson's paper)
-    double alpha = asin(dist_d / dist_P0) * 180.0f/M_PI;
-    double beta  = asin(dist_d / dist_P1) * 180.0f/M_PI;
-    double gamma = asin(dist_d / dist_P2) * 180.0f/M_PI;
-    alpha = std::abs(alpha);
-    beta  = std::abs(beta);
-    gamma = std::abs(gamma);
-
-    double angle = MAX3(alpha, beta, gamma);
+    double dist_d, angle;
+    if (!axelsson_metrics(seed, triangle, dist_d, angle)) continue;
 
     // Check if the angles and distance meet the threshold criteria
-    if (d->delaunayInsertion(pt, tri_index))
-    {
-      index_map.push_back(seed.FID);
-      inserted[seed.FID] = true;
-      count++;
-    }
+    //if (angle < max_iteration_angle && dist_d < max_iteration_distance)
+    //{
+      if (d->delaunayInsertion(pt, tri_index))
+      {
+        index_map.push_back(seed.FID);
+        inserted[seed.FID] = true;
+        count++;
+      }
+    //}
   }
 
   prof.toc();
-
   if (verbose) print("  Iteration 0: adding %d seeds to the ground took %.2f secs\n", count, prof.elapsed());
 
   interpolate(&dtm);
@@ -221,9 +170,9 @@ bool LASRpdt::process(PointCloud*& las)
   if (verbose) print("Progressive TIN densification:\n");
 
   prof.tic();
-
   std::chrono::duration<double> total_search_time(0);
 
+  // We loop while we are adding new triangles
   do
   {
     progress->reset();
@@ -236,138 +185,73 @@ bool LASRpdt::process(PointCloud*& las)
 
     iteration++;
     count = 0;
-
-    Point* p;
     tri_index = -1;
+
+    // Process all the points
     while (las->read_point())
     {
-      p = &las->point;
+      unsigned int id = las->current_point;
 
       (*progress)++;
       progress->show();
 
+      // This point has already been inserted in the triangulation. Skip next computations
+      if (inserted[id]) continue;
+
       if (pointfilter.filter(&las->point)) continue;
 
-      if (inserted[las->current_point]) continue;
-
-      // Coordinates of the current point
-      PointXYZ P(p->get_x(), p->get_y(), p->get_z());
-      Vec2 pt(P.x-xmin, P.y-ymin);
+      PointXYZ P(las->point.get_x(), las->point.get_y(), las->point.get_z());
+      Vec2 pt(P.x - x_offset, P.y - y_offset);
 
       // We have a rough dtm. Check the DTM elevation. If we are significantly
       // higher than the DTM we can save computation time by skipping the search
       // in the triangulation. Anyway this point won't be added.
       double zdtm = dtm.get_value(P.x, P.y);
-      if (zdtm != dtm.get_nodata() && std::abs(zdtm - P.z) > 3*max_iteration_distance)
+      if (zdtm != dtm.get_nodata() && std::abs(zdtm - P.z) > 3 * max_iteration_distance)
         continue;
 
-      // Find the index of the triangle in which this point lies
+      // Search the triangle where to insert. Benchmarking search time for later speed improvement
       auto start_time = std::chrono::high_resolution_clock::now();
       tri_index = d->findContainerTriangle(pt, tri_index);
       auto end_time = std::chrono::high_resolution_clock::now();
       total_search_time += end_time - start_time;
-
-      // The point has already been inserted, it is a point of the triangulation
       if (tri_index < 0) continue;
 
-      // Find the index of the vertices
-      int idA = d->triangles[tri_index].v[0];
-      int idB = d->triangles[tri_index].v[1];
-      int idC = d->triangles[tri_index].v[2];
+      TriangleXYZ triangle = get_triangle(tri_index);
 
-      // The index may map one of the 4 additional points that are not actually in the point cloud and
-      // that serve as bounding box. Otherwise retrieve the coordinates in the point cloud.
-      auto query_coordinates = [&](int id, PointXYZ& p)
-      {
-        if (id < 4)
-        {
-          p.x = d->vertices[id].pos.x + xmin;
-          p.y = d->vertices[id].pos.y + ymin;
-          p.z = zmean;
-        }
-        else
-        {
-          Point tmp;
-          tmp.set_schema(&las->header->schema);
-          las->get_point(index_map[id-4], &tmp);
-          p.x = tmp.get_x();
-          p.y = tmp.get_y();
-          p.z = tmp.get_z();
-        }
-      };
-
-      PointLAS A,B,C;
-      query_coordinates(idA, A);
-      query_coordinates(idB, B);
-      query_coordinates(idC, C);
-
-      // This is the triangle in which we are supposed to insert the point
-      TriangleXYZ triangle(A,B,C);
-      //triangle.make_clock_wise();
-
-      // If the triangle is < x cm, stop subdividing. This is computationally demanding for no
-      // significant improvement
+      // Skip too small triangles. Small triangle are frozen and cannot be subdivided.
       if (triangle.square_max_edge_size() < min_triangle_size) continue;
 
-      // Compute the normal
-      PointXYZ n = triangle.normal();
+      double dist_d, angle;
+      if (!axelsson_metrics(P, triangle, dist_d, angle)) continue;
 
-      // Angle of the triangle in degrees
-      double triangle_angle = std::acos(n.z) * (180.0 / M_PI);
-
-      // Calculate the perpendicular projection of P onto the triangle
-      // and th distance d from P to the Projection (figure 3 in Axelsson's paper)
-      PointXYZ v = P - A;
-      double dist_d = v.dot(n);
-      PointXYZ P_proj = P - n * dist_d;
-      dist_d = std::abs(dist_d);
-
-      if (!triangle.contains(P_proj)) continue;
-
-      // Calculate the distances from P to the three vertices of the triangle
-      double dist_P0 = P.distance(triangle.A);
-      double dist_P1 = P.distance(triangle.B);
-      double dist_P2 = P.distance(triangle.C);
-
-      // Convert the angles to radians
-      // (figure 3 in Axelsson's paper)
-      double alpha = asin(dist_d / dist_P0) * 180.0f/M_PI;
-      double beta  = asin(dist_d / dist_P1) * 180.0f/M_PI;
-      double gamma = asin(dist_d / dist_P2) * 180.0f/M_PI;
-      alpha = std::abs(alpha);
-      beta = std::abs(beta);
-      gamma = std::abs(gamma);
-
-      double angle = MAX3(alpha, beta, gamma);
-
-      // Check if the angles and distance meet the threshold criteria
       if (angle < max_iteration_angle && dist_d < max_iteration_distance)
       {
-        if (d->delaunayInsertion(Vec2(P.x-xmin, P.y-ymin), tri_index))
+        if (d->delaunayInsertion(pt, tri_index))
         {
-          index_map.push_back(las->current_point);
-          inserted[las->current_point] = true;
+          index_map.push_back(id);
+          inserted[id] = true;
           count++;
         }
       }
 
-      progress->update(las->current_point);
-      progress->show();
+      progress->update(id);
     }
 
     prof2.toc();
+    float perc = (double)count / (double)d->vcount;
+    if (verbose)
+      print("  Iteration %d: adding %d points (+%.1f%%) to the ground took %.2f secs\n", iteration, count, perc * 100, prof2.elapsed());
 
-    float perc = (double)count/(double)d->vcount;
-    if (verbose) print("  Iteration %d: adding %d points (+%.1f\%) to the ground took %.2f secs\n", iteration, count, perc*100, prof2.elapsed());
-
-    if (perc < 1.0f/1000.0f) break;
+    // We actually stop the loop when < 0.1% additions
+    if (perc < 1.0f / 1000.0f) break;
 
     interpolate(&dtm);
 
-  } while(count > 0);
+  } while (count > 0);
 
   prof.toc();
-  if (verbose) print("Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(),  total_search_time.count());
+  if (verbose) print("Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(), total_search_time.count());
 
   progress->done();
 
@@ -380,16 +264,14 @@ bool LASRpdt::process(PointCloud*& las)
   while (las->read_point())
   {
     if (get_and_set_classification(&las->point) == classification)
-    {
       get_and_set_classification(&las->point, 1);
-    }
   }
 
   // =====================================
   // Classify ground points
   // =====================================
 
-  for (unsigned int i = 0 ; i < d->tcount; i++)
+  for (unsigned int i = 0; i < d->tcount; i++)
   {
     int idA = d->triangles[i].v[0] - 4;
     int idB = d->triangles[i].v[1] - 4;
@@ -421,11 +303,70 @@ bool LASRpdt::process(PointCloud*& las)
   {
     double zdtm = dtm.get_value(las->point.get_x(), las->point.get_y());
     if (zdtm != dtm.get_nodata() && std::abs(zdtm - las->point.get_z()) <= offset)
-    {
       get_and_set_classification(&las->point, classification);
-    }
   }
 
+  return true;
+}
+
+// ===========================
+// Helper methods
+// ===========================
+
+TriangleXYZ LASRpdt::get_triangle(int tri_index)
+{
+  int idA = d->triangles[tri_index].v[0];
+  int idB = d->triangles[tri_index].v[1];
+  int idC = d->triangles[tri_index].v[2];
+
+  PointXYZ A, B, C;
+  query_coordinates(idA, A);
+  query_coordinates(idB, B);
+  query_coordinates(idC, C);
+
+  return TriangleXYZ(A, B, C);
+}
+
+void LASRpdt::query_coordinates(int id, PointXYZ& p)
+{
+  if (id < 4)
+  {
+    p.x = d->vertices[id].pos.x + x_offset;
+    p.y = d->vertices[id].pos.y + y_offset;
+    p.z = z_default;
+  }
+  else
+  {
+    Point tmp;
+    tmp.set_schema(&las->header->schema);
+    las->get_point(index_map[id - 4], &tmp);
+    p.x = tmp.get_x();
+    p.y = tmp.get_y();
+    p.z = tmp.get_z();
+  }
+}
+
+bool LASRpdt::axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle)
+{
+  PointXYZ A = triangle.A;
+  PointXYZ n = triangle.normal();
+
+  // Projection and distance
+  PointXYZ v = P - A;
+  dist_d = std::abs(v.dot(n));
+  PointXYZ P_proj = P - n * v.dot(n);
+  if (!triangle.contains(P_proj)) return false;
+
+  // Distances to vertices
+  double dist_P0 = P.distance(triangle.A);
+  double dist_P1 = P.distance(triangle.B);
+  double dist_P2 = P.distance(triangle.C);
+
+  double alpha = std::abs(asin(dist_d / dist_P0) * 180.0 / M_PI);
+  double beta  = std::abs(asin(dist_d / dist_P1) * 180.0 / M_PI);
+  double gamma = std::abs(asin(dist_d / dist_P2) * 180.0 / M_PI);
+
+  angle = MAX3(alpha, beta, gamma);
   return true;
 }
 

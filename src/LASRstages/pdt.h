@@ -23,6 +23,10 @@ public:
   LASRpdt* clone() const override { return new LASRpdt(*this); };
 
 private:
+  TriangleXYZ get_triangle(int tri_index);
+  void query_coordinates(int id, PointXYZ& p);
+  bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle);
+
   void interpolate(Raster* r) const;
   //void interpolate(std::vector<double>& x) const;
 
@@ -33,9 +37,15 @@ private:
   double max_iteration_distance;
   double min_triangle_size;
   double offset;
+
+  double x_offset;
+  double y_offset;
+  double z_offset;
+  double z_default;
+
   int classification;
 
-  std::vector<int> index_map;
+  std::vector<unsigned int> index_map;
   Triangulation* d;
   PointCloud* las;
 };
