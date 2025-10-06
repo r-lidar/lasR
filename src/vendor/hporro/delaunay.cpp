@@ -5,6 +5,41 @@
 #include <algorithm>
 #include <cmath>
 
+// --- temporary global stats ---
+#include <iostream>
+static long long g_query_count = 0;
+static double g_sum_iter = 0.0;
+static double g_sum2_iter = 0.0;
+static int g_min_iter = std::numeric_limits<int>::max();
+static int g_max_iter = 0;
+static const long long g_report_interval = 1000000;
+
+// Function to print and reset stats
+static void reportStats()
+{
+  if (g_query_count == 0) return;
+
+  double mean = g_sum_iter / g_query_count;
+  double variance = (g_sum2_iter / g_query_count) - mean * mean;
+  double stddev = std::sqrt(std::max(0.0, variance));
+
+  std::cout << "[Triangulation Stats] "
+            << g_query_count << " queries  "
+            << "iter(min/mean/max/std) = "
+            << g_min_iter << " / "
+            << mean << " / "
+            << g_max_iter << " / "
+            << stddev << std::endl;
+
+  // reset
+  g_query_count = 0;
+  g_sum_iter = 0.0;
+  g_sum2_iter = 0.0;
+  g_min_iter = std::numeric_limits<int>::max();
+  g_max_iter = 0;
+}
+// ------------------------------
+
 static bool initialized = false;
 
 #ifndef MAX3
@@ -123,17 +158,41 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
 {
   int iteration = 0;
 
+  // Overallocate to reduce future reallocations
+  if ((int)visited.capacity() < tcount)
+    visited.reserve(tcount * 2);
+
+  if ((int)visited.size() < tcount)
+    visited.resize(tcount, 0);
+
+  // Increment visit tag (reset only if overflow)
+  if (++visit_tag == 0)
+  {
+    // Handle integer overflow (wraparound): clear vector
+    std::fill(visited.begin(), visited.end(), 0);
+    visit_tag = 1;
+  }
+
   // If the initial triangle index is invalid, start with the last triangle
   if (prop < 0 || prop >= tcount) prop = tcount - 1;
 
   // Initialize the current triangle index
   int t = prop;
-  visited.resize(tcount);
-  std::fill(visited.begin(), visited.end(), false);
 
   // Continue searching until we either find the triangle or exhaust neighbors
   while (true)
   {
+    // --- update statistics ---
+    g_query_count++;
+    g_sum_iter += iteration;
+    g_sum2_iter += double(iteration) * iteration;
+    if (iteration < g_min_iter) g_min_iter = iteration;
+    if (iteration > g_max_iter) g_max_iter = iteration;
+
+    if (g_query_count >= g_report_interval)
+      reportStats();
+    // ------------------------
+
     iteration++;
 
     // Check if the point is inside the current triangle or on its edge
@@ -153,7 +212,7 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
       if (f == -1) continue;
 
       // Skip if the neighbor has already been visited
-      if (visited[f]) continue;
+      if (visited[f] == visit_tag) continue; // already visited
 
       // Get the vertices of the edge opposite to the neighbor
       Vec2 a = vertices[triangles[t].v[(i + 1) % 3]].pos;
@@ -164,7 +223,7 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
           (orient2d(&a.x, &b.x, &p.x) * orient2d(&a.x, &b.x, &v.x) < 0))
       {
         // Mark current triangle as visited
-        visited[t] = true;
+        visited[t] = visit_tag;
 
         // If the point is likely in the neighbor, update the current triangle and continue
         t = f;
