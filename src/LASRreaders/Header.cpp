@@ -35,7 +35,7 @@ Header::Header()
   number_of_point_records = 0;
   schema = AttributeSchema();
 
-#ifndef NOGDAL
+#ifdef USING_GDAL
   crs = CRS();
 #endif
 }
@@ -56,7 +56,7 @@ void Header::dump() const
   print("Number of Point Records: %" PRIu64 "\n", number_of_point_records);
   schema.dump(true);
 
-#ifndef NOGDAL
+#ifdef USING_GDAL
   crs.dump();
 #endif
 }
@@ -103,7 +103,7 @@ std::pair<unsigned short, unsigned short> Header::gpstime_date() const
 
 void Header::set_crs(int epsg)
 {
-#ifndef NOGDAL
+#ifdef USING_GDAL
   crs = CRS(epsg);
 #else
   this->epsg = epsg;
@@ -112,7 +112,7 @@ void Header::set_crs(int epsg)
 
 void Header::set_crs(const std::string& wkt)
 {
-#ifndef NOGDAL
+#ifdef USING_GDAL
   crs = CRS(wkt);
 #else
   this->wkt = wkt;
@@ -121,7 +121,7 @@ void Header::set_crs(const std::string& wkt)
 
 std::string Header::get_wkt() const
 {
-#ifndef NOGDAL
+#ifdef USING_GDAL
   return(crs.get_wkt());
 #else
   return(wkt);
