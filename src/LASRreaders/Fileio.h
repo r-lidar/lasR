@@ -14,10 +14,10 @@ public:
   Fileio() : progress(nullptr) {}
   Fileio(Progress* p) : progress(p) {}
   virtual ~Fileio() = default;
-  virtual bool open(const std::string& file) = 0;
-  virtual bool create(const std::string& file) = 0;
-  virtual bool populate_header(Header* header, bool read_first_point = false) = 0;
-  virtual bool init(const Header* header) = 0;
+  virtual void open(const std::string& file) = 0;
+  virtual void create(const std::string& file) = 0;
+  virtual void populate_header(Header* header, bool read_first_point = false) = 0;
+  virtual void init(const Header* header) = 0;
   virtual bool read_point(Point* p) = 0;
   virtual bool write_point(Point* p) = 0;
   virtual bool is_opened() = 0;

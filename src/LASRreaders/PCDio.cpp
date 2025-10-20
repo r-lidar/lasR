@@ -32,63 +32,46 @@ PCDio::~PCDio()
   close();
 }
 
-bool PCDio::query(const std::vector<std::string>& main_files, const std::vector<std::string>& neighbour_files, double xmin, double ymin, double xmax, double ymax, double buffer, bool circle, std::vector<std::string> filters)
+void PCDio::query(const std::vector<std::string>& main_files,
+                  const std::vector<std::string>& neighbour_files,
+                  double xmin, double ymin, double xmax, double ymax,
+                  double buffer, bool circle,
+                  std::vector<std::string> filters)
 {
   if (ostream.is_open())
-  {
-    last_error = "Internal error. This interface has been created as a writer";
-    return false;
-  }
+    throw std::logic_error("Internal error: This interface has been created as a writer");
 
   if (main_files.size() > 1)
-  {
-    last_error = "PCD file reader cannot read multiple PCD files yet";
-    return false;
-  }
+    throw std::invalid_argument("PCD file reader cannot read multiple PCD files yet");
 
-  if (neighbour_files.size() > 0)
-  {
-    last_error = "PCD file reader cannot read buffered PCD files yet";
-    return false;
-  }
+  if (!neighbour_files.empty())
+    throw std::invalid_argument("PCD file reader cannot read buffered PCD files yet");
 
-  if ((filters.size() == 1 && filters[0] != "") || filters.size() > 1)
-  {
-    //for (auto f :filters) print("%s\n", f.c_str());
-    last_error = "filters are not enabled for PCD files yet.";
-    return false;
-  }
+  if ((filters.size() == 1 && !filters[0].empty()) || filters.size() > 1)
+    throw std::invalid_argument("Filters are not enabled for PCD files yet.");
 
-  return open(main_files[0]);
+  open(main_files[0]);
 }
 
-bool PCDio::open(const std::string& file)
+void PCDio::open(const std::string& file)
 {
   if (header != nullptr)
-  {
-    last_error = "Internal error. Header already initialized."; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error: header already initialized");
 
   if (ostream.is_open())
-  {
-    last_error = "Internal error. This interface has been created as a writer"; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error: this interface was created as a writer");
 
   this->file = file;
   istream.open(file, std::ios::binary);
 
-  return true;
+  if (!istream.is_open())
+    throw std::runtime_error("Failed to open PCD file: " + file);
 }
 
-bool PCDio::populate_header(Header* header, bool read_first_point)
+void PCDio::populate_header(Header* header, bool read_first_point)
 {
   if (!istream.is_open())
-  {
-    last_error = "Internal error. PCDreader not initialized."; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error. PCDreader not initialized."); // # nocov
 
   std::string line;
 
@@ -181,16 +164,12 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
     }
     else
     {
-      last_error = "Unknown header key: " + key;
-      return false;
+      throw std::runtime_error("Unknown header key: " + key);
     }
   }
 
   if (data != "ascii" && data != "binary")
-  {
-    last_error = "Unsupported data format: " + data;
-    return false;
-  }
+    throw std::runtime_error("Unsupported data format: " + data);
 
   if (data == "binary")
   {
@@ -203,28 +182,16 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
   }
 
   if (fields.size() < 3)
-  {
-    last_error = "The files must have at least 3 fields";
-    return false;
-  }
+    throw std::runtime_error("The files must have at least 3 fields");
 
   if (fields[0] != "x" && fields[0] != "X")
-  {
-    last_error = "The first field must be 'x' or 'X' not '" + fields[0] + "'";
-    return false;
-  }
+    throw std::runtime_error("The first field must be 'x' or 'X' not '" + fields[0] + "'");
 
   if (fields[1] != "y" && fields[1] != "Y")
-  {
-    last_error = "The second field must be 'y' or 'Y' not '" + fields[1] + "'";
-    return false;
-  }
+    throw std::runtime_error("The second field must be 'y' or 'Y' not '" + fields[1] + "'");
 
   if (fields[2] != "z" && fields[2] != "Z")
-  {
-    last_error = "The third field must be 'z' or 'Z' not '" + fields[2] + "'";
-    return false;
-  }
+    throw std::runtime_error("The third field must be 'z' or 'Z' not '" + fields[2] + "'");
 
   Attribute attrf("flags", AttributeType::INT8, 1, 0, "Internal 8-bit mask reserved lasR core engine");
   header->add_attribute(attrf);
@@ -257,8 +224,7 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
       type = AttributeType::DOUBLE;
     else
     {
-      last_error = "Unsupported data type " + data_types[i] + std::to_string(data_sizes[i]);
-      return false;
+      throw std::runtime_error("Unsupported data type " + data_types[i] + std::to_string(data_sizes[i]));
     }
 
     Attribute attr(name, type);
@@ -304,8 +270,6 @@ bool PCDio::populate_header(Header* header, bool read_first_point)
     write_bbox(header, bbox_filename);
     npoints = 0;
   }
-
-  return true;
 }
 
 bool PCDio::read_point(Point* p)
@@ -330,8 +294,8 @@ bool PCDio::read_ascii_point(Point* p)
   std::string line;
   if (!std::getline(istream, line))
   {
-    last_error = "Fail to read line";
-    return false;
+    if (istream.eof()) return false;
+    throw std::runtime_error("I/O error while reading line in PCD file");
   }
 
   std::istringstream iss(line);
@@ -341,10 +305,7 @@ bool PCDio::read_ascii_point(Point* p)
   while (iss >> num) numbers.push_back(num);
 
   if (numbers.size() != header->schema.attributes.size()-1)
-  {
-    last_error = "Invalid number of attribute in line " + line;
-    return false;
-  }
+    throw std::runtime_error("Invalid number of attribute in line " + line);
 
   for (int i = 1; i < header->schema.num_attributes(); ++i)
   {
@@ -364,7 +325,7 @@ bool PCDio::read_ascii_point(Point* p)
       case AttributeType::UINT16:  *reinterpret_cast<uint16_t*>(dest)= static_cast<uint16_t>(value); break;
       case AttributeType::UINT32:  *reinterpret_cast<uint32_t*>(dest)= static_cast<uint32_t>(value); break;
       case AttributeType::UINT64:  *reinterpret_cast<uint64_t*>(dest)= static_cast<uint64_t>(value); break;
-      default: last_error = "Unsupported attribute type"; return false;
+      default: throw std::runtime_error("Unsupported attribute type");
     }
   }
 
@@ -520,10 +481,7 @@ bool PCDio::write_bbox(const Header* header, const std::string &bbox_filename)
 {
   std::ofstream bbox_out(bbox_filename, std::ios::binary);
   if (!bbox_out.is_open())
-  {
-    last_error = "Failed to open bbox file for writing.\n";
-    return false;
-  }
+    throw std::runtime_error("Failed to open bbox file for writing.");
 
   // Write ASCII format
   bbox_out << std::setprecision(4) << header->min_x << " " << header->min_y << " " << header->min_z << " " << header->max_x << " " << header->max_y << " " << header->max_z << std::endl;
@@ -557,10 +515,7 @@ bool PCDio::read_bbox(const std::string &bbox_filename, Header* header)
   }
 
   if (bbox_file.eof())
-  {
-    last_error = "BINARY marker not found in bbox file.\n";
-    return false;
-  }
+    throw std::runtime_error("BINARY marker not found in bbox file.");
 
   // Read binary data
   bbox_file.read(reinterpret_cast<char*>(&header->min_x), sizeof(header->min_x));
@@ -579,13 +534,10 @@ void PCDio::reset_accessor()
 
 }
 
-bool PCDio::create(const std::string& file)
+void PCDio::create(const std::string& file)
 {
   if (istream.is_open())
-  {
-    last_error = "This PCDio instance is configured for reading, not writing.";
-    return false;
-  }
+    throw std::runtime_error("This PCDio instance is configured for reading, not writing.");
 
   this->file = file;
 
@@ -595,10 +547,7 @@ bool PCDio::create(const std::string& file)
     ostream.open(file);
 
   if (!ostream.is_open())
-  {
-    last_error = "Failed to open file for writing: " + file;
-    return false;
-  }
+    throw std::runtime_error("Failed to open file for writing: " + file);
 
   const AttributeSchema& schema = header->schema;
 
@@ -659,15 +608,12 @@ bool PCDio::create(const std::string& file)
     write = &PCDio::write_ascii_point;
 
   npoints = 0;
-
-  return true;
 }
 
 
-bool PCDio::init(const Header* header)
+void PCDio::init(const Header* header)
 {
   this->header = header;
-  return true;
 }
 
 char PCDio::attribute_type_code(AttributeType type)

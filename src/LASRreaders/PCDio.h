@@ -19,10 +19,10 @@ public:
   PCDio();
   PCDio(Progress*);
   ~PCDio();
-  bool open(const std::string& file) override;
-  bool create(const std::string& file) override;
-  bool populate_header(Header* header, bool read_first_point = false) override;
-  bool init(const Header* header) override;
+  void open(const std::string& file) override;
+  void create(const std::string& file) override;
+  void populate_header(Header* header, bool read_first_point = false) override;
+  void init(const Header* header) override;
   bool read_point(Point* p) override;
   bool write_point(Point* p) override;
   bool is_opened() override;
@@ -32,14 +32,10 @@ public:
   int64_t p_count() override;
 
   // For lasr library only.
-  bool query(const std::vector<std::string>& main_files,
+  void query(const std::vector<std::string>& main_files,
              const std::vector<std::string>& neighbour_files,
-             double xmin,
-             double ymin,
-             double xmax,
-             double ymax,
-             double buffer,
-             bool circle,
+             double xmin, double ymin, double xmax, double ymax,
+             double buffer, bool circle,
              std::vector<std::string> filters);
 
 public:

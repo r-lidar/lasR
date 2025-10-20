@@ -22,18 +22,27 @@ bool LASRpcdreader::set_chunk(Chunk& chunk)
   }
 
   pcdio = new PCDio(progress);
-  bool success = pcdio->query(
-    chunk.main_files,
-    chunk.neighbour_files,
-    chunk.xmin,
-    chunk.ymin,
-    chunk.xmax,
-    chunk.ymax,
-    chunk.buffer,
-    chunk.shape == ShapeType::CIRCLE,
-    filters);
 
-  return success;
+  try
+  {
+    pcdio->query(
+        chunk.main_files,
+        chunk.neighbour_files,
+        chunk.xmin,
+        chunk.ymin,
+        chunk.xmax,
+        chunk.ymax,
+        chunk.buffer,
+        chunk.shape == ShapeType::CIRCLE,
+        filters);
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
+    return false;
+  }
+
+  return true;
 }
 
 bool LASRpcdreader::process(Header*& header)
@@ -44,8 +53,16 @@ bool LASRpcdreader::process(Header*& header)
   if (header != nullptr) return true;
 
   header = new Header;
-  if (!pcdio->populate_header(header))
+
+  try
+  {
+    pcdio->populate_header(header);
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
     return false;
+  }
 
   this->header = header;
 

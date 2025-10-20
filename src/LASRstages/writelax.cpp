@@ -47,7 +47,16 @@ bool LASRlaxwriter::process(FileCollection*& ctg)
   {
     if (!success) continue;
     std::string file = files[i].string();
-    if (!lasio.write_lax(file, overwrite, embedded)) success = false;
+
+    try
+    {
+      lasio.write_lax(file, overwrite, embedded);
+    }
+    catch (const std::exception& e)
+    {
+      last_error = e.what();
+      success = false;
+    }
 
     #pragma omp critical
     {
@@ -82,7 +91,16 @@ bool LASRlaxwriter::set_chunk(Chunk& chunk)
     for (const auto& file : files)
     {
       if (!success) continue;
-      success = lasio.write_lax(file, overwrite, embedded);
+
+      try
+      {
+        lasio.write_lax(file, overwrite, embedded);
+      }
+      catch (const std::exception& e)
+      {
+        last_error = e.what();
+        success = false;
+      }
     }
   }
 

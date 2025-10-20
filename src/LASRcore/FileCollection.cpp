@@ -492,9 +492,18 @@ bool FileCollection::add_las_file(std::string file, bool noprocess)
 
   Header header;
   LASio reader;
-  if (!reader.open(file)) return false;
-  reader.populate_header(&header, true);
-  reader.close();
+
+  try
+  {
+    reader.open(file);
+    reader.populate_header(&header, true);
+    reader.close();
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
+    return false;
+  }
 
   if (header.number_of_point_records == 0)
   {
@@ -516,9 +525,18 @@ bool FileCollection::add_pcd_file(std::string file, bool noprocess)
   Header header;
   PCDio reader;
   reader.preread_bbox = true;
-  if (!reader.open(file)) return false;
-  reader.populate_header(&header);
-  reader.close();
+
+  try
+  {
+    reader.open(file);
+    reader.populate_header(&header);
+    reader.close();
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
+    return false;
+  }
 
   add_header(header, noprocess);
   files.push_back(file);

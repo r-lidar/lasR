@@ -64,10 +64,17 @@ bool LASRpcdwriter::process(Point*& p)
   // No writer initialized? Create a writer.
   if (!pcdio->is_opened())
   {
-    if (!pcdio->create(ofile)) return false;
-    written.push_back(ofile);
+    try
+    {
+      pcdio->create(ofile);
+      written.push_back(ofile);
+    }
+    catch (const std::exception& e)
+    {
+      last_error = e.what();
+      return false;
+    }
   }
-
 
   pcdio->write_point(p);
 

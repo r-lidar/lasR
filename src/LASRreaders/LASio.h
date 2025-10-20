@@ -24,13 +24,13 @@ public:
   LASio();
   LASio(Progress*);
   ~LASio();
-  bool open(const std::string& file) override;
-  bool create(const std::string& file) override;
-  bool populate_header(Header* header, bool read_first_point = false) override;
-  bool init(const Header* header) override;
+  void open(const std::string& file) override;
+  void create(const std::string& file) override;
+  void populate_header(Header* header, bool read_first_point = false) override;
+  void init(const Header* header) override;
   bool read_point(Point* p) override;
   bool write_point(Point* p) override;
-  bool write_lax(const std::string& file, bool overwrite, bool embedded);
+  void write_lax(const std::string& file, bool overwrite, bool embedded);
   bool is_opened() override;
   void close() override;
   void reset_accessor() override;

@@ -22,18 +22,27 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   }
 
   lasio = new LASio(progress);
-  bool success = lasio->query(
-    chunk.main_files,
-    chunk.neighbour_files,
-    chunk.xmin,
-    chunk.ymin,
-    chunk.xmax,
-    chunk.ymax,
-    chunk.buffer,
-    chunk.shape == ShapeType::CIRCLE,
-    filters);
 
-  return success;
+  try
+  {
+    lasio->query(
+        chunk.main_files,
+        chunk.neighbour_files,
+        chunk.xmin,
+        chunk.ymin,
+        chunk.xmax,
+        chunk.ymax,
+        chunk.buffer,
+        chunk.shape == ShapeType::CIRCLE,
+        filters);
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
+    return false;
+  }
+
+  return true;
 }
 
 bool LASRlasreader::process(Header*& header)
