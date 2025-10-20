@@ -54,7 +54,7 @@ check_update = function()
 
   last  <- get_latest_version()
   curr <- utils::packageVersion("lasR")
-  new_version = !is.null(last) && last > curr
+  new_version = !is.null(last) && last[1] > curr
   dev_version = is_dev_version(curr)
 
   # nocov start
