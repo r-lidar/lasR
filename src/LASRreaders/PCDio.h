@@ -17,7 +17,6 @@ class PCDio : public Fileio
 {
 public:
   PCDio();
-  PCDio(Progress*);
   ~PCDio();
   void open(const std::string& file) override;
   void create(const std::string& file) override;

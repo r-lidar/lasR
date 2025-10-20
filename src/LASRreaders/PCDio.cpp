@@ -17,16 +17,6 @@ PCDio::PCDio()
   npoints = 0;
 }
 
-PCDio::PCDio(Progress* progress)
-{
-  header = nullptr;
-  preread_bbox = true;
-  is_binary = false;
-  npoints = 0;
-
-  this->progress = progress;
-}
-
 PCDio::~PCDio()
 {
   close();

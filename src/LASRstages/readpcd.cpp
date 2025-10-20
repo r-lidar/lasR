@@ -21,7 +21,7 @@ bool LASRpcdreader::set_chunk(Chunk& chunk)
     pcdio = nullptr;
   }
 
-  pcdio = new PCDio(progress);
+  pcdio = new PCDio();
 
   try
   {

@@ -115,7 +115,7 @@ void LASRpcdwriter::set_header(Header*& header)
     return;
   }
 
-  pcdio = new PCDio(progress);
+  pcdio = new PCDio();
   pcdio->init(header);
   pcdio->set_binary_mode(binary);
 }

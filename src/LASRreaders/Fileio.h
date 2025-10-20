@@ -4,15 +4,13 @@
 #include <string>
 #include <vector>
 
-class Progress;
 class Header;
 struct Point;
 
 class Fileio
 {
 public:
-  Fileio() : progress(nullptr) {}
-  Fileio(Progress* p) : progress(p) {}
+  Fileio() = default;
   virtual ~Fileio() = default;
   virtual void open(const std::string& file) = 0;
   virtual void create(const std::string& file) = 0;
@@ -24,10 +22,16 @@ public:
   virtual void close() = 0;
   virtual void reset_accessor() = 0;
   virtual int64_t p_count() = 0;
-
-protected:
-  Progress* progress;
 };
 
+struct IProgress
+{
+  virtual void reset() = 0;
+  virtual void set_total(uint64_t) = 0;
+  virtual void show() = 0;
+  virtual void done() = 0;
+  virtual IProgress& operator++(int) = 0;
+  virtual ~IProgress() = default;
+};
 
 #endif

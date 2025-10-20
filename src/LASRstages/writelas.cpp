@@ -146,7 +146,7 @@ void LASRlaswriter::set_header(Header*& header)
     return;
   }
 
-  lasio = new LASio(progress);
+  lasio = new LASio();
   lasio->init(header);
   lasio->set_copc_max_depth(copc_depth);
   lasio->set_copc_density(copc_density);

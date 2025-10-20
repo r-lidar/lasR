@@ -17,7 +17,6 @@ LASio::LASio()
   lasheader = nullptr;
   laswriter = nullptr;
   point = nullptr;
-  progress = nullptr;
 
   intensity = AttributeAccessor("Intensity");
   returnnumber = AttributeAccessor("ReturnNumber");
@@ -41,11 +40,6 @@ LASio::LASio()
 
   copc_depth = -1;
   copc_density = 256;
-}
-
-LASio::LASio(Progress* progress) : LASio()
-{
-  this->progress = progress;
 }
 
 LASio::~LASio()
@@ -519,7 +513,7 @@ bool LASio::write_point(Point* p)
   return true;
 }
 
-void LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
+void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IProgress* progress)
 {
   // Initialize las objects
   const char* filechar = const_cast<char*>(file.c_str());
@@ -571,15 +565,21 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
   LASindex lasindex;
   lasindex.prepare(lasquadtree, 1000);
 
-  progress->reset();
-  progress->set_prefix("Write LAX");
-  progress->set_total(n);
+  if (progress)
+  {
+    progress->reset();
+    progress->set_total(n);
+  }
 
   while (lasreader->read_point())
   {
     lasindex.add(lasreader->point.get_x(), lasreader->point.get_y(), (U32)(lasreader->p_count-1));
-    (*progress)++;
-    progress->show();
+
+    if (progress)
+    {
+      (*progress)++;
+      progress->show();
+    }
   }
 
   lasreader->close();
@@ -601,7 +601,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
     lasindex.write(lasreadopener.get_file_name());
   }
 
-  progress->done();
+  if (progress) progress->done();
 }
 
 bool LASio::is_opened()

@@ -21,7 +21,7 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
     lasio = nullptr;
   }
 
-  lasio = new LASio(progress);
+  lasio = new LASio();
 
   try
   {

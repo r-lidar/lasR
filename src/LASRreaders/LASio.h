@@ -16,13 +16,11 @@ class LASreader;
 class LASwriter;
 class LASheader;
 class LASpoint;
-class Progress;
 
 class LASio : public Fileio
 {
 public:
   LASio();
-  LASio(Progress*);
   ~LASio();
   void open(const std::string& file) override;
   void create(const std::string& file) override;
@@ -30,7 +28,7 @@ public:
   void init(const Header* header) override;
   bool read_point(Point* p) override;
   bool write_point(Point* p) override;
-  void write_lax(const std::string& file, bool overwrite, bool embedded);
+  void write_lax(const std::string& file, bool overwrite, bool embedded, IProgress* progress = nullptr);
   bool is_opened() override;
   void close() override;
   void reset_accessor() override;

@@ -3,6 +3,20 @@
 
 #include "LASio.h"
 
+class ProgressAdapter : public IProgress
+{
+public:
+  ProgressAdapter(Progress* b) : bar(b) {}
+  void reset() override { bar->reset(); }
+  void set_total(uint64_t n) override { bar->set_total(n); }
+  void show() override { bar->show(); }
+  void done() override { bar->done(); }
+  IProgress& operator++(int) override { (*bar)++; return *this; }
+
+private:
+  Progress* bar;
+};
+
 LASRlaxwriter::LASRlaxwriter()
 {
   embedded = false;
@@ -38,9 +52,12 @@ bool LASRlaxwriter::process(FileCollection*& ctg)
   progress.set_display(current->get_display());
   progress.set_ncpu(ncpu_concurrent_files);
   progress.create_subprocess();
+  progress.set_prefix("Write LAX");
   this->progress = &progress;
 
-  LASio lasio(&progress);
+  ProgressAdapter adapter(&progress);
+
+  LASio lasio;
 
   #pragma omp parallel for num_threads(ncpu_concurrent_files)
   for (size_t i = 0 ; i < files.size() ; i++)
@@ -50,7 +67,7 @@ bool LASRlaxwriter::process(FileCollection*& ctg)
 
     try
     {
-      lasio.write_lax(file, overwrite, embedded);
+      lasio.write_lax(file, overwrite, embedded, &adapter);
     }
     catch (const std::exception& e)
     {
@@ -80,7 +97,9 @@ bool LASRlaxwriter::set_chunk(Chunk& chunk)
 
   bool success = true;
 
-  LASio lasio(progress);
+  LASio lasio;
+
+  ProgressAdapter adapter(progress);
 
   #pragma omp critical (write_lax)
   {
@@ -94,7 +113,7 @@ bool LASRlaxwriter::set_chunk(Chunk& chunk)
 
       try
       {
-        lasio.write_lax(file, overwrite, embedded);
+        lasio.write_lax(file, overwrite, embedded, &adapter);
       }
       catch (const std::exception& e)
       {
