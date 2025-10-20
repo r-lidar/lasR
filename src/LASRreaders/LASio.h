@@ -4,7 +4,6 @@
 #include "Fileio.h"
 #include "Header.h"
 #include "PointSchema.h"
-#include "Chunk.h"
 
 #include <string>
 #include <vector>
@@ -25,7 +24,6 @@ public:
   LASio();
   LASio(Progress*);
   ~LASio();
-  bool open(const Chunk& chunk, std::vector<std::string> filters) override;
   bool open(const std::string& file) override;
   bool create(const std::string& file) override;
   bool populate_header(Header* header, bool read_first_point = false) override;
@@ -44,6 +42,18 @@ public:
   static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
   static int get_header_size(int minor_version);
   static int guess_point_data_format(bool has_gps, bool has_rgb, bool has_nir, bool has_overlap);
+
+  // For lasr library only.
+  bool query(const std::vector<std::string>& main_files,
+             const std::vector<std::string>& neighbour_files,
+             double xmin,
+             double ymin,
+             double xmax,
+             double ymax,
+             double buffer,
+             bool circle,
+             std::vector<std::string> filters);
+
 
 private:
   LASreadOpener* lasreadopener;

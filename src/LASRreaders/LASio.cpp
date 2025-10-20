@@ -8,6 +8,8 @@
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
 
+#define EPSILON 1e-9
+
 LASio::LASio()
 {
   lasreadopener = nullptr;
@@ -52,7 +54,7 @@ LASio::~LASio()
   close();
 }
 
-bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
+bool LASio::query(const std::vector<std::string>& main_files, const std::vector<std::string>& neighbour_files, double xmin, double ymin, double xmax, double ymax, double buffer, bool circle, std::vector<std::string> filters)
 {
   if (laswriter)
   {
@@ -84,26 +86,26 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
   lasreadopener->set_merged(true);
   lasreadopener->set_stored(false);
   //lasreadopener->set_populate_header(true);
-  //lasreadopener->set_buffer_size(chunk.buffer);
+  //lasreadopener->set_buffer_size(buffer);
   lasreadopener->parse_str(filtercpy);
   lasreadopener->set_copc_stream_ordered_by_chunk();
 
   free(filtercpy);
 
-  for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str(), TRUE);
-  for (auto& file : chunk.neighbour_files) lasreadopener->add_file_name(file.c_str(), TRUE);
+  for (auto& file : main_files) lasreadopener->add_file_name(file.c_str(), TRUE);
+  for (auto& file : neighbour_files) lasreadopener->add_file_name(file.c_str(), TRUE);
 
-  if (chunk.shape == ShapeType::CIRCLE)
-    lasreadopener->set_inside_circle((chunk.xmin+chunk.xmax)/2, (chunk.ymin+chunk.ymax)/2,  (chunk.xmax-chunk.xmin)/2 + chunk.buffer + EPSILON);
+  if (circle)
+    lasreadopener->set_inside_circle((xmin+xmax)/2, (ymin+ymax)/2,  (xmax-xmin)/2 + buffer + EPSILON);
   else
-    lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer - EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
+    lasreadopener->set_inside_rectangle(xmin - buffer - EPSILON, ymin - buffer - EPSILON, xmax + buffer + EPSILON, ymax + buffer + EPSILON);
 
   lasreader = lasreadopener->open();
   if (!lasreader)
   {
     // # nocov start
     char buffer[512];
-    snprintf(buffer, 512, "LASlib internal error. Cannot open LASreader with %s\n", chunk.main_files[0].c_str());
+    snprintf(buffer, 512, "LASlib internal error. Cannot open LASreader with %s\n", main_files[0].c_str());
     last_error = std::string(buffer);
     return false;
     // # nocov end
@@ -120,7 +122,7 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
     lasreader->point.attributer = lasattributer;
   }
 
-  if (chunk.buffer == 0)
+  if (buffer == 0)
   {
     lasreader->header.clean_lasoriginal();
   }
@@ -128,14 +130,14 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
   lasheader = &lasreader->header;
 
   // We did not use LASreaderBuffered so we build a LASvlr_lasoriginal by hand.
-  /*if (chunk.buffer > 0)
+  /*if (buffer > 0)
    {
    lasheader->set_lasoriginal();
    memset((void*)lasheader->vlr_lasoriginal, 0, sizeof(LASvlr_lasoriginal));
-   lasheader->vlr_lasoriginal->min_x = chunk.xmin;
-   lasheader->vlr_lasoriginal->min_y = chunk.ymin;
-   lasheader->vlr_lasoriginal->max_x = chunk.xmax;
-   lasheader->vlr_lasoriginal->max_y = chunk.ymax;
+   lasheader->vlr_lasoriginal->min_x = xmin;
+   lasheader->vlr_lasoriginal->min_y = ymin;
+   lasheader->vlr_lasoriginal->max_x = xmax;
+   lasheader->vlr_lasoriginal->max_y = ymax;
    }*/
 
   return true;

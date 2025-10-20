@@ -7,6 +7,8 @@
 #include <iomanip> // For std::setprecision
 #include <sstream>
 
+#define EPSILON 1e-9
+
 PCDio::PCDio()
 {
   header = nullptr;
@@ -30,7 +32,7 @@ PCDio::~PCDio()
   close();
 }
 
-bool PCDio::open(const Chunk& chunk, std::vector<std::string> filters)
+bool PCDio::query(const std::vector<std::string>& main_files, const std::vector<std::string>& neighbour_files, double xmin, double ymin, double xmax, double ymax, double buffer, bool circle, std::vector<std::string> filters)
 {
   if (ostream.is_open())
   {
@@ -38,13 +40,13 @@ bool PCDio::open(const Chunk& chunk, std::vector<std::string> filters)
     return false;
   }
 
-  if (chunk.main_files.size() > 1)
+  if (main_files.size() > 1)
   {
     last_error = "PCD file reader cannot read multiple PCD files yet";
     return false;
   }
 
-  if (chunk.neighbour_files.size() > 0)
+  if (neighbour_files.size() > 0)
   {
     last_error = "PCD file reader cannot read buffered PCD files yet";
     return false;
@@ -57,7 +59,7 @@ bool PCDio::open(const Chunk& chunk, std::vector<std::string> filters)
     return false;
   }
 
-  return open(chunk.main_files[0]);
+  return open(main_files[0]);
 }
 
 bool PCDio::open(const std::string& file)

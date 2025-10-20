@@ -1,12 +1,8 @@
 #ifndef FILEIO_H
 #define FILEIO_H
 
-#include "Chunk.h"
-#include "error.h"
-
 #include <string>
 #include <vector>
-
 
 class Progress;
 class Header;
@@ -18,7 +14,6 @@ public:
   Fileio() : progress(nullptr) {}
   Fileio(Progress* p) : progress(p) {}
   virtual ~Fileio() = default;
-  virtual bool open(const Chunk& chunk, std::vector<std::string> filters) = 0;
   virtual bool open(const std::string& file) = 0;
   virtual bool create(const std::string& file) = 0;
   virtual bool populate_header(Header* header, bool read_first_point = false) = 0;

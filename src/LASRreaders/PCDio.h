@@ -2,7 +2,7 @@
 #define PCDIO_H
 
 #include "Fileio.h"
-#include "Chunk.h"
+#include "PointSchema.h" // For AttributeType
 
 #include <string>
 #include <vector>
@@ -19,7 +19,6 @@ public:
   PCDio();
   PCDio(Progress*);
   ~PCDio();
-  bool open(const Chunk& chunk, std::vector<std::string> filters) override;
   bool open(const std::string& file) override;
   bool create(const std::string& file) override;
   bool populate_header(Header* header, bool read_first_point = false) override;
@@ -31,6 +30,17 @@ public:
   void set_binary_mode(bool);
   void reset_accessor() override;
   int64_t p_count() override;
+
+  // For lasr library only.
+  bool query(const std::vector<std::string>& main_files,
+             const std::vector<std::string>& neighbour_files,
+             double xmin,
+             double ymin,
+             double xmax,
+             double ymax,
+             double buffer,
+             bool circle,
+             std::vector<std::string> filters);
 
 public:
   bool preread_bbox;

@@ -22,7 +22,18 @@ bool LASRpcdreader::set_chunk(Chunk& chunk)
   }
 
   pcdio = new PCDio(progress);
-  return pcdio->open(chunk, filters);
+  bool success = pcdio->query(
+    chunk.main_files,
+    chunk.neighbour_files,
+    chunk.xmin,
+    chunk.ymin,
+    chunk.xmax,
+    chunk.ymax,
+    chunk.buffer,
+    chunk.shape == ShapeType::CIRCLE,
+    filters);
+
+  return success;
 }
 
 bool LASRpcdreader::process(Header*& header)
