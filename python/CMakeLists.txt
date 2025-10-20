@@ -196,8 +196,6 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRcore/CRS.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/FileCollection.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/Shape.cpp
-  ${LASR_SOURCE_DIR}/src/LASRcore/Header.cpp
-  ${LASR_SOURCE_DIR}/src/LASRcore/PointSchema.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/PointFilter.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/GridPartition.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/Grid.cpp
@@ -214,6 +212,8 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRcore/Engine.cpp
 
   # I/O implementation
+  ${LASR_SOURCE_DIR}/src/LASRreaders/Header.cpp
+  ${LASR_SOURCE_DIR}/src/LASRreaders/PointSchema.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/LASio.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/PCDio.cpp
 
@@ -298,6 +298,7 @@ target_link_libraries(pylasr PRIVATE laszip ${GDAL_LIBRARIES})
 
 target_compile_definitions(pylasr PRIVATE
   USING_PYTHON=1
+  USING_GDAL=1
   NDEBUG=1
   UNORDERED=1
   COMPILATION_CLOSED=1
