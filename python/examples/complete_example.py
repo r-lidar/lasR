@@ -134,16 +134,16 @@ def main():
     print("-" * 30)
 
     # DTM pipeline
-    dtm_pipeline = pylasr.dtm_pipeline(1.0, "dtm.tif")
+    dtm_pipeline = pylasr.dtm(1.0, "dtm.tif")
     print("✅ DTM pipeline created")
 
-    # CHM pipeline
-    chm_pipeline = pylasr.chm_pipeline(0.5, "chm.tif")
-    print("✅ CHM pipeline created")
+    # DSM pipeline
+    dsm_pipeline = pylasr.dsm(0.5, "dsm.tif")
+    print("✅ DSM pipeline created")
 
     # Combined workflow
-    combined = dtm_pipeline + chm_pipeline
-    print("✅ Combined DTM+CHM workflow")
+    combined = dtm_pipeline + dsm_pipeline
+    print("✅ Combined DTM+DSM workflow")
     print(f"✅ Combined pipeline has {len(combined.to_string().split('\n'))} stages")
     print()
 

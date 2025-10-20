@@ -17,8 +17,14 @@ test_that("lasR supports a LAS from lidR",
   ans2 = exec(pipeline2, on = LASfile)
 
   expect_s3_class(ans1, "sf")
-  expect_equal(nrow(ans1$geom[[1]][[1]]), 85L)
-  expect_equal(nrow(ans1$geom[[1]][[1]]), nrow(ans2$geom[[1]][[1]]))
+  expect_true(sf::st_is_valid(ans1))
+  expect_true(sf::st_is_valid(ans2))
+
+  area1 = as.numeric(sf::st_area(ans1))
+  area2 = as.numeric(sf::st_area(ans2))
+
+  expect_equal(area1, 44531.4675)
+  expect_equal(area2, 44531.4675)
 
   pipeline3 = r2  + tri + h + reader_las()
   expect_error(exec(pipeline3, on = LASfile), "The pipeline can only have a single reader stage")

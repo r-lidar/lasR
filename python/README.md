@@ -209,7 +209,7 @@ Comprehensive demonstration of all major features:
 Demonstrates various pipeline creation and execution workflows:
 - Info pipeline
 - Cleaning pipeline (noise removal)
-- Terrain analysis (DTM/CHM)
+- Terrain analysis (DTM/DSM)
 - Point sampling
 - Classification workflows
 
@@ -219,17 +219,17 @@ Enhanced command-line tool for data processing:
 - Show processing timing and results
 - Support for multithreading configuration
 
-### 🔧 Basic DTM/CHM Generation
+### 🔧 Basic DTM/DSM Generation
 
 ```python
 import pylasr
 
 # Use convenience functions for common workflows
-dtm_pipeline = pylasr.dtm_pipeline(1.0, "dtm.tif")
-chm_pipeline = pylasr.chm_pipeline(0.5, "chm.tif")
+dtm_pipeline = pylasr.dtm(1.0, "dtm.tif")
+dsm_pipeline = pylasr.dsm(0.5, "dsm.tif")
 
-# Combine workflows
-terrain_analysis = dtm_pipeline + chm_pipeline
+# Combine them
+terrain_analysis = dtm_pipeline + dsm_pipeline
 terrain_analysis.set_concurrent_files_strategy(2)
 
 # Process data
