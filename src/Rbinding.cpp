@@ -4,7 +4,6 @@
 
 #include "api.h"
 #include "openmp.h"
-#include "RAM.h"
 
 namespace Rcpp
 {
@@ -39,11 +38,11 @@ RCPP_MODULE(utils)
 {
   function("lasfilterusage", &api::lasfilterusage, "LASlib filter list");
   function("lastransformusage", &api::lastransformusage, "LASlib transform list");
-  function("available_threads", &available_threads, "Number of usable cores");
-  function("has_omp_support", &has_omp_support,  "Is lasr build with OpenMP support");
+  function("available_threads", &api::available_threads, "Number of usable cores");
+  function("has_omp_support", &api::has_omp_support,  "Is lasr build with OpenMP support");
   function("is_indexed", &api::is_indexed, "The LAS files is spatially indexed");
-  function("getAvailableRAM", &getAvailableRAM, "FreeRAM");
-  function("getTotalRAM", &getTotalRAM, "Total RAM");
+  function("getAvailableRAM", &api::getAvailableRAM, "FreeRAM");
+  function("getTotalRAM", &api::getTotalRAM, "Total RAM");
 }
 
 // Generic stages that could be used by any API

@@ -1,3 +1,9 @@
+# lasR 0.17.3
+
+- Fix: #213 VPC 3D geometries.
+- Fix: #217 invalid triangulations
+- Fix: #219 `hulls()` is computed more robustly with GEOS.
+
 # lasR 0.17.2
 
 - Fix: #198 LAS files with 0 points are discarded on-the-fly.
