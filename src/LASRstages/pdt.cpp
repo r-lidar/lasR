@@ -124,18 +124,42 @@ bool LASRpdt::process(PointCloud*& las)
 
   d = new Triangulation();
 
+  // We need a spatial index in which we record the id of the last triangle inserted
+  // for each cell in order to get order of magnitude speed when searching where
+  // to insert.
+  Grid partition(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 0.5);
+  std::vector<unsigned int> last_triangle;
+  last_triangle.resize(partition.get_ncells());
+  for (unsigned int cell = 0 ; cell < partition.get_ncells() ; cell++)
+  {
+    double x = partition.x_from_cell(cell);
+    double y = partition.y_from_cell(cell);
+    Vec2 pt(x - x_offset, y - y_offset);
+    last_triangle[cell] = d->findContainerTriangle(pt, -1);
+  }
+
+  int cell = 0;
   int count = 0;
   int iteration = 0;
   int tri_index = -1;
 
   for (auto& seed : seeds)
   {
-    // Reoffset to fit in the bounding box of the triangulation which is +/- 1e8
+    // Cell of the seed
+    cell = partition.cell_from_xy(seed.x, seed.y);
+
+    // Find most probable triangle index
+    //tri_index = last_triangle[cell];
+
+    // Offset to fit in the bounding box of the triangulation which is +/- 1e8
     Vec2 pt(seed.x - x_offset, seed.y - y_offset);
 
     // Find in which triangle to insert the point
     tri_index = d->findContainerTriangle(pt, tri_index);
     if (tri_index < 0) continue;
+
+    // Update the index
+    last_triangle[cell] = tri_index;
 
     // Retrieve the vertices of the triangle
     TriangleXYZ triangle = get_triangle(tri_index);
@@ -184,6 +208,7 @@ bool LASRpdt::process(PointCloud*& las)
     prof2.tic();
 
     iteration++;
+    cell = 0;
     count = 0;
     tri_index = -1;
 
@@ -191,6 +216,9 @@ bool LASRpdt::process(PointCloud*& las)
     while (las->read_point())
     {
       unsigned int id = las->current_point;
+      double x = las->point.get_x();
+      double y = las->point.get_y();
+      double z = las->point.get_z();
 
       (*progress)++;
       progress->show();
@@ -200,8 +228,14 @@ bool LASRpdt::process(PointCloud*& las)
 
       if (pointfilter.filter(&las->point)) continue;
 
-      PointXYZ P(las->point.get_x(), las->point.get_y(), las->point.get_z());
-      Vec2 pt(P.x - x_offset, P.y - y_offset);
+      PointXYZ P(x, y, z);
+      Vec2 pt(x - x_offset, y - y_offset);
+
+      // Cell of the point
+      cell = partition.cell_from_xy(x, y);
+
+      // Find most probable triangle index
+      //tri_index = last_triangle[cell];
 
       // We have a rough dtm. Check the DTM elevation. If we are significantly
       // higher than the DTM we can save computation time by skipping the search
@@ -217,6 +251,10 @@ bool LASRpdt::process(PointCloud*& las)
       total_search_time += end_time - start_time;
       if (tri_index < 0) continue;
 
+      // Update the index
+      last_triangle[cell] = tri_index;
+
+      // Retrieve the vertices of the triangle
       TriangleXYZ triangle = get_triangle(tri_index);
 
       // Skip too small triangles. Small triangle are frozen and cannot be subdivided.
