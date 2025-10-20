@@ -36,7 +36,33 @@
 #define STRICT_R_HEADERS
 #define __STDC_FORMAT_MACROS 1
 
+#ifdef USING_R
 #include "print.h"
+#else
+void print(const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+
+  char buffer[1024];
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+
+  printf("%s", buffer); // Print formatted string
+}
+
+void eprint(const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+
+  char buffer[1024];
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+
+  fprintf(stderr, "ERROR: %s", buffer); // Print formatted string
+}
+#endif
 
 #include <string.h>
 #include <stdlib.h>
