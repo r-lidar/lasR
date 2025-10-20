@@ -52,7 +52,7 @@ bool PCDio::open(const Chunk& chunk, std::vector<std::string> filters)
 
   if ((filters.size() == 1 && filters[0] != "") || filters.size() > 1)
   {
-    for (auto f :filters) print("%s\n", f.c_str());
+    //for (auto f :filters) print("%s\n", f.c_str());
     last_error = "filters are not enabled for PCD files yet.";
     return false;
   }

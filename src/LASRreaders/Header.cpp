@@ -1,5 +1,5 @@
 #include "Header.h"
-#include "print.h"
+//#include "print.h"
 
 #include <cinttypes> // PRIu64
 
@@ -41,7 +41,7 @@ Header::Header()
 }
 
 // # nocov start
-void Header::dump() const
+/*void Header::dump() const
 {
   print("%s: %u.%u\n", signature.c_str(), version_major, version_minor);
   print("Max Coordinates: (%.2f, %.2f, %.2f)\n", max_x, max_y, max_z);
@@ -61,6 +61,7 @@ void Header::dump() const
 #endif
 }
 // # nocov end
+*/
 
 void Header::add_attribute(const Attribute& attr)
 {

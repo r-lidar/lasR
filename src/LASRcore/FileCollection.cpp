@@ -2,6 +2,7 @@
 #include "FileCollection.h"
 #include "Progress.h"
 #include "error.h"
+#include "print.h"
 #include "Grid.h"
 #include "PointSchema.h"
 

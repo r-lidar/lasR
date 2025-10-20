@@ -1,7 +1,7 @@
 #ifndef POINTSCHEMA_H
 #define POINTSCHEMA_H
 
-#include "print.h"
+//#include "print.h"
 
 #include <cstring> //memset
 #include <string>
@@ -134,7 +134,7 @@ struct AttributeSchema
   void add_attribute(const Attribute& attribute);
   void add_attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
   void remove_attribute(const std::string& attribute);
-  void dump(bool verbose = false) const;
+  //void dump(bool verbose = false) const;
 };
 
 struct Point
@@ -147,13 +147,13 @@ struct Point
   Point(AttributeSchema* schema) : own_data(true), data(new unsigned char[schema->total_point_size]), schema(schema) { zero(); }
   Point(unsigned char* ptr, const AttributeSchema* schema) : own_data(false), data(ptr), schema(schema) {}
   ~Point() {if (own_data && data) { delete[] data; data = nullptr; }; }
-  void dump() const
+  /*void dump() const
   {
     for (size_t i = 0 ; i < schema->attributes.size() ; i++)
     {
       print("%s %.2lf\n",  schema->attributes[i].name.c_str(), get_attribute_as_double(i));
     }
-  };
+  };*/
 
   Point(const Point& other) : own_data(other.own_data), data(other.own_data ? new unsigned char[other.schema->total_point_size] : other.data), schema(other.schema)
   {
@@ -330,12 +330,12 @@ public:
   void operator()(Point* point, double value);
   bool exist() { return attribute != nullptr; }
   void reset() { init = false; attribute = nullptr; };
-  void dump()
+  /*void dump()
   {
     print("Accessor to %s\n", name.c_str());
     print("Init %s\n", (init) ? "true" : "false");
     if (attribute) attribute->dump(true);
-  }
+  }*/
 
 protected:
   std::string name;

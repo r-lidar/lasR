@@ -68,10 +68,18 @@ bool LASRinfo::process(Header*& h)
       print("       - Estimated local density: %.2lf pts/%s\n", (double)npoints/area, areaUnits.c_str());
       print("       - Estimated cumulated density: %.2lf pts/%s\n", density, areaUnits.c_str());
     }
-
   }
 
-  print("Schema       :\n"); h->schema.dump();
+  print("Schema       :\n");
+  AttributeSchema& schema = h->schema;
+  print("%d attributes | %d bytes per points\n", schema.num_attributes(), schema.total_point_size);
+  for (const auto& attr : schema.attributes)
+  {
+    if (verbose)
+      print(" Name: %-17s | Address offset: %-2zu | Size: %-1zu | Type: %-6s | Scale Factor: %-5.3f | Value Offset: %-5.3f\n", attr.name.c_str(), attr.offset, attr.size, attr.attributeTypeToString(), attr.scale_factor, attr.value_offset);
+    else
+      print(" Name: %-17s | %-6s | Desc: %s\n", attr.name.c_str(), attr.attributeTypeToString(), attr.description.c_str());
+  }
 
   printed = true;
 
