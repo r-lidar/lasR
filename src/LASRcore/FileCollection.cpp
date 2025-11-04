@@ -427,6 +427,11 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), zmin, MAX(B.x, C.x), MAX(C.y, D.y), zmax);
     std::string sbbox(buffer);
 
+    std::string id = file.stem().string();
+    if (file.extension() == ".laz" && id.size() > 5 && id.substr(id.size() - 5) == ".copc") {
+      id = id.substr(0, id.size() - 5);
+    }
+
     output << "  {" << std::endl;
     output << "    \"type\": \"Feature\"," << std::endl;
     output << "    \"stac_version\": \"1.0.0\"," << std::endl;
@@ -434,7 +439,7 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     output << "      \"https://stac-extensions.github.io/pointcloud/v1.0.0/schema.json\"," << std::endl;
     output << "      \"https://stac-extensions.github.io/projection/v1.1.0/schema.json\"" << std::endl;
     output << "     ]," << std::endl;
-    output << "    \"id\": " << autoquote(file.stem().string()) << "," << std::endl;
+    output << "    \"id\": " << autoquote(id) << "," << std::endl;
     output << "    \"geometry\": {" << std::endl;
     output << "      \"coordinates\": [" << std::endl;
     output << "        " << geometry << std::endl;
