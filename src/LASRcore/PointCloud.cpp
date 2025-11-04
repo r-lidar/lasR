@@ -909,6 +909,11 @@ bool PointCloud::add_rgb()
   return true;
 }
 
+bool PointCloud::remove_rgb()
+{
+  return remove_attributes({"R","G","B"});
+}
+
 bool PointCloud::build_kdtree()
 {
   if (kdtree == nullptr)

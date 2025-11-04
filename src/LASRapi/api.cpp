@@ -347,6 +347,12 @@ Pipeline remove_attributes(std::vector<std::string> names)
   return Pipeline(s);
 }
 
+Pipeline remove_rgb()
+{
+  Stage s("remove_rgb");
+  return Pipeline(s);
+}
+
 Pipeline keep_attributes(std::vector<std::string> names)
 {
   Stage s("remove_attributes");

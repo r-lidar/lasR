@@ -79,6 +79,7 @@ RCPP_MODULE(stages)
   function("region_growing", &api::region_growing, "Region growing segmentation tree segmentation");
   function("remove_attribute", &api::remove_attribute, "Remove a named attribute from the point cloud");
   function("remove_attributes", &api::remove_attributes, "Remove named attributes from the point cloud");
+  function("remove_rgb", &api::remove_rgb, "Remove RGB from the point cloud");
   function("keep_attributes", &api::keep_attributes, "Keep named attributes from the point cloud");
   function("set_crs_epsg", &api::set_crs_epsg, "Set CRS using an EPSG code");
   function("set_crs_wkt", &api::set_crs_wkt, "Set CRS using a WKT string");

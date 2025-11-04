@@ -60,6 +60,7 @@ public:
   bool add_attributes(const std::vector<Attribute>&);
   bool add_point(const Point& p);
   bool add_rgb();
+  bool remove_rgb();
   bool remove_attribute(const std::string&);
   bool remove_attributes(const std::vector<std::string>&);
   bool keep_attributes(const std::vector<std::string>&);

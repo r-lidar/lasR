@@ -28,7 +28,7 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
   return(.APISTAGES$add_attribute(data_type, name, description, scale, offset))
 }
 
-#' Add RGB attributes to a LAS file
+#' Add/remove RGB attributes to a LAS file
 #'
 #' Modifies the LAS format to convert into a format with RGB attributes. Values are zeroed: the underlying
 #' point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
@@ -1005,6 +1005,10 @@ remove_attribute = function(name) { .APISTAGES$remove_attribute(name) }
 #' @export
 #' @rdname add_attribute
 remove_attributes = function(names) { .APISTAGES$remove_attributes(names) }
+
+#' @export
+#' @rdname add_rgb
+remove_rgb = function(names) { .APISTAGES$remove_rgb() }
 
 # ==== S =====
 

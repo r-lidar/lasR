@@ -1,7 +1,8 @@
 # lasr 0.18.0
 
 - New stage `remove_attributes` that deprecated `remove_attribute` (no `s`).
-- New stage `keep_attributes`.
+- New stage `keep_attributes`
+- New stage `remove_rgb()`
 - New function `temppcd()`
 
 # lasR 0.17.3

@@ -2,9 +2,12 @@
 % Please edit documentation in R/stages.R
 \name{add_rgb}
 \alias{add_rgb}
-\title{Add RGB attributes to a LAS file}
+\alias{remove_rgb}
+\title{Add/remove RGB attributes to a LAS file}
 \usage{
 add_rgb()
+
+remove_rgb(names)
 }
 \value{
 If this stage transforms the point cloud in the pipeline it returns nothing. Otherwise
