@@ -1008,7 +1008,7 @@ remove_attributes = function(names) { .APISTAGES$remove_attributes(names) }
 
 #' @export
 #' @rdname add_rgb
-remove_rgb = function(names) { .APISTAGES$remove_rgb() }
+remove_rgb = function() { .APISTAGES$remove_rgb() }
 
 # ==== S =====
 

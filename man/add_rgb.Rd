@@ -7,7 +7,7 @@
 \usage{
 add_rgb()
 
-remove_rgb(names)
+remove_rgb()
 }
 \value{
 If this stage transforms the point cloud in the pipeline it returns nothing. Otherwise
