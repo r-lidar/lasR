@@ -213,6 +213,7 @@ Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vec
 Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1);
 Pipeline region_growing(std::string connect_uid_raster, std::string connect_uid_seeds, double th_tree = 2, double th_seed = 0.45, double th_cr = 0.55, double max_cr = 20, std::string ofile = "");
 Pipeline remove_attribute(std::string name);
+Pipeline remove_attributes(std::vector<std::string> names);
 Pipeline set_crs_epsg(int epsg);
 Pipeline set_crs_wkt(std::string wkt);
 Pipeline sampling_voxel(double res = 2, std::vector<std::string> filter = {""}, std::string method = "random", int shuffle_size = std::numeric_limits<int>::max());

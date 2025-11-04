@@ -332,6 +332,21 @@ Pipeline remove_attribute(std::string name)
   return Pipeline(s);
 }
 
+Pipeline remove_attributes(std::vector<std::string> names)
+{
+  static const std::vector<std::string> forbidden = {"x", "X", "y", "Y", "z", "Z"};
+  for (const auto& name : names)
+  {
+    if (std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end())
+      throw std::invalid_argument("Removing point coordinates is not allowed");
+  }
+
+  Stage s("remove_attributes");
+  s.set("names", names);
+
+  return Pipeline(s);
+}
+
 Pipeline set_crs_epsg(int epsg)
 {
   Stage s("set_crs");

@@ -61,6 +61,7 @@ public:
   bool add_point(const Point& p);
   bool add_rgb();
   bool remove_attribute(const std::string&);
+  bool remove_attributes(const std::vector<std::string>&);
   bool seek(size_t pos);
   bool read_point(bool include_withhelded = false);
   void set_file(const std::string& file) { this->file = file; };

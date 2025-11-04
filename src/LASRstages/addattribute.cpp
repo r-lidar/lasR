@@ -61,3 +61,30 @@ bool LASRremoveattribute::set_parameters(const nlohmann::json& stage)
   }
   return true;
 }
+
+LASRremoveattributes::LASRremoveattributes()
+{
+}
+
+bool LASRremoveattributes::process(PointCloud*& las)
+{
+  return las->remove_attributes(names);
+}
+
+bool LASRremoveattributes::set_parameters(const nlohmann::json& stage)
+{
+  names = stage.at("names").get<std::vector<std::string>>();
+
+  static const std::vector<std::string> forbidden = {"x", "X", "y", "Y", "z", "Z"};
+
+  for (const auto& name : names)
+  {
+    if (std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end())
+    {
+      last_error = "Removing point coordinates is not allowed";
+      return false;
+    }
+  }
+
+  return true;
+}

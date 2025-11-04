@@ -37,4 +37,19 @@ private:
   std::string name;
 };
 
+class LASRremoveattributes: public Stage
+{
+public:
+  LASRremoveattributes();
+  bool process(PointCloud*& las) override;
+  bool set_parameters(const nlohmann::json&) override;
+  std::string get_name() const override { return "remove_attributes"; };
+
+  // multi-threading
+  LASRremoveattributes* clone() const override { return new LASRremoveattributes(*this); };
+
+private:
+  std::vector<std::string> names;
+};
+
 #endif

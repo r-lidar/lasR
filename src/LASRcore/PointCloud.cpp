@@ -725,6 +725,73 @@ bool PointCloud::remove_attribute(const std::string& name)
   return true;
 }
 
+bool PointCloud::remove_attributes(const std::vector<std::string>& names_to_remove)
+{
+  if (names_to_remove.empty()) return true;
+
+  // Step 1: Build a list of attributes to remove
+  struct RemoveInfo
+  {
+    size_t offset;
+    size_t size;
+  };
+  std::vector<RemoveInfo> to_remove;
+  size_t total_remove_size = 0;
+
+  for (const auto& name : names_to_remove)
+  {
+    const Attribute* attr = header->schema.find_attribute(name);
+    if (!attr) continue; // skip non-existing attributes
+    to_remove.push_back({attr->offset, attr->size});
+    total_remove_size += attr->size;
+  }
+
+  if (to_remove.empty()) return true; // nothing to remove
+
+  // Step 2: Sort attributes by offset (important!)
+  std::sort(to_remove.begin(), to_remove.end(), [](const RemoveInfo& a, const RemoveInfo& b) { return a.offset < b.offset; });
+
+  size_t old_point_size = header->schema.total_point_size;
+  size_t new_point_size = old_point_size - total_remove_size;
+
+  // Step 3: For each point, copy only the bytes we want to keep
+  for (size_t i = 0; i < npoints; ++i)
+  {
+    unsigned char* src = buffer + i * old_point_size;
+    unsigned char* dst = buffer + i * new_point_size;
+
+    size_t dst_offset = 0;
+    size_t last_offset = 0;
+
+    for (const auto& r : to_remove)
+    {
+      size_t chunk_size = r.offset - last_offset; // bytes before this attribute
+      if (chunk_size > 0)
+      {
+        memmove(dst + dst_offset, src + last_offset, chunk_size);
+        dst_offset += chunk_size;
+      }
+      last_offset = r.offset + r.size; // skip removed attribute
+    }
+
+    // Copy remaining tail bytes after last removed attribute
+    size_t tail_size = old_point_size - last_offset;
+    if (tail_size > 0)
+    {
+      memmove(dst + dst_offset, src + last_offset, tail_size);
+    }
+  }
+
+  // Step 4: Update schema
+  for (const auto& name : names_to_remove)
+  {
+    header->schema.remove_attribute(name);
+  }
+
+  return true;
+}
+
+
 
 bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 {

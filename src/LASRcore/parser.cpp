@@ -104,6 +104,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"pit_fill",             create_instance<LASRpitfill>},
     {"rasterize",            create_instance<LASRrasterize>},
     {"remove_attribute",     create_instance<LASRremoveattribute>},
+    {"remove_attributes",    create_instance<LASRremoveattributes>},
     {"sampling_pixel",       create_instance<LASRsamplingpixels>},
     {"sampling_poisson",     create_instance<LASRsamplingpoisson>},
     {"sampling_voxel",       create_instance<LASRsamplingvoxels>},

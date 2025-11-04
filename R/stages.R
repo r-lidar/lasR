@@ -6,7 +6,8 @@
 #' zeroed: the underlying point cloud is edited to support a new extrabyte attribute. This new
 #' attribute can be populated later in another stage
 #'
-#' @param name character. The name of the extra bytes attribute to add or remove to the file.
+#' @param name character. The name of the attribute to add or remove to the file.
+#' @param names character vector. The names of attribute to add or remove to the file.
 #' @param description character. A short description of the extra bytes attribute to add to the file (32 characters).
 #' @param data_type character. The data type of the extra bytes attribute. Can be "uchar", "char", "ushort",
 #' "short", "uint", "int", "uint64", "int64", "float", "double".
@@ -995,6 +996,9 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
 #' @rdname add_attribute
 remove_attribute = function(name) { .APISTAGES$remove_attribute(name) }
 
+#' @export
+#' @rdname add_attribute
+remove_attributes = function(names) { .APISTAGES$remove_attributes(names) }
 
 # ==== S =====
 

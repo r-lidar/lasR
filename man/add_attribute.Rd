@@ -3,22 +3,27 @@
 \name{add_extrabytes}
 \alias{add_extrabytes}
 \alias{remove_attribute}
+\alias{remove_attributes}
 \title{Add attributes to a point cloud}
 \usage{
 add_extrabytes(data_type, name, description, scale = 1, offset = 0)
 
 remove_attribute(name)
+
+remove_attributes(names)
 }
 \arguments{
 \item{data_type}{character. The data type of the extra bytes attribute. Can be "uchar", "char", "ushort",
 "short", "uint", "int", "uint64", "int64", "float", "double".}
 
-\item{name}{character. The name of the extra bytes attribute to add or remove to the file.}
+\item{name}{character. The name of the attribute to add or remove to the file.}
 
 \item{description}{character. A short description of the extra bytes attribute to add to the file (32 characters).}
 
 \item{scale, offset}{numeric. The scale and offset of the data. See LAS specification. Leave unchanged
 if not working with LAS files.}
+
+\item{names}{character vector. The names of attribute to add or remove to the file.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.
