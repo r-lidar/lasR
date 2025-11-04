@@ -7,6 +7,7 @@
 \alias{tempshp}
 \alias{templas}
 \alias{templaz}
+\alias{temppcd}
 \title{Temporary files}
 \usage{
 temptif()
@@ -18,6 +19,8 @@ tempshp()
 templas()
 
 templaz()
+
+temppcd()
 }
 \value{
 string. Path to a temporary file.

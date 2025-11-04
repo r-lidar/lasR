@@ -30,4 +30,8 @@ templas = function() { tempfile_with_ext("las") }
 #' @export
 templaz = function() { tempfile_with_ext("laz") }
 
+#' @rdname temporary_files
+#' @export
+temppcd = function() { tempfile_with_ext("pcd") }
+
 tempfile_with_ext = function(ext) { tempfile(fileext = paste0(".", ext)) }
