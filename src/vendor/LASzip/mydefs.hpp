@@ -64,6 +64,18 @@ void eprint(const char *format, ...)
 
   fprintf(stderr, "ERROR: %s", buffer); // Print formatted string
 }
+
+void warning(const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+
+  char buffer[1024];
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+
+  fprintf(stderr, "WARNING: %s", buffer); // Print formatted string
+}
 #endif
 
 #include <string.h>
