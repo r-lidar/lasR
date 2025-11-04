@@ -41,9 +41,9 @@ test_that("add rgb works with extra bytes",
   las = read_las(ans)
 
   expect_true(all(c("Amplitude", "Pulse width") %in% names(las)))
-  expect_true(is.null(las$R))
-  expect_true(is.null(las$G))
-  expect_true(is.null(las$B))
+  expect_true(is.null(las[["R"]]))
+  expect_true(is.null(las[["G"]]))
+  expect_true(is.null(las[["B"]]))
   expect_equal(mean(las$gpstime), 152900)
   expect_equal(sum(las$Amplitude), 596.24)
   expect_equal(sum(las$Intensity), 6552)
