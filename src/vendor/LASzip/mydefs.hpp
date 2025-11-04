@@ -39,6 +39,7 @@
 #ifdef USING_R
 #include "print.h"
 #else
+#include <cstdarg>
 void print(const char *format, ...)
 {
   va_list args;
