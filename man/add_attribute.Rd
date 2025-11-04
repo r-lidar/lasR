@@ -2,11 +2,14 @@
 % Please edit documentation in R/stages.R
 \name{add_extrabytes}
 \alias{add_extrabytes}
+\alias{keep_attributes}
 \alias{remove_attribute}
 \alias{remove_attributes}
 \title{Add attributes to a point cloud}
 \usage{
 add_extrabytes(data_type, name, description, scale = 1, offset = 0)
+
+keep_attributes(names)
 
 remove_attribute(name)
 

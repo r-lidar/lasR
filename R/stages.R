@@ -493,6 +493,12 @@ info = function(f)
   }
 }
 
+# ===== K ====
+
+#' @export
+#' @rdname add_attribute
+keep_attributes = function(names){ .APISTAGES$keep_attributes(names) }
+
 # ===== L =====
 
 #' Load a raster for later use

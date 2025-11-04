@@ -347,6 +347,15 @@ Pipeline remove_attributes(std::vector<std::string> names)
   return Pipeline(s);
 }
 
+Pipeline keep_attributes(std::vector<std::string> names)
+{
+  Stage s("remove_attributes");
+  s.set("keep", names);
+
+  return Pipeline(s);
+}
+
+
 Pipeline set_crs_epsg(int epsg)
 {
   Stage s("set_crs");

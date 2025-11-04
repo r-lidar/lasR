@@ -729,32 +729,49 @@ bool PointCloud::remove_attributes(const std::vector<std::string>& names_to_remo
 {
   if (names_to_remove.empty()) return true;
 
-  // Step 1: Build a list of attributes to remove
+  std::vector<std::string> actual_names_to_removes;
+
   struct RemoveInfo
   {
     size_t offset;
     size_t size;
   };
+
   std::vector<RemoveInfo> to_remove;
   size_t total_remove_size = 0;
+  std::unordered_set<size_t> removed_byte_offsets;
 
+  // Step 1: Build list of attributes to remove
   for (const auto& name : names_to_remove)
   {
     const Attribute* attr = header->schema.find_attribute(name);
-    if (!attr) continue; // skip non-existing attributes
-    to_remove.push_back({attr->offset, attr->size});
-    total_remove_size += attr->size;
+
+    if (!attr) continue;   // Attribute not found
+
+    size_t remove_offset = attr->offset;
+    size_t remove_size   = attr->size;
+
+    // If bit attribute -> remove the entire byte
+    if (attr->type == BIT) remove_size = 1;
+
+    // Skip if we've already removed this byte
+    if (removed_byte_offsets.count(remove_offset)) continue;
+
+    to_remove.push_back({remove_offset, remove_size});
+    actual_names_to_removes.push_back(name);
+    removed_byte_offsets.insert(remove_offset);
+    total_remove_size += remove_size;
   }
 
-  if (to_remove.empty()) return true; // nothing to remove
+  if (to_remove.empty()) return true;
 
-  // Step 2: Sort attributes by offset (important!)
+  // Step 2: Sort attributes by offset
   std::sort(to_remove.begin(), to_remove.end(), [](const RemoveInfo& a, const RemoveInfo& b) { return a.offset < b.offset; });
 
   size_t old_point_size = header->schema.total_point_size;
   size_t new_point_size = old_point_size - total_remove_size;
 
-  // Step 3: For each point, copy only the bytes we want to keep
+  // Step 3: Copy only the bytes we want to keep
   for (size_t i = 0; i < npoints; ++i)
   {
     unsigned char* src = buffer + i * old_point_size;
@@ -765,16 +782,21 @@ bool PointCloud::remove_attributes(const std::vector<std::string>& names_to_remo
 
     for (const auto& r : to_remove)
     {
+      if (r.offset < last_offset)
+      {
+        last_error = "Internal error: overlapping address attribute detected!";
+        return false;
+      }
+
       size_t chunk_size = r.offset - last_offset; // bytes before this attribute
       if (chunk_size > 0)
       {
         memmove(dst + dst_offset, src + last_offset, chunk_size);
         dst_offset += chunk_size;
       }
-      last_offset = r.offset + r.size; // skip removed attribute
+      last_offset = r.offset + r.size;
     }
 
-    // Copy remaining tail bytes after last removed attribute
     size_t tail_size = old_point_size - last_offset;
     if (tail_size > 0)
     {
@@ -783,14 +805,13 @@ bool PointCloud::remove_attributes(const std::vector<std::string>& names_to_remo
   }
 
   // Step 4: Update schema
-  for (const auto& name : names_to_remove)
+  for (const auto& name : actual_names_to_removes)
   {
     header->schema.remove_attribute(name);
   }
 
   return true;
 }
-
 
 
 bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
@@ -845,6 +866,32 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 
   return true;
 }
+
+bool PointCloud::keep_attributes(const std::vector<std::string>& names)
+{
+  // Step 1: Gather all current attribute names
+  std::vector<std::string> all_names;
+  for (const auto& attr : header->schema.attributes)
+    all_names.push_back(attr.name);
+
+  // Step 2: Build list of attributes to remove
+  std::vector<std::string> to_remove;
+  for (const auto& name : all_names)
+  {
+    // Keep the ones requested, plus X/Y/Z always
+    if (name == "x" || name == "X" || name == "y" || name == "Y" || name == "z" || name == "Z" || name == "flags")
+      continue;
+
+    if (std::find(names.begin(), names.end(), name) == names.end())
+    {
+      to_remove.push_back(name);
+    }
+  }
+
+  // Step 3: Remove the unwanted attributes
+  return remove_attributes(to_remove);
+}
+
 
 /*void PointCloud::set_index(bool index)
 {

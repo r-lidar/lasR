@@ -1,9 +1,5 @@
 #include "addattribute.h"
 
-LASRaddattribute::LASRaddattribute()
-{
-}
-
 bool LASRaddattribute::process(PointCloud*& las)
 {
   std::string standard_name = map_attribute(name);
@@ -40,51 +36,73 @@ bool LASRaddattribute::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-LASRremoveattribute::LASRremoveattribute()
-{
-}
-
-bool LASRremoveattribute::process(PointCloud*& las)
-{
-  return las->remove_attribute(name);
-}
-
-bool LASRremoveattribute::set_parameters(const nlohmann::json& stage)
-{
-  name = stage.at("name");
-  if (name == "x" || name == "X" ||
-      name == "y" || name == "Y" ||
-      name == "z" || name == "Z")
-  {
-    last_error = "Removing point coordinates is not allowed";
-    return false;
-  }
-  return true;
-}
-
-LASRremoveattributes::LASRremoveattributes()
-{
-}
-
-bool LASRremoveattributes::process(PointCloud*& las)
-{
-  return las->remove_attributes(names);
-}
-
 bool LASRremoveattributes::set_parameters(const nlohmann::json& stage)
 {
-  names = stage.at("names").get<std::vector<std::string>>();
-
   static const std::vector<std::string> forbidden = {"x", "X", "y", "Y", "z", "Z"};
 
-  for (const auto& name : names)
+  // Detect operation from JSON keys
+  if (stage.contains("keep"))
   {
+    op_type = AttributeOpType::Keep;
+    names = stage.at("keep").get<std::vector<std::string>>();
+  }
+  else if (stage.contains("names"))
+  {
+    op_type = AttributeOpType::RemoveMultiple;
+    names = stage.at("names").get<std::vector<std::string>>();
+  }
+  else if (stage.contains("name"))
+  {
+    op_type = AttributeOpType::RemoveSingle;
+    name = stage.at("name").get<std::string>();
+  }
+  else
+  {
+    last_error = "No valid key found in JSON (expected 'name', 'names', or 'keep')";
+    return false;
+  }
+
+  // Check forbidden attributes
+  switch(op_type)
+  {
+  case AttributeOpType::RemoveSingle:
     if (std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end())
     {
       last_error = "Removing point coordinates is not allowed";
       return false;
     }
+    break;
+
+  case AttributeOpType::RemoveMultiple:
+    for (const auto& n : names)
+    {
+      if (std::find(forbidden.begin(), forbidden.end(), n) != forbidden.end())
+      {
+        last_error = "Removing point coordinates is not allowed";
+        return false;
+      }
+    }
+    break;
+  case AttributeOpType::Keep:
+    break;
   }
 
   return true;
+}
+
+bool LASRremoveattributes::process(PointCloud*& las)
+{
+  switch(op_type)
+  {
+  case AttributeOpType::RemoveSingle:
+    return las->remove_attribute(name);
+
+  case AttributeOpType::RemoveMultiple:
+    return las->remove_attributes(names);
+
+  case AttributeOpType::Keep:
+    return las->keep_attributes(names);
+  }
+
+  return false; // should never reach here
 }
