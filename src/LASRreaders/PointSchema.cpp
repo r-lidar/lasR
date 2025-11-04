@@ -35,13 +35,13 @@ Attribute::Attribute(const std::string& name, AttributeType type, double scale_f
   }
 }
 
-void Attribute::dump(bool verbose) const
+/*void Attribute::dump(bool verbose) const
 {
   if (verbose)
     print(" Name: %-17s | Address offset: %-2zu | Size: %-1zu | Type: %-6s | Scale Factor: %-5.3f | Value Offset: %-5.3f\n", name.c_str(), offset, size, attributeTypeToString(), scale_factor, value_offset);
   else
     print(" Name: %-17s | %-6s | Desc: %s\n", name.c_str(), attributeTypeToString(), description.c_str());
-}
+}*/
 
 void AttributeSchema::add_attribute(const Attribute& attribute)
 {
@@ -122,11 +122,11 @@ int AttributeSchema::get_attribute_index(const std::string& name) const
   return -1;
 }
 
-void AttributeSchema::dump(bool verbose) const
+/*void AttributeSchema::dump(bool verbose) const
 {
   print("%d attributes | %d bytes per points\n", num_attributes(), total_point_size);
   for (const auto& attr : attributes) attr.dump(verbose);
-}
+}*/
 
 AttributeAccessor::AttributeAccessor(double default_value) : name(""), attribute(nullptr), init(false), default_value(default_value) {}
 AttributeAccessor::AttributeAccessor(const std::string& name, double default_value) : name(name), attribute(nullptr), init(false), default_value(default_value) {}

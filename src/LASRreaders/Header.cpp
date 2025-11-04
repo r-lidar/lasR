@@ -1,5 +1,5 @@
 #include "Header.h"
-#include "print.h"
+//#include "print.h"
 
 #include <cinttypes> // PRIu64
 
@@ -35,13 +35,13 @@ Header::Header()
   number_of_point_records = 0;
   schema = AttributeSchema();
 
-#ifndef NOGDAL
+#ifdef USING_GDAL
   crs = CRS();
 #endif
 }
 
 // # nocov start
-void Header::dump() const
+/*void Header::dump() const
 {
   print("%s: %u.%u\n", signature.c_str(), version_major, version_minor);
   print("Max Coordinates: (%.2f, %.2f, %.2f)\n", max_x, max_y, max_z);
@@ -56,11 +56,12 @@ void Header::dump() const
   print("Number of Point Records: %" PRIu64 "\n", number_of_point_records);
   schema.dump(true);
 
-#ifndef NOGDAL
+#ifdef USING_GDAL
   crs.dump();
 #endif
 }
 // # nocov end
+*/
 
 void Header::add_attribute(const Attribute& attr)
 {
@@ -103,7 +104,7 @@ std::pair<unsigned short, unsigned short> Header::gpstime_date() const
 
 void Header::set_crs(int epsg)
 {
-#ifndef NOGDAL
+#ifdef USING_GDAL
   crs = CRS(epsg);
 #else
   this->epsg = epsg;
@@ -112,7 +113,7 @@ void Header::set_crs(int epsg)
 
 void Header::set_crs(const std::string& wkt)
 {
-#ifndef NOGDAL
+#ifdef USING_GDAL
   crs = CRS(wkt);
 #else
   this->wkt = wkt;
@@ -121,7 +122,7 @@ void Header::set_crs(const std::string& wkt)
 
 std::string Header::get_wkt() const
 {
-#ifndef NOGDAL
+#ifdef USING_GDAL
   return(crs.get_wkt());
 #else
   return(wkt);

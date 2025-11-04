@@ -36,7 +36,13 @@
 #define STRICT_R_HEADERS
 #define __STDC_FORMAT_MACROS 1
 
+#ifdef USING_R
 #include "print.h"
+#else
+void print(const char *format, ...);
+void eprint(const char *format, ...);
+void warning(const char *format, ...);
+#endif
 
 #include <string.h>
 #include <stdlib.h>

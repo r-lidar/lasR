@@ -21,8 +21,28 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
     lasio = nullptr;
   }
 
-  lasio = new LASio(progress);
-  return lasio->open(chunk, filters);
+  lasio = new LASio();
+
+  try
+  {
+    lasio->query(
+        chunk.main_files,
+        chunk.neighbour_files,
+        chunk.xmin,
+        chunk.ymin,
+        chunk.xmax,
+        chunk.ymax,
+        chunk.buffer,
+        chunk.shape == ShapeType::CIRCLE,
+        filters);
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
+    return false;
+  }
+
+  return true;
 }
 
 bool LASRlasreader::process(Header*& header)

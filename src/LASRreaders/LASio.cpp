@@ -1,12 +1,13 @@
 #include "LASio.h"
 #include "Progress.h"
-#include "error.h"
 
 #include "lasreader.hpp"
 #include "laswriter.hpp"
 #include "laszip_decompress_selective_v3.hpp"
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
+
+#define EPSILON 1e-9
 
 LASio::LASio()
 {
@@ -16,7 +17,6 @@ LASio::LASio()
   lasheader = nullptr;
   laswriter = nullptr;
   point = nullptr;
-  progress = nullptr;
 
   intensity = AttributeAccessor("Intensity");
   returnnumber = AttributeAccessor("ReturnNumber");
@@ -42,23 +42,15 @@ LASio::LASio()
   copc_density = 256;
 }
 
-LASio::LASio(Progress* progress) : LASio()
-{
-  this->progress = progress;
-}
-
 LASio::~LASio()
 {
   close();
 }
 
-bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
+bool LASio::query(const std::vector<std::string>& main_files, const std::vector<std::string>& neighbour_files, double xmin, double ymin, double xmax, double ymax, double buffer, bool circle, std::vector<std::string> filters)
 {
   if (laswriter)
-  {
-    last_error = "Internal error. This interface has been created as a writer"; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error. This interface has been created as a writer"); // # nocov
 
   // Keep only LASlib string that start with - (e.g. -drop_z_above 50) and drop condition
   // like Z > 50
@@ -84,30 +76,24 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
   lasreadopener->set_merged(true);
   lasreadopener->set_stored(false);
   //lasreadopener->set_populate_header(true);
-  //lasreadopener->set_buffer_size(chunk.buffer);
+  //lasreadopener->set_buffer_size(buffer);
   lasreadopener->parse_str(filtercpy);
   lasreadopener->set_copc_stream_ordered_by_chunk();
 
   free(filtercpy);
 
-  for (auto& file : chunk.main_files) lasreadopener->add_file_name(file.c_str(), TRUE);
-  for (auto& file : chunk.neighbour_files) lasreadopener->add_file_name(file.c_str(), TRUE);
+  for (auto& file : main_files) lasreadopener->add_file_name(file.c_str(), TRUE);
+  for (auto& file : neighbour_files) lasreadopener->add_file_name(file.c_str(), TRUE);
 
-  if (chunk.shape == ShapeType::CIRCLE)
-    lasreadopener->set_inside_circle((chunk.xmin+chunk.xmax)/2, (chunk.ymin+chunk.ymax)/2,  (chunk.xmax-chunk.xmin)/2 + chunk.buffer + EPSILON);
+  if (circle)
+    lasreadopener->set_inside_circle((xmin+xmax)/2, (ymin+ymax)/2,  (xmax-xmin)/2 + buffer + EPSILON);
   else
-    lasreadopener->set_inside_rectangle(chunk.xmin - chunk.buffer - EPSILON, chunk.ymin - chunk.buffer - EPSILON, chunk.xmax + chunk.buffer + EPSILON, chunk.ymax + chunk.buffer + EPSILON);
+    lasreadopener->set_inside_rectangle(xmin - buffer - EPSILON, ymin - buffer - EPSILON, xmax + buffer + EPSILON, ymax + buffer + EPSILON);
 
   lasreader = lasreadopener->open();
+
   if (!lasreader)
-  {
-    // # nocov start
-    char buffer[512];
-    snprintf(buffer, 512, "LASlib internal error. Cannot open LASreader with %s\n", chunk.main_files[0].c_str());
-    last_error = std::string(buffer);
-    return false;
-    // # nocov end
-  }
+    throw std::runtime_error("LASlib internal error. Cannot open LASreader with " + main_files[0]);
 
   // This fixes a bug in LASlib when using LASreaderMerged. If we use LASreaderMerged the
   // attributer of the point is nullptr. This prevent extrabyte from being read since the
@@ -120,7 +106,7 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
     lasreader->point.attributer = lasattributer;
   }
 
-  if (chunk.buffer == 0)
+  if (buffer == 0)
   {
     lasreader->header.clean_lasoriginal();
   }
@@ -128,74 +114,49 @@ bool LASio::open(const Chunk& chunk, std::vector<std::string> filters)
   lasheader = &lasreader->header;
 
   // We did not use LASreaderBuffered so we build a LASvlr_lasoriginal by hand.
-  /*if (chunk.buffer > 0)
+  /*if (buffer > 0)
    {
    lasheader->set_lasoriginal();
    memset((void*)lasheader->vlr_lasoriginal, 0, sizeof(LASvlr_lasoriginal));
-   lasheader->vlr_lasoriginal->min_x = chunk.xmin;
-   lasheader->vlr_lasoriginal->min_y = chunk.ymin;
-   lasheader->vlr_lasoriginal->max_x = chunk.xmax;
-   lasheader->vlr_lasoriginal->max_y = chunk.ymax;
+   lasheader->vlr_lasoriginal->min_x = xmin;
+   lasheader->vlr_lasoriginal->min_y = ymin;
+   lasheader->vlr_lasoriginal->max_x = xmax;
+   lasheader->vlr_lasoriginal->max_y = ymax;
    }*/
 
   return true;
 }
 
-bool LASio::open(const std::string& file)
+void LASio::open(const std::string& file)
 {
   if (lasheader != nullptr)
-  {
-    last_error = "Internal error. LASheader already initialized."; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error. LASheader already initialized."); // # nocov
 
   if (laswriter)
-  {
-    last_error = "Internal error. This interface has been created as a writer"; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error. This interface has been created as a writer"); // # nocov
 
   lasreadopener = new LASreadOpener;
   lasreadopener->add_file_name(file.c_str());
   lasreader = lasreadopener->open();
 
   if (!lasreader)
-  {
-    // # nocov start
-    char buffer[512];
-    snprintf(buffer, 512, "LASlib internal error. Cannot open LASreader with %s\n", file.c_str());
-    last_error = std::string(buffer);
-    return false;
-    // # nocov end
-  }
-
-  return true;
+    throw std::runtime_error("LASlib internal error. Cannot open LASreader with " + file);
 }
 
-bool LASio::create(const std::string& file)
+void LASio::create(const std::string& file)
 {
   if (lasheader == nullptr)
-  {
-    last_error = "Internal error. LASheader not initialized."; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error. LASheader not initialized."); // # nocov
 
   if (lasreader)
-  {
-    last_error = "Internal error. This interface has been created as a reader"; // # nocov
-    return false;
-  }
-
+    throw std::logic_error("Internal error. This interface has been created as a reader"); // # nocov
 
   laswriteopener = new LASwriteOpener;
   laswriteopener->set_file_name(file.c_str());
   laswriter = laswriteopener->open(lasheader);
 
   if (!laswriter)
-  {
-    last_error = "LASlib internal error. Cannot open LASwriter."; // # nocov
-    return false; // # nocov
-  }
+    throw std::runtime_error("LASlib internal error. Cannot open LASwriter."); // # nocov
 
   laswriter->set_copc_depth(copc_depth);
   if (copc_density <= 64)
@@ -205,16 +166,12 @@ bool LASio::create(const std::string& file)
   else
     laswriter->set_copc_dense();
 
-  return true;
 }
 
-bool LASio::populate_header(Header* header, bool read_first_point)
+void LASio::populate_header(Header* header, bool read_first_point)
 {
   if (lasreader == nullptr)
-  {
-    last_error = "Internal error. LASreader not initialized."; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error. LASreader not initialized."); // # nocov
 
   reset_accessor();
 
@@ -373,10 +330,7 @@ bool LASio::populate_header(Header* header, bool read_first_point)
     {
       vlr.data = new unsigned char[src.record_length_after_header];
       if (!vlr.data)
-      {
-        last_error= "VLR memory allocation failled";
-        return false;
-      }
+        throw std::runtime_error("VLR memory allocation failled");
 
       memcpy(vlr.data, src.data, src.record_length_after_header);
     }
@@ -390,22 +344,15 @@ bool LASio::populate_header(Header* header, bool read_first_point)
     header->gpstime = lasreader->point.get_gps_time();
     lasreader->seek(0);
   }
-  return true;
 }
 
-bool LASio::init(const Header* header)
+void LASio::init(const Header* header)
 {
   if (lasheader != nullptr)
-  {
-    last_error = "Internal error. LASheader is already initialized."; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error. LASheader is already initialized."); // # nocov
 
   if (lasreader)
-  {
-    last_error = "Internal error. This interface has been created as a reader"; // # nocov
-    return false;
-  }
+    throw std::logic_error("Internal error. This interface has been created as a reader"); // # nocov
 
   int version_minor = 2;
 
@@ -442,7 +389,7 @@ bool LASio::init(const Header* header)
   lasheader->min_y                = ymin;
   lasheader->max_x                = xmax;
   lasheader->max_y                = ymax;*/
-  std::strncpy(lasheader->generating_software, "lasR with LASlib", 32);
+  std::strncpy(lasheader->generating_software, "lasr with LASlib", 32);
 
   if (header->adjusted_standard_gps_time)
     lasheader->set_global_encoding_bit(0);
@@ -452,10 +399,7 @@ bool LASio::init(const Header* header)
   {
     unsigned char* data = new unsigned char[vlr.record_length_after_header];
     if (!data)
-    {
-      last_error= "VLR memory allocation failled";
-      return false;
-    }
+      throw std::runtime_error("VLR memory allocation failled");
 
     memcpy(data, vlr.data, vlr.record_length_after_header);
     lasheader->add_vlr(vlr.user_id, vlr.record_id, vlr.record_length_after_header, data, TRUE, vlr.description);
@@ -494,8 +438,6 @@ bool LASio::init(const Header* header)
   point->init(lasheader, lasheader->point_data_format, lasheader->point_data_record_length, lasheader);
 
   reset_accessor();
-
-  return true;
 }
 
 bool LASio::read_point(Point* p)
@@ -571,7 +513,7 @@ bool LASio::write_point(Point* p)
   return true;
 }
 
-bool LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
+void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IProgress* progress)
 {
   // Initialize las objects
   const char* filechar = const_cast<char*>(file.c_str());
@@ -580,15 +522,12 @@ bool LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
   LASreader* lasreader = lasreadopener.open();
 
   if (!lasreader)
-  {
-    last_error = "LASlib internal error"; // # nocov
-    return false; // # nocov
-  }
+    throw std::runtime_error("LASlib internal error"); // # nocov
 
   // This file is already copc indexed. Exit
   if (lasreader->get_copcindex())
   {
-    return true;
+    return;
   }
 
   // This file is already indexed
@@ -596,7 +535,7 @@ bool LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
   {
     lasreader->close();
     delete lasreader;
-    return true;
+    return;
   }
 
   lasreadopener.set_decompress_selective(LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY);
@@ -626,15 +565,21 @@ bool LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
   LASindex lasindex;
   lasindex.prepare(lasquadtree, 1000);
 
-  progress->reset();
-  progress->set_prefix("Write LAX");
-  progress->set_total(n);
+  if (progress)
+  {
+    progress->reset();
+    progress->set_total(n);
+  }
 
   while (lasreader->read_point())
   {
     lasindex.add(lasreader->point.get_x(), lasreader->point.get_y(), (U32)(lasreader->p_count-1));
-    (*progress)++;
-    progress->show();
+
+    if (progress)
+    {
+      (*progress)++;
+      progress->show();
+    }
   }
 
   lasreader->close();
@@ -656,9 +601,7 @@ bool LASio::write_lax(const std::string& file, bool overwrite, bool embedded)
     lasindex.write(lasreadopener.get_file_name());
   }
 
-  progress->done();
-
-  return true;
+  if (progress) progress->done();
 }
 
 bool LASio::is_opened()

@@ -66,8 +66,16 @@ bool LASRlaswriter::process(Point*& p)
   // No writer initialized? Create a writer.
   if (!lasio->is_opened())
   {
-    if (!lasio->create(ofile)) return false;
-    written.push_back(ofile);
+    try
+    {
+      lasio->create(ofile);
+      written.push_back(ofile);
+    }
+    catch (const std::exception& e)
+    {
+      last_error = e.what();
+      return false;
+    }
   }
 
   //  If the point in not in the buffer we can write it
@@ -138,7 +146,7 @@ void LASRlaswriter::set_header(Header*& header)
     return;
   }
 
-  lasio = new LASio(progress);
+  lasio = new LASio();
   lasio->init(header);
   lasio->set_copc_max_depth(copc_depth);
   lasio->set_copc_density(copc_density);

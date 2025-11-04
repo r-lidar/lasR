@@ -6,7 +6,7 @@ PKG_CPPFLAGS =\
 	-I$(RWINLIB)/include \
 -I./ -I./LASRcore/ -I./LASRstages/ -I./LASRreaders/ -I./LASRapi/ -I./vendor/ -I./vendor/LASlib/ -I./vendor/LASzip/ \
 	-DHAVE_PROJ_H \
-	-DNDEBUG -DUSING_R
+	-DNDEBUG -DUSING_R -DUSING_GDAL
 
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 

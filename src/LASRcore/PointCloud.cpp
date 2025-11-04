@@ -3,6 +3,7 @@
 #include "Raster.h"
 #include "macros.h"
 #include "error.h"
+#include "print.h"
 
 #include <algorithm>
 
