@@ -359,7 +359,7 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
       {
         if (h.gpstime == 0)
         {
-          warning("This files as no GPS time. Cannot use GPS time to assign a date.");
+          warning("The GPS time of the first point is 0. Cannot use GPS time to assign a date.");
         }
         else
         {
