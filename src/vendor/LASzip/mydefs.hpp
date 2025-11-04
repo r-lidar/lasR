@@ -40,6 +40,7 @@
 #include "print.h"
 #else
 #include <cstdarg>
+#include <cstdio>
 void print(const char *format, ...)
 {
   va_list args;
