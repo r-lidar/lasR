@@ -694,35 +694,7 @@ bool PointCloud::add_attribute(const Attribute& attribute)
 
 bool PointCloud::remove_attribute(const std::string& name)
 {
-  // Find attribute
-  const Attribute* attr = header->schema.find_attribute(name);
-  if (!attr) return true; // nothing to remove
-
-  size_t offset = attr->offset;
-  size_t size_to_remove = attr->size;
-  size_t old_point_size = header->schema.total_point_size;
-  size_t new_point_size = old_point_size - size_to_remove;
-  size_t tail_size = old_point_size - (offset + size_to_remove);
-
-  // For each point from last to first:
-  // We copy head bytes before attribute, then tail bytes after attribute,
-  // packed together tightly in new_point_size bytes.
-  for (size_t i = 0; i < npoints ; ++i)
-  {
-    unsigned char* src = buffer + i * old_point_size;
-    unsigned char* dst = buffer + i * new_point_size;
-
-    // Copy head bytes (before removed attribute)
-    if (offset > 0) memmove(dst, src, offset);
-
-    // Copy tail bytes (after removed attribute)
-    if (tail_size > 0) memmove(dst + offset, src + offset + size_to_remove, tail_size);
-  }
-
-  // Update schema
-  header->schema.remove_attribute(name);
-
-  return true;
+  return remove_attributes({name});
 }
 
 bool PointCloud::remove_attributes(const std::vector<std::string>& names_to_remove)
@@ -765,8 +737,28 @@ bool PointCloud::remove_attributes(const std::vector<std::string>& names_to_remo
 
   if (to_remove.empty()) return true;
 
-  // Step 2: Sort attributes by offset
-  std::sort(to_remove.begin(), to_remove.end(), [](const RemoveInfo& a, const RemoveInfo& b) { return a.offset < b.offset; });
+  // Step 2: Sort and merge overlapping or consecutive remove ranges
+  std::sort(to_remove.begin(), to_remove.end(),  [](const RemoveInfo& a, const RemoveInfo& b) { return a.offset < b.offset; });
+  std::vector<RemoveInfo> merged;
+  merged.reserve(to_remove.size());
+  merged.push_back(to_remove.front());
+  for (size_t i = 1; i < to_remove.size(); ++i)
+  {
+    auto& prev = merged.back();
+    const auto& curr = to_remove[i];
+
+    if (curr.offset <= prev.offset + prev.size)
+    {
+      // Overlapping or consecutive: merge
+      size_t end = std::max(prev.offset + prev.size, curr.offset + curr.size);
+      prev.size = end - prev.offset;
+    }
+    else
+    {
+      merged.push_back(curr);
+    }
+  }
+  to_remove.swap(merged);
 
   size_t old_point_size = header->schema.total_point_size;
   size_t new_point_size = old_point_size - total_remove_size;
