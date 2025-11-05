@@ -25,6 +25,21 @@ bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
   keep_buffer = stage.value("keep_buffer", false);
   copc_density = stage.value("density", 256);
   copc_depth = stage.value("max_depth", -1);
+  version_minor = stage.value("version", 0xFF); // 0xFF auto-detect
+  point_format = stage.value("pdrf", 0xFF);
+
+  if (version_minor != 0xFF && version_minor > 4)
+  {
+    last_error = "Invalid version for LAS format";
+    return false;
+  }
+
+  if (point_format != 0xFF && point_format > 10)
+  {
+    last_error = "Invalid point data format for LAS format";
+    return false;
+  }
+
   return true;
 }
 
@@ -146,8 +161,14 @@ void LASRlaswriter::set_header(Header*& header)
     return;
   }
 
+  // Use a tmp copy of the header to force some option without modifying the original header
+  Header h = *header;
+  h.signature = "LASF";
+  h.point_data_format = point_format;
+  h.version_minor = version_minor;
+
   lasio = new LASio();
-  lasio->init(header);
+  lasio->init(&h);
   lasio->set_copc_max_depth(copc_depth);
   lasio->set_copc_density(copc_density);
 }

@@ -356,17 +356,22 @@ void LASio::init(const Header* header)
 
   int version_minor = 2;
 
-  bool has_gps = header->schema.find_attribute("gpstime") != nullptr;
-  bool has_rgb = header->schema.find_attribute("R") != nullptr;
-  bool has_nir = header->schema.find_attribute("NIR") != nullptr;
-  bool has_overlap = header->schema.find_attribute("Overlap") != nullptr;
 
-  int pdf = guess_point_data_format(has_gps, has_rgb, has_nir, has_overlap);
+  int pdf = header->point_data_format;
+  if (pdf == 0xFF) // Autodetect
+  {
+    bool has_gps = header->schema.find_attribute("gpstime") != nullptr;
+    bool has_rgb = header->schema.find_attribute("R") != nullptr;
+    bool has_nir = header->schema.find_attribute("NIR") != nullptr;
+    bool has_overlap = header->schema.find_attribute("Overlap") != nullptr;
+    pdf = guess_point_data_format(has_gps, has_rgb, has_nir, has_overlap);
+  }
 
-  if (header->signature != "LASF")
+  version_minor = header->version_minor;
+  if (version_minor == 0xFF) // Autodetect
+  {
     version_minor = (pdf >= 6) ? 4 : 2;
-  else
-    version_minor = header->version_minor;
+  }
 
   lasheader = new LASheader();
   lasheader->file_source_ID       = 0;

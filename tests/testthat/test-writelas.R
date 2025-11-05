@@ -83,3 +83,24 @@ test_that("Cannot overwrite processed file",
   pipeline = set_crs(25832) + write_las(ofile = file)
   expect_error(exec(pipeline, on = file), "Cannot override a file used as a source of point-cloud")
 })
+
+test_that("writelas allow controlling format",
+{
+  f = paste0(system.file(package="lasR"), "/extdata/Example.las")
+  o = paste0(tempdir(), "/test.las")
+
+  reader = reader_las(filter = "-keep_first")
+  writer = write_las(o, version = 1, pdrf = 0)
+  u = exec(reader + writer, on = f)
+
+  expect_type(u, "character")
+  expect_length(u, 1)
+  expect_true(all(file.exists(u)))
+
+  v = exec(reader_las() + summarise(), on = o)
+
+  expect_equal(v$npoints, 26)
+  expect_equal(v$npoints_per_return, c("1" = 26))
+  expect_equal(v$npoints_per_class, c("1" = 25, "2" = 1))
+})
+

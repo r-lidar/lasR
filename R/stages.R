@@ -1320,6 +1320,10 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' circumstances, e.g., to merge some files.
 #' @param keep_buffer bool. The buffer is removed to write file but it can be preserved.
 #' @param binary boolean. Write binary or ascii PCD files.
+#' @param version integer. LAS format minor version to write. NULL or NA means it is auto-detected based
+#' on the attributes of the point cloud. It writes either LAS 1.2 or LAS 1.4
+#' @param pdrf integer. LAS point data record format. NULL or NA means it is auto-detected based
+#' on the attributes of the point cloud.
 #' @template param-filter
 #'
 #' @examples
@@ -1332,10 +1336,14 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' @export
 #' @md
 #' @rdname write
-write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE)
+write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE, version = NULL, pdrf = NULL)
 {
   validate_filter(filter)
-  return(.APISTAGES$write_las(ofile, filter, keep_buffer))
+  if (is.null(version)) version = 0xFF
+  if (is.null(pdrf)) pdrf = 0xFF
+  if (is.na(version)) version = 0xFF
+  if (is.na(pdrf)) pdrf = 0xFF
+  return(.APISTAGES$write_las(ofile, filter, keep_buffer, version, pdrf))
 }
 
 #' @export

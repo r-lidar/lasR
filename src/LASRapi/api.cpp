@@ -485,13 +485,26 @@ Pipeline transform_with(std::string connect_uid, std::string operation, std::str
   return Pipeline(s);
 }
 
-Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep_buffer)
+Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep_buffer, unsigned char version, unsigned char pdrf)
 {
   Stage s("write_las");
   s.set("output", ofile);
   s.set("filter", filter);
   s.set("keep_buffer", keep_buffer);
+  if (version != 0xFF)
+  {
+    if (version < 0 || version > 4)
+      throw std::invalid_argument("Invalid argument 'version'. Valid LAS versions are 0,1,2,3 and 4");
 
+    s.set("version", version);
+  }
+  if (pdrf != 0xFF)
+  {
+    if (pdrf < 0 || pdrf > 10)
+      throw std::invalid_argument("Invalid argument 'pdrf'. Valid LAS pdrf are 0 to 10");
+
+    s.set("pdrf", pdrf);
+  }
   return Pipeline(s);
 }
 
