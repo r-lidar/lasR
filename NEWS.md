@@ -4,7 +4,7 @@
 - New stage `keep_attributes`
 - New stage `remove_rgb()`
 - New function `temppcd()`
-- New arguments `version` and `pdrf` in `write_las()` to for a LAS version and point format.
+- New arguments `version` and `pdrf` in `write_las()` to enforce a specific LAS version and point format.
 
 # lasR 0.17.3
 
