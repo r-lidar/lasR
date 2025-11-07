@@ -1,0 +1,4 @@
+include CMakeLists.txt
+include bindings.cpp
+include export_python.cpp
+include vendor_files.txt

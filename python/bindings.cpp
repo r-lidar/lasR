@@ -77,7 +77,7 @@ static std::vector<std::string> normalize_files_arg(const py::object& files) {
 
 PYBIND11_MODULE(pylasr, m) {
     m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing";
-    m.attr("__version__") = "0.17.0";
+    m.attr("__version__") = "0.17.2";
 
     // System information functions
     m.def("available_threads", &api::available_threads,
@@ -495,13 +495,6 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("nothing", &nonapi::nothing,
           "Do nothing (for testing)",
           py::arg("read") = false, py::arg("stream") = false, py::arg("loop") = false);
-
-    m.def("neighborhood_metrics", [](py::object connect_uid, std::vector<std::string> metrics, int k, double r, std::string ofile) {
-        std::string uid = extract_uid(connect_uid);
-        return nonapi::neighborhood_metrics(uid, metrics, k, r, ofile);
-    },
-    "Compute neighborhood metrics",
-    py::arg("connect_uid"), py::arg("metrics"), py::arg("k") = 10, py::arg("r") = 0.0, py::arg("ofile") = "");
 
     // Convenience functions
     m.def("create_pipeline", []() -> api::Pipeline {

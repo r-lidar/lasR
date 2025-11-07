@@ -31,13 +31,19 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
-        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        
-        # For --inplace builds, use the source directory instead
+        # Determine full path for the compiled extension
+        ext_path = os.path.abspath(self.get_ext_fullpath(ext.name))
+        # For in-place builds, place next to setup.py
         if self.inplace:
             extdir = os.path.dirname(os.path.abspath(__file__))
             print(f"Building in-place at: {extdir}")
+        else:
+            # Wheel build: place shared lib next to ext_path, inside build/lib... for packaging
+            extdir = os.path.dirname(ext_path)
+            print(f"Building wheel extension into: {extdir}")
 
+        # Ensure the library output directory exists so the wheel can include shared libs
+        os.makedirs(extdir, exist_ok=True)
         # Create build directory
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
@@ -113,24 +119,39 @@ class CMakeBuild(build_ext):
             )
 
             print("\nRunning CMake build...")
+            os.makedirs(extdir, exist_ok=True)
             subprocess.check_call(
                 ["cmake", "--build", "."] + build_args, cwd=self.build_temp
             )
 
+            # Ensure the compiled module gets copied to the right place for bdist_wheel
+            import sysconfig
+            source_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"pylasr{sysconfig.get_config_var('EXT_SUFFIX')}")
+            if os.path.exists(source_file):
+                dest_file = os.path.join(extdir, os.path.basename(source_file))
+                # Only copy if source and destination are different
+                if os.path.abspath(source_file) != os.path.abspath(dest_file):
+                    print(f"Copying {source_file} to {dest_file}")
+                    shutil.copy2(source_file, dest_file)
+                else:
+                    print(f"Source and destination are the same, skipping copy: {source_file}")
+            
             # Print the output directory content
             print(f"\nFiles in output directory {extdir}:")
-            for f in os.listdir(extdir):
-                if f.endswith('.so') or f.endswith('.pyd'):
-                    print(f"  {f} (Python extension module)")
-                    # Also check if it's the right Python version
-                    import sysconfig
-                    expected_suffix = sysconfig.get_config_var('EXT_SUFFIX')
-                    if expected_suffix and expected_suffix in f:
-                        print(f"    ✓ Matches expected suffix: {expected_suffix}")
+            try:
+                for f in os.listdir(extdir):
+                    if f.endswith('.so') or f.endswith('.pyd'):
+                        print(f"  {f} (Python extension module)")
+                        # Also check if it's the right Python version
+                        expected_suffix = sysconfig.get_config_var('EXT_SUFFIX')
+                        if expected_suffix and expected_suffix in f:
+                            print(f"    ✓ Matches expected suffix: {expected_suffix}")
+                        else:
+                            print(f"    ⚠ Expected suffix: {expected_suffix}")
                     else:
-                        print(f"    ⚠ Expected suffix: {expected_suffix}")
-                else:
-                    print(f"  {f}")
+                        print(f"  {f}")
+            except FileNotFoundError:
+                print(f"  Directory not found or empty")
 
         except subprocess.CalledProcessError as e:
             print(f"Build error: {str(e)}")
@@ -144,13 +165,8 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    name="pylasr",
-    version="0.17.0",
-    description="Python bindings for LASR library",
-    author="LASR Team",
-    ext_modules=[CMakeExtension("pylasr")],
+    ext_modules=[CMakeExtension("pylasr", sourcedir=".")],  # Explicit project root
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
-    python_requires=">=3.9",
     py_modules=[],  # Explicitly set to avoid auto-discovery issues
 )
