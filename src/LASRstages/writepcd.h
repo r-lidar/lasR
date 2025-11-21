@@ -11,7 +11,7 @@ public:
   LASRpcdwriter();
   ~LASRpcdwriter();
   bool set_chunk(Chunk& chunk) override;
-  void set_header(Header*& header) override;
+  bool set_header(Header*& header) override;
   bool set_input_file_name(const std::string& file) override;
   bool set_output_file(const std::string& file) override;
   bool process(Point*& p) override;

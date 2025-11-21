@@ -373,6 +373,33 @@ void LASio::init(const Header* header)
     version_minor = (pdf >= 6) ? 4 : 2;
   }
 
+  if (pdf >= 6 & version_minor < 4)
+  {
+    throw std::invalid_argument(
+        "Invalid format: pdrf > 5 is not compatible with version < 4. "
+        "This error likely occurs because the version was enforced manually, "
+        "while the pdrf value was inferred from the point attributes and ended up being incompatible."
+    );
+  }
+
+  if (pdf >= 4 & version_minor < 3)
+  {
+    throw std::invalid_argument(
+        "Invalid format: pdrf > 3 is not compatible with version < 3. "
+        "This error likely occurs because the version was enforced manually, "
+        "while the pdrf value was inferred from the point attributes and ended up being incompatible."
+    );
+  }
+
+  if (pdf >= 2 & version_minor < 2)
+  {
+    throw std::invalid_argument(
+        "Invalid format: pdrf > 1 is not compatible with version < 2. "
+        "This error likely occurs because the version was enforced manually, "
+        "while the pdrf value was inferred from the point attributes and ended up being incompatible."
+    );
+  }
+
   lasheader = new LASheader();
   lasheader->file_source_ID       = 0;
   lasheader->version_major        = 1;

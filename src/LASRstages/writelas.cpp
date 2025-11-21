@@ -149,7 +149,7 @@ bool LASRlaswriter::process(PointCloud*& las)
   return true;
 }
 
-void LASRlaswriter::set_header(Header*& header)
+bool LASRlaswriter::set_header(Header*& header)
 {
   // We are receiving a new header because a reader start reading a new file
 
@@ -158,7 +158,7 @@ void LASRlaswriter::set_header(Header*& header)
   if (lasio)
   {
     lasio->reset_accessor();
-    return;
+    return true;
   }
 
   // Use a tmp copy of the header to force some option without modifying the original header
@@ -167,10 +167,20 @@ void LASRlaswriter::set_header(Header*& header)
   h.point_data_format = point_format;
   h.version_minor = version_minor;
 
-  lasio = new LASio();
-  lasio->init(&h);
-  lasio->set_copc_max_depth(copc_depth);
-  lasio->set_copc_density(copc_density);
+  try
+  {
+    lasio = new LASio();
+    lasio->init(&h);
+    lasio->set_copc_max_depth(copc_depth);
+    lasio->set_copc_density(copc_density);
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
+    return false;
+  }
+
+  return true;
 }
 
 bool LASRlaswriter::set_chunk(Chunk& chunk)

@@ -146,7 +146,13 @@ bool Engine::run_streamed()
       if (npoints == 0) break;
 
       // Some stages need the header to get initialized (write_las is the only one)
-      stage->set_header(header);
+      success = stage->set_header(header);
+
+      if (!success)
+      {
+        last_error = "in '" + stage->get_name() + "' while processing the header: " + last_error; // # nocov
+        return false; // # nocov
+      }
 
       // Each stage process the LASpoint. The first stage being a reader, the LASpoint, which is
       // initially nullptr, will be initialized by pipeline[0]
@@ -244,7 +250,13 @@ bool Engine::run_loaded()
     }
 
     // Some stages need the header to get initialized (write_las is the only one)
-    stage->set_header(header);
+    success = stage->set_header(header);
+
+    if (!success)
+    {
+      last_error = "in '" + stage->get_name() + "' while processing the header: " + last_error; // # nocov
+      return false; // # nocov
+    }
 
     // The pipeline is not streamable we need an object that stores and spatially index all the points
     // Each stage process the LAS. The first stage being a reader, the LAS, which is initially nullptr,
