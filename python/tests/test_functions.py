@@ -95,12 +95,12 @@ class TestPointOperations(unittest.TestCase):
 
     def test_remove_attribute(self):
         """Test remove_attribute pipeline creation"""
-        pipeline = pylasr.remove_attribute("GPSTime")
+        pipeline = pylasr.remove_attribute("gpstime")
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
     def test_remove_attributes(self):
         """Test remove_attributes pipeline creation"""
-        pipeline = pylasr.remove_attributes(["GPSTime", "ScanAngle"])
+        pipeline = pylasr.remove_attributes(["gpstime", "ScanAngle"])
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
     def test_remove_rgb(self):
