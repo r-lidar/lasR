@@ -292,6 +292,9 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("filter") = std::vector<std::string>{""},
           py::arg("attribute") = "", py::arg("value") = 0.0);
 
+    m.def("remove_attribute", &api::remove_attribute,
+          "Remove an attribute from the point cloud",
+          py::arg("name"));
 
     m.def("remove_attributes", &api::remove_attributes,
           "Remove multiple attributes from the point cloud",
