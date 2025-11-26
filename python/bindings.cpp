@@ -47,7 +47,7 @@ py::object create_result(const nlohmann::json& json_results, const std::string& 
     auto results = py::dict();
     results["success"] = true;
     results["json_config"] = json_config_path;
-    
+
     if (!json_results.empty()) {
         std::string json_str = json_results.dump();
         py::object json_module = py::module_::import("json");
@@ -55,7 +55,7 @@ py::object create_result(const nlohmann::json& json_results, const std::string& 
     } else {
         results["data"] = py::list();  // Empty list instead of None for consistency
     }
-    
+
     return results;
 }
 
@@ -266,9 +266,30 @@ PYBIND11_MODULE(pylasr, m) {
           "Classify noise using Statistical Outlier Removal",
           py::arg("k") = 8, py::arg("m") = 6, py::arg("classification") = 18);
 
-    m.def("classify_with_ivf", &api::classify_with_ivf,
-          "Classify noise using Isolated Voxel Filter",
-          py::arg("res") = 5.0, py::arg("n") = 6, py::arg("classification") = 18);
+    m.def("classify_with_ipf", &api::classify_with_ipf,
+          "Classify noise using Isolated Point Filter",
+          py::arg("r") = 1.0, py::arg("n") = 0, py::arg("classification") = 18);
+
+    m.def("classify_with_ivf",
+          [](double res, int n, int classification)
+          {
+            // Lambda accepts double, wraps it into a 1-element vector for backward compatibility
+            return api::classify_with_ivf({res}, n, classification);
+          },
+          "Classify noise using Isolated Voxel Filter (Cubic)",
+          py::arg("res") = 5.0,
+          py::arg("n") = 6,
+          py::arg("classification") = 18
+    );
+
+    // New Functionality Overload (Vector input)
+    m.def("classify_with_ivf",
+          &api::classify_with_ivf,
+          "Classify noise using Isolated Voxel Filter (Non-Cubic)",
+          py::arg("res") = std::vector<double>{5.0, 5.0, 5.0},
+          py::arg("n") = 6,
+          py::arg("classification") = 18
+    );
 
     m.def("classify_with_csf", &api::classify_with_csf,
           "Classify ground using Cloth Simulation Filter",
