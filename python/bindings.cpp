@@ -317,6 +317,17 @@ PYBIND11_MODULE(pylasr, m) {
           "Remove an attribute from the point cloud",
           py::arg("name"));
 
+    m.def("remove_attributes", &api::remove_attributes,
+          "Remove multiple attributes from the point cloud",
+          py::arg("names"));
+
+    m.def("remove_rgb", &api::remove_rgb,
+          "Remove RGB attributes from the point cloud");
+
+    m.def("keep_attributes", &api::keep_attributes,
+          "Keep only specified attributes in the point cloud",
+          py::arg("names"));
+
     m.def("sort_points", &api::sort_points,
           "Sort points",
           py::arg("spatial") = true);

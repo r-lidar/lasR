@@ -95,7 +95,22 @@ class TestPointOperations(unittest.TestCase):
 
     def test_remove_attribute(self):
         """Test remove_attribute pipeline creation"""
-        pipeline = pylasr.remove_attribute("GPSTime")
+        pipeline = pylasr.remove_attribute("gpstime")
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_remove_attributes(self):
+        """Test remove_attributes pipeline creation"""
+        pipeline = pylasr.remove_attributes(["gpstime", "ScanAngle"])
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_remove_rgb(self):
+        """Test remove_rgb pipeline creation"""
+        pipeline = pylasr.remove_rgb()
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_keep_attributes(self):
+        """Test keep_attributes pipeline creation"""
+        pipeline = pylasr.keep_attributes(["Intensity"])
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
     def test_sort_points(self):
