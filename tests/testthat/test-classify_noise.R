@@ -9,6 +9,18 @@ test_that("classify noise with ivf works",
   expect_equal(ans$npoints_per_class, c(`1` = 60721, `2` = 8053, `9` = 3835, `18` = 794))
 })
 
+test_that("classify noise with ivf works with non cubic voxels",
+{
+  f <- system.file("extdata", "Topography.las", package="lasR")
+  class = classify_with_ivf(res = c(5,5,10), n = 50)
+  ans = exec(class+summarise(), f)
+
+  expect_equal(ans$npoints_per_class, c(`1` = 61256, `2` = 8099, `9` = 3830, `18` = 218))
+
+  expect_error(classify_with_ivf(res = c(5,5), n = 50), "res must be of length 3")
+})
+
+
 test_that("classify noise with ivf works using unorder map",
 {
   skip("Not testable with new API")

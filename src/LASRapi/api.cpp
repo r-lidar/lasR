@@ -53,13 +53,28 @@ Pipeline classify_with_ipf(double r, int n, int classification)
   return Pipeline(s);
 }
 
-Pipeline classify_with_ivf(double res, int n, int classification)
+Pipeline classify_with_ivf(std::vector<double> res, int n, int classification)
 {
-  if (res < 0)  throw std::invalid_argument("Invalid argument: resolution must be positive.");
-  if (n < 0)    throw std::invalid_argument("Invalid argument: neighborhood must be positive.");
+  size_t nv = res.size();
+  if (n < 0)       throw std::invalid_argument("Invalid argument: neighborhood must be positive.");
+  if (nv == 0)     throw std::invalid_argument("Invalid argument: resolution is empty.");
+  if (nv > 1)
+  {
+    if (nv != 3)     throw std::invalid_argument("Invalid argument: res must be of length 3.");
+    if (res[0] < 0)  throw std::invalid_argument("Invalid argument: resolution must be positive.");
+    if (res[1] < 0)  throw std::invalid_argument("Invalid argument: resolution must be positive.");
+    if (res[2] < 0)  throw std::invalid_argument("Invalid argument: resolution must be positive.");
+  }
+  else
+  {
+    res.push_back(res[0]);
+    res.push_back(res[0]);
+  }
 
   Stage s("classify_with_ivf");
-  s.set("res", res);
+  s.set("res_x", res[0]);
+  s.set("res_y", res[1]);
+  s.set("res_z", res[2]);
   s.set("n", n);
   s.set("class", classification);
 

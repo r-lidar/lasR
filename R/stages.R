@@ -240,7 +240,7 @@ classify_with_ipf = function(r = 1, n = 0L, class = 18L) { .APISTAGES$classify_w
 #' Used with class 18, it classifies points as noise. This stage modifies the point cloud in the pipeline
 #' but does not produce any output.
 #'
-#' @param res numeric. Resolution of the voxels.
+#' @param res numeric. Resolution of the voxels. Can be a vector of 3 for x,y and z resolutions
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
 #' @param class integer. The class to assign to the points that match the condition.
 #' @template return-pointcloud

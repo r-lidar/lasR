@@ -6,6 +6,7 @@
 - New stage `classify_with_ipf()` to classify points with isolated point filter.
 - New function `temppcd()`
 - New arguments `version` and `pdrf` in `write_las()` to enforce a specific LAS version and point format.
+- New feature `classify_with_ivf()` supports non cubic voxels with e.g. `classify_with_ivf(res = c(1,1,2))`
 
 # lasR 0.17.3
 

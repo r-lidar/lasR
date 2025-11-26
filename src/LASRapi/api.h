@@ -192,7 +192,7 @@ Pipeline add_attribute(std::string data_type, std::string name, std::string desc
 Pipeline add_rgb();
 Pipeline classify_with_sor(int k = 8, int m = 6, int classification = 18);
 Pipeline classify_with_ipf(double r = 1.0, int n = 1, int classification = 18);
-Pipeline classify_with_ivf(double res = 5, int n = 6, int classification = 18);
+Pipeline classify_with_ivf(std::vector<double> res = {5,5,5}, int n = 6, int classification = 18);
 Pipeline classify_with_csf(bool slope_smooth = false, double class_threshold = 0.5, double cloth_resolution = 0.5, int rigidness = 1, int iterations = 500, double time_step = 0.65, int classification = 2L, std::vector<std::string> filter = {""});
 Pipeline geometry_features(int k, double r, std::string features = "");
 Pipeline delete_points(std::vector<std::string> filter = {""});
