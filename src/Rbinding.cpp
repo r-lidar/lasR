@@ -54,6 +54,7 @@ RCPP_MODULE(stages)
   function("aggregate", &api::aggregate, "Rasterize with R expression");
   function("callback", &api::callback, "Callback R function on the point cloud");
   function("classify_with_sor", &api::classify_with_sor, "Classify noise with SOR");
+  function("classify_with_ipf", &api::classify_with_ipf, "Classify noise with IPF");
   function("classify_with_ivf", &api::classify_with_ivf, "Classify noise with IVF");
   function("classify_with_csf", &api::classify_with_csf, "Classify ground with CSF");
   function("delete_points", &api::delete_points, "Delete points that match criteria");

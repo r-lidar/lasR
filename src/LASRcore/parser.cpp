@@ -13,6 +13,7 @@
 #include "filter.h"
 #include "focal.h"
 #include "info.h"
+#include "ipf.h"
 #include "ivf.h"
 #include "loadmatrix.h"
 #include "loadraster.h"
@@ -88,6 +89,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"add_attribute",        create_instance<LASRaddattribute>},
     {"add_rgb",              create_instance<LASRaddrgb>},
     {"classify_with_csf",    create_instance<LASRcsf>},
+    {"classify_with_ipf",    create_instance<LASRipf>},
     {"classify_with_ivf",    create_instance<LASRivf>},
     {"classify_with_sor",    create_instance<LASRsor>},
     {"edit_attribute",       create_instance<LASRedit>},

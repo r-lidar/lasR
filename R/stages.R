@@ -216,6 +216,25 @@ classify_with_sor = function(k = 8, m = 6, class = 18L) { .APISTAGES$classify_wi
 
 #' Classify noise points
 #'
+#' Classify points using Isolated Point Filter (IVF). The stage identifies points that have only a few other
+#' points in their surrounding sphere neighborhood and edits the points to assign a target classification.
+#' Used with class 18, it classifies points as noise. With a r = 1 and n = 0: if a point has 0
+#' neighbor within a radius of 1 m it is reclassified. With a r = 2 and n = 1: if a point has 0 or 1
+#' neighbor within a radius of 2 m it is reclassified. This stage modifies the point cloud in the pipeline
+#' but does not produce any output.
+#'
+#' @param r numeric. Radius of the sphere.
+#' @param n integer. The maximal number of 'other points' in the sphere. Less than that and the point
+#' is reclassified
+#' @param class integer. The class to assign to the points that match the condition.
+#' @template return-pointcloud
+#'
+#' @export
+classify_with_ipf = function(r = 1, n = 0L, class = 18L) { .APISTAGES$classify_with_ipf(r, n, class) }
+
+
+#' Classify noise points
+#'
 #' Classify points using Isolated Voxel Filter (IVF). The stage identifies points that have only a few other
 #' points in their surrounding 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification.
 #' Used with class 18, it classifies points as noise. This stage modifies the point cloud in the pipeline

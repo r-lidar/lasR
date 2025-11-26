@@ -30,6 +30,8 @@ Pipeline add_rgb()
 
 Pipeline classify_with_sor(int k, int m, int classification)
 {
+  if (k < 2)  throw std::invalid_argument("Invalid argument: impossible to compute standard deviation with less than 2-nearest neighbors");
+
   Stage s("classify_with_sor");
   s.set("k", k);
   s.set("m", m);
@@ -38,8 +40,24 @@ Pipeline classify_with_sor(int k, int m, int classification)
   return Pipeline(s);
 }
 
+Pipeline classify_with_ipf(double r, int n, int classification)
+{
+  if (r <= 0)  throw std::invalid_argument("Invalid argument: radius must be positive.");
+  if (n < 0)   throw std::invalid_argument("Invalid argument: neighborhood must be positive.");
+
+  Stage s("classify_with_ipf");
+  s.set("radius", r);
+  s.set("n", n);
+  s.set("class", classification);
+
+  return Pipeline(s);
+}
+
 Pipeline classify_with_ivf(double res, int n, int classification)
 {
+  if (res < 0)  throw std::invalid_argument("Invalid argument: resolution must be positive.");
+  if (n < 0)    throw std::invalid_argument("Invalid argument: neighborhood must be positive.");
+
   Stage s("classify_with_ivf");
   s.set("res", res);
   s.set("n", n);

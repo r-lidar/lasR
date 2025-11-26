@@ -1,18 +1,15 @@
 #include "openmp.h"
-#include "sor.h"
+#include "ipf.h"
 
-bool LASRsor::process(PointCloud*& las)
+bool LASRipf::process(PointCloud*& las)
 {
   progress->reset();
   progress->set_total(las->npoints);
   progress->set_prefix("Statistical outlier");
   progress->set_ncpu(ncpu);
 
-  int n = 0; // online variance
-  double m0 = 0.0; // online mean
-  double m2 = 0.0;
-  std::vector<double> distances;
-  distances.resize(las->npoints);
+  std::vector<int> n_neighbors;
+  n_neighbors.resize(las->npoints);
 
   // The next for loop is at the level a nested parallel region. Printing the progress bar
   // is not thread safe. We first check that we are in outer thread 0
@@ -20,6 +17,7 @@ bool LASRsor::process(PointCloud*& las)
 
   if (verbose) print("Building KDtree spatial index\n");
   las->build_kdtree();
+
   #pragma omp parallel for num_threads(ncpu)
   for (unsigned int i = 0 ; i < las->npoints ; i++)
   {
@@ -31,21 +29,12 @@ bool LASRsor::process(PointCloud*& las)
     if (!las->get_point(i, &p)) continue;
 
     std::vector<Point> pts;
-    las->knn(p, k+1, pts, &pointfilter);
+    las->query_sphere(p, radius, pts, &pointfilter);
 
-    double dsum = 0;
-    for (size_t i = 1; i < pts.size(); ++i) dsum += std::sqrt(std::pow(p.get_x() - pts[i].get_x(), 2) + std::pow(p.get_y() - pts[i].get_y(), 2) + std::pow(p.get_z() - pts[i].get_z(), 2));
-    double dmean =  dsum / (pts.size()-1);
-    distances[i] = dmean;
+    n_neighbors[i] = pts.size();
 
-    #pragma omp critical (sor)
+    #pragma omp critical (ipf)
     {
-      // Average distance and variance
-      n++;
-      double delta = dmean - m0;
-      m0 += delta/n;
-      m2 += delta*(dmean - m0);
-
       if (main_thread)
       {
         (*progress)++;
@@ -54,16 +43,13 @@ bool LASRsor::process(PointCloud*& las)
     }
   }
 
-  double dmean = m0;
-  double dstd = std::sqrt(m2/(n-1));
-
   AttributeAccessor set_classification("Classification");
 
   while (las->read_point())
   {
     int i = las->current_point;
 
-    if (distances[i] > dmean + m*dstd)
+    if (n_neighbors[i] <= n)
     {
       set_classification(&las->point, classification);
     }
@@ -72,15 +58,22 @@ bool LASRsor::process(PointCloud*& las)
   return true;
 }
 
-bool LASRsor::set_parameters(const nlohmann::json& stage)
+bool LASRipf::set_parameters(const nlohmann::json& stage)
 {
-  k = stage.value("k", 10);
-  m = stage.value("m", 3);
+  radius = stage.value("radius", 1.0);
+  n = stage.value("n", 0);
+  n++;
   classification = stage.value("class", 18);
 
-  if (k < 2)
+  if (radius <= 0)
   {
-    last_error = "Impossible to compute standard deviation with less than 2-nearest neighbors.";
+    last_error = "Parameter 'radius' should be positive.";
+    return false;
+  }
+
+  if (n < 0)
+  {
+    last_error = "Parameter 'n' should be positive or 0.";
     return false;
   }
 

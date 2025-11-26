@@ -3,6 +3,7 @@
 - New stage `remove_attributes` that deprecated `remove_attribute` (no `s`).
 - New stage `keep_attributes`
 - New stage `remove_rgb()`
+- New stage `classify_with_ipf()` to classify points with isolated point filter.
 - New function `temppcd()`
 - New arguments `version` and `pdrf` in `write_las()` to enforce a specific LAS version and point format.
 
