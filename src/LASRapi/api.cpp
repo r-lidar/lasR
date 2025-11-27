@@ -541,13 +541,13 @@ Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep
 
   if (version != 0xFF & pdrf != 0xFF)
   {
-    if (pdrf >= 6 & version < 4)
+    if ((pdrf >= 6) && (version < 4))
       throw std::invalid_argument("Invalid argument pdrf > 5 is not compatible with version < 4");
 
-    if (pdrf >= 4 & version < 3)
+    if ((pdrf >= 4) && (version < 3))
       throw std::invalid_argument("Invalid argument pdrf > 3 is not compatible with version < 3");
 
-    if (pdrf >= 2 & version < 2)
+    if ((pdrf >= 2) && (version < 2))
       throw std::invalid_argument("Invalid argument pdrf > 1 is not compatible with version < 2");
   }
 

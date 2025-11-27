@@ -216,7 +216,7 @@ classify_with_sor = function(k = 8, m = 6, class = 18L) { .APISTAGES$classify_wi
 
 #' Classify noise points
 #'
-#' Classify points using Isolated Point Filter (IVF). The stage identifies points that have only a few other
+#' Classify points using Isolated Point Filter (IPF). The stage identifies points that have only a few other
 #' points in their surrounding sphere neighborhood and edits the points to assign a target classification.
 #' Used with class 18, it classifies points as noise. With a r = 1 and n = 0: if a point has 0
 #' neighbor within a radius of 1 m it is reclassified. With a r = 2 and n = 1: if a point has 0 or 1

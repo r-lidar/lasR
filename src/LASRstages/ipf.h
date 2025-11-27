@@ -8,8 +8,7 @@ class LASRipf: public Stage
 public:
   LASRipf() = default;
   bool process(PointCloud*& las) override;
-  double need_buffer() const override { return 10; };
-  bool is_parallelized() const override { return true; };
+  double need_buffer() const override { return radius; };
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "ipf"; };
 
