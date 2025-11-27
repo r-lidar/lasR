@@ -206,6 +206,7 @@ PYBIND11_MODULE(pylasr, m) {
         .def("set_profile_file", &api::Pipeline::set_profile_file, "Set profiling output file", py::arg("path"))
         .def("set_noprocess", &api::Pipeline::set_noprocess, "Set no-process flags", py::arg("noprocess"))
         .def("has_reader", &api::Pipeline::has_reader, "Check if pipeline has a reader stage")
+        .def("has_catalog", &api::Pipeline::has_catalog, "Check if pipeline has a catalog")
         .def("to_string", &api::Pipeline::to_string, "Get string representation")
         .def("write_json", &api::Pipeline::write_json, "Write pipeline to JSON file", py::arg("path") = "")
         .def("execute", [](api::Pipeline& self, py::object files) -> py::object {
