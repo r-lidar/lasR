@@ -1,0 +1,48 @@
+# Stop the pipeline conditionally
+
+Stop the pipeline conditionally. The stages after a \`stop_if\` stage
+are skipped if the condition is met. This allows to process a subset of
+the dataset of to skip some stages conditionally. This DOES NOT stop the
+computation. In only breaks the pipeline for the current file/chunk
+currently processed. (see exemple)
+
+## Usage
+
+``` r
+stop_if_outside(xmin, ymin, xmax, ymax)
+```
+
+## Arguments
+
+- xmin, ymin, xmax, ymax:
+
+  numeric. bounding box
+
+## Examples
+
+``` r
+# Collection of 4 files
+f <- system.file("extdata", "bcts/", package="lasR")
+
+# This bounding box encompasses only one of the four files
+stopif = stop_if_outside(884800, 620000, 885400, 629200)
+
+read = reader()
+hll = hulls()
+tri = triangulate(filter = keep_ground())
+dtm = rasterize(1, tri)
+
+# reads the 4 files but 'tri' and 'dtm' are computed only for one file because stopif
+# allows to escape the pipeline outside the bounding box
+pipeline = read + hll + stopif + tri + dtm
+ans1 <- exec(pipeline, on = f)
+plot(ans1$hulls$geom, axes = TRUE)
+terra::plot(ans1$rasterize, add = TRUE)
+
+
+# stopif can be applied before read. Only one file will actually be read and processed
+pipeline = stopif + read + hll + tri + dtm
+ans2 <- exec(pipeline, on = f)
+plot(ans2$hulls$geom, axes = TRUE)
+terra::plot(ans1$rasterize, add = TRUE, legend = FALSE)
+```

@@ -1,5 +1,5 @@
 pandoc: 3.1.11
-pkgdown: 2.1.3
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   baba: baba.html
@@ -8,7 +8,7 @@ articles:
   r-stages: r-stages.html
   tutorial: tutorial.html
   why: why.html
-last_built: 2025-11-07T13:35Z
+last_built: 2025-11-27T09:27Z
 urls:
   reference: https://r-lidar.github.io/lasR/reference
   article: https://r-lidar.github.io/lasR/articles

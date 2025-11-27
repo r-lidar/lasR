@@ -1,0 +1,64 @@
+# Compute pointwise geometry features
+
+Compute pointwise geometry features based on local neighborhood. Each
+feature is added into a new point attribute. The names of the new
+attributes (if recorded) are `coeff00`, `coeff01`, `coeff02` and so on,
+`lambda1`, `lambda2`, `lambda3`, `anisotropy`, `planarity`,
+`sphericity`, `linearity`, `omnivariance`, `curvature`, `eigensum`,
+`angle`, `normalX`, `normalY`, `normalZ` (recorded in this order). There
+is a total of 23 attributes that can be added. It is strongly
+discouraged to use them all. All the features are recorded with single
+precision floating points yet computing them all will triple the size of
+the point cloud. This stage modifies the point cloud in the pipeline but
+does not produce any output. If a pipeline has two or more stages with
+this stage, then attribute with the same name are overwritten.
+
+## Usage
+
+``` r
+geometry_features(k, r, features = "")
+```
+
+## Arguments
+
+- k, r:
+
+  integer and numeric respectively for k-nearest neighbours and radius
+  of the neighborhood sphere. If k is given and r is missing, computes
+  with the knn, if r is given and k is missing computes with a sphere
+  neighborhood, if k and r are given computes with the knn and a limit
+  on the search distance.
+
+- features:
+
+  String. Geometric feature to export. Each feature is added into a new
+  attribute. Use 'C' for the 9 principal component coefficients, 'E' for
+  the 3 eigenvalues of the covariance matrix, 'a' for anisotropy, 'p'
+  for planarity, 's' for sphericity, 'l' for linearity, 'o' for
+  omnivariance, 'c' for curvature, 'e' for the sum of eigenvalues, 'i'
+  for the angle (inclination in degrees relative to the vertical), and
+  'n' for the 3 components of the normal vector. Notice that the
+  uppercase labeled components allow computing all the lowercase labeled
+  components. Default is "". In this case, the singular value
+  decomposition is computed but serves no purpose. The order of the
+  flags does not matter and the features are recorded in the order
+  mentioned above.
+
+## Value
+
+This stage transforms the point cloud in the pipeline. It consequently
+returns nothing.
+
+## References
+
+Hackel, T., Wegner, J. D., & Schindler, K. (2016). Contour detection in
+unstructured 3D point clouds. In Proceedings of the IEEE conference on
+computer vision and pattern recognition (pp. 1610-1618).
+
+## Examples
+
+``` r
+f <- system.file("extdata", "Example.las", package = "lasR")
+pipeline <- geometry_features(8, features = "pi") + write_las()
+ans <- exec(pipeline, on = f)
+```

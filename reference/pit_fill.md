@@ -1,0 +1,83 @@
+# Pits and spikes filling
+
+Pits and spikes filling for raster. Typically used for post-processing
+CHM. This algorithm is from St-Onge 2008 (see reference).
+
+## Usage
+
+``` r
+pit_fill(
+  raster,
+  lap_size = 3L,
+  thr_lap = 0.1,
+  thr_spk = -0.1,
+  med_size = 3L,
+  dil_radius = 0L,
+  ofile = temptif()
+)
+```
+
+## Arguments
+
+- raster:
+
+  LASRalgorithm. A stage that produces a raster.
+
+- lap_size:
+
+  integer. Size of the Laplacian filter kernel (integer value, in
+  pixels).
+
+- thr_lap:
+
+  numeric. Threshold Laplacian value for detecting a cavity (all values
+  above this value will be considered a cavity). A positive value.
+
+- thr_spk:
+
+  numeric. Threshold Laplacian value for detecting a spike (all values
+  below this value will be considered a spike). A negative value.
+
+- med_size:
+
+  integer. Size of the median filter kernel (integer value, in pixels).
+
+- dil_radius:
+
+  integer. Dilation radius (integer value, in pixels).
+
+- ofile:
+
+  character. Full outputs are always stored on disk. If `ofile = ""`
+  then the stage will not store the result on disk and will return
+  nothing. It will however hold partial output results temporarily in
+  memory. This is useful for stage that are only intermediate stage.
+
+## Value
+
+This stage produces a raster. The path provided to \`ofile\` is expected
+to be \`.tif\` or any other format supported by GDAL.
+
+## References
+
+St-Onge, B., 2008. Methods for improving the quality of a true
+orthomosaic of Vexcel UltraCam images created using alidar digital
+surface model, Proceedings of the Silvilaser 2008, Edinburgh, 555-562.
+https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=81365288221f3ac34b51a82e2cfed8d58defb10e
+
+## Examples
+
+``` r
+f <- system.file("extdata", "MixedConifer.las", package="lasR")
+
+reader <- reader(filter = keep_first())
+tri <- triangulate()
+chm <- rasterize(0.25, tri)
+pit <- pit_fill(chm)
+u <- exec(reader + tri + chm + pit, on = f)
+
+chm <- u[[1]]
+sto <- u[[2]]
+
+#terra::plot(c(chm, sto), col = lidR::height.colors(25))
+```

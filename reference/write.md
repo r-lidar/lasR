@@ -1,0 +1,91 @@
+# Write point clouds
+
+Write the point cloud in LAS or LAZ or PCD files at any step of the
+pipeline (typically at the end). Unlike other stages, the output won't
+be written into a single large file but in multiple tiled files
+corresponding to the original collection of files.
+
+## Usage
+
+``` r
+write_las(
+  ofile = paste0(tempdir(), "/*.las"),
+  filter = "",
+  keep_buffer = FALSE
+)
+
+write_copc(
+  ofile = paste0(tempdir(), "/*.copc.laz"),
+  filter = "",
+  keep_buffer = FALSE,
+  max_depth = NA,
+  density = "dense"
+)
+
+write_pcd(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
+```
+
+## Arguments
+
+- ofile:
+
+  character. Output file names. The string must contain a wildcard \* so
+  the wildcard can be replaced by the name of the original tile and
+  preserve the tiling pattern. If the wildcard is omitted, everything
+  will be written into a single file. This may be the desired behavior
+  in some circumstances, e.g., to merge some files.
+
+- filter:
+
+  the 'filter' argument allows filtering of the point-cloud to work with
+  points of interest. For a given stage when a filter is applied, only
+  the points that meet the criteria are processed. The most common
+  strings are `Classification == 2"`, `"Z > 2"`, `"Intensity < 100"`.
+  For more details see
+  [filters](https://r-lidar.github.io/lasR/reference/filters.md).
+
+- keep_buffer:
+
+  bool. The buffer is removed to write file but it can be preserved.
+
+- max_depth:
+
+  integer. Maximum depth of the hierarchy. Default is NA meaning that is
+  auto computes
+
+- density:
+
+  character. Can be 'sparse', 'normal' or 'dense'. It controls the point
+  density per octant. With 'sparce' each Octree octant is subdivided
+  into 64 x 64 x 64 cells which mean that the density of point is light.
+  Normal is 128, dense is 256.
+
+- binary:
+
+  boolean. Write binary or ascii PCD files.
+
+## Details
+
+`write_las` can write a COPC LAZ file simply by naming the output file
+with the ".copc.laz" extension. However, users must be cautious. Writing
+COPC is not optimized for memory usage and requires two copies of the
+point cloud in memory to ensure proper sorting and writing. If the user
+cannot afford to keep two copies of the point cloud in RAM, they should
+use a more specialized writer such as Untwine (PDAL) or lascopcindex
+(LAStools).  
+`write_copc` is a wrapper around `write_las`, with a few extra arguments
+to control the COPC format.  
+`write_pcd` cannot merge multiple files into one bigger file yet. It
+cannot write a subset of the file either yet.
+
+## Examples
+
+``` r
+f <- system.file("extdata", "Topography.las", package="lasR")
+read <- reader()
+tri  <- triangulate(filter = keep_ground())
+normalize <- tri + transform_with(tri)
+pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
+exec(pipeline, on = f)
+#> [1] "/tmp/RtmpAKasvg/Topography_norm.las"
+```
