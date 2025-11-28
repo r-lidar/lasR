@@ -43,6 +43,7 @@ private:
   double z_offset;
   double z_default;
 
+  int max_iter;
   int classification;
 
   std::vector<unsigned int> index_map;

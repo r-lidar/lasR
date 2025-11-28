@@ -183,14 +183,14 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
   while (true)
   {
     // --- update statistics ---
-    g_query_count++;
+    /*g_query_count++;
     g_sum_iter += iteration;
     g_sum2_iter += double(iteration) * iteration;
     if (iteration < g_min_iter) g_min_iter = iteration;
     if (iteration > g_max_iter) g_max_iter = iteration;
 
     if (g_query_count >= g_report_interval)
-      reportStats();
+      reportStats();*/
     // ------------------------
 
     iteration++;
@@ -350,7 +350,6 @@ bool Triangulation::isInEdge(int t, Vec2 p) const
   lim = MAX3(p1.y, p2.y, p3.y);
   if (p.y > lim) return false;
 
-  // JR: should be an OR operation??
   return (orient2d(&(p1.x),&(p2.x),&(p.x)) == 0) &&
     (orient2d(&(p2.x),&(p3.x),&(p.x)) == 0) &&
     (orient2d(&(p3.x),&(p1.x),&(p.x)) == 0);

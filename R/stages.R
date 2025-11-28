@@ -324,9 +324,14 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' pipeline = classify_with_pdt() + write_las()
 #' ans = exec(pipeline, on = f, progress = TRUE)
-classify_with_pdt = function(distance = 1, angle = 15, res = 5, min_size = 0.1, offset = 0.05, ..., class = 2L)
+classify_with_pdt = function(distance = 1, angle = 15, res = 50, min_size = 0.1, ..., class = 2L)
 {
-  .APISTAGES$classify_with_pdt(distance, angle, res, min_size, offset, class)
+  p = list(...)
+  max_iter = 500
+  if (!is.null(p$max_iter))
+    max_iter = p$max_iter
+
+  .APISTAGES$classify_with_pdt(distance, angle, res, min_size, class, max_iter)
 }
 
 

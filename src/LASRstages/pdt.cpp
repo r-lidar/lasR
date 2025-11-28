@@ -25,7 +25,14 @@ bool LASRpdt::set_parameters(const nlohmann::json& stage)
   this->min_triangle_size = min_size*min_size;
   this->offset = stage.value("offset", 0.05);
   this->classification = stage.value("class", 2);
+  this->max_iter = stage.value("max_iter", 1000);
 
+  print("PDT parameters\n");
+  print("max_iteration_distance = %.2lf\n",max_iteration_distance);
+  print("max_iteration_angle = %.2lf\n", max_iteration_angle);
+  print("seed_resolution_search = %.2lf\n", seed_resolution_search);
+  print("min_triangle_size = %.2lf\n", min_size);
+  print("max_iter = %d\n\n", max_iter);
   return true;
 }
 
@@ -35,7 +42,6 @@ bool LASRpdt::process(PointCloud*& las)
   this->x_offset = las->header->min_x;
   this->y_offset = las->header->min_y;
   this->z_offset = las->header->min_z;
-
   size_t n = las->npoints;
 
   // Used to discard candidate points quickly and save computationally demanding tests
@@ -44,6 +50,14 @@ bool LASRpdt::process(PointCloud*& las)
   // Used to retain if a point is already part of the triangulation
   std::vector<bool> inserted(n, false);
 
+  Profiler prof;
+  prof.tic();
+
+
+  // ========================================
+  // Order in which point should be processed
+  // =========================================
+
   if (verbose) print("Sorting points:\n");
 
   // Records Z to sort index by Z in order to loop from lowest to highest
@@ -51,11 +65,9 @@ bool LASRpdt::process(PointCloud*& las)
   std::vector<unsigned int> index(n);
   std::iota(index.begin(), index.end(), 0);
   while (las->read_point()) height.push_back(las->point.get_z());
-  std::sort(index.begin(), index.end(), [&height](unsigned int i1, unsigned int i2) { return height[i1] < height[i2]; });
-  height.clear(); height.shrink_to_fit();
-
-  Profiler prof;
-  prof.tic();
+  //std::sort(index.begin(), index.end(), [&height](unsigned int i1, unsigned int i2) { return height[i1] < height[i2]; });
+  height.clear();
+  height.shrink_to_fit();
 
   // =====================
   // Find some seed points
@@ -149,7 +161,7 @@ bool LASRpdt::process(PointCloud*& las)
     cell = partition.cell_from_xy(seed.x, seed.y);
 
     // Find most probable triangle index
-    //tri_index = last_triangle[cell];
+    tri_index = last_triangle[cell];
 
     // Offset to fit in the bounding box of the triangulation which is +/- 1e8
     Vec2 pt(seed.x - x_offset, seed.y - y_offset);
@@ -171,15 +183,15 @@ bool LASRpdt::process(PointCloud*& las)
     if (!axelsson_metrics(seed, triangle, dist_d, angle)) continue;
 
     // Check if the angles and distance meet the threshold criteria
-    //if (angle < max_iteration_angle && dist_d < max_iteration_distance)
-    //{
+    if (angle < max_iteration_angle)
+    {
       if (d->delaunayInsertion(pt, tri_index))
       {
         index_map.push_back(seed.FID);
         inserted[seed.FID] = true;
         count++;
       }
-    //}
+    }
   }
 
   prof.toc();
@@ -195,6 +207,9 @@ bool LASRpdt::process(PointCloud*& las)
 
   prof.tic();
   std::chrono::duration<double> total_search_time(0);
+
+  if (max_iter > 0)
+  {
 
   // We loop while we are adding new triangles
   do
@@ -212,10 +227,11 @@ bool LASRpdt::process(PointCloud*& las)
     count = 0;
     tri_index = -1;
 
-    // Process all the points
-    while (las->read_point())
+    // Process all the points in order
+    for (int id : index)
     {
-      unsigned int id = las->current_point;
+      las->seek(id);
+      //unsigned int id = las->current_point;
       double x = las->point.get_x();
       double y = las->point.get_y();
       double z = las->point.get_z();
@@ -286,7 +302,9 @@ bool LASRpdt::process(PointCloud*& las)
 
     interpolate(&dtm);
 
-  } while (count > 0);
+  } while (count > 0 && iteration < max_iter);
+
+  }
 
   prof.toc();
   if (verbose) print("Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(), total_search_time.count());
@@ -334,7 +352,7 @@ bool LASRpdt::process(PointCloud*& las)
   // Classify ground points with buffer above mesh
   // =============================================
 
-  dtm = Raster(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 0.25);
+  /*dtm = Raster(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 0.25);
   interpolate(&dtm);
 
   while (las->read_point())
@@ -342,7 +360,7 @@ bool LASRpdt::process(PointCloud*& las)
     double zdtm = dtm.get_value(las->point.get_x(), las->point.get_y());
     if (zdtm != dtm.get_nodata() && std::abs(zdtm - las->point.get_z()) <= offset)
       get_and_set_classification(&las->point, classification);
-  }
+  }*/
 
   return true;
 }

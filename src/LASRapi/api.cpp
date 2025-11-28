@@ -62,13 +62,14 @@ Pipeline classify_with_csf(bool slope_smooth, double class_threshold, double clo
   return Pipeline(s);
 }
 
-Pipeline classify_with_pdt(double distance, double angle, double res, double min_size, double offset, int classification)
+Pipeline classify_with_pdt(double distance, double angle, double res, double min_size, int classification, int max_iter)
 {
   Stage s("classify_with_pdt");
   s.set("distance", distance);
   s.set("angle", angle);
   s.set("res", res);
   s.set("min_size", min_size);
+  s.set("max_iter", max_iter);
   s.set("class", classification);
 
   return Pipeline(s);
