@@ -53,7 +53,6 @@ bool LASRpdt::process(PointCloud*& las)
   Profiler prof;
   prof.tic();
 
-
   // ========================================
   // Order in which point should be processed
   // =========================================
@@ -65,7 +64,7 @@ bool LASRpdt::process(PointCloud*& las)
   std::vector<unsigned int> index(n);
   std::iota(index.begin(), index.end(), 0);
   while (las->read_point()) height.push_back(las->point.get_z());
-  //std::sort(index.begin(), index.end(), [&height](unsigned int i1, unsigned int i2) { return height[i1] < height[i2]; });
+  std::sort(index.begin(), index.end(), [&height](unsigned int i1, unsigned int i2) { return height[i1] < height[i2]; });
   height.clear();
   height.shrink_to_fit();
 
@@ -114,7 +113,7 @@ bool LASRpdt::process(PointCloud*& las)
     return false;
   }
 
-  // We created 1 seed per grid cell. Some cell maybe empty. In these cells z = INF
+  // We created 1 seed per grid cell. Some cell maybe empty. In these cells: z = INF
   auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const PointXYZ& p) { return p.z == std::numeric_limits<double>::max(); });
   seeds.erase(new_end, seeds.end());
 
@@ -134,47 +133,27 @@ bool LASRpdt::process(PointCloud*& las)
   // to get rid of low outliers.
   // ---------------------------------------------------------
 
-  d = new Triangulation();
+  Grid gd(las->header->min_x-x_offset, las->header->min_y-y_offset, las->header->max_x-x_offset, las->header->max_y-y_offset, 1);
+  d = new Triangulation(gd);
 
-  // We need a spatial index in which we record the id of the last triangle inserted
-  // for each cell in order to get order of magnitude speed when searching where
-  // to insert.
-  Grid partition(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 0.5);
-  std::vector<unsigned int> last_triangle;
-  last_triangle.resize(partition.get_ncells());
-  for (unsigned int cell = 0 ; cell < partition.get_ncells() ; cell++)
-  {
-    double x = partition.x_from_cell(cell);
-    double y = partition.y_from_cell(cell);
-    Vec2 pt(x - x_offset, y - y_offset);
-    last_triangle[cell] = d->findContainerTriangle(pt, -1);
-  }
-
-  int cell = 0;
   int count = 0;
   int iteration = 0;
-  int tri_index = -1;
+  int t = -1;
+  unsigned int discared = 0;
 
   for (auto& seed : seeds)
   {
-    // Cell of the seed
-    cell = partition.cell_from_xy(seed.x, seed.y);
-
-    // Find most probable triangle index
-    tri_index = last_triangle[cell];
-
     // Offset to fit in the bounding box of the triangulation which is +/- 1e8
+    // Also get extra accuracy
     Vec2 pt(seed.x - x_offset, seed.y - y_offset);
 
     // Find in which triangle to insert the point
-    tri_index = d->findContainerTriangle(pt, tri_index);
-    if (tri_index < 0) continue;
+    t = d->findContainerTriangleFast(pt);
 
-    // Update the index
-    last_triangle[cell] = tri_index;
+    if (t < 0) continue;
 
     // Retrieve the vertices of the triangle
-    TriangleXYZ triangle = get_triangle(tri_index);
+    TriangleXYZ triangle = get_triangle(t);
 
     // Skip too small triangles. Small triangle are freezed and cannot be subdivided.
     if (triangle.square_max_edge_size() < min_triangle_size) continue;
@@ -185,7 +164,7 @@ bool LASRpdt::process(PointCloud*& las)
     // Check if the angles and distance meet the threshold criteria
     if (angle < max_iteration_angle)
     {
-      if (d->delaunayInsertion(pt, tri_index))
+      if (d->delaunayInsertion(pt, t))
       {
         index_map.push_back(seed.FID);
         inserted[seed.FID] = true;
@@ -208,12 +187,11 @@ bool LASRpdt::process(PointCloud*& las)
   prof.tic();
   std::chrono::duration<double> total_search_time(0);
 
-  if (max_iter > 0)
-  {
-
   // We loop while we are adding new triangles
   do
   {
+    if (max_iter == 0) break;
+
     progress->reset();
     progress->set_prefix("PDT");
     progress->set_total(las->npoints);
@@ -223,13 +201,13 @@ bool LASRpdt::process(PointCloud*& las)
     prof2.tic();
 
     iteration++;
-    cell = 0;
     count = 0;
-    tri_index = -1;
+    t = -1;
 
     // Process all the points in order
     for (int id : index)
     {
+
       las->seek(id);
       //unsigned int id = las->current_point;
       double x = las->point.get_x();
@@ -247,31 +225,23 @@ bool LASRpdt::process(PointCloud*& las)
       PointXYZ P(x, y, z);
       Vec2 pt(x - x_offset, y - y_offset);
 
-      // Cell of the point
-      cell = partition.cell_from_xy(x, y);
-
-      // Find most probable triangle index
-      //tri_index = last_triangle[cell];
-
       // We have a rough dtm. Check the DTM elevation. If we are significantly
       // higher than the DTM we can save computation time by skipping the search
       // in the triangulation. Anyway this point won't be added.
       double zdtm = dtm.get_value(P.x, P.y);
       if (zdtm != dtm.get_nodata() && std::abs(zdtm - P.z) > 3 * max_iteration_distance)
+      {
+        discared++;
         continue;
+      }
 
       // Search the triangle where to insert. Benchmarking search time for later speed improvement
-      auto start_time = std::chrono::high_resolution_clock::now();
-      tri_index = d->findContainerTriangle(pt, tri_index);
-      auto end_time = std::chrono::high_resolution_clock::now();
-      total_search_time += end_time - start_time;
-      if (tri_index < 0) continue;
+      t = d->findContainerTriangleFast(pt);
 
-      // Update the index
-      last_triangle[cell] = tri_index;
+      if (t < 0) continue;
 
       // Retrieve the vertices of the triangle
-      TriangleXYZ triangle = get_triangle(tri_index);
+      TriangleXYZ triangle = get_triangle(t);
 
       // Skip too small triangles. Small triangle are frozen and cannot be subdivided.
       if (triangle.square_max_edge_size() < min_triangle_size) continue;
@@ -281,7 +251,7 @@ bool LASRpdt::process(PointCloud*& las)
 
       if (angle < max_iteration_angle && dist_d < max_iteration_distance)
       {
-        if (d->delaunayInsertion(pt, tri_index))
+        if (d->delaunayInsertion(pt, t))
         {
           index_map.push_back(id);
           inserted[id] = true;
@@ -294,20 +264,18 @@ bool LASRpdt::process(PointCloud*& las)
 
     prof2.toc();
     float perc = (double)count / (double)d->vcount;
-    if (verbose)
-      print("  Iteration %d: adding %d points (+%.1f%%) to the ground took %.2f secs\n", iteration, count, perc * 100, prof2.elapsed());
+    if (verbose) print("  Iteration %d: adding %d points (+%.1f%%) to the ground took %.2f secs\n", iteration, count, perc * 100, prof2.elapsed());
 
-    // We actually stop the loop when < 0.1% additions
-    if (perc < 1.0f / 1000.0f) break;
+    if (perc < 1.0f / 1000.0f) break; // We actually stop the loop when < 0.1% additions
 
     interpolate(&dtm);
 
   } while (count > 0 && iteration < max_iter);
 
-  }
-
   prof.toc();
   if (verbose) print("Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(), total_search_time.count());
+
+  print("Number of point discared based on DTM: %lu (%.1f%%)\n", discared, (float)((double)discared/(double)n*100));
 
   progress->done();
 
@@ -346,22 +314,6 @@ bool LASRpdt::process(PointCloud*& las)
     get_and_set_classification(&las->point, classification);
   }
 
-  if (offset == 0) return true;
-
-  // =============================================
-  // Classify ground points with buffer above mesh
-  // =============================================
-
-  /*dtm = Raster(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 0.25);
-  interpolate(&dtm);
-
-  while (las->read_point())
-  {
-    double zdtm = dtm.get_value(las->point.get_x(), las->point.get_y());
-    if (zdtm != dtm.get_nodata() && std::abs(zdtm - las->point.get_z()) <= offset)
-      get_and_set_classification(&las->point, classification);
-  }*/
-
   return true;
 }
 
@@ -369,11 +321,11 @@ bool LASRpdt::process(PointCloud*& las)
 // Helper methods
 // ===========================
 
-TriangleXYZ LASRpdt::get_triangle(int tri_index)
+TriangleXYZ LASRpdt::get_triangle(int t)
 {
-  int idA = d->triangles[tri_index].v[0];
-  int idB = d->triangles[tri_index].v[1];
-  int idC = d->triangles[tri_index].v[2];
+  int idA = d->triangles[t].v[0];
+  int idB = d->triangles[t].v[1];
+  int idC = d->triangles[t].v[2];
 
   PointXYZ A, B, C;
   query_coordinates(idA, A);

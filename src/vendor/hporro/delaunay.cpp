@@ -6,39 +6,13 @@
 #include <cmath>
 
 // --- temporary global stats ---
-#include <iostream>
+#include <chrono>
 static long long g_query_count = 0;
-static double g_sum_iter = 0.0;
-static double g_sum2_iter = 0.0;
-static int g_min_iter = std::numeric_limits<int>::max();
-static int g_max_iter = 0;
-static const long long g_report_interval = 1000000;
-
-// Function to print and reset stats
-static void reportStats()
-{
-  if (g_query_count == 0) return;
-
-  double mean = g_sum_iter / g_query_count;
-  double variance = (g_sum2_iter / g_query_count) - mean * mean;
-  double stddev = std::sqrt(std::max(0.0, variance));
-
-  std::cout << "[Triangulation Stats] "
-            << g_query_count << " queries  "
-            << "iter(min/mean/max/std) = "
-            << g_min_iter << " / "
-            << mean << " / "
-            << g_max_iter << " / "
-            << stddev << std::endl;
-
-  // reset
-  g_query_count = 0;
-  g_sum_iter = 0.0;
-  g_sum2_iter = 0.0;
-  g_min_iter = std::numeric_limits<int>::max();
-  g_max_iter = 0;
-}
-// ------------------------------
+static long long f_query_count = 0;
+static long long n_triangle_tested = 0;
+std::chrono::duration<double> total_fast_search_time(0);
+std::chrono::duration<double> total_search_time(0);
+std::chrono::duration<double> total_insertion_time(0);
 
 static bool initialized = false;
 
@@ -47,7 +21,7 @@ static bool initialized = false;
 #define MIN3(a,b,c) (((a)>(b)) ? (((b)>(c)) ? (c) : (b)) : (((a)>(c)) ? (c) : (a)));
 #endif
 
-Triangulation::Triangulation()
+Triangulation::Triangulation(const Grid& index_) : index(index_)
 {
   int numP = 10000; // allocate memory for 10000 points
 
@@ -84,33 +58,42 @@ Triangulation::Triangulation()
 
   vcount = 4;
   tcount = 2;
+
+  grid.resize(index.get_ncells());
 }
 
 Triangulation::~Triangulation()
 {
+  printf("Fast search took %.2f secs with an average of %.1lf triangle per query\n", total_fast_search_time.count(), (double)n_triangle_tested/(double)f_query_count);
+  printf("Fallback search called %llu times and took %.2f secs\n", g_query_count, total_search_time.count());
+  printf("Delaunay insertion took %.2f secs\n", total_insertion_time.count());
   delete[] triangles;
   delete[] vertices;
 }
 
-
 bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
 {
+  auto start_time = std::chrono::high_resolution_clock::now();
+
   remem();
 
-  int tri_index = findContainerTriangle(p, prop);
+  int tri_index = prop;
+  //int tri_index = findContainerTriangle(p, prop);
 
   Vec2 a = vertices[triangles[tri_index].v[0]].pos;
   Vec2 b = vertices[triangles[tri_index].v[1]].pos;
   Vec2 c = vertices[triangles[tri_index].v[2]].pos;
   Vec2 points[] = {a,b,c};
 
-  //printf("  Insertion in triangle %d (%.1lf, %.1lf), (%.1lf, %.1lf) (%.1lf, %.1lf)\n", tri_index, points[0][0], points[0][1], points[1][0], points[1][1], points[2][0], points[2][1]);
-
-  // we dont insert repeated points
+  // we don't insert repeated points
   for (int i = 0 ; i < 3 ; i++)
   {
     if ((std::abs(p.x-points[i].x) < IN_TRIANGLE_EPS) && (std::abs(p.y-points[i].y) < IN_TRIANGLE_EPS))
+    {
+      auto end_time = std::chrono::high_resolution_clock::now();
+      total_insertion_time += end_time - start_time;
       return false;
+    }
   }
 
   for (int i = 0; i < 3 ; i++)
@@ -137,6 +120,8 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
         }
       }
 
+      auto end_time = std::chrono::high_resolution_clock::now();
+      total_insertion_time += end_time - start_time;
       return true;
     }
   }
@@ -148,14 +133,22 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
     legalize(tri_index);
     legalize(tcount-1);
     legalize(tcount-2);
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    total_insertion_time += end_time - start_time;
     return true;
   }
 
+  auto end_time = std::chrono::high_resolution_clock::now();
+  total_insertion_time += end_time - start_time;
   return true;
 }
 
 int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
 {
+  auto start_time = std::chrono::high_resolution_clock::now();
+  g_query_count++;
+
   int iteration = 0;
 
   // Overallocate to reduce future reallocations
@@ -182,21 +175,13 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
   // Continue searching until we either find the triangle or exhaust neighbors
   while (true)
   {
-    // --- update statistics ---
-    /*g_query_count++;
-    g_sum_iter += iteration;
-    g_sum2_iter += double(iteration) * iteration;
-    if (iteration < g_min_iter) g_min_iter = iteration;
-    if (iteration > g_max_iter) g_max_iter = iteration;
-
-    if (g_query_count >= g_report_interval)
-      reportStats();*/
-    // ------------------------
-
-    iteration++;
-
     // Check if the point is inside the current triangle or on its edge
-    if (isInside(t, p) || isInEdge(t, p)) return t;
+    if (isInside(t, p) || isInEdge(t, p))
+    {
+      auto end_time = std::chrono::high_resolution_clock::now();
+      total_search_time += end_time - start_time;
+      return t;
+    }
 
     // Calculate the centroid of the current triangle
     Vec2 v = (vertices[triangles[t].v[0]].pos + vertices[triangles[t].v[1]].pos + vertices[triangles[t].v[2]].pos) / 3.0;
@@ -237,55 +222,44 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
   }
 }
 
-/*int Triangulation::findContainerTriangleLinearSearch(const Vec2& p) const
+int Triangulation::findContainerTriangleFast(const Vec2& p) const
 {
-  for (int i = 0 ; i < tcount ; i++)
+  auto start_time = std::chrono::high_resolution_clock::now();
+
+  f_query_count++;
+
+  int cell = index.cell_from_xy(p.x, p.y);
+
+  if (cell != -1)
   {
-    if (isInside(i,p))
+    // Search the candidate triangles in the grid cell
+    const auto& candidate_triangles = grid[cell];
+    n_triangle_tested += candidate_triangles.size();
+
+    // Search the candidate triangles for an exact match first
+    for (int t : candidate_triangles)
     {
-      return i;
+      // Check if the ID is valid
+      if (t < tcount)
+      {
+        if (isInside(t, p) || isInEdge(t, p))
+        {
+          auto end_time = std::chrono::high_resolution_clock::now();
+          total_fast_search_time += end_time - start_time;
+          return t;
+        }
+      }
+    }
+
+    if (!candidate_triangles.empty())
+    {
+      return findContainerTriangle(p, candidate_triangles[0]);
     }
   }
 
-  for(int i = 0 ; i < tcount ; i++)
-  {
-    if (isInEdge(i,p))
-    {
-      return i;
-    }
-  }
-
-  return -1;
-}*/
-
-/*int Triangulation::findContainerTriangleSqrtSearch(const Vec2& p, int prop) const
-{
-  if (prop < 0) prop = tcount-1;
-
-  if(isInside(prop,p)) return prop;
-  if(isInEdge(prop,p)) return prop;
-
-  Vec2 v = (vertices[triangles[prop].v[0]].pos+vertices[triangles[prop].v[1]].pos+vertices[triangles[prop].v[2]].pos)/3.0;
-
-  int t = prop;
-  for (int i = 0 ; i < 3 ; i++)
-  {
-    int f = triangles[t].t[i];
-
-    if (f == -1) continue;
-
-    Vec2 a = vertices[triangles[t].v[(i+1)%3]].pos;
-    Vec2 b = vertices[triangles[t].v[(i+2)%3]].pos;
-
-    if ((orient2d(&(v.x),&(p.x),&(a.x))*orient2d(&(v.x),&(p.x),&(b.x)) < 0) &&
-        (orient2d(&(a.x),&(b.x),&(p.x))*orient2d(&(a.x),&(b.x),&(v.x)) < 0))
-    {
-      return findContainerTriangleSqrtSearch(p,f);
-    }
-  }
-
-  return -1;
-}*/
+  // Fallback if no match is found
+  return findContainerTriangle(p, -1);
+}
 
 bool Triangulation::isInside(int t, Vec2 p) const
 {
@@ -363,54 +337,6 @@ bool Triangulation::isInEdge(int t, Vec2 p) const
   // return false;
 }
 
-// checks for repeated vertices or triangles
-/*bool Triangulation::validTriangle(int t)
-{
-  return true;
-
-  if(t==-1)return true;
-  bool res = true;
-  if(t>=tcount)res=false;
-  if(t<-1)res=false;
-  int menosunos = 0;
-  for(int i=0;i<3;i++)menosunos+=triangles[t].t[i]==-1?1:0;
-  if(menosunos<2)if(
-      triangles[t].t[0]==triangles[t].t[1] ||
-        triangles[t].t[0]==triangles[t].t[2] ||
-        triangles[t].t[1]==triangles[t].t[2]
-  ) return false;
-  for(int i=0;i<3;i++)if(triangles[t].t[i]<-1)res=false;
-  for(int i=0;i<3;i++)if(triangles[t].t[i]>tcount)res=false;
-  for(int i=0;i<3;i++)if(triangles[t].v[i]<0)res=false;
-  for(int i=0;i<3;i++)if(triangles[t].v[i]>vcount)res=false;
-
-  for(int i=0;i<3;i++){
-    if(triangles[t].v[i]==triangles[t].v[(i+1)%3])res=false;
-    if(triangles[t].t[i]==triangles[t].t[(i+1)%3] && triangles[t].t[i]!=-1)res=false;
-  }
-  // if(!res) __H_BREAKPOINT__;
-  return res;
-}*/
-
-
-// checks that every t's neighbour has t as its neighbour
-/*bool Triangulation::integrity(int t)
-{
-  return true;
-
-  int t0 = triangles[t].t[0];
-  int t1 = triangles[t].t[1];
-  int t2 = triangles[t].t[2];
-
-  bool a=true,b=true,c=true;
-
-  if(t0!=-1) a = (t==triangles[t0].t[0]) || (t==triangles[t0].t[1]) || (t==triangles[t0].t[2]);
-  if(t1!=-1) b = (t==triangles[t1].t[0]) || (t==triangles[t1].t[1]) || (t==triangles[t1].t[2]);
-  if(t2!=-1) c = (t==triangles[t2].t[0]) || (t==triangles[t2].t[1]) || (t==triangles[t2].t[2]);
-
-  return (a&&b)&&c;
-}*/
-
 void Triangulation::addPointInside(const Vec2& v, int tri_index)
 {
   remem();
@@ -418,6 +344,8 @@ void Triangulation::addPointInside(const Vec2& v, int tri_index)
   int f = tri_index;
   int f1 = tcount++;
   int f2 = tcount++;
+
+  unindexTriangle(f);
 
   int p = vcount++;
 
@@ -449,11 +377,18 @@ void Triangulation::addPointInside(const Vec2& v, int tri_index)
   triangles[f].t[2] = f2;
 
   vertices[p] = Vertex(v,f);
+
+  indexTriangle(f);
+  indexTriangle(f1);
+  indexTriangle(f2);
 }
 
 void Triangulation::addPointInEdge(const Vec2& v, int t0, int t1)
 {
   remem();
+
+  unindexTriangle(t0);
+  unindexTriangle(t1);
 
   int p = vcount;
   vertices[vcount++] = Vertex(v);
@@ -495,12 +430,19 @@ void Triangulation::addPointInEdge(const Vec2& v, int t0, int t1)
   triangles[t1].v[(t1_v+1)%3] = p;
   triangles[t1].t[(t1_v+2)%3] = t3;
 
+  indexTriangle(t0);
+  indexTriangle(t1);
+  indexTriangle(t2);
+  indexTriangle(t3);
+
   remem();
 }
 
 void Triangulation::addPointInEdge(const Vec2& v, int t)
 {
   remem();
+
+  unindexTriangle(t);
 
   int x = triangles[t].t[0] == -1 ? 0 : (triangles[t].t[1] == -1 ? 1 : 2);
 
@@ -527,9 +469,11 @@ void Triangulation::addPointInEdge(const Vec2& v, int t)
     triangles[f2].t[2] = (triangles[f2].t[2] == t ? t1 : triangles[f2].t[2]);
   }
 
+  indexTriangle(t);
+  indexTriangle(t1);
+
   remem();
 }
-
 
 bool Triangulation::legalize(int t)
 {
@@ -642,6 +586,9 @@ bool Triangulation::isCCW(int f) const
 
 bool Triangulation::flip(int t1, int t2)
 {
+  unindexTriangle(t1);
+  unindexTriangle(t2);
+
   int i;
   if (triangles[t1].t[0] == t2) { i = 0; }
   else if (triangles[t1].t[1] == t2) { i = 1; }
@@ -711,6 +658,9 @@ bool Triangulation::flip(int t1, int t2)
       }
     }
   }
+
+  indexTriangle(t1);
+  indexTriangle(t2);
 
   return true;
 }
@@ -854,4 +804,62 @@ bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2
   Vec2 n = Vec2(-a.y,a.x);
 
   return std::abs((p-p1).dot(n)) < IN_TRIANGLE_EPS;
+}
+
+void Triangulation::unindexTriangle(int t)
+{
+  if (t < 0 || t >= tcount) return;
+
+  // 1. Get the triangle's AABB (Same logic as indexTriangle)
+  Vec2 p1 = vertices[triangles[t].v[0]].pos;
+  Vec2 p2 = vertices[triangles[t].v[1]].pos;
+  Vec2 p3 = vertices[triangles[t].v[2]].pos;
+
+  double min_x = std::min({p1.x, p2.x, p3.x});
+  double max_x = std::max({p1.x, p2.x, p3.x});
+  double min_y = std::min({p1.y, p2.y, p3.y});
+  double max_y = std::max({p1.y, p2.y, p3.y});
+
+  // 2. Map AABB to Grid Cells (Use your existing index class utility)
+  std::vector<int> cells;
+  index.get_cells(min_x, min_y, max_x, max_y, cells);
+
+  // 3. Remove t from only the overlapping cells
+  for (int cell_index : cells)
+  {
+    auto& cell = grid[cell_index];
+    // Iterate manually to find the ID
+    for (size_t i = 0; i < cell.size(); ++i)
+    {
+      if (cell[i] == t)
+      {
+        cell[i] = cell.back(); // Move the last element to the current position
+        cell.pop_back();       // Remove the last element
+        break;                 // Stop, assuming t appears only once per cell
+      }
+    }
+  }
+}
+
+void Triangulation::indexTriangle(int t)
+{
+  if (t < 0 || t >= tcount) return;
+
+  // 1. Get the triangle's AABB
+  Vec2 p1 = vertices[triangles[t].v[0]].pos;
+  Vec2 p2 = vertices[triangles[t].v[1]].pos;
+  Vec2 p3 = vertices[triangles[t].v[2]].pos;
+
+  double min_x = std::min({p1.x, p2.x, p3.x});
+  double max_x = std::max({p1.x, p2.x, p3.x});
+  double min_y = std::min({p1.y, p2.y, p3.y});
+  double max_y = std::max({p1.y, p2.y, p3.y});
+
+  // 2. Map AABB to Grid Coordinates
+  std::vector<int> cells;
+  index.get_cells(min_x, min_y, max_x, max_y, cells);
+
+  // 3. Insert t into all overlapping cells
+  for (auto cell : cells)
+    grid[cell].push_back(t);
 }

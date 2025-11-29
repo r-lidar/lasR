@@ -4,14 +4,16 @@
 #include <vector>
 
 #include "geometry.h"
+#include "Grid.h"
 
 class Triangulation
 {
 public:
-  Triangulation();
+  Triangulation(const Grid& index);
   ~Triangulation();
   bool delaunayInsertion(const Vec2& point, int tri_index = -1);
   int findContainerTriangle(const Vec2& p, int prop) const;
+  int findContainerTriangleFast(const Vec2& p) const;
 
   Vertex *vertices;
   Triangle *triangles;
@@ -59,6 +61,12 @@ private:
 
   float a;
   Vec2 p0,p1,p2,p3;
+
+  // --- Grid Parameters ---
+  const Grid& index;
+  std::vector<std::vector<int>> grid;
+  void indexTriangle(int t);
+  void unindexTriangle(int t);
 };
 
 #endif
