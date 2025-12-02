@@ -38,6 +38,8 @@ bool LASRpdt::set_parameters(const nlohmann::json& stage)
 
 bool LASRpdt::process(PointCloud*& las)
 {
+  Profiler tot;
+
   this->las = las;
   this->x_offset = las->header->min_x;
   this->y_offset = las->header->min_y;
@@ -51,33 +53,36 @@ bool LASRpdt::process(PointCloud*& las)
   std::vector<bool> inserted(n, false);
 
   Profiler prof;
-  prof.tic();
 
   // ========================================
   // Order in which point should be processed
   // =========================================
 
-  if (verbose) print("Sorting points:\n");
+  if (verbose) print(" Sorting points: ");
 
   // Records Z to sort index by Z in order to loop from lowest to highest
-  std::vector<float> height; height.reserve(n);
-  std::vector<unsigned int> index(n);
-  std::iota(index.begin(), index.end(), 0);
-  while (las->read_point()) height.push_back(las->point.get_z());
-  std::sort(index.begin(), index.end(), [&height](unsigned int i1, unsigned int i2) { return height[i1] < height[i2]; });
-  height.clear();
-  height.shrink_to_fit();
+  std::vector<std::pair<float, unsigned int>> items;
+  items.reserve(n);
+
+  unsigned int i = 0;
+  while (las->read_point()) items.emplace_back(las->point.get_z(), i++);
+
+  // Sort by height (first element of pair)
+  std::sort(items.begin(), items.end(),  [](const auto& a, const auto& b) {  return a.first < b.first; });
+
+  // Extract just the indices
+  std::vector<unsigned int> index; index.reserve(n);
+  for (const auto& item : items)index.push_back(item.second);
+
+  if (verbose) print("%.2f secs\n", prof.elapsed());
 
   // =====================
   // Find some seed points
   // =====================
 
-  // ----------------------------------
-  // Keeps the lowest points of
-  // each cell of a grid (usually 50 m)
-  // ----------------------------------
+  prof = Profiler();
 
-  if (verbose) print("Search seeds:\n");
+  if (verbose) print(" Searching seeds: ");
 
   Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, seed_resolution_search);
   std::vector<PointLAS> seeds;
@@ -113,15 +118,91 @@ bool LASRpdt::process(PointCloud*& las)
     return false;
   }
 
+  // =========================
+  // Add additional edge virtual edge seeds
+  // ==========================
+
+  /*int n_rows = grid.get_nrows();
+  int n_cols = grid.get_ncols();
+  double f = 1;
+
+  std::vector<PointLAS> border;
+  border.reserve((n_rows + n_cols) * 2);
+
+
+  // --- Process Edges (Rows) ---
+
+  for (int r = 0; r < n_rows; ++r)
+  {
+    bool first = false;
+    PointLAS last;
+    for (int c = 0; c < n_cols; ++c)
+    {
+      int cell_id = grid.cell_from_row_col(r, c);
+
+      auto& p = seeds[cell_id];
+      if (p.z != std::numeric_limits<double>::max())
+      {
+        if (!first)
+        {
+          auto P = p;
+          P.x -= f*seed_resolution_search;
+          border.push_back(P);
+          first = true;
+        }
+
+        last = p;
+      }
+    }
+
+    last.x += f*seed_resolution_search;
+    border.push_back(last);
+  }
+
+  // --- Process Edges (cols) ---
+
+  for (int c = 0; c < n_cols; ++c)
+  {
+    bool first = false;
+    PointLAS last;
+    for (int r = 0; r< n_rows; ++r)
+    {
+      int cell_id = grid.cell_from_row_col(r, c);
+
+      auto& p = seeds[cell_id];
+      if (p.z != std::numeric_limits<double>::max())
+      {
+        if (!first)
+        {
+          auto P = p;
+          P.y -= f*seed_resolution_search;
+          border.push_back(P);
+          first = true;
+        }
+
+        last = p;
+      }
+    }
+
+    last.y += f*seed_resolution_search;
+    border.push_back(last);
+  }*/
+
+  //seeds.insert(seeds.end(), border.begin(), border.end());
+
+
   // We created 1 seed per grid cell. Some cell maybe empty. In these cells: z = INF
   auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const PointXYZ& p) { return p.z == std::numeric_limits<double>::max(); });
   seeds.erase(new_end, seeds.end());
 
   // Sort descending to insert higher seeds first in order to reduce the chance to insert a low outlier first
-  std::sort(seeds.begin(), seeds.end(), [](const PointXYZ& a, const PointXYZ& b) { return a.z > b.z; });
+  //std::sort(seeds.begin(), seeds.end(), [](const PointXYZ& a, const PointXYZ& b) { return a.z > b.z; });
 
   // In the triangulation the 4 first default points at infinity need a Z value. We will use mean z of seeds
   z_default = std::accumulate(seeds.begin(), seeds.end(), 0.0, [](double sum, const PointXYZ& p) { return sum + p.z; }) / seeds.size();
+  z_default -= 100;
+
+  if (verbose) print("%.2f secs\n", prof.elapsed());
 
   // ============================
   // Triangulate the seed points
@@ -133,6 +214,10 @@ bool LASRpdt::process(PointCloud*& las)
   // to get rid of low outliers.
   // ---------------------------------------------------------
 
+  print(" Iteration 0: ");
+
+  prof = Profiler();
+
   Grid gd(las->header->min_x-x_offset, las->header->min_y-y_offset, las->header->max_x-x_offset, las->header->max_y-y_offset, 1);
   d = new Triangulation(gd);
 
@@ -141,52 +226,39 @@ bool LASRpdt::process(PointCloud*& las)
   int t = -1;
   unsigned int discared = 0;
 
+
+  print("adding %d seeds to the ground", seeds.size());
+
   for (auto& seed : seeds)
   {
     // Offset to fit in the bounding box of the triangulation which is +/- 1e8
     // Also get extra accuracy
     Vec2 pt(seed.x - x_offset, seed.y - y_offset);
 
-    // Find in which triangle to insert the point
     t = d->findContainerTriangleFast(pt);
 
-    if (t < 0) continue;
-
-    // Retrieve the vertices of the triangle
-    TriangleXYZ triangle = get_triangle(t);
-
-    // Skip too small triangles. Small triangle are freezed and cannot be subdivided.
-    if (triangle.square_max_edge_size() < min_triangle_size) continue;
-
-    double dist_d, angle;
-    if (!axelsson_metrics(seed, triangle, dist_d, angle)) continue;
-
-    // Check if the angles and distance meet the threshold criteria
-    if (angle < max_iteration_angle)
+    if (d->delaunayInsertion(pt, t))
     {
-      if (d->delaunayInsertion(pt, t))
-      {
-        index_map.push_back(seed.FID);
-        inserted[seed.FID] = true;
-        count++;
-      }
+      index_map.push_back(seed.FID);
+      inserted[seed.FID] = true;
+      count++;
     }
   }
 
-  prof.toc();
-  if (verbose) print("  Iteration 0: adding %d seeds to the ground took %.2f secs\n", count, prof.elapsed());
+  if (verbose) print(" took %.2f secs\n", count, prof.elapsed());
 
-  interpolate(&dtm);
+//interpolate(&dtm);
 
   // =============================
   // Progressive TIN densification
   // =============================
 
-  if (verbose) print("Progressive TIN densification:\n");
+  if (verbose) print(" Progressive TIN densification:\n");
 
-  prof.tic();
+  prof = Profiler();
   std::chrono::duration<double> total_search_time(0);
 
+  int kk = 0;
   // We loop while we are adding new triangles
   do
   {
@@ -198,7 +270,6 @@ bool LASRpdt::process(PointCloud*& las)
     progress->show();
 
     Profiler prof2;
-    prof2.tic();
 
     iteration++;
     count = 0;
@@ -222,18 +293,20 @@ bool LASRpdt::process(PointCloud*& las)
 
       if (pointfilter.filter(&las->point)) continue;
 
+      kk++;
+
       PointXYZ P(x, y, z);
       Vec2 pt(x - x_offset, y - y_offset);
 
       // We have a rough dtm. Check the DTM elevation. If we are significantly
       // higher than the DTM we can save computation time by skipping the search
       // in the triangulation. Anyway this point won't be added.
-      double zdtm = dtm.get_value(P.x, P.y);
+     /*double zdtm = dtm.get_value(P.x, P.y);
       if (zdtm != dtm.get_nodata() && std::abs(zdtm - P.z) > 3 * max_iteration_distance)
       {
         discared++;
         continue;
-      }
+      }*/
 
       // Search the triangle where to insert. Benchmarking search time for later speed improvement
       t = d->findContainerTriangleFast(pt);
@@ -262,20 +335,27 @@ bool LASRpdt::process(PointCloud*& las)
       progress->update(id);
     }
 
-    prof2.toc();
     float perc = (double)count / (double)d->vcount;
+
+    if (iteration == 1 && perc < 0.95)
+    {
+      last_error = "Internal bug. The first iteration is expected to insert more than 95% of the point. This is a known bug. Please report";
+      return false;
+    }
+
     if (verbose) print("  Iteration %d: adding %d points (+%.1f%%) to the ground took %.2f secs\n", iteration, count, perc * 100, prof2.elapsed());
 
     if (perc < 1.0f / 1000.0f) break; // We actually stop the loop when < 0.1% additions
 
-    interpolate(&dtm);
+    //interpolate(&dtm);
 
   } while (count > 0 && iteration < max_iter);
 
-  prof.toc();
-  if (verbose) print("Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(), total_search_time.count());
 
-  print("Number of point discared based on DTM: %lu (%.1f%%)\n", discared, (float)((double)discared/(double)n*100));
+  if (verbose) print("  Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(), total_search_time.count());
+
+  print(" Number of point discared based on DTM: %lu (%.1f%%)\n", discared, (float)((double)discared/(double)kk*100));
+  print(" PDT took %.2f secs\n", tot.elapsed());
 
   progress->done();
 
@@ -366,13 +446,13 @@ bool LASRpdt::axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, d
   if (!triangle.contains(P_proj)) return false;
 
   // Distances to vertices
-  double dist_P0 = P.distance(triangle.A);
-  double dist_P1 = P.distance(triangle.B);
-  double dist_P2 = P.distance(triangle.C);
+  double h0 = P_proj.distance(triangle.A);
+  double h1 = P_proj.distance(triangle.B);
+  double h2 = P_proj.distance(triangle.C);
 
-  double alpha = std::abs(asin(dist_d / dist_P0) * 180.0 / M_PI);
-  double beta  = std::abs(asin(dist_d / dist_P1) * 180.0 / M_PI);
-  double gamma = std::abs(asin(dist_d / dist_P2) * 180.0 / M_PI);
+  double alpha = atan2(dist_d, h0) * 180.0 / M_PI;
+  double beta  = atan2(dist_d, h1) * 180.0 / M_PI;
+  double gamma = atan2(dist_d, h2) * 180.0 / M_PI;
 
   angle = MAX3(alpha, beta, gamma);
   return true;
