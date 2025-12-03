@@ -13,6 +13,9 @@ static long long n_triangle_tested = 0;
 std::chrono::duration<double> total_fast_search_time(0);
 std::chrono::duration<double> total_search_time(0);
 std::chrono::duration<double> total_insertion_time(0);
+std::chrono::duration<double> total_legalize_time(0);
+std::chrono::duration<double> total_unindex_time(0);
+std::chrono::duration<double> total_index_time(0);
 
 static bool initialized = false;
 
@@ -24,6 +27,13 @@ static bool initialized = false;
 Triangulation::Triangulation(const Grid& index_) : index(index_)
 {
   int numP = 10000; // allocate memory for 10000 points
+
+  total_fast_search_time = std::chrono::milliseconds::zero();
+  total_search_time = std::chrono::milliseconds::zero();
+  total_insertion_time = std::chrono::milliseconds::zero();
+  total_legalize_time = std::chrono::milliseconds::zero();
+  total_unindex_time = std::chrono::milliseconds::zero();
+  total_index_time = std::chrono::milliseconds::zero();
 
   if (!initialized)
   {
@@ -67,6 +77,9 @@ Triangulation::~Triangulation()
   printf("Fast search took %.2f secs with an average of %.1lf triangle per query\n", total_fast_search_time.count(), (double)n_triangle_tested/(double)f_query_count);
   printf("Fallback search called %llu times and took %.2f secs\n", g_query_count, total_search_time.count());
   printf("Delaunay insertion took %.2f secs\n", total_insertion_time.count());
+  printf("  legalize took %.2f secs\n", total_legalize_time.count());
+  printf("    index took %.2f secs\n", total_index_time.count());
+  printf("    deindex took %.2f secs\n", total_unindex_time.count());
   delete[] triangles;
   delete[] vertices;
 }
@@ -216,6 +229,9 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
         break;
       }
     }
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    total_search_time += end_time - start_time;
 
     // If no suitable neighbor is found, return -1 indicating the point is outside the triangulation
     if (!foundNext) return -1;
@@ -477,7 +493,11 @@ void Triangulation::addPointInEdge(const Vec2& v, int t)
 
 bool Triangulation::legalize(int t)
 {
+  auto start_time = std::chrono::high_resolution_clock::now();
   for (int i = 0 ; i < 3 ; i++) legalize(t, triangles[t].t[i]);
+
+  auto end_time = std::chrono::high_resolution_clock::now();
+  total_legalize_time += end_time - start_time;
   return true;
 }
 
@@ -808,6 +828,8 @@ bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2
 
 void Triangulation::unindexTriangle(int t)
 {
+  auto start_time = std::chrono::high_resolution_clock::now();
+
   if (t < 0 || t >= tcount) return;
 
   // 1. Get the triangle's AABB (Same logic as indexTriangle)
@@ -835,14 +857,20 @@ void Triangulation::unindexTriangle(int t)
       {
         cell[i] = cell.back(); // Move the last element to the current position
         cell.pop_back();       // Remove the last element
+        change_map[cell_index] = true;
         break;                 // Stop, assuming t appears only once per cell
       }
     }
   }
+
+  auto end_time = std::chrono::high_resolution_clock::now();
+  total_unindex_time += end_time - start_time;
 }
 
 void Triangulation::indexTriangle(int t)
 {
+  auto start_time = std::chrono::high_resolution_clock::now();
+
   if (t < 0 || t >= tcount) return;
 
   // 1. Get the triangle's AABB
@@ -861,5 +889,11 @@ void Triangulation::indexTriangle(int t)
 
   // 3. Insert t into all overlapping cells
   for (auto cell : cells)
+  {
     grid[cell].push_back(t);
+    change_map[cell] = true;
+  }
+
+  auto end_time = std::chrono::high_resolution_clock::now();
+  total_index_time += end_time - start_time;
 }

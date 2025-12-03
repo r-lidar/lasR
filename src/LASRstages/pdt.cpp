@@ -46,13 +46,6 @@ bool LASRpdt::set_parameters(const nlohmann::json& stage)
   this->classification = stage.value("class", 2);
   this->max_iter = stage.value("max_iter", 1000);
   this->buffer_size = stage.value("buffer_size", 30);
-
-  print("PDT parameters\n");
-  print("max_iteration_distance = %.2lf\n",max_iteration_distance);
-  print("max_iteration_angle = %.2lf\n", max_iteration_angle);
-  print("seed_resolution_search = %.2lf\n", seed_resolution_search);
-  print("min_triangle_size = %.2lf\n", min_size);
-  print("max_iter = %d\n\n", max_iter);
   return true;
 }
 
@@ -225,7 +218,13 @@ bool LASRpdt::process(PointCloud*& las)
       TriangleXYZ triangle = get_triangle(t);
 
       // Skip too small triangles. Small triangle are frozen and cannot be subdivided.
-      if (triangle.square_max_edge_size() < min_triangle_size) continue;
+      if (triangle.square_max_edge_size() < min_triangle_size)
+      {
+        // will be skipped next time since anyway
+        // the triangle is not frozen.
+        inserted[id] = true;
+        continue;
+      }
 
       double dist_d, angle;
       if (!axelsson_metrics(P, triangle, dist_d, angle)) continue;
@@ -510,7 +509,7 @@ void LASRpdt::make_seeds()
   Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, seed_resolution_search);
   seeds.clear();
   seeds.resize(grid.get_ncells());
-  for (auto& seed : seeds) seed.z =  std::numeric_limits<double>::max();
+  for (auto& seed : seeds) seed.z = std::numeric_limits<double>::max();
 
   int counter = 0;
   while (las->read_point())
