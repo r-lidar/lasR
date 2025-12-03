@@ -8,6 +8,26 @@
 #include <algorithm>
 #include <cmath>
 
+#include "nanoflann/nanoflann.h"
+#include <vector>
+#include <cmath>
+
+struct PLAdaptor
+{
+  const std::vector<PointLAS>& pts;
+
+  PLAdaptor(const std::vector<PointLAS>& pts_) : pts(pts_) {}
+
+  inline size_t kdtree_get_point_count() const { return pts.size(); }
+
+  inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
+    return (dim == 0 ? pts[idx].x : pts[idx].y);
+  }
+
+  template <class BBOX>
+  bool kdtree_get_bbox(BBOX&) const { return false; }
+};
+
 LASRpdt::LASRpdt()
 {
   this->las = nullptr;
@@ -26,6 +46,7 @@ bool LASRpdt::set_parameters(const nlohmann::json& stage)
   this->offset = stage.value("offset", 0.05);
   this->classification = stage.value("class", 2);
   this->max_iter = stage.value("max_iter", 1000);
+  this->buffer_size = stage.value("buffer_size", 30);
 
   print("PDT parameters\n");
   print("max_iteration_distance = %.2lf\n",max_iteration_distance);
@@ -46,31 +67,23 @@ bool LASRpdt::process(PointCloud*& las)
   this->z_offset = las->header->min_z;
   size_t n = las->npoints;
 
-  // Used to discard candidate points quickly and save computationally demanding tests
-  Raster dtm(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, 1);
-
   // Used to retain if a point is already part of the triangulation
   std::vector<bool> inserted(n, false);
 
   Profiler prof;
 
-  // ========================================
-  // Order in which point should be processed
+  // =========================================
+  // Order in which points should be processed
   // =========================================
 
   if (verbose) print(" Sorting points: ");
 
-  // Records Z to sort index by Z in order to loop from lowest to highest
+  // Sort by height (first element of pair)
   std::vector<std::pair<float, unsigned int>> items;
   items.reserve(n);
-
   unsigned int i = 0;
   while (las->read_point()) items.emplace_back(las->point.get_z(), i++);
-
-  // Sort by height (first element of pair)
   std::sort(items.begin(), items.end(),  [](const auto& a, const auto& b) {  return a.first < b.first; });
-
-  // Extract just the indices
   std::vector<unsigned int> index; index.reserve(n);
   for (const auto& item : items)index.push_back(item.second);
 
@@ -118,85 +131,9 @@ bool LASRpdt::process(PointCloud*& las)
     return false;
   }
 
-  // =========================
-  // Add additional edge virtual edge seeds
-  // ==========================
-
-  /*int n_rows = grid.get_nrows();
-  int n_cols = grid.get_ncols();
-  double f = 1;
-
-  std::vector<PointLAS> border;
-  border.reserve((n_rows + n_cols) * 2);
-
-
-  // --- Process Edges (Rows) ---
-
-  for (int r = 0; r < n_rows; ++r)
-  {
-    bool first = false;
-    PointLAS last;
-    for (int c = 0; c < n_cols; ++c)
-    {
-      int cell_id = grid.cell_from_row_col(r, c);
-
-      auto& p = seeds[cell_id];
-      if (p.z != std::numeric_limits<double>::max())
-      {
-        if (!first)
-        {
-          auto P = p;
-          P.x -= f*seed_resolution_search;
-          border.push_back(P);
-          first = true;
-        }
-
-        last = p;
-      }
-    }
-
-    last.x += f*seed_resolution_search;
-    border.push_back(last);
-  }
-
-  // --- Process Edges (cols) ---
-
-  for (int c = 0; c < n_cols; ++c)
-  {
-    bool first = false;
-    PointLAS last;
-    for (int r = 0; r< n_rows; ++r)
-    {
-      int cell_id = grid.cell_from_row_col(r, c);
-
-      auto& p = seeds[cell_id];
-      if (p.z != std::numeric_limits<double>::max())
-      {
-        if (!first)
-        {
-          auto P = p;
-          P.y -= f*seed_resolution_search;
-          border.push_back(P);
-          first = true;
-        }
-
-        last = p;
-      }
-    }
-
-    last.y += f*seed_resolution_search;
-    border.push_back(last);
-  }*/
-
-  //seeds.insert(seeds.end(), border.begin(), border.end());
-
-
   // We created 1 seed per grid cell. Some cell maybe empty. In these cells: z = INF
   auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const PointXYZ& p) { return p.z == std::numeric_limits<double>::max(); });
   seeds.erase(new_end, seeds.end());
-
-  // Sort descending to insert higher seeds first in order to reduce the chance to insert a low outlier first
-  //std::sort(seeds.begin(), seeds.end(), [](const PointXYZ& a, const PointXYZ& b) { return a.z > b.z; });
 
   // In the triangulation the 4 first default points at infinity need a Z value. We will use mean z of seeds
   z_default = std::accumulate(seeds.begin(), seeds.end(), 0.0, [](double sum, const PointXYZ& p) { return sum + p.z; }) / seeds.size();
@@ -204,35 +141,66 @@ bool LASRpdt::process(PointCloud*& las)
 
   if (verbose) print("%.2f secs\n", prof.elapsed());
 
+  // ==========================
+  // Add virtual edge seeds
+  // ==========================
+
+  if (buffer_size > 0)
+  {
+    add_virtual_buffer(seeds, las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, buffer_size);
+  }
+
+  // ============================
+  // Triangulate edges first
+  // (for offset to payload)
+  // ============================
+
+  Grid gd(las->header->min_x-x_offset-buffer_size,
+          las->header->min_y-y_offset-buffer_size,
+          las->header->max_x-x_offset+buffer_size,
+          las->header->max_y-y_offset+buffer_size, 1);
+  d = new Triangulation(gd);
+  int t = -1;
+
+  if (verbose) print(" Buffer: ");
+
+  prof = Profiler();
+
+  if (verbose) print("adding %lu virtual seed ", vbuf.size());
+
+  for (auto& p : vbuf)
+  {
+    // Offset to fit in the bounding box of the triangulation which is +/- 1e8
+    // (Also get extra accuracy)
+    Vec2 pt(p.x - x_offset, p.y - y_offset);
+    t = d->findContainerTriangleFast(pt);
+    if (!d->delaunayInsertion(pt, t))
+    {
+      last_error = "Internal error: virtual seed point not inserted for unknown reason";
+      return false;
+    }
+  }
+
+  if (verbose) print(" took %.2f secs\n", prof.elapsed());
+
   // ============================
   // Triangulate the seed points
   // ============================
 
-  // -------------------------------------------------------
-  // Instead of triangulating all the seeds as described in the original paper,
-  // we are applying the progressive densification at this first step in order
-  // to get rid of low outliers.
-  // ---------------------------------------------------------
-
-  print(" Iteration 0: ");
+  if (verbose) print(" Iteration 0: ");
 
   prof = Profiler();
 
-  Grid gd(las->header->min_x-x_offset, las->header->min_y-y_offset, las->header->max_x-x_offset, las->header->max_y-y_offset, 1);
-  d = new Triangulation(gd);
-
   int count = 0;
   int iteration = 0;
-  int t = -1;
   unsigned int discared = 0;
 
-
-  print("adding %d seeds to the ground", seeds.size());
+  if (verbose) print("adding %lu seeds to the ground", seeds.size());
 
   for (auto& seed : seeds)
   {
     // Offset to fit in the bounding box of the triangulation which is +/- 1e8
-    // Also get extra accuracy
+    // (Also get extra accuracy)
     Vec2 pt(seed.x - x_offset, seed.y - y_offset);
 
     t = d->findContainerTriangleFast(pt);
@@ -246,8 +214,6 @@ bool LASRpdt::process(PointCloud*& las)
   }
 
   if (verbose) print(" took %.2f secs\n", count, prof.elapsed());
-
-//interpolate(&dtm);
 
   // =============================
   // Progressive TIN densification
@@ -298,16 +264,6 @@ bool LASRpdt::process(PointCloud*& las)
       PointXYZ P(x, y, z);
       Vec2 pt(x - x_offset, y - y_offset);
 
-      // We have a rough dtm. Check the DTM elevation. If we are significantly
-      // higher than the DTM we can save computation time by skipping the search
-      // in the triangulation. Anyway this point won't be added.
-     /*double zdtm = dtm.get_value(P.x, P.y);
-      if (zdtm != dtm.get_nodata() && std::abs(zdtm - P.z) > 3 * max_iteration_distance)
-      {
-        discared++;
-        continue;
-      }*/
-
       // Search the triangle where to insert. Benchmarking search time for later speed improvement
       t = d->findContainerTriangleFast(pt);
 
@@ -337,9 +293,9 @@ bool LASRpdt::process(PointCloud*& las)
 
     float perc = (double)count / (double)d->vcount;
 
-    if (iteration == 1 && perc < 0.95)
+    if (iteration == 1 && perc < 0.90)
     {
-      last_error = "Internal bug. The first iteration is expected to insert more than 95% of the point. This is a known bug. Please report";
+      last_error = "Internal bug. The first iteration is expected to insert more than 90% of the point. This is a known bug. Please report";
       return false;
     }
 
@@ -347,15 +303,15 @@ bool LASRpdt::process(PointCloud*& las)
 
     if (perc < 1.0f / 1000.0f) break; // We actually stop the loop when < 0.1% additions
 
-    //interpolate(&dtm);
-
   } while (count > 0 && iteration < max_iter);
 
 
-  if (verbose) print("  Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(), total_search_time.count());
-
-  print(" Number of point discared based on DTM: %lu (%.1f%%)\n", discared, (float)((double)discared/(double)kk*100));
-  print(" PDT took %.2f secs\n", tot.elapsed());
+  if (verbose)
+  {
+    print("  Densification took %.2f secs (tri search %.2f secs)\n", prof.elapsed(), total_search_time.count());
+    print(" Number of point discared based on DTM: %lu (%.1f%%)\n", discared, (float)((double)discared/(double)kk*100));
+    print(" PDT took %.2f secs\n", tot.elapsed());
+  }
 
   progress->done();
 
@@ -377,21 +333,19 @@ bool LASRpdt::process(PointCloud*& las)
 
   for (unsigned int i = 0; i < d->tcount; i++)
   {
-    int idA = d->triangles[i].v[0] - 4;
-    int idB = d->triangles[i].v[1] - 4;
-    int idC = d->triangles[i].v[2] - 4;
+    // Check all 3 vertices of the triangle
+    for (int j = 0; j < 3; j++)
+    {
+      int v_idx = d->triangles[i].v[j];
 
-    if (idA < 0 || idB < 0 || idC < 0)
-      continue;
+      if (v_idx < 4) continue;                    // 1. Skip Super Vertices (0, 1, 2, 3)
+      if (v_idx < (4 + vbuf.size())) continue;    // 2. Skip Virtual Buffer points
+      int map_idx = v_idx - 4 -  vbuf.size();     // 3. Calculate the correct index for index_map
+      if (map_idx >= index_map.size()) continue;  // Safety check (optional)
 
-    las->seek(index_map[idA]);
-    get_and_set_classification(&las->point, classification);
-
-    las->seek(index_map[idB]);
-    get_and_set_classification(&las->point, classification);
-
-    las->seek(index_map[idC]);
-    get_and_set_classification(&las->point, classification);
+      las->seek(index_map[map_idx]);
+      get_and_set_classification(&las->point, classification);
+    }
   }
 
   return true;
@@ -423,11 +377,18 @@ void LASRpdt::query_coordinates(int id, PointXYZ& p)
     p.y = d->vertices[id].pos.y + y_offset;
     p.z = z_default;
   }
+  else if (id < (vbuf.size() + 4))
+  {
+    const auto& q = vbuf[id - 4];
+    p.x = q.x;
+    p.y = q.y;
+    p.z = q.z;
+  }
   else
   {
     Point tmp;
     tmp.set_schema(&las->header->schema);
-    las->get_point(index_map[id - 4], &tmp);
+    las->get_point(index_map[id - 4 - vbuf.size()], &tmp);
     p.x = tmp.get_x();
     p.y = tmp.get_y();
     p.z = tmp.get_z();
@@ -591,6 +552,73 @@ void LASRpdt::interpolate(Raster* r) const
 
   prof.toc();
   if (verbose) print("  DTM interpolation took %.2f secs\n", prof.elapsed());
+}
+
+#include <random>
+
+void LASRpdt::add_virtual_buffer(const std::vector<PointLAS>& xyz, double xmin, double ymin, double xmax, double ymax, double spacing)
+{
+  vbuf.clear();
+
+  std::mt19937 generator(std::random_device{}());
+  double noise_magnitude = 1;
+  std::uniform_real_distribution<double> distribution(-noise_magnitude / 2.0, noise_magnitude / 2.0);
+
+  xmax += 30;
+  ymax += 30;
+  xmin -= 30;
+  ymin -= 30;
+
+  double dx = xmax - xmin;
+  double dy = ymax - ymin;
+
+  int nx = std::round(dx / spacing);
+  int ny = std::round(dy / spacing);
+
+  double sx = dx / nx;
+  double sy = dy / ny;
+
+  vbuf.reserve((nx + 1) * (ny + 1));
+
+  for (int i = 0; i <= nx; i++)
+  {
+    double x = xmin + i * sx;
+    for (int j = 0; j <= ny; j++)
+    {
+      double x_noise = distribution(generator);
+      double y_noise = distribution(generator);
+
+      double y = ymin + j * sy;
+      PointLAS p;
+      p.x = x + x_noise;
+      p.y = y + y_noise;
+      p.z = 0.0;
+      p.FID = 0;
+      vbuf.push_back(std::move(p));
+    }
+  }
+
+  using namespace nanoflann;
+  PLAdaptor adaptor(xyz);
+  typedef KDTreeSingleIndexAdaptor<L2_Simple_Adaptor<double, PLAdaptor>,PLAdaptor,2> kd_tree_t;
+
+  kd_tree_t index(2, adaptor, KDTreeSingleIndexAdaptorParams(10));
+  index.buildIndex();
+
+  for (auto& p : vbuf)
+  {
+    double query_pt[2] = { p.x, p.y };
+
+    size_t ret_index;
+    double out_dist_sqr;
+
+    KNNResultSet<double> resultSet(1);
+    resultSet.init(&ret_index, &out_dist_sqr);
+
+    index.findNeighbors(resultSet, query_pt, nanoflann::SearchParameters());
+
+    p.z = xyz[ret_index].z;
+  }
 }
 
 // See LASRtriangulate::interpolate

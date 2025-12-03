@@ -26,6 +26,7 @@ private:
   TriangleXYZ get_triangle(int tri_index);
   void query_coordinates(int id, PointXYZ& p);
   bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle);
+  void add_virtual_buffer(const std::vector<PointLAS>& xyz, double xmin, double ymin, double xmax, double ymax, double spacing);
 
   void interpolate(Raster* r) const;
   //void interpolate(std::vector<double>& x) const;
@@ -43,8 +44,12 @@ private:
   double z_offset;
   double z_default;
 
+  double buffer_size;
+
   int max_iter;
   int classification;
+
+  std::vector<PointLAS> vbuf;
 
   std::vector<unsigned int> index_map;
   Triangulation* d;
