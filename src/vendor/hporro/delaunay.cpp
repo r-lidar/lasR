@@ -958,3 +958,17 @@ void Triangulation::indexTriangle(int t)
   auto end_time = std::chrono::high_resolution_clock::now();
   total_index_time += end_time - start_time;
 }
+
+void Triangulation::desactivate_spatial_index()
+{
+  index_active = false;
+  grid.clear();
+}
+
+void Triangulation::activate_spatial_index()
+{
+  index_active = true;
+  grid.clear();
+  for (int i = 0 ; i < tcount ; ++i)
+    indexTriangle(i);
+}

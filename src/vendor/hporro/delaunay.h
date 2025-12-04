@@ -14,13 +14,13 @@ public:
   bool delaunayInsertion(const Vec2& point, int tri_index = -1);
   int findContainerTriangle(const Vec2& p, int prop) const;
   int findContainerTriangleFast(const Vec2& p) const;
+  void desactivate_spatial_index();
+  void activate_spatial_index();
 
   Vertex *vertices;
   Triangle *triangles;
   int vcount = 0;
   int tcount = 0;
-
-  bool index_active;
 
 private:
   void addPointInside(const Vec2& point,int);
@@ -44,16 +44,6 @@ private:
 
   void remem(); // checks if more memory is needed, and if it is needed, allocates more memory.
 
-  //int findContainerTriangleLinearSearch(const Vec2& p) const;
-  //int findContainerTriangleSqrtSearch(const Vec2& p, int prop = -1) const;
-
-  //bool sanity(int);
-  //bool integrity(int t);
-  //bool validTriangle(int t);
-
-  //void print(); // prints the triangulation to standard output
-  //void print_ind(); // prints connectivity
-
   int maxTriangles;
   int maxVertices;
   int incount = 0;
@@ -61,8 +51,9 @@ private:
   float a;
   Vec2 p0,p1,p2,p3;
 
-  // --- Grid Parameters ---
+  // Spatial indexing
   const Grid& index;
+  bool index_active;
   std::vector<std::vector<int>> grid;
   void indexTriangle(int t);
   void unindexTriangle(int t);

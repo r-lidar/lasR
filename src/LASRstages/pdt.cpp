@@ -121,6 +121,10 @@ bool LASRpdt::process(PointCloud*& las)
   Grid gd(min_x-xo-bs, min_y-yo-bs, max_x-xo+bs, max_y-yo+bs, 1);
   d = new Triangulation(gd);
 
+  // For the few first points spatial index search is slow because triangle
+  // are too big. We can deactivate spatial indexing this is actually faster
+  d->desactivate_spatial_index();
+
   if (verbose)  print(" Buffer: adding %lu virtual seed ", vbuff.size());
 
   for (auto& p : vbuff)
@@ -161,6 +165,10 @@ bool LASRpdt::process(PointCloud*& las)
   }
 
   if (verbose) print(" took %.2f secs\n", prof.elapsed());
+
+
+  // Now the edges and seeds are inserted we can leverage spatial indexing.
+  d->activate_spatial_index();
 
   // =============================
   // Progressive TIN densification
