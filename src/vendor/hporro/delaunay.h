@@ -25,8 +25,7 @@ private:
   void addPointInEdge(const Vec2& point, int t1, int t2);
   void addPointInEdge(const Vec2& point, int t);
 
-  bool legalize(int t);
-  bool legalize(int t1, int t2);
+  void legalize(const std::vector<int>& input_triangles);
   bool flip(int t1, int t2);
 
   bool isInside(int t, Vec2) const; //checks if a Vec2 is inside the triangle in the index t

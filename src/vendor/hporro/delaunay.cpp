@@ -87,10 +87,9 @@ Triangulation::~Triangulation()
 bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
 {
   auto start_time = std::chrono::high_resolution_clock::now();
-
   remem();
 
-  int tri_index = prop;
+  int tri_index = prop; // assuming prop is the correct triangle from findContainerTriangleFast
   //int tri_index = findContainerTriangle(p, prop);
 
   Vec2 a = vertices[triangles[tri_index].v[0]].pos;
@@ -98,7 +97,7 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
   Vec2 c = vertices[triangles[tri_index].v[2]].pos;
   Vec2 points[] = {a,b,c};
 
-  // we don't insert repeated points
+  // Check for duplicates
   for (int i = 0 ; i < 3 ; i++)
   {
     if ((std::abs(p.x-points[i].x) < IN_TRIANGLE_EPS) && (std::abs(p.y-points[i].y) < IN_TRIANGLE_EPS))
@@ -109,28 +108,28 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
     }
   }
 
+  // --- Check Edges ---
   for (int i = 0; i < 3 ; i++)
   {
     if (pointInSegment(p, points[(i+1)%3], points[(i+2)%3]))
     {
-      // insert a point in the i edge
-      if (triangles[tri_index].t[i] == -1)
+      int t_neighbor = triangles[tri_index].t[i];
+
+      if (t_neighbor == -1)
       {
         addPointInEdge(p, tri_index);
-        legalize(tri_index);
-        legalize(tcount-1);
-        legalize(tcount-2);
+        // Created 2 new triangles from 1.
+        // The modified triangles are tri_index and tcount-1.
+        // Actually addPointInEdge(p, t) usually creates more splits, let's look at your implementation:
+        // It creates t1 (new) and modifies t.
+        legalize({tri_index, tcount - 1});
       }
       else
       {
-        addPointInEdge(p, tri_index, triangles[tri_index].t[i]);
-        for (int  j = 0 ; j < 3 ; j++)
-        {
-          legalize(triangles[tri_index].t[i]);
-          legalize(tri_index);
-          legalize(tcount-1);
-          legalize(tcount-2);
-        }
+        addPointInEdge(p, tri_index, t_neighbor);
+        // addPointInEdge(p, t0, t1) creates t2, t3 and modifies t0, t1.
+        // We need to legalize all 4.
+        legalize({tri_index, t_neighbor, tcount - 1, tcount - 2});
       }
 
       auto end_time = std::chrono::high_resolution_clock::now();
@@ -139,13 +138,13 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
     }
   }
 
+  // --- Inside Triangle ---
   if (tri_index != -1)
   {
     this->incount++;
     addPointInside(p, tri_index);
-    legalize(tri_index);
-    legalize(tcount-1);
-    legalize(tcount-2);
+    // addPointInside splits tri_index into 3: tri_index, tcount-2, tcount-1
+    legalize({tri_index, tcount - 1, tcount - 2});
 
     auto end_time = std::chrono::high_resolution_clock::now();
     total_insertion_time += end_time - start_time;
@@ -491,67 +490,98 @@ void Triangulation::addPointInEdge(const Vec2& v, int t)
   remem();
 }
 
-bool Triangulation::legalize(int t)
+void Triangulation::legalize(const std::vector<int>& input_triangles)
 {
   auto start_time = std::chrono::high_resolution_clock::now();
-  for (int i = 0 ; i < 3 ; i++) legalize(t, triangles[t].t[i]);
+
+  // Stack of edges to check, represented as pairs of {Triangle_A, Triangle_B}
+  std::vector<std::pair<int, int>> stack;
+  stack.reserve(input_triangles.size() * 3);
+
+  // 1. Initialize stack with edges of the newly inserted triangles
+  // We only check edges that connect to existing triangles (neighbor != -1)
+  for (int t : input_triangles)
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      int neighbor = triangles[t].t[i];
+      if (neighbor != -1)
+      {
+        stack.push_back({t, neighbor});
+      }
+    }
+  }
+
+  // 2. Process the stack
+  while (!stack.empty())
+  {
+    auto [t1, t2] = stack.back();
+    stack.pop_back();
+
+    // Sanity check: Ensure they are still connected (topology might have changed due to previous flips)
+    if (!areConnected(t1, t2)) continue;
+
+    // --- Prepare vertices for InCircle test ---
+    // We need to identify the vertices of the quad formed by t1 and t2
+    // t1 vertices: a0, a1, a2
+    // t2 vertices: b0, b1, b2
+    // Shared edge: 2 vertices.
+    // Opposing vertices: The ones not on the shared edge.
+
+    int a[3] = {triangles[t1].v[0], triangles[t1].v[1], triangles[t1].v[2]};
+    int b[3] = {triangles[t2].v[0], triangles[t2].v[1], triangles[t2].v[2]};
+
+    // Find the vertex in T2 that is NOT in T1 (the point we test against T1's circumcircle)
+    int p_opp_idx = -1;
+    for (int i = 0; i < 3; i++)
+    {
+      if (b[i] != a[0] && b[i] != a[1] && b[i] != a[2])
+      {
+        p_opp_idx = b[i];
+        break;
+      }
+    }
+
+    // Find the vertex in T1 that is NOT in T2
+    int t1_opp_idx = -1;
+    for(int i = 0; i < 3; i++)
+    {
+      if(a[i] != b[0] && a[i] != b[1] && a[i] != b[2])
+      {
+        t1_opp_idx = a[i];
+        break;
+      }
+    }
+
+    // If data is inconsistent, skip
+    if (p_opp_idx == -1 || t1_opp_idx == -1) continue;
+
+    // --- Delaunay Test ---
+    // If the quadrilateral is convex AND the point p_opp is inside the circumcircle of T1
+    if (isConvexBicell(t1, t2) &&
+        inCircle(vertices[a[0]].pos, vertices[a[1]].pos, vertices[a[2]].pos, vertices[p_opp_idx].pos) > 0)
+    {
+      // Perform the flip
+      flip(t1, t2);
+
+      // --- Update Stack ---
+      // After flipping t1 and t2, the diagonal changed.
+      // The new "external" edges of the t1+t2 quad might now be illegal.
+      // We push the neighbors of t1 and t2 (excluding each other) to the stack.
+
+      for (int i = 0; i < 3; i++)
+      {
+        int n1 = triangles[t1].t[i];
+        if (n1 != -1 && n1 != t2) stack.push_back({t1, n1});
+
+        int n2 = triangles[t2].t[i];
+        if (n2 != -1 && n2 != t1) stack.push_back({t2, n2});
+      }
+    }
+  }
 
   auto end_time = std::chrono::high_resolution_clock::now();
   total_legalize_time += end_time - start_time;
-  return true;
-}
-
-bool Triangulation::legalize(int t1, int t2)
-{
-  if (t2 == -1) return true;
-  if (t1 == -1) return true;
-
-  if (!areConnected(t1, t2)) return true;
-
-  int a[6];
-  a[0] = triangles[t1].v[0];
-  a[1] = triangles[t1].v[1];
-  a[2] = triangles[t1].v[2];
-  a[3] = triangles[t2].v[0];
-  a[4] = triangles[t2].v[1];
-  a[5] = triangles[t2].v[2];
-
-  int b[8];
-  b[0] = a[0];
-  b[1] = a[1];
-  b[2] = a[2];
-
-  for(int i = 3 ; i < 6 ; i++)
-  {
-    if ((a[i] != b[0]) && (a[i] != b[1]) && (a[i] != b[2]))
-    {
-      b[3] = a[i];
-    }
-  }
-
-  b[4] = a[3];
-  b[5] = a[4];
-  b[6] = a[5];
-
-  for (int i = 0 ; i < 3 ; i++)
-  {
-    if ((a[i] != b[4]) && (a[i] != b[5]) && (a[i] != b[6]))
-    {
-      b[7] = a[i];
-    }
-  }
-
-  if (isConvexBicell(t1,t2) &&
-     (inCircle(vertices[b[0]].pos,vertices[b[1]].pos, vertices[b[2]].pos, vertices[b[3]].pos) > 0 ||
-      inCircle(vertices[b[4]].pos,vertices[b[5]].pos, vertices[b[6]].pos, vertices[b[7]].pos) > 0))
-  {
-    bool p = flip(t1, t2);
-    legalize(t1);
-    legalize(t2);
-    return p;
-  }
-
-  return true;
 }
 
 // check if two triangles are neighbours
@@ -857,7 +887,6 @@ void Triangulation::unindexTriangle(int t)
       {
         cell[i] = cell.back(); // Move the last element to the current position
         cell.pop_back();       // Remove the last element
-        change_map[cell_index] = true;
         break;                 // Stop, assuming t appears only once per cell
       }
     }
@@ -891,7 +920,6 @@ void Triangulation::indexTriangle(int t)
   for (auto cell : cells)
   {
     grid[cell].push_back(t);
-    change_map[cell] = true;
   }
 
   auto end_time = std::chrono::high_resolution_clock::now();
