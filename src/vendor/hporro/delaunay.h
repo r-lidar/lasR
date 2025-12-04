@@ -20,6 +20,8 @@ public:
   int vcount = 0;
   int tcount = 0;
 
+  bool index_active;
+
 private:
   void addPointInside(const Vec2& point,int);
   void addPointInEdge(const Vec2& point, int t1, int t2);

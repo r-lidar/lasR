@@ -70,6 +70,7 @@ Triangulation::Triangulation(const Grid& index_) : index(index_)
   tcount = 2;
 
   grid.resize(index.get_ncells());
+  index_active = true;
 }
 
 Triangulation::~Triangulation()
@@ -239,6 +240,9 @@ int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
 
 int Triangulation::findContainerTriangleFast(const Vec2& p) const
 {
+  if (!index_active)
+    return findContainerTriangle(p, -1);
+
   auto start_time = std::chrono::high_resolution_clock::now();
 
   f_query_count++;
@@ -858,6 +862,8 @@ bool Triangulation::pointInSegment(const Vec2& p, const Vec2& p1, const Vec2& p2
 
 void Triangulation::unindexTriangle(int t)
 {
+  if (!index_active) return;
+
   auto start_time = std::chrono::high_resolution_clock::now();
 
   if (t < 0 || t >= tcount) return;
@@ -898,6 +904,8 @@ void Triangulation::unindexTriangle(int t)
 
 void Triangulation::indexTriangle(int t)
 {
+  if (!index_active) return;
+
   auto start_time = std::chrono::high_resolution_clock::now();
 
   if (t < 0 || t >= tcount) return;
