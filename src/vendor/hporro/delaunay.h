@@ -57,8 +57,6 @@ private:
   int maxTriangles;
   int maxVertices;
   int incount = 0;
-  mutable std::vector<int> visited;  // reused per query
-  mutable int visit_tag = 1;         // incremented each search
 
   float a;
   Vec2 p0,p1,p2,p3;

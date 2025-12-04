@@ -34,6 +34,10 @@ Triangulation::Triangulation(const Grid& index_) : index(index_)
   total_legalize_time = std::chrono::milliseconds::zero();
   total_unindex_time = std::chrono::milliseconds::zero();
   total_index_time = std::chrono::milliseconds::zero();
+  g_query_count = 0;
+  f_query_count = 0;
+  n_triangle_tested = 0;
+
 
   if (!initialized)
   {
@@ -160,82 +164,103 @@ bool Triangulation::delaunayInsertion(const Vec2& p, int prop)
 int Triangulation::findContainerTriangle(const Vec2& p, int prop) const
 {
   auto start_time = std::chrono::high_resolution_clock::now();
+
   g_query_count++;
 
-  int iteration = 0;
+  // 1. Heuristic: Start from the provided hint or the last triangle
+  int t = (prop < 0 || prop >= tcount) ? tcount - 1 : prop;
 
-  // Overallocate to reduce future reallocations
-  if ((int)visited.capacity() < tcount)
-    visited.reserve(tcount * 2);
+  // Safety check for empty triangulation
+  if (t < 0) return -1;
 
-  if ((int)visited.size() < tcount)
-    visited.resize(tcount, 0);
+  // 2. Stochastic/Straight Walk
+  // We remember the edge we entered from to avoid immediate backtracking.
+  // -1 implies we didn't enter from a neighbor (start of search)
+  int edge_from = -1;
 
-  // Increment visit tag (reset only if overflow)
-  if (++visit_tag == 0)
+  int iter = 0;
+  const int MAX_ITER = tcount + 100; // Safety break for non-convex/invalid states
+
+  while (iter++ < MAX_ITER)
   {
-    // Handle integer overflow (wraparound): clear vector
-    std::fill(visited.begin(), visited.end(), 0);
-    visit_tag = 1;
-  }
+    const Triangle& tri = triangles[t];
 
-  // If the initial triangle index is invalid, start with the last triangle
-  if (prop < 0 || prop >= tcount) prop = tcount - 1;
+    // Identify the vertices
+    // Edge i is defined by vertices (i+1)%3 and (i+2)%3
+    // The neighbor across edge i is tri.t[i]
 
-  // Initialize the current triangle index
-  int t = prop;
+    bool moved = false;
 
-  // Continue searching until we either find the triangle or exhaust neighbors
-  while (true)
-  {
-    // Check if the point is inside the current triangle or on its edge
-    if (isInside(t, p) || isInEdge(t, p))
+    // We check edges in a specific order: start checking the edge *after* the one we came from.
+    // This optimization (Move-To-Front heuristic) reduces average tests per step.
+    int start_edge = (edge_from == -1) ? 0 : (edge_from + 1) % 3;
+
+    for (int k = 0; k < 3; k++)
     {
-      auto end_time = std::chrono::high_resolution_clock::now();
-      total_search_time += end_time - start_time;
-      return t;
-    }
+      int i = (start_edge + k) % 3;
 
-    // Calculate the centroid of the current triangle
-    Vec2 v = (vertices[triangles[t].v[0]].pos + vertices[triangles[t].v[1]].pos + vertices[triangles[t].v[2]].pos) / 3.0;
+      // If we just came from neighbor at i, we know the point is on the "inside"
+      // side of that shared edge, so we skip it.
+      if (i == edge_from) continue;
 
-    bool foundNext = false;
+      int v1_idx = tri.v[(i + 1) % 3];
+      int v2_idx = tri.v[(i + 2) % 3];
 
-    // Iterate over the neighbors of the current triangle
-    for (int i = 0 ; i < 3 ; i++)
-    {
-      int f = triangles[t].t[i];
+      // Robustness: Handle ghost triangles or uninitialized memory if necessary
+      if (v1_idx == -1 || v2_idx == -1) continue;
 
-      // If there is no neighbor in this direction, skip to the next one
-      if (f == -1) continue;
+      const Vec2& p1 = vertices[v1_idx].pos;
+      const Vec2& p2 = vertices[v2_idx].pos;
 
-      // Skip if the neighbor has already been visited
-      if (visited[f] == visit_tag) continue; // already visited
-
-      // Get the vertices of the edge opposite to the neighbor
-      Vec2 a = vertices[triangles[t].v[(i + 1) % 3]].pos;
-      Vec2 b = vertices[triangles[t].v[(i + 2) % 3]].pos;
-
-      // Perform orientation tests to check if the point lies in the neighboring triangle
-      if ((orient2d(&v.x, &p.x, &a.x) * orient2d(&v.x, &p.x, &b.x) < 0) &&
-          (orient2d(&a.x, &b.x, &p.x) * orient2d(&a.x, &b.x, &v.x) < 0))
+      // Orient2d: Returns positive if p is to the left of p1->p2 (CCW)
+      // If result < 0, p is to the Right. We must walk to neighbor t[i].
+      // We also handle == 0 (on edge) cautiously. Standard walk moves if strictly right (<0).
+      // However, for robustness, if it is exactly on the edge, we consider it "inside"
+      // or "on edge" of the current triangle and do not jump, effectively stopping.
+      if (orient2d(&p1.x, &p2.x, &p.x) < 0)
       {
-        // Mark current triangle as visited
-        visited[t] = visit_tag;
+        int neighbor = tri.t[i];
 
-        // If the point is likely in the neighbor, update the current triangle and continue
-        t = f;
-        foundNext = true;
+        // If we hit the boundary (neighbor is -1), the point is outside the triangulation
+        if (neighbor == -1)
+        {
+          auto end_time = std::chrono::high_resolution_clock::now();
+          // Remove const_cast if members are mutable
+          const_cast<std::chrono::duration<double>&>(total_search_time) += end_time - start_time;
+          return -1;
+        }
+
+        // Move to neighbor
+        // We need to calculate which edge index in 'neighbor' corresponds to 't'
+        // to set 'edge_from' correctly for the next iteration.
+        // Optimization: We don't strictly need to scan the neighbor's edges to find 't'
+        // if we just want the simple walk. But finding the index allows the (i==edge_from) optimization.
+
+        // Simple version (slightly slower but less code): edge_from = -1;
+        // Optimized version: Find the edge index in 'neighbor' that points back to 't'
+
+        const Triangle& n_tri = triangles[neighbor];
+        if (n_tri.t[0] == t) edge_from = 0;
+        else if (n_tri.t[1] == t) edge_from = 1;
+        else edge_from = 2;
+
+        t = neighbor;
+        moved = true;
         break;
       }
     }
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    total_search_time += end_time - start_time;
-
-    // If no suitable neighbor is found, return -1 indicating the point is outside the triangulation
-    if (!foundNext) return -1;
+    // If we checked all relevant edges and didn't move, we are inside (or on the edge).
+    if (!moved)
+    {
+      auto end_time = std::chrono::high_resolution_clock::now();
+      const_cast<std::chrono::duration<double>&>(total_search_time) += end_time - start_time;
+      return t;
+    }
   }
+
+  // Fallback if max iterations reached (should not happen in valid Delaunay with bounding box)
+  return -1;
 }
 
 int Triangulation::findContainerTriangleFast(const Vec2& p) const
