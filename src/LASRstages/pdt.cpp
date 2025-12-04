@@ -543,46 +543,68 @@ void LASRpdt::make_seeds()
   if (verbose) print("%.2f secs\n", prof.elapsed());
 }
 
-void LASRpdt::make_buffer(const std::vector<PointLAS>& xyz, double xmin, double ymin, double xmax, double ymax, double spacing)
+void LASRpdt::make_buffer(const std::vector<PointLAS>& xyz, double xmin, double ymin, double xmax, double ymax, double buffer)
 {
-  vbuff.clear();
-
   std::mt19937 generator(std::random_device{}());
   double noise_magnitude = 1;
   std::uniform_real_distribution<double> distribution(-noise_magnitude / 2.0, noise_magnitude / 2.0);
 
-  xmax += 30;
-  ymax += 30;
-  xmin -= 30;
-  ymin -= 30;
+  xmax += (buffer-1);
+  ymax += (buffer-1);
+  xmin -= (buffer-1);
+  ymin -= (buffer-1);
 
   double dx = xmax - xmin;
   double dy = ymax - ymin;
 
-  int nx = std::round(dx / spacing);
-  int ny = std::round(dy / spacing);
+  int nx = std::round(dx / seed_resolution_search);
+  int ny = std::round(dy / seed_resolution_search);
 
   double sx = dx / nx;
   double sy = dy / ny;
 
-  vbuff.reserve((nx + 1) * (ny + 1));
+  vbuff.clear();
+  vbuff.reserve(2 * (nx + ny) + 4); // perimeter only
 
+  PointLAS p; p.z = 0;
+  double x, y, x_noise, y_noise;
+
+  // Bottom and top edges
   for (int i = 0; i <= nx; i++)
   {
-    double x = xmin + i * sx;
-    for (int j = 0; j <= ny; j++)
-    {
-      double x_noise = distribution(generator);
-      double y_noise = distribution(generator);
+    x = xmin + i * sx;
+    x_noise = distribution(generator);
 
-      double y = ymin + j * sy;
-      PointLAS p;
-      p.x = x + x_noise;
-      p.y = y + y_noise;
-      p.z = 0.0;
-      p.FID = 0;
-      vbuff.push_back(std::move(p));
-    }
+    // Bottom (ymin)
+    y_noise = distribution(generator);
+    p.x = x + x_noise;
+    p.y = ymin + y_noise;
+    vbuff.push_back(p);
+
+    // Top
+    y_noise = distribution(generator);
+    p.x = x + x_noise;
+    p.y = ymax + y_noise;
+    vbuff.push_back(p);
+  }
+
+  // Left and right edges (skip corners to avoid duplicates)
+  for (int j = 1; j < ny; j++)
+  {
+    y = ymin + j * sy;
+    y_noise = distribution(generator);
+
+    // Left (xmin)
+    x_noise = distribution(generator);
+    p.x = xmin + x_noise;
+    p.y = y + y_noise;
+    vbuff.push_back(p);
+
+    // Right (xmax)
+    x_noise = distribution(generator);
+    p.x = xmax + x_noise;
+    p.y = y + y_noise;
+    vbuff.push_back(p);
   }
 
   using namespace nanoflann;
