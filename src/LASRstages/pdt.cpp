@@ -254,7 +254,7 @@ bool LASRpdt::process(PointCloud*& las)
 
     if (iteration == 1 && perc < 0.90)
     {
-      warning("Internal debug warning. The first iteration is expected to insert more than 90% of the point.");
+      warning("Internal debug warning. The first iteration is expected to insert more than 90%% of the point.\n");
     }
 
     if (verbose) print("  Iteration %d: adding %d points (+%.1f%%) to the ground took %.2f secs\n", iteration, count, perc * 100, prof2.elapsed());
