@@ -1,5 +1,10 @@
 # Changelog
 
+## lasR 0.17.4
+
+- Fix: [\#247](https://github.com/r-lidar/lasR/issues/247) memory
+  violation in some edge cases.
+
 ## lasR 0.17.3
 
 - Fix: [\#213](https://github.com/r-lidar/lasR/issues/213) VPC 3D
