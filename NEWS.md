@@ -1,3 +1,7 @@
+# lasR 0.17.4
+ 
+- Fix: #247 memory violation in some edge cases.
+
 # lasR 0.17.3
 
 - Fix: #213 VPC 3D geometries.

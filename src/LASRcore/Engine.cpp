@@ -240,6 +240,7 @@ bool Engine::run_loaded()
     if (npoints == 0)
     {
       order.pop_back();
+      for (auto&& stage : pipeline) stage->reset_filter();
       return true;
     }
 
