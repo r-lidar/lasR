@@ -16,6 +16,8 @@ public:
   int findContainerTriangleFast(const Vec2& p) const;
   void desactivate_spatial_index();
   void activate_spatial_index();
+  void reset_dirty_cells();
+  const std::vector<bool>& get_dirty_cells() const;
 
   Vertex *vertices;
   Triangle *triangles;
@@ -55,6 +57,7 @@ private:
   const Grid& index;
   bool index_active;
   std::vector<std::vector<int>> grid;
+  std::vector<bool> dirty_cells;
   void indexTriangle(int t);
   void unindexTriangle(int t);
 };

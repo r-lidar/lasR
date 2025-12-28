@@ -74,6 +74,7 @@ Triangulation::Triangulation(const Grid& index_) : index(index_)
   tcount = 2;
 
   grid.resize(index.get_ncells());
+  dirty_cells.resize(index.get_ncells(), true);
   index_active = true;
 }
 
@@ -628,26 +629,6 @@ bool Triangulation::areConnected(int t1, int t2) const
   return one && two;
 }
 
-/*void Triangulation::print()
- {
- for(int i = 0 ; i < tcount ; i++)
- {
- std::cout << "Triangle " << i << ":\n";
- std::cout << "P0: " << vertices[triangles[i].v[0]].pos.x << " " << vertices[triangles[i].v[0]].pos.y << std::endl;
- std::cout << "P1: " << vertices[triangles[i].v[1]].pos.x << " " << vertices[triangles[i].v[1]].pos.y << std::endl;
- std::cout << "P2: " << vertices[triangles[i].v[2]].pos.x << " " << vertices[triangles[i].v[2]].pos.y << std::endl;
- }
- }
-
- void Triangulation::print_ind()
- {
- for(int i = 0 ; i < tcount ; i++)
- {
- std::cout << "Triangle " << i << ": ";
- std::cout << triangles[i].t[0] << " " << triangles[i].t[1] << " " << triangles[i].t[2] << std::endl;
- }
- }*/
-
 bool Triangulation::isCCW(int f) const
 {
   if (f == -1) return true;
@@ -910,7 +891,10 @@ void Triangulation::unindexTriangle(int t)
   // 3. Remove t from only the overlapping cells
   for (int cell_index : cells)
   {
+    dirty_cells[cell_index] = true; // Mark this region as modified
+
     auto& cell = grid[cell_index];
+
     // Iterate manually to find the ID
     for (size_t i = 0; i < cell.size(); ++i)
     {
@@ -952,6 +936,7 @@ void Triangulation::indexTriangle(int t)
   // 3. Insert t into all overlapping cells
   for (auto cell : cells)
   {
+    dirty_cells[cell] = true; // Mark this region as modified
     grid[cell].push_back(t);
   }
 
@@ -971,4 +956,14 @@ void Triangulation::activate_spatial_index()
   grid.clear();
   for (int i = 0 ; i < tcount ; ++i)
     indexTriangle(i);
+}
+
+void Triangulation::reset_dirty_cells()
+{
+  std::fill(dirty_cells.begin(), dirty_cells.end(), false);
+}
+
+const std::vector<bool>& Triangulation::get_dirty_cells() const
+{
+  return dirty_cells;
 }

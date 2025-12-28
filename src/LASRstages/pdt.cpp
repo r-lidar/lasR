@@ -180,10 +180,16 @@ bool LASRpdt::process(PointCloud*& las)
 
   int count = 0;
 
+  std::vector<bool> active_regions(gd.get_ncells(), true);
+
   // We loop while we are adding new triangles
   do
   {
     if (max_iter == 0) break;
+
+    // Reset the dirty tracker inside the triangulation
+    // so it only records changes happening during this specific iteration
+    d->reset_dirty_cells();
 
     count = 0;
 
@@ -216,6 +222,13 @@ bool LASRpdt::process(PointCloud*& las)
 
       PointXYZ P(x, y, z);
       Vec2 pt(x - xo, y - yo);
+
+      // -Optimization Step
+      // Check if the region containing this point was modified in the previous step.
+      // If the cell is valid and was NOT marked active/modified in the previous loop,
+      // we can skip this point entirely. The triangulation here hasn't changed.
+      int cell_id = gd.cell_from_xy(pt.x, pt.y);
+      if (!active_regions[cell_id]) continue;
 
       // Search the triangle where to insert. Benchmarking search time for later speed improvement
       t = d->findContainerTriangleFast(pt);
@@ -250,6 +263,11 @@ bool LASRpdt::process(PointCloud*& las)
       progress->update(id);
     }
 
+    // Prepare for next iteration ---
+    // The active regions for the NEXT loop are the ones that became "dirty"
+    // during THIS loop.
+    active_regions = d->get_dirty_cells();
+
     float perc = (double)count / (double)d->vcount;
 
     if (iteration == 1 && perc < 0.90)
@@ -259,7 +277,7 @@ bool LASRpdt::process(PointCloud*& las)
 
     if (verbose) print("  Iteration %d: adding %d points (+%.1f%%) to the ground took %.2f secs\n", iteration, count, perc * 100, prof2.elapsed());
 
-    if (perc < 1.0f / 1000.0f) break; // We actually stop the loop when < 0.1% additions
+    if (perc < 0.5f / 1000.0f) break; // We actually stop the loop when < 0.05% additions
 
   } while (count > 0 && iteration < max_iter);
 
