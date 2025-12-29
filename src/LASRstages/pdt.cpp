@@ -14,17 +14,10 @@
 struct PLAdaptor
 {
   const std::vector<PointLAS>& pts;
-
   PLAdaptor(const std::vector<PointLAS>& pts_) : pts(pts_) {}
-
   inline size_t kdtree_get_point_count() const { return pts.size(); }
-
-  inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
-    return (dim == 0 ? pts[idx].x : pts[idx].y);
-  }
-
-  template <class BBOX>
-  bool kdtree_get_bbox(BBOX&) const { return false; }
+  inline double kdtree_get_pt(const size_t idx, const size_t dim) const { return (dim == 0 ? pts[idx].x : pts[idx].y); }
+  template <class BBOX> bool kdtree_get_bbox(BBOX&) const { return false; }
 };
 
 LASRpdt::LASRpdt()
@@ -83,6 +76,8 @@ bool LASRpdt::process(PointCloud*& las)
   std::sort(items.begin(), items.end(),  [](const auto& a, const auto& b) {  return a.first < b.first; });
   std::vector<unsigned int> index; index.reserve(n);
   for (const auto& item : items) index.push_back(item.second);
+  items.clear();
+  items.shrink_to_fit();
 
   if (verbose) print("%.2f secs\n", prof.elapsed());
 
