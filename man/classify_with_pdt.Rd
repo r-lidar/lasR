@@ -5,14 +5,12 @@
 \title{Ground Point Classification}
 \usage{
 classify_with_pdt(
-  distance = 1,
-  angle = 15,
-  res = 5,
-  min_size = 0.1,
-  offset = 0.05,
+  distance = 2,
+  angle = 30,
+  res = 10,
+  min_size = 0.5,
   ...,
-  class = 2L,
-  filter = "-keep_last"
+  class = 2L
 )
 }
 \arguments{
@@ -24,23 +22,18 @@ areas.}
 
 \item{res}{Scalar. The resolution for locating seed points. It takes the lowest point per grid cell.
 It should be larger than any above ground structure such as building or bridges. In forested lands
-5 m is good but larger values are recommended if human made stucture can be observed.}
+5 m is good but larger values are recommended if human made structure can be observed.}
 
 \item{min_size}{Scalar. The minimum size for triangles. Densification halts if triangles are smaller
 than this limit. The default setting is generally suitable for most scenarios.}
-
-\item{offset}{Scalar. Points can be above the triangulation of ground points and still become ground.
-if \code{offset = 0} only vertices of the triangulation are classified as ground. If \code{offset > 0} a buffer
-below and above the mesh is added for classification.}
 
 \item{...}{Unused}
 
 \item{class}{Integer. The classification to assign to the points, typically 2 for ground points.}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
-interest. The available filters are those from LASlib and can be found by running \link{filter_usage}.
-For a given stage when a filter is applied, only the points that meet the criteria are processed.
-The most common strings are "-keep_first", "-keep_class 2", "drop_z_below 2". For more details see
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
 }
 \value{

@@ -304,9 +304,6 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' 5 m is good but larger values are recommended if human made structure can be observed.
 #' @param min_size Scalar. The minimum size for triangles. Densification halts if triangles are smaller
 #' than this limit. The default setting is generally suitable for most scenarios.
-#' @param offset Scalar. Points can be above the triangulation of ground points and still become ground.
-#' if `offset = 0` only vertices of the triangulation are classified as ground. If `offset > 0` a buffer
-#' below and above the mesh is added for classification.
 #' @param class Integer. The classification to assign to the points, typically 2 for ground points.
 #' @param ... Unused
 #' @template param-filter
@@ -324,7 +321,7 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' pipeline = classify_with_pdt() + write_las()
 #' ans = exec(pipeline, on = f, progress = TRUE)
-classify_with_pdt = function(distance = 1, angle = 15, res = 50, min_size = 0.1, ..., class = 2L)
+classify_with_pdt = function(distance = 2, angle = 30, res = 10, min_size = 0.5, ..., class = 2L)
 {
   p = list(...)
   max_iter = 500
