@@ -124,7 +124,7 @@ bool LASRpdt::process(PointCloud*& las)
 
   for (auto& p : vbuff)
   {
-    Vec2 pt(p.x - xo, p.y - yo);
+    Vec2 pt(p.x - xo, p.y - yo, p.z);
     t = d->findContainerTriangleFast(pt);
     if (!d->delaunayInsertion(pt, t))
     {
@@ -149,7 +149,7 @@ bool LASRpdt::process(PointCloud*& las)
 
   for (auto& seed : seeds)
   {
-    Vec2 pt(seed.x - xo, seed.y - yo);
+    Vec2 pt(seed.x - xo, seed.y - yo, seed.z);
     t = d->findContainerTriangleFast(pt);
 
     if (d->delaunayInsertion(pt, t))
@@ -216,9 +216,9 @@ bool LASRpdt::process(PointCloud*& las)
       if (pointfilter.filter(&las->point)) continue;
 
       PointXYZ P(x, y, z);
-      Vec2 pt(x - xo, y - yo);
+      Vec2 pt(x - xo, y - yo, z);
 
-      // -Optimization Step
+      // Optimization Step
       // Check if the region containing this point was modified in the previous step.
       // If the cell is valid and was NOT marked active/modified in the previous loop,
       // we can skip this point entirely. The triangulation here hasn't changed.
@@ -233,11 +233,12 @@ bool LASRpdt::process(PointCloud*& las)
       // Retrieve the vertices of the triangle
       TriangleXYZ triangle = get_triangle(t);
 
+      double max_edge = triangle.square_max_edge_size();
+
       // Skip too small triangles. Small triangle are frozen and cannot be subdivided.
-      if (triangle.square_max_edge_size() < min_triangle_size)
+      if (max_edge < min_triangle_size)
       {
-        // will be skipped next time since anyway
-        // the triangle is not frozen.
+        // will be skipped next time since because the triangle is frozen.
         inserted[id] = true;
         continue;
       }
@@ -282,8 +283,16 @@ bool LASRpdt::process(PointCloud*& las)
   //progress->done();
 
   // =====================================
+  // Detect spikes
+  // =====================================
+
+  std::vector<bool> isSpike = detect_spikes();
+
+  // =====================================
   // Reclassify the points as unclassified
   // =====================================
+
+  if (verbose) print(" Classification\n");
 
   AttributeAccessor get_and_set_classification("Classification");
 
@@ -310,9 +319,15 @@ bool LASRpdt::process(PointCloud*& las)
       if (map_idx >= index_map.size()) continue;   // Safety check (optional)
 
       las->seek(index_map[map_idx]);
-      get_and_set_classification(&las->point, classification);
+
+      if (!isSpike[v_idx])
+        get_and_set_classification(&las->point, classification);
+      else
+        get_and_set_classification(&las->point, 7);
     }
   }
+
+  d->write("/home/jr/delaunay25.obj");
 
   return true;
 }
@@ -650,6 +665,197 @@ void LASRpdt::make_buffer(const std::vector<PointLAS>& xyz, double xmin, double 
   }
 }
 
+struct Vec3 { double x, y, z; };
+
+// Helper to calculate dot product
+double dot(const Vec3& a, const Vec3& b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+// Helper to subtract vectors
+Vec3 sub(const Vec3& a, const Vec3& b) {
+  return {a.x - b.x, a.y - b.y, a.z - b.z};
+}
+
+// Helper to normalize a vector
+Vec3 normalize(Vec3 v) {
+  double len = std::sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+  if (len < 1e-9) return {0, 0, 1}; // Default up if degenerate
+  return {v.x / len, v.y / len, v.z / len};
+}
+
+// Helper: Cross product
+Vec3 cross(const Vec3& a, const Vec3& b) {
+  return {
+  a.y * b.z - a.z * b.y,
+  a.z * b.x - a.x * b.z,
+  a.x * b.y - a.y * b.x
+};
+}
+
+std::vector<bool> LASRpdt::detect_spikes()
+{
+  if (verbose) print(" Detect spikes (Slope-Adaptive)\n");
+
+  std::vector<bool> isSpike(d->vcount, false);
+
+  // Configurable thresholds
+  const double SPIKE_HEIGHT_THRESHOLD = 0.75; // Min meters deviation from trend
+  const double SPIKINESS_RATIO = 1;        // Height must be x times larger than base width
+
+  for (int i = 0; i < d->vcount; ++i)
+  {
+    Vertex& centralVert = d->vertices[i];
+
+    // --- 1. Neighborhood Collection (Orbit Logic) ---
+    int startTriIdx = centralVert.tri_index;
+    if (startTriIdx == -1) continue;
+
+    std::vector<int> neighbors; // Changed to vector for ordered access if needed
+    std::set<int> uniqueCheck;
+
+    int currentTriIdx = startTriIdx;
+    bool completedOrbit = false;
+    int safetyCounter = 0;
+
+    while (!completedOrbit && safetyCounter < 20)
+    {
+      Triangle& tri = d->triangles[currentTriIdx];
+
+      // Collect neighbors
+      for (int j = 0; j < 3; ++j)
+      {
+        int vIdx = tri.v[j];
+        if (vIdx != i && uniqueCheck.find(vIdx) == uniqueCheck.end())
+        {
+          uniqueCheck.insert(vIdx);
+          neighbors.push_back(vIdx);
+        }
+      }
+
+      // CCW Adjacency Traversal
+      int nextTriIdx = -1;
+      for (int j = 0; j < 3; ++j)
+      {
+        int neighborT = tri.t[j];
+        if (neighborT != -1) {
+          Triangle& adj = d->triangles[neighborT];
+          if (adj.v[0] == i || adj.v[1] == i || adj.v[2] == i)
+          {
+            // Ensure we don't go back to the previous triangle
+            // Note: A more robust visited-check is recommended for complex meshes
+            bool isNew = true;
+            // (Simple heuristic: assumes strict CCW ordering in data)
+            // For production, use a 'visited' set for triangles
+            nextTriIdx = neighborT;
+          }
+        }
+      }
+
+      // Break if boundary or loop closed
+      if (nextTriIdx == -1 || nextTriIdx == startTriIdx) {
+        completedOrbit = true;
+      } else {
+        currentTriIdx = nextTriIdx;
+      }
+      safetyCounter++;
+    }
+
+    if (neighbors.size() < 3) continue; // Need at least 3 points to define a plane
+
+    // --- 2. Advanced Spike Metrics ---
+
+    // A. Local Extremum Check
+    // If the vertex is not strictly higher or lower than ALL neighbors,
+    // it is likely part of a slope, not a spike.
+    double vZ = centralVert.pos.z;
+    bool higherThanAll = true;
+    bool lowerThanAll = true;
+
+    // Also compute Centroid of neighbors here
+    Vec3 centroid = {0, 0, 0};
+    double avgDistToNeighbor = 0;
+
+    for (int nIdx : neighbors)
+    {
+      Vec2 tmp = d->vertices[nIdx].pos;
+      Vec3 nPos = {tmp.x, tmp.y, tmp.z};
+      if (nPos.z >= vZ) higherThanAll = false;
+      if (nPos.z <= vZ) lowerThanAll = false;
+
+      centroid.x += nPos.x;
+      centroid.y += nPos.y;
+      centroid.z += nPos.z;
+
+      // Approximate width/support
+      double dx = nPos.x - centralVert.pos.x;
+      double dy = nPos.y - centralVert.pos.y;
+      avgDistToNeighbor += std::sqrt(dx*dx + dy*dy);
+    }
+
+    // If it's not a peak or a pit, it's not a spike (it's a slope)
+    if (!higherThanAll && !lowerThanAll) continue;
+
+    centroid.x /= neighbors.size();
+    centroid.y /= neighbors.size();
+    centroid.z /= neighbors.size();
+    avgDistToNeighbor /= neighbors.size();
+
+    // B. Estimate Local Slope Plane (Newell's method approximation or Area Average)
+    // We calculate the average normal of the polygon formed by the neighbors.
+    // A simple way is to sum the cross products of the edges connecting neighbors relative to the centroid.
+    Vec3 avgNormal = {0, 0, 0};
+
+    // This estimates the normal of the "base" ring
+    for (size_t k = 0; k < neighbors.size(); ++k)
+    {
+      Vec2 tmp1 = d->vertices[neighbors[k]].pos;
+      Vec2 tmp2 = d->vertices[neighbors[(k + 1) % neighbors.size()]].pos; // Wrap around
+      Vec3 p1 = {tmp1.x, tmp1.y, tmp1.z};
+      Vec3 p2 = {tmp2.x, tmp2.y, tmp2.z};
+
+      // Cross product of vectors from Centroid
+      Vec3 v1 = sub(p1, centroid);
+      Vec3 v2 = sub(p2, centroid);
+      Vec3 n = cross(v1, v2);
+      avgNormal.x += n.x;
+      avgNormal.y += n.y;
+      avgNormal.z += n.z;
+    }
+    avgNormal = normalize(avgNormal);
+
+    // Ensure normal points "up" relative to Z to avoid sign confusion
+    if (avgNormal.z < 0) {
+      avgNormal.x = -avgNormal.x;
+      avgNormal.y = -avgNormal.y;
+      avgNormal.z = -avgNormal.z;
+    }
+
+    // C. Calculate Deviation from Plane
+    // Project vector (Vertex - Centroid) onto the Normal
+    Vec2 tmp = centralVert.pos;
+    Vec3 center = {tmp.x, tmp.y, tmp.z};
+    Vec3 vecToVert = sub(center, centroid);
+    double deviation = std::abs(dot(vecToVert, avgNormal));
+
+    // D. Spikiness Ratio (Height vs Width)
+    // If the spike is very wide (large avgDistToNeighbor), the ratio drops.
+    double ratio = (avgDistToNeighbor > 1e-5) ? (deviation / avgDistToNeighbor) : 0;
+
+    // --- Final Decision ---
+    // 1. Must deviate significantly from the trend plane (slope corrected height)
+    // 2. Must be sharp (high ratio)
+    if (deviation > SPIKE_HEIGHT_THRESHOLD && ratio > SPIKINESS_RATIO) {
+      isSpike[i] = true;
+      if (verbose) {
+        warning("Vertex %d is a spike! (Dev: %.2f, Ratio: %.2f)\n", i, deviation, ratio);
+      }
+    }
+  }
+
+  return isSpike;
+}
+
 // See LASRtriangulate::interpolate
 /*void LASRpdt::interpolate(std::vector<double>& x) const
 {
@@ -701,4 +907,3 @@ void LASRpdt::make_buffer(const std::vector<PointLAS>& xyz, double xmin, double 
   prof.toc();
   if (verbose) print("  LAS interpolation took %.2f secs\n", prof.elapsed());
 }*/
-
