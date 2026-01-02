@@ -18,6 +18,7 @@ public:
   void activate_spatial_index();
   void reset_dirty_cells();
   const std::vector<bool>& get_dirty_cells() const;
+  void write(const std::string& filename) const;
 
   Vertex *vertices;
   Triangle *triangles;

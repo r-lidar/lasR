@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <iostream>
 
 // --- temporary global stats ---
 #include <chrono>
@@ -474,6 +476,8 @@ void Triangulation::addPointInEdge(const Vec2& v, int t0, int t1)
   triangles[t0].t[(t0_v+1)%3] = t2;
   triangles[t1].v[(t1_v+1)%3] = p;
   triangles[t1].t[(t1_v+2)%3] = t3;
+
+  vertices[p].tri_index = t2;
 
   indexTriangle(t0);
   indexTriangle(t1);
@@ -966,4 +970,49 @@ void Triangulation::reset_dirty_cells()
 const std::vector<bool>& Triangulation::get_dirty_cells() const
 {
   return dirty_cells;
+}
+
+void Triangulation::write(const std::string& filename) const
+{
+  std::ofstream outfile(filename);
+
+  if (!outfile.is_open()) {
+    std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
+    return;
+  }
+
+  outfile << "# 2.5D Delaunay Triangulation Export\n";
+
+  // 1. Write Vertices (starting from index 4)
+  // We skip the first 4 vertices entirely.
+  for (int i = 4; i < vcount; ++i) {
+    const Vec2& p = vertices[i].pos;
+    outfile << "v " << p.x << " " << p.y << " " << p.z << "\n";
+  }
+
+  outfile << "\n";
+
+  // 2. Write Faces (Triangles)
+  int facesWritten = 0;
+  for (int i = 0; i < tcount; ++i) {
+    int v0 = triangles[i].v[0];
+    int v1 = triangles[i].v[1];
+    int v2 = triangles[i].v[2];
+
+    // Only export if the triangle does NOT connect to any super-structure vertex
+    if (v0 > 3 && v1 > 3 && v2 > 3) {
+      // Recomputing the index:
+      // NewIndex = OriginalIndex - 4 (to account for skipped vertices)
+      // .obj Index = NewIndex + 1 (1-based indexing)
+      // Result: OriginalIndex - 3
+      outfile << "f " << (v0 - 3) << " "
+              << (v1 - 3) << " "
+              << (v2 - 3) << "\n";
+      facesWritten++;
+    }
+  }
+
+  outfile.close();
+  std::cout << "Successfully exported " << (vcount - 4) << " vertices and "
+            << facesWritten << " triangles." << std::endl;
 }
