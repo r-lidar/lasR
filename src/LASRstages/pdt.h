@@ -8,7 +8,7 @@
 class Triangulation;
 class Raster;
 
-class LASRpdt : public StageVector
+class LASRpdt : public Stage
 {
 public:
   LASRpdt();
@@ -25,11 +25,10 @@ public:
 private:
   TriangleXYZ get_triangle(int tri_index);
   void query_coordinates(int id, PointXYZ& p);
-  bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle);
   void make_seeds();
-  void make_buffer(const std::vector<PointLAS>& xyz, double xmin, double ymin, double xmax, double ymax, double buffer);
+  void make_buffer(double xmin, double ymin, double xmax, double ymax);
   std::vector<bool> detect_spikes();
-  void interpolate(Raster* r) const;
+  //void interpolate(Raster* r) const;
   //void interpolate(std::vector<double>& x) const;
 
 private:
@@ -38,7 +37,6 @@ private:
   double max_terrain_angle;
   double max_iteration_distance;
   double min_triangle_size;
-  double offset;
 
   double x_offset;
   double y_offset;

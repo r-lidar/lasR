@@ -8,10 +8,11 @@ struct Vec2
   double x;
   double y;
   double z;
+  unsigned int fid;
 
-  Vec2() : x(0), y(0), z(0) {}
-  Vec2(double x, double y) : x(x), y(y), z(0) {}
-  Vec2(double x, double y, double z) : x(x), y(y), z(z) {}
+  Vec2() : x(0), y(0), z(0), fid(0) {}
+  Vec2(double x, double y) : x(x), y(y), z(0), fid(0) {}
+  Vec2(double x, double y, double z) : x(x), y(y), z(z), fid(0) {}
   bool operator==(const Vec2& other) const { return x == other.x && y == other.y; }
   Vec2 operator-(const Vec2& other) const { return Vec2{x - other.x, y - other.y}; }
   Vec2 operator+(const Vec2& other) const { return Vec2{x + other.x, y + other.y}; }

@@ -20,12 +20,27 @@ struct PLAdaptor
   template <class BBOX> bool kdtree_get_bbox(BBOX&) const { return false; }
 };
 
+struct VertexAdaptor
+{
+  const Vertex* vertices;
+  size_t count;
+  VertexAdaptor(const Vertex* v, size_t c) : vertices(v), count(c) {}
+  inline size_t kdtree_get_point_count() const { return count; }
+  inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
+    if (dim == 0) return vertices[idx].pos.x;
+    if (dim == 1) return vertices[idx].pos.y;
+    return vertices[idx].pos.z;
+  }
+  template <class BBOX> bool kdtree_get_bbox(BBOX& /*bb*/) const { return false; }
+};
+
+double distance_to_fitted_plane(const Vec2& query, const std::vector<size_t>& neighbor_indices, const Vertex* vertices);
+bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle);
+
 LASRpdt::LASRpdt()
 {
   this->las = nullptr;
   this->d = nullptr;
-
-  vector.set_geometry_type(wkbMultiPolygon25D);
 }
 
 bool LASRpdt::set_parameters(const nlohmann::json& stage)
@@ -35,7 +50,6 @@ bool LASRpdt::set_parameters(const nlohmann::json& stage)
   this->seed_resolution_search = stage.value("res", 50);
   double min_size = stage.value("min_size", 0.1);
   this->min_triangle_size = min_size*min_size;
-  this->offset = stage.value("offset", 0.05);
   this->classification = stage.value("class", 2);
   this->max_iter = stage.value("max_iter", 1000);
   this->buffer_size = stage.value("buffer_size", 30);
@@ -46,6 +60,9 @@ bool LASRpdt::process(PointCloud*& las)
 {
   Profiler tot;
 
+  // Compute some offset to geographic coordinate
+  // and move close to (0,0) for floating point
+  // accuracy
   this->las = las;
   this->x_offset = las->header->min_x;
   this->y_offset = las->header->min_y;
@@ -58,6 +75,7 @@ bool LASRpdt::process(PointCloud*& las)
   double max_y = las->header->max_y;
 
   // Used to retain if a point is already part of the triangulation
+  // and skip some computation
   std::vector<bool> inserted(n, false);
 
   Profiler prof;
@@ -87,34 +105,38 @@ bool LASRpdt::process(PointCloud*& las)
 
   make_seeds();
 
-  if (seeds.size() == 0)
-  {
+  if (seeds.size() == 0) {
     last_error = "0 point to process";
     return false;
   }
 
-  // ==========================
-  // Add virtual edge seeds
-  // ==========================
-
-  if (buffer_size > 0)
-  {
-    make_buffer(seeds, min_x, min_y, max_x, max_y, buffer_size);
-  }
-
   // ============================
-  // Triangulate edges first
-  // (for offset to payload)
+  // Create additional virtual
+  // edge seeds
   // ============================
 
-  prof = Profiler();
-  int t = -1;
+  make_buffer(min_x, min_y, max_x, max_y);
+
+  // ============================
+  // Prepare the triangulation and
+  // its spatial index
+  // ============================
+
   double bs = buffer_size;
   double xo = x_offset;
   double yo = y_offset;
 
   Grid gd(min_x-xo-bs, min_y-yo-bs, max_x-xo+bs, max_y-yo+bs, 1);
   d = new Triangulation(gd);
+
+
+  // ============================
+  // Triangulate edges first
+  // ============================
+
+  prof = Profiler();
+
+  int t = -1;
 
   // For the few first points spatial index search is slow because triangle
   // are too big. We can deactivate spatial indexing this is actually faster
@@ -161,10 +183,6 @@ bool LASRpdt::process(PointCloud*& las)
 
   if (verbose) print(" took %.2f secs\n", prof.elapsed());
 
-
-  // Now the edges and seeds are inserted we can leverage spatial indexing.
-  d->activate_spatial_index();
-
   // =============================
   // Progressive TIN densification
   // =============================
@@ -172,6 +190,9 @@ bool LASRpdt::process(PointCloud*& las)
   if (verbose) print(" Progressive TIN densification:\n");
 
   prof = Profiler();
+
+  // Now the edges and seeds are inserted we can leverage spatial indexing.
+  d->activate_spatial_index();
 
   int count = 0;
 
@@ -205,7 +226,6 @@ bool LASRpdt::process(PointCloud*& las)
       if (inserted[id]) continue;
 
       las->seek(id);
-      //unsigned int id = las->current_point;
       double x = las->point.get_x();
       double y = las->point.get_y();
       double z = las->point.get_z();
@@ -225,7 +245,6 @@ bool LASRpdt::process(PointCloud*& las)
       int cell_id = gd.cell_from_xy(pt.x, pt.y);
       if (!active_regions[cell_id]) continue;
 
-      // Search the triangle where to insert. Benchmarking search time for later speed improvement
       t = d->findContainerTriangleFast(pt);
 
       if (t < 0) continue;
@@ -259,9 +278,9 @@ bool LASRpdt::process(PointCloud*& las)
       progress->update(id);
     }
 
-    // Prepare for next iteration ---
-    // The active regions for the NEXT loop are the ones that became "dirty"
-    // during THIS loop.
+    // Prepare for next iteration
+    // The active regions for the next loop are the ones that became "dirty"
+    // during this loop.
     active_regions = d->get_dirty_cells();
 
     float perc = (double)count / (double)d->vcount;
@@ -376,163 +395,11 @@ void LASRpdt::query_coordinates(int id, PointXYZ& p)
   }
 }
 
-bool LASRpdt::axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle)
-{
-  PointXYZ A = triangle.A;
-  PointXYZ n = triangle.normal();
-
-  // Projection and distance
-  PointXYZ v = P - A;
-  dist_d = std::abs(v.dot(n));
-  PointXYZ P_proj = P - n * v.dot(n);
-  if (!triangle.contains(P_proj)) return false;
-
-  // Distances to vertices
-  double h0 = P_proj.distance(triangle.A);
-  double h1 = P_proj.distance(triangle.B);
-  double h2 = P_proj.distance(triangle.C);
-
-  double alpha = atan2(dist_d, h0) * 180.0 / M_PI;
-  double beta  = atan2(dist_d, h1) * 180.0 / M_PI;
-  double gamma = atan2(dist_d, h2) * 180.0 / M_PI;
-
-  angle = MAX3(alpha, beta, gamma);
-  return true;
-}
-
-/*bool LASRpdt::write()
-{
-  if (ofile.empty()) return true;
-
-  progress->set_total(d->tcount);
-  progress->set_prefix("Write triangulation");
-  progress->show();
-
-  auto start_time = std::chrono::high_resolution_clock::now();
-
-  std::vector<TriangleXYZ> triangles;
-
-  for (unsigned int i = 0 ; i < d->tcount; i++)
-  {
-    int idA = d->triangles[i].v[0] - 4;
-    int idB = d->triangles[i].v[1] - 4;
-    int idC = d->triangles[i].v[2] - 4;
-
-    if (idA < 0 || idB < 0 || idC < 0)
-      continue;
-
-    //print("Vertices %d %d %d\n", idA, idB, idC);
-
-    PointLAS A,B,C;
-    las->get_point(index_map[idA], A);
-    las->get_point(index_map[idB], B);
-    las->get_point(index_map[idC], C);
-
-    Vec2 a = d->vertices[d->triangles[i].v[0]].pos;
-    Vec2 b = d->vertices[d->triangles[i].v[1]].pos;
-    Vec2 c = d->vertices[d->triangles[i].v[2]].pos;
-
-    TriangleXYZ triangle(A, B, C);
-    triangle.make_clock_wise();
-    triangles.push_back(triangle);
-
-    (*progress)++;
-    progress->show();
-    if (progress->interrupted()) break;
-  }
-
-  progress->done();
-
-  #pragma omp critical (write_ptd)
-  {
-    vector.write(triangles);
-  }
-
-  if (verbose)
-  {
-    // # nocov start
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    float second = (float)duration.count()/1000.0f;
-    print("  Writing Delaunay triangulation took %.2f sec\n", second);
-    // # nocov end
-  }
-
-  return true;
-}*/
-
 void LASRpdt::clear(bool last)
 {
   delete d;
   d = nullptr;
   index_map.clear();
-}
-
-// See LASRtriangulate::interpolate
-void LASRpdt::interpolate(Raster* r) const
-{
-  Profiler prof;
-  prof.tic();
-
-  r->set_value(0, r->get_nodata());
-
-  // Generate the raster points in this triangle
-  double xres = r->get_xres();
-  double yres = r->get_yres();
-
-  #pragma omp parallel for num_threads(ncpu)
-  for (unsigned int i = 0 ; i < d->tcount; i++)
-  {
-    int idA = d->triangles[i].v[0] - 4;
-    int idB = d->triangles[i].v[1] - 4;
-    int idC = d->triangles[i].v[2] - 4;
-
-    if (idA < 0 || idB < 0 || idC < 0)
-      continue;
-
-    PointXYZ A,B,C;
-    Point p;
-    p.set_schema(&las->header->schema);
-
-    las->get_point(index_map[idA], &p);
-    A.x = p.get_x();
-    A.y = p.get_y();
-    A.z = p.get_z();
-
-    las->get_point(index_map[idB], &p);
-    B.x = p.get_x();
-    B.y = p.get_y();
-    B.z = p.get_z();
-
-    las->get_point(index_map[idC], &p);
-    C.x = p.get_x();
-    C.y = p.get_y();
-    C.z = p.get_z();
-
-    TriangleXYZ triangle(A, B, C);
-
-    double minx = ROUNDANY(triangle.xmin() - 0.5 * xres, xres);
-    double miny = ROUNDANY(triangle.ymin() - 0.5 * yres, yres);
-    double maxx = ROUNDANY(triangle.xmax() - 0.5 * xres, xres) + xres;
-    double maxy = ROUNDANY(triangle.ymax() - 0.5 * yres, yres) + yres;
-
-    for (double x = minx ; x <= maxx ; x += xres)
-    {
-      for (double y = miny ; y <= maxy ; y += yres)
-      {
-        if (!triangle.contains({x,y})) continue;
-
-        PointXYZ p(x,y);
-        triangle.linear_interpolation(p);
-
-        int cell = r->cell_from_xy(x,y);
-        if (cell != -1) r->set_value(cell, p.z);
-      }
-    }
-  }
-
-  prof.toc();
-  if (verbose) print("  DTM interpolation took %.2f secs\n", prof.elapsed());
 }
 
 void LASRpdt::make_seeds()
@@ -578,16 +445,18 @@ void LASRpdt::make_seeds()
   if (verbose) print("%.2f secs\n", prof.elapsed());
 }
 
-void LASRpdt::make_buffer(const std::vector<PointLAS>& xyz, double xmin, double ymin, double xmax, double ymax, double buffer)
+void LASRpdt::make_buffer(double xmin, double ymin, double xmax, double ymax)
 {
+  if (buffer_size <= 0) return;
+
   std::mt19937 generator(std::random_device{}());
   double noise_magnitude = 1;
   std::uniform_real_distribution<double> distribution(-noise_magnitude / 2.0, noise_magnitude / 2.0);
 
-  xmax += (buffer-1);
-  ymax += (buffer-1);
-  xmin -= (buffer-1);
-  ymin -= (buffer-1);
+  xmax += (buffer_size-1);
+  ymax += (buffer_size-1);
+  xmin -= (buffer_size-1);
+  ymin -= (buffer_size-1);
 
   double dx = xmax - xmin;
   double dy = ymax - ymin;
@@ -643,7 +512,7 @@ void LASRpdt::make_buffer(const std::vector<PointLAS>& xyz, double xmin, double 
   }
 
   using namespace nanoflann;
-  PLAdaptor adaptor(xyz);
+  PLAdaptor adaptor(seeds);
   typedef KDTreeSingleIndexAdaptor<L2_Simple_Adaptor<double, PLAdaptor>,PLAdaptor,2> kd_tree_t;
 
   kd_tree_t index(2, adaptor, KDTreeSingleIndexAdaptorParams(10));
@@ -661,200 +530,149 @@ void LASRpdt::make_buffer(const std::vector<PointLAS>& xyz, double xmin, double 
 
     index.findNeighbors(resultSet, query_pt, nanoflann::SearchParameters());
 
-    p.z = xyz[ret_index].z;
+    p.z = seeds[ret_index].z;
   }
-}
-
-struct Vec3 { double x, y, z; };
-
-// Helper to calculate dot product
-double dot(const Vec3& a, const Vec3& b) {
-  return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-// Helper to subtract vectors
-Vec3 sub(const Vec3& a, const Vec3& b) {
-  return {a.x - b.x, a.y - b.y, a.z - b.z};
-}
-
-// Helper to normalize a vector
-Vec3 normalize(Vec3 v) {
-  double len = std::sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-  if (len < 1e-9) return {0, 0, 1}; // Default up if degenerate
-  return {v.x / len, v.y / len, v.z / len};
-}
-
-// Helper: Cross product
-Vec3 cross(const Vec3& a, const Vec3& b) {
-  return {
-  a.y * b.z - a.z * b.y,
-  a.z * b.x - a.x * b.z,
-  a.x * b.y - a.y * b.x
-};
 }
 
 std::vector<bool> LASRpdt::detect_spikes()
 {
-  if (verbose) print(" Detect spikes (Slope-Adaptive)\n");
+  Profiler prof;
+  if (verbose) print(" Spikes removal: ");
 
-  std::vector<bool> isSpike(d->vcount, false);
+  int k = 8;
+  double threshold = 0.75;
 
-  // Configurable thresholds
-  const double SPIKE_HEIGHT_THRESHOLD = 0.75; // Min meters deviation from trend
-  const double SPIKINESS_RATIO = 1;        // Height must be x times larger than base width
+  std::vector<bool> is_spike(d->vcount, false);
+
+  // KD-Tree adaptor
+  VertexAdaptor adaptor(d->vertices, d->vcount);
+
+  // We search neighbors in 2D (XY) for DTMs
+  typedef nanoflann::KDTreeSingleIndexAdaptor<nanoflann::L2_Simple_Adaptor<double, VertexAdaptor>,VertexAdaptor, 2> kdtree;
+
+  kdtree index(2, adaptor, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+  index.buildIndex();
+
+  // Iterate over all vertices
+  // Pre-allocate memory for search results
+  std::vector<unsigned int> ret_index(k + 1); // +1 because the point itself will be found
+  std::vector<double> out_dist_sqr(k + 1);
 
   for (int i = 0; i < d->vcount; ++i)
   {
-    Vertex& centralVert = d->vertices[i];
+    double query_pt[2] = {d->vertices[i].pos.x, d->vertices[i].pos.y};
+    size_t num_results = index.knnSearch(&query_pt[0], k + 1, &ret_index[0], &out_dist_sqr[0]);
 
-    // --- 1. Neighborhood Collection (Orbit Logic) ---
-    int startTriIdx = centralVert.tri_index;
-    if (startTriIdx == -1) continue;
-
-    std::vector<int> neighbors; // Changed to vector for ordered access if needed
-    std::set<int> uniqueCheck;
-
-    int currentTriIdx = startTriIdx;
-    bool completedOrbit = false;
-    int safetyCounter = 0;
-
-    while (!completedOrbit && safetyCounter < 20)
+    std::vector<size_t> neighbors;
+    neighbors.reserve(k);
+    for (size_t j = 0; j < num_results; ++j)
     {
-      Triangle& tri = d->triangles[currentTriIdx];
-
-      // Collect neighbors
-      for (int j = 0; j < 3; ++j)
+      if (ret_index[j] != (size_t)i)
       {
-        int vIdx = tri.v[j];
-        if (vIdx != i && uniqueCheck.find(vIdx) == uniqueCheck.end())
-        {
-          uniqueCheck.insert(vIdx);
-          neighbors.push_back(vIdx);
-        }
+        neighbors.push_back(ret_index[j]);
       }
-
-      // CCW Adjacency Traversal
-      int nextTriIdx = -1;
-      for (int j = 0; j < 3; ++j)
-      {
-        int neighborT = tri.t[j];
-        if (neighborT != -1) {
-          Triangle& adj = d->triangles[neighborT];
-          if (adj.v[0] == i || adj.v[1] == i || adj.v[2] == i)
-          {
-            // Ensure we don't go back to the previous triangle
-            // Note: A more robust visited-check is recommended for complex meshes
-            bool isNew = true;
-            // (Simple heuristic: assumes strict CCW ordering in data)
-            // For production, use a 'visited' set for triangles
-            nextTriIdx = neighborT;
-          }
-        }
-      }
-
-      // Break if boundary or loop closed
-      if (nextTriIdx == -1 || nextTriIdx == startTriIdx) {
-        completedOrbit = true;
-      } else {
-        currentTriIdx = nextTriIdx;
-      }
-      safetyCounter++;
     }
 
-    if (neighbors.size() < 3) continue; // Need at least 3 points to define a plane
+    // We need at least 3 points to define a plane
+    if (neighbors.size() < 3) continue;
 
-    // --- 2. Advanced Spike Metrics ---
+    // 3. Fit plane and check distance
+    double diff = distance_to_fitted_plane(d->vertices[i].pos, neighbors, d->vertices);
 
-    // A. Local Extremum Check
-    // If the vertex is not strictly higher or lower than ALL neighbors,
-    // it is likely part of a slope, not a spike.
-    double vZ = centralVert.pos.z;
-    bool higherThanAll = true;
-    bool lowerThanAll = true;
-
-    // Also compute Centroid of neighbors here
-    Vec3 centroid = {0, 0, 0};
-    double avgDistToNeighbor = 0;
-
-    for (int nIdx : neighbors)
+    // Check against threshold (absolute value for spikes both up and down)
+    if (std::abs(diff) > threshold)
     {
-      Vec2 tmp = d->vertices[nIdx].pos;
-      Vec3 nPos = {tmp.x, tmp.y, tmp.z};
-      if (nPos.z >= vZ) higherThanAll = false;
-      if (nPos.z <= vZ) lowerThanAll = false;
-
-      centroid.x += nPos.x;
-      centroid.y += nPos.y;
-      centroid.z += nPos.z;
-
-      // Approximate width/support
-      double dx = nPos.x - centralVert.pos.x;
-      double dy = nPos.y - centralVert.pos.y;
-      avgDistToNeighbor += std::sqrt(dx*dx + dy*dy);
-    }
-
-    // If it's not a peak or a pit, it's not a spike (it's a slope)
-    if (!higherThanAll && !lowerThanAll) continue;
-
-    centroid.x /= neighbors.size();
-    centroid.y /= neighbors.size();
-    centroid.z /= neighbors.size();
-    avgDistToNeighbor /= neighbors.size();
-
-    // B. Estimate Local Slope Plane (Newell's method approximation or Area Average)
-    // We calculate the average normal of the polygon formed by the neighbors.
-    // A simple way is to sum the cross products of the edges connecting neighbors relative to the centroid.
-    Vec3 avgNormal = {0, 0, 0};
-
-    // This estimates the normal of the "base" ring
-    for (size_t k = 0; k < neighbors.size(); ++k)
-    {
-      Vec2 tmp1 = d->vertices[neighbors[k]].pos;
-      Vec2 tmp2 = d->vertices[neighbors[(k + 1) % neighbors.size()]].pos; // Wrap around
-      Vec3 p1 = {tmp1.x, tmp1.y, tmp1.z};
-      Vec3 p2 = {tmp2.x, tmp2.y, tmp2.z};
-
-      // Cross product of vectors from Centroid
-      Vec3 v1 = sub(p1, centroid);
-      Vec3 v2 = sub(p2, centroid);
-      Vec3 n = cross(v1, v2);
-      avgNormal.x += n.x;
-      avgNormal.y += n.y;
-      avgNormal.z += n.z;
-    }
-    avgNormal = normalize(avgNormal);
-
-    // Ensure normal points "up" relative to Z to avoid sign confusion
-    if (avgNormal.z < 0) {
-      avgNormal.x = -avgNormal.x;
-      avgNormal.y = -avgNormal.y;
-      avgNormal.z = -avgNormal.z;
-    }
-
-    // C. Calculate Deviation from Plane
-    // Project vector (Vertex - Centroid) onto the Normal
-    Vec2 tmp = centralVert.pos;
-    Vec3 center = {tmp.x, tmp.y, tmp.z};
-    Vec3 vecToVert = sub(center, centroid);
-    double deviation = std::abs(dot(vecToVert, avgNormal));
-
-    // D. Spikiness Ratio (Height vs Width)
-    // If the spike is very wide (large avgDistToNeighbor), the ratio drops.
-    double ratio = (avgDistToNeighbor > 1e-5) ? (deviation / avgDistToNeighbor) : 0;
-
-    // --- Final Decision ---
-    // 1. Must deviate significantly from the trend plane (slope corrected height)
-    // 2. Must be sharp (high ratio)
-    if (deviation > SPIKE_HEIGHT_THRESHOLD && ratio > SPIKINESS_RATIO) {
-      isSpike[i] = true;
-      if (verbose) {
-        warning("Vertex %d is a spike! (Dev: %.2f, Ratio: %.2f)\n", i, deviation, ratio);
-      }
+      is_spike[i] = true;
     }
   }
 
-  return isSpike;
+  if (verbose) print("%.2f secs\n", prof.elapsed());
+
+  return is_spike;
 }
+
+double distance_to_fitted_plane(const Vec2& query, const std::vector<size_t>& neighbor_indices, const Vertex* vertices)
+{
+  if (neighbor_indices.size() < 3)
+    return 0.0;
+
+  // --- Centroid for numerical stability ---
+  double cx = 0, cy = 0, cz = 0;
+  for (size_t idx : neighbor_indices)
+  {
+    cx += vertices[idx].pos.x;
+    cy += vertices[idx].pos.y;
+    cz += vertices[idx].pos.z;
+  }
+  cx /= neighbor_indices.size();
+  cy /= neighbor_indices.size();
+  cz /= neighbor_indices.size();
+
+  // --- Least squares fit: z' = a*x' + b*y' ---
+  double sxx = 0, sxy = 0, syy = 0;
+  double sxz = 0, syz = 0;
+
+  for (size_t idx : neighbor_indices)
+  {
+    double dx = vertices[idx].pos.x - cx;
+    double dy = vertices[idx].pos.y - cy;
+    double dz = vertices[idx].pos.z - cz;
+
+    sxx += dx * dx;
+    sxy += dx * dy;
+    syy += dy * dy;
+    sxz += dx * dz;
+    syz += dy * dz;
+  }
+
+  double det = sxx * syy - sxy * sxy;
+
+  // Degenerate XY configuration
+  if (std::abs(det) < 1e-9)
+    return 0.0;
+
+  double a = (syy * sxz - sxy * syz) / det;
+  double b = (sxx * syz - sxy * sxz) / det;
+
+  // --- Predicted Z at query position ---
+  double qdx = query.x - cx;
+  double qdy = query.y - cy;
+  double predicted_z = (a * qdx + b * qdy) + cz;
+
+  // --- Vertical residual ---
+  double vertical_residual = query.z - predicted_z;
+
+  // --- Convert to perpendicular distance ---
+  // Plane normal = (-a, -b, 1)
+  double normal_length = std::sqrt(a * a + b * b + 1.0);
+
+  return vertical_residual / normal_length;
+}
+
+bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle)
+{
+  PointXYZ A = triangle.A;
+  PointXYZ n = triangle.normal();
+
+  // Projection and distance
+  PointXYZ v = P - A;
+  dist_d = std::abs(v.dot(n));
+  PointXYZ P_proj = P - n * v.dot(n);
+  if (!triangle.contains(P_proj)) return false;
+
+  // Distances to vertices
+  double h0 = P_proj.distance(triangle.A);
+  double h1 = P_proj.distance(triangle.B);
+  double h2 = P_proj.distance(triangle.C);
+
+  double alpha = atan2(dist_d, h0) * 180.0 / M_PI;
+  double beta  = atan2(dist_d, h1) * 180.0 / M_PI;
+  double gamma = atan2(dist_d, h2) * 180.0 / M_PI;
+
+  angle = MAX3(alpha, beta, gamma);
+  return true;
+}
+
 
 // See LASRtriangulate::interpolate
 /*void LASRpdt::interpolate(std::vector<double>& x) const
@@ -907,3 +725,71 @@ std::vector<bool> LASRpdt::detect_spikes()
   prof.toc();
   if (verbose) print("  LAS interpolation took %.2f secs\n", prof.elapsed());
 }*/
+
+// See LASRtriangulate::interpolate
+/*void LASRpdt::interpolate(Raster* r) const
+ {
+ Profiler prof;
+ prof.tic();
+
+ r->set_value(0, r->get_nodata());
+
+ // Generate the raster points in this triangle
+ double xres = r->get_xres();
+ double yres = r->get_yres();
+
+#pragma omp parallel for num_threads(ncpu)
+ for (unsigned int i = 0 ; i < d->tcount; i++)
+ {
+ int idA = d->triangles[i].v[0] - 4;
+ int idB = d->triangles[i].v[1] - 4;
+ int idC = d->triangles[i].v[2] - 4;
+
+ if (idA < 0 || idB < 0 || idC < 0)
+ continue;
+
+ PointXYZ A,B,C;
+ Point p;
+ p.set_schema(&las->header->schema);
+
+ las->get_point(index_map[idA], &p);
+ A.x = p.get_x();
+ A.y = p.get_y();
+ A.z = p.get_z();
+
+ las->get_point(index_map[idB], &p);
+ B.x = p.get_x();
+ B.y = p.get_y();
+ B.z = p.get_z();
+
+ las->get_point(index_map[idC], &p);
+ C.x = p.get_x();
+ C.y = p.get_y();
+ C.z = p.get_z();
+
+ TriangleXYZ triangle(A, B, C);
+
+ double minx = ROUNDANY(triangle.xmin() - 0.5 * xres, xres);
+ double miny = ROUNDANY(triangle.ymin() - 0.5 * yres, yres);
+ double maxx = ROUNDANY(triangle.xmax() - 0.5 * xres, xres) + xres;
+ double maxy = ROUNDANY(triangle.ymax() - 0.5 * yres, yres) + yres;
+
+ for (double x = minx ; x <= maxx ; x += xres)
+ {
+ for (double y = miny ; y <= maxy ; y += yres)
+ {
+ if (!triangle.contains({x,y})) continue;
+
+ PointXYZ p(x,y);
+ triangle.linear_interpolation(p);
+
+ int cell = r->cell_from_xy(x,y);
+ if (cell != -1) r->set_value(cell, p.z);
+ }
+ }
+ }
+
+ prof.toc();
+ if (verbose) print("  DTM interpolation took %.2f secs\n", prof.elapsed());
+ }*/
+
