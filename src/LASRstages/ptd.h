@@ -2,12 +2,6 @@
 #define LASRPTD_H
 
 #include "Stage.h"
-#include "hporro/geometry.h"
-
-namespace IncrementalDelaunay
-{
-class Triangulation;
-}
 
 class LASRptd : public Stage
 {
@@ -15,8 +9,6 @@ public:
   LASRptd();
   bool process(PointCloud*& las) override;
   double need_buffer() const override { return 30.0; }
-  void clear(bool last) override;
-  //bool write() override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "ptd"; }
 
@@ -24,38 +16,14 @@ public:
   LASRptd* clone() const override { return new LASRptd(*this); };
 
 private:
-  TriangleXYZ get_triangle(int tri_index);
-  void query_coordinates(int id, PointXYZ& p);
-  void make_seeds();
-  void make_buffer();
-  std::vector<bool> detect_spikes();
-  //void interpolate(Raster* r) const;
-  //void interpolate(std::vector<double>& x) const;
-
-private:
   double seed_resolution_search;
   double max_iteration_angle;
   double max_terrain_angle;
   double max_iteration_distance;
   double min_triangle_size;
-
-  double x_min;
-  double y_min;
-  double x_max;
-  double y_max;
-  double z_default;
-
   double buffer_size;
-
   int max_iter;
   int classification;
-
-  std::vector<IncrementalDelaunay::Vec2> candidates;
-  std::vector<IncrementalDelaunay::Vec2> seeds;
-  std::vector<IncrementalDelaunay::Vec2> vbuff;
-
-  IncrementalDelaunay::Triangulation* d;
-  PointCloud* las;
 };
 
 #endif
