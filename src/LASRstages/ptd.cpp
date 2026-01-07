@@ -64,38 +64,60 @@ bool LASRptd::process(PointCloud*& las)
   // and move close to (0,0) for floating point
   // accuracy
   this->las = las;
-  this->x_offset = las->header->min_x;
-  this->y_offset = las->header->min_y;
-  this->z_offset = las->header->min_z;
+  double x_offset = las->header->min_x;
+  double y_offset = las->header->min_y;
+  double z_offset = las->header->min_z;
   size_t n = las->npoints;
 
-  double min_x = las->header->min_x;
-  double min_y = las->header->min_y;
-  double max_x = las->header->max_x;
-  double max_y = las->header->max_y;
-
-  // Used to retain if a point is already part of the triangulation
-  // and skip some computation
-  std::vector<bool> inserted(n, false);
+  // =========================================
+  // Querying potential ground points
+  // =========================================
 
   Profiler prof;
+  if (verbose) print(" Querying points of interest: ");
+
+  while (las->read_point())
+  {
+    if (pointfilter.filter(&las->point)) continue;
+
+    IncrementalDelaunay::Vec2 p;
+    p.x = las->point.get_x() - x_offset;
+    p.y = las->point.get_y() - y_offset;
+    p.z = las->point.get_z();
+    p.fid = las->current_point;
+    candidates.emplace_back(p);
+  }
+
+  if (candidates.size() == 0)
+  {
+    last_error = "0 point to process";
+    return false;
+  }
+
+  x_min = std::numeric_limits<double>::infinity();
+  y_min = std::numeric_limits<double>::infinity();
+  x_max = -std::numeric_limits<double>::infinity();
+  y_max = -std::numeric_limits<double>::infinity();
+  for (const IncrementalDelaunay::Vec2& v : candidates)
+  {
+    x_min = std::min(x_min, v.x);
+    y_min = std::min(y_min, v.y);
+    x_max = std::max(x_max, v.x);
+    y_max = std::max(y_max, v.y);
+  }
+
+  std::vector<bool> inserted(candidates.size(), false);
+
+  if (verbose) print("%.2f secs\n", prof.elapsed());
 
   // =========================================
-  // Order in which points should be processed
+  // Sort ground points by z
   // =========================================
 
-  if (verbose) print(" Sorting points: ");
+  prof = Profiler();
+  if (verbose) print(" Sorting points by z: ");
 
-  // Sort by height (first element of pair)
-  std::vector<std::pair<float, unsigned int>> items;
-  items.reserve(n);
-  unsigned int i = 0;
-  while (las->read_point())items.emplace_back(las->point.get_z(), i++);
-  std::sort(items.begin(), items.end(),  [](const auto& a, const auto& b) {  return a.first < b.first; });
-  std::vector<unsigned int> index; index.reserve(n);
-  for (const auto& item : items) index.push_back(item.second);
-  items.clear();
-  items.shrink_to_fit();
+  std::sort(candidates.begin(), candidates.end(),  [](const auto& a, const auto& b) {  return a.z < b.z; });
 
   if (verbose) print("%.2f secs\n", prof.elapsed());
 
@@ -105,8 +127,9 @@ bool LASRptd::process(PointCloud*& las)
 
   make_seeds();
 
-  if (seeds.size() == 0) {
-    last_error = "0 point to process";
+  if (seeds.size() == 0)
+  {
+    last_error = "0 seed point to process";
     return false;
   }
 
@@ -115,18 +138,14 @@ bool LASRptd::process(PointCloud*& las)
   // edge seeds
   // ============================
 
-  make_buffer(min_x, min_y, max_x, max_y);
+  make_buffer();
 
   // ============================
   // Prepare the triangulation and
   // its spatial index
   // ============================
 
-  double bs = buffer_size;
-  double xo = x_offset;
-  double yo = y_offset;
-
-  Grid gd(min_x-xo-bs, min_y-yo-bs, max_x-xo+bs, max_y-yo+bs, 1);
+  Grid gd(x_min-buffer_size, y_min-buffer_size, x_max+buffer_size, y_max+buffer_size, 1);
   d = new IncrementalDelaunay::Triangulation(gd);
 
   // ============================
@@ -216,23 +235,15 @@ bool LASRptd::process(PointCloud*& las)
     t = -1;
 
     // Process all the points in order
-    for (int id : index)
+    for (size_t i = 0 ; i <  candidates.size() ; i++)
     {
       // This point has already been inserted in the triangulation. Skip next computations
-      if (inserted[id]) continue;
+      if (inserted[i]) continue;
 
-      las->seek(id);
-      double x = las->point.get_x();
-      double y = las->point.get_y();
-      double z = las->point.get_z();
+      const auto& P = candidates[i];
 
       //(*progress)++;
       //progress->show();
-
-      if (pointfilter.filter(&las->point)) continue;
-
-      IncrementalDelaunay::Vec2 P(x - xo, y - yo, z);
-      P.fid = id;
 
       // Optimization Step
       // Check if the region containing this point was modified in the previous step.
@@ -261,7 +272,7 @@ bool LASRptd::process(PointCloud*& las)
       if (max_edge < min_triangle_size)
       {
         // will be skipped next time since because the triangle is frozen.
-        inserted[id] = true;
+        inserted[i] = true;
         continue;
       }
 
@@ -273,12 +284,12 @@ bool LASRptd::process(PointCloud*& las)
       {
         if (d->delaunayInsertion(P, t))
         {
-          inserted[id] = true;
+          inserted[i] = true;
           count++;
         }
       }
 
-      progress->update(id);
+      //progress->update(id);
     }
 
     // Prepare for next iteration
@@ -368,29 +379,26 @@ void LASRptd::make_seeds()
 
   if (verbose) print(" Searching seeds: ");
 
-  Grid grid(las->header->min_x, las->header->min_y, las->header->max_x, las->header->max_y, seed_resolution_search);
+  print("%lf %lf, %lf %lf\n", x_min, y_min, x_max, y_max);
+
+  Grid grid(x_min, y_min, x_max, y_max, seed_resolution_search);
   seeds.clear();
   seeds.resize(grid.get_ncells());
   for (auto& seed : seeds) seed.z = std::numeric_limits<double>::max();
 
   int counter = 0;
-  while (las->read_point())
+  for (const auto& v : candidates)
   {
-    if (pointfilter.filter(&las->point)) continue;
+    int cell = grid.cell_from_xy(v.x, v.y);
 
-    double x = las->point.get_x();
-    double y = las->point.get_y();
-    double z = las->point.get_z();
-    unsigned int id = las->current_point;
-    int cell = grid.cell_from_xy(x, y);
+    if (cell < 0) continue;
+
+    //print("%d %lf, %lf\n", cell, v.x, v.y);
 
     IncrementalDelaunay::Vec2& p = seeds[cell];
-    if (z < p.z)
+    if (v.z < p.z)
     {
-      p.x = x-x_offset;
-      p.y = y-y_offset;
-      p.z = z;
-      p.fid = id;
+      p = v;
     }
   }
 
@@ -405,7 +413,7 @@ void LASRptd::make_seeds()
   if (verbose) print("%.2f secs\n", prof.elapsed());
 }
 
-void LASRptd::make_buffer(double xmin, double ymin, double xmax, double ymax)
+void LASRptd::make_buffer()
 {
   if (buffer_size <= 0) return;
 
@@ -413,6 +421,10 @@ void LASRptd::make_buffer(double xmin, double ymin, double xmax, double ymax)
   double noise_magnitude = 1;
   std::uniform_real_distribution<double> distribution(-noise_magnitude / 2.0, noise_magnitude / 2.0);
 
+  double xmin = x_min;
+  double ymin = y_min;
+  double xmax = x_max;
+  double ymax = y_max;
   xmax += (buffer_size-1);
   ymax += (buffer_size-1);
   xmin -= (buffer_size-1);
@@ -441,14 +453,14 @@ void LASRptd::make_buffer(double xmin, double ymin, double xmax, double ymax)
 
     // Bottom (ymin)
     y_noise = distribution(generator);
-    p.x = x + x_noise - x_offset;
-    p.y = ymin + y_noise - y_offset;
+    p.x = x + x_noise;
+    p.y = ymin + y_noise;
     vbuff.push_back(p);
 
     // Top
     y_noise = distribution(generator);
-    p.x = x + x_noise - x_offset;
-    p.y = ymax + y_noise - y_offset;
+    p.x = x + x_noise;
+    p.y = ymax + y_noise;
     vbuff.push_back(p);
   }
 
@@ -460,14 +472,14 @@ void LASRptd::make_buffer(double xmin, double ymin, double xmax, double ymax)
 
     // Left (xmin)
     x_noise = distribution(generator);
-    p.x = xmin + x_noise  - x_offset;
-    p.y = y + y_noise  - y_offset;
+    p.x = xmin + x_noise;
+    p.y = y + y_noise;
     vbuff.push_back(p);
 
     // Right (xmax)
     x_noise = distribution(generator);
-    p.x = xmax + x_noise - x_offset;
-    p.y = y + y_noise - y_offset;
+    p.x = xmax + x_noise;
+    p.y = y + y_noise;
     vbuff.push_back(p);
   }
 

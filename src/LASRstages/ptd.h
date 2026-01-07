@@ -27,7 +27,7 @@ private:
   TriangleXYZ get_triangle(int tri_index);
   void query_coordinates(int id, PointXYZ& p);
   void make_seeds();
-  void make_buffer(double xmin, double ymin, double xmax, double ymax);
+  void make_buffer();
   std::vector<bool> detect_spikes();
   //void interpolate(Raster* r) const;
   //void interpolate(std::vector<double>& x) const;
@@ -39,9 +39,10 @@ private:
   double max_iteration_distance;
   double min_triangle_size;
 
-  double x_offset;
-  double y_offset;
-  double z_offset;
+  double x_min;
+  double y_min;
+  double x_max;
+  double y_max;
   double z_default;
 
   double buffer_size;
@@ -49,6 +50,7 @@ private:
   int max_iter;
   int classification;
 
+  std::vector<IncrementalDelaunay::Vec2> candidates;
   std::vector<IncrementalDelaunay::Vec2> seeds;
   std::vector<IncrementalDelaunay::Vec2> vbuff;
 
