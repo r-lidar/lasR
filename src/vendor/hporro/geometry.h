@@ -3,6 +3,9 @@
 
 #include <stdexcept>
 
+namespace IncrementalDelaunay
+{
+
 struct Vec2
 {
   double x;
@@ -49,5 +52,7 @@ public:
   int v[3]; // indices to the vertices vector
   int t[3]; // indices to the triangles vector
 };
+
+}
 
 #endif

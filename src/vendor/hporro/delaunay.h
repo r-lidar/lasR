@@ -6,6 +6,9 @@
 #include "geometry.h"
 #include "Grid.h"
 
+namespace IncrementalDelaunay
+{
+
 class Triangulation
 {
 public:
@@ -62,5 +65,7 @@ private:
   void indexTriangle(int t);
   void unindexTriangle(int t);
 };
+
+}
 
 #endif

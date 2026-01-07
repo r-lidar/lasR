@@ -26,6 +26,10 @@ static bool initialized = false;
 #define MIN3(a,b,c) (((a)>(b)) ? (((b)>(c)) ? (c) : (b)) : (((a)>(c)) ? (c) : (a)));
 #endif
 
+
+namespace IncrementalDelaunay
+{
+
 Triangulation::Triangulation(const Grid& index_) : index(index_)
 {
   int numP = 10000; // allocate memory for 10000 points
@@ -1015,4 +1019,6 @@ void Triangulation::write(const std::string& filename) const
   outfile.close();
   std::cout << "Successfully exported " << (vcount - 4) << " vertices and "
             << facesWritten << " triangles." << std::endl;
+}
+
 }

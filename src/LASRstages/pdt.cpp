@@ -11,10 +11,10 @@
 #include <vector>
 #include <random>
 
-struct PLAdaptor
+struct Vec2Adaptor
 {
-  const std::vector<PointLAS>& pts;
-  PLAdaptor(const std::vector<PointLAS>& pts_) : pts(pts_) {}
+  const std::vector<IncrementalDelaunay::Vec2>& pts;
+  Vec2Adaptor(const std::vector<IncrementalDelaunay::Vec2>& pts_) : pts(pts_) {}
   inline size_t kdtree_get_point_count() const { return pts.size(); }
   inline double kdtree_get_pt(const size_t idx, const size_t dim) const { return (dim == 0 ? pts[idx].x : pts[idx].y); }
   template <class BBOX> bool kdtree_get_bbox(BBOX&) const { return false; }
@@ -22,9 +22,9 @@ struct PLAdaptor
 
 struct VertexAdaptor
 {
-  const Vertex* vertices;
+  const IncrementalDelaunay::Vertex* vertices;
   size_t count;
-  VertexAdaptor(const Vertex* v, size_t c) : vertices(v), count(c) {}
+  VertexAdaptor(const IncrementalDelaunay::Vertex* v, size_t c) : vertices(v), count(c) {}
   inline size_t kdtree_get_point_count() const { return count; }
   inline double kdtree_get_pt(const size_t idx, const size_t dim) const {
     if (dim == 0) return vertices[idx].pos.x;
@@ -34,7 +34,7 @@ struct VertexAdaptor
   template <class BBOX> bool kdtree_get_bbox(BBOX& /*bb*/) const { return false; }
 };
 
-double distance_to_fitted_plane(const Vec2& query, const std::vector<size_t>& neighbor_indices, const Vertex* vertices);
+double distance_to_fitted_plane(const IncrementalDelaunay::Vec2& query, const std::vector<size_t>& neighbor_indices, const IncrementalDelaunay::Vertex* vertices);
 bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle);
 
 LASRpdt::LASRpdt()
@@ -127,8 +127,7 @@ bool LASRpdt::process(PointCloud*& las)
   double yo = y_offset;
 
   Grid gd(min_x-xo-bs, min_y-yo-bs, max_x-xo+bs, max_y-yo+bs, 1);
-  d = new Triangulation(gd);
-
+  d = new IncrementalDelaunay::Triangulation(gd);
 
   // ============================
   // Triangulate edges first
@@ -146,9 +145,8 @@ bool LASRpdt::process(PointCloud*& las)
 
   for (auto& p : vbuff)
   {
-    Vec2 pt(p.x - xo, p.y - yo, p.z);
-    t = d->findContainerTriangleFast(pt);
-    if (!d->delaunayInsertion(pt, t))
+    t = d->findContainerTriangleFast(p);
+    if (!d->delaunayInsertion(p, t))
     {
       last_error = "Internal error: virtual seed point not inserted for unknown reason";
       return false;
@@ -171,13 +169,11 @@ bool LASRpdt::process(PointCloud*& las)
 
   for (auto& seed : seeds)
   {
-    Vec2 pt(seed.x - xo, seed.y - yo, seed.z);
-    t = d->findContainerTriangleFast(pt);
+    t = d->findContainerTriangleFast(seed);
 
-    if (d->delaunayInsertion(pt, t))
+    if (d->delaunayInsertion(seed, t))
     {
-      index_map.push_back(seed.FID);
-      inserted[seed.FID] = true;
+      inserted[seed.fid] = true;
     }
   }
 
@@ -235,22 +231,29 @@ bool LASRpdt::process(PointCloud*& las)
 
       if (pointfilter.filter(&las->point)) continue;
 
-      PointXYZ P(x, y, z);
-      Vec2 pt(x - xo, y - yo, z);
+      IncrementalDelaunay::Vec2 P(x - xo, y - yo, z);
+      P.fid = id;
 
       // Optimization Step
       // Check if the region containing this point was modified in the previous step.
       // If the cell is valid and was NOT marked active/modified in the previous loop,
       // we can skip this point entirely. The triangulation here hasn't changed.
-      int cell_id = gd.cell_from_xy(pt.x, pt.y);
+      int cell_id = gd.cell_from_xy(P.x, P.y);
       if (!active_regions[cell_id]) continue;
 
-      t = d->findContainerTriangleFast(pt);
+      t = d->findContainerTriangleFast(P);
 
       if (t < 0) continue;
 
       // Retrieve the vertices of the triangle
-      TriangleXYZ triangle = get_triangle(t);
+      const IncrementalDelaunay::Triangle& tri = d->triangles[t];
+      const IncrementalDelaunay::Vec2& p0 = d->vertices[tri.v[0]].pos;
+      const IncrementalDelaunay::Vec2& p1 = d->vertices[tri.v[1]].pos;
+      const IncrementalDelaunay::Vec2& p2 = d->vertices[tri.v[2]].pos;
+      PointXYZ A(p0.x, p0.y, p0.z);
+      PointXYZ B(p1.x, p1.y, p1.z);
+      PointXYZ C(p2.x, p2.y, p2.z);
+      TriangleXYZ triangle(A,B,C);
 
       double max_edge = triangle.square_max_edge_size();
 
@@ -263,13 +266,13 @@ bool LASRpdt::process(PointCloud*& las)
       }
 
       double dist_d, angle;
-      if (!axelsson_metrics(P, triangle, dist_d, angle)) continue;
+      PointXYZ pt(P.x, P.y, P.z);
+      if (!axelsson_metrics(pt, triangle, dist_d, angle)) continue;
 
       if (angle < max_iteration_angle && dist_d < max_iteration_distance)
       {
-        if (d->delaunayInsertion(pt, t))
+        if (d->delaunayInsertion(P, t))
         {
-          index_map.push_back(id);
           inserted[id] = true;
           count++;
         }
@@ -305,7 +308,7 @@ bool LASRpdt::process(PointCloud*& las)
   // Detect spikes
   // =====================================
 
-  std::vector<bool> isSpike = detect_spikes();
+  std::vector<bool> is_spike = detect_spikes();
 
   // =====================================
   // Reclassify the points as unclassified
@@ -315,6 +318,7 @@ bool LASRpdt::process(PointCloud*& las)
 
   AttributeAccessor get_and_set_classification("Classification");
 
+  // Reset classification to non classified
   while (las->read_point())
   {
     if (get_and_set_classification(&las->point) == classification)
@@ -330,16 +334,16 @@ bool LASRpdt::process(PointCloud*& las)
     // Check all 3 vertices of the triangle
     for (int j = 0; j < 3; j++)
     {
+      // The index of the vertices
       int v_idx = d->triangles[i].v[j];
 
       if (v_idx < 4) continue;                     // 1. Skip Super Vertices (0, 1, 2, 3)
       if (v_idx < (4 + vbuff.size())) continue;    // 2. Skip Virtual Buffer points
-      int map_idx = v_idx - 4 -  vbuff.size();     // 3. Calculate the correct index for index_map
-      if (map_idx >= index_map.size()) continue;   // Safety check (optional)
 
-      las->seek(index_map[map_idx]);
+      unsigned int fid = d->vertices[v_idx].pos.fid;
+      las->seek(fid);
 
-      if (!isSpike[v_idx])
+      if (!is_spike[v_idx])
         get_and_set_classification(&las->point, classification);
       else
         get_and_set_classification(&las->point, 7);
@@ -351,55 +355,11 @@ bool LASRpdt::process(PointCloud*& las)
   return true;
 }
 
-// ===========================
-// Helper methods
-// ===========================
-
-TriangleXYZ LASRpdt::get_triangle(int t)
-{
-  int idA = d->triangles[t].v[0];
-  int idB = d->triangles[t].v[1];
-  int idC = d->triangles[t].v[2];
-
-  PointXYZ A, B, C;
-  query_coordinates(idA, A);
-  query_coordinates(idB, B);
-  query_coordinates(idC, C);
-
-  return TriangleXYZ(A, B, C);
-}
-
-void LASRpdt::query_coordinates(int id, PointXYZ& p)
-{
-  if (id < 4)
-  {
-    p.x = d->vertices[id].pos.x + x_offset;
-    p.y = d->vertices[id].pos.y + y_offset;
-    p.z = z_default;
-  }
-  else if (id < (vbuff.size() + 4))
-  {
-    const auto& q = vbuff[id - 4];
-    p.x = q.x;
-    p.y = q.y;
-    p.z = q.z;
-  }
-  else
-  {
-    Point tmp;
-    tmp.set_schema(&las->header->schema);
-    las->get_point(index_map[id - 4 - vbuff.size()], &tmp);
-    p.x = tmp.get_x();
-    p.y = tmp.get_y();
-    p.z = tmp.get_z();
-  }
-}
 
 void LASRpdt::clear(bool last)
 {
   delete d;
   d = nullptr;
-  index_map.clear();
 }
 
 void LASRpdt::make_seeds()
@@ -424,22 +384,22 @@ void LASRpdt::make_seeds()
     unsigned int id = las->current_point;
     int cell = grid.cell_from_xy(x, y);
 
-    PointLAS& p = seeds[cell];
+    IncrementalDelaunay::Vec2& p = seeds[cell];
     if (z < p.z)
     {
-      p.x = x;
-      p.y = y;
+      p.x = x-x_offset;
+      p.y = y-y_offset;
       p.z = z;
-      p.FID = id;
+      p.fid = id;
     }
   }
 
   // We created 1 seed per grid cell. Some cell maybe empty. In these cells: z = INF
-  auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const PointXYZ& p) { return p.z == std::numeric_limits<double>::max(); });
+  auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const IncrementalDelaunay::Vec2& p) { return p.z == std::numeric_limits<double>::max(); });
   seeds.erase(new_end, seeds.end());
 
   // In the triangulation the 4 first default points at infinity need a Z value. We will use mean z of seeds
-  z_default = std::accumulate(seeds.begin(), seeds.end(), 0.0, [](double sum, const PointXYZ& p) { return sum + p.z; }) / seeds.size();
+  z_default = std::accumulate(seeds.begin(), seeds.end(), 0.0, [](double sum, const IncrementalDelaunay::Vec2& p) { return sum + p.z; }) / seeds.size();
   z_default -= 100;
 
   if (verbose) print("%.2f secs\n", prof.elapsed());
@@ -470,7 +430,7 @@ void LASRpdt::make_buffer(double xmin, double ymin, double xmax, double ymax)
   vbuff.clear();
   vbuff.reserve(2 * (nx + ny) + 4); // perimeter only
 
-  PointLAS p; p.z = 0;
+  IncrementalDelaunay::Vec2 p;
   double x, y, x_noise, y_noise;
 
   // Bottom and top edges
@@ -481,14 +441,14 @@ void LASRpdt::make_buffer(double xmin, double ymin, double xmax, double ymax)
 
     // Bottom (ymin)
     y_noise = distribution(generator);
-    p.x = x + x_noise;
-    p.y = ymin + y_noise;
+    p.x = x + x_noise - x_offset;
+    p.y = ymin + y_noise - y_offset;
     vbuff.push_back(p);
 
     // Top
     y_noise = distribution(generator);
-    p.x = x + x_noise;
-    p.y = ymax + y_noise;
+    p.x = x + x_noise - x_offset;
+    p.y = ymax + y_noise - y_offset;
     vbuff.push_back(p);
   }
 
@@ -500,20 +460,20 @@ void LASRpdt::make_buffer(double xmin, double ymin, double xmax, double ymax)
 
     // Left (xmin)
     x_noise = distribution(generator);
-    p.x = xmin + x_noise;
-    p.y = y + y_noise;
+    p.x = xmin + x_noise  - x_offset;
+    p.y = y + y_noise  - y_offset;
     vbuff.push_back(p);
 
     // Right (xmax)
     x_noise = distribution(generator);
-    p.x = xmax + x_noise;
-    p.y = y + y_noise;
+    p.x = xmax + x_noise - x_offset;
+    p.y = y + y_noise - y_offset;
     vbuff.push_back(p);
   }
 
   using namespace nanoflann;
-  PLAdaptor adaptor(seeds);
-  typedef KDTreeSingleIndexAdaptor<L2_Simple_Adaptor<double, PLAdaptor>,PLAdaptor,2> kd_tree_t;
+  Vec2Adaptor adaptor(seeds);
+  typedef KDTreeSingleIndexAdaptor<L2_Simple_Adaptor<double, Vec2Adaptor>,Vec2Adaptor,2> kd_tree_t;
 
   kd_tree_t index(2, adaptor, KDTreeSingleIndexAdaptorParams(10));
   index.buildIndex();
@@ -536,13 +496,16 @@ void LASRpdt::make_buffer(double xmin, double ymin, double xmax, double ymax)
 
 std::vector<bool> LASRpdt::detect_spikes()
 {
-  Profiler prof;
+  std::vector<bool> is_spike(d->vcount, false);
+
+  if (max_iter == 0) return is_spike;
+
   if (verbose) print(" Spikes removal: ");
+
+  Profiler prof;
 
   int k = 8;
   double threshold = 0.75;
-
-  std::vector<bool> is_spike(d->vcount, false);
 
   // KD-Tree adaptor
   VertexAdaptor adaptor(d->vertices, d->vcount);
@@ -586,12 +549,16 @@ std::vector<bool> LASRpdt::detect_spikes()
     }
   }
 
-  if (verbose) print("%.2f secs\n", prof.elapsed());
+  if (verbose)
+  {
+    int sum = std::accumulate(is_spike.begin(), is_spike.end(), 0);
+    print("%d spike detected. Took %.2f secs\n", sum, prof.elapsed());
+  }
 
   return is_spike;
 }
 
-double distance_to_fitted_plane(const Vec2& query, const std::vector<size_t>& neighbor_indices, const Vertex* vertices)
+double distance_to_fitted_plane(const IncrementalDelaunay::Vec2& query, const std::vector<size_t>& neighbor_indices, const IncrementalDelaunay::Vertex* vertices)
 {
   if (neighbor_indices.size() < 3)
     return 0.0;

@@ -2,11 +2,12 @@
 #define LASRPDT_H
 
 #include "Stage.h"
-#include "Vector.h"
-#include "Shape.h"
+#include "hporro/geometry.h"
 
+namespace IncrementalDelaunay
+{
 class Triangulation;
-class Raster;
+}
 
 class LASRpdt : public Stage
 {
@@ -48,11 +49,10 @@ private:
   int max_iter;
   int classification;
 
-  std::vector<PointLAS> seeds;
-  std::vector<PointLAS> vbuff;
+  std::vector<IncrementalDelaunay::Vec2> seeds;
+  std::vector<IncrementalDelaunay::Vec2> vbuff;
 
-  std::vector<unsigned int> index_map;
-  Triangulation* d;
+  IncrementalDelaunay::Triangulation* d;
   PointCloud* las;
 };
 
