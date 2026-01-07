@@ -90,7 +90,7 @@ bool LASRptd::process(PointCloud*& las)
   std::vector<std::pair<float, unsigned int>> items;
   items.reserve(n);
   unsigned int i = 0;
-  while (las->read_point()) items.emplace_back(las->point.get_z(), i++);
+  while (las->read_point())items.emplace_back(las->point.get_z(), i++);
   std::sort(items.begin(), items.end(),  [](const auto& a, const auto& b) {  return a.first < b.first; });
   std::vector<unsigned int> index; index.reserve(n);
   for (const auto& item : items) index.push_back(item.second);

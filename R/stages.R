@@ -285,7 +285,7 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' \itemize{
 #' \item Iteration angle: This controls the rate at which points are classified based on variations in
 #' ground level. Use smaller values (e.g., 4.0) for flat terrain and larger values (e.g., 10.0) for
-#'  mountainous regions.
+#' mountainous regions.
 #' \item Iteration distance: This limits large upward jumps in the model, preventing the misclassification
 #'  of points in low vegetation or on small buildings.
 #' }
@@ -301,11 +301,15 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' areas.
 #' @param res Scalar. The resolution for locating seed points. It takes the lowest point per grid cell.
 #' It should be larger than any above ground structure such as building or bridges. In forested lands
-#' 5 m is good but larger values are recommended if human made structure can be observed.
-#' @param min_size Scalar. The minimum size for triangles. Densification halts if triangles are smaller
-#' than this limit. The default setting is generally suitable for most scenarios.
+#' 10 m is good but larger values are recommended if human made structure can be observed. 50 m is
+#' good in urban scene
+#' @param min_size Scalar. The minimum size for triangles. TIN densification halts if triangles are
+#' smaller than this limit avoiding useless over-densification. The default setting is generally suitable
+#' for most scenarios.
+#' @template param-filter
 #' @param class Integer. The classification to assign to the points, typically 2 for ground points.
-#' @param ... Unused
+#' @param ... supported options: max_iter = 0. Skips the densification, classify only the seed as ground
+#' for debugging only.
 #' @template param-filter
 #'
 #' @template return-pointcloud
@@ -321,14 +325,14 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' pipeline = classify_with_pdt() + write_las()
 #' ans = exec(pipeline, on = f, progress = TRUE)
-classify_with_ptd = function(distance = 2, angle = 30, res = 10, min_size = 0.5, ..., class = 2L)
+classify_with_ptd = function(distance = 2, angle = 30, res = 10, filter = drop_noise(), ..., min_size = 0.25, class = 2L)
 {
   p = list(...)
   max_iter = 500
   if (!is.null(p$max_iter))
     max_iter = p$max_iter
 
-  .APISTAGES$classify_with_ptd(distance, angle, res, min_size, class, max_iter)
+  .APISTAGES$classify_with_ptd(distance, angle, res, min_size, class, max_iter, filter)
 }
 
 

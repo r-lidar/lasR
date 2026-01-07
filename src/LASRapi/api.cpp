@@ -62,7 +62,7 @@ Pipeline classify_with_csf(bool slope_smooth, double class_threshold, double clo
   return Pipeline(s);
 }
 
-Pipeline classify_with_ptd(double distance, double angle, double res, double min_size, int classification, int max_iter)
+Pipeline classify_with_ptd(double distance, double angle, double res, double min_size, int classification, int max_iter, std::vector<std::string> filter)
 {
   Stage s("classify_with_ptd");
   s.set("distance", distance);
@@ -71,6 +71,7 @@ Pipeline classify_with_ptd(double distance, double angle, double res, double min
   s.set("min_size", min_size);
   s.set("max_iter", max_iter);
   s.set("class", classification);
+  s.set("filter", filter);
 
   return Pipeline(s);
 }
