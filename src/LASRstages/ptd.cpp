@@ -1,4 +1,4 @@
-#include "pdt.h"
+#include "ptd.h"
 #include "Profiler.h"
 #include "Raster.h"
 #include "NA.h"
@@ -37,13 +37,13 @@ struct VertexAdaptor
 double distance_to_fitted_plane(const IncrementalDelaunay::Vec2& query, const std::vector<size_t>& neighbor_indices, const IncrementalDelaunay::Vertex* vertices);
 bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle);
 
-LASRpdt::LASRpdt()
+LASRptd::LASRptd()
 {
   this->las = nullptr;
   this->d = nullptr;
 }
 
-bool LASRpdt::set_parameters(const nlohmann::json& stage)
+bool LASRptd::set_parameters(const nlohmann::json& stage)
 {
   this->max_iteration_distance = stage.value("distance", 1);
   this->max_iteration_angle = stage.value("angle", 15);
@@ -56,7 +56,7 @@ bool LASRpdt::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
-bool LASRpdt::process(PointCloud*& las)
+bool LASRptd::process(PointCloud*& las)
 {
   Profiler tot;
 
@@ -356,13 +356,13 @@ bool LASRpdt::process(PointCloud*& las)
 }
 
 
-void LASRpdt::clear(bool last)
+void LASRptd::clear(bool last)
 {
   delete d;
   d = nullptr;
 }
 
-void LASRpdt::make_seeds()
+void LASRptd::make_seeds()
 {
   auto prof = Profiler();
 
@@ -405,7 +405,7 @@ void LASRpdt::make_seeds()
   if (verbose) print("%.2f secs\n", prof.elapsed());
 }
 
-void LASRpdt::make_buffer(double xmin, double ymin, double xmax, double ymax)
+void LASRptd::make_buffer(double xmin, double ymin, double xmax, double ymax)
 {
   if (buffer_size <= 0) return;
 
@@ -494,7 +494,7 @@ void LASRpdt::make_buffer(double xmin, double ymin, double xmax, double ymax)
   }
 }
 
-std::vector<bool> LASRpdt::detect_spikes()
+std::vector<bool> LASRptd::detect_spikes()
 {
   std::vector<bool> is_spike(d->vcount, false);
 
@@ -642,7 +642,7 @@ bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& di
 
 
 // See LASRtriangulate::interpolate
-/*void LASRpdt::interpolate(std::vector<double>& x) const
+/*void LASRptd::interpolate(std::vector<double>& x) const
 {
   Profiler prof;
   prof.tic();
@@ -694,7 +694,7 @@ bool axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& di
 }*/
 
 // See LASRtriangulate::interpolate
-/*void LASRpdt::interpolate(Raster* r) const
+/*void LASRptd::interpolate(Raster* r) const
  {
  Profiler prof;
  prof.tic();

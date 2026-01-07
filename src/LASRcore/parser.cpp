@@ -19,7 +19,7 @@
 #include "localmaximum.h"
 #include "nnmetrics.h"
 #include "nothing.h"
-#include "pdt.h"
+#include "ptd.h"
 #include "pitfill.h"
 #include "rasterize.h"
 #include "sampling.h"
@@ -89,7 +89,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"add_attribute",        create_instance<LASRaddattribute>},
     {"add_rgb",              create_instance<LASRaddrgb>},
     {"classify_with_csf",    create_instance<LASRcsf>},
-    {"classify_with_pdt",    create_instance<LASRpdt>},
+    {"classify_with_ptd",    create_instance<LASRptd>},
     {"classify_with_ivf",    create_instance<LASRivf>},
     {"classify_with_sor",    create_instance<LASRsor>},
     {"edit_attribute",       create_instance<LASRedit>},

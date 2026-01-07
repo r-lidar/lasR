@@ -57,7 +57,7 @@ RCPP_MODULE(stages)
   function("classify_with_sor", &api::classify_with_sor, "Classify noise with SOR");
   function("classify_with_ivf", &api::classify_with_ivf, "Classify noise with IVF");
   function("classify_with_csf", &api::classify_with_csf, "Classify ground with CSF");
-  function("classify_with_pdt", &api::classify_with_pdt, "Classify ground with PDT");
+  function("classify_with_ptd", &api::classify_with_ptd, "Classify ground with PTD");
   function("delete_points", &api::delete_points, "Delete points that match criteria");
   function("edit_attribute", &api::edit_attribute, "Edit an attribute of the points");
   function("filter_with_grid", &api::filter_with_grid, "Filter points with a grid layout");

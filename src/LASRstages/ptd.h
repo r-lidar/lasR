@@ -1,5 +1,5 @@
-#ifndef LASRPDT_H
-#define LASRPDT_H
+#ifndef LASRPTD_H
+#define LASRPTD_H
 
 #include "Stage.h"
 #include "hporro/geometry.h"
@@ -9,19 +9,19 @@ namespace IncrementalDelaunay
 class Triangulation;
 }
 
-class LASRpdt : public Stage
+class LASRptd : public Stage
 {
 public:
-  LASRpdt();
+  LASRptd();
   bool process(PointCloud*& las) override;
   double need_buffer() const override { return 30.0; }
   void clear(bool last) override;
   //bool write() override;
   bool set_parameters(const nlohmann::json&) override;
-  std::string get_name() const override { return "pdt"; }
+  std::string get_name() const override { return "ptd"; }
 
   // multi-threading
-  LASRpdt* clone() const override { return new LASRpdt(*this); };
+  LASRptd* clone() const override { return new LASRptd(*this); };
 
 private:
   TriangleXYZ get_triangle(int tri_index);
