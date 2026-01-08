@@ -1,5 +1,3 @@
-#include <algorithm>
-#include <cmath>
 #include <vector>
 
 #include "ptd.h"
@@ -43,13 +41,13 @@ bool LASRptd::process(PointCloud*& las)
   Profiler prof;
   if (verbose) print(" Querying points of interest: ");
 
-  double rxmin = las->header->min_x;
-  double rymin = las->header->min_y;
-  double rxmax = las->header->max_x;
-  double rymax = las->header->max_y;
+  double rxmin = las->header->min_x - x_offset;
+  double rymin = las->header->min_y - y_offset;
+  double rxmax = las->header->max_x - x_offset;
+  double rymax = las->header->max_y - y_offset;
   Grid grid(rxmin, rymin, rxmax, rymax, min_triangle_size);
   size_t npixels = grid.get_ncells();
-  std::vector<IncrementalDelaunay::Vec2> candidates;
+  std::vector<PTD::Point> candidates;
   candidates.resize(npixels);
   for(auto& p : candidates) { p.z = std::numeric_limits<double>::infinity(); }
 
@@ -57,29 +55,27 @@ bool LASRptd::process(PointCloud*& las)
   {
     if (pointfilter.filter(&las->point)) continue;
 
-    double x = las->point.get_x();
-    double y = las->point.get_y();
-    double z = las->point.get_z();
+    double x = las->point.get_x() - x_offset;
+    double y = las->point.get_y() - y_offset;
+    double z = las->point.get_z() - z_offset;
 
     int cell = grid.cell_from_xy(x, y);
     if (cell < 0 || cell >= candidates.size()) continue;
 
     if (z < candidates[cell].z)
     {
-      candidates[cell].x = x - x_offset;
-      candidates[cell].y = y - y_offset;
+      candidates[cell].x = x;
+      candidates[cell].y = y;
       candidates[cell].z = z;
       candidates[cell].fid = las->current_point;
     }
   }
 
-  candidates.erase(
-    std::remove_if(candidates.begin(), candidates.end(),
-                   [](const IncrementalDelaunay::Vec2& p) {
-                     return p.z == std::numeric_limits<double>::infinity();
-                   }),
-                   candidates.end()
-  );
+  auto new_end = std::remove_if(candidates.begin(), candidates.end(), [](const PTD::Point& p)
+  {
+    return p.z == std::numeric_limits<double>::infinity();
+  });
+  candidates.erase(new_end,  candidates.end());
 
   if (verbose) print("took %.2f secs\n", prof.elapsed());
 
@@ -90,7 +86,7 @@ bool LASRptd::process(PointCloud*& las)
   prof = Profiler();
   if (verbose) print(" Progressive tin densification: ");
 
-  PTDParameters params;
+  PTD::PTDParameters params;
   params.buffer_size = buffer_size;
   params.max_iter = max_iter;
   params.max_iteration_angle = max_iteration_angle;
@@ -104,7 +100,7 @@ bool LASRptd::process(PointCloud*& las)
 
   try
   {
-    PTD ptd(params);
+    PTD::PTD ptd(params);
     ptd.run(candidates);
     gnd = ptd.get_ground_fid();
     out = ptd.get_spikes_fid();

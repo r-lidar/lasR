@@ -6,12 +6,17 @@
 #include <cmath>
 
 #include "PTD.h"
-#include "Profiler.h"
 
-struct Vec2Adaptor
+namespace PTD
 {
-  const std::vector<IncrementalDelaunay::Vec2>& pts;
-  Vec2Adaptor(const std::vector<IncrementalDelaunay::Vec2>& pts_) : pts(pts_) {}
+
+bool axelsson_metrics(const Vec3& P, const Triangle& triangle, double& dist_d, double& angle);
+double distance_to_fitted_plane(const Point& query, const std::vector<size_t>& neighbor_indices, const IncrementalDelaunay::Vertex* vertices);
+
+struct PointAdaptor
+{
+  const std::vector<Point>& pts;
+  PointAdaptor(const std::vector<Point>& pts_) : pts(pts_) {}
   inline size_t kdtree_get_point_count() const { return pts.size(); }
   inline double kdtree_get_pt(const size_t idx, const size_t dim) const { return (dim == 0 ? pts[idx].x : pts[idx].y); }
   template <class BBOX> bool kdtree_get_bbox(BBOX&) const { return false; }
@@ -31,9 +36,6 @@ struct VertexAdaptor
   template <class BBOX> bool kdtree_get_bbox(BBOX& /*bb*/) const { return false; }
 };
 
-#include <stdexcept>
-#include <string>
-
 PTD::PTD(const PTDParameters& p) : params(p), d(nullptr)
 {
   if (params.seed_resolution_search <= 0.0) throw std::invalid_argument("seed_resolution_search must be > 0");
@@ -42,50 +44,49 @@ PTD::PTD(const PTDParameters& p) : params(p), d(nullptr)
   if (params.min_triangle_size < 0.0) throw std::invalid_argument("min_triangle_size must be >= 0");
   if (params.buffer_size < 0.0) throw std::invalid_argument("buffer_size must be >= 0");
   if (params.max_iter < 0) throw std::invalid_argument("max_iter must be >= 0");
+  params.min_triangle_size = params.min_triangle_size *  params.min_triangle_size; //squared comparable distance
 }
 
 PTD::~PTD() { if (d) delete d; }
 
-bool PTD::run(std::vector<IncrementalDelaunay::Vec2>& candidates)
+bool PTD::run(std::vector<Point>& points)
 {
   if (d) delete d;
+  if (points.empty())
+    throw std::runtime_error("0 point to process");
 
-  Profiler tot;
-  if (candidates.empty()) throw std::runtime_error("0 point to process");
+  inserted.assign(points.size(), false);
 
-  inserted.assign(candidates.size(), false);
-
-  calculate_bounds(candidates); // Bounding box of the points
-  sort_points_by_z(candidates); // Sort to process bottom to top
-  make_seeds(candidates);       // Generate the seed points for iteration 0
-  make_buffer();                // Generate extra virtual buffer seeds
+  calculate_bounds(points); // Bounding box of the points
+  sort_points_by_z(points); // Sort to process bottom to top
+  make_seeds(points);       // Generate the seed points for iteration 0
+  make_buffer();            // Generate extra virtual buffer seeds
 
   // Grid used as spatial index by the triangulation and this class
-  gd = Grid(x_min - params.buffer_size, y_min - params.buffer_size, x_max + params.buffer_size, y_max + params.buffer_size, 1);
+  double bs = params.buffer_size;
+  gd = IncrementalDelaunay::Grid(x_min - bs, y_min - bs, x_max + bs, y_max + bs, 1);
 
   // Incremental triangulation
   d = new IncrementalDelaunay::Triangulation(gd);
 
   // For the few first points spatial index search is slow because triangle
-  // are too big. We can deactivate spatial indexing this is actually faster
+  // are too big. We can deactivate spatial indexing. This is actually faster
   d->desactivate_spatial_index();
 
   tin_buffer();
-  tin_seeds(candidates);
+  tin_seeds(points);
 
+  // Progressive densification
+  d->activate_spatial_index(); // Now the edges and seeds are inserted we can leverage spatial indexing.
+  densify_tin(points);
 
-
-  // Progressive Densification
-  d->activate_spatial_index();// Now the edges and seeds are inserted we can leverage spatial indexing.
-  densify_tin(candidates);
-
-  // Detect Spikes
+  // Detect spikes to find outlier
   detect_spikes();
 
   return true;
 }
 
-void PTD::calculate_bounds(const std::vector<IncrementalDelaunay::Vec2>& points)
+void PTD::calculate_bounds(const std::vector<Point>& points)
 {
   x_min = std::numeric_limits<double>::infinity();
   y_min = std::numeric_limits<double>::infinity();
@@ -101,7 +102,7 @@ void PTD::calculate_bounds(const std::vector<IncrementalDelaunay::Vec2>& points)
   }
 }
 
-void PTD::sort_points_by_z(std::vector<IncrementalDelaunay::Vec2>& points)
+void PTD::sort_points_by_z(std::vector<Point>& points)
 {
   std::sort(points.begin(), points.end(), [](const auto& a, const auto& b)
   {
@@ -109,9 +110,9 @@ void PTD::sort_points_by_z(std::vector<IncrementalDelaunay::Vec2>& points)
   });
 }
 
-void PTD::make_seeds(const std::vector<IncrementalDelaunay::Vec2>& points)
+void PTD::make_seeds(const std::vector<Point>& points)
 {
-  Grid grid(x_min, y_min, x_max, y_max, params.seed_resolution_search);
+  IncrementalDelaunay::Grid grid(x_min, y_min, x_max, y_max, params.seed_resolution_search);
   seeds.clear();
   seeds.resize(grid.get_ncells());
   for (auto& seed : seeds) seed.z = std::numeric_limits<double>::max();
@@ -126,12 +127,12 @@ void PTD::make_seeds(const std::vector<IncrementalDelaunay::Vec2>& points)
     }
   }
 
-  auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const IncrementalDelaunay::Vec2& p) { return p.z == std::numeric_limits<double>::max(); });
+  auto new_end = std::remove_if(seeds.begin(), seeds.end(), [](const Point& p) { return p.z == std::numeric_limits<double>::max(); });
   seeds.erase(new_end, seeds.end());
 
   if (seeds.empty()) throw std::runtime_error("0 seed to process");
 
-  z_default = std::accumulate(seeds.begin(), seeds.end(), 0.0, [](double sum, const IncrementalDelaunay::Vec2& p) { return sum + p.z; }) / seeds.size();
+  z_default = std::accumulate(seeds.begin(), seeds.end(), 0.0, [](double sum, const Point& p) { return sum + p.z; }) / seeds.size();
   z_default -= 100;
 }
 
@@ -158,7 +159,7 @@ void PTD::make_buffer()
   vbuff.clear();
   vbuff.reserve(2 * (nx + ny) + 4); // perimeter only
 
-  IncrementalDelaunay::Vec2 p;
+  Point p;
   double x, y, x_noise, y_noise;
 
   // Bottom and top edges
@@ -201,8 +202,8 @@ void PTD::make_buffer()
 
 
   // Using nanoflann to set Z for buffer points based on nearest seeds
-  Vec2Adaptor adaptor(seeds);
-  typedef nanoflann::KDTreeSingleIndexAdaptor<nanoflann::L2_Simple_Adaptor<double, Vec2Adaptor>, Vec2Adaptor, 2> kd_tree_t;
+  PointAdaptor adaptor(seeds);
+  typedef nanoflann::KDTreeSingleIndexAdaptor<nanoflann::L2_Simple_Adaptor<double, PointAdaptor>, PointAdaptor, 2> kd_tree_t;
   kd_tree_t index(2, adaptor, nanoflann::KDTreeSingleIndexAdaptorParams(10));
   index.buildIndex();
 
@@ -231,7 +232,7 @@ void PTD::tin_buffer()
   }
 }
 
-void PTD::tin_seeds(const std::vector<IncrementalDelaunay::Vec2>& points)
+void PTD::tin_seeds(const std::vector<Point>& points)
 {
   // To retrive the index
   std::unordered_map<unsigned int, std::size_t> fid_to_candidate_idx;
@@ -259,7 +260,7 @@ void PTD::tin_seeds(const std::vector<IncrementalDelaunay::Vec2>& points)
 }
 
 
-void PTD::densify_tin(const std::vector<IncrementalDelaunay::Vec2>& points)
+void PTD::densify_tin(const std::vector<Point>& points)
 {
   int iteration = 0;
   int count = 0;
@@ -297,22 +298,29 @@ void PTD::densify_tin(const std::vector<IncrementalDelaunay::Vec2>& points)
       if (t < 0) continue;
 
       // Retrieve vertices (A, B, C)
-      const auto& tri = d->triangles[t];
-      PointXYZ A(d->vertices[tri.v[0]].pos.x, d->vertices[tri.v[0]].pos.y, d->vertices[tri.v[0]].pos.z);
-      PointXYZ B(d->vertices[tri.v[1]].pos.x, d->vertices[tri.v[1]].pos.y, d->vertices[tri.v[1]].pos.z);
-      PointXYZ C(d->vertices[tri.v[2]].pos.x, d->vertices[tri.v[2]].pos.y, d->vertices[tri.v[2]].pos.z);
-      TriangleXYZ triangle(A, B, C);
+      IncrementalDelaunay::Triangle& tri = d->triangles[t];
+      Vec3 A(d->vertices[tri.v[0]].pos);
+      Vec3 B(d->vertices[tri.v[1]].pos);
+      Vec3 C(d->vertices[tri.v[2]].pos);
 
       // Skip too small triangles. Small triangle are frozen and cannot be subdivided.
-      if (triangle.square_max_edge_size() < params.min_triangle_size)
+      Vec3 u(A.x - B.x, A.y - B.y);
+      Vec3 v(A.x - C.x, A.y - C.y);
+      Vec3 w(B.x - C.x, B.y - C.y);
+      double edge_AB = u.x * u.x + u.y * u.y;
+      double edge_AC = v.x * v.x + v.y * v.y;
+      double edge_BC = w.x * w.x + w.y * w.y;
+      double sq_max_edge = std::max(edge_AB, std::max(edge_AC, edge_BC));
+      if (sq_max_edge < params.min_triangle_size)
       {
         inserted[i] = true; // Freeze
         continue;
       }
 
       double dist_d, angle;
-      PointXYZ pt(P.x, P.y, P.z);
-      if (!axelsson_metrics(pt, triangle, dist_d, angle)) continue;
+      Triangle triangle(A, B, C);
+      Vec3 p(P);
+      if (!axelsson_metrics(p, triangle, dist_d, angle)) continue;
 
       if (angle < params.max_iteration_angle && dist_d < params.max_iteration_distance)
       {
@@ -379,32 +387,64 @@ void PTD::detect_spikes()
   }
 }
 
-// Static Helpers implementation
-bool PTD::axelsson_metrics(const PointXYZ& P, const TriangleXYZ& triangle, double& dist_d, double& angle)
+std::vector<unsigned int> PTD::get_ground_fid() const
 {
-  // Exact copy of original axelsson_metrics logic
-  PointXYZ A = triangle.A;
-  PointXYZ n = triangle.normal();
-  PointXYZ v = P - A;
+  std::vector<unsigned int> idx;
+  idx.reserve(d->vcount);
+  unsigned int offset = (4 + vbuff.size() + 1);
+
+  for (unsigned int i = offset; i < d->vcount; i++)
+  {
+    unsigned int fid = d->vertices[i].pos.fid;
+    if (!is_spike[i]) idx.push_back(fid);
+  }
+
+  return idx;
+}
+
+std::vector<unsigned int> PTD::get_spikes_fid() const
+{
+  std::vector<unsigned int> idx;
+  idx.reserve(d->vcount);
+  unsigned int offset = (4 + vbuff.size() + 1);
+
+  for (unsigned int i = offset; i < d->vcount; i++)
+  {
+    unsigned int fid = d->vertices[i].pos.fid;
+    if (is_spike[i]) idx.push_back(fid);
+  }
+
+  return idx;
+}
+
+bool axelsson_metrics(const Vec3& P, const Triangle& triangle, double& dist_d, double& angle)
+{
+  Vec3 A = triangle.A;
+  Vec3 n = triangle.normal();
+  Vec3 v = P - A;
+
   dist_d = std::abs(v.dot(n));
-  PointXYZ P_proj = P - n * v.dot(n);
+
+  // Calculate projection of P onto the triangle plane
+  Vec3 P_proj = P - n * v.dot(n);
+
+  // Check if the projection falls inside the triangle
   if (!triangle.contains(P_proj)) return false;
 
   double h0 = P_proj.distance(triangle.A);
   double h1 = P_proj.distance(triangle.B);
   double h2 = P_proj.distance(triangle.C);
 
-  // M_PI requires <cmath>
-  double alpha = atan2(dist_d, h0) * 180.0 / M_PI;
-  double beta  = atan2(dist_d, h1) * 180.0 / M_PI;
-  double gamma = atan2(dist_d, h2) * 180.0 / M_PI;
+  double alpha = std::atan2(dist_d, h0) * 180.0 / M_PI;
+  double beta  = std::atan2(dist_d, h1) * 180.0 / M_PI;
+  double gamma = std::atan2(dist_d, h2) * 180.0 / M_PI;
 
-  // Assuming MAX3 macro or std::max
-  angle = std::max({alpha, beta, gamma});
+  angle = std::max(alpha, std::max(beta, gamma));
+
   return true;
 }
 
-double PTD::distance_to_fitted_plane(const IncrementalDelaunay::Vec2& query, const std::vector<size_t>& neighbor_indices, const IncrementalDelaunay::Vertex* vertices)
+double distance_to_fitted_plane(const Point& query, const std::vector<size_t>& neighbor_indices, const IncrementalDelaunay::Vertex* vertices)
 {
   if (neighbor_indices.size() < 3)
     return 0.0;
@@ -462,32 +502,4 @@ double PTD::distance_to_fitted_plane(const IncrementalDelaunay::Vec2& query, con
   return vertical_residual / normal_length;
 }
 
-std::vector<unsigned int> PTD::get_ground_fid() const
-{
-  std::vector<unsigned int> idx;
-  idx.reserve(d->vcount);
-  unsigned int offset = (4 + vbuff.size() + 1);
-
-  for (unsigned int i = offset; i < d->vcount; i++)
-  {
-    unsigned int fid = d->vertices[i].pos.fid;
-    if (!is_spike[i]) idx.push_back(fid);
-  }
-
-  return idx;
-}
-
-std::vector<unsigned int> PTD::get_spikes_fid() const
-{
-  std::vector<unsigned int> idx;
-  idx.reserve(d->vcount);
-  unsigned int offset = (4 + vbuff.size() + 1);
-
-  for (unsigned int i = offset; i < d->vcount; i++)
-  {
-    unsigned int fid = d->vertices[i].pos.fid;
-    if (is_spike[i]) idx.push_back(fid);
-  }
-
-  return idx;
 }

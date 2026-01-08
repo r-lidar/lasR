@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "geometry.h"
-#include "Grid.h"
+#include "index.h"
 
 namespace IncrementalDelaunay
 {

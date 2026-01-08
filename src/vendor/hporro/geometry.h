@@ -8,9 +8,7 @@ namespace IncrementalDelaunay
 
 struct Vec2
 {
-  double x;
-  double y;
-  double z;
+  double x, y, z;
   unsigned int fid;
 
   Vec2() : x(0), y(0), z(0), fid(0) {}
