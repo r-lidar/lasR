@@ -1,6 +1,7 @@
 # lasR 0.17.4
  
 - Fix: #247 memory violation in some edge cases.
+- Fix: #259 incorrect values reported for normal vectors.
 
 # lasR 0.17.3
 

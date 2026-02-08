@@ -229,9 +229,9 @@ bool LASRsvd::process(PointCloud*& las)
     double coeff20 = coeff(2,0);
     double coeff21 = coeff(2,1);
     double coeff22 = coeff(2,2);
-    double nx = coeff(0,0);
-    double ny = coeff(0,1);
-    double nz = coeff(0,2);
+    double nx = coeff(0,2);
+    double ny = coeff(1,2);
+    double nz = coeff(2,2);
     double anisotropy = (eigen_largest-eigen_smallest)/eigen_largest;
     double planarity = (eigen_medium-eigen_smallest)/eigen_largest;
     double sphericity = eigen_smallest/eigen_largest;
