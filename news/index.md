@@ -4,6 +4,8 @@
 
 - Fix: [\#247](https://github.com/r-lidar/lasR/issues/247) memory
   violation in some edge cases.
+- Fix: [\#259](https://github.com/r-lidar/lasR/issues/259) incorrect
+  values reported for normal vectors.
 
 ## lasR 0.17.3
 
