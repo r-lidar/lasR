@@ -149,7 +149,7 @@ class TestGeometricAnalysis(unittest.TestCase):
     def test_local_maximum(self):
         """Test local_maximum pipeline creation"""
         pipeline = pylasr.local_maximum(
-            ws=3.0, min_height=2.0, filter=[""], ofile="", use_attribute="Z"
+            ws=3.0, min_height=2.0, filter=[""], ofile="", use_attribute="Z", store_in_attributes="tree_top"
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
@@ -182,6 +182,24 @@ class TestRasterization(unittest.TestCase):
             filter=[""],
             ofile="test.tif",
             default_value=-99999.0,
+        )
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_focal(self):
+        """Test focal operation pipeline creation"""
+        # Create a raster stage first
+        raster = pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
+        # Apply focal operation to the raster
+        pipeline = pylasr.focal(raster, size=3, fun="mean", ofile="focal.tif")
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_pit_fill(self):
+        """Test pit_fill operation pipeline creation"""
+        # Create a raster stage first
+        raster = pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
+        # Apply pit_fill operation to the raster
+        pipeline = pylasr.pit_fill(
+            raster, lap_size=3, thr_lap=0.1, thr_spk=-0.1, med_size=3, ofile="filled.tif"
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
@@ -220,6 +238,46 @@ class TestDataLoading(unittest.TestCase):
             1.0,
         ]
         pipeline = pylasr.load_matrix(matrix, check=True)
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+
+class TestTransformations(unittest.TestCase):
+    """Test transformation pipeline functions"""
+
+    def setUp(self):
+        if not PYLASR_AVAILABLE:
+            self.skipTest("pylasr not available")
+
+    def test_transform_with_matrix(self):
+        """Test transform_with pipeline with affine transformation matrix"""
+        # Create identity matrix (no transformation)
+        matrix = [
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        ]
+        
+        # Load the matrix
+        matrix_stage = pylasr.load_matrix(matrix, check=True)
+        # Apply transformation
+        pipeline = pylasr.transform_with(matrix_stage, operation="-")
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_transform_with_triangulation(self):
+        """Test transform_with pipeline with triangulation (normalization)"""
+        # Create triangulation of ground points
+        triangulation = pylasr.triangulate(filter=["Classification == 2"])
+        # Apply transformation to normalize heights
+        pipeline = pylasr.transform_with(triangulation, operation="-")
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_transform_with_raster(self):
+        """Test transform_with pipeline with raster"""
+        # Create a raster
+        raster = pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
+        # Apply transformation using raster
+        pipeline = pylasr.transform_with(raster, operation="-", bilinear=True)
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
 
