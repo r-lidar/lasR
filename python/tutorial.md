@@ -156,6 +156,31 @@ result = pipeline.execute(f)
 
 In the pipeline above, we are using two variations of rasterization: one capable of rasterizing the point cloud with a predefined operator (here `max` is interpreted as `z_max`), and the other capable of rasterizing a triangulation. The output contains both rasters.
 
+### Focal operations on rasters
+
+Rasters produced in the pipeline can be post-processed using focal (neighborhood) operations. The `focal()` stage applies filters that consider neighboring pixel values, which is useful for smoothing, edge detection, or other raster enhancements.
+
+```python
+# Create a CHM and smooth it using a focal filter
+chm = pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
+smoothed_chm = pylasr.focal(chm, size=3, fun="mean", ofile="/tmp/chm_smooth.tif")
+
+pipeline = chm + smoothed_chm
+result = pipeline.execute(f)
+```
+
+Focal operations are particularly useful when combined with pit-filling and other preprocessing before tree detection algorithms:
+
+```python
+# Fill pits in CHM and smooth the result
+chm = pylasr.rasterize(res=0.5, window=0.5, operators=["max"])
+filled_chm = pylasr.pit_fill(chm, lap_size=3, thr_lap=0.1, thr_spk=-0.1, med_size=3)
+smoothed_chm = pylasr.focal(filled_chm, size=3, fun="mean")
+
+pipeline = chm + filled_chm + smoothed_chm
+result = pipeline.execute(f)
+```
+
 ## Transform with
 
 Another way to use a Delaunay triangulation is to transform the point cloud. Users can add or subtract the triangulation from the point cloud, effectively normalizing it. Unlike some higher-level packages, there is no high-level function with names like `normalize_points()`. Instead, `pylasr` is composed of low-level atomic stages that offer more versatility.
@@ -187,6 +212,30 @@ result = pipeline.execute(f)
 ```
 
 After performing normalization, users may want to write the normalized point cloud to disk for later use. In this case, you can append the `write_las()` stage to the pipeline.
+
+### Affine transformations
+
+Point clouds can also be transformed using 4x4 affine transformation matrices. This allows for rotation, translation, and scaling operations. The `load_matrix()` stage loads a transformation matrix and the `transform_with()` stage applies it:
+
+```python
+# Example: load and apply an affine transformation matrix
+# The matrix should be provided as a list of 16 values (row-major order)
+# representing a 4x4 transformation matrix
+
+# Rotation around Z-axis by 45 degrees + translation
+rotation_translation_matrix = [
+    0.707, -0.707, 0, 100,    # rotation + x translation
+    0.707,  0.707, 0, 50,     # rotation + y translation
+    0,      0,     1, 5,       # z translation
+    0,      0,     0, 1        # homogeneous coordinates
+]
+
+matrix = pylasr.load_matrix(rotation_translation_matrix)
+transformation = pylasr.transform_with(matrix)
+
+pipeline = matrix + transformation + pylasr.write_las("/tmp/transformed_*.las")
+result = pipeline.execute(f)
+```
 
 ## Write LAS
 
@@ -227,6 +276,21 @@ chm = pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
 lm_raster = pylasr.local_maximum_raster(chm, ws=3, min_height=2.0)
 
 pipeline = chm + lm_points + lm_raster
+result = pipeline.execute(f)
+```
+
+The `local_maximum()` stage can optionally store the local maxima locations in a new point attribute instead of or in addition to producing vector output:
+
+```python
+# Store local maxima as a point attribute (e.g., for tree tops)
+lm_with_attr = pylasr.local_maximum(
+    ws=3, 
+    min_height=2.0, 
+    store_in_attributes="tree_top"  # creates a new attribute marking tree top locations
+)
+
+# Combine with writing to get both vector output and point attributes
+pipeline = lm_with_attr + pylasr.write_las("/tmp/points_with_tree_tops_*.las")
 result = pipeline.execute(f)
 ```
 
@@ -338,12 +402,14 @@ if result['success'] and result['data']:
 
 # Custom metrics
 custom_metrics = pylasr.summarise(
-    metrics=["z_mean", "z_p95", "i_median", "count"],
+    metrics=["z_mean", "z_p95", "i_median", "count", "z_skew", "z_kurt"],
     zwbin=2.0,  # bin size for height histogram
     iwbin=50.0  # bin size for intensity histogram
 )
 result = custom_metrics.execute(f)
 ```
+
+The available metrics include standard statistics (`mean`, `median`, `sd`, `min`, `max`, `p25`, `p75`, `p95`), specialized functions (`mode`, `kurtosis`, `skewness`), and count operations. For any numeric attribute `attr`, you can compute `attr_skew` (skewness) and `attr_kurt` (kurtosis) to understand the distribution of values.
 
 Like other stages, the output produced by `summarise()` depends on its positioning in the pipeline. Let's insert a sampling stage. We can see that it summarizes the point cloud in its current state in the pipeline.
 
@@ -573,6 +639,48 @@ chm_result = chm_pipeline.execute(f)
 
 R users: the R vignette references a pre-recorded `normalize()` pipeline; in Python you compose it manually with `transform_with()` as above.
 
+## Filtering points
+
+Throughout the pipeline, many stages accept a `filter` argument to selectively process points. The filter uses a programming-style syntax that supports various operations:
+
+```python
+# Basic comparisons
+pipeline = pylasr.rasterize(res=1.0, operators=["max"], filter=["Z > 5"])  # height above 5m
+pipeline = pylasr.rasterize(res=1.0, operators=["max"], filter=["Z < 50"])  # height below 50m
+
+# Range filtering
+pipeline = pylasr.rasterize(res=1.0, operators=["max"], filter=["Z >= 2", "Z <= 20"])
+pipeline = pylasr.rasterize(res=1.0, operators=["max"], filter=["Z < 0", "Z > 1"])  # excluding range
+
+# Classification filtering
+pipeline = pylasr.delete_points(["Classification != 2"])  # delete non-ground points
+pipeline = pylasr.local_maximum(ws=3, min_height=2, filter=["ReturnNumber == 1"])  # first returns only
+
+# Intensity filtering
+pipeline = pylasr.sampling_voxel(res=1, filter=["Intensity > 100"])
+
+# Multiple conditions
+pipeline = pylasr.rasterize(
+    res=1.0, 
+    operators=["max"], 
+    filter=["Z > 2", "Classification %in% 2 3 4"]  # ground, low vegetation, medium vegetation
+)
+
+# String-based filters
+pipeline = pylasr.rasterize(
+    res=1.0,
+    operators=["mean"],
+    filter=["Classification %out% 0 1 2"]  # exclude unclassified, unclassified-low, ground
+)
+```
+
+Filters are applied at the point level, so a pipeline with a filter processes only points matching the condition while leaving others unaffected. This is useful for:
+- Computing metrics on specific point subsets
+- Detecting features in selected regions
+- Removing noise or low-quality points from intermediate processing stages
+
+> **Note:** Helper functions like `keep_z_between()`, `drop_z_between()`, `keep_ground()`, etc. are available in the R API as convenience functions. In Python, use the filter string syntax directly: `["Z >= 2", "Z <= 20"]` instead of `keep_z_between(2, 20)`, or use logical operators with `%in%` and `%out%` for classification-based filters.
+
 ## Advanced usage patterns
 
 ### Chaining multiple operations
@@ -647,11 +755,35 @@ The modular design allows users to build custom workflows ranging from simple da
 - `remove_attribute()` - Remove attributes from point cloud
 - `sort_points()` - Sort points spatially or by attributes
 
+Example of modifying and removing attributes:
+```python
+# Edit values of an existing attribute
+edit = pylasr.edit_attribute("classification", "IF(Z > 10, 18, classification)")
+
+# Remove unwanted attributes
+remove = pylasr.remove_attribute(["attribute_name_1", "attribute_name_2"])
+
+pipeline = edit + remove
+result = pipeline.execute(f)
+```
+
 ### Classification and filtering
 - `classify_with_sor()` - Statistical Outlier Removal for noise classification
 - `classify_with_ivf()` - Isolated Voxel Filter for noise classification  
 - `classify_with_csf()` - Cloth Simulation Filter for ground classification
-- `filter_with_grid()` - Grid-based point filtering
+- `filter_with_grid()` - Grid-based point filtering to keep lowest or highest point per cell
+
+The `filter_with_grid()` stage is useful for data thinning while preserving important features:
+```python
+# Keep only the highest point in each 2m x 2m grid cell
+keep_highest = pylasr.filter_with_grid(res=2.0, method="highest")
+
+# Keep only the lowest point (useful for ground detection preprocessing)
+keep_lowest = pylasr.filter_with_grid(res=2.0, method="lowest")
+
+pipeline = keep_highest + pylasr.write_las("/tmp/thinned_*.las")
+result = pipeline.execute(f)
+```
 
 ### Sampling methods
 - `sampling_voxel()` - Voxel-based point sampling
@@ -662,12 +794,34 @@ The modular design allows users to build custom workflows ranging from simple da
 - `geometry_features()` - Compute geometric features (eigenvalues, etc.)
 
 ### Input/Output operations
-- `write_copc()` - Write Cloud Optimized Point Cloud files
+- `write_copc()` - Write Cloud Optimized Point Cloud files with hierarchical structure
 - `write_pcd()` - Write Point Cloud Data files
 - `write_vpc()` - Write Virtual Point Cloud files
 - `write_lax()` - Write spatial index files
 - `load_raster()` - Load external raster data
 - `load_matrix()` - Load transformation matrices
+
+Writing COPC format with control over hierarchy:
+```python
+# Write to COPC format with specified hierarchy depth
+copc_writer = pylasr.write_copc(
+    ofile="/tmp/output.copc.las",
+    copc_depth=8,  # hierarchy depth
+)
+
+pipeline = copc_writer
+result = pipeline.execute(f)
+```
+
+Writing to PCD format (with limitations):
+```python
+# Write to PCD format - note that PCD has limited buffer and merge capabilities
+pcd_writer = pylasr.write_pcd(ofile="/tmp/output.pcd")
+
+# Reading PCD files (single file only, no buffering/merging)
+pcd_pipeline = pylasr.reader() + pylasr.info()
+result = pcd_pipeline.execute("input_file.pcd")
+```
 
 ### Raster operations  
 - `focal()` - Apply focal (neighborhood) operations on rasters
