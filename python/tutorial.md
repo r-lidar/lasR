@@ -224,10 +224,10 @@ Point clouds can also be transformed using 4x4 affine transformation matrices. T
 
 # Rotation around Z-axis by 45 degrees + translation
 rotation_translation_matrix = [
-    0.707, -0.707, 0, 100,    # rotation + x translation
-    0.707,  0.707, 0, 50,     # rotation + y translation
-    0,      0,     1, 5,       # z translation
-    0,      0,     0, 1        # homogeneous coordinates
+    0.7071067811865476, -0.7071067811865476, 0, 100,  # rotation + x translation
+    0.7071067811865476,  0.7071067811865476, 0, 50,   # rotation + y translation
+    0,                    0,                   1, 5,   # z translation
+    0,                    0,                   0, 1    # homogeneous coordinates
 ]
 
 matrix = pylasr.load_matrix(rotation_translation_matrix)
@@ -409,7 +409,7 @@ custom_metrics = pylasr.summarise(
 result = custom_metrics.execute(f)
 ```
 
-The available metrics include standard statistics (`mean`, `median`, `sd`, `min`, `max`, `p25`, `p75`, `p95`), specialized functions (`mode`, `kurtosis`, `skewness`), and count operations. For any numeric attribute `attr`, you can compute `attr_skew` (skewness) and `attr_kurt` (kurtosis) to understand the distribution of values.
+The available metrics include standard statistics (`mean`, `median`, `sd`, `min`, `max`, `p25`, `p75`, `p95`), specialized functions (`mode`, `kurt`, `skew`, corresponding to kurtosis and skewness), and count operations. For any numeric attribute `attr`, you can compute `attr_skew` (skewness) and `attr_kurt` (kurtosis) to understand the distribution of values.
 
 Like other stages, the output produced by `summarise()` depends on its positioning in the pipeline. Let's insert a sampling stage. We can see that it summarizes the point cloud in its current state in the pipeline.
 
@@ -645,12 +645,17 @@ Throughout the pipeline, many stages accept a `filter` argument to selectively p
 
 ```python
 # Basic comparisons
-pipeline = pylasr.rasterize(res=1.0, operators=["max"], filter=["Z > 5"])  # height above 5m
-pipeline = pylasr.rasterize(res=1.0, operators=["max"], filter=["Z < 50"])  # height below 50m
+pipeline = pylasr.rasterize(res=1.0, window=1.0, operators=["max"], filter=["Z > 5"])  # height above 5m
+pipeline = pylasr.rasterize(res=1.0, window=1.0, operators=["max"], filter=["Z < 50"])  # height below 50m
 
 # Range filtering
-pipeline = pylasr.rasterize(res=1.0, operators=["max"], filter=["Z >= 2", "Z <= 20"])
-pipeline = pylasr.rasterize(res=1.0, operators=["max"], filter=["Z < 0", "Z > 1"])  # excluding range
+pipeline = pylasr.rasterize(res=1.0, window=1.0, operators=["max"], filter=["Z >= 2", "Z <= 20"])  # keep within [2, 20]
+# Excluding a range: remove points with 0 <= Z <= 1, then rasterize remaining points.
+# Note: multiple filter strings are combined with AND; OR conditions are not supported.
+pipeline = (
+    pylasr.delete_points(["Z %between% 0 1"])
+    + pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
+)
 
 # Classification filtering
 pipeline = pylasr.delete_points(["Classification != 2"])  # delete non-ground points
@@ -662,6 +667,7 @@ pipeline = pylasr.sampling_voxel(res=1, filter=["Intensity > 100"])
 # Multiple conditions
 pipeline = pylasr.rasterize(
     res=1.0, 
+    window=1.0,
     operators=["max"], 
     filter=["Z > 2", "Classification %in% 2 3 4"]  # ground, low vegetation, medium vegetation
 )
@@ -669,6 +675,7 @@ pipeline = pylasr.rasterize(
 # String-based filters
 pipeline = pylasr.rasterize(
     res=1.0,
+    window=1.0,
     operators=["mean"],
     filter=["Classification %out% 0 1 2"]  # exclude unclassified, unclassified-low, ground
 )
@@ -757,13 +764,12 @@ The modular design allows users to build custom workflows ranging from simple da
 
 Example of modifying and removing attributes:
 ```python
-# Edit values of an existing attribute
-edit = pylasr.edit_attribute("classification", "IF(Z > 10, 18, classification)")
-
-# Remove unwanted attributes
-remove = pylasr.remove_attribute(["attribute_name_1", "attribute_name_2"])
-
-pipeline = edit + remove
+# Edit values of an existing attribute: set classification to 18 where Z > 10
+edit = pylasr.edit_attribute("Z > 10", "classification", 18)
+# Remove unwanted attributes (chain multiple stages for multiple attributes)
+remove1 = pylasr.remove_attribute("attribute_name_1")
+remove2 = pylasr.remove_attribute("attribute_name_2")
+pipeline = edit + remove1 + remove2
 result = pipeline.execute(f)
 ```
 
@@ -776,10 +782,10 @@ result = pipeline.execute(f)
 The `filter_with_grid()` stage is useful for data thinning while preserving important features:
 ```python
 # Keep only the highest point in each 2m x 2m grid cell
-keep_highest = pylasr.filter_with_grid(res=2.0, method="highest")
+keep_highest = pylasr.filter_with_grid(res=2.0, operation="max")
 
 # Keep only the lowest point (useful for ground detection preprocessing)
-keep_lowest = pylasr.filter_with_grid(res=2.0, method="lowest")
+keep_lowest = pylasr.filter_with_grid(res=2.0, operation="min")
 
 pipeline = keep_highest + pylasr.write_las("/tmp/thinned_*.las")
 result = pipeline.execute(f)
@@ -806,7 +812,7 @@ Writing COPC format with control over hierarchy:
 # Write to COPC format with specified hierarchy depth
 copc_writer = pylasr.write_copc(
     ofile="/tmp/output.copc.las",
-    copc_depth=8,  # hierarchy depth
+    max_depth=8,  # hierarchy depth
 )
 
 pipeline = copc_writer
@@ -819,7 +825,7 @@ Writing to PCD format (with limitations):
 pcd_writer = pylasr.write_pcd(ofile="/tmp/output.pcd")
 
 # Reading PCD files (single file only, no buffering/merging)
-pcd_pipeline = pylasr.reader() + pylasr.info()
+pcd_pipeline = pylasr.info()
 result = pcd_pipeline.execute("input_file.pcd")
 ```
 
