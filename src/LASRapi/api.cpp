@@ -62,12 +62,13 @@ Pipeline classify_with_csf(bool slope_smooth, double class_threshold, double clo
   return Pipeline(s);
 }
 
-Pipeline geometry_features(int k, double r, std::string features)
+Pipeline geometry_features(int k, double r, std::string features, bool always_up)
 {
   Stage s("svd");
   s.set("k", k);
   s.set("r", r);
   s.set("features", features);
+  s.set("always_up", always_up);
 
   return Pipeline(s);
 }

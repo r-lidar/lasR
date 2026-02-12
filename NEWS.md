@@ -1,3 +1,7 @@
+# lasR 0.18.0
+
+- New: #263 new argument `always_up` in geometry_features().
+
 # lasR 0.17.4
  
 - Fix: #247 memory violation in some edge cases.

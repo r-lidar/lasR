@@ -17,6 +17,8 @@ test_that("geometry_features works",
   expect_equal(mean(las$lambda1), 1.0659, tolerance = 1e-3)
   expect_equal(mean(las$anisotropy), 0.9724, tolerance = 1e-3)
   expect_equal(mean(las$inclination), 80.6690, tolerance = 1e-3)
+  expect_equal(mean(las$normalX), -0.04826, tolerance = 1e-3)
+  expect_equal(mean(las$normalZ), 0.13028, tolerance = 1e-3)
 })
 
 test_that("geometry_features overwrites",
@@ -62,5 +64,16 @@ test_that("knn with deleted points does not crash",
   f <- system.file("extdata", "MixedConifer.las", package="lasR")
   pipeline = delete_points("Classification == 2") + geometry_features(k = 15 , features = "lps")
   expect_error(exec(pipeline, on = f), NA)
+})
+
+test_that("geometry_features normals always up",
+{
+  f <- system.file("extdata", "Example.las", package = "lasR")
+  pipeline <- geometry_features(k = 8, features = "n", always_up = TRUE) + write_las()
+  ans <- exec(pipeline, on = f)
+  las = read_las(ans)
+
+  expect_true(all(las$normalZ > 0))
+  expect_equal(mean(las$normalZ), 0.161260, tolerance = 1e-3)
 })
 

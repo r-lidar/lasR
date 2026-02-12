@@ -295,7 +295,8 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 #' Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 #' The order of the flags does not matter and the features are recorded in the order mentioned above.
-#'
+#' @param always_up boolean. Applies only to the normals. Ensure that z the component is always oriented
+#' upward.
 #' @template return-pointcloud
 #'
 #' @export
@@ -307,13 +308,13 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' f <- system.file("extdata", "Example.las", package = "lasR")
 #' pipeline <- geometry_features(8, features = "pi") + write_las()
 #' ans <- exec(pipeline, on = f)
-geometry_features = function(k, r, features = "")
+geometry_features = function(k, r, features = "", always_up = FALSE)
 {
   if (missing(k) && missing(r))  stop("'k' and 'r' are missing", call. = FALSE)
   if (!missing(r) && !missing(k)) { } # knn + radius
   if (!missing(k) && missing(r))  { r <- 0 }  # knn
   if (!missing(r) && missing(k)) { k <- 0 }   # radius
-  .APISTAGES$geometry_feature(k, r, features)
+  .APISTAGES$geometry_feature(k, r, features, always_up)
 }
 
 

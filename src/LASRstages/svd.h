@@ -18,6 +18,7 @@ private:
   int k;
   double r;
 
+  bool always_up;
   bool record_eigen_values;
   bool record_coefficients;
 

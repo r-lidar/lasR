@@ -47,7 +47,7 @@ py::object create_result(const nlohmann::json& json_results, const std::string& 
     auto results = py::dict();
     results["success"] = true;
     results["json_config"] = json_config_path;
-    
+
     if (!json_results.empty()) {
         std::string json_str = json_results.dump();
         py::object json_module = py::module_::import("json");
@@ -55,7 +55,7 @@ py::object create_result(const nlohmann::json& json_results, const std::string& 
     } else {
         results["data"] = py::list();  // Empty list instead of None for consistency
     }
-    
+
     return results;
 }
 
@@ -281,7 +281,7 @@ PYBIND11_MODULE(pylasr, m) {
     // Geometric features
     m.def("geometry_features", &api::geometry_features,
           "Compute geometric features",
-          py::arg("k"), py::arg("r"), py::arg("features") = "");
+          py::arg("k"), py::arg("r"), py::arg("features") = "",  py::arg("always_up") = false);
 
     // Point operations
     m.def("delete_points", &api::delete_points,
