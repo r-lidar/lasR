@@ -1,5 +1,10 @@
 # Changelog
 
+## lasR 0.18.0
+
+- New: [\#263](https://github.com/r-lidar/lasR/issues/263) new argument
+  `always_up` in geometry_features().
+
 ## lasR 0.17.4
 
 - Fix: [\#247](https://github.com/r-lidar/lasR/issues/247) memory

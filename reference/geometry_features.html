@@ -76,7 +76,7 @@ overwritten.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">geometry_features</span><span class="op">(</span><span class="va">k</span>, <span class="va">r</span>, features <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">geometry_features</span><span class="op">(</span><span class="va">k</span>, <span class="va">r</span>, features <span class="op">=</span> <span class="st">""</span>, always_up <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -99,6 +99,11 @@ covariance matrix, 'a' for anisotropy, 'p' for planarity, 's' for sphericity, 'l
 Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 The order of the flags does not matter and the features are recorded in the order mentioned above.</p></dd>
+
+
+<dt id="arg-always-up">always_up<a class="anchor" aria-label="anchor" href="#arg-always-up"></a></dt>
+<dd><p>boolean. Applies only to the normals. Ensure that z the component is always oriented
+upward.</p></dd>
 
 </dl></div>
     <div class="section level2">

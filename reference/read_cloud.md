@@ -60,6 +60,6 @@ u
 #> resolution  : 5, 5  (x, y)
 #> extent      : 273355, 273645, 5274355, 5274645  (xmin, xmax, ymin, ymax)
 #> coord. ref. :  
-#> source      : file2408532b928a.tif 
+#> source      : file244373287bf3.tif 
 #> name        : max 
 ```

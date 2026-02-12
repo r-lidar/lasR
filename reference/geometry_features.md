@@ -16,7 +16,7 @@ this stage, then attribute with the same name are overwritten.
 ## Usage
 
 ``` r
-geometry_features(k, r, features = "")
+geometry_features(k, r, features = "", always_up = FALSE)
 ```
 
 ## Arguments
@@ -43,6 +43,11 @@ geometry_features(k, r, features = "")
   decomposition is computed but serves no purpose. The order of the
   flags does not matter and the features are recorded in the order
   mentioned above.
+
+- always_up:
+
+  boolean. Applies only to the normals. Ensure that z the component is
+  always oriented upward.
 
 ## Value
 
