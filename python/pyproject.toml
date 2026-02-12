@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylasr"
-version = "0.17.2"
+version = "0.17.4"
 description = "Python bindings for LASR library - Fast Airborne LiDAR Data Processing"
 readme = "README.md"
 requires-python = ">=3.9"
