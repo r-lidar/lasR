@@ -77,7 +77,7 @@ static std::vector<std::string> normalize_files_arg(const py::object& files) {
 
 PYBIND11_MODULE(pylasr, m) {
     m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing";
-    m.attr("__version__") = "0.17.2";
+    m.attr("__version__") = "0.17.4";
 
     // System information functions
     m.def("available_threads", &api::available_threads,
