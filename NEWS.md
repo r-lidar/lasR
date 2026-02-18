@@ -1,6 +1,7 @@
 # lasR 0.18.0
 
 - New: #263 new argument `always_up` in geometry_features().
+- Fix: #265 VPC without epsg.
 
 # lasR 0.17.4
  
