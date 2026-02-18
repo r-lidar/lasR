@@ -4,6 +4,8 @@
 
 - New: [\#263](https://github.com/r-lidar/lasR/issues/263) new argument
   `always_up` in geometry_features().
+- Fix: [\#265](https://github.com/r-lidar/lasR/issues/265) VPC without
+  epsg.
 
 ## lasR 0.17.4
 
