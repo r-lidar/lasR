@@ -10,7 +10,11 @@ later in another stage
 ``` r
 add_extrabytes(data_type, name, description, scale = 1, offset = 0)
 
+keep_attributes(names)
+
 remove_attribute(name)
+
+remove_attributes(names)
 ```
 
 ## Arguments
@@ -23,8 +27,7 @@ remove_attribute(name)
 
 - name:
 
-  character. The name of the extra bytes attribute to add or remove to
-  the file.
+  character. The name of the attribute to add or remove to the file.
 
 - description:
 
@@ -35,6 +38,10 @@ remove_attribute(name)
 
   numeric. The scale and offset of the data. See LAS specification.
   Leave unchanged if not working with LAS files.
+
+- names:
+
+  character vector. The names of attribute to add or remove to the file.
 
 ## Value
 

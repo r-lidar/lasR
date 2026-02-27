@@ -40,12 +40,12 @@ Source:
 [`DESCRIPTION`](https://github.com/r-lidar/lasR/blob/main/DESCRIPTION)
 
 Roussel J (2026). *lasR: Fast and Pipeable Airborne LiDAR Data Tools*. R
-package version 0.17.4, <https://github.com/r-lidar/lasR>.
+package version 0.18.0, <https://github.com/r-lidar/lasR>.
 
     @Manual{,
       title = {lasR: Fast and Pipeable Airborne LiDAR Data Tools},
       author = {Jean-Romain Roussel},
       year = {2026},
-      note = {R package version 0.17.4},
+      note = {R package version 0.18.0},
       url = {https://github.com/r-lidar/lasR},
     }

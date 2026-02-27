@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,7 +47,18 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.18.0" id="lasr-0180">lasR 0.18.0<a class="anchor" aria-label="anchor" href="#lasr-0180"></a></h2>
-<ul><li>New: <a href="https://github.com/r-lidar/lasR/issues/263" class="external-link">#263</a> new argument <code>always_up</code> in geometry_features().</li>
+<ul><li>New: <a href="https://github.com/r-lidar/lasR/issues/263" class="external-link">#263</a> new argument <code>always_up</code> in <code><a href="../reference/geometry_features.html">geometry_features()</a></code>.</li>
+<li>New stage <code>remove_attributes</code> that deprecated <code>remove_attribute</code> (no <code>s</code>).</li>
+<li>New stage <code>keep_attributes</code>
+</li>
+<li>New stage <code><a href="../reference/add_rgb.html">remove_rgb()</a></code>
+</li>
+<li>New stage <code><a href="../reference/classify_with_ipf.html">classify_with_ipf()</a></code> to classify points with isolated point filter.</li>
+<li>New function <code><a href="../reference/temporary_files.html">temppcd()</a></code>
+</li>
+<li>New arguments <code>version</code> and <code>pdrf</code> in <code><a href="../reference/write.html">write_las()</a></code> to enforce a specific LAS version and point format.</li>
+<li>New feature <code><a href="../reference/classify_with_ivf.html">classify_with_ivf()</a></code> supports non cubic voxels with e.g. <code>classify_with_ivf(res = c(1,1,2))</code>
+</li>
 <li>Fix: <a href="https://github.com/r-lidar/lasR/issues/265" class="external-link">#265</a> VPC without epsg.</li>
 </ul></div>
     <div class="section level2">

@@ -16,7 +16,8 @@ classify_with_ivf(res = 5, n = 6L, class = 18L)
 
 - res:
 
-  numeric. Resolution of the voxels.
+  numeric. Resolution of the voxels. Can be a vector of 3 for x,y and z
+  resolutions
 
 - n:
 

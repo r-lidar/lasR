@@ -11,7 +11,9 @@ corresponding to the original collection of files.
 write_las(
   ofile = paste0(tempdir(), "/*.las"),
   filter = "",
-  keep_buffer = FALSE
+  keep_buffer = FALSE,
+  version = NULL,
+  pdrf = NULL
 )
 
 write_copc(
@@ -47,6 +49,17 @@ write_pcd(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
 - keep_buffer:
 
   bool. The buffer is removed to write file but it can be preserved.
+
+- version:
+
+  integer. LAS format minor version to write. NULL or NA means it is
+  auto-detected based on the attributes of the point cloud. It writes
+  either LAS 1.2 or LAS 1.4
+
+- pdrf:
+
+  integer. LAS point data record format. NULL or NA means it is
+  auto-detected based on the attributes of the point cloud.
 
 - max_depth:
 
@@ -87,5 +100,5 @@ tri  <- triangulate(filter = keep_ground())
 normalize <- tri + transform_with(tri)
 pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 exec(pipeline, on = f)
-#> [1] "/tmp/RtmpXXWUgg/Topography_norm.las"
+#> [1] "/tmp/Rtmp35k4wL/Topography_norm.las"
 ```

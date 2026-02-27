@@ -11,7 +11,7 @@ attribute can be populated later in another stage"></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.17.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,11 @@ attribute can be populated later in another stage</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">add_extrabytes</span><span class="op">(</span><span class="va">data_type</span>, <span class="va">name</span>, <span class="va">description</span>, scale <span class="op">=</span> <span class="fl">1</span>, offset <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">remove_attribute</span><span class="op">(</span><span class="va">name</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">keep_attributes</span><span class="op">(</span><span class="va">names</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">remove_attribute</span><span class="op">(</span><span class="va">name</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">remove_attributes</span><span class="op">(</span><span class="va">names</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -73,7 +77,7 @@ attribute can be populated later in another stage</p>
 
 
 <dt id="arg-name">name<a class="anchor" aria-label="anchor" href="#arg-name"></a></dt>
-<dd><p>character. The name of the extra bytes attribute to add or remove to the file.</p></dd>
+<dd><p>character. The name of the attribute to add or remove to the file.</p></dd>
 
 
 <dt id="arg-description">description<a class="anchor" aria-label="anchor" href="#arg-description"></a></dt>
@@ -83,6 +87,10 @@ attribute can be populated later in another stage</p>
 <dt id="arg-scale-offset">scale, offset<a class="anchor" aria-label="anchor" href="#arg-scale-offset"></a></dt>
 <dd><p>numeric. The scale and offset of the data. See LAS specification. Leave unchanged
 if not working with LAS files.</p></dd>
+
+
+<dt id="arg-names">names<a class="anchor" aria-label="anchor" href="#arg-names"></a></dt>
+<dd><p>character vector. The names of attribute to add or remove to the file.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -1,4 +1,4 @@
-# Add RGB attributes to a LAS file
+# Add/remove RGB attributes to a LAS file
 
 Modifies the LAS format to convert into a format with RGB attributes.
 Values are zeroed: the underlying point cloud is edited to be
@@ -10,6 +10,8 @@ values are preserved.
 
 ``` r
 add_rgb()
+
+remove_rgb()
 ```
 
 ## Value
@@ -25,5 +27,5 @@ f <- system.file("extdata", "Example.las", package="lasR")
 
 pipeline <- add_rgb() + write_las()
 exec(pipeline, on = f)
-#> [1] "/tmp/RtmpXXWUgg/Example.las"
+#> [1] "/tmp/Rtmp35k4wL/Example.las"
 ```

@@ -14,6 +14,8 @@ tempshp()
 templas()
 
 templaz()
+
+temppcd()
 ```
 
 ## Value
@@ -24,7 +26,7 @@ string. Path to a temporary file.
 
 ``` r
 tempshp()
-#> [1] "/tmp/RtmpXXWUgg/file21b8533849eb.shp"
+#> [1] "/tmp/Rtmp35k4wL/file22611e4bc3da.shp"
 templaz()
-#> [1] "/tmp/RtmpXXWUgg/file21b838954902.laz"
+#> [1] "/tmp/Rtmp35k4wL/file22614c2dc64.laz"
 ```
