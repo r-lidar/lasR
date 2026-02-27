@@ -84,7 +84,7 @@ public:
   virtual void set_crs(const CRS& crs) { this->crs = crs; };
   virtual bool set_output_file(const std::string& file) { ofile = file; return true; };
   virtual bool set_input_file_name(const std::string& file) { return true; };
-  virtual void set_header(Header*& header) { return; };
+  virtual bool set_header(Header*& header) { return true; };
   virtual bool set_chunk(Chunk& chunk);
   virtual bool set_parameters(const nlohmann::json&) { return true; };
   virtual bool is_streamable() const { return false; };

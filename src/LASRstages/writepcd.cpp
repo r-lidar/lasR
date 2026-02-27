@@ -103,7 +103,7 @@ bool LASRpcdwriter::process(PointCloud*& las)
   return true;
 }
 
-void LASRpcdwriter::set_header(Header*& header)
+bool LASRpcdwriter::set_header(Header*& header)
 {
   // We are receiving a new header because a reader start reading a new file
 
@@ -112,12 +112,22 @@ void LASRpcdwriter::set_header(Header*& header)
   if (pcdio)
   {
     pcdio->reset_accessor();
-    return;
+    return true;
   }
 
-  pcdio = new PCDio();
-  pcdio->init(header);
-  pcdio->set_binary_mode(binary);
+  try
+  {
+    pcdio = new PCDio();
+    pcdio->init(header);
+    pcdio->set_binary_mode(binary);
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
+    return false;
+  }
+
+  return true;
 }
 
 bool LASRpcdwriter::set_chunk(Chunk& chunk)

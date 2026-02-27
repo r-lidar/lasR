@@ -227,6 +227,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/csf.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/edit.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/focal.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/ipf.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/ivf.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/loadmatrix.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/loadraster.cpp

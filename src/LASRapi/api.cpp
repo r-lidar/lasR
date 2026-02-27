@@ -30,6 +30,8 @@ Pipeline add_rgb()
 
 Pipeline classify_with_sor(int k, int m, int classification)
 {
+  if (k < 2)  throw std::invalid_argument("Invalid argument: impossible to compute standard deviation with less than 2-nearest neighbors");
+
   Stage s("classify_with_sor");
   s.set("k", k);
   s.set("m", m);
@@ -38,10 +40,41 @@ Pipeline classify_with_sor(int k, int m, int classification)
   return Pipeline(s);
 }
 
-Pipeline classify_with_ivf(double res, int n, int classification)
+Pipeline classify_with_ipf(double r, int n, int classification)
 {
+  if (r <= 0)  throw std::invalid_argument("Invalid argument: radius must be positive.");
+  if (n < 0)   throw std::invalid_argument("Invalid argument: neighborhood must be positive.");
+
+  Stage s("classify_with_ipf");
+  s.set("radius", r);
+  s.set("n", n);
+  s.set("class", classification);
+
+  return Pipeline(s);
+}
+
+Pipeline classify_with_ivf(std::vector<double> res, int n, int classification)
+{
+  size_t nv = res.size();
+  if (n < 0)       throw std::invalid_argument("Invalid argument: neighborhood must be positive.");
+  if (nv == 0)     throw std::invalid_argument("Invalid argument: resolution is empty.");
+  if (nv > 1)
+  {
+    if (nv != 3)     throw std::invalid_argument("Invalid argument: res must be of length 3.");
+    if (res[0] < 0)  throw std::invalid_argument("Invalid argument: resolution must be positive.");
+    if (res[1] < 0)  throw std::invalid_argument("Invalid argument: resolution must be positive.");
+    if (res[2] < 0)  throw std::invalid_argument("Invalid argument: resolution must be positive.");
+  }
+  else
+  {
+    res.push_back(res[0]);
+    res.push_back(res[0]);
+  }
+
   Stage s("classify_with_ivf");
-  s.set("res", res);
+  s.set("res_x", res[0]);
+  s.set("res_y", res[1]);
+  s.set("res_z", res[2]);
   s.set("n", n);
   s.set("class", classification);
 
@@ -333,6 +366,36 @@ Pipeline remove_attribute(std::string name)
   return Pipeline(s);
 }
 
+Pipeline remove_attributes(std::vector<std::string> names)
+{
+  static const std::vector<std::string> forbidden = {"x", "X", "y", "Y", "z", "Z"};
+  for (const auto& name : names)
+  {
+    if (std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end())
+      throw std::invalid_argument("Removing point coordinates is not allowed");
+  }
+
+  Stage s("remove_attributes");
+  s.set("names", names);
+
+  return Pipeline(s);
+}
+
+Pipeline remove_rgb()
+{
+  Stage s("remove_rgb");
+  return Pipeline(s);
+}
+
+Pipeline keep_attributes(std::vector<std::string> names)
+{
+  Stage s("remove_attributes");
+  s.set("keep", names);
+
+  return Pipeline(s);
+}
+
+
 Pipeline set_crs_epsg(int epsg)
 {
   Stage s("set_crs");
@@ -456,12 +519,38 @@ Pipeline transform_with(std::string connect_uid, std::string operation, std::str
   return Pipeline(s);
 }
 
-Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep_buffer)
+Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep_buffer, unsigned char version, unsigned char pdrf)
 {
   Stage s("write_las");
   s.set("output", ofile);
   s.set("filter", filter);
   s.set("keep_buffer", keep_buffer);
+  if (version != 0xFF)
+  {
+    if (version < 0 || version > 4)
+      throw std::invalid_argument("Invalid argument 'version'. Valid LAS versions are 0,1,2,3 and 4");
+
+    s.set("version", version);
+  }
+  if (pdrf != 0xFF)
+  {
+    if (pdrf < 0 || pdrf > 10)
+      throw std::invalid_argument("Invalid argument 'pdrf'. Valid LAS pdrf are 0 to 10");
+
+    s.set("pdrf", pdrf);
+  }
+
+  if ((version) != 0xFF && (pdrf != 0xFF))
+  {
+    if ((pdrf >= 6) && (version < 4))
+      throw std::invalid_argument("Invalid argument pdrf > 5 is not compatible with version < 4");
+
+    if ((pdrf >= 4) && (version < 3))
+      throw std::invalid_argument("Invalid argument pdrf > 3 is not compatible with version < 3");
+
+    if ((pdrf >= 2) && (version < 2))
+      throw std::invalid_argument("Invalid argument pdrf > 1 is not compatible with version < 2");
+  }
 
   return Pipeline(s);
 }

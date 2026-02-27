@@ -5,7 +5,12 @@
 
 bool LASRivf::process(PointCloud*& las)
 {
-  // Stores for a given voxel the number of point in its 27 voxels neighborhood
+  // 1. Setup Resolutions (Assuming these are members or passed in)
+  // If your class only has 'res', you need to add res_y and res_z members.
+  double res_x = this->res_x;
+  double res_y = this->res_y;
+  double res_z = this->res_z;
+
   std::unordered_map<Voxel, int, VoxelHash> uregistry;
   std::vector<int> vregistry;
   bool use_vregistry = false;
@@ -17,19 +22,28 @@ bool LASRivf::process(PointCloud*& las)
   double rymax = las->header->max_y;
   double rzmax = las->header->max_z;
 
-  rxmin = ROUNDANY(rxmin - 0.5 * res, res);
-  rymin = ROUNDANY(rymin - 0.5 * res, res);
-  rzmin = ROUNDANY(rzmin - 0.5 * res, res);
-  rxmax = ROUNDANY(rxmax + 0.5 * res, res);
-  rymax = ROUNDANY(rymax + 0.5 * res, res);
-  rzmax = ROUNDANY(rzmax + 0.5 * res, res);
+  // 2. Align Bounding Box: Use specific resolution for each axis
+  rxmin = ROUNDANY(rxmin - 0.5 * res_x, res_x);
+  rymin = ROUNDANY(rymin - 0.5 * res_y, res_y);
+  rzmin = ROUNDANY(rzmin - 0.5 * res_z, res_z);
+  rxmax = ROUNDANY(rxmax + 0.5 * res_x, res_x);
+  rymax = ROUNDANY(rymax + 0.5 * res_y, res_y);
+  rzmax = ROUNDANY(rzmax + 0.5 * res_z, res_z);
 
-  int length = (rxmax - rxmin) / res;
-  int width  = (rymax - rymin) / res;
-  int height = (rzmax - rzmin) / res;
-  size_t nvoxels = (size_t)length*(size_t)width*(size_t)height;
+  // 3. Calculate Grid Dimensions
+  // Ensure we don't divide by zero (safety check) and use floor/ceil correctly
+  int length = (int)((rxmax - rxmin) / res_x);
+  int width  = (int)((rymax - rymin) / res_y);
+  int height = (int)((rzmax - rzmin) / res_z);
 
-  if (!force_map && nvoxels < INT_MAX/sizeof(int)) // 256 MB
+  // Safety clamp for empty dimensions (e.g. flat clouds)
+  if (length < 1) length = 1;
+  if (width < 1) width = 1;
+  if (height < 1) height = 1;
+
+  size_t nvoxels = (size_t)length * (size_t)width * (size_t)height;
+
+  if (!force_map && nvoxels < INT_MAX/sizeof(int))
   {
     vregistry.resize(nvoxels);
     std::fill(vregistry.begin(), vregistry.end(), 0);
@@ -41,34 +55,41 @@ bool LASRivf::process(PointCloud*& las)
   progress->set_prefix("Isolated voxels");
 
   Voxel ukey;
-  int vkey;
+  // Use size_t for vkey to prevent overflow during calculation if grid is large
+  size_t vkey;
+
+  // Pre-calculate inverse resolution for speed (multiplication is faster than division)
+  double inv_res_x = 1.0 / res_x;
+  double inv_res_y = 1.0 / res_y;
+  double inv_res_z = 1.0 / res_z;
 
   while (las->read_point())
   {
-    int nx = std::floor((las->point.get_x() - rxmin) / res);
-    int ny = std::floor((las->point.get_y() - rymin) / res);
-    int nz = std::floor((las->point.get_z() - rzmin) / res);
+    // 4. Update Index Calculation
+    int nx = std::floor((las->point.get_x() - rxmin) * inv_res_x);
+    int ny = std::floor((las->point.get_y() - rymin) * inv_res_y);
+    int nz = std::floor((las->point.get_z() - rzmin) * inv_res_z);
 
-    // Add one in the 27 neighboring voxels of this point
     for (int i : {-1,0,1})
     {
       for (int j : {-1,0,1})
       {
         for (int k : {-1,0,1})
         {
-          if (i == 0 && j == 0 && k == 0)
-            continue;
+          if (i == 0 && j == 0 && k == 0) continue;
 
-          int xi = nx+i;
-          int yj = ny+j;
-          int zk = nz+k;
+          int xi = nx + i;
+          int yj = ny + j;
+          int zk = nz + k;
 
+          // Boundary checks
           if (xi < 0 || xi >= length || yj < 0 || yj >= width || zk < 0 || zk >= height)
-            continue; // This happens on the edges
+            continue;
 
           if (use_vregistry)
           {
-            vkey = xi + yj*length + zk*length*width;
+            // 5. Update flattening logic
+            vkey = (size_t)xi + (size_t)yj * length + (size_t)zk * length * width;
             vregistry[vkey]++;
           }
           else
@@ -86,20 +107,20 @@ bool LASRivf::process(PointCloud*& las)
 
   AttributeAccessor set_and_get_classification("Classification");
 
-  // Loop again through each point.
-  // Check if the number of points in its neighbourhood is above the threshold
+  // Second Pass
   while (las->read_point())
   {
-    int nx = std::floor((las->point.get_x() - rxmin) / res);
-    int ny = std::floor((las->point.get_y() - rymin) / res);
-    int nz = std::floor((las->point.get_z() - rzmin) / res);
+    // Repeat index calculation
+    int nx = std::floor((las->point.get_x() - rxmin) * inv_res_x);
+    int ny = std::floor((las->point.get_y() - rymin) * inv_res_y);
+    int nz = std::floor((las->point.get_z() - rzmin) * inv_res_z);
 
     int count;
 
     if (use_vregistry)
     {
-      vkey = nx + ny*length + nz*length*width;
-      count = vregistry[vkey] ;
+      vkey = (size_t)nx + (size_t)ny * length + (size_t)nz * length * width;
+      count = vregistry[vkey];
     }
     else
     {
@@ -121,7 +142,10 @@ bool LASRivf::process(PointCloud*& las)
 
 bool LASRivf::set_parameters(const nlohmann::json& stage)
 {
-  res = stage.value("res", 5.0);
+  double base_res = stage.value("res", 5.0);
+  res_x = stage.value("res_x", base_res);
+  res_y = stage.value("res_y", base_res);
+  res_z = stage.value("res_z", base_res);
   n = stage.value("n", 6);
   classification = stage.value("class", 18);
   force_map = stage.value("force_map", false);

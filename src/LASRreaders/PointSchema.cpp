@@ -82,9 +82,43 @@ void AttributeSchema::remove_attribute(const std::string& attribute_name)
   if (idx < 0) return;
 
   const Attribute& attr_to_remove = attributes[idx];
-  size_t size_to_remove = attr_to_remove.size;
 
-  // Erase the attribute from the vector
+  size_t offset_to_remove = attr_to_remove.offset;
+  size_t size_to_remove   = attr_to_remove.size;
+
+  // If BIT, remove *all* bit attributes sharing this byte
+  if (attr_to_remove.type == BIT)
+  {
+    // Gather indices of all bit attributes in the same byte
+    std::vector<int> bit_indices;
+    for (int i = 0; i < (int)attributes.size(); ++i)
+    {
+      const Attribute& a = attributes[i];
+      if (a.type == BIT && a.offset == offset_to_remove)
+        bit_indices.push_back(i);
+    }
+
+    // Remove them in reverse order (so indices stay valid)
+    for (auto it = bit_indices.rbegin(); it != bit_indices.rend(); ++it)
+    {
+      attributes.erase(attributes.begin() + *it);
+    }
+
+    // Remove the entire byte from layout
+    size_to_remove = 1;
+
+    // Adjust offsets of subsequent attributes
+    for (size_t i = 0; i < attributes.size(); ++i)
+    {
+      if (attributes[i].offset > offset_to_remove)
+        attributes[i].offset -= size_to_remove;
+    }
+
+    total_point_size -= size_to_remove;
+    return;
+  }
+
+  // Otherwise, regular (non-bit) attribute removal
   attributes.erase(attributes.begin() + idx);
 
   // Adjust offsets of subsequent attributes
@@ -93,9 +127,9 @@ void AttributeSchema::remove_attribute(const std::string& attribute_name)
     attributes[i].offset -= size_to_remove;
   }
 
-  // Update total point size
   total_point_size -= size_to_remove;
 }
+
 
 const Attribute* AttributeSchema::find_attribute(const std::string& name) const
 {

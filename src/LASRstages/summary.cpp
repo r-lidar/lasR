@@ -92,7 +92,7 @@ void LASRsummary::merge(const Stage* other)
 
   merge_maps(npoints_per_return, o->npoints_per_return);
   merge_maps(npoints_per_class, o->npoints_per_class);
-  merge_maps(npoints_per_sdf, o->npoints_per_return);
+  merge_maps(npoints_per_sdf, o->npoints_per_sdf);
   merge_maps(zhistogram, o->zhistogram);
   merge_maps(ihistogram, o->ihistogram);
 

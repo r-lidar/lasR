@@ -356,17 +356,49 @@ void LASio::init(const Header* header)
 
   int version_minor = 2;
 
-  bool has_gps = header->schema.find_attribute("gpstime") != nullptr;
-  bool has_rgb = header->schema.find_attribute("R") != nullptr;
-  bool has_nir = header->schema.find_attribute("NIR") != nullptr;
-  bool has_overlap = header->schema.find_attribute("Overlap") != nullptr;
 
-  int pdf = guess_point_data_format(has_gps, has_rgb, has_nir, has_overlap);
+  int pdf = header->point_data_format;
+  if (pdf == 0xFF) // Autodetect
+  {
+    bool has_gps = header->schema.find_attribute("gpstime") != nullptr;
+    bool has_rgb = header->schema.find_attribute("R") != nullptr;
+    bool has_nir = header->schema.find_attribute("NIR") != nullptr;
+    bool has_overlap = header->schema.find_attribute("Overlap") != nullptr;
+    pdf = guess_point_data_format(has_gps, has_rgb, has_nir, has_overlap);
+  }
 
-  if (header->signature != "LASF")
+  version_minor = header->version_minor;
+  if (version_minor == 0xFF) // Autodetect
+  {
     version_minor = (pdf >= 6) ? 4 : 2;
-  else
-    version_minor = header->version_minor;
+  }
+
+  if ((pdf >= 6) && (version_minor < 4))
+  {
+    throw std::invalid_argument(
+        "Invalid format: pdrf > 5 is not compatible with version < 4. "
+        "This error likely occurs because the version was enforced manually, "
+        "while the pdrf value was inferred from the point attributes and ended up being incompatible."
+    );
+  }
+
+  if ((pdf >= 4) && (version_minor < 3))
+  {
+    throw std::invalid_argument(
+        "Invalid format: pdrf > 3 is not compatible with version < 3. "
+        "This error likely occurs because the version was enforced manually, "
+        "while the pdrf value was inferred from the point attributes and ended up being incompatible."
+    );
+  }
+
+  if ((pdf >= 2) && (version_minor < 2))
+  {
+    throw std::invalid_argument(
+        "Invalid format: pdrf > 1 is not compatible with version < 2. "
+        "This error likely occurs because the version was enforced manually, "
+        "while the pdrf value was inferred from the point attributes and ended up being incompatible."
+    );
+  }
 
   lasheader = new LASheader();
   lasheader->file_source_ID       = 0;

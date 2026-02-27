@@ -694,33 +694,113 @@ bool PointCloud::add_attribute(const Attribute& attribute)
 
 bool PointCloud::remove_attribute(const std::string& name)
 {
-  // Find attribute
-  const Attribute* attr = header->schema.find_attribute(name);
-  if (!attr) return true; // nothing to remove
+  return remove_attributes({name});
+}
 
-  size_t offset = attr->offset;
-  size_t size_to_remove = attr->size;
+bool PointCloud::remove_attributes(const std::vector<std::string>& names_to_remove)
+{
+  if (names_to_remove.empty()) return true;
+
+  std::vector<std::string> actual_names_to_removes;
+
+  struct RemoveInfo
+  {
+    size_t offset;
+    size_t size;
+  };
+
+  std::vector<RemoveInfo> to_remove;
+  size_t total_remove_size = 0;
+  std::unordered_set<size_t> removed_byte_offsets;
+
+  // Step 1: Build list of attributes to remove
+  for (const auto& name : names_to_remove)
+  {
+    const Attribute* attr = header->schema.find_attribute(name);
+
+    if (!attr) continue;   // Attribute not found
+
+    size_t remove_offset = attr->offset;
+    size_t remove_size   = attr->size;
+
+    // If bit attribute -> remove the entire byte
+    if (attr->type == BIT) remove_size = 1;
+
+    // Skip if we've already removed this byte
+    if (removed_byte_offsets.count(remove_offset)) continue;
+
+    to_remove.push_back({remove_offset, remove_size});
+    actual_names_to_removes.push_back(name);
+    removed_byte_offsets.insert(remove_offset);
+    total_remove_size += remove_size;
+  }
+
+  if (to_remove.empty()) return true;
+
+  // Step 2: Sort and merge overlapping or consecutive remove ranges
+  std::sort(to_remove.begin(), to_remove.end(),  [](const RemoveInfo& a, const RemoveInfo& b) { return a.offset < b.offset; });
+  std::vector<RemoveInfo> merged;
+  merged.reserve(to_remove.size());
+  merged.push_back(to_remove.front());
+  for (size_t i = 1; i < to_remove.size(); ++i)
+  {
+    auto& prev = merged.back();
+    const auto& curr = to_remove[i];
+
+    if (curr.offset <= prev.offset + prev.size)
+    {
+      // Overlapping or consecutive: merge
+      size_t end = std::max(prev.offset + prev.size, curr.offset + curr.size);
+      prev.size = end - prev.offset;
+    }
+    else
+    {
+      merged.push_back(curr);
+    }
+  }
+  to_remove.swap(merged);
+
   size_t old_point_size = header->schema.total_point_size;
-  size_t new_point_size = old_point_size - size_to_remove;
-  size_t tail_size = old_point_size - (offset + size_to_remove);
+  size_t new_point_size = old_point_size - total_remove_size;
 
-  // For each point from last to first:
-  // We copy head bytes before attribute, then tail bytes after attribute,
-  // packed together tightly in new_point_size bytes.
-  for (size_t i = 0; i < npoints ; ++i)
+  // Step 3: Copy only the bytes we want to keep
+  for (size_t i = 0; i < npoints; ++i)
   {
     unsigned char* src = buffer + i * old_point_size;
     unsigned char* dst = buffer + i * new_point_size;
 
-    // Copy head bytes (before removed attribute)
-    if (offset > 0) memmove(dst, src, offset);
+    size_t dst_offset = 0;
+    size_t last_offset = 0;
 
-    // Copy tail bytes (after removed attribute)
-    if (tail_size > 0) memmove(dst + offset, src + offset + size_to_remove, tail_size);
+    for (const auto& r : to_remove)
+    {
+      if (r.offset < last_offset)
+      {
+        last_error = "Internal error: overlapping address attribute detected!";
+        return false;
+      }
+
+      size_t chunk_size = r.offset - last_offset; // bytes before this attribute
+      if (chunk_size > 0)
+      {
+        memmove(dst + dst_offset, src + last_offset, chunk_size);
+        dst_offset += chunk_size;
+      }
+      last_offset = r.offset + r.size;
+    }
+
+    size_t tail_size = old_point_size - last_offset;
+    if (tail_size > 0)
+    {
+      memmove(dst + dst_offset, src + last_offset, tail_size);
+    }
   }
 
-  // Update schema
-  header->schema.remove_attribute(name);
+  // Step 4: Update schema
+  for (const auto& name : actual_names_to_removes)
+  {
+    header->schema.remove_attribute(name);
+  }
 
   return true;
 }
@@ -779,6 +859,32 @@ bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
   return true;
 }
 
+bool PointCloud::keep_attributes(const std::vector<std::string>& names)
+{
+  // Step 1: Gather all current attribute names
+  std::vector<std::string> all_names;
+  for (const auto& attr : header->schema.attributes)
+    all_names.push_back(attr.name);
+
+  // Step 2: Build list of attributes to remove
+  std::vector<std::string> to_remove;
+  for (const auto& name : all_names)
+  {
+    // Keep the ones requested, plus X/Y/Z always
+    if (name == "x" || name == "X" || name == "y" || name == "Y" || name == "z" || name == "Z" || name == "flags")
+      continue;
+
+    if (std::find(names.begin(), names.end(), name) == names.end())
+    {
+      to_remove.push_back(name);
+    }
+  }
+
+  // Step 3: Remove the unwanted attributes
+  return remove_attributes(to_remove);
+}
+
+
 /*void PointCloud::set_index(bool index)
 {
   clean_spatialindex();
@@ -801,6 +907,11 @@ bool PointCloud::add_rgb()
   Attribute B("B", AttributeType::INT16, 0, 0, "Blue channe");
   add_attributes({R,G,B});
   return true;
+}
+
+bool PointCloud::remove_rgb()
+{
+  return remove_attributes({"R","G","B"});
 }
 
 bool PointCloud::build_kdtree()

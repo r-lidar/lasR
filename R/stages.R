@@ -6,7 +6,8 @@
 #' zeroed: the underlying point cloud is edited to support a new extrabyte attribute. This new
 #' attribute can be populated later in another stage
 #'
-#' @param name character. The name of the extra bytes attribute to add or remove to the file.
+#' @param name character. The name of the attribute to add or remove to the file.
+#' @param names character vector. The names of attribute to add or remove to the file.
 #' @param description character. A short description of the extra bytes attribute to add to the file (32 characters).
 #' @param data_type character. The data type of the extra bytes attribute. Can be "uchar", "char", "ushort",
 #' "short", "uint", "int", "uint64", "int64", "float", "double".
@@ -27,7 +28,7 @@ add_extrabytes = function(data_type, name, description, scale = 1, offset = 0)
   return(.APISTAGES$add_attribute(data_type, name, description, scale, offset))
 }
 
-#' Add RGB attributes to a LAS file
+#' Add/remove RGB attributes to a LAS file
 #'
 #' Modifies the LAS format to convert into a format with RGB attributes. Values are zeroed: the underlying
 #' point cloud is edited to be transformed in a format that supports RGB. RGB can be populated later
@@ -215,12 +216,31 @@ classify_with_sor = function(k = 8, m = 6, class = 18L) { .APISTAGES$classify_wi
 
 #' Classify noise points
 #'
+#' Classify points using Isolated Point Filter (IPF). The stage identifies points that have only a few other
+#' points in their surrounding sphere neighborhood and edits the points to assign a target classification.
+#' Used with class 18, it classifies points as noise. With a r = 1 and n = 0: if a point has 0
+#' neighbor within a radius of 1 m it is reclassified. With a r = 2 and n = 1: if a point has 0 or 1
+#' neighbor within a radius of 2 m it is reclassified. This stage modifies the point cloud in the pipeline
+#' but does not produce any output.
+#'
+#' @param r numeric. Radius of the sphere.
+#' @param n integer. The maximal number of 'other points' in the sphere. Less than that and the point
+#' is reclassified
+#' @param class integer. The class to assign to the points that match the condition.
+#' @template return-pointcloud
+#'
+#' @export
+classify_with_ipf = function(r = 1, n = 0L, class = 18L) { .APISTAGES$classify_with_ipf(r, n, class) }
+
+
+#' Classify noise points
+#'
 #' Classify points using Isolated Voxel Filter (IVF). The stage identifies points that have only a few other
 #' points in their surrounding 3 x 3 x 3 = 27 voxels and edits the points to assign a target classification.
 #' Used with class 18, it classifies points as noise. This stage modifies the point cloud in the pipeline
 #' but does not produce any output.
 #'
-#' @param res numeric. Resolution of the voxels.
+#' @param res numeric. Resolution of the voxels. Can be a vector of 3 for x,y and z resolutions
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
 #' @param class integer. The class to assign to the points that match the condition.
 #' @template return-pointcloud
@@ -492,6 +512,12 @@ info = function(f)
     return(invisible())
   }
 }
+
+# ===== K ====
+
+#' @export
+#' @rdname add_attribute
+keep_attributes = function(names){ .APISTAGES$keep_attributes(names) }
 
 # ===== L =====
 
@@ -996,6 +1022,13 @@ region_growing = function(raster, seeds, th_tree = 2, th_seed = 0.45, th_cr = 0.
 #' @rdname add_attribute
 remove_attribute = function(name) { .APISTAGES$remove_attribute(name) }
 
+#' @export
+#' @rdname add_attribute
+remove_attributes = function(names) { .APISTAGES$remove_attributes(names) }
+
+#' @export
+#' @rdname add_rgb
+remove_rgb = function() { .APISTAGES$remove_rgb() }
 
 # ==== S =====
 
@@ -1307,6 +1340,10 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' circumstances, e.g., to merge some files.
 #' @param keep_buffer bool. The buffer is removed to write file but it can be preserved.
 #' @param binary boolean. Write binary or ascii PCD files.
+#' @param version integer. LAS format minor version to write. NULL or NA means it is auto-detected based
+#' on the attributes of the point cloud. It writes either LAS 1.2 or LAS 1.4
+#' @param pdrf integer. LAS point data record format. NULL or NA means it is auto-detected based
+#' on the attributes of the point cloud.
 #' @template param-filter
 #'
 #' @examples
@@ -1319,10 +1356,14 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' @export
 #' @md
 #' @rdname write
-write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE)
+write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE, version = NULL, pdrf = NULL)
 {
   validate_filter(filter)
-  return(.APISTAGES$write_las(ofile, filter, keep_buffer))
+  if (is.null(version)) version = 0xFF
+  if (is.null(pdrf)) pdrf = 0xFF
+  if (is.na(version)) version = 0xFF
+  if (is.na(pdrf)) pdrf = 0xFF
+  return(.APISTAGES$write_las(ofile, filter, keep_buffer, version, pdrf))
 }
 
 #' @export

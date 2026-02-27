@@ -267,9 +267,30 @@ PYBIND11_MODULE(pylasr, m) {
           "Classify noise using Statistical Outlier Removal",
           py::arg("k") = 8, py::arg("m") = 6, py::arg("classification") = 18);
 
-    m.def("classify_with_ivf", &api::classify_with_ivf,
-          "Classify noise using Isolated Voxel Filter",
-          py::arg("res") = 5.0, py::arg("n") = 6, py::arg("classification") = 18);
+    m.def("classify_with_ipf", &api::classify_with_ipf,
+          "Classify noise using Isolated Point Filter",
+          py::arg("r") = 1.0, py::arg("n") = 0, py::arg("classification") = 18);
+
+    m.def("classify_with_ivf",
+          [](double res, int n, int classification)
+          {
+            // Lambda accepts double, wraps it into a 1-element vector for backward compatibility
+            return api::classify_with_ivf({res}, n, classification);
+          },
+          "Classify noise using Isolated Voxel Filter (Cubic)",
+          py::arg("res") = 5.0,
+          py::arg("n") = 6,
+          py::arg("classification") = 18
+    );
+
+    // New Functionality Overload (Vector input)
+    m.def("classify_with_ivf",
+          &api::classify_with_ivf,
+          "Classify noise using Isolated Voxel Filter (Non-Cubic)",
+          py::arg("res") = std::vector<double>{5.0, 5.0, 5.0},
+          py::arg("n") = 6,
+          py::arg("classification") = 18
+    );
 
     m.def("classify_with_csf", &api::classify_with_csf,
           "Classify ground using Cloth Simulation Filter",
@@ -296,6 +317,17 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("remove_attribute", &api::remove_attribute,
           "Remove an attribute from the point cloud",
           py::arg("name"));
+
+    m.def("remove_attributes", &api::remove_attributes,
+          "Remove multiple attributes from the point cloud",
+          py::arg("names"));
+
+    m.def("remove_rgb", &api::remove_rgb,
+          "Remove RGB attributes from the point cloud");
+
+    m.def("keep_attributes", &api::keep_attributes,
+          "Keep only specified attributes in the point cloud",
+          py::arg("names"));
 
     m.def("sort_points", &api::sort_points,
           "Sort points",
@@ -470,10 +502,24 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("filter") = std::vector<std::string>{""});
 
     // Writers
-    m.def("write_las", &api::write_las,
+    m.def("write_las",
+          [](const std::string &ofile,
+             std::vector<std::string> filter = {""},
+             bool keep_buffer = false,
+             std::optional<unsigned char> version = std::nullopt,
+             std::optional<unsigned char> pdrf = std::nullopt)
+          {
+              unsigned char v = version.has_value() ? version.value() : 0xFF;
+              unsigned char p = pdrf.has_value() ? pdrf.value() : 0xFF;
+
+              return api::write_las(ofile, filter, keep_buffer, v, p);
+          },
           "Write LAS/LAZ file",
-          py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""},
-          py::arg("keep_buffer") = false);
+          py::arg("ofile"),
+          py::arg("filter") = std::vector<std::string>{""},
+          py::arg("keep_buffer") = false,
+          py::arg("version") = py::none(),
+          py::arg("pdrf") = py::none());
 
     m.def("write_copc", &api::write_copc,
           "Write COPC file",

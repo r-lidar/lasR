@@ -11,7 +11,7 @@ public:
   LASRlaswriter();
   ~LASRlaswriter();
   bool set_chunk(Chunk& chunk) override;
-  void set_header(Header*& header) override;
+  bool set_header(Header*& header) override;
   bool set_input_file_name(const std::string& file) override;
   bool set_output_file(const std::string& file) override;
   bool process(Point*& p) override;
@@ -29,8 +29,10 @@ private:
   void clean_copc_ext(std::string& path);
 
   bool keep_buffer;
-  int copc_density;
-  int copc_depth;
+  short copc_density;
+  short copc_depth;
+  unsigned char version_minor;
+  unsigned char point_format;
   std::vector<AttributeAccessor> core_accessors;
 
   LASio* lasio;

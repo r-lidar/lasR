@@ -54,7 +54,17 @@ bool Vector::create_file()
   for (const auto& field : fields)
   {
     OGRFieldDefn attr(field.first.c_str(), field.second);
-    layer->CreateField(&attr);
+    OGRErr err = layer->CreateField(&attr);
+
+    if (err != OGRERR_NONE)
+    {
+      CPLErr lastErrType = CPLGetLastErrorType();   // CE_None, CE_Debug, CE_Warning, CE_Failure, CE_Fatal
+      CPLErrorNum lastErrNo = CPLGetLastErrorNo();  // Numeric GDAL error code
+      const char* lastErrMsg = CPLGetLastErrorMsg(); // Human-readable message
+
+      last_error =  lastErrMsg;
+      return false;
+    }
   }
 
   return true;

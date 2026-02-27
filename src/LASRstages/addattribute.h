@@ -6,7 +6,7 @@
 class LASRaddattribute: public Stage
 {
 public:
-  LASRaddattribute();
+  LASRaddattribute() = default;
   bool process(PointCloud*& las) override;
   bool set_parameters(const nlohmann::json&) override;
   std::string get_name() const override { return "add_attribute"; };
@@ -22,19 +22,29 @@ private:
   std::string description;
 };
 
-class LASRremoveattribute: public Stage
+enum class AttributeOpType
+{
+  RemoveSingle,
+  RemoveMultiple,
+  Keep
+};
+
+class LASRremoveattributes: public Stage
 {
 public:
-  LASRremoveattribute();
+  LASRremoveattributes() = default;
   bool process(PointCloud*& las) override;
   bool set_parameters(const nlohmann::json&) override;
-  std::string get_name() const override { return "remove_attribute"; };
+  std::string get_name() const override { return "remove_attributes"; };
 
   // multi-threading
-  LASRremoveattribute* clone() const override { return new LASRremoveattribute(*this); };
+  LASRremoveattributes* clone() const override { return new LASRremoveattributes(*this); };
 
 private:
-  std::string name;
+  AttributeOpType op_type = AttributeOpType::RemoveSingle;
+  std::string name;                 // for single remove
+  std::vector<std::string> names;   // for multiple remove or keep
+  std::string last_error;
 };
 
 #endif

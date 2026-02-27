@@ -7,7 +7,7 @@
 classify_with_ivf(res = 5, n = 6L, class = 18L)
 }
 \arguments{
-\item{res}{numeric. Resolution of the voxels.}
+\item{res}{numeric. Resolution of the voxels. Can be a vector of 3 for x,y and z resolutions}
 
 \item{n}{integer. The maximal number of 'other points' in the 27 voxels.}
 

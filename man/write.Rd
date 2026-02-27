@@ -9,7 +9,9 @@
 write_las(
   ofile = paste0(tempdir(), "/*.las"),
   filter = "",
-  keep_buffer = FALSE
+  keep_buffer = FALSE,
+  version = NULL,
+  pdrf = NULL
 )
 
 write_copc(
@@ -34,6 +36,12 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 \link{filters}.}
 
 \item{keep_buffer}{bool. The buffer is removed to write file but it can be preserved.}
+
+\item{version}{integer. LAS format minor version to write. NULL or NA means it is auto-detected based
+on the attributes of the point cloud. It writes either LAS 1.2 or LAS 1.4}
+
+\item{pdrf}{integer. LAS point data record format. NULL or NA means it is auto-detected based
+on the attributes of the point cloud.}
 
 \item{max_depth}{integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes}
 

@@ -13,6 +13,7 @@
 #include "filter.h"
 #include "focal.h"
 #include "info.h"
+#include "ipf.h"
 #include "ivf.h"
 #include "loadmatrix.h"
 #include "loadraster.h"
@@ -88,6 +89,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"add_attribute",        create_instance<LASRaddattribute>},
     {"add_rgb",              create_instance<LASRaddrgb>},
     {"classify_with_csf",    create_instance<LASRcsf>},
+    {"classify_with_ipf",    create_instance<LASRipf>},
     {"classify_with_ivf",    create_instance<LASRivf>},
     {"classify_with_sor",    create_instance<LASRsor>},
     {"edit_attribute",       create_instance<LASRedit>},
@@ -96,6 +98,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"focal",                create_instance<LASRfocal>},
     {"hulls",                create_instance<LASRboundaries>},
     {"info",                 create_instance<LASRinfo>},
+    {"keep_attributes",      create_instance<LASRremoveattributes>},
     {"load_matrix",          create_instance<LASRloadmatrix>},
     {"load_raster",          create_instance<LASRloadraster>},
     {"local_maximum",        create_instance<LASRlocalmaximum>},
@@ -103,7 +106,9 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"nothing",              create_instance<LASRnothing>},
     {"pit_fill",             create_instance<LASRpitfill>},
     {"rasterize",            create_instance<LASRrasterize>},
-    {"remove_attribute",     create_instance<LASRremoveattribute>},
+    {"remove_attribute",     create_instance<LASRremoveattributes>},
+    {"remove_attributes",    create_instance<LASRremoveattributes>},
+    {"remove_rgb",           create_instance<LASRremovergb>},
     {"sampling_pixel",       create_instance<LASRsamplingpixels>},
     {"sampling_poisson",     create_instance<LASRsamplingpoisson>},
     {"sampling_voxel",       create_instance<LASRsamplingvoxels>},

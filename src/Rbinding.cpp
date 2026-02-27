@@ -54,6 +54,7 @@ RCPP_MODULE(stages)
   function("aggregate", &api::aggregate, "Rasterize with R expression");
   function("callback", &api::callback, "Callback R function on the point cloud");
   function("classify_with_sor", &api::classify_with_sor, "Classify noise with SOR");
+  function("classify_with_ipf", &api::classify_with_ipf, "Classify noise with IPF");
   function("classify_with_ivf", &api::classify_with_ivf, "Classify noise with IVF");
   function("classify_with_csf", &api::classify_with_csf, "Classify ground with CSF");
   function("delete_points", &api::delete_points, "Delete points that match criteria");
@@ -78,6 +79,9 @@ RCPP_MODULE(stages)
   function("reader_rectangles", &api::reader_rectangles, "Read points within rectangles");
   function("region_growing", &api::region_growing, "Region growing segmentation tree segmentation");
   function("remove_attribute", &api::remove_attribute, "Remove a named attribute from the point cloud");
+  function("remove_attributes", &api::remove_attributes, "Remove named attributes from the point cloud");
+  function("remove_rgb", &api::remove_rgb, "Remove RGB from the point cloud");
+  function("keep_attributes", &api::keep_attributes, "Keep named attributes from the point cloud");
   function("set_crs_epsg", &api::set_crs_epsg, "Set CRS using an EPSG code");
   function("set_crs_wkt", &api::set_crs_wkt, "Set CRS using a WKT string");
   function("sampling_voxel", &api::sampling_voxel, "Sample the point cloud using voxel-based sampling");
