@@ -68,20 +68,12 @@ ans
 #> 61347  8159  3897 
 #> 
 #> $z_histogram
-#>   788   790   792   794   796   798   800   802   804   806   808   810   812 
-#>     1   163   265   470   596   694  1610  4955  5510 13833  9974  9865  8076 
-#>   814   816   818   820   822   824   826   828   830 
-#>  6643  4682  2958  1715   830   390   146    26     1 
+#>  394  396  398  400  402  404  406  408  410  412  414 
+#>    1  265  596 1610 5510 9974 8076 4682 1715  390   26 
 #> 
 #> $i_histogram
-#>   50  100  150  200  250  300  350  400  450  500  550  600  650  700  750  800 
-#>   25  397 1041 1576 2842 2585 2249 2051 2341 2575 2301 2529 2483 2623 2505 2697 
-#>  850  900  950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1450 1500 1550 1600 
-#> 2759 2865 2865 3242 3272 3556 3464 3231 2589 2472 3478 3747 1969  532  183  104 
-#> 1650 1700 1750 1800 1850 1900 1950 2000 2050 2100 2150 2200 2250 2300 2350 2400 
-#>   97   65   35   18    9   13    7    6    0    1    0    2    1    0    0    0 
-#> 2450 
-#>    1 
+#>  1 
+#> 25 
 #> 
 #> $crs
 #> [1] "PROJCRS[\"NAD83(CSRS) / MTM zone 7\",BASEGEOGCRS[\"NAD83(CSRS)\",DATUM[\"NAD83 Canadian Spatial Reference System\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",4617]],CONVERSION[\"MTM zone 7\",METHOD[\"Transverse Mercator\",ID[\"EPSG\",9807]],PARAMETER[\"Latitude of natural origin\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-70.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"Scale factor at natural origin\",0.9999,SCALEUNIT[\"unity\",1],ID[\"EPSG\",8805]],PARAMETER[\"False easting\",304800,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"easting (E(X))\",east,ORDER[1],LENGTHUNIT[\"metre\",1]],AXIS[\"northing (N(Y))\",north,ORDER[2],LENGTHUNIT[\"metre\",1]],USAGE[SCOPE[\"Engineering survey, topographic mapping.\"],AREA[\"Canada - Quebec - between 72°W and 69°W.\"],BBOX[45.01,-72,61.8,-69]],ID[\"EPSG\",2949]]"
