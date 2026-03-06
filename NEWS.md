@@ -1,3 +1,7 @@
+# lasR 0.18.1
+
+- Fix: #275 wrong zhistogram output in `summarize()` for bins != 2
+
 # lasR 0.18.0
 
 - New: #263 new argument `always_up` in `geometry_features()`.

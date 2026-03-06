@@ -43,10 +43,12 @@ bool LASRsummary::process(Point*& p)
 
   //(p->get_scan_direction_flag() == 0) ? npoints_per_sdf.first++ : npoints_per_sdf.second++;
 
-  int z = (int) std::round(p->get_z() / zwbin ) * zwbin;
-  int i = (int) std::round(get_intensity(p) / iwbin) * iwbin;
-  (zhistogram.find(z) == zhistogram.end()) ?  zhistogram[z] = 1 : zhistogram[z]++;
-  (ihistogram.find(i) == ihistogram.end()) ?  ihistogram[i] = 1 : ihistogram[i]++;
+  // Calculate Bin Indices (Integer keys)
+  // We divide by width and round to find which "bucket" the point falls into.
+  int z_idx = (int)std::round(p->get_z() / zwbin);
+  int i_idx = (int)std::round(get_intensity(p) / iwbin);
+  zhistogram[z_idx]++;
+  ihistogram[i_idx]++;
 
   if (metrics_engine.active())  cloud.push_back(*p);
 
@@ -195,7 +197,7 @@ SEXP LASRsummary::to_R()
   {
     hmin = zhistogram.begin()->first;
     hmax = (--zhistogram.end())->first;
-    nbins = (hmax-hmin)/2+1;
+    nbins = (hmax-hmin)/zwbin+1;
   }
   else
   {
