@@ -150,7 +150,7 @@ ans
 #> 10 POINT Z (481260.7 3812939 2...
 #> 
 #> $write_las
-#> [1] "/tmp/RtmppsKGHt/MixedConifer.las"
+#> [1] "/tmp/Rtmpzf9FCo/MixedConifer.las"
 #> 
 
 # Storing in an new attribute without geospatial output
@@ -158,5 +158,5 @@ attr <- add_extrabytes("uchar", "lm", "local maximum flag")
 lmf <- local_maximum(5, ofile = "", store_in_attribute = "lm")
 ans <- exec(attr + lmf + write_las(), on = f)
 ans
-#> [1] "/tmp/RtmppsKGHt/MixedConifer.las"
+#> [1] "/tmp/Rtmpzf9FCo/MixedConifer.las"
 ```
