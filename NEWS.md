@@ -1,4 +1,4 @@
-# lasR 0.18.1
+# lasR 0.18.2
 
 - Fix: #275 wrong zhistogram output in `summarize()` for bins != 2
 
