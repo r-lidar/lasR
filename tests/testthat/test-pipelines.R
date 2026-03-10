@@ -32,7 +32,7 @@ test_that("normalize & dtm",
   x = as.numeric(names(ans$summary$z_histogram))
   w = ans$summary$z_histogram
 
-  expect_equal(mean(x*w/sum(w)), 0.31, tolerance = 0.01)
+  expect_equal(mean(x*w/sum(w)), 0.23, tolerance = 0.01)
 
   pipeline = reader_las() + dtm(add_class = 9) + hag() + summarise() + chm(1, TRUE)
   suppressWarnings(ans <- exec(pipeline, on = f))
@@ -44,7 +44,7 @@ test_that("normalize & dtm",
   w = ans$summary$z_histogram
 
   # was not actually normalized because put in extrabyte
-  expect_equal(mean(x*w/sum(w)), 36.77, tolerance = 0.01)
+  expect_equal(mean(x*w/sum(w)), 38.47, tolerance = 0.01)
 })
 
 test_that("pipleline info works",

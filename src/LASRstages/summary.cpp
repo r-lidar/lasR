@@ -45,8 +45,8 @@ bool LASRsummary::process(Point*& p)
 
   // Calculate Bin Indices (Integer keys)
   // We divide by width and round to find which "bucket" the point falls into.
-  int z_idx = (int)std::round(p->get_z() / zwbin);
-  int i_idx = (int)std::round(get_intensity(p) / iwbin);
+  int z_idx = static_cast<int>(std::floor(p->get_z() / zwbin));
+  int i_idx = static_cast<int>(std::floor(get_intensity(p) / iwbin));
   zhistogram[z_idx]++;
   ihistogram[i_idx]++;
 
@@ -197,7 +197,7 @@ SEXP LASRsummary::to_R()
   {
     hmin = zhistogram.begin()->first;
     hmax = (--zhistogram.end())->first;
-    nbins = (hmax-hmin)/zwbin+1;
+    nbins = (hmax-hmin+1);
   }
   else
   {
@@ -209,8 +209,8 @@ SEXP LASRsummary::to_R()
   SEXP R_zhistogram_names = PROTECT(Rf_allocVector(STRSXP, nbins)); nsexpprotected++;
   for (auto i = 0 ; i < nbins ; i++)
   {
-    int key = hmin + i*zwbin;
-    std::string num = std::to_string(key);
+    int key = hmin + i;
+    std::string num = std::to_string(key*zwbin);
     SET_STRING_ELT(R_zhistogram_names, i, Rf_mkChar(num.c_str()));
     if (zhistogram.find(key) != zhistogram.end())
       REAL(R_zhistogram)[i] = (double)zhistogram[key];
@@ -223,7 +223,7 @@ SEXP LASRsummary::to_R()
   {
     hmin = ihistogram.begin()->first;
     hmax = (--ihistogram.end())->first;
-    nbins = (hmax-hmin)/iwbin+1;
+    nbins = (hmax-hmin+1);
   }
   else
   {
@@ -235,8 +235,8 @@ SEXP LASRsummary::to_R()
   SEXP R_ihistogram_names = PROTECT(Rf_allocVector(STRSXP, nbins)); nsexpprotected++;
   for (auto i = 0 ; i < nbins ; i++)
   {
-    int key = hmin + i*iwbin;
-    std::string num = std::to_string(key);
+    int key = hmin + i;
+    std::string num = std::to_string(key*iwbin);
     SET_STRING_ELT(R_ihistogram_names, i, Rf_mkChar(num.c_str()));
     if (ihistogram.find(key) != ihistogram.end())
       REAL(R_ihistogram)[i] = (double)ihistogram[key];

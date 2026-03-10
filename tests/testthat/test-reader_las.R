@@ -10,12 +10,14 @@ test_that("reader works with single file",
   pipeline = reader_las(filter = "-keep_intensity_above 100") + summarise()
 
   expect_error({u = exec(pipeline, on = f)}, NA)
-  expect_equal(u$i_histogram, c("100" = 5))
+  expect_equal(round(as.numeric(names(u$i_histogram))), c(100))
+  expect_equal(unname(u$i_histogram), c(5))
 
   pipeline = reader_las(filter = "Intensity > 50") + summarise()
 
   expect_error({u = exec(pipeline, on = f)}, NA)
-  expect_equal(u$i_histogram, c("50" = 5, "100" = 21))
+  expect_equal(round(as.numeric(names(u$i_histogram))), c(50, 100))
+  expect_equal(unname(u$i_histogram), c(21, 5))
 })
 
 test_that("reader works with multiple files",
