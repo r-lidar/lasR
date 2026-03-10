@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cstdint>
+#include <atomic>
 
 #define PROGRESSSYM "=================================================="
 
@@ -48,7 +49,7 @@ private:
   // main
   float percentage;
   float prev;
-  uint64_t current;
+  std::atomic<uint64_t> current;
   uint64_t ntotal;
   std::string prefix;
 

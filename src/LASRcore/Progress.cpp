@@ -55,8 +55,6 @@ void Progress::create_subprocess()
 // Progress::check_interrupt() this is automatically done in thread 0 when using the progress bar.
 Progress& Progress::operator++(int)
 {
-  if (omp_get_thread_num() != 0) return *this;
-
   if (sub != nullptr)
   {
     (*sub)++;
@@ -64,6 +62,10 @@ Progress& Progress::operator++(int)
   else
   {
     this->current++;
+
+    if (omp_get_thread_num() != 0)
+      return *this;
+
     this->compute_percentage();
 
     #ifdef USING_R

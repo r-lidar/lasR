@@ -1,6 +1,7 @@
 # lasR 0.18.2
 
 - Fix: #275 wrong zhistogram output in `summarize()` for bins != 2
+- Fix: displayed progress bar values in parallel
 
 # lasR 0.18.0
 
