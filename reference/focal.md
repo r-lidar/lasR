@@ -49,7 +49,7 @@ chm2 = lasR:::focal(chm, 8, fun = "mean")
 chm3 = lasR:::focal(chm, 8, fun = "max")
 pipeline <- reader() + chm + chm2 + chm2
 ans = exec(pipeline, on = f)
-#> Warning: GDAL Error 1: TIFFResetField:/tmp/RtmpAE6a4F/file227256a32347.tif: Can not read TIFF directory entry.
+#> Warning: GDAL Error 1: TIFFResetField:/tmp/Rtmpo09ej6/file220e28757dd5.tif: Can not read TIFF directory entry.
 
 terra::plot(ans[[1]])
 
