@@ -7,8 +7,10 @@ test_that("delete_points works (streaming)",
 
   expect_equal(ans[[1]]$npoints, 30)
   expect_equal(ans[[2]]$npoints, 19)
-  expect_equal(ans[[1]]$z_histogram, c(`974` = 11, `976` = 11, `978` = 8))
-  expect_equal(ans[[2]]$z_histogram, c(`976` = 11, `978` = 8))
+  expect_equal(round(as.numeric(names(ans[[1]]$z_histogram))), c(972, 974, 976, 978))
+  expect_equal(unname(ans[[1]]$z_histogram), c(1, 17, 8, 4))
+  expect_equal(round(as.numeric(names(ans[[2]]$z_histogram))), c(974, 976, 978))
+  expect_equal(unname(ans[[2]]$z_histogram), c(7, 8, 4))
 })
 
 test_that("delete_points works (batch)",
@@ -20,8 +22,10 @@ test_that("delete_points works (batch)",
 
   expect_equal(ans[[1]]$npoints, 30)
   expect_equal(ans[[2]]$npoints, 19)
-  expect_equal(ans[[1]]$z_histogram, c(`974` = 11, `976` = 11, `978` = 8))
-  expect_equal(ans[[2]]$z_histogram, c(`976` = 11, `978` = 8))
+  expect_equal(round(as.numeric(names(ans[[1]]$z_histogram))), c(972, 974, 976, 978))
+  expect_equal(unname(ans[[1]]$z_histogram), c(1, 17, 8, 4))
+  expect_equal(round(as.numeric(names(ans[[2]]$z_histogram))), c(974, 976, 978))
+  expect_equal(unname(ans[[2]]$z_histogram), c(7, 8, 4))
 })
 
 test_that("delete_points works when 0 point left # 46 (batch)",
@@ -33,8 +37,10 @@ test_that("delete_points works when 0 point left # 46 (batch)",
 
   expect_equal(ans[[1]]$npoints, 30)
   expect_equal(ans[[2]]$npoints, 0)
-  expect_equal(ans[[1]]$z_histogram, c(`974` = 11, `976` = 11, `978` = 8))
-  expect_equal(ans[[2]]$z_histogram, c(`0` = 0))
+  expect_equal(round(as.numeric(names(ans[[1]]$z_histogram))), c(972, 974, 976, 978))
+  expect_equal(unname(ans[[1]]$z_histogram), c(1, 17, 8, 4))
+  expect_equal(round(as.numeric(names(ans[[2]]$z_histogram))), c(0))
+  expect_equal(unname(ans[[2]]$z_histogram), c(0))
 })
 
 test_that("delete point memory reallocation works",

@@ -9,7 +9,8 @@ test_that("tw can normalize",
   pipeline = reader_las(filter = "-keep_class 2") + summarise()
   u = exec(pipeline, on = g)
 
-  expect_equal(u$z_histogram, c("0" = 8159))
+  expect_equal(as.numeric(names(u$z_histogram)), c(0))
+  expect_equal(unname(u$z_histogram), c(8159))
 })
 
 test_that("tw can normalize with extrabyte and sets scale and offsets",

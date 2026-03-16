@@ -51,6 +51,31 @@ PointXYZ::PointXYZ() : PointXY(), z(0) {}
 PointXYZ::PointXYZ(double x, double y) : PointXY(x,y), z(0) {}
 PointXYZ::PointXYZ(double x, double y, double z) : PointXY(x,y), z(z) {}
 
+double PointXYZ::distance(const PointXYZ& p) const
+{
+  return std::sqrt(pow(x - p.x, 2) + pow(y - p.y, 2) + pow(z - p.z, 2));
+}
+
+PointXYZ PointXYZ::operator-(const PointXYZ &other) const
+{
+  return PointXYZ(x - other.x, y - other.y, z - other.z);
+}
+
+PointXYZ PointXYZ::operator*(double scalar) const
+{
+  return PointXYZ(x * scalar, y * scalar, z * scalar);
+}
+
+double PointXYZ::dot(const PointXYZ &other) const
+{
+  return x * other.x + y * other.y + z * other.z;
+}
+
+PointXYZ PointXYZ::operator+(const PointXYZ &other) const
+{
+  return PointXYZ(x + other.x, y + other.y, z + other.z);
+}
+
 bool PointXYZ::operator==(const PointXYZ& other) const
 {
   return (x == other.x) && (y == other.y) && (z == other.z);
@@ -97,6 +122,35 @@ void TriangleXYZ::make_clock_wise()
 void TriangleXYZ::make_counter_clock_wise()
 {
   if (orientation() == CLOCKWISE) std::swap(this->B, this->C);
+}
+
+PointXYZ TriangleXYZ::normal() const
+{
+  // Compute edges
+  PointXYZ edge1(B.x - A.x, B.y - A.y, B.z - A.z);
+  PointXYZ edge2(C.x - A.x, C.y - A.y, C.z - A.z);
+
+  // Compute cross product
+  PointXYZ n;
+  n.x = edge1.y * edge2.z - edge1.z * edge2.y;
+  n.y = edge1.z * edge2.x - edge1.x * edge2.z;
+  n.z = edge1.x * edge2.y - edge1.y * edge2.x;
+
+  // Normalize the vector
+  double length = sqrt(n.dot(n));
+  n.x /= length;
+  n.y /= length;
+  n.z /= length;
+
+  // Ensure the z-component is oriented upward
+  /*if (n.z < 0)
+  {
+    n.x = -n.x;
+    n.y = -n.y;
+    n.z = -n.z;
+  }*/
+
+  return n;
 }
 
 PointXYZ TriangleXYZ::centroid() const

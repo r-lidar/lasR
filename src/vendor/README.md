@@ -11,6 +11,9 @@ This directory contains third-party open source libraries and tools that are ess
 5. **geophoton**: chm enhamcement. https://github.com/Geophoton-inc/chm_prep
 6. **nanoflann**: kdtree. https://github.com/jlblancoc/nanoflann
 7. **nlohmann**: JSON parser. https://github.com/nlohmann/json
+8. **hporro**: Incremental Delaunay. github.com/hporro/IncrementalDelaunay
+9. **ptd**: Progressive TIN densification. github.com/r-lidar/PTD
+10. **spikefree**: Spike-free CHM
 
 ## Notes
 - These libraries are external and are maintained independently of the `lasR` package.

@@ -453,8 +453,8 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
     if (index) output << "      \"index:indexed\": " << "true," << std::endl;
     output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
-    if (!wkt.empty()) output << "      \"proj:wkt2\": " << wkt << "," << std::endl;
-    if (epsg != 0) output << "      \"proj:epsg\": " << epsg << std::endl;
+    if (!wkt.empty()) output << "      \"proj:wkt2\": " << wkt;
+    if (epsg != 0) output << "," << std::endl << "      \"proj:epsg\": " << epsg << std::endl;
     output << "    }," << std::endl;
     output << "    \"links\": []," << std::endl;
     output << "    \"assets\": {" << std::endl;

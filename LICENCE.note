@@ -16,10 +16,17 @@ The lasR package as a whole is distributed under GPL-3. The lasR package include
 - For `delaunator`:
   - © 2018 Volodymyr Bilonenko. [delfrrr/delaunator-cpp](https://github.com/delfrrr/delaunator-cpp)
   - Provided under MIT license
-- For `Armadillo`:
-  - © 2008-2024 Conrad Sanderson (https://conradsanderson.id.au)
-  - © 2008-2016 National ICT Australia (NICTA)
-  - © 2017-2024 Data61 / CSIRO
-  - Provided under Apache license
+- For `Eigen`:
+  - Guennebaud, Gaël and Jacob, Benoît and others
+  - Eigen: A C++ linear algebra library http://eigen.tuxfamily.org
+  - Licence: MPL2
+- For `Cloth Simulation Filter (CSF)`
+  - © 2017 State Key Laboratory of Remote Sensing Science, Institute of Remote Sensing Science and Engineering, Beijing Normal University
+  - Licence: Apache
+  - W. Zhang, J. Qi, P. Wan, H. Wang, D. Xie, X. Wang, and G. Yan, “An Easy-to-Use Airborne LiDAR Data Filtering Method Based on Cloth Simulation,” Remote Sens., vol. 8, no. 6, p. 501, 2016.
+- For `Incremental Delaunay`
+  - © 2020 Heinich Porro [hporro/IncrementalDelaunay](https://github.com/hporro/IncrementalDelaunay)
+  - Licence: MIT
+  - With important revisions and improvements by Jean-Romain Roussel.
 
 Full copies of the license agreements used by these components are included there respective folders in `src/vendor`).

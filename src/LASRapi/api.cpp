@@ -95,12 +95,27 @@ Pipeline classify_with_csf(bool slope_smooth, double class_threshold, double clo
   return Pipeline(s);
 }
 
-Pipeline geometry_features(int k, double r, std::string features)
+Pipeline classify_with_ptd(double res, double angle, double distance, double spacing, int classification, int max_iter, std::vector<std::string> filter)
+{
+  Stage s("classify_with_ptd");
+  s.set("distance", distance);
+  s.set("angle", angle);
+  s.set("res", res);
+  s.set("spacing", spacing);
+  s.set("max_iter", max_iter);
+  s.set("class", classification);
+  s.set("filter", filter);
+
+  return Pipeline(s);
+}
+
+Pipeline geometry_features(int k, double r, std::string features, bool always_up)
 {
   Stage s("svd");
   s.set("k", k);
   s.set("r", r);
   s.set("features", features);
+  s.set("always_up", always_up);
 
   return Pipeline(s);
 }
@@ -454,6 +469,18 @@ Pipeline sampling_poisson(double distance,  std::vector<std::string> filter, int
   return Pipeline(s);
 }
 
+Pipeline spikefree(double res, double freeze_distance, double height_buffer, std::vector<std::string> filter, std::string ofile)
+{
+  Stage s("spikefree");
+  s.set("res", res);
+  s.set("freeze_distance", freeze_distance);
+  s.set("height_buffer", height_buffer);
+  s.set("filter", filter);
+  s.set("output", ofile);
+
+  return Pipeline(s);
+}
+
 Pipeline stop_if_outside(double xmin, double ymin, double xmax, double ymax)
 {
   Stage s("stop_if");
@@ -462,6 +489,7 @@ Pipeline stop_if_outside(double xmin, double ymin, double xmax, double ymax)
   s.set("xmax", xmax);
   s.set("ymin", ymin);
   s.set("ymax", ymax);
+  s.set_raster();
 
   return Pipeline(s);
 }

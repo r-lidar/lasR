@@ -41,6 +41,8 @@ bool LASRsvd::set_parameters(const nlohmann::json& stage)
   r = stage.value("r", 0.0);
   std::string features = stage.value("features", "");
 
+  always_up = stage.value("always_up", false);
+
   record_eigen_values = true;
   record_coefficients = true;
 
@@ -229,9 +231,9 @@ bool LASRsvd::process(PointCloud*& las)
     double coeff20 = coeff(2,0);
     double coeff21 = coeff(2,1);
     double coeff22 = coeff(2,2);
-    double nx = coeff(0,0);
-    double ny = coeff(0,1);
-    double nz = coeff(0,2);
+    double nx = coeff(0,2);
+    double ny = coeff(1,2);
+    double nz = coeff(2,2);
     double anisotropy = (eigen_largest-eigen_smallest)/eigen_largest;
     double planarity = (eigen_medium-eigen_smallest)/eigen_largest;
     double sphericity = eigen_smallest/eigen_largest;
@@ -276,6 +278,13 @@ bool LASRsvd::process(PointCloud*& las)
       if (ft_i) { set_angle(&las->point, angle); }
       if (ft_n)
       {
+        if (always_up && nz < 0)
+        {
+          nx *= -1;
+          ny *= -1;
+          nz *= -1;
+        }
+
         set_normalX(&las->point, nx);
         set_normalY(&las->point, ny);
         set_normalZ(&las->point, nz);

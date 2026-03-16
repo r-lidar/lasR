@@ -20,9 +20,11 @@
 #include "localmaximum.h"
 #include "nnmetrics.h"
 #include "nothing.h"
+#include "ptd.h"
 #include "pitfill.h"
 #include "rasterize.h"
 #include "sampling.h"
+#include "spikefree.h"
 #include "readlas.h"
 #include "readpcd.h"
 #include "regiongrowing.h"
@@ -89,6 +91,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"add_attribute",        create_instance<LASRaddattribute>},
     {"add_rgb",              create_instance<LASRaddrgb>},
     {"classify_with_csf",    create_instance<LASRcsf>},
+    {"classify_with_ptd",    create_instance<LASRptd>},
     {"classify_with_ipf",    create_instance<LASRipf>},
     {"classify_with_ivf",    create_instance<LASRivf>},
     {"classify_with_sor",    create_instance<LASRsor>},
@@ -112,6 +115,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"sampling_pixel",       create_instance<LASRsamplingpixels>},
     {"sampling_poisson",     create_instance<LASRsamplingpoisson>},
     {"sampling_voxel",       create_instance<LASRsamplingvoxels>},
+    {"spikefree",            create_instance<LASRspikefree>},
     {"set_crs",              create_instance<LASRsetcrs>},
     {"sort",                 create_instance<LASRsort>},
     {"summarise",            create_instance<LASRsummary>},

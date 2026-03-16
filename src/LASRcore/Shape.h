@@ -38,6 +38,11 @@ struct PointXYZ : public PointXY
   PointXYZ();
   PointXYZ(double x, double y);
   PointXYZ(double x, double y, double z);
+  double distance(const PointXYZ& other) const;
+  double dot(const PointXYZ& other) const;
+  PointXYZ operator-(const PointXYZ& other) const;
+  PointXYZ operator*(double scalar) const;
+  PointXYZ operator+(const PointXYZ& other) const;
   bool operator==(const PointXYZ& other) const;
   //ool operator<(const PointXYZ& other) const;
 };
@@ -125,6 +130,7 @@ public:
   TriangleXYZ(const PointXYZ& A, const PointXYZ& B, const PointXYZ& C);
   void make_clock_wise();
   void make_counter_clock_wise();
+  PointXYZ normal() const;
   PointXYZ centroid() const override;
   bool contains(double x, double y) const override;
   bool contains(const PointXY& p) const;

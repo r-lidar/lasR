@@ -289,6 +289,74 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
   .APISTAGES$classify_with_csf(slope_smooth, class_threshold, cloth_resolution, rigidness, iterations, time_step, class, filter)
 }
 
+#' Ground Point Classification
+#'
+#' Classify ground points using a modified version of the Progressive TIN
+#' densification method by Axelsson (2000) (see references). The approach involves iteratively
+#' constructing a triangulated surface model (TIN) to classify ground points (see details). **This
+#' algorithm is much more robust than the CSF in \link{classify_with_csf} and should be
+#' preferred**.
+#'
+#' The method begins by identifying local low points, assuming at least one ground-level point exists
+#' within any X meters area. Initially, the triangles of the TIN model are mostly below the ground
+#' surface, only touching lowest points at their vertices. As the iterations progress, additional
+#' points are incorporated to more accurately follow the true ground surface.\cr\cr
+#' The classification process is controlled by two main parameters:
+#' \itemize{
+#' \item Iteration angle: This controls the rate at which points are classified based on variations in
+#' ground level. Use smaller values (e.g., 20) for flat terrain and larger values (e.g., 40) for
+#' mountainous regions.
+#' \item Iteration distance: This limits large upward jumps in the model, preventing the misclassification
+#'  of points in low vegetation or on small buildings.
+#' }
+#' The algorithm is robust to low noise points, meaning it can handle some level of noise without
+#' needing explicit noise classification. However, it is preferable to have noise classified points
+#' to guarantee optimal results.
+#' \cr\cr
+#' The densification process can also stop if the triangle edges become shorter than a specified length.
+#'
+#' @param distance Scalar. The threshold for iteration distance, as described in Figure 3 of Axelsson's paper.
+#' @param angle Scalar. The threshold for iteration angle, as illustrated in Figure 3 of Axelsson's paper.
+#' Use smaller values (close to 20) for flat areas and larger values (close to 40) for mountainous
+#' areas.
+#' @param res Scalar. The resolution for locating seed points. It takes the lowest point per grid cell.
+#' It should be larger than any above ground structure such as building or bridges. In forested lands
+#' 10 m is good but larger values are recommended if human made structure can be observed. 50 m is
+#' good in urban scene
+#' @param spacing Scalar. The spacing of ground points. TIN densification halts if triangles are
+#' smaller than this limit avoiding useless over-densification. The default setting is generally suitable
+#' for most scenarios.
+#' @template param-filter
+#' @param class Integer. The classification to assign to the points, typically 2 for ground points.
+#' @param ... supported options: max_iter = 0. Skips the densification, classify only the seed as ground
+#' for debugging only.
+#' @template param-filter
+#'
+#' @template return-pointcloud
+#'
+#' @references
+#' Axelsson, P. (2000). DEM Generation from Laser Scanner Data Using adaptive TIN Models. International
+#' Archives of Photogrammetry and Remote Sensing, 33(B4), 110–117.
+#' https://www.isprs.org/proceedings/xxxiii/congress/part4/111_xxxiii-part4.pdf
+#'
+#' @export
+#' @md
+#'
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package="lasR")
+#' pipeline = classify_with_ptd() + write_las()
+#' ans = exec(pipeline, on = f, progress = TRUE)
+classify_with_ptd = function(res = 10, angle = 30, distance = 2, filter = drop_noise(), ..., spacing = 0.25, class = 2L)
+{
+  p = list(...)
+  max_iter = 500
+  if (!is.null(p$max_iter))
+    max_iter = p$max_iter
+
+  .APISTAGES$classify_with_ptd(res, angle, distance, spacing, class, max_iter, filter)
+}
+
+
 # ===== G =====
 
 #' Compute pointwise geometry features
@@ -315,7 +383,8 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 #' Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 #' The order of the flags does not matter and the features are recorded in the order mentioned above.
-#'
+#' @param always_up boolean. Applies only to the normals. Ensure that z the component is always oriented
+#' upward.
 #' @template return-pointcloud
 #'
 #' @export
@@ -327,13 +396,13 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' f <- system.file("extdata", "Example.las", package = "lasR")
 #' pipeline <- geometry_features(8, features = "pi") + write_las()
 #' ans <- exec(pipeline, on = f)
-geometry_features = function(k, r, features = "")
+geometry_features = function(k, r, features = "", always_up = FALSE)
 {
   if (missing(k) && missing(r))  stop("'k' and 'r' are missing", call. = FALSE)
   if (!missing(r) && !missing(k)) { } # knn + radius
   if (!missing(k) && missing(r))  { r <- 0 }  # knn
   if (!missing(r) && missing(k)) { k <- 0 }   # radius
-  .APISTAGES$geometry_feature(k, r, features)
+  .APISTAGES$geometry_feature(k, r, features, always_up)
 }
 
 
@@ -1173,6 +1242,31 @@ stop_if_chunk_id_below = function(index) { .APISTAGES$stop_if_chunk_id_below(ind
 #' exec(sort_points(), on = f)
 #' @export
 sort_points = function() { .APISTAGES$sort_points(TRUE) }
+
+#' Digital Surface Model
+#'
+#' The pit-free algorithm developed by Khosravipour et al. (2016), which is based on the computation
+#' of an incremental triangulation of all returns with triangle freezing criteria.
+#'
+#' @param res resolution of the raster
+#' @param freeze_distance freeze distance (see references). Recommended value: 3 times the pulse spacing or
+#' a little higher.
+#' @param height_buffer buffer distance (see references). Recommended value: 0.5 do not change.
+#' @template param-filter
+#' @template param-ofile
+#'
+#'@references Khosravipour, Anahita & Skidmore, Andrew & Isenburg, Martin. (2016). Generating spike-free
+#'digital surface models using LiDAR raw point clouds: A new approach for forestry applications.
+#'International Journal of Applied Earth Observation and Geoinformation. 52. 104-114. 10.1016/j.jag.2016.06.005.
+#'
+#'@examples
+#' f <- system.file("extdata", "Megaplot.las", package="lasR")
+#' chm = exec(spikefree(0.1, 3), on = f)
+#' @export
+spikefree = function(res = 0.5, freeze_distance = 1, height_buffer = 0.5, filter = "", ofile = temptif())
+{
+  return(.APISTAGES$spikefree(res, freeze_distance, height_buffer, filter, ofile))
+}
 
 #' Summary
 #'

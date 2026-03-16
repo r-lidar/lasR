@@ -77,7 +77,7 @@ static std::vector<std::string> normalize_files_arg(const py::object& files) {
 
 PYBIND11_MODULE(pylasr, m) {
     m.doc() = "Python bindings for LASR library - LiDAR and point cloud processing";
-    m.attr("__version__") = "0.17.0";
+    m.attr("__version__") = "0.17.4";
 
     // System information functions
     m.def("available_threads", &api::available_threads,
@@ -206,6 +206,7 @@ PYBIND11_MODULE(pylasr, m) {
         .def("set_profile_file", &api::Pipeline::set_profile_file, "Set profiling output file", py::arg("path"))
         .def("set_noprocess", &api::Pipeline::set_noprocess, "Set no-process flags", py::arg("noprocess"))
         .def("has_reader", &api::Pipeline::has_reader, "Check if pipeline has a reader stage")
+        .def("has_catalog", &api::Pipeline::has_catalog, "Check if pipeline has a catalog")
         .def("to_string", &api::Pipeline::to_string, "Get string representation")
         .def("write_json", &api::Pipeline::write_json, "Write pipeline to JSON file", py::arg("path") = "")
         .def("execute", [](api::Pipeline& self, py::object files) -> py::object {
@@ -301,7 +302,7 @@ PYBIND11_MODULE(pylasr, m) {
     // Geometric features
     m.def("geometry_features", &api::geometry_features,
           "Compute geometric features",
-          py::arg("k"), py::arg("r"), py::arg("features") = "");
+          py::arg("k"), py::arg("r"), py::arg("features") = "",  py::arg("always_up") = false);
 
     // Point operations
     m.def("delete_points", &api::delete_points,
@@ -354,6 +355,14 @@ PYBIND11_MODULE(pylasr, m) {
           "Sample points using Poisson disk sampling",
           py::arg("distance") = 2.0, py::arg("filter") = std::vector<std::string>{""},
           py::arg("shuffle_size") = std::numeric_limits<int>::max());
+
+    m.def("spikefree", &api::spikefree,
+          "Spkipe-free dsm algorithm",
+          py::arg("res") = 0.5,
+          py::arg("freeze_distance") = 1.0,
+          py::arg("height_buffer") = 0.5,
+          py::arg("filter") = std::vector<std::string>{""},
+          py::arg("ofile") = "";
 
     // Rasterization
     m.def("rasterize", &api::rasterize,
@@ -541,13 +550,6 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("nothing", &nonapi::nothing,
           "Do nothing (for testing)",
           py::arg("read") = false, py::arg("stream") = false, py::arg("loop") = false);
-
-    m.def("neighborhood_metrics", [](py::object connect_uid, std::vector<std::string> metrics, int k, double r, std::string ofile) {
-        std::string uid = extract_uid(connect_uid);
-        return nonapi::neighborhood_metrics(uid, metrics, k, r, ofile);
-    },
-    "Compute neighborhood metrics",
-    py::arg("connect_uid"), py::arg("metrics"), py::arg("k") = 10, py::arg("r") = 0.0, py::arg("ofile") = "");
 
     // Convenience functions
     m.def("create_pipeline", []() -> api::Pipeline {

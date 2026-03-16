@@ -4,7 +4,7 @@
 \alias{geometry_features}
 \title{Compute pointwise geometry features}
 \usage{
-geometry_features(k, r, features = "")
+geometry_features(k, r, features = "", always_up = FALSE)
 }
 \arguments{
 \item{k, r}{integer and numeric respectively for k-nearest neighbours and radius of the neighborhood
@@ -20,6 +20,9 @@ covariance matrix, 'a' for anisotropy, 'p' for planarity, 's' for sphericity, 'l
 Notice that the uppercase labeled components allow computing all the lowercase labeled components.
 Default is "". In this case, the singular value decomposition is computed but serves no purpose.
 The order of the flags does not matter and the features are recorded in the order mentioned above.}
+
+\item{always_up}{boolean. Applies only to the normals. Ensure that z the component is always oriented
+upward.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.

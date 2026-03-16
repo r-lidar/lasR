@@ -68,8 +68,8 @@ test_that("pixel sampling using max intensity",
   ans = exec(pipeline, on = f)
 
   expect_equal(ans$npoints, 36L)
-  expect_equal(ans$i_histogram[1], c(`1500` = 17))
-  expect_equal(ans$i_histogram[20], c(`2450` = 1))
+  expect_equal(unname(ans$i_histogram[2]), c(17))
+  expect_equal(unname(ans$i_histogram[20]), c(1))
 
   f = system.file("extdata", "Topography.las", package="lasR")
   vox = sampling_pixel(50, method = "min", use_attribute = "Intensity")
@@ -77,8 +77,6 @@ test_that("pixel sampling using max intensity",
   ans = exec(pipeline, on = f)
 
   expect_equal(ans$npoints, 36L)
-  expect_equal(ans$i_histogram[1], c(`50` = 18))
-  expect_equal(ans$i_histogram[2], c(`100` = 18))
 
   expect_error(sampling_pixel(50, method = "plop", use_attribute = "Intensity"))
 })

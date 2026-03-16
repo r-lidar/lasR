@@ -6,9 +6,8 @@ test_that("works with COPC",
 
 test_that("Max depth in COPC",
 {
-  skip_if(Sys.info()[["user"]] != "jr")
-
   f = "/home/jr/R packages/r-lidar/lasR/inst/extdata/autzen-classified.copc.laz"
+  skip_if_not(file.exists(f), "COPC file does not exist")
 
   pipeline = reader(copc_depth = 0) + summarise()
   ans = exec(pipeline, on = f)
@@ -28,9 +27,9 @@ test_that("works with COPC",
 
 test_that("Write COPC",
 {
-  skip_if(Sys.info()[["user"]] != "jr")
-
   f = "/home/jr/R packages/r-lidar/lasR/inst/extdata/autzen-classified.copc.laz"
+  skip_if_not(file.exists(f), "COPC file does not exist")
+
   o = tempfile(fileext = ".copc.laz")
 
   pipeline = reader(copc_depth = 2) + write_las(o)

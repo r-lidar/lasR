@@ -1,5 +1,17 @@
-# lasr 0.18.0
+# lasR 0.19.0
 
+- New: Progressive TIN densification with `classify_with_ptd()`
+- New: CHM with ths spike-free algorithm with `spikefree()`
+
+
+# lasR 0.18.2
+
+- Fix: #275 wrong zhistogram output in `summarize()` for bins != 2
+- Fix: displayed progress bar values in parallel
+
+# lasR 0.18.0
+
+- New: #263 new argument `always_up` in `geometry_features()`.
 - New stage `remove_attributes` that deprecated `remove_attribute` (no `s`).
 - New stage `keep_attributes`
 - New stage `remove_rgb()`
@@ -7,6 +19,13 @@
 - New function `temppcd()`
 - New arguments `version` and `pdrf` in `write_las()` to enforce a specific LAS version and point format.
 - New feature `classify_with_ivf()` supports non cubic voxels with e.g. `classify_with_ivf(res = c(1,1,2))`
+- Fix: #265 VPC without epsg.
+
+# lasR 0.17.4
+ 
+- Fix: #247 memory violation in some edge cases.
+- Fix: #259 incorrect values reported for normal vectors.
+
 
 # lasR 0.17.3
 

@@ -80,7 +80,7 @@ public:
   bool get_point(size_t pos, Point* p, PointFilter* const filter = nullptr) const;
   bool query(const Shape* const shape, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
   bool query(const std::vector<Interval>& intervals, std::vector<Point>& addr, PointFilter* const filter = nullptr) const;
-  bool query_sphere(const Point& xyz, double r, std::vector<Point>& res, PointFilter* const filter) const;
+  bool query_sphere(const Point& xyz, double r, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
   bool knn(const Point& xyz, int k, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
   bool rknn(const Point& xyz, int k, double r, std::vector<Point>& res, PointFilter* const filter = nullptr) const;
   int get_index(Point* p) { size_t index = (size_t)(p->data - buffer); return(index/header->schema.total_point_size); }
