@@ -2,6 +2,7 @@
 
 - New: Progressive TIN densification with `classify_with_ptd()`
 - New: CHM with ths spike-free algorithm with `spikefree()`
+- Fix: crash with rare cases of streamable pipeline + chunking + empty chunks.
 
 
 # lasR 0.18.2
