@@ -9,7 +9,6 @@ classify_with_ptd(
   angle = 30,
   distance = 2,
   filter = drop_noise(),
-  ...,
   spacing = 0.25,
   class = 2L
 )
@@ -30,9 +29,6 @@ areas.}
 interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
 The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
 \link{filters}.}
-
-\item{...}{supported options: max_iter = 0. Skips the densification, classify only the seed as ground
-for debugging only.}
 
 \item{spacing}{Scalar. The spacing of ground points. TIN densification halts if triangles are
 smaller than this limit avoiding useless over-densification. The default setting is generally suitable

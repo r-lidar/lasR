@@ -328,8 +328,6 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' for most scenarios.
 #' @template param-filter
 #' @param class Integer. The classification to assign to the points, typically 2 for ground points.
-#' @param ... supported options: max_iter = 0. Skips the densification, classify only the seed as ground
-#' for debugging only.
 #' @template param-filter
 #'
 #' @template return-pointcloud
@@ -346,14 +344,9 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' f <- system.file("extdata", "Topography.las", package="lasR")
 #' pipeline = classify_with_ptd() + write_las()
 #' ans = exec(pipeline, on = f, progress = TRUE)
-classify_with_ptd = function(res = 10, angle = 30, distance = 2, filter = drop_noise(), ..., spacing = 0.25, class = 2L)
+classify_with_ptd = function(res = 10, angle = 30, distance = 2, filter = drop_noise(), spacing = 0.25, class = 2L)
 {
-  p = list(...)
-  max_iter = 500
-  if (!is.null(p$max_iter))
-    max_iter = p$max_iter
-
-  .APISTAGES$classify_with_ptd(res, angle, distance, spacing, class, max_iter, filter)
+  .APISTAGES$classify_with_ptd(res, angle, distance, spacing, class, filter)
 }
 
 
