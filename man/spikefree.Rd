@@ -16,7 +16,8 @@ spikefree(
 \item{res}{resolution of the raster}
 
 \item{freeze_distance}{freeze distance (see references). Recommended value: 3 times the pulse spacing or
-a little higher.}
+a little higher. Use \code{freeze_distance = 0} to use the locally adaptive spikefree by Fisher F. J. (2024)
+(see references)}
 
 \item{height_buffer}{buffer distance (see references). Recommended value: 0.5 do not change.}
 
@@ -42,4 +43,8 @@ chm = exec(spikefree(0.1, 3), on = f)
 Khosravipour, Anahita & Skidmore, Andrew & Isenburg, Martin. (2016). Generating spike-free
 digital surface models using LiDAR raw point clouds: A new approach for forestry applications.
 International Journal of Applied Earth Observation and Geoinformation. 52. 104-114. 10.1016/j.jag.2016.06.005.
+\cr\cr
+Fischer, F. J., Jackson, T., Vincent, G., & Jucker, T. (2024). Robust characterisation
+of forest structure from airborne laser scanning—A systematic assessment and sample workflow for
+ecologists. Methods in Ecology and Evolution, 15, 1873–1888. https://doi.org/10.1111/2041-210X.14416
 }
