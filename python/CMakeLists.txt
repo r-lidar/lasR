@@ -234,6 +234,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/localmaximum.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/nnmetrics.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/nothing.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/ptd.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/rasterize.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/readlas.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/readpcd.cpp
@@ -242,6 +243,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/setcrs.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/sor.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/sort.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/spikefree.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/svd.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/transformwith.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/triangulate.cpp
