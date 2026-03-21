@@ -132,7 +132,6 @@ include_directories(
   ${LASR_SOURCE_DIR}/src/vendor
   ${LASR_SOURCE_DIR}/src/vendor/LASlib
   ${LASR_SOURCE_DIR}/src/vendor/LASzip
-  ${LASR_SOURCE_DIR}/src/vendor/common
   ${LASR_SOURCE_DIR}/src/LASRcore
   ${LASR_SOURCE_DIR}/src/LASRapi
   ${LASR_SOURCE_DIR}/src/LASRreaders
@@ -263,6 +262,11 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/vendor/csf/c2cdist.cpp
   ${LASR_SOURCE_DIR}/src/vendor/csf/point_cloud.cpp
   ${LASR_SOURCE_DIR}/src/vendor/geophoton/chm_prep.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/hporro/delaunay.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/hporro/index.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/hporro/pred3d.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/ptd/PTD.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/spikefree/Spikefree.cpp
 
   # LASlib vendor files
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasreader.cpp
