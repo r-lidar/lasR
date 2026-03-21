@@ -5,7 +5,6 @@
 - New: Metric engine support `|x|` modifier to compute on the absolue value. It is now possible to write e.g. `rasterize(5, c("a_mean", "|a|_mean"))`
 - Fix: crash with rare cases of streamable pipeline + chunking + empty chunks.
 
-
 # lasR 0.18.2
 
 - Fix: #275 wrong zhistogram output in `summarize()` for bins != 2
