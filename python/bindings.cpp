@@ -368,7 +368,7 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("freeze_distance") = 1.0,
           py::arg("height_buffer") = 0.5,
           py::arg("filter") = std::vector<std::string>{""},
-          py::arg("ofile") = "";
+          py::arg("ofile") = "");
 
     // Rasterization
     m.def("rasterize", &api::rasterize,
