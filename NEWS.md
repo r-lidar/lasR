@@ -2,6 +2,7 @@
 
 - New: Progressive TIN densification with `classify_with_ptd()`
 - New: CHM with the spike-free algorithm with `spikefree()` + locally adaptative spikefree
+- New: Metric engine support `|x|` modifier to compute on the absolue value. It is now possible to write e.g. `rasterize(5, c("a_mean", "|a|_mean"))`
 - Fix: crash with rare cases of streamable pipeline + chunking + empty chunks.
 
 

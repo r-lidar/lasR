@@ -19,7 +19,9 @@
 #' r - returnnumber, c - classification, u - userdata, p - pointsourceid, e - edgeofflightline,
 #' d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr
 #' **Be careful** to the typos: attributes are non failing features. If the attribute does not exist `NaN`
-#' is returned. Thus `intesity_mean` return `NaN` rather than failing.
+#' is returned. Thus `intesity_mean` (with typo) return `NaN` rather than failing. Last the metric names
+#' supports modifiers like absolute value. Thus `|a|_mean`, `|angle|_mean`, `|ScanAngle|_mean` are valid
+#' operators.
 #'
 #' @section Metrics:
 #' The available metric names are: `count`, `max`, `min`, `mean`, `median`, `sum`, `sd`, `cv`, `pX` (percentile), `aboveX`, `mode`,
@@ -32,13 +34,13 @@
 #' @section Extra attribute:
 #' The core attributes natively supported are x, y, z, classification, intensity, and so on. Some
 #' point clouds have other may have other attributes. In this case, metrics can be derived the same way using
-#' the names of the attributes. Be careful of typos. The attributes existance are not checked internally
+#' the names of the attributes. Be careful of typos. The attributes existence are not checked internally
 #' because. For example, if a user requests: `ntensity_mean`, this could be a typo or the name of an
 #' extra attribute. Because extra attribute are never failing, `ntensity_mean` will return `NaN`
 #' rather than an error.
 #'
 #' @examples
-#' metrics = c("z_max", "i_min", "r_mean", "n_median", "z_sd", "c_sd", "t_cv", "u_sum", "z_p95")
+#' metrics = c("z_max", "i_min", "r_mean", "n_median", "z_sd", "c_sd", "t_cv", "u_sum", "z_p95", "|a|_mean")
 #' f <- system.file("extdata", "Example.las", package="lasR")
 #' p <- summarise(metrics = metrics)
 #' r <- rasterize(5, operators = metrics)

@@ -45,11 +45,22 @@ static const std::unordered_map<std::string, std::vector<std::string>> attribute
 
 inline std::string map_attribute(const std::string& attribute)
 {
+  bool absolute = false;
+  std::string name = attribute;
+  if (name.size() >= 2 && name.front() == '|' && name.back() == '|')
+  {
+    absolute = true;
+    name = name.substr(1, name.size() - 2);
+  }
+
   for (const auto& [standard_name, aliases] : attribute_map)
   {
-    if (std::find(aliases.begin(), aliases.end(), attribute) != aliases.end())
+    if (std::find(aliases.begin(), aliases.end(), name) != aliases.end())
     {
-      return standard_name;
+      if (absolute)
+        return "|" + standard_name + "|";
+      else
+        return standard_name;
     }
   }
 
@@ -340,11 +351,14 @@ public:
 protected:
   std::string name;
   const Attribute* attribute;
-  bool init;
+  bool init = false;
+  bool absolute = false;
   double default_value;
 
   double read(const Point* point);
   void write(Point* point, double value);
+
+  void parse_name();
 };
 
 #endif
