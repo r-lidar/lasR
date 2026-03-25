@@ -19,7 +19,7 @@ respectively."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.18.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.19.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,7 +84,9 @@ slightly inaccurate, but anyway, these metrics are not supposed to be useful.</p
 by using a single letter: t - gpstime, a - angle, i - intensity, n - numberofreturns,
 r - returnnumber, c - classification, u - userdata, p - pointsourceid, e - edgeofflightline,
 d - scandirectionflag, R - red, G - green, B - blue, N - nir.<br><strong>Be careful</strong> to the typos: attributes are non failing features. If the attribute does not exist <code>NaN</code>
-is returned. Thus <code>intesity_mean</code> return <code>NaN</code> rather than failing.</p>
+is returned. Thus <code>intesity_mean</code> (with typo) return <code>NaN</code> rather than failing. Last the metric names
+supports modifiers like absolute value. Thus <code>|a|_mean</code>, <code>|angle|_mean</code>, <code>|ScanAngle|_mean</code> are valid
+operators.</p>
     </div>
     <div class="section level2">
     <h2 id="metrics">Metrics<a class="anchor" aria-label="anchor" href="#metrics"></a></h2>
@@ -103,7 +105,7 @@ It is possible to call a metric without the name of the attribute. In this case,
 
 <p>The core attributes natively supported are x, y, z, classification, intensity, and so on. Some
 point clouds have other may have other attributes. In this case, metrics can be derived the same way using
-the names of the attributes. Be careful of typos. The attributes existance are not checked internally
+the names of the attributes. Be careful of typos. The attributes existence are not checked internally
 because. For example, if a user requests: <code>ntensity_mean</code>, this could be a typo or the name of an
 extra attribute. Because extra attribute are never failing, <code>ntensity_mean</code> will return <code>NaN</code>
 rather than an error.</p>
@@ -111,7 +113,7 @@ rather than an error.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">metrics</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"z_max"</span>, <span class="st">"i_min"</span>, <span class="st">"r_mean"</span>, <span class="st">"n_median"</span>, <span class="st">"z_sd"</span>, <span class="st">"c_sd"</span>, <span class="st">"t_cv"</span>, <span class="st">"u_sum"</span>, <span class="st">"z_p95"</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">metrics</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"z_max"</span>, <span class="st">"i_min"</span>, <span class="st">"r_mean"</span>, <span class="st">"n_median"</span>, <span class="st">"z_sd"</span>, <span class="st">"c_sd"</span>, <span class="st">"t_cv"</span>, <span class="st">"u_sum"</span>, <span class="st">"z_p95"</span>, <span class="st">"|a|_mean"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Example.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="summarise.html">summarise</a></span><span class="op">(</span>metrics <span class="op">=</span> <span class="va">metrics</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">5</span>, operators <span class="op">=</span> <span class="va">metrics</span><span class="op">)</span></span></span>
@@ -119,15 +121,15 @@ rather than an error.</p>
 <span class="r-in"><span><span class="va">ans</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">metrics</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        c_sd i_min n_median   r_mean         t_cv u_sum   z_max    z_p95</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.3051286    27        1 1.133333 4.466148e-07   960 978.345 978.2653</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       z_sd</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 1.459199</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       z_sd |a|_mean</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 1.459199 21.66667</span>
 <span class="r-in"><span><span class="va">ans</span><span class="op">$</span><span class="va">rasterize</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> class       : SpatRaster </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> size        : 1, 4, 9  (nrow, ncol, nlyr)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> size        : 1, 4, 10  (nrow, ncol, nlyr)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 5, 5  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 339000, 339020, 5248000, 5248005  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83 / UTM zone 17N (EPSG:26917) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file227919a79dc1.tif </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file25496d6ffe42.tif </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> names       : z_max, i_min, r_mean, n_median, z_sd, c_sd, ... </span>
 </code></pre></div>
     </div>

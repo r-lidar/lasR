@@ -18,6 +18,8 @@
   : Classify noise points
 - [`classify_with_ivf()`](https://r-lidar.github.io/lasR/reference/classify_with_ivf.md)
   : Classify noise points
+- [`classify_with_ptd()`](https://r-lidar.github.io/lasR/reference/classify_with_ptd.md)
+  : Ground Point Classification
 - [`classify_with_sor()`](https://r-lidar.github.io/lasR/reference/classify_with_sor.md)
   : Classify noise points
 - [`delete_points()`](https://r-lidar.github.io/lasR/reference/delete_points.md)
@@ -121,6 +123,8 @@
   : Set global processing options
 - [`sort_points()`](https://r-lidar.github.io/lasR/reference/sort_points.md)
   : Sort points in the point cloud
+- [`spikefree()`](https://r-lidar.github.io/lasR/reference/spikefree.md)
+  : Digital Surface Model
 - [`stop_if_outside()`](https://r-lidar.github.io/lasR/reference/stop_if_outside.md)
   : Stop the pipeline conditionally
 - [`summarise()`](https://r-lidar.github.io/lasR/reference/summarise.md)

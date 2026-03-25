@@ -34,18 +34,21 @@
 - **Jose L. Blanco**. Copyright holder.  
   Is an author of the included nanoflann library
 
+- **Heinich Porro**. Copyright holder.  
+  Is the original author of the included incremental delaunay library
+
 ## Citation
 
 Source:
 [`DESCRIPTION`](https://github.com/r-lidar/lasR/blob/main/DESCRIPTION)
 
 Roussel J (2026). *lasR: Fast and Pipeable Airborne LiDAR Data Tools*. R
-package version 0.18.2, <https://github.com/r-lidar/lasR>.
+package version 0.19.0, <https://github.com/r-lidar/lasR>.
 
     @Manual{,
       title = {lasR: Fast and Pipeable Airborne LiDAR Data Tools},
       author = {Jean-Romain Roussel},
       year = {2026},
-      note = {R package version 0.18.2},
+      note = {R package version 0.19.0},
       url = {https://github.com/r-lidar/lasR},
     }

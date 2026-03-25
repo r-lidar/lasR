@@ -88,6 +88,6 @@ exec(pipeline, on = f)
 #> [4,] 0.0000000  0.0000000    0    1
 #> 
 #> $write_las
-#> [1] "/tmp/Rtmpzf9FCo/Topography.las"
+#> [1] "/tmp/Rtmpy55V7f/Topography.las"
 #> 
 ```

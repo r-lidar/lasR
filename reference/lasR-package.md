@@ -49,3 +49,6 @@ Other contributors:
 
 - Jose L. Blanco <joseluisblancoc@gmail.com> (Is an author of the
   included nanoflann library) \[copyright holder\]
+
+- Heinich Porro (Is the original author of the included incremental
+  delaunay library) \[copyright holder\]
