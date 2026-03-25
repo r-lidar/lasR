@@ -57,6 +57,7 @@ RCPP_MODULE(stages)
   function("classify_with_ipf", &api::classify_with_ipf, "Classify noise with IPF");
   function("classify_with_ivf", &api::classify_with_ivf, "Classify noise with IVF");
   function("classify_with_csf", &api::classify_with_csf, "Classify ground with CSF");
+  function("classify_with_ptd", &api::classify_with_ptd, "Classify ground with PTD");
   function("delete_points", &api::delete_points, "Delete points that match criteria");
   function("edit_attribute", &api::edit_attribute, "Edit an attribute of the points");
   function("filter_with_grid", &api::filter_with_grid, "Filter points with a grid layout");
@@ -87,6 +88,7 @@ RCPP_MODULE(stages)
   function("sampling_voxel", &api::sampling_voxel, "Sample the point cloud using voxel-based sampling");
   function("sampling_pixel", &api::sampling_pixel, "Sample the point cloud using pixel-based sampling");
   function("sampling_poisson", &api::sampling_poisson, "Sample the point cloud using Poisson disk sampling");
+  function("spikefree", &api::spikefree, "Spike-free CHM");
   function("stop_if_outside", &api::stop_if_outside, "Stop processing if the chunk is outside given bounds");
   function("stop_if_chunk_id_below", &api::stop_if_chunk_id_below, "Stop processing if chunk ID is below threshold");
   function("sort_points", &api::sort_points, "Sort points spatially and/or in temporarly");

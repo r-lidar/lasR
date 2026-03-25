@@ -25,7 +25,9 @@ by using a single letter: t - gpstime, a - angle, i - intensity, n - numberofret
 r - returnnumber, c - classification, u - userdata, p - pointsourceid, e - edgeofflightline,
 d - scandirectionflag, R - red, G - green, B - blue, N - nir.\cr
 \strong{Be careful} to the typos: attributes are non failing features. If the attribute does not exist \code{NaN}
-is returned. Thus \code{intesity_mean} return \code{NaN} rather than failing.
+is returned. Thus \code{intesity_mean} (with typo) return \code{NaN} rather than failing. Last the metric names
+supports modifiers like absolute value. Thus \verb{|a|_mean}, \verb{|angle|_mean}, \verb{|ScanAngle|_mean} are valid
+operators.
 }
 
 \section{Metrics}{
@@ -42,14 +44,14 @@ It is possible to call a metric without the name of the attribute. In this case,
 
 The core attributes natively supported are x, y, z, classification, intensity, and so on. Some
 point clouds have other may have other attributes. In this case, metrics can be derived the same way using
-the names of the attributes. Be careful of typos. The attributes existance are not checked internally
+the names of the attributes. Be careful of typos. The attributes existence are not checked internally
 because. For example, if a user requests: \code{ntensity_mean}, this could be a typo or the name of an
 extra attribute. Because extra attribute are never failing, \code{ntensity_mean} will return \code{NaN}
 rather than an error.
 }
 
 \examples{
-metrics = c("z_max", "i_min", "r_mean", "n_median", "z_sd", "c_sd", "t_cv", "u_sum", "z_p95")
+metrics = c("z_max", "i_min", "r_mean", "n_median", "z_sd", "c_sd", "t_cv", "u_sum", "z_p95", "|a|_mean")
 f <- system.file("extdata", "Example.las", package="lasR")
 p <- summarise(metrics = metrics)
 r <- rasterize(5, operators = metrics)

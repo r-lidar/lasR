@@ -116,8 +116,10 @@ bool Engine::run_streamed()
   Progress prg;
   prg.set_total(INT64_MAX);
 
+  size_t i = -1;
   while(!last_point)
   {
+    i++;
     prg++;
     if (prg.interrupted())
     {
@@ -177,6 +179,11 @@ bool Engine::run_streamed()
         last_point = true;
       }
     }
+  }
+
+  if (i == 0)
+  {
+    order.pop_back();
   }
 
   // Each stage is writing its own output

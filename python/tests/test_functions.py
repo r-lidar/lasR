@@ -75,6 +75,18 @@ class TestClassificationFunctions(unittest.TestCase):
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
+    def test_classify_with_ptd(self):
+        """Test Progressive TIN Densification ground classification"""
+        pipeline = pylasr.classify_with_ptd(
+            res=10, angle=20, distance=3, spacing=0.25, classification=2, filter=[""]
+        )
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_classify_with_ptd_defaults(self):
+        """Test classify_with_ptd with default parameters"""
+        pipeline = pylasr.classify_with_ptd()
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
 
 class TestPointOperations(unittest.TestCase):
     """Test point operation pipeline functions"""
@@ -116,6 +128,31 @@ class TestPointOperations(unittest.TestCase):
     def test_sort_points(self):
         """Test sort_points pipeline creation"""
         pipeline = pylasr.sort_points(spatial=True)
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+
+class TestSpikefree(unittest.TestCase):
+    """Test spikefree DSM pipeline function"""
+
+    def setUp(self):
+        if not PYLASR_AVAILABLE:
+            self.skipTest("pylasr not available")
+
+    def test_spikefree(self):
+        """Test spikefree pipeline creation with custom parameters"""
+        pipeline = pylasr.spikefree(
+            res=0.5, freeze_distance=1.0, height_buffer=0.5, filter=[""], ofile=""
+        )
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_spikefree_defaults(self):
+        """Test spikefree pipeline creation with defaults"""
+        pipeline = pylasr.spikefree()
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
+    def test_spikefree_adaptive(self):
+        """Test spikefree with freeze_distance=0 for locally adaptive mode"""
+        pipeline = pylasr.spikefree(freeze_distance=0)
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
 
@@ -164,7 +201,12 @@ class TestGeometricAnalysis(unittest.TestCase):
     def test_local_maximum(self):
         """Test local_maximum pipeline creation"""
         pipeline = pylasr.local_maximum(
-            ws=3.0, min_height=2.0, filter=[""], ofile="", use_attribute="Z", store_in_attributes="tree_top"
+            ws=3.0,
+            min_height=2.0,
+            filter=[""],
+            ofile="",
+            use_attribute="Z",
+            store_in_attributes="tree_top",
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
@@ -214,7 +256,12 @@ class TestRasterization(unittest.TestCase):
         raster = pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
         # Apply pit_fill operation to the raster
         pipeline = pylasr.pit_fill(
-            raster, lap_size=3, thr_lap=0.1, thr_spk=-0.1, med_size=3, ofile="filled.tif"
+            raster,
+            lap_size=3,
+            thr_lap=0.1,
+            thr_spk=-0.1,
+            med_size=3,
+            ofile="filled.tif",
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
@@ -267,12 +314,24 @@ class TestTransformations(unittest.TestCase):
         """Test transform_with pipeline with affine transformation matrix"""
         # Create identity matrix (no transformation)
         matrix = [
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
         ]
-        
+
         # Load the matrix
         matrix_stage = pylasr.load_matrix(matrix, check=True)
         # Apply transformation

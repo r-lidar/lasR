@@ -299,6 +299,12 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("iterations") = 500, py::arg("time_step") = 0.65,
           py::arg("classification") = 2, py::arg("filter") = std::vector<std::string>{""});
 
+    m.def("classify_with_ptd", &api::classify_with_ptd,
+          "Classify ground using Progressive TIN densification",
+          py::arg("res") = 10, py::arg("angle") = 20,
+          py::arg("distance") = 3, py::arg("spacing") = 0.25,
+          py::arg("classification") = 2, py::arg("filter") = std::vector<std::string>{""});
+
     // Geometric features
     m.def("geometry_features", &api::geometry_features,
           "Compute geometric features",
@@ -355,6 +361,14 @@ PYBIND11_MODULE(pylasr, m) {
           "Sample points using Poisson disk sampling",
           py::arg("distance") = 2.0, py::arg("filter") = std::vector<std::string>{""},
           py::arg("shuffle_size") = std::numeric_limits<int>::max());
+
+    m.def("spikefree", &api::spikefree,
+          "Spkipe-free dsm algorithm",
+          py::arg("res") = 0.5,
+          py::arg("freeze_distance") = 1.0,
+          py::arg("height_buffer") = 0.5,
+          py::arg("filter") = std::vector<std::string>{""},
+          py::arg("ofile") = "");
 
     // Rasterization
     m.def("rasterize", &api::rasterize,

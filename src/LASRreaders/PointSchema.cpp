@@ -162,11 +162,18 @@ int AttributeSchema::get_attribute_index(const std::string& name) const
   for (const auto& attr : attributes) attr.dump(verbose);
 }*/
 
-AttributeAccessor::AttributeAccessor(double default_value) : name(""), attribute(nullptr), init(false), default_value(default_value) {}
-AttributeAccessor::AttributeAccessor(const std::string& name, double default_value) : name(name), attribute(nullptr), init(false), default_value(default_value) {}
+AttributeAccessor::AttributeAccessor(double default_value) : name(""), attribute(nullptr), init(false), default_value(default_value)
+{
+  parse_name();
+}
+AttributeAccessor::AttributeAccessor(const std::string& name, double default_value) : name(name), attribute(nullptr), init(false), default_value(default_value)
+{
+  parse_name();
+}
 AttributeAccessor::AttributeAccessor(const std::string& name, AttributeSchema* schema, double default_value) : name(name), attribute(schema->find_attribute(name)), init(true), default_value(default_value)
 {
   if (!attribute) throw std::runtime_error("Attribute not found in schema");
+  parse_name();
 }
 
 double AttributeAccessor::read(const Point* point)
@@ -194,7 +201,10 @@ double AttributeAccessor::read(const Point* point)
   case DOUBLE: cast_value = static_cast<double>(*reinterpret_cast<const double*>(pointer)); break;
   default: return default_value;
   }
-  return attribute->value_offset + attribute->scale_factor * cast_value;
+
+  double val = attribute->value_offset + attribute->scale_factor * cast_value;
+  if (absolute) val = std::abs(val);
+  return val;
 }
 
 void AttributeAccessor::write(Point* point, double value)
@@ -208,6 +218,7 @@ void AttributeAccessor::write(Point* point, double value)
 
   unsigned char* pointer = point->data + attribute->offset;
   double scaled_value = (value - attribute->value_offset) / attribute->scale_factor;
+  if (absolute) scaled_value = std::abs(scaled_value);
 
   switch (attribute->type) {
   case BIT:    *reinterpret_cast<uint8_t*>(pointer) = (*reinterpret_cast<uint8_t*>(pointer) & ~(1 << attribute->bit_pos)) | ((value != 0.0) << attribute->bit_pos); break;
@@ -233,4 +244,13 @@ double AttributeAccessor::operator()(const Point* point)
 void AttributeAccessor::operator()(Point* point, double value)
 {
   write(point, value);
+}
+
+void AttributeAccessor::parse_name()
+{
+  if (name.size() >= 2 && name.front() == '|' && name.back() == '|')
+  {
+    absolute = true;
+    name = name.substr(1, name.size() - 2);
+  }
 }

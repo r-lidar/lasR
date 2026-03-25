@@ -775,8 +775,10 @@ result = pipeline.execute(f)
 
 ### Classification and filtering
 - `classify_with_sor()` - Statistical Outlier Removal for noise classification
-- `classify_with_ivf()` - Isolated Voxel Filter for noise classification  
+- `classify_with_ivf()` - Isolated Voxel Filter for noise classification (now also accepts a list of 3 resolutions for non-cubic voxels, e.g. `res=[5.0, 5.0, 10.0]`)
+- `classify_with_ipf()` - Isolated Point Filter for noise classification
 - `classify_with_csf()` - Cloth Simulation Filter for ground classification
+- `classify_with_ptd()` - Progressive TIN Densification for ground classification
 - `filter_with_grid()` - Grid-based point filtering to keep lowest or highest point per cell
 
 The `filter_with_grid()` stage is useful for data thinning while preserving important features:
@@ -795,6 +797,25 @@ result = pipeline.execute(f)
 - `sampling_voxel()` - Voxel-based point sampling
 - `sampling_pixel()` - Pixel-based point sampling  
 - `sampling_poisson()` - Poisson disk sampling
+
+### Spikefree DSM
+
+The `spikefree()` stage creates a pit-free Digital Surface Model using an incremental triangulation approach with triangle freezing (Khosravipour et al. 2016). It produces cleaner DSMs than simple max-height rasterization:
+
+```python
+# Standard spikefree DSM
+dsm = pylasr.spikefree(
+    res=0.5,              # raster resolution
+    freeze_distance=1.0,  # ~3x pulse spacing recommended
+    height_buffer=0.5,    # keep default
+    ofile="/tmp/dsm_spikefree.tif"
+)
+result = dsm.execute(f)
+
+# Locally adaptive mode (Fisher 2024)
+dsm_adaptive = pylasr.spikefree(freeze_distance=0, ofile="/tmp/dsm_adaptive.tif")
+result = dsm_adaptive.execute(f)
+```
 
 ### Geometric analysis
 - `geometry_features()` - Compute geometric features (eigenvalues, etc.)

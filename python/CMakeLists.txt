@@ -132,7 +132,6 @@ include_directories(
   ${LASR_SOURCE_DIR}/src/vendor
   ${LASR_SOURCE_DIR}/src/vendor/LASlib
   ${LASR_SOURCE_DIR}/src/vendor/LASzip
-  ${LASR_SOURCE_DIR}/src/vendor/common
   ${LASR_SOURCE_DIR}/src/LASRcore
   ${LASR_SOURCE_DIR}/src/LASRapi
   ${LASR_SOURCE_DIR}/src/LASRreaders
@@ -234,6 +233,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/localmaximum.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/nnmetrics.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/nothing.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/ptd.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/rasterize.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/readlas.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/readpcd.cpp
@@ -242,6 +242,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/setcrs.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/sor.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/sort.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/spikefree.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/svd.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/transformwith.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/triangulate.cpp
@@ -261,6 +262,11 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/vendor/csf/c2cdist.cpp
   ${LASR_SOURCE_DIR}/src/vendor/csf/point_cloud.cpp
   ${LASR_SOURCE_DIR}/src/vendor/geophoton/chm_prep.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/hporro/delaunay.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/hporro/index.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/hporro/pred3d.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/ptd/PTD.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/spikefree/Spikefree.cpp
 
   # LASlib vendor files
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasreader.cpp

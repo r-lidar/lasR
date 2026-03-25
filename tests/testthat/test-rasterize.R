@@ -28,6 +28,19 @@ test_that("rasterize works with extrabyte",
   expect_equal(mean(u[[3]][], na.rm = T), 0)
 })
 
+test_that("rasterize works with absolute value",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+  met = rasterize(5, c("a_mean", "|a|_mean"))
+  u = exec(met, on = f)
+
+  expect_s4_class(u, "SpatRaster")
+  expect_equal(names(u), c("a_mean", "|a|_mean"))
+  expect_equal(dim(u), c(58, 58, 2))
+  expect_equal(mean(u[[1]][], na.rm = T), -2.3653, tolerance = 1e-6)
+  expect_equal(mean(u[[2]][], na.rm = T), 2.56111, tolerance = 1e-6)
+})
+
 test_that("rasterize non streamed works",
 {
   f = system.file("extdata", "Topography.las", package="lasR")

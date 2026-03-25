@@ -28,7 +28,7 @@ void print_queue()
       Rprintf("%s", message.second.c_str());
       break;
     case WARNINGLVL:
-      REprintf("WARNING: %s", message.second.c_str());
+      REprintf("\033[38;5;208mWARNING: %s\033[0m", message.second.c_str());
       break;
     case ERRORLVL:
       REprintf("ERROR: %s", message.second.c_str());
@@ -128,7 +128,7 @@ void warning(const char *format, ...)
   vsnprintf(buffer, sizeof(buffer), format, args);
   va_end(args);
 
-  fprintf(stderr, "WARNING: %s", buffer); // Print formatted string
+  fprintf(stderr, "\033[38;5;208mWARNING: %s\033[0m", buffer); // Print formatted string
 }
 
 #endif

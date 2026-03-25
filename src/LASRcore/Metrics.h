@@ -78,53 +78,6 @@ private:
   MetricCalculator parse(const std::string& name);
   std::vector<MetricCalculator> regular_operators;
 
-  // Map of string to attribute accessors
-  /*std::unordered_map<std::string, AttributeAccessor> attribute_functions = {
-    {"x", [](const PointLAS& p) { return p.x; }},
-    {"y", [](const PointLAS& p) { return p.y; }},
-    {"z", [](const PointLAS& p) { return p.z; }},
-    {"i", [](const PointLAS& p) { return p.intensity; }},
-    {"r", [](const PointLAS& p) { return p.return_number; }},
-    {"n", [](const PointLAS& p) { return p.number_of_returns; }},
-    {"c", [](const PointLAS& p) { return p.classification; }},
-    {"t", [](const PointLAS& p) { return p.gps_time; }},
-    {"s", [](const PointLAS& p) { return p.synthetic_flag; }},
-    {"k", [](const PointLAS& p) { return p.keypoint_flag; }},
-    {"w", [](const PointLAS& p) { return p.withheld_flag; }},
-    {"o", [](const PointLAS& p) { return p.overlap_flag; }},
-    {"u", [](const PointLAS& p) { return p.user_data; }},
-    {"p", [](const PointLAS& p) { return p.point_source_ID; }},
-    {"e", [](const PointLAS& p) { return p.edge_of_flight_line; }},
-    {"d", [](const PointLAS& p) { return p.scan_direction_flag; }},
-    {"a", [](const PointLAS& p) { return p.scan_angle; }},
-    {"R", [](const PointLAS& p) { return p.R; }},
-    {"G", [](const PointLAS& p) { return p.G; }},
-    {"B", [](const PointLAS& p) { return p.B; }},
-    {"N", [](const PointLAS& p) { return p.NIR; }},
-
-    // # nocov start
-    {"intensity", [](const PointLAS& p) { return p.intensity; }},
-    {"returnnumber", [](const PointLAS& p) { return p.return_number; }},
-    {"numberofreturn", [](const PointLAS& p) { return p.number_of_returns; }},
-    {"classification", [](const PointLAS& p) { return p.classification; }},
-    {"gpstime", [](const PointLAS& p) { return p.gps_time; }},
-    {"synthetic", [](const PointLAS& p) { return p.synthetic_flag; }},
-    {"keypoint", [](const PointLAS& p) { return p.keypoint_flag; }},
-    {"withheld", [](const PointLAS& p) { return p.withheld_flag; }},
-    {"overlap", [](const PointLAS& p) { return p.overlap_flag; }},
-    {"userdata", [](const PointLAS& p) { return p.user_data; }},
-    {"pointsourceid", [](const PointLAS& p) { return p.point_source_ID; }},
-    {"edgeofflightline", [](const PointLAS& p) { return p.edge_of_flight_line; }},
-    {"scandirectionflag", [](const PointLAS& p) { return p.scan_direction_flag; }},
-    {"angle", [](const PointLAS& p) { return p.scan_angle; }},
-    {"scanangle", [](const PointLAS& p) { return p.scan_angle; }},
-    {"red", [](const PointLAS& p) { return p.R; }},
-    {"green", [](const PointLAS& p) { return p.G; }},
-    {"blue", [](const PointLAS& p) { return p.B; }},
-    {"nir", [](const PointLAS& p) { return p.NIR; }}
-    // # nocov end
-  };*/
-
   // Map of string to metric functions
   std::unordered_map<std::string, MetricComputation> metric_functions = {
     {"max", [this](AttributeAccessor& accessor, const PointCollection& points, float param) { return max(accessor, points, param); }},
