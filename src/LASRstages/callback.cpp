@@ -1,7 +1,44 @@
+#ifdef USING_R
+#include "Rversion.h"
 #include "callback.h"
 #include <unordered_set>
 
-#ifdef USING_R
+namespace{
+  // From data.table https://github.com/Rdatatable/data.table/pull/7451/changes
+  #if R_VERSION < R_Version(4, 6, 0)
+  # define BACKPORT_RESIZABLE_API
+  # define R_allocResizableVector(type, maxlen) R_allocResizableVector_(type, maxlen)
+  # define R_duplicateAsResizable(x) R_duplicateAsResizable_(x)
+  # define R_maxLength(x) R_maxLength_(x)
+  static inline R_xlen_t R_maxLength_(SEXP x) {
+    return IS_GROWABLE(x) ? TRUELENGTH(x) : XLENGTH(x);
+  }
+  # define R_isResizable(x) R_isResizable_(x)
+  static inline bool R_isResizable_(SEXP x) {
+    // IS_GROWABLE checks for XLENGTH < TRUELENGTH instead
+    return (LEVELS(x) & 0x20) && XLENGTH(x) <= TRUELENGTH(x);
+  }
+  # define R_resizeVector(x, newlen) R_resizeVector_(x, newlen)
+  #endif
+
+  #ifdef BACKPORT_RESIZABLE_API
+  SEXP R_allocResizableVector_(SEXPTYPE type, R_xlen_t maxlen) {
+    SEXP ret = Rf_allocVector(type, maxlen);
+    SET_TRUELENGTH(ret, maxlen);
+    SET_GROWABLE_BIT(ret);
+    return ret;
+  }
+
+  void R_resizeVector_(SEXP x, R_xlen_t newlen) {
+    if (!R_isResizable(x))
+      throw std::runtime_error("attempt to resize a non-resizable vector"); // # nocov
+    if (newlen > XTRUELENGTH(x))
+      throw std::runtime_error("newlen exceeds maxlen"); // # nocov
+    SETLENGTH(x, newlen);
+  }
+  #endif
+}
+
 
 LASRcallback::LASRcallback()
 {
@@ -137,7 +174,7 @@ bool LASRcallback::process(PointCloud*& las)
     int type = (attributes[i].type >= AttributeType::FLOAT || attributes[i].scale_factor != 1 || attributes[i].value_offset != 0) ? REALSXP : INTSXP;
 
     // We overallocate npoints. We may actually have less than that.
-    SEXP v = PROTECT(Rf_allocVector(type, las->npoints)); nsexpprotected++;
+    SEXP v = PROTECT(R_allocResizableVector(type, las->npoints)); nsexpprotected++;
     SET_VECTOR_ELT(data_frame, i, v);
   }
 
@@ -207,7 +244,7 @@ bool LASRcallback::process(PointCloud*& las)
     for (int i = 0 ; i < nattr ; i++)
     {
       SEXP vector = VECTOR_ELT(data_frame, i);
-      SETLENGTH(vector, p_count);
+      R_resizeVector(vector, p_count);
     }
   }
 
