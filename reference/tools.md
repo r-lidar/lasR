@@ -36,31 +36,31 @@ algo1 <- rasterize(1, "max")
 algo2 <- rasterize(4, "min")
 print(algo1)
 #> -----------
-#> rasterize (uid:40b066503fb7)
+#> rasterize (uid:10b92a291dad)
 #>   method : [max] 
 #>   window : 1.00 
 #>   res : 1.00 
 #>   filter : [] 
-#>   output : /tmp/Rtmpy55V7f/file254971cbaeb1.tif 
+#>   output : /tmp/Rtmp4Fagql/file2539687c51f6.tif 
 #> -----------
 #> 
 #> NULL
 pipeline <- algo1 + algo2
 print(pipeline)
 #> -----------
-#> rasterize (uid:40b066503fb7)
+#> rasterize (uid:10b92a291dad)
 #>   method : [max] 
 #>   window : 1.00 
 #>   res : 1.00 
 #>   filter : [] 
-#>   output : /tmp/Rtmpy55V7f/file254971cbaeb1.tif 
+#>   output : /tmp/Rtmp4Fagql/file2539687c51f6.tif 
 #> -----------
-#> rasterize (uid:faa15b31099d)
+#> rasterize (uid:99ed0b1ea6e5)
 #>   method : [min] 
 #>   window : 4.00 
 #>   res : 4.00 
 #>   filter : [] 
-#>   output : /tmp/Rtmpy55V7f/file254953b5e366.tif 
+#>   output : /tmp/Rtmp4Fagql/file253937f53f61.tif 
 #> -----------
 #> 
 #> NULL
