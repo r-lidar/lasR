@@ -96,7 +96,7 @@ BOOL LASreaderLAS::open(const char* file_name, I32 io_buffer_size, BOOL peek_onl
       {
         if (stat_buf.st_size > 500 * 1024 * 1024)
         {
-          warning("WARNING: remote file '%s' is %.0f MB. Consider converting to COPC for efficient streaming.\n", file_name, (double)stat_buf.st_size / (1024.0 * 1024.0));
+          warning("remote file '%s' is %.0f MB. Consider converting to COPC for efficient streaming.\n", file_name, (double)stat_buf.st_size / (1024.0 * 1024.0));
         }
       }
     }
