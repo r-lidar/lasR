@@ -26,7 +26,8 @@ Imports:
     utils,
     stats,
     Rcpp
-Suggests: 
+Suggests:
+    httpuv,
     knitr,
     rmarkdown,
     sf,
