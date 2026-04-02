@@ -30,10 +30,10 @@
 
 ===============================================================================
 */
-#ifdef USING_GDAL
-
 #ifndef BYTE_STREAM_IN_GDAL_H
 #define BYTE_STREAM_IN_GDAL_H
+
+#ifdef USING_GDAL
 
 #include "bytestreamin.hpp"
 
@@ -110,7 +110,10 @@ inline ByteStreamInGDAL::~ByteStreamInGDAL()
 {
   if (file)
   {
-    VSIFCloseL(file);
+    if (VSIFCloseL(file) != 0)
+    {
+      eprint("WARNING: VSIFCloseL failed\n");
+    }
     file = NULL;
   }
 }
@@ -155,8 +158,7 @@ inline BOOL ByteStreamInGDAL::seek(const I64 position)
 
 inline BOOL ByteStreamInGDAL::seekEnd(const I64 distance)
 {
-  int result = VSIFSeekL(file, (vsi_l_offset)(-distance), SEEK_END);
-  return !result;
+  return !(VSIFSeekL(file, (vsi_l_offset)(-(I64)distance), SEEK_END));
 }
 
 inline ByteStreamInGDALLE::ByteStreamInGDALLE(VSILFILE* file) : ByteStreamInGDAL(file)
@@ -255,5 +257,5 @@ inline void ByteStreamInGDALBE::get64bitsBE(U8* bytes)
   getBytes(bytes, 8);
 }
 
-#endif
-#endif
+#endif // USING_GDAL
+#endif // BYTE_STREAM_IN_GDAL_H
