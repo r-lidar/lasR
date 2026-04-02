@@ -37,6 +37,12 @@
 #include "lasindex.hpp"
 #include "lascopc.hpp"
 
+#ifdef USING_GDAL
+#include "bytestreamin_gdal.hpp"
+#include <cpl_vsi.h>
+#include <string>
+#endif
+
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
@@ -45,12 +51,85 @@
 #include <stdlib.h>
 #include <string.h>
 
+static bool is_remote_path(const char* path)
+{
+  if (path == 0) return false;
+  if (strncmp(path, "http://", 7) == 0) return true;
+  if (strncmp(path, "https://", 8) == 0) return true;
+  if (strncmp(path, "/vsicurl/", 9) == 0) return true;
+  if (strncmp(path, "/vsis3/", 7) == 0) return true;
+  if (strncmp(path, "/vsigs/", 7) == 0) return true;
+  if (strncmp(path, "/vsiaz/", 7) == 0) return true;
+  if (strncmp(path, "/vsiadls/", 9) == 0) return true;
+  if (strncmp(path, "/vsioss/", 8) == 0) return true;
+  if (strncmp(path, "/vsiswift/", 10) == 0) return true;
+  return false;
+}
+
 BOOL LASreaderLAS::open(const char* file_name, I32 io_buffer_size, BOOL peek_only, U32 decompress_selective)
 {
   if (file_name == 0)
   {
     eprint("ERROR: file name pointer is zero\n");
     return FALSE;
+  }
+
+  if (is_remote_path(file_name))
+  {
+#ifdef USING_GDAL
+    // Build the GDAL virtual filesystem path
+    std::string vsi_path;
+    if (strncmp(file_name, "http://", 7) == 0 || strncmp(file_name, "https://", 8) == 0)
+    {
+      vsi_path = std::string("/vsicurl/") + file_name;
+    }
+    else
+    {
+      vsi_path = file_name;
+    }
+
+    // Size warning for non-COPC files
+    if (strstr(file_name, ".copc.") == NULL)
+    {
+      VSIStatBufL stat_buf;
+      if (VSIStatL(vsi_path.c_str(), &stat_buf) == 0)
+      {
+        if (stat_buf.st_size > 500 * 1024 * 1024)
+        {
+          warning("WARNING: remote file '%s' is %.0f MB. Consider converting to COPC for efficient streaming.\n", file_name, (double)stat_buf.st_size / (1024.0 * 1024.0));
+        }
+      }
+    }
+
+    VSILFILE* vsi_file = VSIFOpenL(vsi_path.c_str(), "rb");
+    if (vsi_file == 0)
+    {
+      eprint("ERROR: cannot open remote file '%s'\n", file_name);
+      return FALSE;
+    }
+
+    // Save file name for error messages
+    if (this->file_name)
+    {
+      free(this->file_name);
+      this->file_name = 0;
+    }
+    this->file_name = LASCopyString(file_name);
+
+    // Leave FILE* file as null -- close() already null-checks before fclose()
+    // ByteStreamInGDAL takes ownership and will call VSIFCloseL in destructor
+
+    ByteStreamIn* in;
+    if (IS_LITTLE_ENDIAN())
+      in = new ByteStreamInGDALLE(vsi_file);
+    else
+      in = new ByteStreamInGDALBE(vsi_file);
+
+    return open(in, peek_only, decompress_selective);
+#else
+    eprint("ERROR: remote file access requires GDAL. File: '%s'\n", file_name);
+    return FALSE;
+#endif
   }
 
 #ifdef _MSC_VER
