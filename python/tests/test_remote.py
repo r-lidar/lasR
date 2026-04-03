@@ -38,9 +38,17 @@ def http_server():
                 break
         except OSError:
             time.sleep(0.1)
+    else:
+        proc.terminate()
+        proc.wait(timeout=5)
+        pytest.fail(f"HTTP server subprocess never became reachable on 127.0.0.1:{port}")
     yield f"http://127.0.0.1:{port}"
     proc.terminate()
-    proc.wait(timeout=5)
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=5)
 
 
 def _get_npoints(result):

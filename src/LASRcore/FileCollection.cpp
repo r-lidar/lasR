@@ -54,7 +54,7 @@ static std::string filename_from_url(const std::string& url)
   size_t pos = path.rfind('/');
   if (pos == std::string::npos) return path;
   std::string name = path.substr(pos + 1);
-  // Strip .laz or .las extension, and .copc prefix if present
+  // Strip .laz or .las extension, and .copc suffix if present
   size_t dot = name.rfind('.');
   if (dot != std::string::npos) name = name.substr(0, dot);
   if (name.size() > 5 && name.substr(name.size() - 5) == ".copc")
@@ -81,12 +81,8 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
     pb.show();
     PathType type = parse_path(file);
 
-    // A LAS or LAZ file
-    if (type == PathType::LASFILE)
-    {
-      if (!add_las_file(file)) return false;
-    }
-    else if (type == PathType::REMOTEFILE)
+    // A LAS, LAZ, or remote file
+    if (type == PathType::LASFILE || type == PathType::REMOTEFILE)
     {
       if (!add_las_file(file)) return false;
     }

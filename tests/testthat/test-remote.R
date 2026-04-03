@@ -72,7 +72,7 @@ test_that("remote non-COPC file reads correctly",
 
 test_that("remote file with invalid URL fails gracefully",
 {
-  expect_error(exec(reader() + summarise(), on = "https://localhost:99999/nonexistent.copc.laz"))
+  expect_error(exec(reader() + summarise(), on = "https://localhost:65535/nonexistent.copc.laz"))
 })
 
 test_that("public remote COPC endpoint works",
