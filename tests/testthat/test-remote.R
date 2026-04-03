@@ -1,5 +1,6 @@
 test_that("remote COPC reads correctly via HTTP",
 {
+  skip_on_cran()
   skip_if_not_installed("httpuv")
 
   f <- system.file("extdata", "example.copc.laz", package = "lasR")
@@ -26,6 +27,7 @@ test_that("remote COPC reads correctly via HTTP",
 
 test_that("remote COPC with copc_depth works",
 {
+  skip_on_cran()
   skip_if_not_installed("httpuv")
 
   f <- system.file("extdata", "example.copc.laz", package = "lasR")
@@ -49,6 +51,7 @@ test_that("remote COPC with copc_depth works",
 
 test_that("remote non-COPC file reads correctly",
 {
+  skip_on_cran()
   skip_if_not_installed("httpuv")
 
   f <- system.file("extdata", "Example.laz", package = "lasR")
@@ -72,13 +75,14 @@ test_that("remote non-COPC file reads correctly",
 
 test_that("remote file with invalid URL fails gracefully",
 {
+  skip_on_cran()
   expect_error(exec(reader() + summarise(), on = "https://localhost:65535/nonexistent.copc.laz"))
 })
 
 test_that("public remote COPC endpoint works",
 {
   skip_on_cran()
-  skip_if_offline()
+  skip_if_not(nzchar(Sys.which("curl")) || capabilities("libcurl"), "No network available")
 
   url <- "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz"
 
