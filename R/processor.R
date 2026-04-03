@@ -59,7 +59,8 @@ exec = function(pipeline, on, with = NULL, ...)
     if (is.character(on))
     {
       stopifnot(length(on) > 0)
-      on <- normalizePath(on, mustWork = FALSE)
+      is_remote <- grepl("^https?://|^/vsi", on)
+      on[!is_remote] <- normalizePath(on[!is_remote], mustWork = FALSE)
       on_is_valid = TRUE
     }
 
@@ -98,7 +99,8 @@ exec = function(pipeline, on, with = NULL, ...)
     if (methods::is(on, "LAScatalog"))
     {
       on <- on$filename
-      on <- normalizePath(on, mustWork = FALSE)
+      is_remote <- grepl("^https?://|^/vsi", on)
+      on[!is_remote] <- normalizePath(on[!is_remote], mustWork = FALSE)
       on_is_valid = TRUE
     }
 
