@@ -2960,6 +2960,11 @@ void LASreadOpener::set_file_name(const CHAR* file_name, BOOL unique)
 #include <windows.h>
 BOOL LASreadOpener::add_file_name(const CHAR* file_name, BOOL unique)
 {
+  if (is_remote_path(file_name))
+  {
+    add_file_name_single(file_name, unique);
+  }
+
 	BOOL r = FALSE;
 	HANDLE h;
 	WIN32_FIND_DATA info;

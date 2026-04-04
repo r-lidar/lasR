@@ -45,6 +45,38 @@ wchar_t* UTF8toUTF16(const char* utf8)
 }
 #endif
 
+#include <string.h>
+
+bool is_remote_path(const char* path)
+{
+  if (!path) return false;
+
+  // Group 1: The HTTP family
+  if (path[0] == 'h')
+  {
+    return
+      strncmp(path, "http://", 7) == 0 ||
+      strncmp(path, "https://", 8) == 0;
+  }
+
+  // Group 2: The GDAL VSI family
+  // Fast check: Must start with '/' and contain "vsi"
+  if (path[0] == '/' && strncmp(path, "/vsi", 4) == 0)
+  {
+    const char* sub = path + 4;
+
+    return
+      strncmp(sub, "curl/", 5) == 0  ||
+      strncmp(sub, "s3/", 3) == 0    ||
+      strncmp(sub, "gs/", 3) == 0    ||
+      strncmp(sub, "az/", 3) == 0    ||
+      strncmp(sub, "adls/", 5) == 0  ||
+      strncmp(sub, "oss/", 4) == 0   ||
+      strncmp(sub, "swift/", 6) == 0;
+  }
+
+  return false;
+}
 
 #ifndef USING_R
 #include <cstdarg>

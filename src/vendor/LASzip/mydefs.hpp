@@ -269,4 +269,7 @@ inline void ENDIAN_SWAP_64(const U8* from, U8* to)
 wchar_t* UTF8toUTF16(const char* utf8);
 #endif
 
+bool is_remote_path(const char* path);
+
+
 #endif
