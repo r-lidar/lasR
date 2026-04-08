@@ -4,6 +4,8 @@
 
 - **Jean-Romain Roussel**. Author, maintainer, copyright holder.
 
+- **Alexey Grigoryev**. Contributor.
+
 - **Martin Isenburg**. Copyright holder.  
   Is the author of the included LASlib and LASzip libraries
 
