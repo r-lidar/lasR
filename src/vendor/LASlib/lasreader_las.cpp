@@ -51,21 +51,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static bool is_remote_path(const char* path)
-{
-  if (path == 0) return false;
-  if (strncmp(path, "http://", 7) == 0) return true;
-  if (strncmp(path, "https://", 8) == 0) return true;
-  if (strncmp(path, "/vsicurl/", 9) == 0) return true;
-  if (strncmp(path, "/vsis3/", 7) == 0) return true;
-  if (strncmp(path, "/vsigs/", 7) == 0) return true;
-  if (strncmp(path, "/vsiaz/", 7) == 0) return true;
-  if (strncmp(path, "/vsiadls/", 9) == 0) return true;
-  if (strncmp(path, "/vsioss/", 8) == 0) return true;
-  if (strncmp(path, "/vsiswift/", 10) == 0) return true;
-  return false;
-}
-
 BOOL LASreaderLAS::open(const char* file_name, I32 io_buffer_size, BOOL peek_only, U32 decompress_selective)
 {
   if (file_name == 0)
