@@ -32,6 +32,35 @@ inline void gmtime_r(const time_t* timep, std::tm* result)
 }
 #endif
 
+static bool is_remote_path(const std::string& path)
+{
+  if (path.compare(0, 7, "http://") == 0) return true;
+  if (path.compare(0, 8, "https://") == 0) return true;
+  if (path.compare(0, 9, "/vsicurl/") == 0) return true;
+  if (path.compare(0, 7, "/vsis3/") == 0) return true;
+  if (path.compare(0, 7, "/vsigs/") == 0) return true;
+  if (path.compare(0, 7, "/vsiaz/") == 0) return true;
+  if (path.compare(0, 9, "/vsiadls/") == 0) return true;
+  if (path.compare(0, 8, "/vsioss/") == 0) return true;
+  if (path.compare(0, 10, "/vsiswift/") == 0) return true;
+  return false;
+}
+
+static std::string filename_from_url(const std::string& url)
+{
+  // Strip query parameters
+  std::string path = url.substr(0, url.find('?'));
+  // Find the last slash
+  size_t pos = path.rfind('/');
+  if (pos == std::string::npos) return path;
+  std::string name = path.substr(pos + 1);
+  // Strip .laz or .las extension, and .copc suffix if present
+  size_t dot = name.rfind('.');
+  if (dot != std::string::npos) name = name.substr(0, dot);
+  if (name.size() > 5 && name.substr(name.size() - 5) == ".copc")
+    name = name.substr(0, name.size() - 5);
+  return name;
+}
 
 bool FileCollection::read(const std::vector<std::string>& files, bool progress)
 {
@@ -52,8 +81,8 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
     pb.show();
     PathType type = parse_path(file);
 
-    // A LAS or LAZ file
-    if (type == PathType::LASFILE)
+    // A LAS, LAZ, or remote file
+    if (type == PathType::LASFILE || type == PathType::REMOTEFILE)
     {
       if (!add_las_file(file)) return false;
     }
@@ -195,7 +224,10 @@ bool FileCollection::read_vpc(const std::string& filename)
       // Find the path to the file and resolve relative path
       auto first_asset = *feature["assets"].begin();
       std::string file_path = first_asset["href"];
-      file_path = std::filesystem::weakly_canonical(parent_folder / file_path).string();
+      if (!is_remote_path(file_path))
+      {
+        file_path = std::filesystem::weakly_canonical(parent_folder / file_path).string();
+      }
 
       int pccount = feature["properties"]["pc:count"].get<int>();
 
@@ -695,8 +727,12 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
 
   if (!use_dataframe)
   {
-    chunk.main_files.push_back(files[i].string());
-    chunk.name = files[i].stem().string();
+    std::string filepath = files[i].string();
+    chunk.main_files.push_back(filepath);
+    if (is_remote_path(filepath))
+      chunk.name = filename_from_url(filepath);
+    else
+      chunk.name = files[i].stem().string();
   }
   else
   {
@@ -889,6 +925,11 @@ bool FileCollection::file_exists(std::string& file)
 
 PathType FileCollection::parse_path(const std::string& path)
 {
+  if (is_remote_path(path))
+  {
+    return PathType::REMOTEFILE;
+  }
+
   std::filesystem::path file_path(path);
 
   if (std::filesystem::exists(file_path))
