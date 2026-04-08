@@ -48,9 +48,15 @@ jobs:
 
     - name: Install system dependencies on macOS
       if: runner.os == 'macOS'
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: '1'
       run: |
-        brew update
-        brew install libomp gdal geos proj sqlite3 tbb
+        brew install shared-mime-info
+        brew install libomp gdal geos proj sqlite3 tbb || {
+          brew postinstall shared-mime-info || true
+          brew postinstall libheif || true
+          brew install libomp gdal geos proj sqlite3 tbb
+        }
 
     - name: Install Python dependencies
       run: |
