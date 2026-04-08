@@ -9,10 +9,11 @@ coverage](https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg)](https
 The `lasr` library (pronounced “laser”) is a C++ library for large scale
 airborne point cloud processing with C++, R an Python APIs. It enables
 the creation and execution of **complex processing pipelines** on
-massive lidar data. It can read and write `.las`, `.laz` and `.pcd`
-files, compute metrics using an area-based approach, generate digital
-canopy models, segment individual trees, decimate point data, and
-process collections of files using multicore processing strategies.
+massive lidar data. It can read and write `.las`, `.laz`, `.copc.laz`
+(local and remote storage) and `.pcd` files, compute metrics using an
+area-based approach, generate digital canopy models, segment individual
+trees, decimate point data, and process collections of files using
+multicore processing strategies.
 
 `lasr` offers a range of tools to process massive volumes of lidar data
 efficiently in a production environment using either the `C++` API, the
