@@ -56,6 +56,6 @@ exec(pipeline, on = f)
 #> resolution  : 1, 1  (x, y)
 #> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)
 #> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) 
-#> source      : file24656728a780.tif 
+#> source      : file243377b96fd0.tif 
 #> name        : max 
 ```

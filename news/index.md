@@ -1,5 +1,15 @@
 # Changelog
 
+## lasR 0.20.0
+
+- NEW: Support of remote files
+
+``` r
+url <- "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz"
+pipeline <-  reader_circles(637368.8, 851944.8, 15) + summarise()
+ans <- exec(pipeline, on = url)
+```
+
 ## lasR 0.19.0
 
 - New: Progressive TIN densification with

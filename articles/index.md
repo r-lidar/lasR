@@ -14,3 +14,4 @@
 - [R stages](https://r-lidar.github.io/lasR/articles/r-stages.md):
 - [Buffered Area Based
   Approach](https://r-lidar.github.io/lasR/articles/baba.md):
+- [Remote files](https://r-lidar.github.io/lasR/articles/remote.md):
