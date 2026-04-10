@@ -1,3 +1,7 @@
+# lasR 0.20.1
+
+- Fix #285: `summarise()` count synthetic and withheld points
+
 # lasR 0.20.0
 
 - NEW: Support of remote files
