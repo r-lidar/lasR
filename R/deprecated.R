@@ -5,7 +5,7 @@
 #' @param filter see \link{reader}
 #' @param xc,yc,r see \link{reader}
 #' @param xmin,xmax,ymin,ymax see \link{reader}
-#' @param select,copc_depth see \link{reader}
+#' @param select,copc_depth,ept_depth see \link{reader}
 #' @param ... see \link{reader}
 #' @name deprecated
 #' @rdname deprecated

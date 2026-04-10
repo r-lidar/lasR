@@ -44,7 +44,7 @@ reader_las_rectangles(
 \arguments{
 \item{filter}{see \link{reader}}
 
-\item{select, copc_depth}{see \link{reader}}
+\item{select, copc_depth, ept_depth}{see \link{reader}}
 
 \item{...}{see \link{reader}}
 
