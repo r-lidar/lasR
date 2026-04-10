@@ -75,7 +75,7 @@ bool LASReptreader::process(Point*& point)
   {
     if (eptio->read_point(point))
     {
-      if (point->inside_buffer(xmin, ymin, ymax, ymax, circular))
+      if (point->inside_buffer(xmin, ymin, xmax, ymax, circular))
         point->set_buffered();
     }
     else

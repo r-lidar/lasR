@@ -66,15 +66,24 @@ void EPTio::open(const std::string& endpoint)
   // Determine if remote
   this->remote = is_remote(endpoint);
 
+  // Separate query string from path (for signed URLs like ?token=...)
+  std::string clean_endpoint = endpoint;
+  size_t qpos = endpoint.find('?');
+  if (qpos != std::string::npos)
+  {
+    query_string = endpoint.substr(qpos);
+    clean_endpoint = endpoint.substr(0, qpos);
+  }
+
   // Derive base_path by stripping ept.json
-  base_path = endpoint;
+  base_path = clean_endpoint;
   size_t pos = base_path.rfind("ept.json");
   if (pos != std::string::npos)
     base_path = base_path.substr(0, pos);
   else
     throw std::runtime_error("EPT endpoint must point to an ept.json file: " + endpoint);
 
-  // Remove trailing slash if not present, add one
+  // Ensure trailing slash
   if (!base_path.empty() && base_path.back() != '/')
     base_path += '/';
 
@@ -86,7 +95,7 @@ void EPTio::open(const std::string& endpoint)
 void EPTio::read_root_tile_header()
 {
   // Find the first tile with points from the root hierarchy to read scale/offset
-  std::string hier_path = base_path + "ept-hierarchy/0-0-0-0.json";
+  std::string hier_path = base_path + "ept-hierarchy/0-0-0-0.json" + query_string;
   std::string json_str;
 
   try { json_str = read_file_contents(hier_path); }
@@ -132,7 +141,8 @@ void EPTio::read_root_tile_header()
 
 void EPTio::parse_ept_json()
 {
-  std::string json_str = read_file_contents(base_path + "ept.json");
+  // query_string is appended for signed URL authentication
+  std::string json_str = read_file_contents(base_path + "ept.json" + query_string);
   ept_metadata = nlohmann::json::parse(json_str);
 
   // Validate dataType
@@ -358,6 +368,7 @@ void EPTio::load_hierarchy_page(const EPTkey& page_key, double qxmin, double qym
 {
   std::string path = hierarchy_path(page_key);
   std::string json_str;
+  bool is_root = (page_key.d == 0 && page_key.x == 0 && page_key.y == 0 && page_key.z == 0);
 
   try
   {
@@ -365,7 +376,10 @@ void EPTio::load_hierarchy_page(const EPTkey& page_key, double qxmin, double qym
   }
   catch (const std::exception& e)
   {
-    warning("EPT hierarchy file not found: %s\n", path.c_str());
+    if (is_root)
+      throw std::runtime_error("Failed to read EPT hierarchy: " + path + ": " + e.what());
+
+    warning("EPT sub-hierarchy file not found: %s\n", path.c_str());
     return;
   }
 
@@ -487,7 +501,7 @@ std::string EPTio::tile_path(const EPTkey& key) const
     std::to_string(key.d) + "-" +
     std::to_string(key.x) + "-" +
     std::to_string(key.y) + "-" +
-    std::to_string(key.z) + ".laz";
+    std::to_string(key.z) + ".laz" + query_string;
 }
 
 std::string EPTio::hierarchy_path(const EPTkey& key) const
@@ -496,7 +510,7 @@ std::string EPTio::hierarchy_path(const EPTkey& key) const
     std::to_string(key.d) + "-" +
     std::to_string(key.x) + "-" +
     std::to_string(key.y) + "-" +
-    std::to_string(key.z) + ".json";
+    std::to_string(key.z) + ".json" + query_string;
 }
 
 std::string EPTio::read_file_contents(const std::string& path) const

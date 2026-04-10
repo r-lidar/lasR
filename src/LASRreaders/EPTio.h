@@ -56,6 +56,7 @@ private:
 private:
   // EPT metadata
   std::string base_path;
+  std::string query_string;  // URL query params (e.g. ?token=...) for signed URLs
   bool remote;
   bool opened;
   nlohmann::json ept_metadata;
