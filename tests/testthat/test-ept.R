@@ -30,16 +30,8 @@ test_that("EPT reader detects non-laszip dataType",
   ept_dir <- file.path(tempdir(), "ept-bad")
   dir.create(ept_dir, showWarnings = FALSE)
 
-  ept_json <- list(
-    bounds = c(0, 0, 0, 10, 10, 10),
-    boundsConforming = c(0, 0, 0, 10, 10, 10),
-    dataType = "binary",
-    hierarchyType = "json",
-    schema = list(list(name = "X", type = "signed", size = 4)),
-    span = 128
-  )
-
-  jsonlite::write_json(ept_json, file.path(ept_dir, "ept.json"), auto_unbox = TRUE)
+  writeLines('{"bounds":[0,0,0,10,10,10],"boundsConforming":[0,0,0,10,10,10],"dataType":"binary","hierarchyType":"json","schema":[{"name":"X","type":"signed","size":4}],"span":128}',
+    file.path(ept_dir, "ept.json"))
 
   expect_error(
     exec(reader(), on = file.path(ept_dir, "ept.json")),
