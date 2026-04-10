@@ -85,28 +85,49 @@ void EPTio::open(const std::string& endpoint)
 
 void EPTio::read_root_tile_header()
 {
-  EPTkey root(0, 0, 0, 0);
-  std::string root_path = tile_path(root);
+  // Find the first tile with points from the root hierarchy to read scale/offset
+  std::string hier_path = base_path + "ept-hierarchy/0-0-0-0.json";
+  std::string json_str;
 
-  try
+  try { json_str = read_file_contents(hier_path); }
+  catch (...) { return; }
+
+  nlohmann::json hierarchy = nlohmann::json::parse(json_str);
+
+  for (auto& [key_str, value] : hierarchy.items())
   {
-    LASreadOpener opener;
-    opener.set_file_name(root_path.c_str());
-    LASreader* reader = opener.open();
-    if (reader)
+    int point_count = value.get<int>();
+    if (point_count <= 0) continue;
+
+    // Found a tile with points — try to open it
+    int d, x, y, z;
+    if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4)
+      continue;
+
+    EPTkey key(d, x, y, z);
+    std::string path = tile_path(key);
+
+    try
     {
-      x_scale = reader->header.x_scale_factor;
-      y_scale = reader->header.y_scale_factor;
-      z_scale = reader->header.z_scale_factor;
-      x_offset = reader->header.x_offset;
-      y_offset = reader->header.y_offset;
-      z_offset = reader->header.z_offset;
-      scale_offset_initialized = true;
-      reader->close();
-      delete reader;
+      LASreadOpener opener;
+      opener.set_file_name(path.c_str());
+      LASreader* reader = opener.open();
+      if (reader)
+      {
+        x_scale = reader->header.x_scale_factor;
+        y_scale = reader->header.y_scale_factor;
+        z_scale = reader->header.z_scale_factor;
+        x_offset = reader->header.x_offset;
+        y_offset = reader->header.y_offset;
+        z_offset = reader->header.z_offset;
+        scale_offset_initialized = true;
+        reader->close();
+        delete reader;
+        return;
+      }
     }
+    catch (...) { continue; }
   }
-  catch (...) { /* use defaults */ }
 }
 
 void EPTio::parse_ept_json()
@@ -381,8 +402,9 @@ void EPTio::load_hierarchy_page(const EPTkey& page_key, double qxmin, double qym
     }
     else if (point_count == -1)
     {
-      // Sub-hierarchy exists — recurse
-      load_hierarchy_page(key, qxmin, qymin, qxmax, qymax);
+      // Sub-hierarchy exists — only recurse if deeper nodes are allowed
+      if (depth_limit < 0 || d < depth_limit)
+        load_hierarchy_page(key, qxmin, qymin, qxmax, qymax);
     }
     // point_count == 0: empty node, skip
   }
