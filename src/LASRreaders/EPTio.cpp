@@ -460,12 +460,14 @@ bool EPTio::open_next_tile()
   tile_queue.pop_front();
 
   std::string path = tile_path(key);
-
   current_tile = new LASio();
 
   try
   {
     current_tile->open(path);
+    // populate_header initializes LASlib's point reader and extrabytes accessors
+    Header temp_header;
+    current_tile->populate_header(&temp_header);
   }
   catch (const std::exception& e)
   {
@@ -510,13 +512,13 @@ std::string EPTio::read_file_contents(const std::string& path) const
     if (!fp)
       throw std::runtime_error("Cannot open remote file: " + path);
 
-    // Get file size
-    VSIFSeekL(fp, 0, SEEK_END);
-    vsi_l_offset size = VSIFTellL(fp);
-    VSIFSeekL(fp, 0, SEEK_SET);
+    // Read in chunks — seeking to end doesn't work reliably for HTTP streams
+    std::string content;
+    char buffer[8192];
+    size_t bytes_read;
+    while ((bytes_read = VSIFReadL(buffer, 1, sizeof(buffer), fp)) > 0)
+      content.append(buffer, bytes_read);
 
-    std::string content(size, '\0');
-    VSIFReadL(&content[0], 1, size, fp);
     VSIFCloseL(fp);
     return content;
   }
