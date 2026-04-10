@@ -1,5 +1,11 @@
 # Changelog
 
+## lasR 0.20.1
+
+- Fix [\#285](https://github.com/r-lidar/lasR/issues/285):
+  [`summarise()`](https://r-lidar.github.io/lasR/reference/summarise.md)
+  count synthetic and withheld points
+
 ## lasR 0.20.0
 
 - NEW: Support of remote files
