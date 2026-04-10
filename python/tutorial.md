@@ -353,6 +353,15 @@ However `hull()` is more likely to be used without a triangulation. In this case
 - `reader_rectangles()`: will read only some rectangular regions of interest of the coverage and process them sequentially.
 - `reader_circles()`: will read only some circular regions of interest of the coverage and process them sequentially.
 
+All readers support local and remote files (HTTP, S3, Azure, GCS). For COPC files, use `copc_depth` to limit the octree depth. For EPT (Entwine Point Tile) datasets, pass the `ept.json` URL and use `ept_depth` to control depth.
+
+```python
+# Remote EPT dataset
+url = "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/IA_FullState/ept.json"
+pipeline = pylasr.reader_coverage(ept_depth=2) + pylasr.summarise()
+result = pipeline.execute([url])
+```
+
 ### Reading entire coverage
 ```python
 # Process entire dataset

@@ -956,6 +956,11 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' `reader_rectangles()` read and process only some selected regions of interest. If the chosen
 #' reader has no options i.e. using `reader()` it can be omitted.
 #'
+#' Supported input formats: LAS, LAZ, COPC, PCD, and EPT (Entwine Point Tiles).
+#' EPT endpoints are detected automatically from `ept.json` paths or URLs.
+#' For remote files, COPC and EPT are strongly recommended as they support
+#' efficient spatial streaming (only relevant data is downloaded).
+#'
 #' @template param-filter
 #' @param xc,yc,r numeric. Circle centres and radius or radii.
 #' @param xmin,ymin,xmax,ymax numeric. Coordinates of the rectangles
