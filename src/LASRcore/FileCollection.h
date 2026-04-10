@@ -12,7 +12,7 @@
 #include <vector>
 #include <filesystem>
 
-enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, PCDFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE, DATAFRAME, XPTR, REMOTEFILE};
+enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, PCDFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE, DATAFRAME, XPTR, REMOTEFILE, EPTFILE};
 
 class Header;
 
@@ -68,6 +68,7 @@ private:
   bool read_vpc(const std::string& file);
   bool add_las_file(std::string file, bool noprocess = false);
   bool add_pcd_file(std::string file, bool noprocess = false);
+  bool add_ept_endpoint(std::string path, bool noprocess = false);
   bool add_header(const Header& header, bool noprocess = false);
   bool get_chunk_regular(int index, Chunk& chunk) const;
   bool get_chunk_with_query(int index, Chunk& chunk) const;

@@ -1,0 +1,29 @@
+{
+  "bounds": [339002, 5247999, 972, 339016, 5248013, 986],
+  "boundsConforming": [339002.889, 5248000.001, 973.145, 339015.116, 5248001.244, 978.345],
+  "dataType": "laszip",
+  "hierarchyType": "json",
+  "points": 30,
+  "schema": [
+    { "name": "X", "type": "signed", "size": 4 },
+    { "name": "Y", "type": "signed", "size": 4 },
+    { "name": "Z", "type": "signed", "size": 4 },
+    { "name": "Intensity", "type": "unsigned", "size": 2 },
+    { "name": "ReturnNumber", "type": "unsigned", "size": 1 },
+    { "name": "NumberOfReturns", "type": "unsigned", "size": 1 },
+    { "name": "ScanDirectionFlag", "type": "unsigned", "size": 1 },
+    { "name": "EdgeOfFlightLine", "type": "unsigned", "size": 1 },
+    { "name": "Classification", "type": "unsigned", "size": 1 },
+    { "name": "ScanAngleRank", "type": "signed", "size": 1 },
+    { "name": "UserData", "type": "unsigned", "size": 1 },
+    { "name": "PointSourceId", "type": "unsigned", "size": 2 },
+    { "name": "GpsTime", "type": "float", "size": 8 }
+  ],
+  "span": 128,
+  "srs": {
+    "authority": "EPSG",
+    "horizontal": "26917",
+    "wkt": "PROJCS[\"NAD83 / UTM zone 17N\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",-81],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"26917\"]]"
+  },
+  "version": "1.0.0"
+}
