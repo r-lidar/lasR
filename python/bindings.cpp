@@ -412,17 +412,17 @@ PYBIND11_MODULE(pylasr, m) {
     // Readers
     m.def("reader_coverage", &api::reader_coverage,
           "Read points from coverage area",
-          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("copc_depth") = -1, py::arg("ept_depth") = -1);
+          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("depth") = -1);
 
     m.def("reader_circles", &api::reader_circles,
           "Read points from circular areas",
           py::arg("xc"), py::arg("yc"), py::arg("r"),
-          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("copc_depth") = -1, py::arg("ept_depth") = -1);
+          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("depth") = -1);
 
     m.def("reader_rectangles", &api::reader_rectangles,
           "Read points from rectangular areas",
           py::arg("xmin"), py::arg("ymin"), py::arg("xmax"), py::arg("ymax"),
-          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("copc_depth") = -1, py::arg("ept_depth") = -1);
+          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("depth") = -1);
 
     // Local maxima
     m.def("local_maximum", &api::local_maximum,

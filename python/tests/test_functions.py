@@ -364,7 +364,7 @@ class TestReaders(unittest.TestCase):
 
     def test_reader_coverage(self):
         """Test reader_coverage pipeline creation"""
-        pipeline = pylasr.reader_coverage(filter=[""], select="*", copc_depth=-1)
+        pipeline = pylasr.reader_coverage(filter=[""], select="*", depth=-1)
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
     def test_reader_circles(self):
@@ -375,7 +375,7 @@ class TestReaders(unittest.TestCase):
             r=[50.0, 50.0],
             filter=[""],
             select="*",
-            copc_depth=-1,
+            depth=-1,
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
@@ -388,7 +388,7 @@ class TestReaders(unittest.TestCase):
             ymax=[50.0, 150.0],
             filter=[""],
             select="*",
-            copc_depth=-1,
+            depth=-1,
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 

@@ -965,10 +965,10 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' @param xc,yc,r numeric. Circle centres and radius or radii.
 #' @param xmin,ymin,xmax,ymax numeric. Coordinates of the rectangles
 #' @param select character. Unused. Reserved for future versions.
-#' @param copc_depth integer. If the files are COPC file is is possible to read the point hierarchy
-#' up to a given level. COPC hierarchy is 0-index. The first level is 0 not 1.
-#' @param ept_depth integer. If the files are EPT (Entwine Point Tile) endpoints, read the octree
-#' hierarchy up to a given depth level. EPT depth is 0-indexed. The root level is 0.
+#' @param depth integer. Maximum octree depth level for COPC or EPT data. Depth is 0-indexed.
+#' When NULL (default), all levels are read.
+#' @param copc_depth integer. Deprecated. Use `depth` instead.
+#' @param ept_depth integer. Deprecated. Use `depth` instead.
 #' @param ... passed to other readers
 #'
 #' @examples
@@ -998,44 +998,46 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' # terra::plot(ans)
 #' @export
 #' @md
-reader = function(filter = "", select = "*", copc_depth = NULL, ept_depth = NULL, ...)
+reader = function(filter = "", select = "*", depth = NULL, copc_depth = NULL, ept_depth = NULL, ...)
 {
+  depth <- resolve_depth(depth, copc_depth, ept_depth)
+
   p <- list(...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
 
-  if (circle) return(reader_circles(p$xc, p$yc, p$r, filter = filter, select = select, copc_depth = copc_depth, ept_depth = ept_depth, ...))
-  if (rectangle) return(reader_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, select = select, copc_depth = copc_depth, ept_depth = ept_depth, ...))
-  return(reader_coverage(filter = filter, select = select, copc_depth = copc_depth, ept_depth = ept_depth, ...))
+  if (circle) return(reader_circles(p$xc, p$yc, p$r, filter = filter, select = select, depth = depth, ...))
+  if (rectangle) return(reader_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, select = select, depth = depth, ...))
+  return(reader_coverage(filter = filter, select = select, depth = depth, ...))
 }
 
 #' @export
 #' @rdname reader
-reader_coverage = function(filter = "", select = "*", copc_depth = NULL, ept_depth = NULL, ...)
+reader_coverage = function(filter = "", select = "*", depth = NULL, copc_depth = NULL, ept_depth = NULL, ...)
 {
   validate_filter(filter, TRUE)
-  if (is.null(copc_depth)) copc_depth = -1
-  if (is.null(ept_depth)) ept_depth = -1
-  .APISTAGES$reader_coverage(filter, select, copc_depth, ept_depth)
+  depth <- resolve_depth(depth, copc_depth, ept_depth)
+  if (is.null(depth)) depth = -1
+  .APISTAGES$reader_coverage(filter, select, depth)
 }
 
 #' @export
 #' @rdname reader
-reader_circles = function(xc, yc, r, filter = "", select = "*", copc_depth = NULL, ept_depth = NULL, ...)
+reader_circles = function(xc, yc, r, filter = "", select = "*", depth = NULL, copc_depth = NULL, ept_depth = NULL, ...)
 {
   validate_filter(filter, TRUE)
-  if (is.null(copc_depth)) copc_depth = -1
-  if (is.null(ept_depth)) ept_depth = -1
-  .APISTAGES$reader_circles(xc, yc, r, filter, select, copc_depth, ept_depth)
+  depth <- resolve_depth(depth, copc_depth, ept_depth)
+  if (is.null(depth)) depth = -1
+  .APISTAGES$reader_circles(xc, yc, r, filter, select, depth)
 }
 
 #' @export
 #' @rdname reader
-reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", copc_depth = NULL, ept_depth = NULL, ...)
+reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", depth = NULL, copc_depth = NULL, ept_depth = NULL, ...)
 {
-  if (is.null(copc_depth)) copc_depth = -1
-  if (is.null(ept_depth)) ept_depth = -1
-  .APISTAGES$reader_rectangles(xmin, ymin, xmax, ymax, filter, select, copc_depth, ept_depth)
+  depth <- resolve_depth(depth, copc_depth, ept_depth)
+  if (is.null(depth)) depth = -1
+  .APISTAGES$reader_rectangles(xmin, ymin, xmax, ymax, filter, select, depth)
 }
 
 #' Region growing

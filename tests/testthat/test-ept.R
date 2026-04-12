@@ -49,3 +49,20 @@ test_that("EPT pipeline integration works",
 
   expect_true(file.exists(ofile))
 })
+
+test_that("EPT depth filtering works",
+{
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+
+  # Test data has only depth-1 tiles, so depth=1 should match full read
+  d1 <- exec(reader(depth = 1) + summarise(), on = ept)
+  full <- exec(reader() + summarise(), on = ept)
+
+  expect_equal(d1$npoints, full$npoints)
+})
+
+test_that("Multiple EPT endpoints produce an error",
+{
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  expect_error(exec(reader() + summarise(), on = c(ept, ept)), "single EPT")
+})

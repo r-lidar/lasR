@@ -62,7 +62,14 @@ bool LASio::query(const std::vector<std::string>& main_files, const std::vector<
     std::string trimmed = (start == std::string::npos) ? "" : filter.substr(start);
 
     // Check if the trimmed string starts with '-'
-    if (!trimmed.empty() && trimmed[0] == '-') sfilter += trimmed + " ";
+    if (!trimmed.empty() && trimmed[0] == '-')
+    {
+      // Translate unified -depth to LASlib's -max_depth for COPC
+      if (trimmed.compare(0, 7, "-depth ") == 0)
+        trimmed = "-max_depth " + trimmed.substr(7);
+
+      sfilter += trimmed + " ";
+    }
   }
 
   //print("LASlib filters = '%s'\n", sfilter.c_str());

@@ -4,8 +4,6 @@
 #include "Fileio.h"
 #include "PointSchema.h"
 
-#include "lascopc.hpp"
-
 #include <nlohmann/json.hpp>
 
 #include <string>
@@ -16,6 +14,18 @@
 class LASio;
 class Header;
 struct Point;
+
+// Octree key identifying a node in the EPT hierarchy.
+// Defined locally to avoid pulling in LASlib's lascopc.hpp.
+struct EPTkey
+{
+  int d;
+  int x;
+  int y;
+  int z;
+  EPTkey() : d(-1), x(-1), y(-1), z(-1) {}
+  EPTkey(int d, int x, int y, int z) : d(d), x(x), y(y), z(z) {}
+};
 
 class EPTio : public Fileio
 {
@@ -33,7 +43,7 @@ public:
   void reset_accessor() override;
   int64_t p_count() override;
 
-  void set_ept_depth(int depth);
+  void set_depth(int depth);
 
   void query(const std::vector<std::string>& main_files,
              const std::vector<std::string>& neighbour_files,

@@ -295,22 +295,19 @@ Pipeline rasterize_triangulation(std::string connect_uid, double res, std::strin
   return Pipeline(s);
 }
 
-Pipeline reader_coverage(std::vector<std::string> filter, std::string select, int copc_depth, int ept_depth)
+Pipeline reader_coverage(std::vector<std::string> filter, std::string select, int depth)
 {
   Stage s("reader");
 
-  if (copc_depth >= 0)
-    filter.push_back("-max_depth " + std::to_string(copc_depth));
-
-  if (ept_depth >= 0)
-    filter.push_back("-ept_depth " + std::to_string(ept_depth));
+  if (depth >= 0)
+    filter.push_back("-depth " + std::to_string(depth));
 
   s.set("filter", filter);
 
   return Pipeline(s);
 }
 
-Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter, std::string select, int copc_depth, int ept_depth)
+Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter, std::string select, int depth)
 {
   if (xc.size() != yc.size())
     throw std::invalid_argument("xc and yc must have the same length");
@@ -325,11 +322,8 @@ Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vec
       throw std::invalid_argument("xc and r must have the same length when r has more than one value");
   }
 
-  if (copc_depth >= 0)
-    filter.push_back("-max_depth " + std::to_string(copc_depth));
-
-  if (ept_depth >= 0)
-    filter.push_back("-ept_depth " + std::to_string(ept_depth));
+  if (depth >= 0)
+    filter.push_back("-depth " + std::to_string(depth));
 
   Stage s("reader");
   s.set("filter", filter);
@@ -340,17 +334,14 @@ Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vec
   return Pipeline(s);
 }
 
-Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter, std::string select, int copc_depth, int ept_depth)
+Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter, std::string select, int depth)
 {
   size_t n = xmin.size();
   if (ymin.size() != n || xmax.size() != n || ymax.size() != n)
     throw std::invalid_argument("xmin, ymin, xmax, and ymax must all have the same length");
 
-  if (copc_depth >= 0)
-    filter.push_back("-max_depth " + std::to_string(copc_depth));
-
-  if (ept_depth >= 0)
-    filter.push_back("-ept_depth " + std::to_string(ept_depth));
+  if (depth >= 0)
+    filter.push_back("-depth " + std::to_string(depth));
 
   Stage s("reader");
   s.set("filter", filter);

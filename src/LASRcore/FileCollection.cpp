@@ -589,6 +589,12 @@ bool FileCollection::add_pcd_file(std::string file, bool noprocess)
 
 bool FileCollection::add_ept_endpoint(std::string path, bool noprocess)
 {
+  if (files.size() > 0)
+  {
+    last_error = "Only a single EPT endpoint is supported";
+    return false;
+  }
+
   std::replace(path.begin(), path.end(), '\\', '/');
 
   Header header;
@@ -966,7 +972,17 @@ PathType FileCollection::parse_path(const std::string& path)
     if (url_path.size() >= 8 && url_path.substr(url_path.size() - 8) == "ept.json")
       return PathType::EPTFILE;
 
-    return PathType::REMOTEFILE;
+    // Validate remote file has a LAS/LAZ extension
+    std::string lower_path = url_path;
+    std::transform(lower_path.begin(), lower_path.end(), lower_path.begin(), ::tolower);
+    if (lower_path.size() >= 4)
+    {
+      std::string ext = lower_path.substr(lower_path.size() - 4);
+      if (ext == ".las" || ext == ".laz")
+        return PathType::REMOTEFILE;
+    }
+
+    return PathType::OTHERFILE;
   }
 
   std::filesystem::path file_path(path);

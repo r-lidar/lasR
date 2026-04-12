@@ -2,12 +2,13 @@
 #include "Header.h"
 #include "LASio.h"
 #include "error.h"
-
-#include "lascopc.hpp"
-#include "lasreader.hpp"
+#include "print.h"
 
 #include <nlohmann/json.hpp>
+
+#ifdef USING_GDAL
 #include <cpl_vsi.h>
+#endif
 
 #include <fstream>
 #include <sstream>
@@ -17,6 +18,7 @@
 
 static bool is_remote(const std::string& path)
 {
+#ifdef USING_GDAL
   if (path.compare(0, 7, "http://") == 0) return true;
   if (path.compare(0, 8, "https://") == 0) return true;
   if (path.compare(0, 9, "/vsicurl/") == 0) return true;
@@ -26,6 +28,9 @@ static bool is_remote(const std::string& path)
   if (path.compare(0, 9, "/vsiadls/") == 0) return true;
   if (path.compare(0, 8, "/vsioss/") == 0) return true;
   if (path.compare(0, 10, "/vsiswift/") == 0) return true;
+#else
+  (void)path;
+#endif
   return false;
 }
 
@@ -108,7 +113,7 @@ void EPTio::read_root_tile_header()
     int point_count = value.get<int>();
     if (point_count <= 0) continue;
 
-    // Found a tile with points — try to open it
+    // Found a tile with points — try to open it via LASio (no direct LASlib)
     int d, x, y, z;
     if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4)
       continue;
@@ -118,22 +123,19 @@ void EPTio::read_root_tile_header()
 
     try
     {
-      LASreadOpener opener;
-      opener.set_file_name(path.c_str());
-      LASreader* reader = opener.open();
-      if (reader)
-      {
-        x_scale = reader->header.x_scale_factor;
-        y_scale = reader->header.y_scale_factor;
-        z_scale = reader->header.z_scale_factor;
-        x_offset = reader->header.x_offset;
-        y_offset = reader->header.y_offset;
-        z_offset = reader->header.z_offset;
-        scale_offset_initialized = true;
-        reader->close();
-        delete reader;
-        return;
-      }
+      LASio probe;
+      probe.open(path);
+      Header h;
+      probe.populate_header(&h);
+      x_scale = h.x_scale_factor;
+      y_scale = h.y_scale_factor;
+      z_scale = h.z_scale_factor;
+      x_offset = h.x_offset;
+      y_offset = h.y_offset;
+      z_offset = h.z_offset;
+      scale_offset_initialized = true;
+      probe.close();
+      return;
     }
     catch (...) { continue; }
   }
@@ -308,14 +310,14 @@ void EPTio::query(const std::vector<std::string>& main_files,
   if (main_files.empty())
     throw std::invalid_argument("EPT reader requires at least one file path");
 
-  // Parse ept_depth from filters (injected as "-ept_depth N" by the API)
+  // Parse -depth from filters (injected as "-depth N" by the API)
   for (const auto& filter : filters)
   {
     size_t start = filter.find_first_not_of(" \t");
     std::string trimmed = (start == std::string::npos) ? "" : filter.substr(start);
-    if (trimmed.compare(0, 11, "-ept_depth ") == 0)
+    if (trimmed.compare(0, 7, "-depth ") == 0)
     {
-      try { depth_limit = std::stoi(trimmed.substr(11)); }
+      try { depth_limit = std::stoi(trimmed.substr(7)); }
       catch (...) { depth_limit = -1; }
     }
   }
@@ -515,6 +517,7 @@ std::string EPTio::hierarchy_path(const EPTkey& key) const
 
 std::string EPTio::read_file_contents(const std::string& path) const
 {
+#ifdef USING_GDAL
   if (is_remote(path))
   {
     // Use GDAL VSI for remote files
@@ -536,17 +539,19 @@ std::string EPTio::read_file_contents(const std::string& path) const
     VSIFCloseL(fp);
     return content;
   }
-  else
-  {
-    // Local file
-    std::ifstream file(path);
-    if (!file.is_open())
-      throw std::runtime_error("Cannot open file: " + path);
+#else
+  if (is_remote(path))
+    throw std::runtime_error("Remote EPT endpoints require GDAL support: " + path);
+#endif
 
-    std::ostringstream ss;
-    ss << file.rdbuf();
-    return ss.str();
-  }
+  // Local file
+  std::ifstream file(path);
+  if (!file.is_open())
+    throw std::runtime_error("Cannot open file: " + path);
+
+  std::ostringstream ss;
+  ss << file.rdbuf();
+  return ss.str();
 }
 
 void EPTio::create(const std::string&)
@@ -594,7 +599,7 @@ void EPTio::reset_accessor()
   // No accessors to reset — EPTio delegates to LASio per tile
 }
 
-void EPTio::set_ept_depth(int depth)
+void EPTio::set_depth(int depth)
 {
   depth_limit = depth;
 }

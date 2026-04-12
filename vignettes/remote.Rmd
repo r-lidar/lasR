@@ -60,14 +60,14 @@ ans <- exec(pipeline, on = url)
 url <- "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/IA_FullState/ept.json"
 
 # Read only the root level of the octree
-ans <- exec(reader(ept_depth = 0) + summarise(), on = url)
+ans <- exec(reader(depth = 0) + summarise(), on = url)
 
 # Spatial query — fetches only the tiles that overlap
-pipeline <- reader_circles(-10421000, 5102000, 500, ept_depth = 6) + write_las()
+pipeline <- reader_circles(-10421000, 5102000, 500, depth = 6) + write_las()
 ans <- exec(pipeline, on = url)
 ```
 
-The `ept_depth` parameter controls how deep into the octree hierarchy to read (0 = root only). Only LAZ-encoded EPT datasets are supported.
+The `depth` parameter controls how deep into the octree hierarchy to read (0 = root only). This parameter works for both COPC and EPT formats. Only LAZ-encoded EPT datasets are supported.
 
 ### VPC
 

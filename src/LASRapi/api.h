@@ -210,9 +210,9 @@ Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_hei
 Pipeline pit_fill(std::string connect_uid, int lap_size = 3, double thr_lap = 0.1, double thr_spk = -0.1, int med_size = 3, int dil_radius = 0, std::string ofile = "");
 Pipeline rasterize(double res, double window, std::vector<std::string> operators = {"max"}, std::vector<std::string> filter = {""}, std::string ofile = "", double default_value = -99999);
 Pipeline rasterize_triangulation(std::string connect_uid, double res, std::string ofile = "");
-Pipeline reader_coverage(std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1, int ept_depth = -1);
-Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1, int ept_depth = -1);
-Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter = {""}, std::string select = "*", int copc_depth = -1, int ept_depth = -1);
+Pipeline reader_coverage(std::vector<std::string> filter = {""}, std::string select = "*", int depth = -1);
+Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter = {""}, std::string select = "*", int depth = -1);
+Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter = {""}, std::string select = "*", int depth = -1);
 Pipeline region_growing(std::string connect_uid_raster, std::string connect_uid_seeds, double th_tree = 2, double th_seed = 0.45, double th_cr = 0.55, double max_cr = 20, std::string ofile = "");
 Pipeline remove_attribute(std::string name);
 Pipeline remove_attributes(std::vector<std::string> names);
