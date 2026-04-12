@@ -16,9 +16,11 @@
 #include <stdexcept>
 #include <cmath>
 
+// Detect remote schemes regardless of GDAL availability so callers can produce
+// a clear "requires GDAL" error rather than letting an HTTPS URL fall through
+// to ifstream as if it were a local path.
 static bool is_remote(const std::string& path)
 {
-#ifdef USING_GDAL
   if (path.compare(0, 7, "http://") == 0) return true;
   if (path.compare(0, 8, "https://") == 0) return true;
   if (path.compare(0, 9, "/vsicurl/") == 0) return true;
@@ -28,9 +30,6 @@ static bool is_remote(const std::string& path)
   if (path.compare(0, 9, "/vsiadls/") == 0) return true;
   if (path.compare(0, 8, "/vsioss/") == 0) return true;
   if (path.compare(0, 10, "/vsiswift/") == 0) return true;
-#else
-  (void)path;
-#endif
   return false;
 }
 
@@ -99,46 +98,69 @@ void EPTio::open(const std::string& endpoint)
 
 void EPTio::read_root_tile_header()
 {
-  // Find the first tile with points from the root hierarchy to read scale/offset
-  std::string hier_path = base_path + "ept-hierarchy/0-0-0-0.json" + query_string;
-  std::string json_str;
+  // Walk the hierarchy (BFS) until we find a real tile we can open, then read
+  // its scale/offset. Descend into sub-hierarchy pages (point_count == -1) as
+  // needed so sparse/deep hierarchies still yield a usable result. Fail loudly
+  // rather than fall back to defaults that would silently corrupt coordinates.
+  std::deque<EPTkey> pages_to_visit;
+  pages_to_visit.push_back(EPTkey(0, 0, 0, 0));
 
-  try { json_str = read_file_contents(hier_path); }
-  catch (...) { return; }
-
-  nlohmann::json hierarchy = nlohmann::json::parse(json_str);
-
-  for (auto& [key_str, value] : hierarchy.items())
+  while (!pages_to_visit.empty())
   {
-    int point_count = value.get<int>();
-    if (point_count <= 0) continue;
+    EPTkey page_key = pages_to_visit.front();
+    pages_to_visit.pop_front();
 
-    // Found a tile with points — try to open it via LASio (no direct LASlib)
-    int d, x, y, z;
-    if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4)
-      continue;
-
-    EPTkey key(d, x, y, z);
-    std::string path = tile_path(key);
-
-    try
-    {
-      LASio probe;
-      probe.open(path);
-      Header h;
-      probe.populate_header(&h);
-      x_scale = h.x_scale_factor;
-      y_scale = h.y_scale_factor;
-      z_scale = h.z_scale_factor;
-      x_offset = h.x_offset;
-      y_offset = h.y_offset;
-      z_offset = h.z_offset;
-      scale_offset_initialized = true;
-      probe.close();
-      return;
-    }
+    std::string hier_path = hierarchy_path(page_key);
+    std::string json_str;
+    try { json_str = read_file_contents(hier_path); }
     catch (...) { continue; }
+
+    nlohmann::json hierarchy = nlohmann::json::parse(json_str);
+
+    // First pass: try to open any leaf tile in this page
+    for (auto& [key_str, value] : hierarchy.items())
+    {
+      int point_count = value.get<int>();
+      if (point_count <= 0) continue;
+
+      int d, x, y, z;
+      if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4)
+        continue;
+
+      EPTkey key(d, x, y, z);
+      std::string path = tile_path(key);
+
+      try
+      {
+        LASio probe;
+        probe.open(path);
+        Header h;
+        probe.populate_header(&h);
+        x_scale = h.x_scale_factor;
+        y_scale = h.y_scale_factor;
+        z_scale = h.z_scale_factor;
+        x_offset = h.x_offset;
+        y_offset = h.y_offset;
+        z_offset = h.z_offset;
+        scale_offset_initialized = true;
+        probe.close();
+        return;
+      }
+      catch (...) { continue; }
+    }
+
+    // Second pass: queue any sub-hierarchy pages for further traversal
+    for (auto& [key_str, value] : hierarchy.items())
+    {
+      if (value.get<int>() != -1) continue;
+      int d, x, y, z;
+      if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4)
+        continue;
+      pages_to_visit.push_back(EPTkey(d, x, y, z));
+    }
   }
+
+  throw std::runtime_error("EPT dataset has no readable tiles to derive scale/offset from: " + base_path);
 }
 
 void EPTio::parse_ept_json()
@@ -309,6 +331,9 @@ void EPTio::query(const std::vector<std::string>& main_files,
 {
   if (main_files.empty())
     throw std::invalid_argument("EPT reader requires at least one file path");
+
+  // Reset depth limit so a previous query's setting doesn't carry over.
+  depth_limit = -1;
 
   // Parse -depth from filters (injected as "-depth N" by the API)
   for (const auto& filter : filters)

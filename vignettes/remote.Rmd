@@ -71,4 +71,4 @@ The `depth` parameter controls how deep into the octree hierarchy to read (0 = r
 
 ### VPC
 
-To deal with a collection of tiled remotes files we recommend using a VPC file that indexes remotes files.
+To deal with a collection of tiled remote files we recommend using a VPC file that indexes remote files.
