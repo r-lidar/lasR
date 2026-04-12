@@ -1006,8 +1006,10 @@ reader = function(filter = "", select = "*", depth = NULL, copc_depth = NULL, ep
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
 
-  if (circle) return(reader_circles(p$xc, p$yc, p$r, filter = filter, select = select, depth = depth, ...))
-  if (rectangle) return(reader_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, select = select, depth = depth, ...))
+  # xc/yc/r and xmin/ymin/xmax/ymax flow through ... — do not pass them positionally,
+  # otherwise they spill into copc_depth/ept_depth slots and corrupt argument matching.
+  if (circle) return(reader_circles(filter = filter, select = select, depth = depth, ...))
+  if (rectangle) return(reader_rectangles(filter = filter, select = select, depth = depth, ...))
   return(reader_coverage(filter = filter, select = select, depth = depth, ...))
 }
 
