@@ -128,6 +128,20 @@ print.laslibfilter = function(x, ...)
   return(ans)
 }
 
+resolve_depth <- function(depth, copc_depth, ept_depth)
+{
+  has_old <- !is.null(copc_depth) || !is.null(ept_depth)
+  if (has_old)
+  {
+    if (!is.null(depth))
+      stop("Cannot specify both 'depth' and 'copc_depth'/'ept_depth'. Use 'depth' only.")
+
+    .Deprecated(msg = "'copc_depth' and 'ept_depth' are deprecated. Use 'depth' instead.")
+    depth <- if (!is.null(copc_depth)) copc_depth else ept_depth
+  }
+  return(depth)
+}
+
 validate_filter <- function(condition, allow_laslib_filter)
 {
   if (length(condition) == 0L) return(condition)

@@ -1,0 +1,28 @@
+{
+  "bounds": [273356, 5274356, 788, 273644, 5274644, 1076],
+  "boundsConforming": [273357.1447, 5274357.144, 788.99325, 273642.8565, 5274642.848, 829.75825],
+  "dataType": "laszip",
+  "hierarchyType": "json",
+  "points": 73403,
+  "schema": [
+    { "name": "X", "type": "signed", "size": 4 },
+    { "name": "Y", "type": "signed", "size": 4 },
+    { "name": "Z", "type": "signed", "size": 4 },
+    { "name": "Intensity", "type": "unsigned", "size": 2 },
+    { "name": "ReturnNumber", "type": "unsigned", "size": 1 },
+    { "name": "NumberOfReturns", "type": "unsigned", "size": 1 },
+    { "name": "ScanDirectionFlag", "type": "unsigned", "size": 1 },
+    { "name": "EdgeOfFlightLine", "type": "unsigned", "size": 1 },
+    { "name": "Classification", "type": "unsigned", "size": 1 },
+    { "name": "ScanAngleRank", "type": "signed", "size": 1 },
+    { "name": "UserData", "type": "unsigned", "size": 1 },
+    { "name": "PointSourceId", "type": "unsigned", "size": 2 },
+    { "name": "GpsTime", "type": "float", "size": 8 }
+  ],
+  "span": 128,
+  "srs": {
+    "authority": "EPSG",
+    "horizontal": "2949"
+  },
+  "version": "1.0.0"
+}

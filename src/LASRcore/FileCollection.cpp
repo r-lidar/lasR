@@ -9,6 +9,7 @@
 // To read the header of files
 #include "PCDio.h"
 #include "LASio.h"
+#include "EPTio.h"
 
 // STL
 #include <iostream>
@@ -81,10 +82,14 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
     pb.show();
     PathType type = parse_path(file);
 
-    // A LAS, LAZ, or remote file
-    if (type == PathType::LASFILE || type == PathType::REMOTEFILE)
+    // A LAS, LAZ, or remote LAS/LAZ file
+    if (type == PathType::LASFILE || type == PathType::REMOTELASFILE)
     {
       if (!add_las_file(file)) return false;
+    }
+    else if (type == PathType::EPTFILE || type == PathType::REMOTEEPTFILE)
+    {
+      if (!add_ept_endpoint(file)) return false;
     }
     else if (type == PathType::PCDFILE)
     {
@@ -582,6 +587,38 @@ bool FileCollection::add_pcd_file(std::string file, bool noprocess)
   return true;
 }
 
+bool FileCollection::add_ept_endpoint(std::string path, bool noprocess)
+{
+  if (files.size() > 0)
+  {
+    last_error = "Only a single EPT endpoint is supported";
+    return false;
+  }
+
+  std::replace(path.begin(), path.end(), '\\', '/');
+
+  Header header;
+  EPTio reader;
+
+  try
+  {
+    reader.open(path);
+    reader.populate_header(&header);
+    reader.close();
+  }
+  catch (const std::exception& e)
+  {
+    last_error = e.what();
+    return false;
+  }
+
+  add_header(header, noprocess);
+  files.push_back(path);
+
+  use_dataframe = false;
+  return true;
+}
+
 
 #ifdef USING_R
 // Special to build a FileCollection from a data.frame in R
@@ -706,6 +743,8 @@ PathType FileCollection::get_format() const
     return LASFILE;
   else if (signature == "PCDF")
     return PCDFILE;
+  else if (signature == "EPTF")
+    return EPTFILE;
   else if (signature == "data.frame")
     return DATAFRAME;
   else if (signature == "xptr")
@@ -925,9 +964,25 @@ bool FileCollection::file_exists(std::string& file)
 
 PathType FileCollection::parse_path(const std::string& path)
 {
+  // Check for EPT endpoint (remote or local ept.json)
   if (is_remote_path(path))
   {
-    return PathType::REMOTEFILE;
+    // Check if URL path ends with ept.json (strip query params first)
+    std::string url_path = path.substr(0, path.find('?'));
+    if (url_path.size() >= 8 && url_path.substr(url_path.size() - 8) == "ept.json")
+      return PathType::REMOTEEPTFILE;
+
+    // Validate remote file has a LAS/LAZ extension
+    std::string lower_path = url_path;
+    std::transform(lower_path.begin(), lower_path.end(), lower_path.begin(), ::tolower);
+    if (lower_path.size() >= 4)
+    {
+      std::string ext = lower_path.substr(lower_path.size() - 4);
+      if (ext == ".las" || ext == ".laz")
+        return PathType::REMOTELASFILE;
+    }
+
+    return PathType::OTHERFILE;
   }
 
   std::filesystem::path file_path(path);
@@ -936,6 +991,10 @@ PathType FileCollection::parse_path(const std::string& path)
   {
     if (std::filesystem::is_regular_file(file_path))
     {
+      // Check for local EPT endpoint
+      if (file_path.filename() == "ept.json")
+        return PathType::EPTFILE;
+
       std::string ext = file_path.extension().string();
       if (ext == ".vpc" || ext == ".vpc") return PathType::VPCFILE;
       if (ext == ".las" || ext == ".LAS") return PathType::LASFILE;
