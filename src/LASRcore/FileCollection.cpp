@@ -82,12 +82,12 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
     pb.show();
     PathType type = parse_path(file);
 
-    // A LAS, LAZ, or remote file
-    if (type == PathType::LASFILE || type == PathType::REMOTEFILE)
+    // A LAS, LAZ, or remote LAS/LAZ file
+    if (type == PathType::LASFILE || type == PathType::REMOTELASFILE)
     {
       if (!add_las_file(file)) return false;
     }
-    else if (type == PathType::EPTFILE)
+    else if (type == PathType::EPTFILE || type == PathType::REMOTEEPTFILE)
     {
       if (!add_ept_endpoint(file)) return false;
     }
@@ -970,7 +970,7 @@ PathType FileCollection::parse_path(const std::string& path)
     // Check if URL path ends with ept.json (strip query params first)
     std::string url_path = path.substr(0, path.find('?'));
     if (url_path.size() >= 8 && url_path.substr(url_path.size() - 8) == "ept.json")
-      return PathType::EPTFILE;
+      return PathType::REMOTEEPTFILE;
 
     // Validate remote file has a LAS/LAZ extension
     std::string lower_path = url_path;
@@ -979,7 +979,7 @@ PathType FileCollection::parse_path(const std::string& path)
     {
       std::string ext = lower_path.substr(lower_path.size() - 4);
       if (ext == ".las" || ext == ".laz")
-        return PathType::REMOTEFILE;
+        return PathType::REMOTELASFILE;
     }
 
     return PathType::OTHERFILE;
