@@ -15,21 +15,22 @@ class LASio;
 class Header;
 struct Point;
 
-// Octree key identifying a node in the EPT hierarchy.
-// Defined locally to avoid pulling in LASlib's lascopc.hpp.
-struct EPTkey
-{
-  int d;
-  int x;
-  int y;
-  int z;
-  EPTkey() : d(-1), x(-1), y(-1), z(-1) {}
-  EPTkey(int d, int x, int y, int z) : d(d), x(x), y(y), z(z) {}
-};
-
 class EPTio : public Fileio
 {
 public:
+  // Octree key identifying a node in the EPT hierarchy.
+  // Nested inside EPTio to avoid ODR collision with LASlib's ::EPTkey
+  // (defined in lascopc.hpp) in translation units that include both headers.
+  struct EPTkey
+  {
+    int d;
+    int x;
+    int y;
+    int z;
+    EPTkey() : d(-1), x(-1), y(-1), z(-1) {}
+    EPTkey(int d, int x, int y, int z) : d(d), x(x), y(y), z(z) {}
+  };
+
   EPTio();
   ~EPTio();
   void open(const std::string& endpoint) override;
