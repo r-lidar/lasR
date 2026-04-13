@@ -60,7 +60,7 @@ private:
   std::string read_file_contents(const std::string& path) const;
   std::string tile_path(const EPTkey& key) const;
   std::string hierarchy_path(const EPTkey& key) const;
-  void read_root_tile_header();
+  void find_probe_tile();
   void compute_node_bounds(const EPTkey& key, double& nxmin, double& nymin, double& nzmin,
                            double& nxmax, double& nymax, double& nzmax) const;
 
@@ -75,20 +75,14 @@ private:
   double conf_bounds[6];  // conforming data bounds
   std::string srs_wkt;
   int srs_epsg;
-  int span;
+
+  // Path of a representative tile used by populate_header() to derive the LAS
+  // schema via LASio. Using a real LAZ file avoids having to interpret every
+  // possible EPT JSON schema naming variation.
+  std::string probe_tile_path;
 
   // Depth control
   int depth_limit;
-
-  // Scale/offset from root tile
-  double x_scale, y_scale, z_scale;
-  double x_offset, y_offset, z_offset;
-  bool scale_offset_initialized;
-
-  // Schema info derived from ept.json
-  bool has_gps;
-  bool has_rgb;
-  bool has_nir;
 
   // Hierarchy traversal state
   std::deque<EPTkey> tile_queue;

@@ -37,18 +37,11 @@ EPTio::EPTio()
 {
   remote = false;
   opened = false;
-  span = 0;
   srs_epsg = 0;
   depth_limit = -1;
   total_points = 0;
   current_tile = nullptr;
   points_read = 0;
-  x_scale = y_scale = z_scale = 0.001;
-  x_offset = y_offset = z_offset = 0;
-  scale_offset_initialized = false;
-  has_gps = false;
-  has_rgb = false;
-  has_nir = false;
 
   for (int i = 0; i < 6; i++)
   {
@@ -93,15 +86,15 @@ void EPTio::open(const std::string& endpoint)
 
   parse_ept_json();
   opened = true;
-  read_root_tile_header();
+  find_probe_tile();
 }
 
-void EPTio::read_root_tile_header()
+void EPTio::find_probe_tile()
 {
-  // Walk the hierarchy (BFS) until we find a real tile we can open, then read
-  // its scale/offset. Descend into sub-hierarchy pages (point_count == -1) as
-  // needed so sparse/deep hierarchies still yield a usable result. Fail loudly
-  // rather than fall back to defaults that would silently corrupt coordinates.
+  // Walk the hierarchy (BFS) until we find a real tile we can open, and record
+  // its path for later use by populate_header(). Descend into sub-hierarchy
+  // pages (point_count == -1) as needed so sparse/deep hierarchies still yield
+  // a usable result. Fail loudly rather than leave probe_tile_path empty.
   std::deque<EPTkey> pages_to_visit;
   pages_to_visit.push_back(EPTkey(0, 0, 0, 0));
 
@@ -134,16 +127,8 @@ void EPTio::read_root_tile_header()
       {
         LASio probe;
         probe.open(path);
-        Header h;
-        probe.populate_header(&h);
-        x_scale = h.x_scale_factor;
-        y_scale = h.y_scale_factor;
-        z_scale = h.z_scale_factor;
-        x_offset = h.x_offset;
-        y_offset = h.y_offset;
-        z_offset = h.z_offset;
-        scale_offset_initialized = true;
         probe.close();
+        probe_tile_path = path;
         return;
       }
       catch (...) { continue; }
@@ -160,7 +145,7 @@ void EPTio::read_root_tile_header()
     }
   }
 
-  throw std::runtime_error("EPT dataset has no readable tiles to derive scale/offset from: " + base_path);
+  throw std::runtime_error("EPT dataset has no readable tiles to derive schema from: " + base_path);
 }
 
 void EPTio::parse_ept_json()
@@ -203,9 +188,6 @@ void EPTio::parse_ept_json()
       conf_bounds[i] = cube_bounds[i];
   }
 
-  // Read span
-  span = ept_metadata.value("span", 256);
-
   // Read SRS
   if (ept_metadata.contains("srs"))
   {
@@ -220,21 +202,10 @@ void EPTio::parse_ept_json()
     }
   }
 
-  // Parse schema to determine point format
-  has_gps = false;
-  has_rgb = false;
-  has_nir = false;
-
-  if (ept_metadata.contains("schema"))
-  {
-    for (const auto& dim : ept_metadata["schema"])
-    {
-      std::string name = dim.value("name", "");
-      if (name == "GpsTime") has_gps = true;
-      if (name == "Red") has_rgb = true;
-      if (name == "Infrared") has_nir = true;
-    }
-  }
+  // Note: schema (attribute names, PDF, extra bytes, bit flags) is derived
+  // from a real tile via LASio in populate_header(). Parsing the JSON schema
+  // directly would miss naming variations, extra attributes, and LAS bit flags
+  // that aren't exposed in ept.json.
 }
 
 void EPTio::populate_header(Header* header, bool)
@@ -242,11 +213,25 @@ void EPTio::populate_header(Header* header, bool)
   if (!opened)
     throw std::logic_error("Internal error: EPTio not opened");
 
-  header->signature = "EPTF";
-  header->version_major = 1;
-  header->version_minor = 0;
+  if (probe_tile_path.empty())
+    throw std::logic_error("Internal error: no probe tile available to derive EPT schema");
 
-  // Bounds from conforming bounds
+  // Delegate schema construction (PDF, attributes, extra bytes, bit flags,
+  // scale/offset) to LASio on a real tile. This avoids fragile guesses from
+  // the EPT JSON schema, which uses inconsistent naming conventions across
+  // datasets ("GpsTime"/"gpstime", "Red"/"red", "Infrared"/"NIR") and omits
+  // LAS bit flags entirely.
+  LASio probe;
+  probe.open(probe_tile_path);
+  probe.populate_header(header);
+  probe.close();
+
+  // Override EPT-specific fields. The schema and scale/offset already came
+  // from the probe tile.
+  header->signature = "EPTF";
+
+  // Use conforming bounds from ept.json (authoritative for the dataset,
+  // not just the probe tile)
   header->min_x = conf_bounds[0];
   header->min_y = conf_bounds[1];
   header->min_z = conf_bounds[2];
@@ -254,67 +239,11 @@ void EPTio::populate_header(Header* header, bool)
   header->max_y = conf_bounds[4];
   header->max_z = conf_bounds[5];
 
-  // CRS
+  // CRS from ept.json (overrides whatever LASio picked up from the tile VLRs)
   if (!srs_wkt.empty())
     header->set_crs(srs_wkt);
   else if (srs_epsg > 0)
     header->set_crs(srs_epsg);
-
-  // Determine point data format from schema
-  int pdf = LASio::guess_point_data_format(has_gps, has_rgb, has_nir, false);
-  header->point_data_format = pdf;
-
-  // Use scale/offset from root tile for coordinate consistency
-  header->x_scale_factor = x_scale;
-  header->y_scale_factor = y_scale;
-  header->z_scale_factor = z_scale;
-  header->x_offset = x_offset;
-  header->y_offset = y_offset;
-  header->z_offset = z_offset;
-
-  // Build schema matching the LAS point format
-  header->schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved for lasR core engine");
-  header->schema.add_attribute("X", AttributeType::INT32, header->x_scale_factor, header->x_offset, "X coordinate");
-  header->schema.add_attribute("Y", AttributeType::INT32, header->y_scale_factor, header->y_offset, "Y coordinate");
-  header->schema.add_attribute("Z", AttributeType::INT32, header->z_scale_factor, header->z_offset, "Z coordinate");
-  header->schema.add_attribute("Intensity", AttributeType::UINT16, 1, 0, "Pulse return magnitude");
-  header->schema.add_attribute("ReturnNumber", AttributeType::UINT8, 1, 0, "Pulse return number");
-  header->schema.add_attribute("NumberOfReturns", AttributeType::UINT8, 1, 0, "Total number of returns for a given pulse");
-  header->schema.add_attribute("Classification", AttributeType::UINT8, 1, 0, "Classification of the point");
-  header->schema.add_attribute("UserData", AttributeType::UINT8, 1, 0, "User data");
-  header->schema.add_attribute("PointSourceID", AttributeType::INT16, 1, 0, "Point source ID");
-
-  if (pdf >= 6)
-  {
-    header->schema.add_attribute("ScanAngle", AttributeType::FLOAT, 1, 0, "Scan angle");
-    header->schema.add_attribute("ScannerChannel", AttributeType::UINT8, 1, 0, "Scanner channel");
-  }
-  else
-  {
-    header->schema.add_attribute("ScanAngle", AttributeType::INT8, 1, 0, "Scan angle rank");
-  }
-
-  if (has_gps)
-    header->schema.add_attribute("gpstime", AttributeType::DOUBLE, 1, 0, "GPS time");
-
-  if (has_rgb)
-  {
-    header->schema.add_attribute("R", AttributeType::UINT16, 1, 0, "Red channel");
-    header->schema.add_attribute("G", AttributeType::UINT16, 1, 0, "Green channel");
-    header->schema.add_attribute("B", AttributeType::UINT16, 1, 0, "Blue channel");
-  }
-
-  if (has_nir)
-    header->schema.add_attribute("NIR", AttributeType::UINT16, 1, 0, "Near infrared channel");
-
-  header->schema.add_attribute("EdgeOfFlightline", AttributeType::BIT, 1, 0, "Edge of flight line");
-  header->schema.add_attribute("ScanDirectionFlag", AttributeType::BIT, 1, 0, "Scan direction flag");
-  header->schema.add_attribute("Synthetic", AttributeType::BIT, 1, 0, "Synthetic flag");
-  header->schema.add_attribute("Keypoint", AttributeType::BIT, 1, 0, "Keypoint flag");
-  header->schema.add_attribute("Withheld", AttributeType::BIT, 1, 0, "Withheld flag");
-
-  if (pdf >= 6)
-    header->schema.add_attribute("Overlap", AttributeType::BIT, 1, 0, "Overlap flag");
 
   // Spatial index is always true for EPT (octree-indexed)
   header->spatial_index = true;
