@@ -44,7 +44,9 @@ Classify ground points using a modified version of the Progressive TIN
 densification method by Axelsson (2000) (see references). The approach involves iteratively
 constructing a triangulated surface model (TIN) to classify ground points (see details). \strong{This
 algorithm is much more robust than the CSF in \link{classify_with_csf} and should be
-preferred}.
+preferred}. This methods also detect and thus classify low noise points i.e. points that are
+part of ground point by construction but that are likely low outlier. Ground point are assigned class
+2. Low outliers are assigned class 7.
 }
 \details{
 The method begins by identifying local low points, assuming at least one ground-level point exists

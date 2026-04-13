@@ -25,6 +25,7 @@ Useful links:
 
 Other contributors:
 \itemize{
+  \item Alexey Grigoryev \email{agrigoriev@gmail.com} [contributor]
   \item Martin Isenburg (Is the author of the included LASlib and LASzip libraries) [copyright holder]
   \item Benoît St-Onge (Is the author of the included 'chm_prep' function) [copyright holder]
   \item Niels Lohmann (Is the author of the included json parser) [copyright holder]
