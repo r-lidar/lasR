@@ -6,7 +6,10 @@ involves iteratively constructing a triangulated surface model (TIN) to
 classify ground points (see details). **This algorithm is much more
 robust than the CSF in
 [classify_with_csf](https://r-lidar.github.io/lasR/reference/classify_with_csf.md)
-and should be preferred**.
+and should be preferred**. This methods also detect and thus classify
+low noise points i.e. points that are part of ground point by
+construction but that are likely low outlier. Ground point are assigned
+class 2. Low outliers are assigned class 7.
 
 ## Usage
 

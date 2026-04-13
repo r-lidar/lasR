@@ -3,11 +3,15 @@
 densification method by Axelsson (2000) (see references). The approach involves iteratively
 constructing a triangulated surface model (TIN) to classify ground points (see details). This
 algorithm is much more robust than the CSF in classify_with_csf and should be
-preferred."><meta property="og:description" content="Classify ground points using a modified version of the Progressive TIN
+preferred. This methods also detect and thus classify low noise points i.e. points that are
+part of ground point by construction but that are likely low outlier. Ground point are assigned class
+2. Low outliers are assigned class 7."><meta property="og:description" content="Classify ground points using a modified version of the Progressive TIN
 densification method by Axelsson (2000) (see references). The approach involves iteratively
 constructing a triangulated surface model (TIN) to classify ground points (see details). This
 algorithm is much more robust than the CSF in classify_with_csf and should be
-preferred."></head><body>
+preferred. This methods also detect and thus classify low noise points i.e. points that are
+part of ground point by construction but that are likely low outlier. Ground point are assigned class
+2. Low outliers are assigned class 7."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -60,7 +64,9 @@ preferred."></head><body>
 densification method by Axelsson (2000) (see references). The approach involves iteratively
 constructing a triangulated surface model (TIN) to classify ground points (see details). <strong>This
 algorithm is much more robust than the CSF in <a href="classify_with_csf.html">classify_with_csf</a> and should be
-preferred</strong>.</p>
+preferred</strong>. This methods also detect and thus classify low noise points i.e. points that are
+part of ground point by construction but that are likely low outlier. Ground point are assigned class
+2. Low outliers are assigned class 7.</p>
     </div>
 
     <div class="section level2">

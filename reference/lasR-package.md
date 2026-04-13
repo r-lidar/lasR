@@ -22,6 +22,8 @@ holder\]
 
 Other contributors:
 
+- Alexey Grigoryev <agrigoriev@gmail.com> \[contributor\]
+
 - Martin Isenburg (Is the author of the included LASlib and LASzip
   libraries) \[copyright holder\]
 

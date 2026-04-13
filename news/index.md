@@ -2,9 +2,8 @@
 
 ## lasR 0.20.1
 
-- Fix [\#285](https://github.com/r-lidar/lasR/issues/285):
-  [`summarise()`](https://r-lidar.github.io/lasR/reference/summarise.md)
-  count synthetic and withheld points
+- Enhance: documentation of `classify_with_ptd`
+  ([\#288](https://github.com/r-lidar/lasR/issues/288))
 
 ## lasR 0.20.0
 
