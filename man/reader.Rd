@@ -66,7 +66,7 @@ pipeline <- reader(filter = keep_z_above(1.3)) + rasterize(10, "zmean")
 ans <- exec(pipeline, on = f)
 # terra::plot(ans)
 
-# read_las() with no option can be omitted
+# reader() with no option can be omitted
 ans <- exec(rasterize(10, "zmax"), on = f)
 # terra::plot(ans)
 
