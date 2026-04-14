@@ -7,11 +7,35 @@
 \alias{reader_rectangles}
 \title{Initialize the pipeline}
 \usage{
-reader(filter = "", select = "*", copc_depth = NULL, ...)
+reader(
+  filter = "",
+  select = "*",
+  depth = NULL,
+  copc_depth = NULL,
+  ept_depth = NULL,
+  ...
+)
 
-reader_coverage(filter = "", select = "*", copc_depth = NULL, ...)
+reader_coverage(
+  filter = "",
+  select = "*",
+  depth = NULL,
+  copc_depth = NULL,
+  ept_depth = NULL,
+  ...
+)
 
-reader_circles(xc, yc, r, filter = "", select = "*", copc_depth = NULL, ...)
+reader_circles(
+  xc,
+  yc,
+  r,
+  filter = "",
+  select = "*",
+  depth = NULL,
+  copc_depth = NULL,
+  ept_depth = NULL,
+  ...
+)
 
 reader_rectangles(
   xmin,
@@ -20,7 +44,9 @@ reader_rectangles(
   ymax,
   filter = "",
   select = "*",
+  depth = NULL,
   copc_depth = NULL,
+  ept_depth = NULL,
   ...
 )
 }
@@ -32,8 +58,12 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 
 \item{select}{character. Unused. Reserved for future versions.}
 
-\item{copc_depth}{integer. If the files are COPC file is is possible to read the point hierarchy
-up to a given level. COPC hierarchy is 0-index. The first level is 0 not 1.}
+\item{depth}{integer. Maximum octree depth level for COPC or EPT data. Depth is 0-indexed.
+When NULL (default), all levels are read.}
+
+\item{copc_depth}{integer. Deprecated. Use \code{depth} instead.}
+
+\item{ept_depth}{integer. Deprecated. Use \code{depth} instead.}
 
 \item{...}{passed to other readers}
 
@@ -48,6 +78,12 @@ It only initializes the pipeline. \code{reader()} is the main function that disp
 functions. \code{reader_coverage()} processes the entire point cloud. \code{reader_circles()} and
 \code{reader_rectangles()} read and process only some selected regions of interest. If the chosen
 reader has no options i.e. using \code{reader()} it can be omitted.
+}
+\details{
+Supported input formats: LAS, LAZ, COPC, PCD, and EPT (Entwine Point Tiles).
+EPT endpoints are detected automatically from \code{ept.json} paths or URLs.
+For remote files, COPC and EPT are strongly recommended as they support
+efficient spatial streaming (only relevant data is downloaded).
 }
 \examples{
 f <- system.file("extdata", "Topography.las", package = "lasR")

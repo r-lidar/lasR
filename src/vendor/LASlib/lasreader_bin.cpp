@@ -2,13 +2,13 @@
 ===============================================================================
 
   FILE:  lasreader_bin.cpp
-  
+
   CONTENTS:
-  
+
     see corresponding header file
-  
+
   PROGRAMMERS:
-  
+
     martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
 
   COPYRIGHT:
@@ -21,11 +21,11 @@
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  
+
   CHANGE HISTORY:
-  
+
     see corresponding header file
-  
+
 ===============================================================================
 */
 #include "lasreader_bin.hpp"
@@ -68,7 +68,7 @@ struct TSheader
   I32 size;
   I32 version;
   I32 recog_val;
-  I8 recog_str[4];
+  CHAR recog_str[4];
   I32 npoints;
   I32 units;
   F64 origin_x;
@@ -221,7 +221,7 @@ BOOL LASreaderBIN::open(ByteStreamIn* stream)
   // initialize point
 
   point.init(&header, header.point_data_format, header.point_data_record_length);
-  
+
   // set point count to zero
 
   p_count = 0;

@@ -174,7 +174,7 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
     eprint("ERROR: writing EVLR reserved\n");
     return FALSE;
   }
-  I8 user_id[16];
+  CHAR user_id[16];
   memset(user_id, 0, 16);
   strcpy(user_id, "LASF_Spec");
   if (!stream->putBytes((U8*)user_id, 16))
@@ -194,7 +194,7 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
     eprint("ERROR: writing EVLR record_length_after_header\n");
     return FALSE;
   }
-  I8 description[32];
+  CHAR description[32];
   memset(description, 0, 32);
   snprintf(description, 32, "%s by LAStools (%d)", (compressed ? "compressed" : "created"), LAS_TOOLS_VERSION);
   if (!stream->putBytes((U8*)description, 32))

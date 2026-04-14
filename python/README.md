@@ -16,7 +16,8 @@ The LASR Python bindings provide a clean, Pythonic interface to the powerful LAS
 - **Memory Efficient**: Minimal memory overhead through C++ backend
 - **Rich Results**: Access detailed stage outputs and processing statistics
 - **Structured Error Handling**: Comprehensive error information and debugging
-- **Flexible Input Paths**: Pass a directory/catalog or an iterable of path-like objects; only .las/.laz files are used
+- **Flexible Input Paths**: Pass a directory/catalog or an iterable of path-like objects; supports LAS, LAZ, COPC, PCD, and EPT formats
+- **Remote Data Access**: Stream data from HTTP, S3, Azure, GCS via GDAL virtual filesystems; COPC and EPT support efficient spatial queries over the network
 
 ## Installation
 

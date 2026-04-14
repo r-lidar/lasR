@@ -27,6 +27,7 @@
 #include "spikefree.h"
 #include "readlas.h"
 #include "readpcd.h"
+#include "readept.h"
 #include "regiongrowing.h"
 #include "setcrs.h"
 #include "sor.h"
@@ -267,6 +268,12 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
             case PCDFILE:
             {
               auto v = std::make_unique<LASRpcdreader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            case EPTFILE:
+            {
+              auto v = std::make_unique<LASReptreader>();
               pipeline.push_back(std::move(v));
               break;
             }

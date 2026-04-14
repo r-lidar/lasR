@@ -215,6 +215,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRreaders/PointSchema.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/LASio.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/PCDio.cpp
+  ${LASR_SOURCE_DIR}/src/LASRreaders/EPTio.cpp
 
   # Stages implementation
   ${LASR_SOURCE_DIR}/src/LASRstages/info.cpp
@@ -237,6 +238,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/rasterize.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/readlas.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/readpcd.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/readept.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/regiongrowing.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/sampling.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/setcrs.cpp
