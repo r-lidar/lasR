@@ -967,8 +967,6 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' @param select character. Unused. Reserved for future versions.
 #' @param depth integer. Maximum octree depth level for COPC or EPT data. Depth is 0-indexed.
 #' When NULL (default), all levels are read.
-#' @param copc_depth integer. Deprecated. Use `depth` instead.
-#' @param ept_depth integer. Deprecated. Use `depth` instead.
 #' @param ... passed to other readers
 #'
 #' @examples
@@ -982,7 +980,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' ans <- exec(pipeline, on = f)
 #' # terra::plot(ans)
 #'
-#' # read_las() with no option can be omitted
+#' # reader() with no option can be omitted
 #' ans <- exec(rasterize(10, "zmax"), on = f)
 #' # terra::plot(ans)
 #'
@@ -998,10 +996,8 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' # terra::plot(ans)
 #' @export
 #' @md
-reader = function(filter = "", select = "*", depth = NULL, copc_depth = NULL, ept_depth = NULL, ...)
+reader = function(filter = "", select = "*", depth = NULL, ...)
 {
-  depth <- resolve_depth(depth, copc_depth, ept_depth)
-
   p <- list(...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
@@ -1015,29 +1011,29 @@ reader = function(filter = "", select = "*", depth = NULL, copc_depth = NULL, ep
 
 #' @export
 #' @rdname reader
-reader_coverage = function(filter = "", select = "*", depth = NULL, copc_depth = NULL, ept_depth = NULL, ...)
+reader_coverage = function(filter = "", select = "*", depth = NULL, ...)
 {
   validate_filter(filter, TRUE)
-  depth <- resolve_depth(depth, copc_depth, ept_depth)
+  depth <- resolve_depth(depth, ...)
   if (is.null(depth)) depth = -1
   .APISTAGES$reader_coverage(filter, select, depth)
 }
 
 #' @export
 #' @rdname reader
-reader_circles = function(xc, yc, r, filter = "", select = "*", depth = NULL, copc_depth = NULL, ept_depth = NULL, ...)
+reader_circles = function(xc, yc, r, filter = "", select = "*", depth = NULL, ...)
 {
   validate_filter(filter, TRUE)
-  depth <- resolve_depth(depth, copc_depth, ept_depth)
+  depth <- resolve_depth(depth, ...)
   if (is.null(depth)) depth = -1
   .APISTAGES$reader_circles(xc, yc, r, filter, select, depth)
 }
 
 #' @export
 #' @rdname reader
-reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", depth = NULL, copc_depth = NULL, ept_depth = NULL, ...)
+reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", depth = NULL, ...)
 {
-  depth <- resolve_depth(depth, copc_depth, ept_depth)
+  depth <- resolve_depth(depth, ...)
   if (is.null(depth)) depth = -1
   .APISTAGES$reader_rectangles(xmin, ymin, xmax, ymax, filter, select, depth)
 }

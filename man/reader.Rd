@@ -7,35 +7,11 @@
 \alias{reader_rectangles}
 \title{Initialize the pipeline}
 \usage{
-reader(
-  filter = "",
-  select = "*",
-  depth = NULL,
-  copc_depth = NULL,
-  ept_depth = NULL,
-  ...
-)
+reader(filter = "", select = "*", depth = NULL, ...)
 
-reader_coverage(
-  filter = "",
-  select = "*",
-  depth = NULL,
-  copc_depth = NULL,
-  ept_depth = NULL,
-  ...
-)
+reader_coverage(filter = "", select = "*", depth = NULL, ...)
 
-reader_circles(
-  xc,
-  yc,
-  r,
-  filter = "",
-  select = "*",
-  depth = NULL,
-  copc_depth = NULL,
-  ept_depth = NULL,
-  ...
-)
+reader_circles(xc, yc, r, filter = "", select = "*", depth = NULL, ...)
 
 reader_rectangles(
   xmin,
@@ -45,8 +21,6 @@ reader_rectangles(
   filter = "",
   select = "*",
   depth = NULL,
-  copc_depth = NULL,
-  ept_depth = NULL,
   ...
 )
 }
@@ -60,10 +34,6 @@ The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"
 
 \item{depth}{integer. Maximum octree depth level for COPC or EPT data. Depth is 0-indexed.
 When NULL (default), all levels are read.}
-
-\item{copc_depth}{integer. Deprecated. Use \code{depth} instead.}
-
-\item{ept_depth}{integer. Deprecated. Use \code{depth} instead.}
 
 \item{...}{passed to other readers}
 

@@ -8,35 +8,11 @@
 \alias{reader_las_rectangles}
 \title{Deprecated}
 \usage{
-reader_las(
-  filter = "",
-  select = "*",
-  depth = NULL,
-  copc_depth = NULL,
-  ept_depth = NULL,
-  ...
-)
+reader_las(filter = "", select = "*", depth = NULL, ...)
 
-reader_las_coverage(
-  filter = "",
-  select = "*",
-  depth = NULL,
-  copc_depth = NULL,
-  ept_depth = NULL,
-  ...
-)
+reader_las_coverage(filter = "", select = "*", depth = NULL, ...)
 
-reader_las_circles(
-  xc,
-  yc,
-  r,
-  filter = "",
-  select = "*",
-  depth = NULL,
-  copc_depth = NULL,
-  ept_depth = NULL,
-  ...
-)
+reader_las_circles(xc, yc, r, filter = "", select = "*", depth = NULL, ...)
 
 reader_las_rectangles(
   xmin,
@@ -46,8 +22,6 @@ reader_las_rectangles(
   filter = "",
   select = "*",
   depth = NULL,
-  copc_depth = NULL,
-  ept_depth = NULL,
   ...
 )
 }
