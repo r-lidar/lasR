@@ -1,3 +1,7 @@
+# lasR 0.21.0
+
+- NEW: Support of Entwine Point Tile format
+
 # lasR 0.20.0
 
 - NEW: Support of remote files
