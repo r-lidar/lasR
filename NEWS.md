@@ -1,7 +1,8 @@
 # lasR 0.21.0
 
-- NEW: Support of Entwine Point Tile format
-- NEW: `classify_with_ivf` gains a parameter `filter` (#289)
+- New: Support of Entwine Point Tile format
+- New: `classify_with_ivf` gains a parameter `filter` (#289)
+- Change: `drop_noise()` and `keep_noise()` now filter classes 7 and 18 instead of 18 only (#283)
 
 # lasR 0.20.0
 

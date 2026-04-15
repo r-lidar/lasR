@@ -61,11 +61,11 @@ drop_ground = function() { make_filter("Classification != 2") }
 
 #' @rdname filters
 #' @export
-keep_noise = function() { make_filter("Classification == 18") }
+keep_noise = function() { make_filter("Classification %in% 7 18") }
 
 #' @rdname filters
 #' @export
-drop_noise = function() { make_filter("Classification != 18") }
+drop_noise = function() { make_filter("Classification %out% 7 18") }
 
 #' @rdname filters
 #' @export
