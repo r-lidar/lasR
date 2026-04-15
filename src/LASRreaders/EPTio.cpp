@@ -471,9 +471,9 @@ std::string EPTio::hierarchy_path(const EPTkey& key) const
 
 std::string EPTio::read_file_contents(const std::string& path) const
 {
-#ifdef USING_GDAL
   if (is_remote(path))
   {
+#ifdef USING_GDAL
     // Use GDAL VSI for remote files
     std::string vsi_path = path;
     if (path.compare(0, 4, "http") == 0)
@@ -492,11 +492,11 @@ std::string EPTio::read_file_contents(const std::string& path) const
 
     VSIFCloseL(fp);
     return content;
-  }
 #else
-  if (is_remote(path))
     throw std::runtime_error("Remote EPT endpoints require GDAL support: " + path);
 #endif
+  }
+
 
   // Local file
   std::ifstream file(path);
