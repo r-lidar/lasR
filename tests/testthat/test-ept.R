@@ -54,11 +54,13 @@ test_that("EPT depth filtering works",
 {
   ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
 
-  # Test data has only depth-1 tiles, so depth=1 should match full read
-  d1 <- exec(reader(depth = 1) + summarise(), on = ept)
+  # Test data has no 0-0-0-0 tile (hierarchy starts at depth 1), so depth=0
+  # yields zero points and must not hang.
+  d0 <- exec(reader(depth = 0) + summarise(), on = ept)
   full <- exec(reader() + summarise(), on = ept)
 
-  expect_equal(d1$npoints, full$npoints)
+  expect_equal(d0$npoints, 0)
+  expect_gt(full$npoints, 0)
 })
 
 test_that("Multiple EPT endpoints produce an error",
