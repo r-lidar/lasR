@@ -145,7 +145,7 @@ bool Engine::run_streamed()
       // There is no point to read
       uint64_t npoints = 0;
       npoints += header->number_of_point_records;
-      if (npoints == 0) break;
+      if (npoints == 0) { last_point = true; break; }
 
       // Some stages need the header to get initialized (write_las is the only one)
       success = stage->set_header(header);
