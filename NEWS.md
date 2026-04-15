@@ -1,6 +1,7 @@
 # lasR 0.21.0
 
 - NEW: Support of Entwine Point Tile format
+- NEW: `classify_with_ivf` gains a parameter `filter` (#289)
 
 # lasR 0.20.0
 

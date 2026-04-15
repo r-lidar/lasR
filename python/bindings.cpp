@@ -289,7 +289,8 @@ PYBIND11_MODULE(pylasr, m) {
           "Classify noise using Isolated Voxel Filter (Non-Cubic)",
           py::arg("res") = std::vector<double>{5.0, 5.0, 5.0},
           py::arg("n") = 6,
-          py::arg("classification") = 18
+          py::arg("classification") = 18,
+          py::arg("filter") = std::vector<std::string>{""}
     );
 
     m.def("classify_with_csf", &api::classify_with_csf,

@@ -4,7 +4,7 @@
 \alias{classify_with_ivf}
 \title{Classify noise points}
 \usage{
-classify_with_ivf(res = 5, n = 6L, class = 18L)
+classify_with_ivf(res = 5, n = 6L, class = 18L, filter = "")
 }
 \arguments{
 \item{res}{numeric. Resolution of the voxels. Can be a vector of 3 for x,y and z resolutions}
@@ -12,6 +12,11 @@ classify_with_ivf(res = 5, n = 6L, class = 18L)
 \item{n}{integer. The maximal number of 'other points' in the 27 voxels.}
 
 \item{class}{integer. The class to assign to the points that match the condition.}
+
+\item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
+interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.
+The most common strings are \verb{Classification == 2"}, \code{"Z > 2"}, \code{"Intensity < 100"}. For more details see
+\link{filters}.}
 }
 \value{
 This stage transforms the point cloud in the pipeline. It consequently returns nothing.

@@ -243,10 +243,11 @@ classify_with_ipf = function(r = 1, n = 0L, class = 18L) { .APISTAGES$classify_w
 #' @param res numeric. Resolution of the voxels. Can be a vector of 3 for x,y and z resolutions
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
 #' @param class integer. The class to assign to the points that match the condition.
+#' @template param-filter
 #' @template return-pointcloud
 #'
 #' @export
-classify_with_ivf = function(res = 5, n = 6L, class = 18L) { .APISTAGES$classify_with_ivf(res, n, class) }
+classify_with_ivf = function(res = 5, n = 6L, class = 18L, filter = "") { .APISTAGES$classify_with_ivf(res, n, class, filter) }
 
 #' Classify ground points
 #'

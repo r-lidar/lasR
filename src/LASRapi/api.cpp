@@ -53,7 +53,7 @@ Pipeline classify_with_ipf(double r, int n, int classification)
   return Pipeline(s);
 }
 
-Pipeline classify_with_ivf(std::vector<double> res, int n, int classification)
+Pipeline classify_with_ivf(std::vector<double> res, int n, int classification, std::vector<std::string> filter)
 {
   size_t nv = res.size();
   if (n < 0)       throw std::invalid_argument("Invalid argument: neighborhood must be positive.");
@@ -77,6 +77,7 @@ Pipeline classify_with_ivf(std::vector<double> res, int n, int classification)
   s.set("res_z", res[2]);
   s.set("n", n);
   s.set("class", classification);
+  s.set("filter", filter);
 
   return Pipeline(s);
 }
