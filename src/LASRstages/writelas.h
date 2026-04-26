@@ -14,6 +14,7 @@ public:
   bool set_header(Header*& header) override;
   bool set_input_file_name(const std::string& file) override;
   bool set_output_file(const std::string& file) override;
+  bool process(FileCollection*& ctg) override;
   bool process(Point*& p) override;
   bool process(PointCloud*& las) override;
   bool is_streamable() const override { return true; };
@@ -50,6 +51,18 @@ private:
   unsigned char version_minor;
   unsigned char point_format;
   std::vector<AttributeAccessor> core_accessors;
+
+  // Union bbox over the input FileCollection, captured in process(ctg)
+  // before any per-tile processing. Used to size the COPC octree
+  // when merging many input files into a single .copc.laz output.
+  // NaN if not yet captured (single-file path).
+  double catalog_xmin;
+  double catalog_ymin;
+  double catalog_zmin;
+  double catalog_xmax;
+  double catalog_ymax;
+  double catalog_zmax;
+  bool catalog_bbox_valid;
 
   LASio* lasio;
 };

@@ -49,8 +49,10 @@ public:
   double get_buffer() const { return buffer; };
   double get_xmin() const { return xmin; };
   double get_ymin() const { return ymin; };
+  double get_zmin() const { return zmin; };
   double get_xmax() const { return xmax; };
   double get_ymax() const { return ymax; };
+  double get_zmax() const { return zmax; };
   void set_crs(const CRS& crs) { this->crs = crs; };
   CRS get_crs() const { return crs; };
   const std::vector<std::filesystem::path>& get_files() const;
@@ -79,8 +81,10 @@ private:
   // Bounding box of the file collection
   double xmin;
   double ymin;
+  double zmin;
   double xmax;
   double ymax;
+  double zmax;
 
   // CRS retained of the overall collection
   CRS crs;

@@ -89,6 +89,36 @@ test_that("write_copc round-trips a PDRF 6 input via the fast path",
   expect_equal(dst$npoints, src$npoints)
 })
 
+test_that("write_copc merges multiple input files into a single COPC",
+{
+  f1 = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
+  f2 = system.file("extdata", "bcts", "bcts_2.laz", package = "lasR")
+  skip_if(f1 == "" || f2 == "", "bcts tiles not available")
+
+  o = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(o), add = TRUE)
+
+  expect_error(exec(write_copc(o), on = c(f1, f2)), NA)
+
+  n1 = exec(reader() + summarise(), on = f1)$npoints
+  n2 = exec(reader() + summarise(), on = f2)$npoints
+  nout = exec(reader() + summarise(), on = o)$npoints
+  expect_equal(nout, n1 + n2)
+
+  # Read the COPC info VLR (at offset 375 + 54 in LAS 1.4 with COPC info as
+  # the first VLR) and assert the octree was sized to the UNION of the two
+  # input files' bboxes — not just file 1's. Without the union-bbox fix,
+  # center_y would be ~629279 (file 1's center) and halfsize ~121.5; with
+  # the fix, center_y ~629429 (union center) and halfsize ~271.4.
+  con = file(o, open = "rb")
+  on.exit(close(con), add = TRUE)
+  seek(con, 375 + 54)
+  center_xyz = readBin(con, "double", n = 3)
+  halfsize   = readBin(con, "double", n = 1)
+  expect_gt(center_xyz[2], 629350)  # union center, not file-1 center
+  expect_gt(halfsize, 200)           # union halfsize, not file-1 halfsize
+})
+
 test_that("write_copc output is readable by lasR EPT-style reader with depth filter",
 {
   f = system.file("extdata", "Megaplot.las", package = "lasR")
