@@ -1,4 +1,6 @@
 #include "LASio.h"
+#include "Progress.h"
+#include "COPCwriter.h"
 
 #include "lasreader.hpp"
 #include "laswriter.hpp"
@@ -8,6 +10,17 @@
 
 #define EPSILON 1e-9
 
+namespace
+{
+  bool path_has_copc_suffix(const std::string& path)
+  {
+    static const std::string suffix = ".copc.laz";
+    if (path.size() < suffix.size()) return false;
+    return std::equal(suffix.rbegin(), suffix.rend(), path.rbegin(),
+                      [](char a, char b) { return std::tolower((unsigned char)a) == std::tolower((unsigned char)b); });
+  }
+}
+
 LASio::LASio()
 {
   lasreadopener = nullptr;
@@ -15,6 +28,7 @@ LASio::LASio()
   lasreader = nullptr;
   lasheader = nullptr;
   laswriter = nullptr;
+  copcwriter = nullptr;
   point = nullptr;
 
   intensity = AttributeAccessor("Intensity");
@@ -48,7 +62,7 @@ LASio::~LASio()
 
 bool LASio::query(const std::vector<std::string>& main_files, const std::vector<std::string>& neighbour_files, double xmin, double ymin, double xmax, double ymax, double buffer, bool circle, std::vector<std::string> filters)
 {
-  if (laswriter)
+  if (laswriter || copcwriter)
     throw std::logic_error("Internal error. This interface has been created as a writer"); // # nocov
 
   // Keep only LASlib string that start with - (e.g. -drop_z_above 50) and drop condition
@@ -138,7 +152,7 @@ void LASio::open(const std::string& file)
   if (lasheader != nullptr)
     throw std::logic_error("Internal error. LASheader already initialized."); // # nocov
 
-  if (laswriter)
+  if (laswriter || copcwriter)
     throw std::logic_error("Internal error. This interface has been created as a writer"); // # nocov
 
   lasreadopener = new LASreadOpener;
@@ -157,21 +171,28 @@ void LASio::create(const std::string& file)
   if (lasreader)
     throw std::logic_error("Internal error. This interface has been created as a reader"); // # nocov
 
-  laswriteopener = new LASwriteOpener;
-  laswriteopener->set_file_name(file.c_str());
-  laswriter = laswriteopener->open(lasheader);
-
-  if (!laswriter)
-    throw std::runtime_error("LASlib internal error. Cannot open LASwriter."); // # nocov
-
-  laswriter->set_copc_depth(copc_depth);
-  if (copc_density <= 64)
-    laswriter->set_copc_sparse();
-  else if ((copc_density > 64) && (copc_density <= 128))
-    laswriter->set_copc_normal();
+  if (path_has_copc_suffix(file))
+  {
+    copcwriter = new COPCwriter;
+    copcwriter->set_copc_depth(copc_depth);
+    copcwriter->set_copc_density(copc_density);
+    if (!copcwriter->open(file.c_str(), lasheader, LAS_TOOLS_IO_OBUFFER_SIZE))
+    {
+      std::string err = copcwriter->last_error();
+      delete copcwriter;
+      copcwriter = nullptr;
+      throw std::runtime_error("Cannot open COPC writer: " + err);
+    }
+  }
   else
-    laswriter->set_copc_dense();
+  {
+    laswriteopener = new LASwriteOpener;
+    laswriteopener->set_file_name(file.c_str());
+    laswriter = laswriteopener->open(lasheader);
 
+    if (!laswriter)
+      throw std::runtime_error("LASlib internal error. Cannot open LASwriter."); // # nocov
+  }
 }
 
 void LASio::populate_header(Header* header, bool read_first_point)
@@ -444,10 +465,15 @@ void LASio::init(const Header* header)
   lasheader->y_offset             = header->schema.attributes[AttributeCore::Y].value_offset;
   lasheader->z_offset             = header->schema.attributes[AttributeCore::Z].value_offset;
   lasheader->number_of_point_records = 0;
-  /*lasheader->min_x                = xmin;
-  lasheader->min_y                = ymin;
-  lasheader->max_x                = xmax;
-  lasheader->max_y                = ymax;*/
+  // Propagate bbox from the Header struct. The regular LAZ path overwrites
+  // these via inventory at close time; the COPC path reads them at open() to
+  // build the octree, then also overwrites via inventory at close.
+  lasheader->min_x = header->min_x;
+  lasheader->max_x = header->max_x;
+  lasheader->min_y = header->min_y;
+  lasheader->max_y = header->max_y;
+  lasheader->min_z = header->min_z;
+  lasheader->max_z = header->max_z;
   std::strncpy(lasheader->generating_software, "lasr with LASlib", 32);
 
   if (header->adjusted_standard_gps_time)
@@ -566,8 +592,16 @@ bool LASio::write_point(Point* p)
   for (size_t i = 0 ; i < extrabytes_offsets.size() ; i++)
     point->set_attribute(i, p->data + extrabytes_offsets[i]);
 
-  laswriter->write_point(point);
-  laswriter->update_inventory(point);
+  if (copcwriter)
+  {
+    if (!copcwriter->write_point(point))
+      throw std::runtime_error("COPC writer failed: " + copcwriter->last_error());
+  }
+  else
+  {
+    laswriter->write_point(point);
+    laswriter->update_inventory(point);
+  }
 
   return true;
 }
@@ -665,7 +699,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
 
 bool LASio::is_opened()
 {
-  return (lasreader != nullptr || laswriter != nullptr);
+  return (lasreader != nullptr || laswriter != nullptr || copcwriter != nullptr);
 }
 
 int64_t LASio::p_count()
@@ -689,6 +723,16 @@ void LASio::close()
     laswriter->close();
     delete laswriter;
     laswriter = nullptr;
+
+    delete lasheader;
+    lasheader = nullptr;
+  }
+
+  if (copcwriter)
+  {
+    copcwriter->close();
+    delete copcwriter;
+    copcwriter = nullptr;
 
     delete lasheader;
     lasheader = nullptr;

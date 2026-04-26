@@ -16,6 +16,7 @@ class LASreader;
 class LASwriter;
 class LASheader;
 class LASpoint;
+class COPCwriter;
 
 class LASio : public Fileio
 {
@@ -58,6 +59,7 @@ private:
   LASwriteOpener* laswriteopener;
   LASreader* lasreader;
   LASwriter* laswriter;
+  COPCwriter* copcwriter;
   LASheader* lasheader;
   LASpoint* point;
 
