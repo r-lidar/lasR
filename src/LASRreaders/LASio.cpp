@@ -173,6 +173,16 @@ void LASio::create(const std::string& file)
 
   if (path_has_copc_suffix(file))
   {
+    // Apply the bbox stashed during init() to lasheader so the COPC writer
+    // can build its octree from the correct geometry. Non-COPC writes leave
+    // lasheader's bbox untouched and rely on inventory-at-close.
+    lasheader->min_x = saved_min_x;
+    lasheader->max_x = saved_max_x;
+    lasheader->min_y = saved_min_y;
+    lasheader->max_y = saved_max_y;
+    lasheader->min_z = saved_min_z;
+    lasheader->max_z = saved_max_z;
+
     copcwriter = new COPCwriter;
     copcwriter->set_copc_depth(copc_depth);
     copcwriter->set_copc_density(copc_density);
@@ -465,15 +475,16 @@ void LASio::init(const Header* header)
   lasheader->y_offset             = header->schema.attributes[AttributeCore::Y].value_offset;
   lasheader->z_offset             = header->schema.attributes[AttributeCore::Z].value_offset;
   lasheader->number_of_point_records = 0;
-  // Propagate bbox from the Header struct. The regular LAZ path overwrites
-  // these via inventory at close time; the COPC path reads them at open() to
-  // build the octree, then also overwrites via inventory at close.
-  lasheader->min_x = header->min_x;
-  lasheader->max_x = header->max_x;
-  lasheader->min_y = header->min_y;
-  lasheader->max_y = header->max_y;
-  lasheader->min_z = header->min_z;
-  lasheader->max_z = header->max_z;
+  // Stash the source bbox for COPCwriter to consume at create() time. The
+  // regular LAZ path leaves lasheader's bbox at default — inventory updates
+  // it at close time. The COPC writer needs an accurate bbox up front to
+  // size the octree, so it'll be applied to lasheader inside create().
+  saved_min_x = header->min_x;
+  saved_max_x = header->max_x;
+  saved_min_y = header->min_y;
+  saved_max_y = header->max_y;
+  saved_min_z = header->min_z;
+  saved_max_z = header->max_z;
   std::strncpy(lasheader->generating_software, "lasr with LASlib", 32);
 
   if (header->adjusted_standard_gps_time)

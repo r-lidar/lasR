@@ -87,6 +87,17 @@ private:
 
   int copc_depth;
   int copc_density;
+
+  // Source bbox stashed by init() and applied to lasheader by create()
+  // when the output is .copc.laz. Lets the COPC writer build its octree
+  // with an accurate bbox without touching lasheader on the regular LAZ
+  // path (which relies on inventory-at-close for bbox).
+  double saved_min_x = 0.0;
+  double saved_max_x = 0.0;
+  double saved_min_y = 0.0;
+  double saved_max_y = 0.0;
+  double saved_min_z = 0.0;
+  double saved_max_z = 0.0;
 };
 
 
