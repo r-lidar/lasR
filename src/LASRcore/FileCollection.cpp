@@ -723,6 +723,8 @@ bool FileCollection::add_header(const Header& header, bool noprocess)
   if (ymin > header.min_y) ymin = header.min_y;
   if (xmax < header.max_x) xmax = header.max_x;
   if (ymax < header.max_y) ymax = header.max_y;
+  if (zmin > header.min_z) zmin = header.min_z;
+  if (zmax < header.max_z) zmax = header.max_z;
 
   this->noprocess.push_back(noprocess);
   this->file_index.add(header.min_x, header.min_y, header.max_x, header.max_y);
@@ -1338,8 +1340,10 @@ void FileCollection::clear()
 {
   xmin = std::numeric_limits<double>::max();
   ymin = std::numeric_limits<double>::max();
+  zmin = std::numeric_limits<double>::max();
   xmax = -std::numeric_limits<double>::max();
   ymax = -std::numeric_limits<double>::max();
+  zmax = -std::numeric_limits<double>::max();
   last_error.clear();
 
   use_dataframe = true;

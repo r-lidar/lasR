@@ -11,6 +11,26 @@ LASRlaswriter::LASRlaswriter()
   copc_bbox_set = false;
   copc_bbox_xmin = copc_bbox_ymin = copc_bbox_zmin = 0.0;
   copc_bbox_xmax = copc_bbox_ymax = copc_bbox_zmax = 0.0;
+  catalog_xmin = catalog_ymin = catalog_zmin = 0.0;
+  catalog_xmax = catalog_ymax = catalog_zmax = 0.0;
+  catalog_bbox_valid = false;
+}
+
+bool LASRlaswriter::process(FileCollection*& ctg)
+{
+  // Capture the union bbox over all input files. Used by set_header() to
+  // size the COPC output's octree correctly when merging multiple inputs.
+  if (ctg)
+  {
+    catalog_xmin = ctg->get_xmin();
+    catalog_ymin = ctg->get_ymin();
+    catalog_zmin = ctg->get_zmin();
+    catalog_xmax = ctg->get_xmax();
+    catalog_ymax = ctg->get_ymax();
+    catalog_zmax = ctg->get_zmax();
+    catalog_bbox_valid = (catalog_xmin <= catalog_xmax) && (catalog_ymin <= catalog_ymax);
+  }
+  return true;
 }
 
 LASRlaswriter::~LASRlaswriter() noexcept
@@ -244,6 +264,21 @@ bool LASRlaswriter::set_header(Header*& header)
   h.signature = "LASF";
   h.point_data_format = point_format;
   h.version_minor = version_minor;
+
+  // For multi-file merge into a single output, override the per-tile bbox
+  // with the FileCollection's union bbox. The COPC writer uses this bbox
+  // to build the octree at open(); without the override, file 2's points
+  // (and beyond) would be clamped into file 1's octree edges, producing
+  // a structurally-correct but skewed COPC output.
+  if (catalog_bbox_valid)
+  {
+    h.min_x = catalog_xmin;
+    h.min_y = catalog_ymin;
+    h.min_z = catalog_zmin;
+    h.max_x = catalog_xmax;
+    h.max_y = catalog_ymax;
+    h.max_z = catalog_zmax;
+  }
 
   try
   {
