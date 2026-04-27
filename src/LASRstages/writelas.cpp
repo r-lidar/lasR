@@ -2,8 +2,24 @@
 
 #include "LASio.h"
 
+#include <algorithm>  // std::equal
+#include <cctype>
 #include <cmath>      // std::isfinite
 #include <exception>  // std::exception_ptr, std::current_exception
+
+namespace
+{
+  bool path_has_copc_suffix(const std::string& path)
+  {
+    static const std::string suffix = ".copc.laz";
+    if (path.size() < suffix.size()) return false;
+    return std::equal(suffix.rbegin(), suffix.rend(), path.rbegin(),
+                      [](char a, char b) {
+                        return std::tolower((unsigned char)a) ==
+                               std::tolower((unsigned char)b);
+                      });
+  }
+}
 
 LASRlaswriter::LASRlaswriter()
 {
@@ -265,12 +281,18 @@ bool LASRlaswriter::set_header(Header*& header)
   h.point_data_format = point_format;
   h.version_minor = version_minor;
 
-  // For multi-file merge into a single output, override the per-tile bbox
-  // with the FileCollection's union bbox. The COPC writer uses this bbox
-  // to build the octree at open(); without the override, file 2's points
-  // (and beyond) would be clamped into file 1's octree edges, producing
-  // a structurally-correct but skewed COPC output.
-  if (catalog_bbox_valid)
+  // For multi-file merge into a single COPC output, override the per-tile
+  // bbox with the FileCollection's union bbox. The COPC writer uses this
+  // bbox to build the octree at open(); without the override, file 2's
+  // points (and beyond) would be clamped into file 1's octree edges,
+  // producing a structurally-correct but skewed COPC output.
+  //
+  // Gate on (merged && copc-suffix output): per-file mode (`*` placeholder)
+  // creates one output per input tile, and each tile's output should use
+  // its own bbox — applying the catalog union there would inflate every
+  // per-tile output to cover the whole input set. Non-COPC writes ignore
+  // bbox at open anyway, but skip the override for clarity.
+  if (catalog_bbox_valid && merged && path_has_copc_suffix(template_filename))
   {
     h.min_x = catalog_xmin;
     h.min_y = catalog_ymin;
