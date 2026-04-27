@@ -122,15 +122,10 @@ jobs:
           mingw-w64-x86_64-tbb
           mingw-w64-x86_64-python
           mingw-w64-x86_64-python-pip
-
-    - name: Install Python packages
-      shell: msys2 {0}
-      run: |
-        # Check Python version and install packages
-        python --version
-        which python
-        python -m pip install --upgrade pip
-        python -m pip install setuptools wheel numpy pybind11
+          mingw-w64-x86_64-python-setuptools
+          mingw-w64-x86_64-python-wheel
+          mingw-w64-x86_64-python-numpy
+          mingw-w64-x86_64-python-pybind11
 
     - name: Configure pybind11 path
       shell: msys2 {0}
