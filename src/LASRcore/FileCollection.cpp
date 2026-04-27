@@ -207,6 +207,14 @@ bool FileCollection::read_vpc(const std::string& filename)
       return false; // # nocov
     }
 
+    // Track whether every feature provides a 3D bbox. If some do and
+    // some don't, the catalog's accumulated z-bounds would only cover
+    // a subset of files while point counts cover all of them — this
+    // produces a wrong octree size on merged COPC writes. Reject the
+    // mix loudly instead of silently producing skewed output.
+    int n_features_with_z = 0;
+    int n_features_total = 0;
+
     // Loop over the features to read the file paths and bounding boxes
     for (const auto& feature : vpc["features"])
     {
@@ -327,7 +335,21 @@ bool FileCollection::read_vpc(const std::string& filename)
       {
         if (zmin > h.min_z) zmin = h.min_z;
         if (zmax < h.max_z) zmax = h.max_z;
+        n_features_with_z++;
       }
+      n_features_total++;
+    }
+
+    if (n_features_with_z != 0 && n_features_with_z != n_features_total)
+    {
+      last_error = "Malformed virtual point cloud file: " +
+        std::to_string(n_features_with_z) + " of " +
+        std::to_string(n_features_total) + " features carry a 3D proj:bbox; "
+        "the rest are 2D. Mixed 4D/6D bboxes produce a partial z range over "
+        "only some inputs while point counts cover all of them, which sizes "
+        "the merged COPC octree incorrectly. Make every feature's "
+        "properties.proj:bbox 6-element [minx, miny, minz, maxx, maxy, maxz].";
+      return false;
     }
   }
   catch (const std::ifstream::failure& e)
@@ -478,11 +500,19 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     oTargetSRS.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
     oSourceSRS = crs.get_crs();
     OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
-    double z = 0;
-    if (!poTransform->Transform(1, &A.x, &A.y, &zmin) ||
-        !poTransform->Transform(1, &B.x, &B.y, &z) ||
-        !poTransform->Transform(1, &C.x, &C.y, &zmax) ||
-        !poTransform->Transform(1, &D.x, &D.y, &z))
+    // STAC's top-level "bbox" lives in WGS 84 (EPSG:4979). Transform a
+    // mutable copy of the source z so the source-CRS z values stay
+    // available for properties.proj:bbox below — feeding the transformed
+    // values into proj:bbox while x/y are kept in source coords would
+    // make proj:bbox internally inconsistent if the vertical transform
+    // shifts z.
+    double top_zmin = zmin;
+    double top_zmax = zmax;
+    double z_throwaway = 0;
+    if (!poTransform->Transform(1, &A.x, &A.y, &top_zmin) ||
+        !poTransform->Transform(1, &B.x, &B.y, &z_throwaway) ||
+        !poTransform->Transform(1, &C.x, &C.y, &top_zmax) ||
+        !poTransform->Transform(1, &D.x, &D.y, &z_throwaway))
     {
       last_error = "Transformation of the bounding in WGS 84 failed!";
       return false;
@@ -491,7 +521,7 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf], [%.9lf,%.9lf], [%.9lf,%.9lf], [%.9lf,%.9lf], [%.9lf,%.9lf] ]", A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y, A.x, A.y);
     std::string geometry(buffer);
-    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), zmin, MAX(B.x, C.x), MAX(C.y, D.y), zmax);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), top_zmin, MAX(B.x, C.x), MAX(C.y, D.y), top_zmax);
     std::string sbbox(buffer);
 
     std::string id = file.stem().string();
