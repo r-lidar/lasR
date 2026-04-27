@@ -261,15 +261,23 @@ bool FileCollection::read_vpc(const std::string& filename)
         // # nocov end
       }
 
-      // We are sure there is a bbox
+      // We are sure there is a bbox. STAC proj:bbox is [minx,miny,minz,maxx,maxy,maxz]
+      // for 3D and [minx,miny,maxx,maxy] for 2D. Read z when available so the
+      // FileCollection's union z-bounds are tight; merged COPC outputs need all
+      // three axes to size the octree correctly.
       auto bbox = feature["properties"]["proj:bbox"];
       double min_x, min_y, max_x, max_y;
+      double min_z = 0.0, max_z = 0.0;
+      bool have_z = false;
       if (bbox.size() == 6)
       {
         min_x = bbox[0].get<double>();
         min_y = bbox[1].get<double>();
+        min_z = bbox[2].get<double>();
         max_x = bbox[3].get<double>();
         max_y = bbox[4].get<double>();
+        max_z = bbox[5].get<double>();
+        have_z = true;
       }
       else if (bbox.size() == 4)
       {
@@ -291,6 +299,11 @@ bool FileCollection::read_vpc(const std::string& filename)
       h.min_y = min_y;
       h.max_x = max_x;
       h.max_y = max_y;
+      if (have_z)
+      {
+        h.min_z = min_z;
+        h.max_z = max_z;
+      }
       h.number_of_point_records = pccount;
       h.spatial_index = spatial_index;
       h.signature = "LASF";
@@ -306,6 +319,11 @@ bool FileCollection::read_vpc(const std::string& filename)
       if (ymin > h.min_y) ymin = h.min_y;
       if (xmax < h.max_x) xmax = h.max_x;
       if (ymax < h.max_y) ymax = h.max_y;
+      if (have_z)
+      {
+        if (zmin > h.min_z) zmin = h.min_z;
+        if (zmax < h.max_z) zmax = h.max_z;
+      }
     }
   }
   catch (const std::ifstream::failure& e)
@@ -1421,6 +1439,13 @@ PathType FileCollection::parse_path(const std::string& path)
   }
 }
 
+
+uint64_t FileCollection::get_total_points() const
+{
+  uint64_t total = 0;
+  for (const Header& h : headers) total += h.number_of_point_records;
+  return total;
+}
 
 FileCollection::FileCollection()
 {
