@@ -4,7 +4,7 @@ test_that("write_copc round-trips Topography point count and bbox",
   o = tempfile(fileext = ".copc.laz")
   on.exit(unlink(o), add = TRUE)
 
-  expect_error(exec(reader() + write_las(o), on = f), NA)
+  expect_error(exec(reader() + write_las(o, experimental_writer = TRUE), on = f), NA)
   expect_true(file.info(o)$size > 0)
 
   src = exec(reader() + summarise(), on = f)
@@ -20,7 +20,7 @@ test_that("write_copc produces a file with populated COPC info VLR",
   o = tempfile(fileext = ".copc.laz")
   on.exit(unlink(o), add = TRUE)
 
-  exec(write_copc(o), on = f)
+  exec(write_copc(o, experimental_writer = TRUE), on = f)
 
   # A round-trip read should find all points, proving that the EPT hierarchy
   # eVLR and COPC info VLR are correctly populated (a degenerate hierarchy
@@ -38,7 +38,7 @@ test_that("write_copc handles PDRF promotion (format 1 -> 6)",
   o = tempfile(fileext = ".copc.laz")
   on.exit(unlink(o), add = TRUE)
 
-  expect_error(exec(reader() + write_las(o), on = f), NA)
+  expect_error(exec(reader() + write_las(o, experimental_writer = TRUE), on = f), NA)
 
   # Re-read and confirm we still get the same number of points (the PDRF
   # promotion must not lose or duplicate any).
@@ -53,7 +53,7 @@ test_that("write_copc leaves no spill directory behind on success",
   o = tempfile(fileext = ".copc.laz")
   on.exit(unlink(o), add = TRUE)
 
-  exec(write_copc(o), on = f)
+  exec(write_copc(o, experimental_writer = TRUE), on = f)
 
   # No residual <output>.copc-spill-* directory should remain after a
   # successful close(), regardless of whether spilling was triggered.
@@ -69,8 +69,8 @@ test_that("write_copc produces byte-identical output across runs (stable sort)",
   o2 = tempfile(fileext = ".copc.laz")
   on.exit(unlink(c(o1, o2)), add = TRUE)
 
-  exec(reader() + write_las(o1), on = f)
-  exec(reader() + write_las(o2), on = f)
+  exec(reader() + write_las(o1, experimental_writer = TRUE), on = f)
+  exec(reader() + write_las(o2, experimental_writer = TRUE), on = f)
 
   expect_equal(file.info(o1)$size, file.info(o2)$size)
   expect_equal(unname(tools::md5sum(o1)), unname(tools::md5sum(o2)))
@@ -83,7 +83,7 @@ test_that("write_copc round-trips a PDRF 6 input via the fast path",
   o = tempfile(fileext = ".copc.laz")
   on.exit(unlink(o), add = TRUE)
 
-  exec(reader() + write_las(o), on = f)
+  exec(reader() + write_las(o, experimental_writer = TRUE), on = f)
   src = exec(reader() + summarise(), on = f)
   dst = exec(reader() + summarise(), on = o)
   expect_equal(dst$npoints, src$npoints)
@@ -95,7 +95,7 @@ test_that("write_copc output is readable by lasR EPT-style reader with depth fil
   o = tempfile(fileext = ".copc.laz")
   on.exit(unlink(o), add = TRUE)
 
-  exec(write_copc(o), on = f)
+  exec(write_copc(o, experimental_writer = TRUE), on = f)
 
   # reader_las(depth=0) asks for root-level points only. For a non-empty COPC
   # this must return > 0 points and <= the full file's point count. This

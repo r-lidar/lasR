@@ -41,6 +41,7 @@ LASRlaswriter::~LASRlaswriter() noexcept
 bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
 {
   keep_buffer = stage.value("keep_buffer", false);
+  experimental_writer = stage.value("experimental_writer", false);
   copc_density = stage.value("density", 256);
   copc_depth = stage.value("max_depth", -1);
   version_minor = stage.value("version", 0xFF); // 0xFF auto-detect
@@ -205,6 +206,7 @@ bool LASRlaswriter::set_header(Header*& header)
     lasio->init(&h);
     lasio->set_copc_max_depth(copc_depth);
     lasio->set_copc_density(copc_density);
+    lasio->set_use_new_copc_writer(experimental_writer);
   }
   catch (const std::exception& e)
   {

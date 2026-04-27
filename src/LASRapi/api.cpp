@@ -547,12 +547,13 @@ Pipeline transform_with(std::string connect_uid, std::string operation, std::str
   return Pipeline(s);
 }
 
-Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep_buffer, unsigned char version, unsigned char pdrf)
+Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep_buffer, unsigned char version, unsigned char pdrf, bool experimental_writer)
 {
   Stage s("write_las");
   s.set("output", ofile);
   s.set("filter", filter);
   s.set("keep_buffer", keep_buffer);
+  s.set("experimental_writer", experimental_writer);
   if (version != 0xFF)
   {
     if (version < 0 || version > 4)
@@ -583,7 +584,7 @@ Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep
   return Pipeline(s);
 }
 
-Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density)
+Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density, bool experimental_writer)
 {
   std::string ext = ofile.substr(ofile.size()-9, ofile.size());
   if (ext != ".copc.laz") throw std::invalid_argument("File must be .copc.laz");
@@ -604,6 +605,7 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
   s.set("filter", filter);
   s.set("keep_buffer", keep_buffer);
   s.set("density", d);
+  s.set("experimental_writer", experimental_writer);
   if (max_depth >= 0)
     s.set("max_depth", max_depth);
 

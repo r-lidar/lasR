@@ -35,6 +35,7 @@ public:
   void reset_accessor() override;
   void set_copc_max_depth(int depth);
   void set_copc_density(int density);
+  void set_use_new_copc_writer(bool b) { use_new_copc_writer = b; }
   int64_t p_count() override;
 
   // Tools
@@ -87,6 +88,10 @@ private:
 
   int copc_depth;
   int copc_density;
+  // When true and the output path ends in .copc.laz, route to the new
+  // bounded-memory streaming COPCwriter. Otherwise the .copc.laz output is
+  // handled by LASlib's in-memory LASwriterCOPC (the historical default).
+  bool use_new_copc_writer = false;
 
   // Source bbox stashed by init() and applied to lasheader by create()
   // when the output is .copc.laz. Lets the COPC writer build its octree

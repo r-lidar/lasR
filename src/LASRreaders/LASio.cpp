@@ -188,7 +188,7 @@ void LASio::create(const std::string& file)
   if (lasreader)
     throw std::logic_error("Internal error. This interface has been created as a reader"); // # nocov
 
-  if (path_has_copc_suffix(file))
+  if (path_has_copc_suffix(file) && use_new_copc_writer)
   {
     // Apply the bbox + point count stashed during init() to lasheader so
     // the COPC writer can build its octree from the correct geometry and
@@ -226,6 +226,20 @@ void LASio::create(const std::string& file)
 
     if (!laswriter)
       throw std::runtime_error("LASlib internal error. Cannot open LASwriter."); // # nocov
+
+    // For .copc.laz outputs LASlib returns a LASwriterCOPC. Forward the
+    // depth/density settings before any points are written. These calls
+    // are no-ops on the regular LAZ path.
+    if (path_has_copc_suffix(file))
+    {
+      laswriter->set_copc_depth(copc_depth);
+      if (copc_density <= 64)
+        laswriter->set_copc_sparse();
+      else if (copc_density <= 128)
+        laswriter->set_copc_normal();
+      else
+        laswriter->set_copc_dense();
+    }
   }
 }
 

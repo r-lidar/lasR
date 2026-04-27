@@ -1447,6 +1447,10 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' on the attributes of the point cloud. It writes either LAS 1.2 or LAS 1.4
 #' @param pdrf integer. LAS point data record format. NULL or NA means it is auto-detected based
 #' on the attributes of the point cloud.
+#' @param experimental_writer bool. When TRUE and the output is a `.copc.laz` file, use the new
+#' bounded-memory streaming COPC writer instead of LASlib's in-memory `LASwriterCOPC`. The new
+#' writer is experimental: it spills to disk if needed and produces deterministic output, but is
+#' not yet the default. Has no effect for non-COPC outputs.
 #' @template param-filter
 #'
 #' @examples
@@ -1459,14 +1463,14 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' @export
 #' @md
 #' @rdname write
-write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE, version = NULL, pdrf = NULL)
+write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE, version = NULL, pdrf = NULL, experimental_writer = FALSE)
 {
   validate_filter(filter)
   if (is.null(version)) version = 0xFF
   if (is.null(pdrf)) pdrf = 0xFF
   if (is.na(version)) version = 0xFF
   if (is.na(pdrf)) pdrf = 0xFF
-  return(.APISTAGES$write_las(ofile, filter, keep_buffer, version, pdrf))
+  return(.APISTAGES$write_las(ofile, filter, keep_buffer, version, pdrf, experimental_writer))
 }
 
 #' @export
@@ -1475,11 +1479,11 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' @param density character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
 #' With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
 #' is light. Normal is 128, dense is 256.
-write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense")
+write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense", experimental_writer = FALSE)
 {
   ofile = normalizePath(ofile, mustWork = FALSE)
   if (is.na(max_depth)) max_depth = -1
-  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density)
+  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density, experimental_writer)
 }
 
 #' @export

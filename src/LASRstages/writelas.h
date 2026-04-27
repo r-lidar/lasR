@@ -29,6 +29,7 @@ private:
   void clean_copc_ext(std::string& path);
 
   bool keep_buffer;
+  bool experimental_writer;
   short copc_density;
   short copc_depth;
   unsigned char version_minor;
