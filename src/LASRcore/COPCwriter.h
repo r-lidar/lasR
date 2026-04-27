@@ -87,6 +87,12 @@ private:
   // Stats accumulated during write_point
   F64 gpstime_minimum = 0.0;
   F64 gpstime_maximum = 0.0;
+  // Actual data bbox seen during intake. Compared against the declared
+  // octree bbox at close() to warn when the input header is much looser
+  // than the data (skewed octree structure — see "loose bbox" pitfall).
+  F64 data_min_x = 0.0, data_max_x = 0.0;
+  F64 data_min_y = 0.0, data_max_y = 0.0;
+  F64 data_min_z = 0.0, data_max_z = 0.0;
   bool have_any_point = false;
 
   std::string output_path;

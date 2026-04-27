@@ -62,6 +62,33 @@ test_that("write_copc leaves no spill directory behind on success",
   expect_length(residues, 0L)
 })
 
+test_that("write_copc produces byte-identical output across runs (stable sort)",
+{
+  f = system.file("extdata", "Topography.las", package = "lasR")
+  o1 = tempfile(fileext = ".copc.laz")
+  o2 = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(c(o1, o2)), add = TRUE)
+
+  exec(reader() + write_las(o1), on = f)
+  exec(reader() + write_las(o2), on = f)
+
+  expect_equal(file.info(o1)$size, file.info(o2)$size)
+  expect_equal(unname(tools::md5sum(o1)), unname(tools::md5sum(o2)))
+})
+
+test_that("write_copc round-trips a PDRF 6 input via the fast path",
+{
+  f = system.file("extdata", "las14_pdrf6.laz", package = "lasR")
+  skip_if(f == "", "las14_pdrf6.laz not available")
+  o = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(o), add = TRUE)
+
+  exec(reader() + write_las(o), on = f)
+  src = exec(reader() + summarise(), on = f)
+  dst = exec(reader() + summarise(), on = o)
+  expect_equal(dst$npoints, src$npoints)
+})
+
 test_that("write_copc output is readable by lasR EPT-style reader with depth filter",
 {
   f = system.file("extdata", "Megaplot.las", package = "lasR")
