@@ -2,6 +2,8 @@
 
 #include "LASio.h"
 
+#include <exception>  // std::exception_ptr, std::current_exception
+
 LASRlaswriter::LASRlaswriter()
 {
   lasio = nullptr;
@@ -231,10 +233,16 @@ void LASRlaswriter::clear(bool last)
   {
     if (lasio)
     {
-      // lasio->close can throw on COPC finalize failure. clear() returns
-      // void, so we capture the error in last_error for the engine to
-      // pick up. The output file is unlinked on the writer's end so the
-      // user doesn't see a corrupt .copc.laz on disk.
+      // lasio->close can throw on COPC finalize failure. We must:
+      //   (a) record the error,
+      //   (b) clean up the lasio pointer regardless,
+      //   (c) rethrow so the engine sees the failure.
+      // Without (c) the failure is swallowed: Engine::run discards
+      // clear()'s outcome and the parallel executor doesn't check
+      // the cleanup either, so a corrupt-then-deleted .copc.laz would
+      // be reported to the user as a successful write. We also keep
+      // (a) and (b) to avoid leaking the writer if close throws.
+      std::exception_ptr ex_ptr;
       try
       {
         lasio->close();
@@ -242,9 +250,11 @@ void LASRlaswriter::clear(bool last)
       catch (const std::exception& e)
       {
         last_error = std::string("error closing writer: ") + e.what();
+        ex_ptr = std::current_exception();
       }
       delete lasio;
       lasio = nullptr;
+      if (ex_ptr) std::rethrow_exception(ex_ptr);
     }
   }
 }
