@@ -173,15 +173,22 @@ void LASio::create(const std::string& file)
 
   if (path_has_copc_suffix(file))
   {
-    // Apply the bbox stashed during init() to lasheader so the COPC writer
-    // can build its octree from the correct geometry. Non-COPC writes leave
-    // lasheader's bbox untouched and rely on inventory-at-close.
+    // Apply the bbox + point count stashed during init() to lasheader so
+    // the COPC writer can build its octree from the correct geometry and
+    // pick a non-trivial auto max_depth. Non-COPC writes leave lasheader's
+    // bbox/count untouched and rely on inventory-at-close. The COPC writer's
+    // own update_header(use_inventory=TRUE) will re-overwrite the count
+    // from its inventory at close time, so this temporary value is only
+    // visible to the open-time depth heuristic.
     lasheader->min_x = saved_min_x;
     lasheader->max_x = saved_max_x;
     lasheader->min_y = saved_min_y;
     lasheader->max_y = saved_max_y;
     lasheader->min_z = saved_min_z;
     lasheader->max_z = saved_max_z;
+    if (saved_point_count <= U32_MAX)
+      lasheader->number_of_point_records = (U32)saved_point_count;
+    lasheader->extended_number_of_point_records = saved_point_count;
 
     copcwriter = new COPCwriter;
     copcwriter->set_copc_depth(copc_depth);
@@ -464,6 +471,7 @@ void LASio::init(const Header* header)
   saved_max_y = header->max_y;
   saved_min_z = header->min_z;
   saved_max_z = header->max_z;
+  saved_point_count = header->number_of_point_records;
   std::strncpy(lasheader->generating_software, "lasr with LASlib", 32);
 
   if (header->adjusted_standard_gps_time)
@@ -720,12 +728,23 @@ void LASio::close()
 
   if (copcwriter)
   {
-    copcwriter->close();
+    // close() returns -1 on finalize failure; the writer also unlinks the
+    // partial output file on its end so the caller doesn't see a corrupt
+    // .copc.laz on disk. Propagate the error so the pipeline doesn't
+    // silently report success on a write that failed.
+    const int64_t rc = copcwriter->close();
+    std::string err;
+    if (rc < 0) err = copcwriter->last_error();
     delete copcwriter;
     copcwriter = nullptr;
 
     delete lasheader;
     lasheader = nullptr;
+
+    if (rc < 0)
+    {
+      throw std::runtime_error("COPC writer failed at close: " + err);
+    }
   }
 
   if (lasreadopener)

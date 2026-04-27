@@ -154,13 +154,19 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
 
   // Add zero-count placeholders for ancestors not already emitted. Readers
   // need every ancestor of every real octant to be present in the hierarchy.
+  // Snapshot the size before the loop and accumulate placeholders into a
+  // separate vector — appending to `collected` while range-iterating it
+  // would be UB the moment a vector reallocation invalidates the iterator
+  // mid-walk.
   std::unordered_set<EPTkey, EPTKeyHasher> emitted_keys;
   emitted_keys.reserve(collected.size());
   for (const auto& o : collected) emitted_keys.insert(o.key);
 
-  for (const auto& o : collected)
+  std::vector<FinalOctant> placeholders;
+  const size_t real_count = collected.size();
+  for (size_t i = 0; i < real_count; ++i)
   {
-    EPTkey k = o.key;
+    EPTkey k = collected[i].key;
     while (k.d > 0)
     {
       EPTkey parent = k.get_parent();
@@ -169,7 +175,7 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
         FinalOctant z;
         z.key = parent;
         z.point_count = 0;
-        collected.push_back(std::move(z));
+        placeholders.push_back(std::move(z));
       }
       k = parent;
     }
@@ -181,9 +187,12 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
       FinalOctant z;
       z.key = k;
       z.point_count = 0;
-      collected.push_back(std::move(z));
+      placeholders.push_back(std::move(z));
     }
   }
+  collected.insert(collected.end(),
+                   std::make_move_iterator(placeholders.begin()),
+                   std::make_move_iterator(placeholders.end()));
 
   // Sort deterministically for emit: depth_order from lascopc.hpp gives a
   // stable total order (depth asc, then x, y, z). Nonzero-count octants are
