@@ -90,7 +90,7 @@ bool COPCwriter::prepare_copc_header(const LASheader* source_header)
   // refuse loudly than to write a file that has lost waveform metadata.
   if (src_pdrf == 4 || src_pdrf == 5 || src_pdrf == 9 || src_pdrf == 10)
   {
-    char msg[256];
+    char msg[512];
     std::snprintf(msg, sizeof(msg),
       "COPC writer cannot accept waveform point data format %u: COPC requires "
       "PDRF 6, 7, or 8, and promoting from waveform formats would silently "
