@@ -234,7 +234,11 @@ bool FileCollection::read_vpc(const std::string& filename)
         file_path = std::filesystem::weakly_canonical(parent_folder / file_path).string();
       }
 
-      int pccount = feature["properties"]["pc:count"].get<int>();
+      // pc:count via 64-bit. STAC's pointcloud extension says the field is
+      // an integer with no upper bound; reading as int silently truncates
+      // catalogs over ~2.1B points, which would mis-size the merged COPC
+      // octree's auto max_depth.
+      uint64_t pccount = feature["properties"]["pc:count"].get<uint64_t>();
 
       // Get the CRS either in WKT or EPSG
       std::string wkt = feature["properties"].value("proj:wkt2", "");
@@ -507,7 +511,19 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
     if (index) output << "      \"index:indexed\": " << "true," << std::endl;
-    output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
+    // 6-element STAC proj:bbox = [minx, miny, minz, maxx, maxy, maxz]. The
+    // older 4-element form is allowed by the spec but loses z, and lasR's
+    // own VPC reader (read_vpc) only inspects properties.proj:bbox — not
+    // the top-level "bbox" field — when populating the FileCollection's
+    // 3D bounds. A 4D properties.proj:bbox round-tripped into a merged
+    // COPC write produces no z bounds, which then disables the union
+    // bbox/count override on the writer side and falls back to file-1's
+    // bbox alone.
+    output << "      \"proj:bbox\": ["
+           << std::fixed << std::setprecision(3)
+           << bbox.minx << ", " << bbox.miny << ", " << zmin << ", "
+           << bbox.maxx << ", " << bbox.maxy << ", " << zmax
+           << "]," << std::endl;
     if (!wkt.empty()) output << "      \"proj:wkt2\": " << wkt;
     if (epsg != 0) output << "," << std::endl << "      \"proj:epsg\": " << epsg << std::endl;
     output << "    }," << std::endl;
