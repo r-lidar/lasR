@@ -1,4 +1,5 @@
 #include "COPCspill.h"
+#include "print.h"
 
 #include <algorithm>
 #include <chrono>
@@ -255,6 +256,24 @@ bool COPCspill::enforce_budget()
     auto it = cells.find(victim_key);
     if (it == cells.end()) break;
     if (!spill_cell(victim_key, it->second)) return false;
+  }
+
+  // Persistent budget overrun: every cell is already spilled and the only
+  // remaining RAM is the per-cell write_buf reservations (write_buf_size
+  // bytes per spilled cell). We can't reduce further without giving up
+  // batched writes, so warn the user once per writer so they can either
+  // raise LASR_COPC_RAM_BUDGET or accept the overshoot. Worst-case
+  // overhead is bounded by (number of spilled cells) * write_buf_size.
+  if (agg_ram > ram_budget && !budget_overrun_warned)
+  {
+    budget_overrun_warned = true;
+    warning("COPC writer: RAM budget cannot be enforced — every cell is "
+            "already spilled and per-cell write buffers are %llu bytes each. "
+            "Aggregate RAM is %llu MB vs budget %llu MB. Raise "
+            "LASR_COPC_RAM_BUDGET or accept the overshoot.\n",
+            (unsigned long long)write_buf_size,
+            (unsigned long long)(agg_ram >> 20),
+            (unsigned long long)(ram_budget >> 20));
   }
   return true;
 }

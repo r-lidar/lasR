@@ -7,13 +7,29 @@ LASRlaswriter::LASRlaswriter()
   lasio = nullptr;
 }
 
-LASRlaswriter::~LASRlaswriter()
+LASRlaswriter::~LASRlaswriter() noexcept
 {
+  // Destructors must not throw. lasio->close() can now throw a runtime_error
+  // when the COPC writer's finalize fails; if we let that escape during
+  // stack unwinding from another exception, std::terminate gets called.
+  // Swallow with a warning — the close path also unlinks the partial output
+  // file on its end so the user doesn't end up with a corrupt file on disk.
   if (lasio)
   {
     // # nocov start
     warning("internal error: please report, a LASwriter is still opened when destructing LASRlaswriter. The LAS or LAZ file written may be corrupted\n");
-    lasio->close();
+    try
+    {
+      lasio->close();
+    }
+    catch (const std::exception& e)
+    {
+      warning("error during writer close in destructor (suppressed): %s\n", e.what());
+    }
+    catch (...)
+    {
+      warning("unknown error during writer close in destructor (suppressed)\n");
+    }
     delete lasio;
     lasio = nullptr;
     // # nocov end
@@ -120,7 +136,21 @@ bool LASRlaswriter::process(Point*& p)
        }
        }*/
 
-      lasio->write_point(p);
+      // lasio->write_point can throw — the COPC writer reports per-point
+      // I/O failures as runtime_error. Catch and report via last_error so
+      // the engine sees a normal stage failure instead of an uncaught
+      // exception (the parallel executor's catch in execute.cpp only
+      // handles std::string, so an exception here would terminate the
+      // worker thread).
+      try
+      {
+        lasio->write_point(p);
+      }
+      catch (const std::exception& e)
+      {
+        last_error = std::string("error writing point: ") + e.what();
+        return false;
+      }
     }
   }
 
@@ -201,7 +231,18 @@ void LASRlaswriter::clear(bool last)
   {
     if (lasio)
     {
-      lasio->close();
+      // lasio->close can throw on COPC finalize failure. clear() returns
+      // void, so we capture the error in last_error for the engine to
+      // pick up. The output file is unlinked on the writer's end so the
+      // user doesn't see a corrupt .copc.laz on disk.
+      try
+      {
+        lasio->close();
+      }
+      catch (const std::exception& e)
+      {
+        last_error = std::string("error closing writer: ") + e.what();
+      }
       delete lasio;
       lasio = nullptr;
     }

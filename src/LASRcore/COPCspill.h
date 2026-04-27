@@ -140,6 +140,7 @@ private:
 
   bool poisoned = false;
   std::string error_msg;
+  bool budget_overrun_warned = false;
 };
 
 #endif
