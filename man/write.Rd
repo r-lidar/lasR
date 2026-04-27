@@ -11,7 +11,8 @@ write_las(
   filter = "",
   keep_buffer = FALSE,
   version = NULL,
-  pdrf = NULL
+  pdrf = NULL,
+  experimental_writer = FALSE
 )
 
 write_copc(
@@ -19,7 +20,8 @@ write_copc(
   filter = "",
   keep_buffer = FALSE,
   max_depth = NA,
-  density = "dense"
+  density = "dense",
+  experimental_writer = FALSE
 )
 
 write_pcd(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
@@ -42,6 +44,11 @@ on the attributes of the point cloud. It writes either LAS 1.2 or LAS 1.4}
 
 \item{pdrf}{integer. LAS point data record format. NULL or NA means it is auto-detected based
 on the attributes of the point cloud.}
+
+\item{experimental_writer}{bool. When TRUE and the output is a \code{.copc.laz} file, use the new
+bounded-memory streaming COPC writer instead of LASlib's in-memory \code{LASwriterCOPC}. The new
+writer is experimental: it spills to disk if needed and produces deterministic output, but is
+not yet the default. Has no effect for non-COPC outputs.}
 
 \item{max_depth}{integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes}
 
