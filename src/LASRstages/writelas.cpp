@@ -301,7 +301,25 @@ bool LASRlaswriter::set_header(Header*& header)
   // its own bbox/count — applying the catalog values there would inflate
   // every per-tile output to cover the whole input set. Non-COPC writes
   // ignore both fields at open anyway, but skip the override for clarity.
-  if (catalog_bbox_valid && merged && path_has_copc_suffix(template_filename))
+  const bool merged_copc = merged && path_has_copc_suffix(template_filename);
+  if (merged_copc && !catalog_bbox_valid)
+  {
+    // Catalog bbox is invalid (typically: legacy 4D-only VPC where the
+    // reader couldn't recover z bounds; or no FileCollection seen). With
+    // a missing catalog bbox, set_header would silently fall back to
+    // file-1's per-tile bbox/count — sizing the merged COPC's octree
+    // and auto-depth from a single tile, which produces a structurally
+    // bad output (clamping at close, too-shallow depth). Refuse loudly
+    // so the user fixes the input rather than getting a quietly skewed
+    // file.
+    last_error = "Cannot write merged COPC: input catalog has no valid 3D "
+      "bounding box. This typically means the input is a legacy VPC whose "
+      "proj:bbox is 4-element (no z). Either regenerate the VPC with a "
+      "6-element properties.proj:bbox, or write per-tile COPC by using a "
+      "'*' placeholder in the output filename.";
+    return false;
+  }
+  if (catalog_bbox_valid && merged_copc)
   {
     h.min_x = catalog_xmin;
     h.min_y = catalog_ymin;
