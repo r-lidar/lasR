@@ -562,24 +562,27 @@ PYBIND11_MODULE(pylasr, m) {
              std::vector<std::string> filter = {""},
              bool keep_buffer = false,
              std::optional<unsigned char> version = std::nullopt,
-             std::optional<unsigned char> pdrf = std::nullopt)
+             std::optional<unsigned char> pdrf = std::nullopt,
+             bool experimental_writer = false)
           {
               unsigned char v = version.has_value() ? version.value() : 0xFF;
               unsigned char p = pdrf.has_value() ? pdrf.value() : 0xFF;
 
-              return api::write_las(ofile, filter, keep_buffer, v, p);
+              return api::write_las(ofile, filter, keep_buffer, v, p, experimental_writer);
           },
           "Write LAS/LAZ file",
           py::arg("ofile"),
           py::arg("filter") = std::vector<std::string>{""},
           py::arg("keep_buffer") = false,
           py::arg("version") = py::none(),
-          py::arg("pdrf") = py::none());
+          py::arg("pdrf") = py::none(),
+          py::arg("experimental_writer") = false);
 
     m.def("write_copc", &api::write_copc,
           "Write COPC file",
           py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""},
-          py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = "dense");
+          py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = "dense",
+          py::arg("experimental_writer") = false);
 
     m.def("write_pcd", &api::write_pcd,
           "Write PCD file",
