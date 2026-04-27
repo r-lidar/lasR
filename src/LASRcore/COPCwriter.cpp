@@ -9,6 +9,7 @@
 #include "laswriter_las.hpp"
 #include "lasdefinitions.hpp"
 #include "lascopc.hpp"
+#include "print.h"
 
 namespace
 {
@@ -170,6 +171,26 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   if (poisoned) return false;
   output_path = file_name;
 
+  // Degenerate bbox produces an octree with halfsize 0; every point would
+  // be clamped to cell (0,0,0,0) and the output would be a single-chunk
+  // pseudo-COPC with no spatial index. Refuse loudly instead of silently
+  // producing useless output.
+  if (source_header->max_x <= source_header->min_x ||
+      source_header->max_y <= source_header->min_y ||
+      source_header->max_z <= source_header->min_z)
+  {
+    char msg[512];
+    std::snprintf(msg, sizeof(msg),
+      "COPC writer requires a non-degenerate bounding box; got "
+      "x=(%g, %g) y=(%g, %g) z=(%g, %g). The input header (or "
+      "upstream pipeline) must populate min/max bounds before writing.",
+      source_header->min_x, source_header->max_x,
+      source_header->min_y, source_header->max_y,
+      source_header->min_z, source_header->max_z);
+    fail(msg);
+    return false;
+  }
+
   if (!prepare_copc_header(source_header)) return false;
 
   writer_las = new LASwriterLAS;
@@ -196,6 +217,9 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
 
   gpstime_minimum =  1e300;
   gpstime_maximum = -1e300;
+  data_min_x =  1e300; data_max_x = -1e300;
+  data_min_y =  1e300; data_max_y = -1e300;
+  data_min_z =  1e300; data_max_z = -1e300;
   have_any_point = false;
 
   return true;
@@ -205,12 +229,32 @@ bool COPCwriter::write_point(const LASpoint* p)
 {
   if (poisoned || !spill || !hierarchy || !writer_las) return false;
 
-  // Format-convert through our internal LASpoint (handles PDRF upgrade).
-  *point = *p;
+  // Same-format fast path: when the source is already in the target PDRF
+  // (modern LAS 1.4 input → PDRF 6/7/8) and the record length matches, use
+  // p directly for inventory, key, and bytes. Saves one LASpoint::operator=
+  // (a field-by-field copy) per point. The slow path goes through `*point = *p`
+  // which is required to upgrade legacy PDRF 0–5 to extended 6+ semantics.
+  const LASpoint* effective = p;
+  const bool fast_path = (p->extended_point_type == point->extended_point_type)
+                      && (p->total_point_size   == point->total_point_size);
+  if (!fast_path)
+  {
+    *point = *p;
+    effective = point;
+  }
 
-  F64 t = point->get_gps_time();
+  const F64 x = effective->get_x();
+  const F64 y = effective->get_y();
+  const F64 z = effective->get_z();
+  const F64 t = effective->get_gps_time();
   if (!have_any_point || t < gpstime_minimum) gpstime_minimum = t;
   if (!have_any_point || t > gpstime_maximum) gpstime_maximum = t;
+  if (!have_any_point || x < data_min_x) data_min_x = x;
+  if (!have_any_point || x > data_max_x) data_max_x = x;
+  if (!have_any_point || y < data_min_y) data_min_y = y;
+  if (!have_any_point || y > data_max_y) data_max_y = y;
+  if (!have_any_point || z < data_min_z) data_min_z = z;
+  if (!have_any_point || z > data_max_z) data_max_z = z;
   have_any_point = true;
 
   // Track per-point stats into LASwriterLAS's inventory. The points won't
@@ -218,13 +262,13 @@ bool COPCwriter::write_point(const LASpoint* p)
   // the inventory is used by update_header(use_inventory=TRUE) to populate the
   // output header's bbox and point counts — so we must update it here, per
   // intake point, not at emit time (which would double-count everything).
-  writer_las->update_inventory(point);
+  writer_las->update_inventory(effective);
 
-  // Compute the max-depth leaf key from the already-converted point.
-  EPTkey key = hierarchy->compute_leaf_key(point);
+  // Compute the max-depth leaf key.
+  EPTkey key = hierarchy->compute_leaf_key(effective);
 
-  // Serialize the converted point into our reusable scratch, then hand to spill.
-  point->copy_to(write_scratch.data());
+  // Serialize to our reusable scratch and hand to spill.
+  effective->copy_to(write_scratch.data());
   if (!spill->append(key, write_scratch.data()))
   {
     fail(std::string("COPCspill error: ") + spill->last_error());
@@ -274,9 +318,12 @@ bool COPCwriter::finalize_and_write()
     // Sort via indirection over fixed-size records. Build a pointer vector,
     // sort pointers by key, then reshuffle the bytes into place in the same
     // sort_buf (one-pass, no extra allocations beyond ptrs).
+    // stable_sort: identical (gps_time, channel, return) keys keep their
+    // intake order so two runs over the same input produce byte-equivalent
+    // chunks. Costs O(N) extra scratch and ~20% more sort time vs std::sort.
     ptrs.resize(o.point_count);
     for (U64 i = 0; i < o.point_count; i++) ptrs[i] = sort_buf.data() + i * point_size;
-    std::sort(ptrs.begin(), ptrs.end(), PointLess{point_size});
+    std::stable_sort(ptrs.begin(), ptrs.end(), PointLess{point_size});
 
     // In-place permutation: pull records out in sorted order into a second
     // scratch buffer (same size) and swap buffers. Simpler and correct vs
@@ -334,6 +381,34 @@ bool COPCwriter::finalize_and_write()
     fail("LASwriterLAS::update_header failed");
     return false;
   }
+
+  // 6) Warn if the declared bbox the octree was sized to is much looser
+  //    than the actual data. The output is still valid, but COPC info VLR
+  //    spacing is too coarse and chunks cluster in a sub-region of the
+  //    octree volume — readers do unnecessary I/O for region queries.
+  if (have_any_point)
+  {
+    const F64 declared_vol = (copc_header->max_x - copc_header->min_x) *
+                             (copc_header->max_y - copc_header->min_y) *
+                             (copc_header->max_z - copc_header->min_z);
+    const F64 data_vol     = (data_max_x - data_min_x) *
+                             (data_max_y - data_min_y) *
+                             (data_max_z - data_min_z);
+    if (declared_vol > 0 && data_vol > 0 && data_vol < 0.5 * declared_vol)
+    {
+      warning("COPC writer: declared bbox is %.1fx larger than data bbox; "
+              "the octree is sized to the declared bbox so chunks may be "
+              "concentrated in a sub-region of the octree volume. "
+              "data x=(%g, %g) y=(%g, %g) z=(%g, %g); "
+              "declared x=(%g, %g) y=(%g, %g) z=(%g, %g).\n",
+              declared_vol / data_vol,
+              data_min_x, data_max_x, data_min_y, data_max_y, data_min_z, data_max_z,
+              copc_header->min_x, copc_header->max_x,
+              copc_header->min_y, copc_header->max_y,
+              copc_header->min_z, copc_header->max_z);
+    }
+  }
+
   return true;
 }
 
