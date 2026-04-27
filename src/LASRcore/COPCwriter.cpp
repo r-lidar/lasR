@@ -171,18 +171,21 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   if (poisoned) return false;
   output_path = file_name;
 
-  // Degenerate bbox produces an octree with halfsize 0; every point would
-  // be clamped to cell (0,0,0,0) and the output would be a single-chunk
-  // pseudo-COPC with no spatial index. Refuse loudly instead of silently
-  // producing useless output.
-  if (source_header->max_x <= source_header->min_x ||
-      source_header->max_y <= source_header->min_y ||
-      source_header->max_z <= source_header->min_z)
+  // Reject only when the entire bbox is degenerate. A flat axis (e.g.
+  // a synthetic flat-ground cloud, or a single-elevation airborne strip
+  // with min_z == max_z) is valid as long as at least one axis has
+  // extent — the COPC root cube takes its halfsize from the largest
+  // axis. Degenerate axes are inflated downstream (in prepare_copc_header)
+  // to keep EPToctree::get_key's grid_resolution computation safe.
+  const bool x_flat = source_header->max_x <= source_header->min_x;
+  const bool y_flat = source_header->max_y <= source_header->min_y;
+  const bool z_flat = source_header->max_z <= source_header->min_z;
+  if (x_flat && y_flat && z_flat)
   {
     char msg[512];
     std::snprintf(msg, sizeof(msg),
-      "COPC writer requires a non-degenerate bounding box; got "
-      "x=(%g, %g) y=(%g, %g) z=(%g, %g). The input header (or "
+      "COPC writer requires a non-degenerate bounding box on at least one "
+      "axis; got x=(%g, %g) y=(%g, %g) z=(%g, %g). The input header (or "
       "upstream pipeline) must populate min/max bounds before writing.",
       source_header->min_x, source_header->max_x,
       source_header->min_y, source_header->max_y,
@@ -192,6 +195,21 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   }
 
   if (!prepare_copc_header(source_header)) return false;
+
+  // Inflate any flat axes by a small fraction of the largest extent so
+  // EPToctree's per-axis grid_resolution (= extent / grid_size) is never
+  // zero. The COPC info VLR's halfsize comes from the largest axis only,
+  // so this inflation is invisible to readers.
+  {
+    const F64 ext_x = copc_header->max_x - copc_header->min_x;
+    const F64 ext_y = copc_header->max_y - copc_header->min_y;
+    const F64 ext_z = copc_header->max_z - copc_header->min_z;
+    const F64 max_ext = std::max(ext_x, std::max(ext_y, ext_z));
+    const F64 pad = max_ext * 1e-6;  // tiny but non-zero
+    if (ext_x <= 0) { copc_header->max_x = copc_header->min_x + pad; }
+    if (ext_y <= 0) { copc_header->max_y = copc_header->min_y + pad; }
+    if (ext_z <= 0) { copc_header->max_z = copc_header->min_z + pad; }
+  }
 
   writer_las = new LASwriterLAS;
   if (!writer_las->open(file_name, copc_header, LASZIP_COMPRESSOR_LAYERED_CHUNKED, 2, 0, io_buffer_size))
@@ -315,30 +333,26 @@ bool COPCwriter::finalize_and_write()
       return false;
     }
 
-    // Sort via indirection over fixed-size records. Build a pointer vector,
-    // sort pointers by key, then reshuffle the bytes into place in the same
-    // sort_buf (one-pass, no extra allocations beyond ptrs).
+    // Sort via indirection over fixed-size records. Build a pointer vector
+    // aliased into sort_buf, stable_sort the pointers, then drive
+    // LASwriterLAS::write_point directly off the sorted pointers — no
+    // second full-size byte buffer.
     // stable_sort: identical (gps_time, channel, return) keys keep their
     // intake order so two runs over the same input produce byte-equivalent
-    // chunks. Costs O(N) extra scratch and ~20% more sort time vs std::sort.
+    // chunks. Costs O(N) extra scratch (the pointer vector) and ~20% more
+    // sort time vs std::sort.
     ptrs.resize(o.point_count);
     for (U64 i = 0; i < o.point_count; i++) ptrs[i] = sort_buf.data() + i * point_size;
     std::stable_sort(ptrs.begin(), ptrs.end(), PointLess{point_size});
 
-    // In-place permutation: pull records out in sorted order into a second
-    // scratch buffer (same size) and swap buffers. Simpler and correct vs
-    // trying to permute in place across variable-size swaps.
-    std::vector<U8> sorted_buf(bytes);
-    for (U64 i = 0; i < o.point_count; i++)
-      std::memcpy(sorted_buf.data() + i * point_size, ptrs[i], point_size);
-    sort_buf.swap(sorted_buf);
-
     // Write the chunk. Offset is captured before the first point of the chunk;
-    // chunk() commits and we measure size by the delta.
+    // chunk() commits and we measure size by the delta. Decode through the
+    // sorted pointer vector — keeps close-time peak memory at one octant's
+    // worth (sort_buf + ptrs), independent of the post-collapse octant size.
     const I64 chunk_offset = writer_las->tell();
     for (U64 i = 0; i < o.point_count; i++)
     {
-      point->copy_from(sort_buf.data() + i * point_size);
+      point->copy_from(ptrs[i]);
       if (!writer_las->write_point(point))
       {
         fail("LASwriterLAS::write_point failed");
@@ -382,12 +396,44 @@ bool COPCwriter::finalize_and_write()
     return false;
   }
 
-  // 6) Warn if the declared bbox the octree was sized to is much looser
-  //    than the actual data. The output is still valid, but COPC info VLR
-  //    spacing is too coarse and chunks cluster in a sub-region of the
-  //    octree volume — readers do unnecessary I/O for region queries.
+  // 6) Validate the declared (octree) bbox against the actual data bbox.
+  //    The octree was built at open() from the declared bbox; if a
+  //    pipeline stage moved any point outside that bbox, EPToctree::get_key
+  //    silently clamped it to the boundary cell — producing a structurally
+  //    bad COPC where boundary chunks are over-loaded. Detect this case
+  //    and fail loudly: a clamped output is worse than no output.
+  //    Also warn (without failing) when the declared bbox is much looser
+  //    than the data — the output is correct but the COPC info VLR's
+  //    spacing is too coarse for efficient LOD reads.
   if (have_any_point)
   {
+    const F64 eps = 1e-9;
+    const bool clamped =
+        (data_min_x < copc_header->min_x - eps) ||
+        (data_max_x > copc_header->max_x + eps) ||
+        (data_min_y < copc_header->min_y - eps) ||
+        (data_max_y > copc_header->max_y + eps) ||
+        (data_min_z < copc_header->min_z - eps) ||
+        (data_max_z > copc_header->max_z + eps);
+    if (clamped)
+    {
+      char buf[768];
+      std::snprintf(buf, sizeof(buf),
+        "COPC writer: at least one point fell outside the octree bbox the "
+        "writer was opened with. EPToctree::get_key clamped those points to "
+        "the boundary cells, so the resulting COPC has a corrupted spatial "
+        "index. This usually means a pipeline stage transformed points "
+        "after the writer was opened. "
+        "data x=(%g, %g) y=(%g, %g) z=(%g, %g); "
+        "octree x=(%g, %g) y=(%g, %g) z=(%g, %g).",
+        data_min_x, data_max_x, data_min_y, data_max_y, data_min_z, data_max_z,
+        copc_header->min_x, copc_header->max_x,
+        copc_header->min_y, copc_header->max_y,
+        copc_header->min_z, copc_header->max_z);
+      fail(buf);
+      return false;
+    }
+
     const F64 declared_vol = (copc_header->max_x - copc_header->min_x) *
                              (copc_header->max_y - copc_header->min_y) *
                              (copc_header->max_z - copc_header->min_z);
@@ -414,26 +460,38 @@ bool COPCwriter::finalize_and_write()
 
 I64 COPCwriter::close()
 {
-  if (closed) return 0;
+  if (closed) return poisoned ? -1 : 0;
   closed = true;
 
+  bool finalize_ok = true;
   I64 total = 0;
 
   if (!poisoned && writer_las && hierarchy && spill)
   {
-    if (!finalize_and_write())
-    {
-      // finalize failed — fall through to close()/cleanup so we don't leak.
-    }
+    finalize_ok = finalize_and_write();
+    // Always attempt LASwriterLAS::close so we don't leak its file handle,
+    // but ignore its byte count when finalize failed — the file is partial.
     total = writer_las->close(TRUE);
   }
   else if (writer_las)
   {
+    finalize_ok = false;  // we never completed finalize
     total = writer_las->close(TRUE);
   }
 
   delete writer_las; writer_las = nullptr;
   if (spill) { spill->cleanup(); }
+
+  // If finalize or earlier write failed, the on-disk file is corrupt.
+  // Unlink it and signal the caller via a -1 return so they can throw.
+  if (poisoned || !finalize_ok)
+  {
+    if (!output_path.empty())
+    {
+      std::remove(output_path.c_str());
+    }
+    return -1;
+  }
   return total;
 }
 

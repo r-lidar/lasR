@@ -98,6 +98,12 @@ private:
   double saved_max_y = 0.0;
   double saved_min_z = 0.0;
   double saved_max_z = 0.0;
+  // Source point count stashed by init() and applied to lasheader by
+  // create() when the output is .copc.laz. Required so EPToctree's
+  // auto max_depth heuristic (which divides total point count by
+  // max_points_per_octant=100000) sees the actual count instead of
+  // the zero left by init() for the regular LAZ inventory path.
+  uint64_t saved_point_count = 0;
 };
 
 
