@@ -29,13 +29,18 @@ LASRlaswriter::LASRlaswriter()
   copc_bbox_xmax = copc_bbox_ymax = copc_bbox_zmax = 0.0;
   catalog_xmin = catalog_ymin = catalog_zmin = 0.0;
   catalog_xmax = catalog_ymax = catalog_zmax = 0.0;
+  catalog_total_points = 0;
   catalog_bbox_valid = false;
 }
 
 bool LASRlaswriter::process(FileCollection*& ctg)
 {
-  // Capture the union bbox over all input files. Used by set_header() to
-  // size the COPC output's octree correctly when merging multiple inputs.
+  // Capture the union bbox and total point count over all input files.
+  // Used by set_header() to (a) size the COPC output's octree to the
+  // union bbox, and (b) pick a non-trivial auto max_depth — the per-tile
+  // header count alone is file-1's only and too small for multi-file
+  // merges (compute_max_depth divides by max_points_per_octant and would
+  // otherwise pick a too-shallow depth).
   if (ctg)
   {
     catalog_xmin = ctg->get_xmin();
@@ -44,7 +49,10 @@ bool LASRlaswriter::process(FileCollection*& ctg)
     catalog_xmax = ctg->get_xmax();
     catalog_ymax = ctg->get_ymax();
     catalog_zmax = ctg->get_zmax();
-    catalog_bbox_valid = (catalog_xmin <= catalog_xmax) && (catalog_ymin <= catalog_ymax);
+    catalog_total_points = ctg->get_total_points();
+    catalog_bbox_valid = (catalog_xmin <= catalog_xmax) &&
+                         (catalog_ymin <= catalog_ymax) &&
+                         (catalog_zmin <= catalog_zmax);
   }
   return true;
 }
@@ -282,16 +290,17 @@ bool LASRlaswriter::set_header(Header*& header)
   h.version_minor = version_minor;
 
   // For multi-file merge into a single COPC output, override the per-tile
-  // bbox with the FileCollection's union bbox. The COPC writer uses this
-  // bbox to build the octree at open(); without the override, file 2's
-  // points (and beyond) would be clamped into file 1's octree edges,
-  // producing a structurally-correct but skewed COPC output.
+  // bbox AND the per-tile point count with the FileCollection's union and
+  // total. The COPC writer uses these at open(): bbox sizes the octree,
+  // total point count drives the auto-max_depth heuristic. Without the
+  // count override, depth comes out from file 1's count alone and is
+  // far too shallow for the merged data set (single-chunk pseudo-COPC).
   //
   // Gate on (merged && copc-suffix output): per-file mode (`*` placeholder)
   // creates one output per input tile, and each tile's output should use
-  // its own bbox — applying the catalog union there would inflate every
-  // per-tile output to cover the whole input set. Non-COPC writes ignore
-  // bbox at open anyway, but skip the override for clarity.
+  // its own bbox/count — applying the catalog values there would inflate
+  // every per-tile output to cover the whole input set. Non-COPC writes
+  // ignore both fields at open anyway, but skip the override for clarity.
   if (catalog_bbox_valid && merged && path_has_copc_suffix(template_filename))
   {
     h.min_x = catalog_xmin;
@@ -300,6 +309,7 @@ bool LASRlaswriter::set_header(Header*& header)
     h.max_x = catalog_xmax;
     h.max_y = catalog_ymax;
     h.max_z = catalog_zmax;
+    h.number_of_point_records = catalog_total_points;
   }
 
   try

@@ -53,6 +53,11 @@ public:
   double get_xmax() const { return xmax; };
   double get_ymax() const { return ymax; };
   double get_zmax() const { return zmax; };
+  // Total number of points across every header in the collection. Used by
+  // the COPC writer to size the octree's auto max_depth correctly when
+  // merging multiple files into a single output (the per-tile header count
+  // alone is too small).
+  uint64_t get_total_points() const;
   void set_crs(const CRS& crs) { this->crs = crs; };
   CRS get_crs() const { return crs; };
   const std::vector<std::filesystem::path>& get_files() const;

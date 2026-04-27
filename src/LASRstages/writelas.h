@@ -52,16 +52,18 @@ private:
   unsigned char point_format;
   std::vector<AttributeAccessor> core_accessors;
 
-  // Union bbox over the input FileCollection, captured in process(ctg)
-  // before any per-tile processing. Used to size the COPC octree
-  // when merging many input files into a single .copc.laz output.
-  // NaN if not yet captured (single-file path).
+  // Union bbox + total point count over the input FileCollection, captured
+  // in process(ctg) before any per-tile processing. Used to size the COPC
+  // octree (bbox) and pick a non-trivial auto max_depth (point count) when
+  // merging many input files into a single .copc.laz output.
+  // catalog_bbox_valid is false if no FileCollection was seen.
   double catalog_xmin;
   double catalog_ymin;
   double catalog_zmin;
   double catalog_xmax;
   double catalog_ymax;
   double catalog_zmax;
+  uint64_t catalog_total_points;
   bool catalog_bbox_valid;
 
   LASio* lasio;
