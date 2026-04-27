@@ -435,7 +435,15 @@ bool COPCspill::read_octant(const std::vector<EPTkey>& leaves, U8* out_buffer, U
   for (const EPTkey& k : leaves)
   {
     auto it = cells.find(k);
-    if (it == cells.end()) continue;
+    if (it == cells.end())
+    {
+      // A leaf in the caller's list has no corresponding cell — that means
+      // either the cell was already dropped or the caller's count
+      // bookkeeping disagrees with the spill's. Either way the sort_buf
+      // would end up partially uninitialized; refuse loudly.
+      fail("read_octant: leaf has no spill state (caller bookkeeping mismatch)");
+      return false;
+    }
     CellBuffer& cell = it->second;
 
     if (!cell.spilled)
@@ -477,8 +485,32 @@ bool COPCspill::read_octant(const std::vector<EPTkey>& leaves, U8* out_buffer, U
         std::memcpy(cursor, scratch, n);
         cursor += n;
       }
+      // Distinguish EOF (clean end) from I/O error. ferror() on a stream
+      // that hit a read error is non-zero; without this check a short
+      // read from a truncated spill file would leave the tail of
+      // sort_buf uninitialized and pass through to the LAZ encoder.
+      const bool io_err = std::ferror(f) != 0;
       std::fclose(f);
+      if (io_err)
+      {
+        fail("read_octant: I/O error reading spill file " + cell.file_path);
+        return false;
+      }
     }
+  }
+
+  // The caller sized byte_count = sum(cell.point_count * point_size) over
+  // the supplied leaves; if cursor != end, either a leaf was missing
+  // (handled above) or a spill file was truncated relative to its
+  // tracked count. Both cases would otherwise feed uninitialized bytes
+  // through to LAZ encoding.
+  if (cursor != end)
+  {
+    fail("read_octant: short read — gathered "
+         + std::to_string((U64)(cursor - out_buffer))
+         + " bytes, expected "
+         + std::to_string(byte_count));
+    return false;
   }
   return true;
 }
