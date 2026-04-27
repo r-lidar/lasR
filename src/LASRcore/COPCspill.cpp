@@ -214,7 +214,11 @@ void COPCspill::append_ram(CellBuffer& cell, const U8* bytes)
 
 bool COPCspill::append_spilled(const EPTkey& key, CellBuffer& cell, const U8* bytes)
 {
-  // write_buf is preallocated to write_buf_size when the cell was spilled.
+  // write_buf is reserved to write_buf_size capacity at spill time and
+  // accounted as a fixed reservation in agg_ram (see spill_cell). Appends
+  // grow the size up to the capacity and flush; neither the resize nor
+  // the flush changes the cell's memory footprint, so agg_ram doesn't
+  // change here.
   if (cell.write_buf.size() + point_size > write_buf_size)
   {
     if (!flush_write_buf(key, cell)) return false;
@@ -222,7 +226,6 @@ bool COPCspill::append_spilled(const EPTkey& key, CellBuffer& cell, const U8* by
   size_t old = cell.write_buf.size();
   cell.write_buf.resize(old + point_size);
   std::memcpy(cell.write_buf.data() + old, bytes, point_size);
-  agg_ram += point_size;
   return true;
 }
 
@@ -278,12 +281,16 @@ bool COPCspill::spill_cell(const EPTkey& key, CellBuffer& cell)
   agg_ram -= cell.ram.size();
   std::vector<U8>().swap(cell.ram); // release capacity, not just .clear()
   cell.write_buf.reserve(write_buf_size);
+  agg_ram += write_buf_size; // account for the reserved capacity, which is real RAM
   cell.spilled = true;
   return true;
 }
 
 bool COPCspill::flush_write_buf(const EPTkey& key, CellBuffer& cell)
 {
+  // Flush moves bytes to disk but doesn't change the cell's RAM footprint:
+  // write_buf's capacity (write_buf_size) is fixed and is what agg_ram
+  // tracks for spilled cells.
   if (cell.write_buf.empty()) return true;
   if (!ensure_open(key, cell, "ab")) return false;
   size_t n = std::fwrite(cell.write_buf.data(), 1, cell.write_buf.size(), cell.file_handle);
@@ -292,7 +299,6 @@ bool COPCspill::flush_write_buf(const EPTkey& key, CellBuffer& cell)
     fail("write to spill file failed: " + cell.file_path);
     return false;
   }
-  agg_ram -= cell.write_buf.size();
   cell.write_buf.clear();
   return true;
 }
@@ -472,7 +478,9 @@ void COPCspill::drop_octant(const std::vector<EPTkey>& leaves)
     }
     else
     {
-      agg_ram -= cell.write_buf.size();
+      // Spilled cell's RAM footprint is the reserved write_buf capacity,
+      // not write_buf.size(); see spill_cell / append_spilled accounting.
+      agg_ram -= write_buf_size;
       close_handle(cell);
       if (!cell.file_path.empty())
       {

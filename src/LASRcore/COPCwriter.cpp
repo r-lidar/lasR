@@ -80,10 +80,30 @@ bool COPCwriter::prepare_copc_header(const LASheader* source_header)
   *copc_header = *source_header;
   copc_header->unlink();
 
+  U8 src_pdrf = source_header->point_data_format;
+
+  // Refuse waveform PDRFs (4, 5, 9, 10). Their point records carry
+  // wavepacket descriptor fields that don't exist in COPC's allowed
+  // formats (6/7/8); blindly promoting would silently strip them.
+  // PDRF 4/5 also assume waveform payload elsewhere (in a separate VLR
+  // or external file) which the COPC spec doesn't support. Better to
+  // refuse loudly than to write a file that has lost waveform metadata.
+  if (src_pdrf == 4 || src_pdrf == 5 || src_pdrf == 9 || src_pdrf == 10)
+  {
+    char msg[256];
+    std::snprintf(msg, sizeof(msg),
+      "COPC writer cannot accept waveform point data format %u: COPC requires "
+      "PDRF 6, 7, or 8, and promoting from waveform formats would silently "
+      "drop the wavepacket descriptor. Strip waveform fields upstream or "
+      "convert to a non-waveform PDRF before writing COPC.",
+      (unsigned)src_pdrf);
+    fail(msg);
+    return false;
+  }
+
   // Promote PDRF: legacy formats get upgraded to 6/7/8.
   U8 target_pdrf = 6;
-  U8 src_pdrf = source_header->point_data_format;
-  if (src_pdrf == 2 || src_pdrf == 3 || src_pdrf == 5 || src_pdrf == 7) target_pdrf = 7;
+  if (src_pdrf == 2 || src_pdrf == 3 || src_pdrf == 7) target_pdrf = 7;
   if (src_pdrf == 8) target_pdrf = 8;
   copc_header->point_data_format = target_pdrf;
 

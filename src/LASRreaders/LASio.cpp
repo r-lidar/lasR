@@ -1,6 +1,7 @@
 #include "LASio.h"
 #include "Progress.h"
 #include "COPCwriter.h"
+#include "print.h"
 
 #include "lasreader.hpp"
 #include "laswriter.hpp"
@@ -55,9 +56,25 @@ LASio::LASio()
   copc_density = 256;
 }
 
-LASio::~LASio()
+LASio::~LASio() noexcept
 {
-  close();
+  // Destructors must not throw — close() will throw a runtime_error when
+  // the COPC writer's finalize fails, but if we let it propagate from a
+  // destructor (especially during stack unwinding from another exception)
+  // it triggers std::terminate. Swallow and log instead. Callers that
+  // care about close-time errors must call close() explicitly.
+  try
+  {
+    close();
+  }
+  catch (const std::exception& e)
+  {
+    eprint("LASio::~LASio: error during close (suppressed): %s\n", e.what());
+  }
+  catch (...)
+  {
+    eprint("LASio::~LASio: unknown error during close (suppressed)\n");
+  }
 }
 
 bool LASio::query(const std::vector<std::string>& main_files, const std::vector<std::string>& neighbour_files, double xmin, double ymin, double xmax, double ymax, double buffer, bool circle, std::vector<std::string> filters)

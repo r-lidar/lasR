@@ -22,7 +22,7 @@ class LASio : public Fileio
 {
 public:
   LASio();
-  ~LASio();
+  ~LASio() noexcept;
   void open(const std::string& file) override;
   void create(const std::string& file) override;
   void populate_header(Header* header, bool read_first_point = false) override;

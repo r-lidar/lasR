@@ -147,10 +147,24 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
   std::unordered_set<EPTkey, EPTKeyHasher> ancestors;
   std::vector<FinalOctant> collected;
 
-  // Kick off recursion from root. Copy leaf_counts because the recursion takes by value.
-  subdivide_recursive(EPTkey::root(), leaf_counts, max_depth,
-                      static_cast<U64>(std::max(1, min_points_per_chunk)),
-                      collected, ancestors);
+  // Empty input: subdivide_recursive returns immediately on empty leaves,
+  // so the in-recursion "emit empty root" fallback is unreachable. Emit
+  // it explicitly here so the file is still valid (one zero-count root
+  // entry) — readers expect at least the root entry in the hierarchy.
+  if (leaf_counts.empty())
+  {
+    FinalOctant root;
+    root.key = EPTkey::root();
+    root.point_count = 0;
+    collected.push_back(std::move(root));
+  }
+  else
+  {
+    // Kick off recursion from root. Copy leaf_counts because the recursion takes by value.
+    subdivide_recursive(EPTkey::root(), leaf_counts, max_depth,
+                        static_cast<U64>(std::max(1, min_points_per_chunk)),
+                        collected, ancestors);
+  }
 
   // Add zero-count placeholders for ancestors not already emitted. Readers
   // need every ancestor of every real octant to be present in the hierarchy.
