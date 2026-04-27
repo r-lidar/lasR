@@ -98,7 +98,7 @@ test_that("write_copc merges multiple input files into a single COPC",
   o = tempfile(fileext = ".copc.laz")
   on.exit(unlink(o), add = TRUE)
 
-  expect_error(exec(write_copc(o), on = c(f1, f2)), NA)
+  expect_error(exec(write_copc(o, experimental_writer = TRUE), on = c(f1, f2)), NA)
 
   n1 = exec(reader() + summarise(), on = f1)$npoints
   n2 = exec(reader() + summarise(), on = f2)$npoints
