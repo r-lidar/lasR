@@ -9,7 +9,7 @@ class LASRlaswriter: public StageWriter
 {
 public:
   LASRlaswriter();
-  ~LASRlaswriter();
+  ~LASRlaswriter() noexcept;
   bool set_chunk(Chunk& chunk) override;
   bool set_header(Header*& header) override;
   bool set_input_file_name(const std::string& file) override;

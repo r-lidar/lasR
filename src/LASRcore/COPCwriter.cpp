@@ -409,8 +409,17 @@ bool COPCwriter::finalize_and_write()
   }
   hierarchy->fill_copc_info(info, gpstime_minimum, gpstime_maximum, 0, 0);
 
-  // 5) Drive the header/VLR/eVLR flush + patch via LASlib.
-  if (!writer_las->update_header(copc_header, TRUE, TRUE))
+  // 5) Drive the header/VLR/eVLR flush + patch via LASlib. With
+  //    use_inventory=TRUE, LASinventory::update_header overwrites the
+  //    public-header bbox from the accumulated point inventory. For the
+  //    no-points case the inventory is empty and the resulting bbox would
+  //    be inverted (max_X starts at INT_MIN, min_X at INT_MAX), giving a
+  //    nonsensical declared bbox in the output header even though the
+  //    COPC info VLR has the right values. Disable use_inventory when no
+  //    points were written so the declared bbox carried in copc_header
+  //    survives the flush.
+  const BOOL use_inventory = have_any_point ? TRUE : FALSE;
+  if (!writer_las->update_header(copc_header, use_inventory, TRUE))
   {
     fail("LASwriterLAS::update_header failed");
     return false;
