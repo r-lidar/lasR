@@ -125,7 +125,12 @@ jobs:
           mingw-w64-x86_64-python-setuptools
           mingw-w64-x86_64-python-wheel
           mingw-w64-x86_64-python-numpy
-          mingw-w64-x86_64-python-pybind11
+
+    - name: Install pybind11 (not packaged for MinGW)
+      shell: msys2 {0}
+      run: |
+        # MSYS2's Python is PEP 668 externally-managed; runner is ephemeral.
+        python -m pip install --break-system-packages pybind11
 
     - name: Configure pybind11 path
       shell: msys2 {0}
