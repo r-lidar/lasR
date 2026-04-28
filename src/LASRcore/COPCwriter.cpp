@@ -302,12 +302,31 @@ bool COPCwriter::write_point(const LASpoint* p)
   // intake point, not at emit time (which would double-count everything).
   writer_las->update_inventory(effective);
 
-  // Compute the max-depth leaf key.
-  EPTkey key = hierarchy->compute_leaf_key(effective);
+  // Top-down voxel routing. Each octant carries an occupancy set keyed by
+  // voxel cell id (within its grid_size³ grid). The point is routed to the
+  // shallowest ancestor whose voxel is still free; if no ancestor accepts
+  // it, it falls through to the max-depth leaf (which always accepts).
+  // This builds a true progressive LOD: a depth-d query returns one
+  // representative per voxel covering the queried subtree, spaced
+  // ~halfsize / grid_size apart at depth d.
+  EPTkey accepted_key = hierarchy->compute_leaf_key(effective);
+  const I32 max_d = hierarchy->get_max_depth();
+  for (I32 d = 0; d < max_d; ++d)
+  {
+    EPTkey k_d = hierarchy->compute_key_at(effective, d);
+    I32 cell_d = hierarchy->compute_voxel_cell(effective, k_d);
+    if (cell_d < 0) continue;
+    auto& occ = occupancy[k_d];
+    if (occ.insert(cell_d).second)
+    {
+      accepted_key = k_d;
+      break;
+    }
+  }
 
   // Serialize to our reusable scratch and hand to spill.
   effective->copy_to(write_scratch.data());
-  if (!spill->append(key, write_scratch.data()))
+  if (!spill->append(accepted_key, write_scratch.data()))
   {
     fail(std::string("COPCspill error: ") + spill->last_error());
     return false;
