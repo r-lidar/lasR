@@ -32,7 +32,12 @@ public:
   COPCwriter& operator=(const COPCwriter&) = delete;
 
   // Configuration (call before open()).
-  void set_copc_depth(I32 depth) { copc_depth = depth; }       // -1 = auto
+  // depth >= 0 is treated as a hard cap on routing depth (the auto heuristic
+  // can underestimate for clustered data, but if the user asks for a
+  // specific depth, honour it). depth < 0 (the default) leaves it on auto:
+  // the heuristic picks an initial value, and routing may bump beyond it
+  // up to HARD_DEPTH_LIMIT to keep chunks under max_points_per_octant.
+  void set_copc_depth(I32 depth) { copc_depth = depth; copc_depth_user_set = (depth >= 0); }
   void set_copc_density(I32 density) { copc_density = density; } // grid side, typically 128/256/512
   void set_min_points_per_chunk(I32 n) { min_points_per_chunk = n; }
 
@@ -42,8 +47,9 @@ public:
   // the output, unsupported PDRF).
   bool open(const char* file_name, const LASheader* source_header, I32 io_buffer_size);
 
-  // Write one point. Format-converts to target PDRF, computes max-depth leaf
-  // key, hands to COPCspill. Returns false if writer is poisoned or I/O fails.
+  // Write one point. Format-converts to target PDRF, hashes the bytes, and
+  // routes through the top-down voxel-occupancy table (route_or_spill).
+  // Returns false if writer is poisoned or I/O fails.
   bool write_point(const LASpoint* p);
 
   // Finalise: collapse, sort per-octant, LAZ-chunk emit, write hierarchy eVLR,
@@ -98,8 +104,9 @@ private:
   // whose voxel cell at this octant is either unoccupied (and the octant is
   // under cap) or occupied by a resident with a smaller hash. Evicted
   // residents are re-routed starting at depth d+1. Points that exhaust every
-  // ancestor's voxel + cap fall through to the max-depth leaf, which always
-  // accepts via spill.
+  // voxel up to routing_max_depth are force-accepted via spill at the
+  // deepest key — for user-set max_depth this is the expected terminal
+  // case; for auto mode it only happens at HARD_DEPTH_LIMIT and warns.
   std::unordered_map<EPTkey, std::unordered_map<I32, ResidentEntry>, EPTKeyHasher> occupancy;
 
   // Octants whose residents have already been flushed to spill due to RAM
@@ -143,6 +150,25 @@ private:
   I32 copc_density = 256;
   I32 max_points_per_octant = 100000; // used to estimate auto max_depth
   I32 min_points_per_chunk = 100;
+  // Hard upper bound on adaptive depth bumping. Only consulted when
+  // copc_depth was left at its auto sentinel (-1) at open() time — a user
+  // who explicitly passed max_depth gets that value as a hard routing cap
+  // (the auto heuristic can be wrong for clustered data; an explicit
+  // request is treated as authoritative). 16 gives sub-mm voxel resolution
+  // for any realistic dataset; at the hard limit the writer warns once
+  // and force-accepts via spill (chunk may exceed cap; surfaced by the
+  // end-of-finalize oversize warning).
+  static constexpr I32 HARD_DEPTH_LIMIT = 16;
+  // The actual depth the routing loop is allowed to descend to. Set in
+  // prepare_copc_header from copc_depth (user) or HARD_DEPTH_LIMIT (auto).
+  // Routing visits voxel-occupancy at depths 0..routing_max_depth-1 and
+  // force-accepts at routing_max_depth (the "leaf").
+  I32 routing_max_depth = HARD_DEPTH_LIMIT;
+  // True iff the user passed an explicit max_depth via set_copc_depth.
+  // Drives both the routing cap above and the wording of the
+  // end-of-finalize oversize warning.
+  bool copc_depth_user_set = false;
+  bool hard_depth_warned = false;
 
   // Stats accumulated during write_point
   F64 gpstime_minimum = 0.0;

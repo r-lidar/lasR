@@ -23,11 +23,16 @@ public:
   };
 
   // copc_header is the COPC-transformed header (LAS 1.4, PDRF 6/7/8). Bounding
-  // box and scale/offset determine the octree. max_depth <= 10. grid_size is
-  // the root grid density (copc_density: 128/256/512).
+  // box and scale/offset determine the octree. max_depth is the auto-heuristic
+  // value (LASlib parity, capped at 10) when copc_depth is auto, or the
+  // user-provided value (capped at HARD_DEPTH_LIMIT in COPCwriter). grid_size
+  // is the root grid density (copc_density: 128/256/512).
   COPChierarchy(const LASheader& copc_header, I32 max_depth, I32 grid_size);
 
-  // Compute the max-depth leaf key for a point. Called per-point during intake.
+  // Compute the leaf key at the constructor's max_depth for a point. Used
+  // by callers that still need the heuristic leaf depth; the writer's
+  // routing path uses compute_key_at(p, d) directly to support adaptive
+  // depth bumping past max_depth.
   EPTkey compute_leaf_key(const LASpoint* p) const;
 
   // Compute the octant key at an arbitrary depth (0..max_depth) for a point.

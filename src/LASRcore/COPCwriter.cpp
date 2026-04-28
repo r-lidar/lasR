@@ -262,11 +262,30 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
 
   // Hierarchy: EPToctree is built from the (now COPC-shaped) header; max depth
   // is either user-specified or derived from the point count / octant budget.
-  I32 max_depth = (copc_depth < 0)
-                    ? EPToctree::compute_max_depth(*copc_header, (U64)max_points_per_octant)
-                    : copc_depth;
-  if (max_depth > 10) max_depth = 10;
-  if (max_depth < 0)  max_depth = 0;
+  // The 10-cap matches LASlib's safety on the auto heuristic — explicit
+  // user values are honoured up to HARD_DEPTH_LIMIT (we still clamp to the
+  // structural ceiling because routing/spill machinery has been validated
+  // there). The hierarchy's depth field is mostly cosmetic now since
+  // routing decides the actual depth per-point; it still carries the
+  // user/auto value for downstream metadata.
+  I32 max_depth = copc_depth_user_set ? copc_depth
+                : EPToctree::compute_max_depth(*copc_header, (U64)max_points_per_octant);
+  if (copc_depth_user_set && max_depth > HARD_DEPTH_LIMIT)
+  {
+    warning("user-specified max_depth=%d exceeds the writer's hard "
+            "depth limit (%d); clamping. The output will use the "
+            "deepest supported octree level.\n",
+            (int)max_depth, (int)HARD_DEPTH_LIMIT);
+    max_depth = HARD_DEPTH_LIMIT;
+  }
+  if (max_depth > HARD_DEPTH_LIMIT) max_depth = HARD_DEPTH_LIMIT;
+  if (max_depth < 0)                max_depth = 0;
+  if (!copc_depth_user_set && max_depth > 10) max_depth = 10; // LASlib parity for auto
+
+  // Routing cap: user-set is a hard cap (depth bumping is disabled); auto
+  // lets routing extend up to HARD_DEPTH_LIMIT past the heuristic when
+  // chunks would otherwise exceed max_points_per_octant.
+  routing_max_depth = copc_depth_user_set ? max_depth : HARD_DEPTH_LIMIT;
 
   hierarchy = new COPChierarchy(*copc_header, max_depth, copc_density);
   spill = new COPCspill(output_path, copc_header->point_data_record_length);
@@ -332,24 +351,28 @@ bool COPCwriter::write_point(const LASpoint* p)
 }
 
 // Route a point's bytes into the in-RAM occupancy tables, evicting and
-// re-routing any losing residents. Falls through to spill on the max-depth
-// leaf if no ancestor accepts.
+// re-routing any losing residents.
 //
-// Two refinements over plain "first-hit-wins" voxel claim:
+// Three refinements over plain "first-hit-wins" voxel claim:
 //   1. Hard chunk cap — an octant only accepts new claims while its voxel
-//      count is below max_points_per_octant. Once full, points fall through
-//      to the next depth. Keeps every internal LAZ chunk bounded by the
-//      configured cap (matching the auto-depth heuristic's assumption).
+//      count is below max_points_per_octant. Once full, points descend to
+//      the next depth. Keeps every internal LAZ chunk bounded by the cap.
 //   2. Hash-based replacement — on collision the higher hash wins; the
 //      losing resident is evicted and re-routed starting at depth+1. The
 //      hash is a deterministic function of the point bytes (FNV-1a) so
 //      two runs produce byte-identical output, but the result is
-//      independent of input order — a scanline-ordered input no longer
-//      systematically biases the coarse-LOD sample.
+//      independent of input order.
+//   3. Adaptive depth bump (auto only) — when copc_depth was left auto,
+//      routing_max_depth is HARD_DEPTH_LIMIT so the loop can walk past
+//      the auto-heuristic max_depth. An explicit user max_depth is
+//      treated as a hard cap (routing_max_depth = user value); points
+//      that exhaust every voxel up to the cap are force-accepted at the
+//      cap, producing a chunk that may exceed max_points_per_octant.
+//      Either way the leaf chunk size is surfaced by the
+//      end-of-finalize oversize warning.
 bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_depth)
 {
   std::vector<U8> bytes = std::move(bytes_in);
-  const I32 max_d = hierarchy->get_max_depth();
   const I32 cap = max_points_per_octant > 0 ? max_points_per_octant : 100000;
   const std::size_t per_entry_overhead = sizeof(ResidentEntry);
 
@@ -357,8 +380,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
   for (;;)
   {
     bool placed = false;
-    EPTkey leaf_key;
-    for (I32 d = start_depth; d < max_d; ++d)
+    for (I32 d = start_depth; d < routing_max_depth; ++d)
     {
       // Decode the bytes back into our scratch LASpoint so we can compute
       // octant key / voxel cell. Cheap: same copy_from used elsewhere.
@@ -408,14 +430,36 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
 
     if (placed) break;
 
-    // Reached max-depth (or every cap-bound ancestor refused). Always
-    // accept at the leaf via spill.
-    point->copy_from(bytes.data());
-    leaf_key = hierarchy->compute_leaf_key(point);
-    if (!spill->append(leaf_key, bytes.data()))
+    // Walked all the way to routing_max_depth without acceptance — force-
+    // append at the deepest key. For user-set max_depth this is the
+    // *expected* terminal state and chunks may legitimately stay under
+    // cap, so no intake-time warning here — the end-of-finalize oversize
+    // scan reports actual cap violations. For auto mode, hitting the
+    // hard depth limit means a pathological cluster exhausted every
+    // voxel up to depth 16, which IS the early-warning case worth a
+    // one-shot diagnostic.
+    // Scoped so the `deepest` declaration doesn't get bypassed by the
+    // `goto next_iter` above (clang refuses such jumps).
     {
-      fail(std::string("COPCspill error: ") + spill->last_error());
-      return false;
+      point->copy_from(bytes.data());
+      EPTkey deepest = hierarchy->compute_key_at(point, routing_max_depth);
+      if (!hard_depth_warned && !copc_depth_user_set)
+      {
+        warning("COPC writer hit the hard depth limit (%d) — a point "
+                "cluster exceeds max_points_per_octant at every voxel "
+                "up to that depth. Affected octant: depth=%d x=%d y=%d "
+                "z=%d. The chunk will exceed cap; see end-of-finalize "
+                "oversize warning for the actual size. Subsequent "
+                "occurrences are silenced.\n",
+                (int)HARD_DEPTH_LIMIT,
+                (int)deepest.d, (int)deepest.x, (int)deepest.y, (int)deepest.z);
+        hard_depth_warned = true;
+      }
+      if (!spill->append(deepest, bytes.data()))
+      {
+        fail(std::string("COPCspill error: ") + spill->last_error());
+        return false;
+      }
     }
     break;
 
@@ -550,13 +594,12 @@ bool COPCwriter::finalize_and_write()
   //    Copy the emit order up front because record_chunk mutates entries.
   std::vector<COPChierarchy::FinalOctant> emit_copy = hierarchy->emit_order();
 
-  // Up-front oversize scan. Internal-node chunks are capped by
-  // route_or_spill + cap-aware collapse, but a max-depth leaf can legitimately
-  // exceed the cap (routing always accepts at the leaf to avoid dropping
-  // points, so a dense cluster or too-shallow max_depth produces one large
-  // leaf chunk). Warn BEFORE allocating any sort buffer below — that
-  // allocation is the OOM risk surface, and the user needs the diagnostic
-  // before the process dies.
+  // Up-front oversize scan. Voxel-routing + cap-aware collapse keep every
+  // routed chunk under max_points_per_octant; a force-accept at the
+  // routing depth cap (user max_depth in user-set mode, HARD_DEPTH_LIMIT
+  // in auto mode) is the only way a chunk gets here over cap. Warn BEFORE
+  // allocating any sort buffer below — that allocation is the OOM risk
+  // surface, and the user needs the diagnostic before the process dies.
   if (max_points_per_octant > 0)
   {
     U64 largest_chunk = 0;
@@ -571,17 +614,23 @@ bool COPCwriter::finalize_and_write()
     }
     if (largest_chunk > (U64)max_points_per_octant)
     {
+      const char* mitigation = copc_depth_user_set
+        ? "Raise max_depth (or leave it auto for adaptive bumping) "
+          "or accept the larger chunk."
+        : "A point cluster exhausted the hard depth limit; either "
+          "lower the cluster density or accept the larger chunk.";
       warning("largest COPC chunk has %llu points, exceeding the "
               "max_points_per_octant cap of %d (chunk at depth=%d, "
               "x=%d, y=%d, z=%d). Close-time sort will allocate ~%llu MB. "
-              "Consider increasing max_depth or accepting the larger chunk.\n",
+              "%s\n",
               (unsigned long long)largest_chunk,
               (int)max_points_per_octant,
               (int)largest_chunk_key.d,
               (int)largest_chunk_key.x,
               (int)largest_chunk_key.y,
               (int)largest_chunk_key.z,
-              (unsigned long long)((largest_chunk * (U64)point_size) >> 20));
+              (unsigned long long)((largest_chunk * (U64)point_size) >> 20),
+              mitigation);
     }
   }
 
