@@ -117,6 +117,13 @@ private:
   // mechanism is disabled for that octant after flush).
   std::unordered_set<EPTkey, EPTKeyHasher> flushed_octants;
 
+  // Per-octant byte usage, kept in sync with `occupancy` on every insert /
+  // replace / evict / flush. Avoids the O(voxels) cost of re-summing each
+  // octant's bytes on every enforce_resident_budget call (which on a 364M
+  // point input under tight budget triggers per-point and dominates CPU).
+  // The aggregate `resident_bytes` is the sum over all entries.
+  std::unordered_map<EPTkey, std::uint64_t, EPTKeyHasher> octant_bytes;
+
   // Aggregate bytes held in `occupancy`. Tracked incrementally on
   // insert / replace / evict so we can keep total resident memory below a
   // configurable budget (resident_budget). When the budget is exceeded the

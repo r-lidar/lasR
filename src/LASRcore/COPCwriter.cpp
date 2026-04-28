@@ -14,6 +14,21 @@
 
 namespace
 {
+  // Parse LASR_COPC_RESIDENT_BUDGET env var (bytes). Returns 0 if unset or
+  // invalid. Mirrors COPCspill's LASR_COPC_RAM_BUDGET — they're independent
+  // budgets (writer's in-RAM voxel residents vs spill's per-cell write
+  // buffers) and tuning one without the other can leave the other as the
+  // bottleneck on huge files.
+  std::uint64_t env_resident_budget()
+  {
+    const char* v = std::getenv("LASR_COPC_RESIDENT_BUDGET");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    unsigned long long n = std::strtoull(v, &end, 10);
+    if (!end || *end != '\0' || n == 0) return 0;
+    return (std::uint64_t)n;
+  }
+
   // Extract the three fields (GPS time, scanner channel, return number) used
   // as the within-chunk sort key. Layout matches PDRF 6/7/8 point records.
   // Same semantics as the helpers in laswriter_copc.cpp:50-52.
@@ -298,6 +313,13 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
                         ? max_depth
                         : (max_depth == 0 ? 0 : HARD_DEPTH_LIMIT);
 
+  // Apply env override for the in-RAM voxel-resident budget (writer-side).
+  // Defaults to 256 MB; bumped via LASR_COPC_RESIDENT_BUDGET=<bytes>.
+  // Independent from COPCspill's LASR_COPC_RAM_BUDGET — on huge files both
+  // need bumping or the unset one becomes the bottleneck.
+  if (std::uint64_t env_b = env_resident_budget(); env_b > 0)
+    resident_budget = env_b;
+
   hierarchy = new COPChierarchy(*copc_header, max_depth, copc_density);
   spill = new COPCspill(output_path, copc_header->point_data_record_length);
 
@@ -417,6 +439,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
         const std::size_t added = e.bytes.size() + per_entry_overhead;
         voxels.emplace(cell_d, std::move(e));
         resident_bytes += added;
+        octant_bytes[k_d] += added;
         inserted_resident = true;
         placed = true;
         break;
@@ -520,37 +543,40 @@ bool COPCwriter::flush_hot_octant(const EPTkey& key)
   occupancy.erase(it);
   flushed_octants.insert(key);
   resident_bytes = (resident_bytes >= freed) ? (resident_bytes - freed) : 0;
+  octant_bytes.erase(key);
   return true;
 }
 
 bool COPCwriter::enforce_resident_budget()
 {
-  // Pick the heaviest hot octant and flush it. Repeat until under budget
-  // or no hot octants remain (in which case we accept staying over budget
-  // — only flushed/leaf bytes are left and those don't shrink).
-  // Tie-break on (depth, x, y, z) when multiple octants share the heaviest
-  // size: flushing freezes that octant's voxel decisions and any later
-  // routing that would have hit it now descends instead, so a
-  // non-deterministic pick here would propagate into the output bytes.
-  // unordered_map iteration order is implementation-defined; the
-  // tie-break makes the choice reproducible across runs and platforms.
+  // Pick the heaviest hot octant from the incrementally-maintained
+  // octant_bytes table (O(N_octants), no inner voxel sum) and flush.
+  // Drive resident_bytes below the LOW WATER mark (50% of budget) before
+  // returning, so we don't get called again on the very next insert
+  // — without hysteresis the previous version triggered per-point on
+  // huge inputs and dominated CPU (97% in this function on the sofi
+  // run before this fix).
+  //
+  // Tie-break on (depth, x, y, z) when multiple octants share the
+  // heaviest size: flushing freezes that octant's voxel decisions and
+  // any later routing that would have hit it now descends instead, so
+  // a non-deterministic pick here would propagate into the output
+  // bytes. unordered_map iteration order is implementation-defined.
   auto key_less = [](const EPTkey& a, const EPTkey& b) {
     if (a.d != b.d) return a.d < b.d;
     if (a.x != b.x) return a.x < b.x;
     if (a.y != b.y) return a.y < b.y;
     return a.z < b.z;
   };
-  while (resident_bytes > resident_budget && !occupancy.empty())
+  const std::uint64_t low_water = resident_budget / 2;
+  while (resident_bytes > low_water && !octant_bytes.empty())
   {
     EPTkey heaviest;
     bool have_winner = false;
-    std::size_t heaviest_bytes = 0;
-    for (const auto& kv : occupancy)
+    std::uint64_t heaviest_bytes = 0;
+    for (const auto& kv : octant_bytes)
     {
-      // Approximate: count voxels × (point_size + per-entry overhead).
-      // Cheap and tracks resident_bytes well enough to pick a winner.
-      std::size_t b = 0;
-      for (const auto& vk : kv.second) b += vk.second.bytes.size() + sizeof(ResidentEntry);
+      const std::uint64_t b = kv.second;
       if (!have_winner ||
           b > heaviest_bytes ||
           (b == heaviest_bytes && key_less(kv.first, heaviest)))
