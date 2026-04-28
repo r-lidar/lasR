@@ -1,6 +1,7 @@
 #include "COPCwriter.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -35,6 +36,23 @@ namespace
       return point_return_number(a) < point_return_number(b);
     }
   };
+
+  // FNV-1a 64-bit over the point bytes. Used to break ties when two points
+  // contend for the same voxel cell — the higher hash wins. A pure function
+  // of the point bytes, so two runs over identical input produce identical
+  // routing decisions (byte-stable output, asserted by the round-trip test).
+  // Independence from input order removes the bias of "first arriving wins"
+  // that scanline-ordered inputs would otherwise introduce.
+  inline uint64_t point_hash(const U8* bytes, std::size_t n)
+  {
+    uint64_t h = 14695981039346656037ULL;
+    for (std::size_t i = 0; i < n; ++i)
+    {
+      h ^= bytes[i];
+      h *= 1099511628211ULL;
+    }
+    return h;
+  }
 
   // Number of "base" bytes for each legacy PDRF (format < 6). Anything beyond
   // this in record_length is extra-bytes storage.
@@ -302,42 +320,141 @@ bool COPCwriter::write_point(const LASpoint* p)
   // intake point, not at emit time (which would double-count everything).
   writer_las->update_inventory(effective);
 
-  // Top-down voxel routing. Each octant carries an occupancy set keyed by
-  // voxel cell id (within its grid_size³ grid). The point is routed to the
-  // shallowest ancestor whose voxel is still free; if no ancestor accepts
-  // it, it falls through to the max-depth leaf (which always accepts).
-  // This builds a true progressive LOD: a depth-d query returns one
-  // representative per voxel covering the queried subtree, spaced
-  // ~halfsize / grid_size apart at depth d.
-  EPTkey accepted_key = hierarchy->compute_leaf_key(effective);
-  const I32 max_d = hierarchy->get_max_depth();
-  for (I32 d = 0; d < max_d; ++d)
-  {
-    EPTkey k_d = hierarchy->compute_key_at(effective, d);
-    I32 cell_d = hierarchy->compute_voxel_cell(effective, k_d);
-    if (cell_d < 0) continue;
-    auto& occ = occupancy[k_d];
-    if (occ.insert(cell_d).second)
-    {
-      accepted_key = k_d;
-      break;
-    }
-  }
+  // Serialize the point bytes once. Both the routing path (in-RAM resident)
+  // and the leaf-fallback path (spill->append) consume from this buffer.
+  const U32 point_size = copc_header->point_data_record_length;
+  std::vector<U8> bytes(point_size);
+  effective->copy_to(bytes.data());
+  const U64 hash = point_hash(bytes.data(), point_size);
 
-  // Serialize to our reusable scratch and hand to spill.
-  effective->copy_to(write_scratch.data());
-  if (!spill->append(accepted_key, write_scratch.data()))
+  // Top-down voxel routing with hash-based eviction (caveats 1 + 2).
+  return route_or_spill(std::move(bytes), hash, /*start_depth=*/0);
+}
+
+// Route a point's bytes into the in-RAM occupancy tables, evicting and
+// re-routing any losing residents. Falls through to spill on the max-depth
+// leaf if no ancestor accepts.
+//
+// Two refinements over plain "first-hit-wins" voxel claim:
+//   1. Hard chunk cap — an octant only accepts new claims while its voxel
+//      count is below max_points_per_octant. Once full, points fall through
+//      to the next depth. Keeps every internal LAZ chunk bounded by the
+//      configured cap (matching the auto-depth heuristic's assumption).
+//   2. Hash-based replacement — on collision the higher hash wins; the
+//      losing resident is evicted and re-routed starting at depth+1. The
+//      hash is a deterministic function of the point bytes (FNV-1a) so
+//      two runs produce byte-identical output, but the result is
+//      independent of input order — a scanline-ordered input no longer
+//      systematically biases the coarse-LOD sample.
+bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_depth)
+{
+  std::vector<U8> bytes = std::move(bytes_in);
+  const I32 max_d = hierarchy->get_max_depth();
+  const I32 cap = max_points_per_octant > 0 ? max_points_per_octant : 100000;
+
+  for (;;)
   {
-    fail(std::string("COPCspill error: ") + spill->last_error());
-    return false;
+    bool placed = false;
+    EPTkey leaf_key;
+    for (I32 d = start_depth; d < max_d; ++d)
+    {
+      // Decode the bytes back into our scratch LASpoint so we can compute
+      // octant key / voxel cell. Cheap: same copy_from used elsewhere.
+      point->copy_from(bytes.data());
+      EPTkey k_d = hierarchy->compute_key_at(point, d);
+      I32 cell_d = hierarchy->compute_voxel_cell(point, k_d);
+      if (cell_d < 0) continue;
+
+      auto& voxels = occupancy[k_d];
+      auto it = voxels.find(cell_d);
+      if (it == voxels.end())
+      {
+        // Voxel free. Claim it only if the octant still has cap room;
+        // otherwise descend further (chunk-size cap).
+        if ((I32)voxels.size() >= cap) continue;
+        ResidentEntry e;
+        e.hash = hash;
+        e.bytes = std::move(bytes);
+        voxels.emplace(cell_d, std::move(e));
+        placed = true;
+        break;
+      }
+
+      if (hash > it->second.hash)
+      {
+        // New point wins this voxel. Evict the resident and continue
+        // routing it from the next depth in the next outer-loop pass.
+        ResidentEntry evicted = std::move(it->second);
+        it->second.hash = hash;
+        it->second.bytes = std::move(bytes);
+        bytes = std::move(evicted.bytes);
+        hash = evicted.hash;
+        start_depth = d + 1;
+        placed = false;
+        goto next_iter;
+      }
+      // Resident wins; descend.
+    }
+
+    if (placed) return true;
+
+    // Reached max-depth (or every cap-bound ancestor refused). Always
+    // accept at the leaf via spill.
+    point->copy_from(bytes.data());
+    leaf_key = hierarchy->compute_leaf_key(point);
+    if (!spill->append(leaf_key, bytes.data()))
+    {
+      fail(std::string("COPCspill error: ") + spill->last_error());
+      return false;
+    }
+    return true;
+
+    next_iter:;
   }
-  return true;
 }
 
 bool COPCwriter::finalize_and_write()
 {
   if (poisoned) return false;
   if (!writer_las || !hierarchy || !spill) { fail("writer not open"); return false; }
+
+  // Flush in-RAM voxel residents to spill, keyed by their octant. After this
+  // step, COPCspill holds the complete per-octant byte stream and the rest
+  // of finalize (collapse / sort / chunk emit) is unchanged. Iterate octants
+  // in deterministic order so spill's per-leaf append sequence is stable
+  // across runs (the within-chunk std::stable_sort below makes this strictly
+  // belt-and-braces, but the comparator only sorts on gpstime/channel/return
+  // — points with identical keys still need a deterministic incoming order).
+  {
+    std::vector<EPTkey> octant_keys;
+    octant_keys.reserve(occupancy.size());
+    for (const auto& kv : occupancy) octant_keys.push_back(kv.first);
+    std::sort(octant_keys.begin(), octant_keys.end(),
+              [](const EPTkey& a, const EPTkey& b) {
+                if (a.d != b.d) return a.d < b.d;
+                if (a.x != b.x) return a.x < b.x;
+                if (a.y != b.y) return a.y < b.y;
+                return a.z < b.z;
+              });
+    for (const EPTkey& k : octant_keys)
+    {
+      auto& voxels = occupancy[k];
+      std::vector<I32> cells;
+      cells.reserve(voxels.size());
+      for (const auto& vk : voxels) cells.push_back(vk.first);
+      std::sort(cells.begin(), cells.end());
+      for (I32 cell : cells)
+      {
+        auto& e = voxels[cell];
+        if (!spill->append(k, e.bytes.data()))
+        {
+          fail(std::string("COPCspill error: ") + spill->last_error());
+          return false;
+        }
+      }
+    }
+    occupancy.clear();
+  }
 
   const U32 point_size = copc_header->point_data_record_length;
 

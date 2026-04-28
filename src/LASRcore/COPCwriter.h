@@ -80,14 +80,32 @@ private:
   COPChierarchy* hierarchy = nullptr;
   COPCspill* spill = nullptr;
 
+  // Per-voxel resident point: hash drives unbiased replacement on collision,
+  // bytes are held in RAM until close() flushes them to spill keyed by their
+  // octant. Holding bytes (rather than a spill offset) is what lets a losing
+  // resident be evicted and re-routed deeper without leaving an orphan in
+  // spill. Memory cost is bounded by max_points_per_octant per active octant
+  // (caveat 1's cap), so total resident bytes are bounded by the product of
+  // active-octant count and the cap.
+  struct ResidentEntry
+  {
+    U64 hash;
+    std::vector<U8> bytes;
+  };
+
   // Per-octant voxel occupancy. A point claims the first ancestor (root-down)
-  // whose voxel cell at this octant is unoccupied. The point is then routed
-  // to that octant's spill bucket. At max_depth every point is accepted
-  // unconditionally, so every point ends up keyed by exactly one octant.
-  // This produces a true progressive LOD: each octant holds one
-  // representative per voxel of its grid_size³ grid (LASlib-equivalent
-  // selection algorithm).
-  std::unordered_map<EPTkey, std::unordered_set<I32>, EPTKeyHasher> occupancy;
+  // whose voxel cell at this octant is either unoccupied (and the octant is
+  // under cap) or occupied by a resident with a smaller hash. Evicted
+  // residents are re-routed starting at depth d+1. Points that exhaust every
+  // ancestor's voxel + cap fall through to the max-depth leaf, which always
+  // accepts via spill.
+  std::unordered_map<EPTkey, std::unordered_map<I32, ResidentEntry>, EPTKeyHasher> occupancy;
+
+  // Route a point's bytes (with precomputed hash) into the in-RAM occupancy
+  // tables starting at start_depth, evicting and re-routing any residents
+  // that lose the hash compare. Falls through to spill->append at the
+  // max-depth leaf if no ancestor accepts. Returns false on spill error.
+  bool route_or_spill(std::vector<U8>&& bytes, U64 hash, I32 start_depth);
 
   // Configuration
   I32 copc_depth = -1;
