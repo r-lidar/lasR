@@ -51,11 +51,15 @@ public:
   // Apply the collapse rule to a {leaf_key -> point_count} map. After this
   // returns, emit_order() is populated with final octants in deterministic
   // order (depth-first, depth_order within each level).
-  // min_points_per_chunk: if a leaf has fewer than this, its points are
-  // absorbed into the nearest existing ancestor. Matches the current
-  // LASwriterCOPC behaviour.
+  //
+  // min_points_per_chunk: if a chunk has fewer than this, its points are
+  // absorbed into the nearest existing ancestor — but only if that
+  // absorption keeps the ancestor's total at or below max_points_per_chunk
+  // (otherwise the small chunk is left alone, preserving the cap invariant).
+  // max_points_per_chunk <= 0 disables the cap check (legacy behaviour).
   void finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>& leaf_counts,
-                I32 min_points_per_chunk);
+                I32 min_points_per_chunk,
+                I32 max_points_per_chunk = 0);
 
   const std::vector<FinalOctant>& emit_order() const { return emit; }
 
