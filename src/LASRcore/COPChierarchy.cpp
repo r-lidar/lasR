@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <unordered_set>
 
 COPChierarchy::COPChierarchy(const LASheader& copc_header, I32 max_depth, I32 grid_size)
@@ -42,7 +43,8 @@ static EPTkey find_existing_ancestor(const EPTkey& key,
 }
 
 void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>& leaf_counts,
-                             I32 min_points_per_chunk)
+                             I32 min_points_per_chunk,
+                             I32 max_points_per_chunk)
 {
   emit.clear();
   entries.clear();
@@ -81,6 +83,9 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
   std::sort(ordered_keys.begin(), ordered_keys.end(),
             [](const EPTkey& a, const EPTkey& b) { return a.d > b.d; });
 
+  const U64 max_chunk = (max_points_per_chunk > 0)
+                          ? static_cast<U64>(max_points_per_chunk)
+                          : std::numeric_limits<U64>::max();
   for (const EPTkey& k : ordered_keys)
   {
     auto it = octant_counts.find(k);
@@ -96,6 +101,21 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
       // create a root entry so we can absorb into it.
       anc_it = octant_counts.emplace(ancestor, 0ULL).first;
       octant_sources[ancestor] = {};
+    }
+    // Cap-aware: skip absorption if it would push the ancestor over the
+    // configured max_points_per_chunk. Leaves the small chunk standing
+    // (a slightly suboptimal LAZ chunk size, but bounded), preserves the
+    // cap invariant, and keeps the small octant emittable as its own
+    // chunk. If the freshly-inserted ancestor entry is unused, drop it
+    // so we don't end up with a phantom zero-count root.
+    if (anc_it->second + it->second > max_chunk)
+    {
+      if (anc_it->second == 0 && octant_sources[ancestor].empty())
+      {
+        octant_counts.erase(anc_it);
+        octant_sources.erase(ancestor);
+      }
+      continue;
     }
     anc_it->second += it->second;
     auto& dst = octant_sources[ancestor];

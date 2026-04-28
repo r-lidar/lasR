@@ -101,11 +101,41 @@ private:
   // accepts via spill.
   std::unordered_map<EPTkey, std::unordered_map<I32, ResidentEntry>, EPTKeyHasher> occupancy;
 
+  // Octants whose residents have already been flushed to spill due to RAM
+  // pressure. A flushed octant no longer accepts new claims at routing
+  // time — points descend past it. The flushed residents are baked into
+  // spill exactly as if they had been emitted from the in-RAM table
+  // normally; they just lose their replaceability (the hash-replace
+  // mechanism is disabled for that octant after flush).
+  std::unordered_set<EPTkey, EPTKeyHasher> flushed_octants;
+
+  // Aggregate bytes held in `occupancy`. Tracked incrementally on
+  // insert / replace / evict so we can keep total resident memory below a
+  // configurable budget (resident_budget). When the budget is exceeded the
+  // heaviest hot octant is flushed to spill and demoted to flushed_octants.
+  std::uint64_t resident_bytes = 0;
+  // Default 256 MB to match COPCspill's default budget. The two budgets are
+  // independent — spill bytes don't count against this one and vice versa —
+  // so total close-time RAM peaks at roughly 2× this number plus the
+  // largest single chunk's sort buffer.
+  std::uint64_t resident_budget = 256ULL * 1024 * 1024;
+
   // Route a point's bytes (with precomputed hash) into the in-RAM occupancy
   // tables starting at start_depth, evicting and re-routing any residents
   // that lose the hash compare. Falls through to spill->append at the
   // max-depth leaf if no ancestor accepts. Returns false on spill error.
   bool route_or_spill(std::vector<U8>&& bytes, U64 hash, I32 start_depth);
+
+  // Push a single hot octant's residents into spill and demote it to
+  // flushed_octants. Used both by enforce_resident_budget() (intake-time
+  // memory pressure) and by finalize_and_write() (close-time fold).
+  // Returns false on spill error.
+  bool flush_hot_octant(const EPTkey& key);
+
+  // If resident_bytes > resident_budget, flush the heaviest hot octant(s)
+  // until under budget. Called from route_or_spill() after each successful
+  // resident insert.
+  bool enforce_resident_budget();
 
   // Configuration
   I32 copc_depth = -1;

@@ -351,7 +351,9 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
   std::vector<U8> bytes = std::move(bytes_in);
   const I32 max_d = hierarchy->get_max_depth();
   const I32 cap = max_points_per_octant > 0 ? max_points_per_octant : 100000;
+  const std::size_t per_entry_overhead = sizeof(ResidentEntry);
 
+  bool inserted_resident = false;
   for (;;)
   {
     bool placed = false;
@@ -362,6 +364,10 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
       // octant key / voxel cell. Cheap: same copy_from used elsewhere.
       point->copy_from(bytes.data());
       EPTkey k_d = hierarchy->compute_key_at(point, d);
+
+      // Flushed octants no longer accept claims — descend.
+      if (flushed_octants.count(k_d)) continue;
+
       I32 cell_d = hierarchy->compute_voxel_cell(point, k_d);
       if (cell_d < 0) continue;
 
@@ -375,7 +381,10 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
         ResidentEntry e;
         e.hash = hash;
         e.bytes = std::move(bytes);
+        const std::size_t added = e.bytes.size() + per_entry_overhead;
         voxels.emplace(cell_d, std::move(e));
+        resident_bytes += added;
+        inserted_resident = true;
         placed = true;
         break;
       }
@@ -384,6 +393,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
       {
         // New point wins this voxel. Evict the resident and continue
         // routing it from the next depth in the next outer-loop pass.
+        // No net change in resident_bytes (one in, one out, same size).
         ResidentEntry evicted = std::move(it->second);
         it->second.hash = hash;
         it->second.bytes = std::move(bytes);
@@ -396,7 +406,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
       // Resident wins; descend.
     }
 
-    if (placed) return true;
+    if (placed) break;
 
     // Reached max-depth (or every cap-bound ancestor refused). Always
     // accept at the leaf via spill.
@@ -407,10 +417,74 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
       fail(std::string("COPCspill error: ") + spill->last_error());
       return false;
     }
-    return true;
+    break;
 
     next_iter:;
   }
+
+  // Periodically check the budget — only when we just added net-new bytes.
+  // Eviction (resident replacement) keeps resident_bytes constant; the leaf
+  // fall-through doesn't grow occupancy at all. So no budget check needed
+  // on those paths.
+  if (inserted_resident && resident_bytes > resident_budget)
+  {
+    if (!enforce_resident_budget()) return false;
+  }
+  return true;
+}
+
+bool COPCwriter::flush_hot_octant(const EPTkey& key)
+{
+  auto it = occupancy.find(key);
+  if (it == occupancy.end()) return true; // nothing to do
+  auto& voxels = it->second;
+
+  // Append residents in deterministic order (sorted cell id) so spill's
+  // per-leaf append sequence matches the close-time ordering used by the
+  // sort routine — keeps byte-stable output.
+  std::vector<I32> cells;
+  cells.reserve(voxels.size());
+  for (const auto& vk : voxels) cells.push_back(vk.first);
+  std::sort(cells.begin(), cells.end());
+
+  std::size_t freed = 0;
+  for (I32 cell : cells)
+  {
+    auto& e = voxels[cell];
+    if (!spill->append(key, e.bytes.data()))
+    {
+      fail(std::string("COPCspill error: ") + spill->last_error());
+      return false;
+    }
+    freed += e.bytes.size() + sizeof(ResidentEntry);
+  }
+  occupancy.erase(it);
+  flushed_octants.insert(key);
+  resident_bytes = (resident_bytes >= freed) ? (resident_bytes - freed) : 0;
+  return true;
+}
+
+bool COPCwriter::enforce_resident_budget()
+{
+  // Pick the heaviest hot octant and flush it. Repeat until under budget
+  // or no hot octants remain (in which case we accept staying over budget
+  // — only flushed/leaf bytes are left and those don't shrink).
+  while (resident_bytes > resident_budget && !occupancy.empty())
+  {
+    EPTkey heaviest;
+    std::size_t heaviest_bytes = 0;
+    for (const auto& kv : occupancy)
+    {
+      // Approximate: count voxels × (point_size + per-entry overhead).
+      // Cheap and tracks resident_bytes well enough to pick a winner.
+      std::size_t b = 0;
+      for (const auto& vk : kv.second) b += vk.second.bytes.size() + sizeof(ResidentEntry);
+      if (b > heaviest_bytes) { heaviest_bytes = b; heaviest = kv.first; }
+    }
+    if (heaviest_bytes == 0) break;
+    if (!flush_hot_octant(heaviest)) return false;
+  }
+  return true;
 }
 
 bool COPCwriter::finalize_and_write()
@@ -418,13 +492,16 @@ bool COPCwriter::finalize_and_write()
   if (poisoned) return false;
   if (!writer_las || !hierarchy || !spill) { fail("writer not open"); return false; }
 
-  // Flush in-RAM voxel residents to spill, keyed by their octant. After this
-  // step, COPCspill holds the complete per-octant byte stream and the rest
-  // of finalize (collapse / sort / chunk emit) is unchanged. Iterate octants
-  // in deterministic order so spill's per-leaf append sequence is stable
-  // across runs (the within-chunk std::stable_sort below makes this strictly
-  // belt-and-braces, but the comparator only sorts on gpstime/channel/return
-  // — points with identical keys still need a deterministic incoming order).
+  // Flush all remaining in-RAM voxel residents to spill, keyed by their
+  // octant. After this step, COPCspill holds the complete per-octant byte
+  // stream and the rest of finalize (collapse / sort / chunk emit) is
+  // unchanged. Iterate hot octants in deterministic order so spill's per-leaf
+  // append sequence is stable across runs (the within-chunk std::stable_sort
+  // below makes this strictly belt-and-braces, but the comparator only sorts
+  // on gpstime/channel/return — points with identical keys still need a
+  // deterministic incoming order). Reuses flush_hot_octant for the actual
+  // append loop so the close-time fold and the intake-time RAM-pressure
+  // flush share one ordering convention.
   {
     std::vector<EPTkey> octant_keys;
     octant_keys.reserve(occupancy.size());
@@ -438,29 +515,15 @@ bool COPCwriter::finalize_and_write()
               });
     for (const EPTkey& k : octant_keys)
     {
-      auto& voxels = occupancy[k];
-      std::vector<I32> cells;
-      cells.reserve(voxels.size());
-      for (const auto& vk : voxels) cells.push_back(vk.first);
-      std::sort(cells.begin(), cells.end());
-      for (I32 cell : cells)
-      {
-        auto& e = voxels[cell];
-        if (!spill->append(k, e.bytes.data()))
-        {
-          fail(std::string("COPCspill error: ") + spill->last_error());
-          return false;
-        }
-      }
+      if (!flush_hot_octant(k)) return false;
     }
-    occupancy.clear();
   }
 
   const U32 point_size = copc_header->point_data_record_length;
 
   // 1) Collapse the octree based on per-leaf counts.
   auto leaf_counts = spill->cell_counts();
-  hierarchy->finalize(leaf_counts, min_points_per_chunk);
+  hierarchy->finalize(leaf_counts, min_points_per_chunk, max_points_per_octant);
 
   // 2) Iterate final octants in deterministic order. Emit real chunks for
   //    point_count > 0; record zero-size entries for placeholder ancestors.
@@ -472,12 +535,28 @@ bool COPCwriter::finalize_and_write()
   std::vector<U8>  scratch;
   scratch.resize(point_size);
 
+  // Track the largest emitted chunk so we can warn at end of finalize when
+  // any chunk exceeded max_points_per_octant. Internal-node chunks are
+  // capped by the routing-time check + cap-aware collapse, but max-depth
+  // leaves are NOT capped: routing always accepts at the leaf to avoid
+  // dropping points, so a dense cluster (or a user-forced too-shallow
+  // max_depth) can produce a single oversized leaf chunk. The close-time
+  // sort buffer below is sized to that chunk; on a pathological input
+  // this is the OOM risk surface and the user deserves a heads-up.
+  U64 largest_chunk = 0;
+  EPTkey largest_chunk_key;
+
   for (const auto& o : emit_copy)
   {
     if (o.point_count == 0)
     {
       hierarchy->record_chunk(o.key, 0, 0, 0);
       continue;
+    }
+    if (o.point_count > largest_chunk)
+    {
+      largest_chunk = o.point_count;
+      largest_chunk_key = o.key;
     }
 
     const U64 bytes = (U64)o.point_count * (U64)point_size;
@@ -525,6 +604,27 @@ bool COPCwriter::finalize_and_write()
 
     // Release spill resources for this octant.
     spill->drop_octant(o.leaves);
+  }
+
+  // Warn (don't fail) on oversized chunks. The cap is enforced for
+  // internal-node chunks by route_or_spill + cap-aware collapse, but
+  // a max-depth leaf can legitimately exceed the cap when a cluster
+  // exhausts every ancestor voxel and every point keeps falling
+  // through. The right structural fix is a deeper max_depth or a
+  // larger cap; this is observability, not a refusal.
+  if (max_points_per_octant > 0 && largest_chunk > (U64)max_points_per_octant)
+  {
+    eprint("warning: largest COPC chunk has %llu points, exceeding the "
+           "max_points_per_octant cap of %d (chunk at depth=%d, "
+           "x=%d, y=%d, z=%d). Close-time sort uses ~%llu MB. "
+           "Consider increasing max_depth or accepting the larger chunk.\n",
+           (unsigned long long)largest_chunk,
+           (int)max_points_per_octant,
+           (int)largest_chunk_key.d,
+           (int)largest_chunk_key.x,
+           (int)largest_chunk_key.y,
+           (int)largest_chunk_key.z,
+           (unsigned long long)((largest_chunk * (U64)point_size) >> 20));
   }
 
   // 3) Install the hierarchy entries into the COPC eVLR placeholder.
