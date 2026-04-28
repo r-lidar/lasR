@@ -7,11 +7,12 @@
 #include "lascopc.hpp"
 #include "lasdefinitions.hpp"
 
-// Owns the octree math for a COPC output: max-depth leaf key assignment,
-// the min-points-per-chunk collapse rule, the ordered list of final octants
-// ready for emit, and the chunk-offset table used to build the EPT
-// hierarchy eVLR. Does no I/O; operates on counts and keys supplied by
-// the caller (typically COPCspill and COPCwriter).
+// Owns the octree math for a COPC output: octant-key + voxel-cell
+// computation at any depth (the writer routes per-point top-down across
+// depths), the min-points-per-chunk collapse rule, the ordered list of
+// final octants ready for emit, and the chunk-offset table used to build
+// the EPT hierarchy eVLR. Does no I/O; operates on counts and keys
+// supplied by the caller (typically COPCspill and COPCwriter).
 class COPChierarchy
 {
 public:
@@ -35,8 +36,12 @@ public:
   // depth bumping past max_depth.
   EPTkey compute_leaf_key(const LASpoint* p) const;
 
-  // Compute the octant key at an arbitrary depth (0..max_depth) for a point.
-  // Used by the top-down voxel-routing intake path.
+  // Compute the octant key at an arbitrary depth for a point. The writer
+  // calls this for every depth its routing loop visits, which can extend
+  // past the constructor's max_depth in auto mode (up to HARD_DEPTH_LIMIT
+  // in COPCwriter). EPToctree::get_key handles any depth that fits in I32
+  // grid coordinates (~depth 30 before overflow); the writer's hard cap
+  // is 16, well within that.
   EPTkey compute_key_at(const LASpoint* p, I32 depth) const;
 
   // Voxel cell index within `key`'s grid_size³ grid for the point. Returns

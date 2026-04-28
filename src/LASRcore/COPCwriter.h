@@ -131,7 +131,8 @@ private:
   // Route a point's bytes (with precomputed hash) into the in-RAM occupancy
   // tables starting at start_depth, evicting and re-routing any residents
   // that lose the hash compare. Falls through to spill->append at the
-  // max-depth leaf if no ancestor accepts. Returns false on spill error.
+  // routing depth cap (user max_depth, or HARD_DEPTH_LIMIT in auto mode)
+  // if no ancestor accepts. Returns false on spill error.
   bool route_or_spill(std::vector<U8>&& bytes, U64 hash, I32 start_depth);
 
   // Push a single hot octant's residents into spill and demote it to
