@@ -1,6 +1,7 @@
 #ifndef COPC_WRITER_H
 #define COPC_WRITER_H
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
