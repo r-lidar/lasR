@@ -469,9 +469,22 @@ bool COPCwriter::enforce_resident_budget()
   // Pick the heaviest hot octant and flush it. Repeat until under budget
   // or no hot octants remain (in which case we accept staying over budget
   // — only flushed/leaf bytes are left and those don't shrink).
+  // Tie-break on (depth, x, y, z) when multiple octants share the heaviest
+  // size: flushing freezes that octant's voxel decisions and any later
+  // routing that would have hit it now descends instead, so a
+  // non-deterministic pick here would propagate into the output bytes.
+  // unordered_map iteration order is implementation-defined; the
+  // tie-break makes the choice reproducible across runs and platforms.
+  auto key_less = [](const EPTkey& a, const EPTkey& b) {
+    if (a.d != b.d) return a.d < b.d;
+    if (a.x != b.x) return a.x < b.x;
+    if (a.y != b.y) return a.y < b.y;
+    return a.z < b.z;
+  };
   while (resident_bytes > resident_budget && !occupancy.empty())
   {
     EPTkey heaviest;
+    bool have_winner = false;
     std::size_t heaviest_bytes = 0;
     for (const auto& kv : occupancy)
     {
@@ -479,9 +492,16 @@ bool COPCwriter::enforce_resident_budget()
       // Cheap and tracks resident_bytes well enough to pick a winner.
       std::size_t b = 0;
       for (const auto& vk : kv.second) b += vk.second.bytes.size() + sizeof(ResidentEntry);
-      if (b > heaviest_bytes) { heaviest_bytes = b; heaviest = kv.first; }
+      if (!have_winner ||
+          b > heaviest_bytes ||
+          (b == heaviest_bytes && key_less(kv.first, heaviest)))
+      {
+        heaviest_bytes = b;
+        heaviest = kv.first;
+        have_winner = true;
+      }
     }
-    if (heaviest_bytes == 0) break;
+    if (!have_winner || heaviest_bytes == 0) break;
     if (!flush_hot_octant(heaviest)) return false;
   }
   return true;
@@ -530,21 +550,45 @@ bool COPCwriter::finalize_and_write()
   //    Copy the emit order up front because record_chunk mutates entries.
   std::vector<COPChierarchy::FinalOctant> emit_copy = hierarchy->emit_order();
 
+  // Up-front oversize scan. Internal-node chunks are capped by
+  // route_or_spill + cap-aware collapse, but a max-depth leaf can legitimately
+  // exceed the cap (routing always accepts at the leaf to avoid dropping
+  // points, so a dense cluster or too-shallow max_depth produces one large
+  // leaf chunk). Warn BEFORE allocating any sort buffer below — that
+  // allocation is the OOM risk surface, and the user needs the diagnostic
+  // before the process dies.
+  if (max_points_per_octant > 0)
+  {
+    U64 largest_chunk = 0;
+    EPTkey largest_chunk_key;
+    for (const auto& o : emit_copy)
+    {
+      if (o.point_count > largest_chunk)
+      {
+        largest_chunk = o.point_count;
+        largest_chunk_key = o.key;
+      }
+    }
+    if (largest_chunk > (U64)max_points_per_octant)
+    {
+      warning("largest COPC chunk has %llu points, exceeding the "
+              "max_points_per_octant cap of %d (chunk at depth=%d, "
+              "x=%d, y=%d, z=%d). Close-time sort will allocate ~%llu MB. "
+              "Consider increasing max_depth or accepting the larger chunk.\n",
+              (unsigned long long)largest_chunk,
+              (int)max_points_per_octant,
+              (int)largest_chunk_key.d,
+              (int)largest_chunk_key.x,
+              (int)largest_chunk_key.y,
+              (int)largest_chunk_key.z,
+              (unsigned long long)((largest_chunk * (U64)point_size) >> 20));
+    }
+  }
+
   std::vector<U8> sort_buf;
   std::vector<U8*> ptrs;
   std::vector<U8>  scratch;
   scratch.resize(point_size);
-
-  // Track the largest emitted chunk so we can warn at end of finalize when
-  // any chunk exceeded max_points_per_octant. Internal-node chunks are
-  // capped by the routing-time check + cap-aware collapse, but max-depth
-  // leaves are NOT capped: routing always accepts at the leaf to avoid
-  // dropping points, so a dense cluster (or a user-forced too-shallow
-  // max_depth) can produce a single oversized leaf chunk. The close-time
-  // sort buffer below is sized to that chunk; on a pathological input
-  // this is the OOM risk surface and the user deserves a heads-up.
-  U64 largest_chunk = 0;
-  EPTkey largest_chunk_key;
 
   for (const auto& o : emit_copy)
   {
@@ -552,11 +596,6 @@ bool COPCwriter::finalize_and_write()
     {
       hierarchy->record_chunk(o.key, 0, 0, 0);
       continue;
-    }
-    if (o.point_count > largest_chunk)
-    {
-      largest_chunk = o.point_count;
-      largest_chunk_key = o.key;
     }
 
     const U64 bytes = (U64)o.point_count * (U64)point_size;
@@ -604,27 +643,6 @@ bool COPCwriter::finalize_and_write()
 
     // Release spill resources for this octant.
     spill->drop_octant(o.leaves);
-  }
-
-  // Warn (don't fail) on oversized chunks. The cap is enforced for
-  // internal-node chunks by route_or_spill + cap-aware collapse, but
-  // a max-depth leaf can legitimately exceed the cap when a cluster
-  // exhausts every ancestor voxel and every point keeps falling
-  // through. The right structural fix is a deeper max_depth or a
-  // larger cap; this is observability, not a refusal.
-  if (max_points_per_octant > 0 && largest_chunk > (U64)max_points_per_octant)
-  {
-    eprint("warning: largest COPC chunk has %llu points, exceeding the "
-           "max_points_per_octant cap of %d (chunk at depth=%d, "
-           "x=%d, y=%d, z=%d). Close-time sort uses ~%llu MB. "
-           "Consider increasing max_depth or accepting the larger chunk.\n",
-           (unsigned long long)largest_chunk,
-           (int)max_points_per_octant,
-           (int)largest_chunk_key.d,
-           (int)largest_chunk_key.x,
-           (int)largest_chunk_key.y,
-           (int)largest_chunk_key.z,
-           (unsigned long long)((largest_chunk * (U64)point_size) >> 20));
   }
 
   // 3) Install the hierarchy entries into the COPC eVLR placeholder.

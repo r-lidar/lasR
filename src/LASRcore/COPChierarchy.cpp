@@ -76,12 +76,22 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
   // Collapse small chunks: process deepest-first so absorption cascades
   // upward correctly (a small leaf merges into its parent; if the parent
   // is also small, the next pass merges it into the grandparent, etc.).
+  // Tie-break on x/y/z within a depth so that when multiple equal-depth
+  // chunks compete for the same ancestor's remaining cap room, the
+  // outcome (which one is absorbed vs left standing) is deterministic
+  // across runs — without the tie-break, unordered_map iteration order
+  // would decide and that's implementation-defined.
   const U64 min_chunk = static_cast<U64>(std::max(1, min_points_per_chunk));
   std::vector<EPTkey> ordered_keys;
   ordered_keys.reserve(octant_counts.size());
   for (const auto& kv : octant_counts) ordered_keys.push_back(kv.first);
   std::sort(ordered_keys.begin(), ordered_keys.end(),
-            [](const EPTkey& a, const EPTkey& b) { return a.d > b.d; });
+            [](const EPTkey& a, const EPTkey& b) {
+              if (a.d != b.d) return a.d > b.d;
+              if (a.x != b.x) return a.x < b.x;
+              if (a.y != b.y) return a.y < b.y;
+              return a.z < b.z;
+            });
 
   const U64 max_chunk = (max_points_per_chunk > 0)
                           ? static_cast<U64>(max_points_per_chunk)
