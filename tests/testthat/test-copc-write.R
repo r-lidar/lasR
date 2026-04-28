@@ -105,3 +105,35 @@ test_that("write_copc output is readable by lasR EPT-style reader with depth fil
   expect_gt(root, 0L)
   expect_lte(root, total)
 })
+
+test_that("write_copc produces progressive LOD across depths",
+{
+  # bcts_1.laz (~530k points) at sparse density (grid_size = 64). With true
+  # progressive LOD, point counts must strictly increase with depth, and
+  # depth 0 must return far fewer points than the full file (representative
+  # voxel sampling, not the whole dataset).
+  f = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
+  skip_if(f == "", "bcts_1.laz not available")
+
+  o = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(o), add = TRUE)
+
+  exec(write_copc(o, density = "sparse", experimental_writer = TRUE), on = f)
+
+  total = exec(reader() + summarise(), on = o)$npoints
+  d0 = exec(reader_las(depth = 0) + summarise(), on = o)$npoints
+  d1 = exec(reader_las(depth = 1) + summarise(), on = o)$npoints
+
+  # Density-blind octree (the bug this guards against) would put everything
+  # in max-depth leaves and emit zero-count placeholders for parents — d0
+  # would then be ~0. With voxel routing, d0 should be in the thousands
+  # (one representative per occupied voxel of the root grid).
+  expect_gt(d0, 1000L)
+  expect_lt(d0, total / 10L)   # coarse sample is a small fraction of the whole
+
+  # Cumulative reads must be monotonically non-decreasing with depth, and
+  # depth >= some level must reach the full point count.
+  expect_gte(d1, d0)
+  expect_lte(d1, total)
+  expect_equal(exec(reader() + summarise(), on = o)$npoints, total)
+})

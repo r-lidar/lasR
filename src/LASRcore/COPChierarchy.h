@@ -30,7 +30,16 @@ public:
   // Compute the max-depth leaf key for a point. Called per-point during intake.
   EPTkey compute_leaf_key(const LASpoint* p) const;
 
+  // Compute the octant key at an arbitrary depth (0..max_depth) for a point.
+  // Used by the top-down voxel-routing intake path.
+  EPTkey compute_key_at(const LASpoint* p, I32 depth) const;
+
+  // Voxel cell index within `key`'s grid_size³ grid for the point. Returns
+  // a non-negative cell id usable as a key into a per-octant occupancy set.
+  I32 compute_voxel_cell(const LASpoint* p, const EPTkey& key) const;
+
   I32 get_max_depth() const { return max_depth; }
+  I32 get_grid_size() const { return octree.get_gridsize(); }
 
   // Derived octree geometry for the COPC info VLR.
   F64 get_center_x() const { return octree.get_center_x(); }

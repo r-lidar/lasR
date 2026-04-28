@@ -2,6 +2,8 @@
 #define COPC_WRITER_H
 
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "COPChierarchy.h"
@@ -77,6 +79,15 @@ private:
 
   COPChierarchy* hierarchy = nullptr;
   COPCspill* spill = nullptr;
+
+  // Per-octant voxel occupancy. A point claims the first ancestor (root-down)
+  // whose voxel cell at this octant is unoccupied. The point is then routed
+  // to that octant's spill bucket. At max_depth every point is accepted
+  // unconditionally, so every point ends up keyed by exactly one octant.
+  // This produces a true progressive LOD: each octant holds one
+  // representative per voxel of its grid_size³ grid (LASlib-equivalent
+  // selection algorithm).
+  std::unordered_map<EPTkey, std::unordered_set<I32>, EPTKeyHasher> occupancy;
 
   // Configuration
   I32 copc_depth = -1;

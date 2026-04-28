@@ -15,127 +15,30 @@ EPTkey COPChierarchy::compute_leaf_key(const LASpoint* p) const
   return octree.get_key(p, max_depth);
 }
 
-// Recursive top-down subdivision. Group points by which child subtree they fall
-// under; for each child, either descend (if subtree has enough points) or absorb
-// into the current key. Returns FinalOctants found under `key`. A returned list
-// may include the current key itself (if it absorbed any children) plus deeper
-// surviving octants.
-//
-// Note: `leaves_here` is taken by value so recursive frames can mutate without
-// disturbing the caller's state.
-static void subdivide_recursive(const EPTkey& key,
-                                std::unordered_map<EPTkey, U64, EPTKeyHasher> leaves_here,
-                                I32 max_depth,
-                                U64 min_chunk,
-                                std::vector<COPChierarchy::FinalOctant>& out,
-                                std::unordered_set<EPTkey, EPTKeyHasher>& ancestors_traversed)
+EPTkey COPChierarchy::compute_key_at(const LASpoint* p, I32 depth) const
 {
-  if (leaves_here.empty()) return;
+  return octree.get_key(p, depth);
+}
 
-  // Terminal: we're at max_depth — this IS a leaf, emit as single chunk.
-  if (key.d >= max_depth)
+I32 COPChierarchy::compute_voxel_cell(const LASpoint* p, const EPTkey& key) const
+{
+  return octree.get_cell(p, key);
+}
+
+// Find the nearest existing ancestor of `key` in `octant_counts`. Returns
+// EPTkey::root() if no proper ancestor exists (root is always considered
+// to exist for routing purposes; the caller emits a zero-count root if
+// none of the input keys is root).
+static EPTkey find_existing_ancestor(const EPTkey& key,
+                                     const std::unordered_map<EPTkey, U64, EPTKeyHasher>& octant_counts)
+{
+  EPTkey k = key;
+  while (k.d > 0)
   {
-    U64 total = 0;
-    std::vector<EPTkey> leaves_vec;
-    leaves_vec.reserve(leaves_here.size());
-    for (const auto& kv : leaves_here)
-    {
-      total += kv.second;
-      leaves_vec.push_back(kv.first);
-    }
-    COPChierarchy::FinalOctant o;
-    o.key = key;
-    o.leaves = std::move(leaves_vec);
-    o.point_count = total;
-    out.push_back(std::move(o));
-    return;
+    k = k.get_parent();
+    if (octant_counts.count(k)) return k;
   }
-
-  // Group leaves by which of the 8 children contains them.
-  std::array<std::unordered_map<EPTkey, U64, EPTKeyHasher>, 8> groups;
-  std::array<EPTkey, 8> child_keys = key.get_children();
-
-  auto child_index = [&](const EPTkey& leaf) -> int {
-    // Find which child subtree `leaf` falls under. Compute the ancestor of
-    // `leaf` at depth key.d+1 and match against child_keys.
-    I32 delta = leaf.d - (key.d + 1);
-    I32 cx = leaf.x >> delta;
-    I32 cy = leaf.y >> delta;
-    I32 cz = leaf.z >> delta;
-    for (int i = 0; i < 8; ++i)
-    {
-      if (child_keys[i].x == cx && child_keys[i].y == cy && child_keys[i].z == cz)
-        return i;
-    }
-    return -1; // unreachable for well-formed inputs
-  };
-
-  for (auto& kv : leaves_here)
-  {
-    int ci = child_index(kv.first);
-    if (ci >= 0) groups[ci].emplace(kv.first, kv.second);
-  }
-
-  // For each child: decide whether to recurse or absorb into `key`.
-  std::unordered_map<EPTkey, U64, EPTKeyHasher> absorbed_at_this_level;
-  std::vector<COPChierarchy::FinalOctant> child_results;
-  for (int i = 0; i < 8; ++i)
-  {
-    if (groups[i].empty()) continue;
-
-    U64 subtree_total = 0;
-    for (const auto& kv : groups[i]) subtree_total += kv.second;
-
-    if (subtree_total < min_chunk)
-    {
-      // Absorb this entire subtree into the current key
-      for (auto& kv : groups[i]) absorbed_at_this_level.emplace(kv.first, kv.second);
-    }
-    else
-    {
-      // Subtree has enough points — recurse
-      subdivide_recursive(child_keys[i], std::move(groups[i]), max_depth, min_chunk,
-                          child_results, ancestors_traversed);
-    }
-  }
-
-  // Emit current key if it absorbed anything, or if it's root (root always
-  // emits even if empty — otherwise readers have no entry point).
-  bool has_absorbed = !absorbed_at_this_level.empty();
-  bool is_root = (key.d == 0);
-  if (has_absorbed)
-  {
-    U64 total = 0;
-    std::vector<EPTkey> leaves_vec;
-    leaves_vec.reserve(absorbed_at_this_level.size());
-    for (auto& kv : absorbed_at_this_level)
-    {
-      total += kv.second;
-      leaves_vec.push_back(kv.first);
-    }
-    COPChierarchy::FinalOctant o;
-    o.key = key;
-    o.leaves = std::move(leaves_vec);
-    o.point_count = total;
-    out.push_back(std::move(o));
-  }
-  else if (is_root && child_results.empty())
-  {
-    // Degenerate case: no points at all. Emit empty root so the file is still valid.
-    COPChierarchy::FinalOctant o;
-    o.key = key;
-    o.point_count = 0;
-    out.push_back(std::move(o));
-  }
-  else if (!has_absorbed)
-  {
-    // Current key has children-that-recursed but absorbed nothing itself.
-    // Record it as a zero-count ancestor so readers can traverse.
-    ancestors_traversed.insert(key);
-  }
-
-  // Append child subtree results
-  for (auto& r : child_results) out.push_back(std::move(r));
+  return EPTkey::root();
 }
 
 void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>& leaf_counts,
@@ -144,34 +47,80 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
   emit.clear();
   entries.clear();
 
-  std::unordered_set<EPTkey, EPTKeyHasher> ancestors;
-  std::vector<FinalOctant> collected;
+  // With top-down voxel routing in COPCwriter::write_point, each octant key
+  // already holds exactly the points belonging to its level (one
+  // representative per voxel cell of grid_size³). Our job here is just to:
+  //   1) collapse octants whose count is below min_points_per_chunk by
+  //      moving their points up to the nearest existing ancestor (matches
+  //      LASlib's behaviour and avoids tiny LAZ chunks),
+  //   2) emit zero-count placeholders for any missing ancestor of a real
+  //      octant so readers can traverse the hierarchy,
+  //   3) sort deterministically for stable byte output.
+  std::unordered_map<EPTkey, U64, EPTKeyHasher> octant_counts = leaf_counts;
+  std::unordered_map<EPTkey, std::vector<EPTkey>, EPTKeyHasher> octant_sources;
+  octant_sources.reserve(octant_counts.size());
+  for (const auto& kv : octant_counts) octant_sources[kv.first] = {kv.first};
 
-  // Empty input: subdivide_recursive returns immediately on empty leaves,
-  // so the in-recursion "emit empty root" fallback is unreachable. Emit
-  // it explicitly here so the file is still valid (one zero-count root
-  // entry) — readers expect at least the root entry in the hierarchy.
-  if (leaf_counts.empty())
+  // Empty input: emit zero-count root so the file stays valid.
+  if (octant_counts.empty())
   {
     FinalOctant root;
     root.key = EPTkey::root();
     root.point_count = 0;
-    collected.push_back(std::move(root));
-  }
-  else
-  {
-    // Kick off recursion from root. Copy leaf_counts because the recursion takes by value.
-    subdivide_recursive(EPTkey::root(), leaf_counts, max_depth,
-                        static_cast<U64>(std::max(1, min_points_per_chunk)),
-                        collected, ancestors);
+    emit.push_back(std::move(root));
+    return;
   }
 
-  // Add zero-count placeholders for ancestors not already emitted. Readers
-  // need every ancestor of every real octant to be present in the hierarchy.
-  // Snapshot the size before the loop and accumulate placeholders into a
-  // separate vector — appending to `collected` while range-iterating it
-  // would be UB the moment a vector reallocation invalidates the iterator
-  // mid-walk.
+  // Collapse small chunks: process deepest-first so absorption cascades
+  // upward correctly (a small leaf merges into its parent; if the parent
+  // is also small, the next pass merges it into the grandparent, etc.).
+  const U64 min_chunk = static_cast<U64>(std::max(1, min_points_per_chunk));
+  std::vector<EPTkey> ordered_keys;
+  ordered_keys.reserve(octant_counts.size());
+  for (const auto& kv : octant_counts) ordered_keys.push_back(kv.first);
+  std::sort(ordered_keys.begin(), ordered_keys.end(),
+            [](const EPTkey& a, const EPTkey& b) { return a.d > b.d; });
+
+  for (const EPTkey& k : ordered_keys)
+  {
+    auto it = octant_counts.find(k);
+    if (it == octant_counts.end()) continue;
+    if (it->second >= min_chunk) continue;
+    if (k.d == 0) continue; // root: keep as-is even if small
+
+    EPTkey ancestor = find_existing_ancestor(k, octant_counts);
+    auto anc_it = octant_counts.find(ancestor);
+    if (anc_it == octant_counts.end())
+    {
+      // No existing ancestor (only root above and root has no entry yet):
+      // create a root entry so we can absorb into it.
+      anc_it = octant_counts.emplace(ancestor, 0ULL).first;
+      octant_sources[ancestor] = {};
+    }
+    anc_it->second += it->second;
+    auto& dst = octant_sources[ancestor];
+    auto& src = octant_sources[k];
+    dst.insert(dst.end(), std::make_move_iterator(src.begin()),
+                          std::make_move_iterator(src.end()));
+    octant_counts.erase(it);
+    octant_sources.erase(k);
+  }
+
+  // Build the emit list from surviving octants.
+  std::vector<FinalOctant> collected;
+  collected.reserve(octant_counts.size());
+  for (const auto& kv : octant_counts)
+  {
+    FinalOctant o;
+    o.key = kv.first;
+    o.point_count = kv.second;
+    o.leaves = std::move(octant_sources[kv.first]);
+    collected.push_back(std::move(o));
+  }
+
+  // Add zero-count placeholders for missing ancestors. Snapshot the real
+  // count before walking — appending to `collected` while range-iterating
+  // it would invalidate iterators on reallocation.
   std::unordered_set<EPTkey, EPTKeyHasher> emitted_keys;
   emitted_keys.reserve(collected.size());
   for (const auto& o : collected) emitted_keys.insert(o.key);
@@ -194,24 +143,11 @@ void COPChierarchy::finalize(const std::unordered_map<EPTkey, U64, EPTKeyHasher>
       k = parent;
     }
   }
-  for (const EPTkey& k : ancestors)
-  {
-    if (emitted_keys.insert(k).second)
-    {
-      FinalOctant z;
-      z.key = k;
-      z.point_count = 0;
-      placeholders.push_back(std::move(z));
-    }
-  }
   collected.insert(collected.end(),
                    std::make_move_iterator(placeholders.begin()),
                    std::make_move_iterator(placeholders.end()));
 
-  // Sort deterministically for emit: depth_order from lascopc.hpp gives a
-  // stable total order (depth asc, then x, y, z). Nonzero-count octants are
-  // emitted first so placeholders are stable regardless of their eventual
-  // position; COPCwriter writes chunks only for point_count > 0.
+  // Sort deterministically for emit (depth asc, then x/y/z asc).
   std::sort(collected.begin(), collected.end(),
             [](const FinalOctant& a, const FinalOctant& b) {
               if (a.key.d != b.key.d) return a.key.d < b.key.d;
