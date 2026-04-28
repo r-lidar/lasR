@@ -282,10 +282,21 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   if (max_depth < 0)                max_depth = 0;
   if (!copc_depth_user_set && max_depth > 10) max_depth = 10; // LASlib parity for auto
 
-  // Routing cap: user-set is a hard cap (depth bumping is disabled); auto
-  // lets routing extend up to HARD_DEPTH_LIMIT past the heuristic when
-  // chunks would otherwise exceed max_points_per_octant.
-  routing_max_depth = copc_depth_user_set ? max_depth : HARD_DEPTH_LIMIT;
+  // Routing cap, three-way:
+  //   - user-set:                  hard cap at max_depth, no bumping. The
+  //     user asked for an exact depth, honour it (forced LOD).
+  //   - auto, max_depth == 0:      single-chunk fast path. The auto
+  //     heuristic decided the whole file fits under cap at root, so emit
+  //     one chunk holding everything (matches LAStools' behaviour and
+  //     avoids ~17 chunks of artificial hierarchy + per-chunk LAZ
+  //     overhead on small inputs). At this size the LOD benefit is weak
+  //     anyway — the depth-0 sample is most of the file. Users who want
+  //     LOD on small inputs can force it via explicit max_depth > 0.
+  //   - auto, max_depth > 0:       progressive LOD with adaptive depth
+  //     bumping up to HARD_DEPTH_LIMIT to keep chunks under cap.
+  routing_max_depth = copc_depth_user_set
+                        ? max_depth
+                        : (max_depth == 0 ? 0 : HARD_DEPTH_LIMIT);
 
   hierarchy = new COPChierarchy(*copc_header, max_depth, copc_density);
   spill = new COPCspill(output_path, copc_header->point_data_record_length);
@@ -443,7 +454,11 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
     {
       point->copy_from(bytes.data());
       EPTkey deepest = hierarchy->compute_key_at(point, routing_max_depth);
-      if (!hard_depth_warned && !copc_depth_user_set)
+      // Only fire on a genuine hard-limit hit. The auto single-chunk
+      // fast path (routing_max_depth == 0) routes every point through
+      // this branch by design, so we'd spam a misleading warning if we
+      // didn't gate on the structural condition.
+      if (!hard_depth_warned && routing_max_depth == HARD_DEPTH_LIMIT)
       {
         warning("COPC writer hit the hard depth limit (%d) — a point "
                 "cluster exceeds max_points_per_octant at every voxel "
