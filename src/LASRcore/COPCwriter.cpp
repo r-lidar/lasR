@@ -250,6 +250,18 @@ bool COPCwriter::prepare_copc_header(const LASheader* source_header)
   std::memset(info, 0, sizeof(LASvlr_copc_info));
   copc_header->add_vlr("copc", 1, sizeof(LASvlr_copc_info), (U8*)info, FALSE, "copc info");
   copc_header->add_evlr("copc", 1000, 0, 0, FALSE, "EPT hierarchy");
+  // LASlib's add_evlr (lasdefinitions.hpp:686-722) only writes strlen bytes
+  // of user_id and uses realloc (not calloc) for subsequent slots, so the
+  // padding bytes after "copc" are undefined when this isn't the very
+  // first eVLR add. Zero them explicitly so finalize_and_write's bounded
+  // user_id_equals scan reliably matches our placeholder regardless of
+  // where LASlib positions it.
+  if (copc_header->number_of_extended_variable_length_records > 0)
+  {
+    LASevlr& last = copc_header->evlrs[copc_header->number_of_extended_variable_length_records - 1];
+    std::memset(last.user_id, 0, sizeof(last.user_id));
+    std::memcpy(last.user_id, "copc", 4);
+  }
 
   // Deep-copy the source VLRs/eVLRs into our transformed header, so the caller
   // can destroy the source header independently.
@@ -1020,16 +1032,71 @@ bool COPCwriter::finalize_and_write()
   }
 
   // 3) Install the hierarchy entries into the COPC eVLR placeholder.
+  // Look the placeholder up by (user_id, record_id) instead of evlrs[0]:
+  // prepare_copc_header happens to add it first today, but a future patch
+  // that inserts another eVLR earlier (e.g. CRS WKT eVLR for LAS 1.4)
+  // would silently corrupt the COPC hierarchy via positional access.
   const auto& entries = hierarchy->build_evlr_entries();
   LASvlr_copc_entry* ev_data = new LASvlr_copc_entry[entries.size()];
   for (size_t i = 0; i < entries.size(); i++) ev_data[i] = entries[i];
-  copc_header->evlrs[0].record_length_after_header = (I64)(entries.size() * sizeof(LASvlr_copc_entry));
-  copc_header->evlrs[0].data = (U8*)ev_data;
+  // LASvlr/LASevlr::user_id is a fixed 16-byte field. LASlib's add_vlr
+  // memsets the slot before write so the field is well-padded; add_evlr
+  // does not, and uses realloc (not calloc) for subsequent slots, so
+  // padding bytes after the user_id string may be undefined when our
+  // placeholder isn't the very first add. Use a bounded compare for
+  // both lookups so a preceding non-terminated record can't make the
+  // scan run past the field or accidentally match.
+  auto user_id_equals = [](const char* field16, const char* test) -> bool {
+    const std::size_t n = std::strlen(test);
+    if (n > 16) return false;
+    if (std::memcmp(field16, test, n) != 0) return false;
+    // For a match, every byte after `test` within the 16-byte field
+    // must be NUL (so "copc\0..." matches "copc" but "copcX..." doesn't).
+    for (std::size_t k = n; k < 16; ++k) if (field16[k] != '\0') return false;
+    return true;
+  };
+  LASevlr* hier_evlr = nullptr;
+  for (U32 i = 0; i < copc_header->number_of_extended_variable_length_records; i++)
+  {
+    if (user_id_equals(copc_header->evlrs[i].user_id, "copc") &&
+        copc_header->evlrs[i].record_id == 1000)
+    {
+      hier_evlr = &copc_header->evlrs[i];
+      break;
+    }
+  }
+  if (!hier_evlr)
+  {
+    delete[] ev_data;
+    fail("COPC writer: hierarchy eVLR placeholder (user_id=copc, record_id=1000) not found");
+    return false;
+  }
+  hier_evlr->record_length_after_header = (I64)(entries.size() * sizeof(LASvlr_copc_entry));
+  hier_evlr->data = (U8*)ev_data;
 
   // 4) Fill COPC info VLR fields we know now. LASwriterLAS::update_header
   //    will compute and patch root_hier_offset / root_hier_size based on the
   //    eVLR position (see laswriter_las.cpp:1250-1383), so leave those zero.
-  LASvlr_copc_info* info = (LASvlr_copc_info*)copc_header->vlrs[0].data;
+  // Same scan pattern as the eVLR above. add_vlr does memset its slot, so
+  // a strcmp-based lookup (e.g. via LASheader::get_vlr) would also work
+  // today; using the bounded helper keeps both lookups consistent and
+  // future-proof against LASlib changes that might drop the memset.
+  LASvlr* info_vlr = nullptr;
+  for (U32 i = 0; i < copc_header->number_of_variable_length_records; i++)
+  {
+    if (user_id_equals(copc_header->vlrs[i].user_id, "copc") &&
+        copc_header->vlrs[i].record_id == 1)
+    {
+      info_vlr = &copc_header->vlrs[i];
+      break;
+    }
+  }
+  if (!info_vlr || !info_vlr->data)
+  {
+    fail("COPC writer: info VLR placeholder (user_id=copc, record_id=1) not found");
+    return false;
+  }
+  LASvlr_copc_info* info = (LASvlr_copc_info*)info_vlr->data;
   if (!have_any_point)
   {
     gpstime_minimum = 0.0;
