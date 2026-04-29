@@ -600,6 +600,112 @@ bool COPCspill::read_octant(const std::vector<EPTkey>& leaves, U8* out_buffer, U
   return true;
 }
 
+bool COPCspill::stream_octant(const std::vector<EPTkey>& leaves,
+                              U64 expected_points,
+                              const std::function<bool(const U8*)>& fn)
+{
+  if (poisoned) return false;
+
+  // Stack-stable scratch buffer reused across spilled extents. Sized to
+  // typical extent (write_buf_size, ~64 KB) and grown only if a single
+  // extent exceeds it. Avoids per-extent malloc.
+  std::vector<U8> extent_buf;
+
+  // Mirror of read_octant's byte_count guard: track emitted points and
+  // verify each spilled extent is a whole multiple of point_size. A
+  // mismatch would otherwise produce a chunk shorter than what the
+  // hierarchy records — corrupt COPC.
+  U64 emitted = 0;
+
+  for (const EPTkey& k : leaves)
+  {
+    auto it = cells.find(k);
+    if (it == cells.end())
+    {
+      fail("stream_octant: leaf has no spill state (caller bookkeeping mismatch)");
+      return false;
+    }
+    CellBuffer& cell = it->second;
+
+    if (!cell.spilled)
+    {
+      // RAM-resident: walk the cell's bytes in point_size-stride chunks.
+      // Guard against bookkeeping drift between point_count and ram.size:
+      // if they ever desynchronise we'd read past the vector or drop
+      // tail bytes. Symmetric with the spilled-path extent check below.
+      const U64 n = cell.point_count;
+      if (cell.ram.size() != n * (U64)point_size)
+      {
+        fail("stream_octant: RAM cell size mismatch — got "
+             + std::to_string((U64)cell.ram.size())
+             + " bytes, expected " + std::to_string(n * (U64)point_size));
+        return false;
+      }
+      const U8* base = cell.ram.data();
+      for (U64 i = 0; i < n; ++i)
+      {
+        if (!fn(base + i * point_size))
+        {
+          fail("stream_octant: callback aborted");
+          return false;
+        }
+        ++emitted;
+      }
+    }
+    else
+    {
+      // Spilled: same flush-then-walk pattern as read_octant. The flush
+      // commits any pending write_buf to the shared spill log first; then
+      // we read each extent into extent_buf and iterate.
+      if (!flush_write_buf(k, cell)) return false;
+      if (!spill_log_handle && !cell.extents.empty())
+      {
+        fail("stream_octant: spill log not open but cell has extents");
+        return false;
+      }
+      for (const Extent& e : cell.extents)
+      {
+        if ((e.byte_size % point_size) != 0)
+        {
+          fail("stream_octant: extent byte_size not a multiple of point_size in "
+               + spill_log_path);
+          return false;
+        }
+        if (e.byte_size > extent_buf.size()) extent_buf.resize(e.byte_size);
+        if (spill_seek64(spill_log_handle, (std::int64_t)e.offset, SEEK_SET) != 0)
+        {
+          fail("stream_octant: fseek failed in spill log " + spill_log_path);
+          return false;
+        }
+        std::size_t got = std::fread(extent_buf.data(), 1, e.byte_size, spill_log_handle);
+        if (got != e.byte_size)
+        {
+          fail("stream_octant: short read from spill log " + spill_log_path);
+          return false;
+        }
+        const U64 n_in_extent = e.byte_size / point_size;
+        for (U64 i = 0; i < n_in_extent; ++i)
+        {
+          if (!fn(extent_buf.data() + i * point_size))
+          {
+            fail("stream_octant: callback aborted");
+            return false;
+          }
+          ++emitted;
+        }
+      }
+    }
+  }
+
+  if (emitted != expected_points)
+  {
+    fail("stream_octant: emitted " + std::to_string(emitted)
+         + " points, expected " + std::to_string(expected_points));
+    return false;
+  }
+  return true;
+}
+
 void COPCspill::drop_octant(const std::vector<EPTkey>& leaves)
 {
   for (const EPTkey& k : leaves)

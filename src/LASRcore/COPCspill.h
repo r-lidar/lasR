@@ -2,6 +2,7 @@
 #define COPC_SPILL_H
 
 #include <cstdio>
+#include <functional>
 #include <list>
 #include <string>
 #include <unordered_map>
@@ -69,6 +70,21 @@ public:
   // were appended. out_buffer must be at least byte_count bytes. byte_count
   // must equal sum(counts[leaf]) * point_record_size over the given leaves.
   bool read_octant(const std::vector<EPTkey>& leaves, U8* out_buffer, U64 byte_count);
+
+  // Stream points one at a time through `fn`, in the same per-leaf / intra-
+  // leaf order as read_octant(). Avoids buffering the whole octant in RAM —
+  // used by the writer's skip-sort fallback when a chunk would exceed the
+  // sort-buffer cap. The pointer passed to `fn` is valid only for the
+  // duration of the call (it points into a per-extent scratch buffer or
+  // directly into the cell's RAM). Return false from `fn` to abort; the
+  // method then fails and returns false.
+  // expected_points must equal sum(cell.point_count) over `leaves` —
+  // mirrors read_octant's byte_count guard. Catches spill/extents
+  // bookkeeping drift that would otherwise produce a chunk with fewer
+  // points than the hierarchy records.
+  bool stream_octant(const std::vector<EPTkey>& leaves,
+                     U64 expected_points,
+                     const std::function<bool(const U8*)>& fn);
 
   // Release all per-cell resources for an octant's leaves: in-memory
   // buffers and the per-cell extent vectors. Bytes already written to
