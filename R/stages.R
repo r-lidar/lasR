@@ -1512,6 +1512,42 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' hierarchy, fewer spill cells and less per-octant metadata, at the cost of larger close-time
 #' sort buffers and coarser spatial random access. Pairs naturally with \code{max_extra_depth = 0}
 #' (compact mode) when the goal is minimum file size / writer RAM.
+#'
+#' @section Tuning the experimental writer:
+#' All knobs below require \code{experimental_writer = TRUE}.
+#'
+#' \strong{Default (rich LOD).} \code{max_extra_depth = NA, max_points_per_chunk = NA}.
+#' Best for files served from cloud storage where progressive zoom matters.
+#' Produces deeper hierarchies, smaller chunks, more entries.
+#'
+#' \strong{Compact mode (LAStools-equivalent).} \code{max_extra_depth = 0}.
+#' Caps the routing depth at the auto heuristic --- no adaptive bumping.
+#' Fewer chunks, smaller hierarchy eVLR, smaller writer RAM footprint at
+#' close. Coarser LOD on dense inputs, but the file is still fully valid
+#' COPC. Use when output size matters more than progressive-zoom quality.
+#'
+#' \strong{Minimum file / minimum writer RAM.} \code{max_extra_depth = 0,
+#' max_points_per_chunk = 500000}. Largest chunks, smallest hierarchy,
+#' fewest spill cells. Trade-off: a single LAZ chunk holds 500k points,
+#' so spatial random-access reads (zoom into a small area) load more
+#' irrelevant data per chunk.
+#'
+#' \strong{Memory budgets for huge inputs.} These environment variables
+#' control writer RAM:
+#' \itemize{
+#'   \item \code{LASR_COPC_MEMORY_BUDGET} --- single global budget (bytes), split internally as ~35\% routing residents / 35\% pre-spill / 8\% write buffers / 22\% reserve. Easiest to set.
+#'   \item \code{LASR_COPC_RESIDENT_BUDGET}, \code{LASR_COPC_RAM_BUDGET}, \code{LASR_COPC_SPILL_WRITE_BUDGET} --- fine-grained per-component overrides (each takes precedence over the global split if set).
+#'   \item \code{LASR_COPC_MAX_SORT_MEMORY} --- caps the close-time per-chunk sort buffer (default 256 MB). When a chunk exceeds this the writer falls back to streamed unsorted emit (file is still valid; LAZ ratio slightly worse for the affected chunk).
+#' }
+#' Defaults are tuned for a few-GB input on a laptop. For multi-billion-point inputs (e.g.
+#' \code{LASR_COPC_MEMORY_BUDGET=4294967296} for a 4 GB total budget) raise the global knob
+#' rather than tuning each component.
+#'
+#' \strong{Collapse heuristic.} The writer absorbs any final octant holding fewer than 100
+#' points into its nearest existing ancestor (cap-aware: skips when the absorption would
+#' push the ancestor over \code{max_points_per_chunk}). This avoids tiny LAZ chunks. The
+#' floor is internal and not exposed via R; it matches LASlib's default and is rarely the
+#' wrong choice. Open an issue if your workload needs a different value.
 write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense", experimental_writer = FALSE, max_extra_depth = NA, max_points_per_chunk = NA)
 {
   ofile = normalizePath(ofile, mustWork = FALSE)
