@@ -8,6 +8,7 @@
 #include <cstring>
 #include <random>
 #include <sstream>
+#include <utility>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -331,27 +332,33 @@ bool COPCspill::enforce_budget()
   if (cells.empty()) return true;
 
   const U64 low_water = (U64)((double)ram_budget * 0.9);
+  if (agg_ram <= low_water) return true;
 
-  while (agg_ram > low_water)
+  // Single-pass batch eviction. The previous implementation re-scanned
+  // every cell to find the largest RAM-resident, spilled it, and looped
+  // — O(N²) in the cell count. With ~144k cells on the sofi run that
+  // pattern dominated CPU once the writer's flush_hot_octant started
+  // feeding us appends faster than we could spill them. Same fix shape
+  // as COPCwriter::enforce_resident_budget: snapshot, sort heaviest-
+  // first, drain until under low_water.
+  std::vector<std::pair<size_t, EPTkey>> sorted;
+  sorted.reserve(cells.size());
+  for (auto& kv : cells)
   {
-    EPTkey victim_key;
-    size_t victim_size = 0;
-    bool found = false;
-    for (auto& kv : cells)
-    {
-      if (kv.second.spilled) continue;
-      if (kv.second.ram.size() > victim_size)
-      {
-        victim_size = kv.second.ram.size();
-        victim_key = kv.first;
-        found = true;
-      }
-    }
-    if (!found) break; // nothing RAM-resident left to evict
+    if (kv.second.spilled) continue;
+    if (kv.second.ram.empty()) continue;
+    sorted.emplace_back(kv.second.ram.size(), kv.first);
+  }
+  std::sort(sorted.begin(), sorted.end(),
+            [](const auto& a, const auto& b) { return a.first > b.first; });
 
-    auto it = cells.find(victim_key);
-    if (it == cells.end()) break;
-    if (!spill_cell(victim_key, it->second)) return false;
+  for (const auto& kv : sorted)
+  {
+    if (agg_ram <= low_water) break;
+
+    auto it = cells.find(kv.second);
+    if (it == cells.end()) continue;
+    if (!spill_cell(kv.second, it->second)) return false;
   }
 
   // Persistent budget overrun: nothing left to evict from the RAM-resident
