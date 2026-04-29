@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
 #include <vector>
 
 #include "laswriter_las.hpp"
@@ -403,11 +404,27 @@ bool COPCwriter::write_point(const LASpoint* p)
 //      cap, producing a chunk that may exceed max_points_per_octant.
 //      Either way the leaf chunk size is surfaced by the
 //      end-of-finalize oversize warning.
+// Conservative per-resident-entry overhead used in budget accounting. The
+// real heap cost per voxel is ResidentEntry (32 B) + a malloc'd vector<U8>
+// of point_size bytes (~48 B with allocator rounding for PDRF 6/7/8) +
+// the unordered_map<int, ResidentEntry> bucket node (~50 B: int key,
+// 32 B value, next-ptr, cached hash) + per-allocation libc bookkeeping
+// (~16 B per malloc). That sums to roughly 140 B per voxel for a 30-byte
+// point on macOS/libc++. The previous accounting only counted ~62 B (just
+// payload + sizeof(ResidentEntry)), so resident_budget undercounted real
+// RSS by ~2.4×. 128 B is a conservative fixed overhead that:
+//   - lands close to the observed cost on platforms we care about, and
+//   - intentionally overcounts slightly (favouring "RSS stays under
+//     budget" over "budget headroom is fully used") since allocator
+//     behaviour varies across libc/platforms.
+// Used both by route_or_spill (insert) and flush_hot_octant (free) so
+// the budget bookkeeping stays balanced.
+static constexpr std::size_t RESIDENT_ENTRY_ACCOUNTED_OVERHEAD = 128;
+
 bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_depth)
 {
   std::vector<U8> bytes = std::move(bytes_in);
   const I32 cap = max_points_per_octant > 0 ? max_points_per_octant : 100000;
-  const std::size_t per_entry_overhead = sizeof(ResidentEntry);
 
   bool inserted_resident = false;
   for (;;)
@@ -436,7 +453,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
         ResidentEntry e;
         e.hash = hash;
         e.bytes = std::move(bytes);
-        const std::size_t added = e.bytes.size() + per_entry_overhead;
+        const std::size_t added = e.bytes.size() + RESIDENT_ENTRY_ACCOUNTED_OVERHEAD;
         voxels.emplace(cell_d, std::move(e));
         resident_bytes += added;
         octant_bytes[k_d] += added;
@@ -538,7 +555,7 @@ bool COPCwriter::flush_hot_octant(const EPTkey& key)
       fail(std::string("COPCspill error: ") + spill->last_error());
       return false;
     }
-    freed += e.bytes.size() + sizeof(ResidentEntry);
+    freed += e.bytes.size() + RESIDENT_ENTRY_ACCOUNTED_OVERHEAD;
   }
   occupancy.erase(it);
   flushed_octants.insert(key);
@@ -568,26 +585,34 @@ bool COPCwriter::enforce_resident_budget()
     if (a.y != b.y) return a.y < b.y;
     return a.z < b.z;
   };
+  // Single-pass batch flush. The previous "find heaviest, flush, repeat"
+  // loop was O(N_octants^2) per enforce trigger when octants were
+  // similarly-sized: each iteration scanned the whole map and only freed
+  // ~1/N of the budget, requiring O(N) scans of an O(N) map. On the sofi
+  // input (~50k active octants) this dominated CPU at intake despite the
+  // incremental octant_bytes tracker.
+  //
+  // Snapshot+sort once, then drain from heaviest until under low_water.
+  // O(N log N) per call; typically called only a handful of times for an
+  // entire write because hysteresis prevents re-trigger on each insert.
   const std::uint64_t low_water = resident_budget / 2;
-  while (resident_bytes > low_water && !octant_bytes.empty())
+  if (resident_bytes <= low_water || octant_bytes.empty()) return true;
+
+  std::vector<std::pair<std::uint64_t, EPTkey>> sorted;
+  sorted.reserve(octant_bytes.size());
+  for (const auto& kv : octant_bytes) sorted.emplace_back(kv.second, kv.first);
+  // Heaviest first; (depth, x, y, z) tie-break preserves determinism.
+  std::sort(sorted.begin(), sorted.end(),
+            [&key_less](const auto& a, const auto& b) {
+              if (a.first != b.first) return a.first > b.first;
+              return key_less(a.second, b.second);
+            });
+
+  for (const auto& kv : sorted)
   {
-    EPTkey heaviest;
-    bool have_winner = false;
-    std::uint64_t heaviest_bytes = 0;
-    for (const auto& kv : octant_bytes)
-    {
-      const std::uint64_t b = kv.second;
-      if (!have_winner ||
-          b > heaviest_bytes ||
-          (b == heaviest_bytes && key_less(kv.first, heaviest)))
-      {
-        heaviest_bytes = b;
-        heaviest = kv.first;
-        have_winner = true;
-      }
-    }
-    if (!have_winner || heaviest_bytes == 0) break;
-    if (!flush_hot_octant(heaviest)) return false;
+    if (resident_bytes <= low_water) break;
+    if (kv.first == 0) break;
+    if (!flush_hot_octant(kv.second)) return false;
   }
   return true;
 }

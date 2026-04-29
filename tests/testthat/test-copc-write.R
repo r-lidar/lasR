@@ -137,3 +137,45 @@ test_that("write_copc produces progressive LOD across depths",
   expect_lte(d1, total)
   expect_equal(exec(reader() + summarise(), on = o)$npoints, total)
 })
+
+test_that("write_copc honours a tiny LASR_COPC_RESIDENT_BUDGET (forces flush path)",
+{
+  # bcts_1.laz holds enough points that a 1 MB resident budget will fire
+  # enforce_resident_budget many times during intake (the new batch-flush
+  # path at COPCwriter.cpp:581). Without exercising it, regressions in
+  # flush_hot_octant accounting / wb_lru bookkeeping wouldn't be caught
+  # by the small-input default-budget tests above.
+  f = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
+  skip_if(f == "", "bcts_1.laz not available")
+
+  prev_resident = Sys.getenv("LASR_COPC_RESIDENT_BUDGET", unset = NA)
+  prev_ram      = Sys.getenv("LASR_COPC_RAM_BUDGET",      unset = NA)
+  prev_wb       = Sys.getenv("LASR_COPC_SPILL_WRITE_BUDGET", unset = NA)
+  Sys.setenv(LASR_COPC_RESIDENT_BUDGET   = as.character(1024L * 1024L))   # 1 MB
+  Sys.setenv(LASR_COPC_RAM_BUDGET        = as.character(1024L * 1024L))   # 1 MB
+  Sys.setenv(LASR_COPC_SPILL_WRITE_BUDGET = as.character(2L * 1024L * 1024L)) # 2 MB
+  on.exit({
+    if (is.na(prev_resident)) Sys.unsetenv("LASR_COPC_RESIDENT_BUDGET") else Sys.setenv(LASR_COPC_RESIDENT_BUDGET = prev_resident)
+    if (is.na(prev_ram))      Sys.unsetenv("LASR_COPC_RAM_BUDGET")      else Sys.setenv(LASR_COPC_RAM_BUDGET = prev_ram)
+    if (is.na(prev_wb))       Sys.unsetenv("LASR_COPC_SPILL_WRITE_BUDGET") else Sys.setenv(LASR_COPC_SPILL_WRITE_BUDGET = prev_wb)
+  }, add = TRUE)
+
+  o1 = tempfile(fileext = ".copc.laz")
+  o2 = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(c(o1, o2)), add = TRUE)
+
+  # Two writes with the same tiny budget must succeed and must produce
+  # identical output (the flush-path order must remain deterministic).
+  exec(reader() + write_las(o1, experimental_writer = TRUE), on = f)
+  exec(reader() + write_las(o2, experimental_writer = TRUE), on = f)
+
+  src_n = exec(reader() + summarise(), on = f)$npoints
+  expect_equal(exec(reader() + summarise(), on = o1)$npoints, src_n)
+  expect_equal(exec(reader() + summarise(), on = o2)$npoints, src_n)
+
+  # Same-input, same-budget runs must be byte-stable across the flush
+  # path — protects flush_hot_octant ordering, wb_lru tie-break, and the
+  # batch-flush sort from regressions.
+  expect_equal(file.info(o1)$size, file.info(o2)$size)
+  expect_equal(unname(tools::md5sum(o1)), unname(tools::md5sum(o2)))
+})
