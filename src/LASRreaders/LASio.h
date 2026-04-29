@@ -35,6 +35,7 @@ public:
   void reset_accessor() override;
   void set_copc_max_depth(int depth);
   void set_copc_density(int density);
+  void set_copc_max_extra_depth(int extra) { copc_max_extra_depth = extra; }
   void set_use_new_copc_writer(bool b) { use_new_copc_writer = b; }
   int64_t p_count() override;
 
@@ -88,6 +89,9 @@ private:
 
   int copc_depth;
   int copc_density;
+  // -1 = no extra cap (writer's hard depth limit applies). 0 = compact:
+  // never bump past auto heuristic. >0 = bump up to N levels.
+  int copc_max_extra_depth = -1;
   // When true and the output path ends in .copc.laz, route to the new
   // bounded-memory streaming COPCwriter. Otherwise the .copc.laz output is
   // handled by LASlib's in-memory LASwriterCOPC (the historical default).

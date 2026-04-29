@@ -32,6 +32,10 @@ private:
   bool experimental_writer;
   short copc_density;
   short copc_depth;
+  // Auto-mode-only cap on adaptive depth bumping past the heuristic.
+  // -1 = no extra cap (writer's HARD_DEPTH_LIMIT). 0 = "compact mode":
+  // never bump past the heuristic depth.
+  short copc_max_extra_depth;
   unsigned char version_minor;
   unsigned char point_format;
   std::vector<AttributeAccessor> core_accessors;

@@ -342,21 +342,28 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   if (max_depth < 0)                max_depth = 0;
   if (!copc_depth_user_set && max_depth > 10) max_depth = 10; // LASlib parity for auto
 
-  // Routing cap, three-way:
-  //   - user-set:                  hard cap at max_depth, no bumping. The
-  //     user asked for an exact depth, honour it (forced LOD).
-  //   - auto, max_depth == 0:      single-chunk fast path. The auto
-  //     heuristic decided the whole file fits under cap at root, so emit
-  //     one chunk holding everything (matches LAStools' behaviour and
-  //     avoids ~17 chunks of artificial hierarchy + per-chunk LAZ
-  //     overhead on small inputs). At this size the LOD benefit is weak
-  //     anyway — the depth-0 sample is most of the file. Users who want
-  //     LOD on small inputs can force it via explicit max_depth > 0.
-  //   - auto, max_depth > 0:       progressive LOD with adaptive depth
-  //     bumping up to HARD_DEPTH_LIMIT to keep chunks under cap.
-  routing_max_depth = copc_depth_user_set
-                        ? max_depth
-                        : (max_depth == 0 ? 0 : HARD_DEPTH_LIMIT);
+  // Routing cap, four-way (max_extra_depth opens an auto-mode tuning):
+  //   - user-set:                  hard cap at max_depth, no bumping.
+  //   - auto, max_depth == 0:      single-chunk fast path.
+  //   - auto, max_depth > 0,
+  //     max_extra_depth >= 0:      compact-ish — bump up to N levels
+  //                                past the heuristic. max_extra_depth=0
+  //                                disables bumping entirely (LAStools-
+  //                                like compact mode); fewer chunks,
+  //                                smaller hierarchy + spill footprint
+  //                                at the cost of coarser LOD on dense
+  //                                inputs.
+  //   - auto, max_depth > 0,
+  //     max_extra_depth < 0:       full bumping up to HARD_DEPTH_LIMIT
+  //                                (default — finest LOD).
+  if (copc_depth_user_set)
+    routing_max_depth = max_depth;
+  else if (max_depth == 0)
+    routing_max_depth = 0;
+  else if (copc_max_extra_depth >= 0)
+    routing_max_depth = std::min<I32>(max_depth + copc_max_extra_depth, HARD_DEPTH_LIMIT);
+  else
+    routing_max_depth = HARD_DEPTH_LIMIT;
 
   // Memory budgeting, three layers of precedence:
   //   1. LASR_COPC_<COMPONENT>_BUDGET  — wins for that component
@@ -371,9 +378,12 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   //   - write buffers: 8%
   //   - reserve: 22% (implicit, not allocated to a component)
   // 78% explicit + 22% reserve. Chosen so the reserve covers what the
-  // explicit budgets don't track: per-octant cell_to_idx nodes,
-  // unordered_map bucket overhead, allocator fragmentation, and the
-  // close-time sort buffer for the largest emitted chunk.
+  // explicit budgets don't track: the outer-level occupancy /
+  // octant_bytes / flushed_octants maps, allocator fragmentation,
+  // LASZip encoder state across the emitted chunks, the close-time
+  // sort buffer for the largest emitted chunk, and read-side buffers.
+  // (The per-octant cell_to_idx is now a flat vector-backed table whose
+  // arrays are accounted via capacity deltas alongside bytes/cells/hashes.)
   std::uint64_t mem_budget    = env_memory_budget();
   std::uint64_t resident_env  = env_resident_budget();
   std::uint64_t ram_env       = env_ram_budget_writer_side();
@@ -500,15 +510,72 @@ bool COPCwriter::write_point(const LASpoint* p)
 //      cap, producing a chunk that may exceed max_points_per_octant.
 //      Either way the leaf chunk size is surfaced by the
 //      end-of-finalize oversize warning.
-// Per-voxel overhead used in budget accounting with the packed HotOctant
-// layout — the cell_to_idx unordered_map node (int key + U32 value +
-// next-ptr + cached hash + amortised bucket-array share). The three
-// parallel arrays (bytes/cells/hashes) are accounted via *capacity
-// deltas* on each push_back, which captures vector geometric growth
-// (capacity typically doubles) rather than just logical size. The
-// previous flat-overhead approach undercounted real RAM by up to 2×
-// because of that growth.
-static constexpr std::size_t RESIDENT_NODE_OVERHEAD = 64;
+// FlatI32U32Map implementation — open-addressed I32→U32 hash table with
+// linear probing. ~12 B amortised per entry vs ~50 B for unordered_map.
+U32 COPCwriter::FlatI32U32Map::mix(I32 x)
+{
+  U32 h = static_cast<U32>(x);
+  h ^= h >> 16;
+  h *= 0x85ebca6bu;
+  h ^= h >> 13;
+  h *= 0xc2b2ae35u;
+  h ^= h >> 16;
+  return h;
+}
+
+U32 COPCwriter::FlatI32U32Map::find(I32 cell) const
+{
+  if (keys.empty()) return UINT32_MAX;
+  const U32 mask = static_cast<U32>(keys.size() - 1);
+  U32 slot = mix(cell) & mask;
+  for (;;)
+  {
+    const I32 k = keys[slot];
+    if (k == cell) return values[slot];
+    if (k == -1)   return UINT32_MAX;
+    slot = (slot + 1u) & mask;
+  }
+}
+
+void COPCwriter::FlatI32U32Map::insert(I32 cell, U32 idx)
+{
+  // Initial table or load > 0.7 → grow (double, or 16 if empty). The
+  // load check is on (count + 1) so we never let a single insert push
+  // past the threshold.
+  if (keys.empty() || (count + 1) * 10 > keys.size() * 7)
+  {
+    const std::size_t new_cap = keys.empty() ? 16u : keys.size() * 2u;
+    std::vector<I32> new_keys(new_cap, -1);
+    std::vector<U32> new_values(new_cap, 0u);
+    const U32 new_mask = static_cast<U32>(new_cap - 1);
+    for (std::size_t i = 0; i < keys.size(); ++i)
+    {
+      const I32 k = keys[i];
+      if (k == -1) continue;
+      U32 slot = mix(k) & new_mask;
+      while (new_keys[slot] != -1) slot = (slot + 1u) & new_mask;
+      new_keys[slot]   = k;
+      new_values[slot] = values[i];
+    }
+    keys.swap(new_keys);
+    values.swap(new_values);
+  }
+  const U32 mask = static_cast<U32>(keys.size() - 1);
+  U32 slot = mix(cell) & mask;
+  while (keys[slot] != -1) slot = (slot + 1u) & mask;
+  keys[slot]   = cell;
+  values[slot] = idx;
+  ++count;
+}
+
+// Small per-voxel slack added on top of the capacity-delta accounting.
+// With the FlatI32U32Map (no per-entry node allocations) the only
+// non-array per-voxel cost is the malloc bookkeeping amortised across
+// the five vector allocations (bytes / cells / hashes /
+// cell_to_idx.keys / cell_to_idx.values), which doesn't scale with N.
+// 8 B is conservative slack for the libc++ vector header overhead and
+// any rounding-induced inaccuracy not captured by capacity().
+static constexpr std::size_t RESIDENT_NODE_OVERHEAD = 8;
 
 bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_depth)
 {
@@ -534,29 +601,34 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
       if (cell_d < 0) continue;
 
       auto& oct = occupancy[k_d];
-      auto it = oct.cell_to_idx.find(cell_d);
-      if (it == oct.cell_to_idx.end())
+      const U32 found_idx = oct.cell_to_idx.find(cell_d);
+      if (found_idx == UINT32_MAX)
       {
         // Voxel free. Claim it only if the octant still has cap room;
         // otherwise descend further (chunk-size cap).
         if ((I32)oct.cells.size() >= cap) continue;
         // Snapshot capacities before insertion so we can attribute any
         // vector growth (which doubles capacity) to this voxel's account.
+        // Includes the FlatI32U32Map's two arrays.
         const std::size_t cap_before =
             oct.bytes.capacity() +
             oct.cells.capacity()  * sizeof(I32) +
-            oct.hashes.capacity() * sizeof(U64);
+            oct.hashes.capacity() * sizeof(U64) +
+            oct.cell_to_idx.keys.capacity()   * sizeof(I32) +
+            oct.cell_to_idx.values.capacity() * sizeof(U32);
 
         const U32 idx = (U32)oct.cells.size();
         oct.cells.push_back(cell_d);
         oct.hashes.push_back(hash);
         oct.bytes.insert(oct.bytes.end(), bytes.begin(), bytes.end());
-        oct.cell_to_idx.emplace(cell_d, idx);
+        oct.cell_to_idx.insert(cell_d, idx);
 
         const std::size_t cap_after =
             oct.bytes.capacity() +
             oct.cells.capacity()  * sizeof(I32) +
-            oct.hashes.capacity() * sizeof(U64);
+            oct.hashes.capacity() * sizeof(U64) +
+            oct.cell_to_idx.keys.capacity()   * sizeof(I32) +
+            oct.cell_to_idx.values.capacity() * sizeof(U32);
         const std::size_t added = (cap_after - cap_before) + RESIDENT_NODE_OVERHEAD;
         resident_bytes += added;
         octant_bytes[k_d] += added;
@@ -565,7 +637,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
         break;
       }
 
-      const U32 idx = it->second;
+      const U32 idx = found_idx;
       if (hash > oct.hashes[idx])
       {
         // New point wins this voxel. Swap the in-arena slot with the
