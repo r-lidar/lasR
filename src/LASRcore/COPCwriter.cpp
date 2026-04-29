@@ -31,6 +31,49 @@ namespace
     return (std::uint64_t)n;
   }
 
+  // Parse LASR_COPC_MEMORY_BUDGET env var (bytes). Returns 0 if unset or
+  // invalid. This is the user-facing single knob — the writer splits it
+  // internally into resident / pre-spill RAM / write-buffer / reserve so
+  // operators don't have to juggle three independent budgets that all
+  // need tuning together. The split fractions (35/35/8/22) are picked so
+  // the implicit 22% reserve covers metadata, hash-table nodes, allocator
+  // fragmentation, LASZip encoder state, and other non-budgeted overhead.
+  // Specific per-component env vars still win if set — this is the
+  // fallback when only the global knob is provided.
+  std::uint64_t env_memory_budget()
+  {
+    const char* v = std::getenv("LASR_COPC_MEMORY_BUDGET");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    unsigned long long n = std::strtoull(v, &end, 10);
+    if (!end || *end != '\0' || n == 0) return 0;
+    return (std::uint64_t)n;
+  }
+
+  // Replicate COPCspill's env helpers here so the writer can apply the
+  // same precedence (specific > global-derived > default) and pass
+  // resolved values to the spill ctor. COPCspill itself still re-reads
+  // its own env vars and they win — this is just so the global knob
+  // works without a build-time coupling to spill internals.
+  std::uint64_t env_ram_budget_writer_side()
+  {
+    const char* v = std::getenv("LASR_COPC_RAM_BUDGET");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    unsigned long long n = std::strtoull(v, &end, 10);
+    if (!end || *end != '\0' || n == 0) return 0;
+    return (std::uint64_t)n;
+  }
+  std::uint64_t env_wb_budget_writer_side()
+  {
+    const char* v = std::getenv("LASR_COPC_SPILL_WRITE_BUDGET");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    unsigned long long n = std::strtoull(v, &end, 10);
+    if (!end || *end != '\0' || n == 0) return 0;
+    return (std::uint64_t)n;
+  }
+
   // Extract the three fields (GPS time, scanner channel, return number) used
   // as the within-chunk sort key. Layout matches PDRF 6/7/8 point records.
   // Same semantics as the helpers in laswriter_copc.cpp:50-52.
@@ -315,15 +358,67 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
                         ? max_depth
                         : (max_depth == 0 ? 0 : HARD_DEPTH_LIMIT);
 
-  // Apply env override for the in-RAM voxel-resident budget (writer-side).
-  // Defaults to 256 MB; bumped via LASR_COPC_RESIDENT_BUDGET=<bytes>.
-  // Independent from COPCspill's LASR_COPC_RAM_BUDGET — on huge files both
-  // need bumping or the unset one becomes the bottleneck.
-  if (std::uint64_t env_b = env_resident_budget(); env_b > 0)
-    resident_budget = env_b;
+  // Memory budgeting, three layers of precedence:
+  //   1. LASR_COPC_<COMPONENT>_BUDGET  — wins for that component
+  //   2. LASR_COPC_MEMORY_BUDGET / split — convenience knob, splits one
+  //      total across resident/ram/wb with an implicit ~22% reserve for
+  //      hash-table nodes, fragmentation, LASZip state, R baseline, etc.
+  //   3. Built-in defaults (256 MB resident, 256 MB pre-spill, 128 MB wb)
+  //
+  // Split fractions of MEMORY_BUDGET when used:
+  //   - resident: 35%
+  //   - pre-spill RAM: 35%
+  //   - write buffers: 8%
+  //   - reserve: 22% (implicit, not allocated to a component)
+  // 78% explicit + 22% reserve. Chosen so the reserve covers what the
+  // explicit budgets don't track: per-octant cell_to_idx nodes,
+  // unordered_map bucket overhead, allocator fragmentation, and the
+  // close-time sort buffer for the largest emitted chunk.
+  std::uint64_t mem_budget    = env_memory_budget();
+  std::uint64_t resident_env  = env_resident_budget();
+  std::uint64_t ram_env       = env_ram_budget_writer_side();
+  std::uint64_t wb_env        = env_wb_budget_writer_side();
+
+  if (resident_env > 0)
+    resident_budget = resident_env;
+  else if (mem_budget > 0)
+    resident_budget = (std::uint64_t)((double)mem_budget * 0.35);
+  // else keep built-in default
+
+  // Compute spill ctor args (COPCspill::ctor still re-reads its own env
+  // vars and they win — this is just so MEMORY_BUDGET works without a
+  // build-time coupling). Use COPCspill's own DEFAULT_* constants as the
+  // fallback so values stay in sync if those defaults move.
+  std::uint64_t spill_ram = (ram_env > 0) ? ram_env
+                          : (mem_budget > 0
+                              ? (std::uint64_t)((double)mem_budget * 0.35)
+                              : COPCspill::DEFAULT_RAM_BUDGET);
+  std::uint64_t spill_wb  = (wb_env > 0) ? wb_env
+                          : (mem_budget > 0
+                              ? (std::uint64_t)((double)mem_budget * 0.08)
+                              : COPCspill::DEFAULT_WRITE_BUF_BUDGET);
+
+  // Optional one-shot diagnostic: when LASR_COPC_DEBUG_BUDGETS is set,
+  // print the resolved (resident, ram, wb) trio so tests and operators
+  // can verify that LASR_COPC_MEMORY_BUDGET was actually parsed and
+  // split. Cheap and avoids exposing budget internals through the
+  // public R API.
+  if (const char* dbg = std::getenv("LASR_COPC_DEBUG_BUDGETS"); dbg && *dbg)
+  {
+    warning("COPC budgets resolved: resident=%llu spill_ram=%llu spill_wb=%llu (mem=%llu)\n",
+            (unsigned long long)resident_budget,
+            (unsigned long long)spill_ram,
+            (unsigned long long)spill_wb,
+            (unsigned long long)mem_budget);
+  }
 
   hierarchy = new COPChierarchy(*copc_header, max_depth, copc_density);
-  spill = new COPCspill(output_path, copc_header->point_data_record_length);
+  spill = new COPCspill(output_path, copc_header->point_data_record_length,
+                        spill_ram,
+                        COPCspill::DEFAULT_WRITE_BUF_SIZE,
+                        COPCspill::DEFAULT_FD_CAP,
+                        COPCspill::DEFAULT_CHECK_CADENCE,
+                        spill_wb);
 
   gpstime_minimum =  1e300;
   gpstime_maximum = -1e300;
