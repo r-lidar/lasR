@@ -233,8 +233,17 @@ bool COPCspill::append(const EPTkey& key, const U8* bytes)
 
 void COPCspill::append_ram(CellBuffer& cell, const U8* bytes)
 {
+  // Track capacity, not logical size. std::vector growth doubles capacity,
+  // so logical-N × point_size undercounts the real RAM footprint by up to
+  // 2× — the same bug as the writer-side residents until commit 39de3cf1.
+  // Snapshot capacity before/after the insert and add the delta to
+  // agg_ram. Drop/spill subtracts cell.ram.capacity() before releasing
+  // (see spill_cell / drop_octant) so the budget bookkeeping stays
+  // balanced even when many small cells trigger geometric growth.
+  const std::size_t cap_before = cell.ram.capacity();
   cell.ram.insert(cell.ram.end(), bytes, bytes + point_size);
-  agg_ram += point_size;
+  const std::size_t cap_after = cell.ram.capacity();
+  agg_ram += (cap_after - cap_before);
 }
 
 bool COPCspill::append_spilled(const EPTkey& key, CellBuffer& cell, const U8* bytes)
@@ -297,11 +306,12 @@ bool COPCspill::evict_write_buf(const EPTkey& key, CellBuffer& cell)
 
 bool COPCspill::enforce_write_buf_budget()
 {
-  // Drive aggregate write_buf capacity below the LOW WATER mark (50% of
-  // budget) so we don't get re-triggered on every append. Each iteration
-  // releases one cell's write_buf (write_buf_size bytes typically), so
-  // this is amortised cheap.
-  const U64 low_water = wb_budget / 2;
+  // Drive aggregate write_buf capacity below the LOW WATER mark (40% of
+  // budget) so we don't get re-triggered on every append, and so we
+  // leave headroom for transient bursts. Each iteration releases one
+  // cell's write_buf (write_buf_size bytes typically), so this is
+  // amortised cheap.
+  const U64 low_water = (U64)((double)wb_budget * 0.4);
   while (agg_write_buf_bytes > low_water && !wb_lru.empty())
   {
     EPTkey victim_key = wb_lru.front();
@@ -331,7 +341,13 @@ bool COPCspill::enforce_budget()
 {
   if (cells.empty()) return true;
 
-  const U64 low_water = (U64)((double)ram_budget * 0.9);
+  // Tighter low-water (0.4 of budget) creates more headroom after each
+  // enforce, so it doesn't re-trigger on the very next append. Was 0.9 —
+  // too close to budget under heavy spill churn — and 0.5 was already
+  // enough to amortise but leaves less reserve for fragmentation /
+  // metadata. 0.4 trades a few extra spill cells per enforce for a
+  // larger steady-state cushion.
+  const U64 low_water = (U64)((double)ram_budget * 0.4);
   if (agg_ram <= low_water) return true;
 
   // Single-pass batch eviction. The previous implementation re-scanned
@@ -340,14 +356,15 @@ bool COPCspill::enforce_budget()
   // pattern dominated CPU once the writer's flush_hot_octant started
   // feeding us appends faster than we could spill them. Same fix shape
   // as COPCwriter::enforce_resident_budget: snapshot, sort heaviest-
-  // first, drain until under low_water.
+  // first (by capacity, since that's what costs RAM and what agg_ram
+  // tracks), drain until under low_water.
   std::vector<std::pair<size_t, EPTkey>> sorted;
   sorted.reserve(cells.size());
   for (auto& kv : cells)
   {
     if (kv.second.spilled) continue;
     if (kv.second.ram.empty()) continue;
-    sorted.emplace_back(kv.second.ram.size(), kv.first);
+    sorted.emplace_back(kv.second.ram.capacity(), kv.first);
   }
   std::sort(sorted.begin(), sorted.end(),
             [](const auto& a, const auto& b) { return a.first > b.first; });
@@ -397,7 +414,11 @@ bool COPCspill::spill_cell(const EPTkey& key, CellBuffer& cell)
     }
   }
 
-  agg_ram -= cell.ram.size();
+  // Subtract the cell's vector CAPACITY, not its logical size. Capacity
+  // is what was added to agg_ram by append_ram (which now tracks growth
+  // deltas); subtracting size would leak the over-allocated bytes into
+  // agg_ram.
+  agg_ram -= cell.ram.capacity();
   std::vector<U8>().swap(cell.ram); // release capacity, not just .clear()
   // write_buf is allocated lazily by append_spilled now; spill_cell
   // doesn't pre-reserve. This avoids num_spilled_cells * write_buf_size
@@ -627,7 +648,8 @@ void COPCspill::drop_octant(const std::vector<EPTkey>& leaves)
 
     if (!cell.spilled)
     {
-      agg_ram -= cell.ram.size();
+      // Subtract capacity to match append_ram's growth-aware bookkeeping.
+      agg_ram -= cell.ram.capacity();
     }
     else
     {

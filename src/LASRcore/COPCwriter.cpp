@@ -610,7 +610,9 @@ bool COPCwriter::enforce_resident_budget()
   // Snapshot+sort once, then drain from heaviest until under low_water.
   // O(N log N) per call; typically called only a handful of times for an
   // entire write because hysteresis prevents re-trigger on each insert.
-  const std::uint64_t low_water = resident_budget / 2;
+  // Low_water at 40% (was 50%) leaves an extra 10% as headroom for
+  // metadata, fragmentation, and transient peaks during finalize.
+  const std::uint64_t low_water = (std::uint64_t)((double)resident_budget * 0.4);
   if (resident_bytes <= low_water || octant_bytes.empty()) return true;
 
   std::vector<std::pair<std::uint64_t, EPTkey>> sorted;
