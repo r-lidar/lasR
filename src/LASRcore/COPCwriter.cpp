@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <numeric>
 #include <utility>
 #include <vector>
 
@@ -404,27 +405,21 @@ bool COPCwriter::write_point(const LASpoint* p)
 //      cap, producing a chunk that may exceed max_points_per_octant.
 //      Either way the leaf chunk size is surfaced by the
 //      end-of-finalize oversize warning.
-// Conservative per-resident-entry overhead used in budget accounting. The
-// real heap cost per voxel is ResidentEntry (32 B) + a malloc'd vector<U8>
-// of point_size bytes (~48 B with allocator rounding for PDRF 6/7/8) +
-// the unordered_map<int, ResidentEntry> bucket node (~50 B: int key,
-// 32 B value, next-ptr, cached hash) + per-allocation libc bookkeeping
-// (~16 B per malloc). That sums to roughly 140 B per voxel for a 30-byte
-// point on macOS/libc++. The previous accounting only counted ~62 B (just
-// payload + sizeof(ResidentEntry)), so resident_budget undercounted real
-// RSS by ~2.4×. 128 B is a conservative fixed overhead that:
-//   - lands close to the observed cost on platforms we care about, and
-//   - intentionally overcounts slightly (favouring "RSS stays under
-//     budget" over "budget headroom is fully used") since allocator
-//     behaviour varies across libc/platforms.
-// Used both by route_or_spill (insert) and flush_hot_octant (free) so
-// the budget bookkeeping stays balanced.
-static constexpr std::size_t RESIDENT_ENTRY_ACCOUNTED_OVERHEAD = 128;
+// Per-voxel overhead used in budget accounting with the packed HotOctant
+// layout — the cell_to_idx unordered_map node (int key + U32 value +
+// next-ptr + cached hash + amortised bucket-array share). The three
+// parallel arrays (bytes/cells/hashes) are accounted via *capacity
+// deltas* on each push_back, which captures vector geometric growth
+// (capacity typically doubles) rather than just logical size. The
+// previous flat-overhead approach undercounted real RAM by up to 2×
+// because of that growth.
+static constexpr std::size_t RESIDENT_NODE_OVERHEAD = 64;
 
 bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_depth)
 {
   std::vector<U8> bytes = std::move(bytes_in);
   const I32 cap = max_points_per_octant > 0 ? max_points_per_octant : 100000;
+  const std::size_t point_size = (std::size_t)copc_header->point_data_record_length;
 
   bool inserted_resident = false;
   for (;;)
@@ -443,18 +438,31 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
       I32 cell_d = hierarchy->compute_voxel_cell(point, k_d);
       if (cell_d < 0) continue;
 
-      auto& voxels = occupancy[k_d];
-      auto it = voxels.find(cell_d);
-      if (it == voxels.end())
+      auto& oct = occupancy[k_d];
+      auto it = oct.cell_to_idx.find(cell_d);
+      if (it == oct.cell_to_idx.end())
       {
         // Voxel free. Claim it only if the octant still has cap room;
         // otherwise descend further (chunk-size cap).
-        if ((I32)voxels.size() >= cap) continue;
-        ResidentEntry e;
-        e.hash = hash;
-        e.bytes = std::move(bytes);
-        const std::size_t added = e.bytes.size() + RESIDENT_ENTRY_ACCOUNTED_OVERHEAD;
-        voxels.emplace(cell_d, std::move(e));
+        if ((I32)oct.cells.size() >= cap) continue;
+        // Snapshot capacities before insertion so we can attribute any
+        // vector growth (which doubles capacity) to this voxel's account.
+        const std::size_t cap_before =
+            oct.bytes.capacity() +
+            oct.cells.capacity()  * sizeof(I32) +
+            oct.hashes.capacity() * sizeof(U64);
+
+        const U32 idx = (U32)oct.cells.size();
+        oct.cells.push_back(cell_d);
+        oct.hashes.push_back(hash);
+        oct.bytes.insert(oct.bytes.end(), bytes.begin(), bytes.end());
+        oct.cell_to_idx.emplace(cell_d, idx);
+
+        const std::size_t cap_after =
+            oct.bytes.capacity() +
+            oct.cells.capacity()  * sizeof(I32) +
+            oct.hashes.capacity() * sizeof(U64);
+        const std::size_t added = (cap_after - cap_before) + RESIDENT_NODE_OVERHEAD;
         resident_bytes += added;
         octant_bytes[k_d] += added;
         inserted_resident = true;
@@ -462,16 +470,17 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
         break;
       }
 
-      if (hash > it->second.hash)
+      const U32 idx = it->second;
+      if (hash > oct.hashes[idx])
       {
-        // New point wins this voxel. Evict the resident and continue
-        // routing it from the next depth in the next outer-loop pass.
-        // No net change in resident_bytes (one in, one out, same size).
-        ResidentEntry evicted = std::move(it->second);
-        it->second.hash = hash;
-        it->second.bytes = std::move(bytes);
-        bytes = std::move(evicted.bytes);
-        hash = evicted.hash;
+        // New point wins this voxel. Swap the in-arena slot with the
+        // caller-provided `bytes` buffer using std::swap_ranges — no
+        // allocation per replacement, no malloc churn. The evicted
+        // bytes end up in `bytes` and continue routing from depth+1.
+        // Hash is a plain swap.
+        U8* slot = oct.bytes.data() + (std::size_t)idx * point_size;
+        std::swap_ranges(bytes.data(), bytes.data() + point_size, slot);
+        std::swap(hash, oct.hashes[idx]);
         start_depth = d + 1;
         placed = false;
         goto next_iter;
@@ -536,31 +545,37 @@ bool COPCwriter::flush_hot_octant(const EPTkey& key)
 {
   auto it = occupancy.find(key);
   if (it == occupancy.end()) return true; // nothing to do
-  auto& voxels = it->second;
+  auto& oct = it->second;
 
-  // Append residents in deterministic order (sorted cell id) so spill's
-  // per-leaf append sequence matches the close-time ordering used by the
-  // sort routine — keeps byte-stable output.
-  std::vector<I32> cells;
-  cells.reserve(voxels.size());
-  for (const auto& vk : voxels) cells.push_back(vk.first);
-  std::sort(cells.begin(), cells.end());
+  // Append residents in deterministic order (sorted by cell id) so spill's
+  // per-leaf append sequence is byte-stable across runs. With the packed
+  // layout, sort indices into the parallel arrays rather than copying
+  // (cell, idx) pairs.
+  const std::size_t point_size = (std::size_t)copc_header->point_data_record_length;
+  const std::size_t n = oct.cells.size();
+  std::vector<U32> sort_idx(n);
+  std::iota(sort_idx.begin(), sort_idx.end(), 0u);
+  std::sort(sort_idx.begin(), sort_idx.end(),
+            [&oct](U32 a, U32 b) { return oct.cells[a] < oct.cells[b]; });
 
-  std::size_t freed = 0;
-  for (I32 cell : cells)
+  for (U32 i : sort_idx)
   {
-    auto& e = voxels[cell];
-    if (!spill->append(key, e.bytes.data()))
+    if (!spill->append(key, oct.bytes.data() + (std::size_t)i * point_size))
     {
       fail(std::string("COPCspill error: ") + spill->last_error());
       return false;
     }
-    freed += e.bytes.size() + RESIDENT_ENTRY_ACCOUNTED_OVERHEAD;
   }
+  // Free exactly what was added. octant_bytes[key] was incremented by the
+  // capacity-delta-aware accounting at insert time, so it includes any
+  // vector growth overshoot — using it here keeps resident_bytes balanced
+  // even when the vector grew geometrically beyond the logical N.
+  auto bb_it = octant_bytes.find(key);
+  const std::size_t freed = (bb_it != octant_bytes.end()) ? bb_it->second : 0;
+  if (bb_it != octant_bytes.end()) octant_bytes.erase(bb_it);
   occupancy.erase(it);
   flushed_octants.insert(key);
   resident_bytes = (resident_bytes >= freed) ? (resident_bytes - freed) : 0;
-  octant_bytes.erase(key);
   return true;
 }
 
