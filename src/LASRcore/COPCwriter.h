@@ -46,6 +46,10 @@ public:
   // when copc_depth is user-set (an explicit max_depth is already a
   // hard cap and bumping is disabled in that mode).
   void set_copc_max_extra_depth(I32 extra) { copc_max_extra_depth = extra; }
+  // Per-chunk cap. Default 100,000 matches LASlib. Larger values
+  // produce fewer, larger chunks: less hierarchy + spill metadata,
+  // bigger close-time sort buffers, coarser spatial random access.
+  void set_max_points_per_octant(I32 n) { if (n > 0) max_points_per_octant = n; }
 
   // Open the output file. Applies the COPC header transformations (upgrade to
   // LAS 1.4, promote PDRF to 6/7/8, add COPC info VLR placeholder and EPT

@@ -45,6 +45,7 @@ bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
   copc_density = stage.value("density", 256);
   copc_depth = stage.value("max_depth", -1);
   copc_max_extra_depth = stage.value("max_extra_depth", -1);
+  copc_max_points_per_chunk = stage.value("max_points_per_chunk", -1);
   version_minor = stage.value("version", 0xFF); // 0xFF auto-detect
   point_format = stage.value("pdrf", 0xFF);
 
@@ -209,6 +210,7 @@ bool LASRlaswriter::set_header(Header*& header)
     lasio->set_copc_density(copc_density);
     lasio->set_use_new_copc_writer(experimental_writer);
     lasio->set_copc_max_extra_depth(copc_max_extra_depth);
+    lasio->set_copc_max_points_per_chunk(copc_max_points_per_chunk);
   }
   catch (const std::exception& e)
   {

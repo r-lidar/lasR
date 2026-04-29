@@ -426,7 +426,6 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   spill = new COPCspill(output_path, copc_header->point_data_record_length,
                         spill_ram,
                         COPCspill::DEFAULT_WRITE_BUF_SIZE,
-                        COPCspill::DEFAULT_FD_CAP,
                         COPCspill::DEFAULT_CHECK_CADENCE,
                         spill_wb);
 
@@ -833,11 +832,28 @@ bool COPCwriter::finalize_and_write()
     }
   }
 
+  // Phase boundary: residents are now fully flushed to spill, the
+  // bytes/cells/hashes/cell_to_idx arenas inside `occupancy` are no
+  // longer needed, and `octant_bytes` was emptied by flush_hot_octant.
+  // Swap-clear all three so their bucket arrays are released back to
+  // the allocator before we allocate the close-time sort buffer and
+  // hierarchy's emit_copy. With ~50k+ active octants on huge inputs
+  // this routinely frees hundreds of MB of bucket-array memory and
+  // keeps peak finalize footprint small.
+  decltype(occupancy)().swap(occupancy);
+  decltype(octant_bytes)().swap(octant_bytes);
+  // flushed_octants is no longer consulted past this point either —
+  // routing has stopped. Release it too.
+  decltype(flushed_octants)().swap(flushed_octants);
+
   const U32 point_size = copc_header->point_data_record_length;
 
   // 1) Collapse the octree based on per-leaf counts.
   auto leaf_counts = spill->cell_counts();
   hierarchy->finalize(leaf_counts, min_points_per_chunk, max_points_per_octant);
+  // Release the temporary leaf_counts map — hierarchy has its own
+  // internal state now and we don't need this copy past finalize.
+  decltype(leaf_counts)().swap(leaf_counts);
 
   // 2) Iterate final octants in deterministic order. Emit real chunks for
   //    point_count > 0; record zero-size entries for placeholder ancestors.

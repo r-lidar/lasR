@@ -159,14 +159,12 @@ COPCspill::COPCspill(const std::string& output_path,
                      U32 point_record_size,
                      U64 ram_budget,
                      U32 spilled_write_buffer_size,
-                     U32 open_fd_cap,
                      U32 eviction_check_cadence,
                      U64 write_buf_budget)
   : output_path(output_path),
     point_size(point_record_size),
     ram_budget(ram_budget),
     write_buf_size(spilled_write_buffer_size),
-    fd_cap(open_fd_cap),
     check_cadence(eviction_check_cadence == 0 ? 1u : eviction_check_cadence),
     wb_budget(write_buf_budget)
 {
@@ -178,14 +176,12 @@ COPCspill::COPCspill(const std::string& output_path,
 
 COPCspill::~COPCspill()
 {
-  // Safety-net cleanup. Close any open handles first so rmdir can succeed.
-  for (auto& kv : cells)
+  // Safety-net cleanup. Close the shared spill log so rmdir can succeed
+  // (cleanup() unlinks the log file and the spill dir).
+  if (spill_log_handle)
   {
-    if (kv.second.file_handle)
-    {
-      std::fclose(kv.second.file_handle);
-      kv.second.file_handle = nullptr;
-    }
+    std::fclose(spill_log_handle);
+    spill_log_handle = nullptr;
   }
   cleanup();
 }
@@ -198,7 +194,6 @@ bool COPCspill::append(const EPTkey& key, const U8* bytes)
   if (it == cells.end())
   {
     CellBuffer cb;
-    cb.lru_pos = lru.end();
     cb.wb_lru_pos = wb_lru.end();
     auto ins = cells.emplace(key, std::move(cb));
     it = ins.first;
@@ -399,118 +394,55 @@ bool COPCspill::spill_cell(const EPTkey& key, CellBuffer& cell)
 {
   if (cell.spilled) return true;
 
-  if (!create_spill_dir_if_needed()) return false;
-
-  cell.file_path = build_cell_path(key);
-  if (!ensure_open(key, cell, "wb")) return false;
+  if (!open_spill_log_if_needed()) return false;
 
   if (!cell.ram.empty())
   {
-    size_t n = std::fwrite(cell.ram.data(), 1, cell.ram.size(), cell.file_handle);
-    if (n != cell.ram.size())
-    {
-      fail("write to spill file failed: " + cell.file_path);
-      return false;
-    }
+    U64 off = 0;
+    if (!append_to_spill_log(cell.ram.data(), cell.ram.size(), off)) return false;
+    cell.extents.push_back(Extent{off, (U32)cell.ram.size()});
   }
 
   // Subtract the cell's vector CAPACITY, not its logical size. Capacity
-  // is what was added to agg_ram by append_ram (which now tracks growth
+  // is what was added to agg_ram by append_ram (which tracks growth
   // deltas); subtracting size would leak the over-allocated bytes into
   // agg_ram.
   agg_ram -= cell.ram.capacity();
   std::vector<U8>().swap(cell.ram); // release capacity, not just .clear()
-  // write_buf is allocated lazily by append_spilled now; spill_cell
-  // doesn't pre-reserve. This avoids num_spilled_cells * write_buf_size
-  // becoming the dominant memory term on huge files (the sofi.copc.laz
-  // round-trip used to pin ~9 GB this way with ~144k spilled cells).
   cell.spilled = true;
   return true;
 }
 
 bool COPCspill::flush_write_buf(const EPTkey& key, CellBuffer& cell)
 {
-  // Flush moves bytes to disk but doesn't change the cell's RAM footprint:
-  // write_buf's capacity (write_buf_size) is fixed and is what agg_ram
-  // tracks for spilled cells.
+  // Append the buffered bytes to the shared spill log and record the
+  // extent on the cell. Keeps write_buf's capacity for the next append.
   if (cell.write_buf.empty()) return true;
-  if (!ensure_open(key, cell, "ab")) return false;
-  size_t n = std::fwrite(cell.write_buf.data(), 1, cell.write_buf.size(), cell.file_handle);
-  if (n != cell.write_buf.size())
-  {
-    fail("write to spill file failed: " + cell.file_path);
-    return false;
-  }
+  U64 off = 0;
+  if (!append_to_spill_log(cell.write_buf.data(), cell.write_buf.size(), off)) return false;
+  cell.extents.push_back(Extent{off, (U32)cell.write_buf.size()});
   cell.write_buf.clear();
   return true;
 }
 
-bool COPCspill::ensure_open(const EPTkey& key, CellBuffer& cell, const char* mode)
+bool COPCspill::open_spill_log_if_needed()
 {
-  if (cell.file_handle)
-  {
-    // Touch LRU position.
-    if (cell.lru_pos != lru.end())
-    {
-      lru.erase(cell.lru_pos);
-    }
-    lru.push_back(key);
-    cell.lru_pos = std::prev(lru.end());
-    return true;
-  }
+  if (spill_log_handle) return true;
 
-  // Enforce fd cap.
-  while (lru.size() >= fd_cap)
-  {
-    EPTkey oldest = lru.front();
-    lru.pop_front();
-    auto it = cells.find(oldest);
-    if (it != cells.end() && it->second.file_handle)
-    {
-      std::fclose(it->second.file_handle);
-      it->second.file_handle = nullptr;
-      it->second.lru_pos = lru.end();
-    }
-  }
-
-  cell.file_handle = std::fopen(cell.file_path.c_str(), mode);
-  if (!cell.file_handle)
-  {
-    fail("cannot open spill file: " + cell.file_path);
-    return false;
-  }
-  lru.push_back(key);
-  cell.lru_pos = std::prev(lru.end());
-  return true;
-}
-
-void COPCspill::close_handle(CellBuffer& cell)
-{
-  if (cell.file_handle)
-  {
-    std::fclose(cell.file_handle);
-    cell.file_handle = nullptr;
-  }
-  if (cell.lru_pos != lru.end())
-  {
-    lru.erase(cell.lru_pos);
-    cell.lru_pos = lru.end();
-  }
-}
-
-bool COPCspill::create_spill_dir_if_needed()
-{
-  if (spill_dir_created) return true;
-
+  // Resolve directory: env override or output's parent.
   const char* env_dir = std::getenv("LASR_SPILL_DIR");
   std::string parent = env_dir && *env_dir ? std::string(env_dir) : parent_dir(output_path);
   std::string base = file_basename(output_path);
 
+  // Same stale-dir check as before, but applied to the lock-style dir
+  // we used to create per-spill. Even though we now use a single file,
+  // we keep the spill directory pattern so an aborted previous run
+  // leaves a recognisable artifact and a future run's cleanup is safe.
   std::vector<std::string> stale;
   if (find_stale_spill_dirs(parent, base, stale))
   {
     std::ostringstream oss;
-    oss << "cannot create COPC spill directory: pre-existing dir(s) match '"
+    oss << "cannot create COPC spill log: pre-existing dir(s) match '"
         << base << ".copc-spill-*' in '" << parent
         << "'. Remove stale directories before retrying. Found:";
     for (const auto& s : stale) oss << " '" << s << "'";
@@ -522,22 +454,60 @@ bool COPCspill::create_spill_dir_if_needed()
   oss << parent << LASR_PATH_SEP << base << ".copc-spill-"
       << LASR_GETPID() << "-" << std::hex << random_suffix();
   spill_dir = oss.str();
-
   if (LASR_MKDIR(spill_dir.c_str()) != 0)
   {
     fail("failed to create COPC spill directory: " + spill_dir);
     return false;
   }
   spill_dir_created = true;
+
+  spill_log_path = spill_dir + LASR_PATH_SEP + "spill.log";
+  spill_log_handle = std::fopen(spill_log_path.c_str(), "w+b");
+  if (!spill_log_handle)
+  {
+    fail("cannot open spill log: " + spill_log_path);
+    return false;
+  }
+  spill_log_size = 0;
   return true;
 }
 
-std::string COPCspill::build_cell_path(const EPTkey& key) const
+// 64-bit seek wrapper. fseek with `long` truncates 64-bit offsets on
+// Windows (long is 32-bit there); use _fseeki64 / fseeko to keep
+// large spill logs working past 2 GB. Returns 0 on success.
+static int spill_seek64(FILE* fp, std::int64_t off, int whence)
 {
-  std::ostringstream oss;
-  oss << spill_dir << LASR_PATH_SEP
-      << key.d << "_" << key.x << "_" << key.y << "_" << key.z << ".bin";
-  return oss.str();
+#ifdef _WIN32
+  return _fseeki64(fp, off, whence);
+#else
+  return fseeko(fp, (off_t)off, whence);
+#endif
+}
+
+bool COPCspill::append_to_spill_log(const U8* bytes, std::size_t n, U64& out_offset)
+{
+  if (!spill_log_handle)
+  {
+    fail("internal error: append_to_spill_log called before open");
+    return false;
+  }
+  // Seek to end-of-log before writing. read_octant() leaves the file
+  // position somewhere inside the log after fseek+fread; without this
+  // explicit seek the next append would overwrite earlier extent data.
+  if (spill_seek64(spill_log_handle, (std::int64_t)spill_log_size, SEEK_SET) != 0)
+  {
+    fail("spill log seek-to-end failed: " + spill_log_path);
+    return false;
+  }
+  out_offset = spill_log_size;
+  std::size_t written = std::fwrite(bytes, 1, n, spill_log_handle);
+  if (written != n)
+  {
+    fail("write to spill log failed: " + spill_log_path);
+    return false;
+  }
+  spill_log_size += n;
+  return true;
 }
 
 std::unordered_map<EPTkey, U64, EPTKeyHasher> COPCspill::cell_counts() const
@@ -581,52 +551,44 @@ bool COPCspill::read_octant(const std::vector<EPTkey>& leaves, U8* out_buffer, U
     }
     else
     {
-      // Flush any pending writes, then rewind and stream contents into the buffer.
+      // Flush any pending writes (records the final extent), then walk
+      // each extent in order via the shared spill log. fseek + fread per
+      // extent — typical extent is ~64 KB (a write_buf flush) so the
+      // syscall overhead is amortised.
       if (!flush_write_buf(k, cell)) return false;
-      close_handle(cell);
-
-      FILE* f = std::fopen(cell.file_path.c_str(), "rb");
-      if (!f)
+      if (!spill_log_handle && !cell.extents.empty())
       {
-        fail("cannot open spill file for read: " + cell.file_path);
+        fail("read_octant: spill log not open but cell has extents");
         return false;
       }
-
-      // Stream in chunks to avoid a large temporary.
-      constexpr size_t CHUNK = 1 << 16;
-      U8 scratch[CHUNK];
-      while (true)
+      for (const Extent& e : cell.extents)
       {
-        size_t n = std::fread(scratch, 1, CHUNK, f);
-        if (n == 0) break;
-        if (cursor + n > end)
+        if (cursor + e.byte_size > end)
         {
-          std::fclose(f);
           fail("read_octant buffer overflow (spill)");
           return false;
         }
-        std::memcpy(cursor, scratch, n);
-        cursor += n;
-      }
-      // Distinguish EOF (clean end) from I/O error. ferror() on a stream
-      // that hit a read error is non-zero; without this check a short
-      // read from a truncated spill file would leave the tail of
-      // sort_buf uninitialized and pass through to the LAZ encoder.
-      const bool io_err = std::ferror(f) != 0;
-      std::fclose(f);
-      if (io_err)
-      {
-        fail("read_octant: I/O error reading spill file " + cell.file_path);
-        return false;
+        if (spill_seek64(spill_log_handle, (std::int64_t)e.offset, SEEK_SET) != 0)
+        {
+          fail("read_octant: fseek failed in spill log " + spill_log_path);
+          return false;
+        }
+        std::size_t n = std::fread(cursor, 1, e.byte_size, spill_log_handle);
+        if (n != e.byte_size)
+        {
+          fail("read_octant: short read from spill log " + spill_log_path);
+          return false;
+        }
+        cursor += e.byte_size;
       }
     }
   }
 
   // The caller sized byte_count = sum(cell.point_count * point_size) over
   // the supplied leaves; if cursor != end, either a leaf was missing
-  // (handled above) or a spill file was truncated relative to its
-  // tracked count. Both cases would otherwise feed uninitialized bytes
-  // through to LAZ encoding.
+  // (handled above) or the cell's recorded extents in the shared spill
+  // log don't sum to its tracked count. Both cases would otherwise feed
+  // uninitialized bytes through to LAZ encoding.
   if (cursor != end)
   {
     fail("read_octant: short read — gathered "
@@ -654,9 +616,9 @@ void COPCspill::drop_octant(const std::vector<EPTkey>& leaves)
     else
     {
       // Release write_buf capacity (if any) and remove from wb_lru —
-      // post-refactor the write_buf is lazy and tracked in its own
-      // budget, so dropping a spilled cell only affects agg_write_buf_bytes
-      // when it actually had a buffer.
+      // write_buf is lazy and tracked in its own budget, so dropping a
+      // spilled cell only affects agg_write_buf_bytes when it actually
+      // had a buffer.
       if (cell.write_buf.capacity() > 0)
       {
         if (agg_write_buf_bytes >= write_buf_size) agg_write_buf_bytes -= write_buf_size;
@@ -668,15 +630,11 @@ void COPCspill::drop_octant(const std::vector<EPTkey>& leaves)
         wb_lru.erase(cell.wb_lru_pos);
         cell.wb_lru_pos = wb_lru.end();
       }
-      close_handle(cell);
-      if (!cell.file_path.empty())
-      {
-#ifdef _WIN32
-        DeleteFileA(cell.file_path.c_str());
-#else
-        ::unlink(cell.file_path.c_str());
-#endif
-      }
+      // The cell's bytes in the shared spill log become unreferenced
+      // (dead bytes inside the file). We don't try to reclaim them — the
+      // whole log is unlinked at cleanup() and the OS reclaims the
+      // disk space then. Release the per-cell extents vector capacity.
+      std::vector<Extent>().swap(cell.extents);
     }
     cells.erase(it);
   }
@@ -684,19 +642,18 @@ void COPCspill::drop_octant(const std::vector<EPTkey>& leaves)
 
 void COPCspill::cleanup()
 {
-  // Close any open handles left over (e.g. on error paths).
-  for (auto& kv : cells)
+  // Close the shared spill log handle (if still open). The per-cell
+  // file_handle / open-fd LRU from the previous design are gone.
+  if (spill_log_handle)
   {
-    if (kv.second.file_handle)
-    {
-      std::fclose(kv.second.file_handle);
-      kv.second.file_handle = nullptr;
-    }
+    std::fclose(spill_log_handle);
+    spill_log_handle = nullptr;
   }
-  lru.clear();
 
   if (spill_dir_created)
   {
+    // remove_spill_dir() unlinks the spill log file along with the
+    // directory itself.
     remove_spill_dir(spill_dir);
     spill_dir_created = false;
   }

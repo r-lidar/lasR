@@ -211,6 +211,8 @@ void LASio::create(const std::string& file)
     copcwriter->set_copc_depth(copc_depth);
     copcwriter->set_copc_density(copc_density);
     copcwriter->set_copc_max_extra_depth(copc_max_extra_depth);
+    if (copc_max_points_per_chunk > 0)
+      copcwriter->set_max_points_per_octant(copc_max_points_per_chunk);
     if (!copcwriter->open(file.c_str(), lasheader, LAS_TOOLS_IO_OBUFFER_SIZE))
     {
       std::string err = copcwriter->last_error();
