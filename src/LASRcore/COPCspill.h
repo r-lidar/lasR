@@ -32,7 +32,8 @@ public:
             U64 ram_budget = 256ULL * 1024 * 1024,
             U32 spilled_write_buffer_size = 64 * 1024,
             U32 open_fd_cap = 256,
-            U32 eviction_check_cadence = 4096);
+            U32 eviction_check_cadence = 4096,
+            U64 write_buf_budget = 128ULL * 1024 * 1024);
 
   ~COPCspill();
 
@@ -78,14 +79,23 @@ private:
     std::vector<U8> ram;
 
     // Spilled state (spilled == true): ram is cleared; bytes live in the temp
-    // file. write_buf accumulates new appends until full, then flushes.
+    // file. write_buf is lazily allocated on the first append after spill,
+    // and is released by the LRU evictor when the global write-buffer budget
+    // is exceeded. A spilled cell with no write_buf simply re-allocates on
+    // its next append.
     bool spilled = false;
     std::string file_path;
     FILE* file_handle = nullptr;
     std::vector<U8> write_buf;
 
-    // Position in the LRU list when file_handle != nullptr; end() otherwise.
+    // Position in the open-fd LRU list when file_handle != nullptr; end()
+    // otherwise.
     std::list<EPTkey>::iterator lru_pos;
+
+    // Position in the write-buffer LRU list when write_buf has capacity;
+    // end() otherwise. Tracks the "active" set of write buffers so the
+    // evictor can pick the least-recently-touched one to release.
+    std::list<EPTkey>::iterator wb_lru_pos;
   };
 
   // Append to a RAM-resident cell. Updates agg_ram.
@@ -98,12 +108,30 @@ private:
   // Called every eviction_check_cadence appends.
   bool enforce_budget();
 
+  // Write-buffer eviction: while aggregate write_buf capacity is over the
+  // configured budget, flush + release the LRU cell's write_buf. Lets a
+  // huge fan-out of spilled cells share a small bounded RAM pool instead
+  // of each pinning write_buf_size bytes forever.
+  bool enforce_write_buf_budget();
+
   // Transition a RAM-resident cell to Spilled: write its ram vector to a temp
-  // file, clear ram, set spilled flags, allocate write_buf. Returns false on I/O error.
+  // file, clear ram, set spilled flags. write_buf is now lazily allocated by
+  // append_spilled, not here. Returns false on I/O error.
   bool spill_cell(const EPTkey& key, CellBuffer& cell);
 
-  // Flush the cell's write_buf to its temp file. Returns false on I/O error.
+  // Flush the cell's write_buf to its temp file, keeping its capacity for
+  // the next append. Returns false on I/O error.
   bool flush_write_buf(const EPTkey& key, CellBuffer& cell);
+
+  // Flush + release the cell's write_buf capacity. Removes the cell from
+  // wb_lru and decrements agg_write_buf_bytes. The cell stays spilled and
+  // can re-append later (the next append re-allocates write_buf).
+  bool evict_write_buf(const EPTkey& key, CellBuffer& cell);
+
+  // Mark `key`/`cell` as the most-recently-touched write_buf in wb_lru.
+  // Splices an existing entry to the back, or inserts at the back if absent.
+  // Caller is responsible for ensuring write_buf has capacity > 0.
+  void touch_wb_lru(const EPTkey& key, CellBuffer& cell);
 
   // Ensure the cell's file handle is open. Enforces fd cap by closing LRU entries.
   bool ensure_open(const EPTkey& key, CellBuffer& cell, const char* mode);
@@ -134,6 +162,15 @@ private:
 
   // LRU of cells whose file_handle is currently open. Front = least recently used.
   std::list<EPTkey> lru;
+
+  // Independent LRU of cells whose write_buf has capacity allocated. Front
+  // is the least-recently-touched (next eviction candidate). The aggregate
+  // capacity across all entries is tracked in agg_write_buf_bytes and kept
+  // under wb_budget by enforce_write_buf_budget().
+  std::list<EPTkey> wb_lru;
+  U64 wb_budget;
+  U64 agg_write_buf_bytes = 0;
+  bool wb_budget_warned = false;
 
   bool spill_dir_created = false;
   std::string spill_dir;
