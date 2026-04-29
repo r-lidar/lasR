@@ -97,6 +97,14 @@ public:
   // Called from close() on success and from the destructor as a safety net.
   void cleanup();
 
+  // Drain every cell's pending write_buf bytes to the shared spill log
+  // and release the write_buf capacity. Call once at the boundary
+  // between intake and finalize so the subsequent read/stream emit
+  // phase doesn't have to mix writes and reads on the spill_log fd
+  // (which works correctly via spill_seek64+SEEK_SET but is cleaner
+  // and slightly cheaper as a one-pass drain). Returns false on I/O.
+  bool flush_all_write_bufs();
+
   bool is_poisoned() const { return poisoned; }
   const std::string& last_error() const { return error_msg; }
 

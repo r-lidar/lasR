@@ -878,6 +878,19 @@ bool COPCwriter::finalize_and_write()
   // routing has stopped. Release it too.
   decltype(flushed_octants)().swap(flushed_octants);
 
+  // Drain every spilled cell's pending write_buf to the shared spill log
+  // in one pass. Without this, the per-leaf flush_write_buf inside
+  // read_octant / stream_octant runs interleaved with reads, churning
+  // the fd between SEEK_END+fwrite and SEEK_SET+fread for every emit
+  // chunk. Doing the drain once here also releases write_buf capacity
+  // back to the allocator before the emit phase allocates its sort
+  // buffer, lowering peak finalize memory by up to wb_budget bytes.
+  if (!spill->flush_all_write_bufs())
+  {
+    fail(std::string("COPCspill drain failed: ") + spill->last_error());
+    return false;
+  }
+
   const U32 point_size = copc_header->point_data_record_length;
 
   // 1) Collapse the octree based on per-leaf counts.
