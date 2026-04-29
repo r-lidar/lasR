@@ -313,3 +313,46 @@ test_that("write_copc max_extra_depth = 0 produces a more compact hierarchy",
   expect_lt(read_max_real_depth(o_compact),
             read_max_real_depth(o_default))
 })
+
+test_that("write_copc skip-sort fallback fires under tiny LASR_COPC_MAX_SORT_MEMORY",
+{
+  # Sort-buffer cap protects against finalize-time OOM on oversized
+  # chunks (force-accept at HARD_DEPTH_LIMIT, or user max_points_per_chunk
+  # much larger than available RAM). Set the cap to 1 byte so every
+  # chunk takes the streamed-no-sort path. The file must still round-trip
+  # the full point count, and the writer must emit the diagnostic warning
+  # exactly once (silenced after first hit).
+  f = system.file("extdata", "Megaplot.las", package = "lasR")
+  skip_if(f == "", "Megaplot.las not available")
+
+  prev_cap = Sys.getenv("LASR_COPC_MAX_SORT_MEMORY", unset = NA)
+  Sys.setenv(LASR_COPC_MAX_SORT_MEMORY = "1")
+  on.exit({
+    if (is.na(prev_cap)) Sys.unsetenv("LASR_COPC_MAX_SORT_MEMORY")
+    else                 Sys.setenv(LASR_COPC_MAX_SORT_MEMORY = prev_cap)
+  }, add = TRUE)
+
+  o = tempfile(fileext = ".copc.laz")
+  err_file = tempfile()
+  on.exit(unlink(c(o, err_file)), add = TRUE)
+
+  con = file(err_file, open = "wt")
+  tryCatch({
+    sink(con, type = "message")
+    exec(reader() + write_las(o, experimental_writer = TRUE), on = f)
+  }, finally = {
+    sink(NULL, type = "message")
+    close(con)
+  })
+  err_text = readLines(err_file, warn = FALSE)
+
+  # File must be valid and round-trip every point even though no chunk
+  # was sorted — sort affects LAZ ratio only, not correctness.
+  src_n = exec(reader() + summarise(), on = f)$npoints
+  expect_equal(exec(reader() + summarise(), on = o)$npoints, src_n)
+
+  # Warning is emitted exactly once (silenced after first hit). Match
+  # on a substring stable across the full warning text.
+  warn_lines = grep("exceeding the sort-buffer cap", err_text, value = TRUE)
+  expect_length(warn_lines, 1L)
+})

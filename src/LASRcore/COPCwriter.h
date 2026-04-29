@@ -50,6 +50,14 @@ public:
   // produce fewer, larger chunks: less hierarchy + spill metadata,
   // bigger close-time sort buffers, coarser spatial random access.
   void set_max_points_per_octant(I32 n) { if (n > 0) max_points_per_octant = n; }
+  // Cap on the close-time sort buffer (bytes). Default 256 MB. When an
+  // emit chunk's bytes exceed this, the writer falls back to a streamed
+  // unsorted emit with a one-shot warning — the COPC spec doesn't
+  // mandate within-chunk ordering, so the file remains valid; only LAZ
+  // compression is slightly worse for the affected chunk. Force-accept
+  // at HARD_DEPTH_LIMIT (or a user max_points_per_chunk much larger
+  // than this cap) is the realistic trigger.
+  void set_max_sort_memory(U64 b) { if (b > 0) max_sort_memory = b; }
 
   // Open the output file. Applies the COPC header transformations (upgrade to
   // LAS 1.4, promote PDRF to 6/7/8, add COPC info VLR placeholder and EPT
@@ -227,6 +235,11 @@ private:
   // end-of-finalize oversize warning.
   bool copc_depth_user_set = false;
   bool hard_depth_warned = false;
+  // See set_max_sort_memory. Default 256 MB; env LASR_COPC_MAX_SORT_MEMORY
+  // overrides at open() time. Independent of resident_budget so a user can
+  // raise the routing budget without inflating finalize peak memory.
+  std::uint64_t max_sort_memory = 256ULL * 1024 * 1024;
+  bool skip_sort_warned = false;
 
   // Stats accumulated during write_point
   F64 gpstime_minimum = 0.0;

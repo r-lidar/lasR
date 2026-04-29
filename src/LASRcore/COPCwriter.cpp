@@ -73,6 +73,15 @@ namespace
     if (!end || *end != '\0' || n == 0) return 0;
     return (std::uint64_t)n;
   }
+  std::uint64_t env_max_sort_memory()
+  {
+    const char* v = std::getenv("LASR_COPC_MAX_SORT_MEMORY");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    unsigned long long n = std::strtoull(v, &end, 10);
+    if (!end || *end != '\0' || n == 0) return 0;
+    return (std::uint64_t)n;
+  }
 
   // Extract the three fields (GPS time, scanner channel, return number) used
   // as the within-chunk sort key. Layout matches PDRF 6/7/8 point records.
@@ -408,17 +417,26 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
                               ? (std::uint64_t)((double)mem_budget * 0.08)
                               : COPCspill::DEFAULT_WRITE_BUF_BUDGET);
 
+  // Sort-buffer cap. Independent of resident_budget: the sort buffer is a
+  // close-time, single-chunk allocation, and operators may want to allow
+  // more for routing without inflating finalize peak memory (or vice
+  // versa). Env override only — not folded into MEMORY_BUDGET because
+  // it's not a steady-state allocation and the cap is a backstop, not a
+  // budget partition.
+  if (std::uint64_t e = env_max_sort_memory(); e > 0) max_sort_memory = e;
+
   // Optional one-shot diagnostic: when LASR_COPC_DEBUG_BUDGETS is set,
-  // print the resolved (resident, ram, wb) trio so tests and operators
+  // print the resolved (resident, ram, wb, sort-cap) so tests and operators
   // can verify that LASR_COPC_MEMORY_BUDGET was actually parsed and
   // split. Cheap and avoids exposing budget internals through the
   // public R API.
   if (const char* dbg = std::getenv("LASR_COPC_DEBUG_BUDGETS"); dbg && *dbg)
   {
-    warning("COPC budgets resolved: resident=%llu spill_ram=%llu spill_wb=%llu (mem=%llu)\n",
+    warning("COPC budgets resolved: resident=%llu spill_ram=%llu spill_wb=%llu sort_cap=%llu (mem=%llu)\n",
             (unsigned long long)resident_budget,
             (unsigned long long)spill_ram,
             (unsigned long long)spill_wb,
+            (unsigned long long)max_sort_memory,
             (unsigned long long)mem_budget);
   }
 
@@ -914,40 +932,79 @@ bool COPCwriter::finalize_and_write()
     }
 
     const U64 bytes = (U64)o.point_count * (U64)point_size;
-    sort_buf.resize(bytes);
-
-    if (!spill->read_octant(o.leaves, sort_buf.data(), bytes))
-    {
-      fail(std::string("COPCspill read failed: ") + spill->last_error());
-      return false;
-    }
-
-    // Sort via indirection over fixed-size records. Build a pointer vector
-    // aliased into sort_buf, stable_sort the pointers, then drive
-    // LASwriterLAS::write_point directly off the sorted pointers — no
-    // second full-size byte buffer.
-    // stable_sort: identical (gps_time, channel, return) keys keep their
-    // intake order so two runs over the same input produce byte-equivalent
-    // chunks. Costs O(N) extra scratch (the pointer vector) and ~20% more
-    // sort time vs std::sort.
-    ptrs.resize(o.point_count);
-    for (U64 i = 0; i < o.point_count; i++) ptrs[i] = sort_buf.data() + i * point_size;
-    std::stable_sort(ptrs.begin(), ptrs.end(), PointLess{point_size});
-
-    // Write the chunk. Offset is captured before the first point of the chunk;
-    // chunk() commits and we measure size by the delta. Decode through the
-    // sorted pointer vector — keeps close-time peak memory at one octant's
-    // worth (sort_buf + ptrs), independent of the post-collapse octant size.
     const I64 chunk_offset = writer_las->tell();
-    for (U64 i = 0; i < o.point_count; i++)
+
+    // Sort-cap gate. The sort path buffers the whole chunk in `sort_buf`
+    // plus a parallel pointer vector for stable_sort — fine for
+    // <=max_points_per_octant chunks (typical 3 MB at 100k × 30 B), but
+    // a force-accepted leaf at HARD_DEPTH_LIMIT (or a user-set
+    // max_points_per_chunk) can produce a chunk whose buffer alone
+    // exceeds available RAM. The skip-sort path streams from spill
+    // point-by-point — same per-point CPU, no whole-chunk allocation.
+    // The COPC spec doesn't mandate within-chunk ordering; the only
+    // cost is slightly worse LAZ compression on the affected chunk.
+    if (bytes > max_sort_memory)
     {
-      point->copy_from(ptrs[i]);
-      if (!writer_las->write_point(point))
+      if (!skip_sort_warned)
       {
-        fail("LASwriterLAS::write_point failed");
+        warning("COPC writer: chunk at depth=%d x=%d y=%d z=%d holds "
+                "%llu MB of point data, exceeding the sort-buffer cap "
+                "(%llu MB). Emitting in spill-append order without "
+                "sorting; LAZ compression will be slightly worse for "
+                "this chunk. Subsequent occurrences are silenced. "
+                "Raise LASR_COPC_MAX_SORT_MEMORY to opt back into "
+                "sorting at the cost of higher peak RAM.\n",
+                (int)o.key.d, (int)o.key.x, (int)o.key.y, (int)o.key.z,
+                (unsigned long long)(bytes >> 20),
+                (unsigned long long)(max_sort_memory >> 20));
+        skip_sort_warned = true;
+      }
+      auto cb = [this](const U8* p) -> bool {
+        point->copy_from(p);
+        return writer_las->write_point(point) != 0;
+      };
+      if (!spill->stream_octant(o.leaves, o.point_count, cb))
+      {
+        fail(std::string("COPCspill stream failed: ") + spill->last_error());
         return false;
       }
     }
+    else
+    {
+      sort_buf.resize(bytes);
+
+      if (!spill->read_octant(o.leaves, sort_buf.data(), bytes))
+      {
+        fail(std::string("COPCspill read failed: ") + spill->last_error());
+        return false;
+      }
+
+      // Sort via indirection over fixed-size records. Build a pointer vector
+      // aliased into sort_buf, stable_sort the pointers, then drive
+      // LASwriterLAS::write_point directly off the sorted pointers — no
+      // second full-size byte buffer.
+      // stable_sort: identical (gps_time, channel, return) keys keep their
+      // intake order so two runs over the same input produce byte-equivalent
+      // chunks. Costs O(N) extra scratch (the pointer vector) and ~20% more
+      // sort time vs std::sort.
+      ptrs.resize(o.point_count);
+      for (U64 i = 0; i < o.point_count; i++) ptrs[i] = sort_buf.data() + i * point_size;
+      std::stable_sort(ptrs.begin(), ptrs.end(), PointLess{point_size});
+
+      // Write the chunk through the sorted pointer vector — keeps close-time
+      // peak memory at one octant's worth (sort_buf + ptrs), independent of
+      // the post-collapse octant size.
+      for (U64 i = 0; i < o.point_count; i++)
+      {
+        point->copy_from(ptrs[i]);
+        if (!writer_las->write_point(point))
+        {
+          fail("LASwriterLAS::write_point failed");
+          return false;
+        }
+      }
+    }
+
     if (!writer_las->chunk())
     {
       fail("LASwriterLAS::chunk failed");
