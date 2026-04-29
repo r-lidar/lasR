@@ -87,17 +87,29 @@ private:
   COPChierarchy* hierarchy = nullptr;
   COPCspill* spill = nullptr;
 
-  // Per-voxel resident point: hash drives unbiased replacement on collision,
-  // bytes are held in RAM until close() flushes them to spill keyed by their
-  // octant. Holding bytes (rather than a spill offset) is what lets a losing
-  // resident be evicted and re-routed deeper without leaving an orphan in
-  // spill. Memory cost is bounded by max_points_per_octant per active octant
-  // (caveat 1's cap), so total resident bytes are bounded by the product of
-  // active-octant count and the cap.
-  struct ResidentEntry
+  // Packed per-octant arena. Replaces the old
+  // unordered_map<I32, ResidentEntry> per octant where each voxel paid
+  // ~140 B (50 B map node + 32 B ResidentEntry + 48 B vector<U8> heap +
+  // 16 B malloc bookkeeping for a 30 B point — ~4.5× payload overhead).
+  //
+  // Per voxel here:
+  //   - point_size bytes of payload, packed contiguously in `bytes`
+  //   - 4 B cell id in `cells`
+  //   - 8 B hash in `hashes`
+  //   - ~50 B in `cell_to_idx` for the lookup
+  // ≈ point_size + 64 B total. ~35% smaller for PDRF6 (30 B points), and
+  // a single allocation per array eliminates the per-voxel malloc cost
+  // and most fragmentation.
+  //
+  // Replacement (hash collision) is in-place: copy new bytes into
+  // bytes[idx*point_size], swap hashes[idx], evicted bytes are returned
+  // via the caller-passed buffer.
+  struct HotOctant
   {
-    U64 hash;
-    std::vector<U8> bytes;
+    std::vector<U8>  bytes;        // size = N * point_size
+    std::vector<I32> cells;        // size = N
+    std::vector<U64> hashes;       // size = N
+    std::unordered_map<I32, U32> cell_to_idx; // cell -> index in parallel arrays
   };
 
   // Per-octant voxel occupancy. A point claims the first ancestor (root-down)
@@ -107,7 +119,7 @@ private:
   // voxel up to routing_max_depth are force-accepted via spill at the
   // deepest key — for user-set max_depth this is the expected terminal
   // case; for auto mode it only happens at HARD_DEPTH_LIMIT and warns.
-  std::unordered_map<EPTkey, std::unordered_map<I32, ResidentEntry>, EPTKeyHasher> occupancy;
+  std::unordered_map<EPTkey, HotOctant, EPTKeyHasher> occupancy;
 
   // Octants whose residents have already been flushed to spill due to RAM
   // pressure. A flushed octant no longer accepts new claims at routing
