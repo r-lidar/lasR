@@ -27,13 +27,22 @@
 class COPCspill
 {
 public:
+  // Default budgets exposed so callers (e.g. COPCwriter) can build their
+  // own fallback paths without duplicating literal byte counts and
+  // silently diverging if these change.
+  static constexpr U64 DEFAULT_RAM_BUDGET       = 256ULL * 1024 * 1024;
+  static constexpr U64 DEFAULT_WRITE_BUF_BUDGET = 128ULL * 1024 * 1024;
+  static constexpr U32 DEFAULT_WRITE_BUF_SIZE   = 64u * 1024u;
+  static constexpr U32 DEFAULT_FD_CAP           = 256u;
+  static constexpr U32 DEFAULT_CHECK_CADENCE    = 4096u;
+
   COPCspill(const std::string& output_path,
             U32 point_record_size,
-            U64 ram_budget = 256ULL * 1024 * 1024,
-            U32 spilled_write_buffer_size = 64 * 1024,
-            U32 open_fd_cap = 256,
-            U32 eviction_check_cadence = 4096,
-            U64 write_buf_budget = 128ULL * 1024 * 1024);
+            U64 ram_budget = DEFAULT_RAM_BUDGET,
+            U32 spilled_write_buffer_size = DEFAULT_WRITE_BUF_SIZE,
+            U32 open_fd_cap = DEFAULT_FD_CAP,
+            U32 eviction_check_cadence = DEFAULT_CHECK_CADENCE,
+            U64 write_buf_budget = DEFAULT_WRITE_BUF_BUDGET);
 
   ~COPCspill();
 

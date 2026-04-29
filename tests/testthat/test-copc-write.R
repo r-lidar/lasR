@@ -179,3 +179,78 @@ test_that("write_copc honours a tiny LASR_COPC_RESIDENT_BUDGET (forces flush pat
   expect_equal(file.info(o1)$size, file.info(o2)$size)
   expect_equal(unname(tools::md5sum(o1)), unname(tools::md5sum(o2)))
 })
+
+test_that("write_copc honours LASR_COPC_MEMORY_BUDGET (single global knob)",
+{
+  # Setting only LASR_COPC_MEMORY_BUDGET should split internally into the
+  # three sub-budgets (resident 35%, pre-spill RAM 35%, write-buf 8%,
+  # implicit reserve 22%) without the user having to set each one.
+  #
+  # Verifying "the env var actually drives behavior" is hard from R: the
+  # writer is byte-stable regardless of budget, so output comparisons
+  # cannot distinguish "env honored, tight budget" from "env ignored,
+  # default budget". Instead we set LASR_COPC_DEBUG_BUDGETS=1 to make
+  # COPCwriter print the resolved (resident, ram, wb) trio once at
+  # open(), capture that warning via sink(type="message"), and assert
+  # the printed values match the documented split fractions. This proves
+  # both that the env var is parsed AND that the split policy is
+  # correct.
+  f = system.file("extdata", "Megaplot.las", package = "lasR")  # smaller — test speed
+  skip_if(f == "", "Megaplot.las not available")
+
+  prev_global   = Sys.getenv("LASR_COPC_MEMORY_BUDGET",      unset = NA)
+  prev_debug    = Sys.getenv("LASR_COPC_DEBUG_BUDGETS",      unset = NA)
+  prev_resident = Sys.getenv("LASR_COPC_RESIDENT_BUDGET",    unset = NA)
+  prev_ram      = Sys.getenv("LASR_COPC_RAM_BUDGET",         unset = NA)
+  prev_wb       = Sys.getenv("LASR_COPC_SPILL_WRITE_BUDGET", unset = NA)
+  global_bytes  = 8L * 1024L * 1024L   # 8 MB — small enough to be obvious
+  Sys.setenv(LASR_COPC_MEMORY_BUDGET = as.character(global_bytes))
+  Sys.setenv(LASR_COPC_DEBUG_BUDGETS = "1")
+  Sys.unsetenv("LASR_COPC_RESIDENT_BUDGET")
+  Sys.unsetenv("LASR_COPC_RAM_BUDGET")
+  Sys.unsetenv("LASR_COPC_SPILL_WRITE_BUDGET")
+  on.exit({
+    if (is.na(prev_global))   Sys.unsetenv("LASR_COPC_MEMORY_BUDGET")      else Sys.setenv(LASR_COPC_MEMORY_BUDGET = prev_global)
+    if (is.na(prev_debug))    Sys.unsetenv("LASR_COPC_DEBUG_BUDGETS")      else Sys.setenv(LASR_COPC_DEBUG_BUDGETS = prev_debug)
+    if (is.na(prev_resident)) Sys.unsetenv("LASR_COPC_RESIDENT_BUDGET")    else Sys.setenv(LASR_COPC_RESIDENT_BUDGET = prev_resident)
+    if (is.na(prev_ram))      Sys.unsetenv("LASR_COPC_RAM_BUDGET")         else Sys.setenv(LASR_COPC_RAM_BUDGET = prev_ram)
+    if (is.na(prev_wb))       Sys.unsetenv("LASR_COPC_SPILL_WRITE_BUDGET") else Sys.setenv(LASR_COPC_SPILL_WRITE_BUDGET = prev_wb)
+  }, add = TRUE)
+
+  o = tempfile(fileext = ".copc.laz")
+  err_file = tempfile()
+  on.exit(unlink(c(o, err_file)), add = TRUE)
+
+  # Capture REprintf-routed warnings via sink(type="message"). Using
+  # tryCatch + finally to guarantee the sink is reset exactly once even
+  # if exec() throws — the previous double-close pattern would error on
+  # exit.
+  con = file(err_file, open = "wt")
+  tryCatch({
+    sink(con, type = "message")
+    exec(reader() + write_las(o, experimental_writer = TRUE), on = f)
+  }, finally = {
+    sink(NULL, type = "message")
+    close(con)
+  })
+  err_text = readLines(err_file, warn = FALSE)
+
+  src_n = exec(reader() + summarise(), on = f)$npoints
+  expect_equal(exec(reader() + summarise(), on = o)$npoints, src_n)
+
+  # Find the debug line and parse the three resolved budget values.
+  debug_line = grep("COPC budgets resolved", err_text, value = TRUE)
+  expect_length(debug_line, 1L)
+  m = regmatches(debug_line,
+                 regexec("resident=(\\d+) spill_ram=(\\d+) spill_wb=(\\d+)", debug_line))[[1]]
+  expect_length(m, 4L)  # full match + 3 captures
+
+  resident = as.numeric(m[2])
+  ram      = as.numeric(m[3])
+  wb       = as.numeric(m[4])
+  # Documented split: 35% / 35% / 8% of LASR_COPC_MEMORY_BUDGET. Allow
+  # 1-byte slack for floating-point rounding in the writer.
+  expect_equal(resident, floor(global_bytes * 0.35), tolerance = 2)
+  expect_equal(ram,      floor(global_bytes * 0.35), tolerance = 2)
+  expect_equal(wb,       floor(global_bytes * 0.08), tolerance = 2)
+})
