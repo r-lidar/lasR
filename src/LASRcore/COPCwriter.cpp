@@ -614,15 +614,25 @@ bool COPCwriter::route_or_spill(U8* bytes, U64 hash, I32 start_depth)
   const I32 cap = max_points_per_octant > 0 ? max_points_per_octant : 100000;
   const std::size_t point_size = (std::size_t)copc_header->point_data_record_length;
 
+  // Decode `bytes` into `point` exactly once per outer-loop iteration.
+  // compute_key_at and compute_voxel_cell only read x/y/z from `point`,
+  // and those don't change as we walk depths — re-decoding per depth
+  // (the previous behaviour) just burned ~max_depth point-decodes per
+  // point routing iteration. After a hash-collision swap the bytes do
+  // change, so set need_decode=true on that path and re-enter the
+  // outer loop, which re-decodes once at the top.
   bool inserted_resident = false;
+  bool need_decode = true;
   for (;;)
   {
+    if (need_decode)
+    {
+      point->copy_from(bytes);
+      need_decode = false;
+    }
     bool placed = false;
     for (I32 d = start_depth; d < routing_max_depth; ++d)
     {
-      // Decode the bytes back into our scratch LASpoint so we can compute
-      // octant key / voxel cell. Cheap: same copy_from used elsewhere.
-      point->copy_from(bytes);
       EPTkey k_d = hierarchy->compute_key_at(point, d);
 
       // Flushed octants no longer accept claims — descend.
@@ -681,6 +691,9 @@ bool COPCwriter::route_or_spill(U8* bytes, U64 hash, I32 start_depth)
         std::swap(hash, oct.hashes[idx]);
         start_depth = d + 1;
         placed = false;
+        // bytes were just swapped — `point` no longer matches them.
+        // Re-decode at the top of the next outer iteration.
+        need_decode = true;
         goto next_iter;
       }
       // Resident wins; descend.
@@ -699,7 +712,12 @@ bool COPCwriter::route_or_spill(U8* bytes, U64 hash, I32 start_depth)
     // Scoped so the `deepest` declaration doesn't get bypassed by the
     // `goto next_iter` above (clang refuses such jumps).
     {
-      point->copy_from(bytes);
+      // `point` is already in sync with `bytes` here: the inner loop
+      // exited via fall-through (no break, no goto), and the outer-loop
+      // top decoded `bytes` into `point` at the start of this iteration.
+      // Hash-collision swaps would have set need_decode and jumped to
+      // next_iter, so this branch is reached only when bytes haven't
+      // mutated since the decode.
       EPTkey deepest = hierarchy->compute_key_at(point, routing_max_depth);
       // Only fire on a genuine hard-limit hit. The auto single-chunk
       // fast path (routing_max_depth == 0) routes every point through
