@@ -40,6 +40,12 @@ public:
   void set_copc_depth(I32 depth) { copc_depth = depth; copc_depth_user_set = (depth >= 0); }
   void set_copc_density(I32 density) { copc_density = density; } // grid side, typically 128/256/512
   void set_min_points_per_chunk(I32 n) { min_points_per_chunk = n; }
+  // Auto-mode-only cap on adaptive depth bumping. -1 = no extra cap
+  // (HARD_DEPTH_LIMIT applies). 0 = compact: never bump past auto
+  // heuristic. >0 = bump up to N levels past the heuristic. Ignored
+  // when copc_depth is user-set (an explicit max_depth is already a
+  // hard cap and bumping is disabled in that mode).
+  void set_copc_max_extra_depth(I32 extra) { copc_max_extra_depth = extra; }
 
   // Open the output file. Applies the COPC header transformations (upgrade to
   // LAS 1.4, promote PDRF to 6/7/8, add COPC info VLR placeholder and EPT
@@ -96,20 +102,47 @@ private:
   //   - point_size bytes of payload, packed contiguously in `bytes`
   //   - 4 B cell id in `cells`
   //   - 8 B hash in `hashes`
-  //   - ~50 B in `cell_to_idx` for the lookup
-  // ≈ point_size + 64 B total. ~35% smaller for PDRF6 (30 B points), and
-  // a single allocation per array eliminates the per-voxel malloc cost
-  // and most fragmentation.
+  //   - ~12 B amortised in `cell_to_idx` (flat open-addressed table at
+  //     ~0.7 load factor: 8 B per slot × 1/0.7 ≈ 11.4 B per voxel)
+  // ≈ point_size + 24 B total. ~80% smaller per voxel than the original
+  // unordered_map<I32, ResidentEntry> design and ~50% smaller than the
+  // first packed cut (which still used unordered_map<I32, U32> for the
+  // lookup at ~50 B per voxel).
   //
   // Replacement (hash collision) is in-place: copy new bytes into
   // bytes[idx*point_size], swap hashes[idx], evicted bytes are returned
   // via the caller-passed buffer.
+  //
+  // FlatI32U32Map is an open-addressed I32→U32 hash table specialised
+  // for our usage: insert-or-update only (no per-entry erase — the
+  // whole octant is dropped at flush time), so we don't need
+  // tombstones; the cell-id key is non-negative so we sentinel empty
+  // slots with -1; capacity is a power of 2 so slot index is a cheap
+  // bitmask. ~12 B amortised per entry vs ~50 B for unordered_map.
+  struct FlatI32U32Map
+  {
+    std::vector<I32> keys;     // -1 = empty (cell ids are always >= 0)
+    std::vector<U32> values;   // index into the parallel arrays
+    std::size_t      count = 0;
+
+    // Murmur3 finalizer — well-distributed for sequential cell ids and
+    // cheap (a few mixes). Quality matters under linear probing.
+    static U32 mix(I32 x);
+
+    // Find the index for `cell`, or return UINT32_MAX if absent.
+    U32 find(I32 cell) const;
+
+    // Insert (cell -> idx) assuming cell is not already present. Grows
+    // the table when load factor would exceed ~0.7.
+    void insert(I32 cell, U32 idx);
+  };
+
   struct HotOctant
   {
     std::vector<U8>  bytes;        // size = N * point_size
     std::vector<I32> cells;        // size = N
     std::vector<U64> hashes;       // size = N
-    std::unordered_map<I32, U32> cell_to_idx; // cell -> index in parallel arrays
+    FlatI32U32Map    cell_to_idx;  // cell -> index in parallel arrays
   };
 
   // Per-octant voxel occupancy. A point claims the first ancestor (root-down)
@@ -167,6 +200,7 @@ private:
 
   // Configuration
   I32 copc_depth = -1;
+  I32 copc_max_extra_depth = -1; // see set_copc_max_extra_depth
   I32 copc_density = 256;
   I32 max_points_per_octant = 100000; // used to estimate auto max_depth
   I32 min_points_per_chunk = 100;

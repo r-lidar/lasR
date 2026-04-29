@@ -21,7 +21,8 @@ write_copc(
   keep_buffer = FALSE,
   max_depth = NA,
   density = "dense",
-  experimental_writer = FALSE
+  experimental_writer = FALSE,
+  max_extra_depth = NA
 )
 
 write_pcd(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
@@ -55,6 +56,15 @@ not yet the default. Has no effect for non-COPC outputs.}
 \item{density}{character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
 With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
 is light. Normal is 128, dense is 256.}
+
+\item{max_extra_depth}{integer. \strong{Only honoured when} \code{experimental_writer = TRUE} ---
+the legacy LASlib writer has no equivalent knob. Auto-mode only: how many depth levels the writer
+is allowed to bump past the heuristic-chosen \code{max_depth} to keep chunks under
+\code{max_points_per_octant}. Default NA = unlimited (the routing loop walks up to the writer's
+hard depth cap of 16). Setting \code{max_extra_depth = 0} is "compact mode" --- no bumping past
+the heuristic, fewer chunks, smaller hierarchy, smaller spill RAM footprint, at the cost of a
+coarser LOD on dense inputs. Ignored when \code{max_depth} is explicitly set (an explicit
+\code{max_depth} is a hard cap and bumping is already disabled in that mode).}
 
 \item{binary}{boolean. Write binary or ascii PCD files.}
 }

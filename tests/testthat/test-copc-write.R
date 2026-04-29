@@ -254,3 +254,62 @@ test_that("write_copc honours LASR_COPC_MEMORY_BUDGET (single global knob)",
   expect_equal(ram,      floor(global_bytes * 0.35), tolerance = 2)
   expect_equal(wb,       floor(global_bytes * 0.08), tolerance = 2)
 })
+
+test_that("write_copc max_extra_depth = 0 produces a more compact hierarchy",
+{
+  # Compact mode: in auto mode, disable adaptive depth bumping past the
+  # heuristic. On bcts_1.laz with sparse density the default (full
+  # bumping) reaches depth 5 (12,329 / 67,514 / 219,668 / 436,145 /
+  # 530,380 / 531,662 across cumulative depths). With max_extra_depth=0
+  # routing should stop at the auto-heuristic depth and the deepest
+  # entries collapse into shallower chunks — fewer chunks total, full
+  # point count reached at a shallower level.
+  f = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
+  skip_if(f == "", "bcts_1.laz not available")
+
+  o_default = tempfile(fileext = ".copc.laz")
+  o_compact = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(c(o_default, o_compact)), add = TRUE)
+
+  exec(write_copc(o_default, density = "sparse", experimental_writer = TRUE), on = f)
+  exec(write_copc(o_compact, density = "sparse", experimental_writer = TRUE,
+                  max_extra_depth = 0), on = f)
+
+  total = exec(reader() + summarise(), on = f)$npoints
+  # Both must round-trip every point.
+  expect_equal(exec(reader() + summarise(), on = o_default)$npoints, total)
+  expect_equal(exec(reader() + summarise(), on = o_compact)$npoints, total)
+
+  # The compact file's deepest non-empty chunk depth should be <= the
+  # default's — that's the structural invariant compact mode promises
+  # (fewer hierarchy levels). File-size comparison is not asserted
+  # because LAZ compression context differs across chunk counts and
+  # can flip either way; depth is the deterministic discriminator.
+  read_max_real_depth = function(path) {
+    con = file(path, open = "rb"); on.exit(close(con))
+    # Skip the 5 leading doubles in the COPC info VLR (center xyz +
+    # halfsize + spacing) to land on root_hier_offset.
+    seek(con, 375 + 54 + 5*8)
+    hier_offset = readBin(con, "integer", n = 1, size = 8)
+    hier_size   = readBin(con, "integer", n = 1, size = 8)
+    seek(con, hier_offset)
+    n = hier_size %/% 32
+    max_d = -1L
+    for (i in seq_len(n)) {
+      d = readBin(con, "integer", n = 1, size = 4)
+      readBin(con, "integer", n = 3, size = 4)  # x,y,z
+      readBin(con, "integer", n = 1, size = 8)  # offset
+      bs = readBin(con, "integer", n = 1, size = 4)
+      pc = readBin(con, "integer", n = 1, size = 4)
+      if (pc > 0 && d > max_d) max_d = d
+    }
+    max_d
+  }
+  # Strict less-than: bcts_1.laz at sparse density is known to bump
+  # past the auto heuristic in default mode (we observed depth 5 in
+  # earlier runs vs auto-heuristic ~depth 1-3 for ~530k pts at the
+  # default cap). Compact must reach a strictly smaller max depth,
+  # otherwise max_extra_depth=0 was silently ignored.
+  expect_lt(read_max_real_depth(o_compact),
+            read_max_real_depth(o_default))
+})

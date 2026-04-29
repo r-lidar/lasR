@@ -1498,11 +1498,20 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' @param density character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
 #' With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
 #' is light. Normal is 128, dense is 256.
-write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense", experimental_writer = FALSE)
+#' @param max_extra_depth integer. \strong{Only honoured when} \code{experimental_writer = TRUE} ---
+#' the legacy LASlib writer has no equivalent knob. Auto-mode only: how many depth levels the writer
+#' is allowed to bump past the heuristic-chosen \code{max_depth} to keep chunks under
+#' \code{max_points_per_octant}. Default NA = unlimited (the routing loop walks up to the writer's
+#' hard depth cap of 16). Setting \code{max_extra_depth = 0} is "compact mode" --- no bumping past
+#' the heuristic, fewer chunks, smaller hierarchy, smaller spill RAM footprint, at the cost of a
+#' coarser LOD on dense inputs. Ignored when \code{max_depth} is explicitly set (an explicit
+#' \code{max_depth} is a hard cap and bumping is already disabled in that mode).
+write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense", experimental_writer = FALSE, max_extra_depth = NA)
 {
   ofile = normalizePath(ofile, mustWork = FALSE)
   if (is.na(max_depth)) max_depth = -1
-  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density, experimental_writer)
+  if (is.na(max_extra_depth)) max_extra_depth = -1
+  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density, experimental_writer, max_extra_depth)
 }
 
 #' @export

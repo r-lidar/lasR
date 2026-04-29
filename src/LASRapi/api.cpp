@@ -584,7 +584,7 @@ Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep
   return Pipeline(s);
 }
 
-Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density, bool experimental_writer)
+Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density, bool experimental_writer, int max_extra_depth)
 {
   std::string ext = ofile.substr(ofile.size()-9, ofile.size());
   if (ext != ".copc.laz") throw std::invalid_argument("File must be .copc.laz");
@@ -608,6 +608,8 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
   s.set("experimental_writer", experimental_writer);
   if (max_depth >= 0)
     s.set("max_depth", max_depth);
+  if (max_extra_depth >= 0)
+    s.set("max_extra_depth", max_extra_depth);
 
   return Pipeline(s);
 }
