@@ -607,6 +607,34 @@ bool COPCspill::read_octant(const std::vector<EPTkey>& leaves, U8* out_buffer, U
   return true;
 }
 
+bool COPCspill::flush_all_write_bufs()
+{
+  if (poisoned) return false;
+  if (!spill_log_handle) return true;  // nothing was spilled, nothing to flush
+  for (auto& kv : cells)
+  {
+    CellBuffer& cell = kv.second;
+    if (!cell.spilled) continue;
+    if (cell.write_buf.empty() && cell.write_buf.capacity() == 0) continue;
+    // Flush appends an extent and clears write_buf, then we release its
+    // capacity (the post-finalize emit phase reads from the spill log;
+    // no point keeping write-buf RAM committed).
+    if (!flush_write_buf(kv.first, cell)) return false;
+    if (cell.write_buf.capacity() > 0)
+    {
+      if (agg_write_buf_bytes >= write_buf_size) agg_write_buf_bytes -= write_buf_size;
+      else agg_write_buf_bytes = 0;
+      std::vector<U8>().swap(cell.write_buf);
+    }
+    if (cell.wb_lru_pos != wb_lru.end())
+    {
+      wb_lru.erase(cell.wb_lru_pos);
+      cell.wb_lru_pos = wb_lru.end();
+    }
+  }
+  return true;
+}
+
 bool COPCspill::stream_octant(const std::vector<EPTkey>& leaves,
                               U64 expected_points,
                               const std::function<bool(const U8*)>& fn)
