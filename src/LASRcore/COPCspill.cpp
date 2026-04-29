@@ -39,6 +39,20 @@ namespace
     return (U64)n;
   }
 
+  // Parse LASR_COPC_SPILL_WRITE_BUDGET env var (bytes) — caps the aggregate
+  // capacity of all per-cell write buffers. Returns 0 if unset or invalid.
+  // Independent of LASR_COPC_RAM_BUDGET (which now bounds only the
+  // pre-spill RAM-resident point bytes).
+  U64 env_wb_budget()
+  {
+    const char* v = std::getenv("LASR_COPC_SPILL_WRITE_BUDGET");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    unsigned long long n = std::strtoull(v, &end, 10);
+    if (!end || *end != '\0' || n == 0) return 0;
+    return (U64)n;
+  }
+
   // Parent directory of `<output>`. If no separator, returns ".".
   std::string parent_dir(const std::string& path)
   {
@@ -145,16 +159,20 @@ COPCspill::COPCspill(const std::string& output_path,
                      U64 ram_budget,
                      U32 spilled_write_buffer_size,
                      U32 open_fd_cap,
-                     U32 eviction_check_cadence)
+                     U32 eviction_check_cadence,
+                     U64 write_buf_budget)
   : output_path(output_path),
     point_size(point_record_size),
     ram_budget(ram_budget),
     write_buf_size(spilled_write_buffer_size),
     fd_cap(open_fd_cap),
-    check_cadence(eviction_check_cadence == 0 ? 1u : eviction_check_cadence)
+    check_cadence(eviction_check_cadence == 0 ? 1u : eviction_check_cadence),
+    wb_budget(write_buf_budget)
 {
   U64 env = env_ram_budget();
   if (env > 0) this->ram_budget = env;
+  U64 env_wb = env_wb_budget();
+  if (env_wb > 0) this->wb_budget = env_wb;
 }
 
 COPCspill::~COPCspill()
@@ -180,6 +198,7 @@ bool COPCspill::append(const EPTkey& key, const U8* bytes)
   {
     CellBuffer cb;
     cb.lru_pos = lru.end();
+    cb.wb_lru_pos = wb_lru.end();
     auto ins = cells.emplace(key, std::move(cb));
     it = ins.first;
   }
@@ -203,6 +222,10 @@ bool COPCspill::append(const EPTkey& key, const U8* bytes)
     {
       if (!enforce_budget()) return false;
     }
+    if (agg_write_buf_bytes > wb_budget)
+    {
+      if (!enforce_write_buf_budget()) return false;
+    }
   }
   return true;
 }
@@ -215,11 +238,16 @@ void COPCspill::append_ram(CellBuffer& cell, const U8* bytes)
 
 bool COPCspill::append_spilled(const EPTkey& key, CellBuffer& cell, const U8* bytes)
 {
-  // write_buf is reserved to write_buf_size capacity at spill time and
-  // accounted as a fixed reservation in agg_ram (see spill_cell). Appends
-  // grow the size up to the capacity and flush; neither the resize nor
-  // the flush changes the cell's memory footprint, so agg_ram doesn't
-  // change here.
+  // write_buf is lazy: empty until the first append after spill or after
+  // a wb_lru eviction. Allocate to capacity write_buf_size on first use,
+  // and account that capacity in agg_write_buf_bytes (independent budget
+  // from agg_ram, which now bounds only RAM-resident pre-spill buffers).
+  if (cell.write_buf.capacity() == 0)
+  {
+    cell.write_buf.reserve(write_buf_size);
+    agg_write_buf_bytes += write_buf_size;
+  }
+
   if (cell.write_buf.size() + point_size > write_buf_size)
   {
     if (!flush_write_buf(key, cell)) return false;
@@ -227,6 +255,74 @@ bool COPCspill::append_spilled(const EPTkey& key, CellBuffer& cell, const U8* by
   size_t old = cell.write_buf.size();
   cell.write_buf.resize(old + point_size);
   std::memcpy(cell.write_buf.data() + old, bytes, point_size);
+
+  // Mark this cell as the most-recently-touched write_buf. Splices the
+  // existing wb_lru entry to the back (or inserts at back if absent).
+  touch_wb_lru(key, cell);
+  return true;
+}
+
+void COPCspill::touch_wb_lru(const EPTkey& key, CellBuffer& cell)
+{
+  if (cell.wb_lru_pos != wb_lru.end())
+  {
+    wb_lru.splice(wb_lru.end(), wb_lru, cell.wb_lru_pos);
+  }
+  else
+  {
+    wb_lru.push_back(key);
+    cell.wb_lru_pos = std::prev(wb_lru.end());
+  }
+}
+
+bool COPCspill::evict_write_buf(const EPTkey& key, CellBuffer& cell)
+{
+  // Flush any buffered bytes to disk, then release the write_buf capacity
+  // and remove the cell from wb_lru. The cell stays spilled and may
+  // re-allocate write_buf on its next append.
+  if (cell.write_buf.capacity() == 0) return true; // nothing to do
+  if (!flush_write_buf(key, cell)) return false;
+  // Account: drop the previously-reserved capacity from the global count.
+  if (agg_write_buf_bytes >= write_buf_size) agg_write_buf_bytes -= write_buf_size;
+  else agg_write_buf_bytes = 0;
+  std::vector<U8>().swap(cell.write_buf);
+  if (cell.wb_lru_pos != wb_lru.end())
+  {
+    wb_lru.erase(cell.wb_lru_pos);
+    cell.wb_lru_pos = wb_lru.end();
+  }
+  return true;
+}
+
+bool COPCspill::enforce_write_buf_budget()
+{
+  // Drive aggregate write_buf capacity below the LOW WATER mark (50% of
+  // budget) so we don't get re-triggered on every append. Each iteration
+  // releases one cell's write_buf (write_buf_size bytes typically), so
+  // this is amortised cheap.
+  const U64 low_water = wb_budget / 2;
+  while (agg_write_buf_bytes > low_water && !wb_lru.empty())
+  {
+    EPTkey victim_key = wb_lru.front();
+    auto it = cells.find(victim_key);
+    if (it == cells.end())
+    {
+      // Stale lru entry — pop and continue.
+      wb_lru.pop_front();
+      continue;
+    }
+    if (!evict_write_buf(victim_key, it->second)) return false;
+  }
+  if (agg_write_buf_bytes > wb_budget && !wb_budget_warned)
+  {
+    wb_budget_warned = true;
+    warning("COPC writer: spill write-buffer budget cannot be enforced "
+            "(agg %llu MB vs budget %llu MB). Raise "
+            "LASR_COPC_SPILL_WRITE_BUDGET to give the spill more "
+            "scratch RAM, or accept the overshoot.\n",
+            (unsigned long long)(agg_write_buf_bytes >> 20),
+            (unsigned long long)(wb_budget >> 20));
+  }
   return true;
 }
 
@@ -258,20 +354,17 @@ bool COPCspill::enforce_budget()
     if (!spill_cell(victim_key, it->second)) return false;
   }
 
-  // Persistent budget overrun: every cell is already spilled and the only
-  // remaining RAM is the per-cell write_buf reservations (write_buf_size
-  // bytes per spilled cell). We can't reduce further without giving up
-  // batched writes, so warn the user once per writer so they can either
-  // raise LASR_COPC_RAM_BUDGET or accept the overshoot. Worst-case
-  // overhead is bounded by (number of spilled cells) * write_buf_size.
+  // Persistent budget overrun: nothing left to evict from the RAM-resident
+  // pool (every cell is already spilled). agg_ram should now be ~0 since
+  // write_buf capacity moved to its own budget (agg_write_buf_bytes /
+  // wb_budget). If we're still over here, the user has unusual conditions
+  // and should raise LASR_COPC_RAM_BUDGET.
   if (agg_ram > ram_budget && !budget_overrun_warned)
   {
     budget_overrun_warned = true;
-    warning("COPC writer: RAM budget cannot be enforced — every cell is "
-            "already spilled and per-cell write buffers are %llu bytes each. "
-            "Aggregate RAM is %llu MB vs budget %llu MB. Raise "
-            "LASR_COPC_RAM_BUDGET or accept the overshoot.\n",
-            (unsigned long long)write_buf_size,
+    warning("COPC writer: RAM budget cannot be enforced — nothing left "
+            "RAM-resident to evict. agg_ram %llu MB vs budget %llu MB. "
+            "Raise LASR_COPC_RAM_BUDGET or accept the overshoot.\n",
             (unsigned long long)(agg_ram >> 20),
             (unsigned long long)(ram_budget >> 20));
   }
@@ -299,8 +392,10 @@ bool COPCspill::spill_cell(const EPTkey& key, CellBuffer& cell)
 
   agg_ram -= cell.ram.size();
   std::vector<U8>().swap(cell.ram); // release capacity, not just .clear()
-  cell.write_buf.reserve(write_buf_size);
-  agg_ram += write_buf_size; // account for the reserved capacity, which is real RAM
+  // write_buf is allocated lazily by append_spilled now; spill_cell
+  // doesn't pre-reserve. This avoids num_spilled_cells * write_buf_size
+  // becoming the dominant memory term on huge files (the sofi.copc.laz
+  // round-trip used to pin ~9 GB this way with ~144k spilled cells).
   cell.spilled = true;
   return true;
 }
@@ -529,9 +624,21 @@ void COPCspill::drop_octant(const std::vector<EPTkey>& leaves)
     }
     else
     {
-      // Spilled cell's RAM footprint is the reserved write_buf capacity,
-      // not write_buf.size(); see spill_cell / append_spilled accounting.
-      agg_ram -= write_buf_size;
+      // Release write_buf capacity (if any) and remove from wb_lru —
+      // post-refactor the write_buf is lazy and tracked in its own
+      // budget, so dropping a spilled cell only affects agg_write_buf_bytes
+      // when it actually had a buffer.
+      if (cell.write_buf.capacity() > 0)
+      {
+        if (agg_write_buf_bytes >= write_buf_size) agg_write_buf_bytes -= write_buf_size;
+        else agg_write_buf_bytes = 0;
+        std::vector<U8>().swap(cell.write_buf);
+      }
+      if (cell.wb_lru_pos != wb_lru.end())
+      {
+        wb_lru.erase(cell.wb_lru_pos);
+        cell.wb_lru_pos = wb_lru.end();
+      }
       close_handle(cell);
       if (!cell.file_path.empty())
       {
