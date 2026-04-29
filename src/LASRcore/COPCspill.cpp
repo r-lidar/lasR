@@ -434,20 +434,27 @@ bool COPCspill::open_spill_log_if_needed()
   std::string parent = env_dir && *env_dir ? std::string(env_dir) : parent_dir(output_path);
   std::string base = file_basename(output_path);
 
-  // Same stale-dir check as before, but applied to the lock-style dir
-  // we used to create per-spill. Even though we now use a single file,
-  // we keep the spill directory pattern so an aborted previous run
-  // leaves a recognisable artifact and a future run's cleanup is safe.
+  // Stale-dir scan: list any pre-existing `<base>.copc-spill-*` in the
+  // parent directory. Previous behaviour was to refuse to start when any
+  // matched — overly strict, because (a) our new spill dir name embeds
+  // the live PID + a random suffix, so a name collision with a stale
+  // dir is statistically impossible, and (b) a single crashed prior
+  // run blocks ALL subsequent runs (including unrelated processes
+  // writing different outputs that share a basename prefix). Downgrade
+  // to a one-shot warning that lists the matches so the operator can
+  // clean up at their leisure, and proceed.
   std::vector<std::string> stale;
   if (find_stale_spill_dirs(parent, base, stale))
   {
     std::ostringstream oss;
-    oss << "cannot create COPC spill log: pre-existing dir(s) match '"
-        << base << ".copc-spill-*' in '" << parent
-        << "'. Remove stale directories before retrying. Found:";
+    oss << "COPC writer: stale spill dir(s) found alongside output '"
+        << base << "' in '" << parent << "' — likely from an aborted "
+        "previous run. The current writer creates its own uniquely-"
+        "named dir (PID + random suffix) so it will not collide. "
+        "Consider removing:";
     for (const auto& s : stale) oss << " '" << s << "'";
-    fail(oss.str());
-    return false;
+    oss << "\n";
+    warning("%s", oss.str().c_str());
   }
 
   std::ostringstream oss;
