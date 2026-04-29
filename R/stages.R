@@ -1482,17 +1482,24 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' @param max_extra_depth integer. \strong{Only honoured when} \code{experimental_writer = TRUE} ---
 #' the legacy LASlib writer has no equivalent knob. Auto-mode only: how many depth levels the writer
 #' is allowed to bump past the heuristic-chosen \code{max_depth} to keep chunks under
-#' \code{max_points_per_octant}. Default NA = unlimited (the routing loop walks up to the writer's
+#' \code{max_points_per_chunk}. Default NA = unlimited (the routing loop walks up to the writer's
 #' hard depth cap of 16). Setting \code{max_extra_depth = 0} is "compact mode" --- no bumping past
 #' the heuristic, fewer chunks, smaller hierarchy, smaller spill RAM footprint, at the cost of a
 #' coarser LOD on dense inputs. Ignored when \code{max_depth} is explicitly set (an explicit
 #' \code{max_depth} is a hard cap and bumping is already disabled in that mode).
-write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense", experimental_writer = FALSE, max_extra_depth = NA)
+#' @param max_points_per_chunk integer. \strong{Only honoured when} \code{experimental_writer = TRUE}.
+#' Caps the number of points per LAZ chunk in the output COPC. Default NA = 100,000 (matches
+#' LASlib). Raising this (e.g. 250000 or 500000) produces fewer, larger chunks --- smaller
+#' hierarchy, fewer spill cells and less per-octant metadata, at the cost of larger close-time
+#' sort buffers and coarser spatial random access. Pairs naturally with \code{max_extra_depth = 0}
+#' (compact mode) when the goal is minimum file size / writer RAM.
+write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense", experimental_writer = FALSE, max_extra_depth = NA, max_points_per_chunk = NA)
 {
   ofile = normalizePath(ofile, mustWork = FALSE)
   if (is.na(max_depth)) max_depth = -1
   if (is.na(max_extra_depth)) max_extra_depth = -1
-  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density, experimental_writer, max_extra_depth)
+  if (is.na(max_points_per_chunk)) max_points_per_chunk = -1
+  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density, experimental_writer, max_extra_depth, max_points_per_chunk)
 }
 
 #' @export

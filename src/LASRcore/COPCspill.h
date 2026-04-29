@@ -14,16 +14,24 @@
 //
 // Design:
 //   - Each cell starts RAM-resident: a growing vector<U8> holds raw point bytes.
-//   - Aggregate RAM usage is tracked. When it exceeds a configurable budget
-//     (default 256 MB), the largest RAM-resident cells are evicted to per-cell
-//     temp files, one at a time, until pressure subsides. Eviction is one-way:
-//     once spilled, a cell stays spilled.
-//   - A spilled cell keeps a small fixed write-buffer (default 64 KB) in RAM.
-//     Appends fill that buffer; flushes go to the cell's temp file.
-//   - Open temp-file handles are LRU-capped (default 256). Handles close on
-//     eviction and reopen (O_APPEND-equivalent) on next flush.
-//   - The spill directory is created lazily on the first eviction. Small inputs
-//     that never exceed the budget never touch disk.
+//   - Aggregate RAM (capacity-tracked) is bounded by a configurable budget
+//     (default 256 MB). When over budget the largest RAM-resident cells are
+//     spilled in a single batch pass until aggregate < 40% of budget.
+//     Eviction is one-way: once spilled, a cell stays spilled.
+//   - All spilled bytes append to a single shared spill log file. Each
+//     cell records (offset, byte_size) extents into the log; read_octant()
+//     walks those extents via fseek+fread. This replaces the previous
+//     "one temp file per cell" design that paid for thousands of file
+//     paths, FILE* handles, an open-fd LRU, and per-file inodes — on
+//     huge fan-out inputs that overhead dominated both RSS and syscall
+//     time.
+//   - A spilled cell keeps a small write-buffer (default 64 KB) in RAM,
+//     allocated lazily on first append after spill. The aggregate
+//     write-buffer capacity across cells is bounded by a separate
+//     budget; the LRU-front cell's buffer is flushed and released when
+//     the budget is exceeded.
+//   - The spill directory is created lazily on the first eviction. Small
+//     inputs that never exceed the RAM budget never touch disk.
 class COPCspill
 {
 public:
@@ -33,14 +41,12 @@ public:
   static constexpr U64 DEFAULT_RAM_BUDGET       = 256ULL * 1024 * 1024;
   static constexpr U64 DEFAULT_WRITE_BUF_BUDGET = 128ULL * 1024 * 1024;
   static constexpr U32 DEFAULT_WRITE_BUF_SIZE   = 64u * 1024u;
-  static constexpr U32 DEFAULT_FD_CAP           = 256u;
   static constexpr U32 DEFAULT_CHECK_CADENCE    = 4096u;
 
   COPCspill(const std::string& output_path,
             U32 point_record_size,
             U64 ram_budget = DEFAULT_RAM_BUDGET,
             U32 spilled_write_buffer_size = DEFAULT_WRITE_BUF_SIZE,
-            U32 open_fd_cap = DEFAULT_FD_CAP,
             U32 eviction_check_cadence = DEFAULT_CHECK_CADENCE,
             U64 write_buf_budget = DEFAULT_WRITE_BUF_BUDGET);
 
@@ -64,10 +70,14 @@ public:
   // must equal sum(counts[leaf]) * point_record_size over the given leaves.
   bool read_octant(const std::vector<EPTkey>& leaves, U8* out_buffer, U64 byte_count);
 
-  // Release all resources for an octant's leaves (in-memory buffers + temp files).
+  // Release all per-cell resources for an octant's leaves: in-memory
+  // buffers and the per-cell extent vectors. Bytes already written to
+  // the shared spill log become dead (unreferenced) and will be reclaimed
+  // by cleanup() unlinking the whole log file at close.
   void drop_octant(const std::vector<EPTkey>& leaves);
 
-  // Remove the spill directory if any files were ever spilled. No-op otherwise.
+  // Close the shared spill log handle and remove the spill directory
+  // (with the log file inside). No-op if no spill ever happened.
   // Called from close() on success and from the destructor as a safety net.
   void cleanup();
 
@@ -80,6 +90,27 @@ public:
   U64 aggregate_ram_bytes() const { return agg_ram; }
 
 private:
+  // Single append-only spill log + per-cell extents. Replaces the
+  // previous "one temp file per spilled cell" design where each of N
+  // cells held a file_path string, a FILE* handle (LRU-capped at 256
+  // open), and an inode on disk. With ~144k cells on the sofi run that
+  // overhead was a real footprint and a real source of system-call
+  // churn; this design folds it into a single FD and per-cell vectors
+  // of (offset, byte_size) extents into the shared log file.
+  //
+  // Per spilled cell now: a vector<Extent>. With typical write-buf
+  // flushes producing ~64 KB extents, even fully-flushed octants
+  // accumulate only a handful of extents (3 MB / 64 KB ≈ 50). The
+  // per-cell file_path string (~50 B), file_handle (8 B), open-fd
+  // LRU iterator (16-24 B), and the per-file inode metadata are
+  // gone. write_buf is still lazy + LRU-budgeted because it's a hot
+  // batching mechanism, not per-cell state.
+  struct Extent
+  {
+    U64 offset;     // byte offset into the spill log
+    U32 byte_size;  // length of this run
+  };
+
   struct CellBuffer
   {
     U64 point_count = 0;
@@ -87,19 +118,13 @@ private:
     // RAM-resident state (spilled == false): holds all bytes for this cell.
     std::vector<U8> ram;
 
-    // Spilled state (spilled == true): ram is cleared; bytes live in the temp
-    // file. write_buf is lazily allocated on the first append after spill,
-    // and is released by the LRU evictor when the global write-buffer budget
-    // is exceeded. A spilled cell with no write_buf simply re-allocates on
-    // its next append.
+    // Spilled state (spilled == true): ram is cleared; bytes live in the
+    // shared spill log at the recorded extents. write_buf is lazily
+    // allocated on the first append after spill and is released by the
+    // wb_lru evictor when the global write-buffer budget is exceeded.
     bool spilled = false;
-    std::string file_path;
-    FILE* file_handle = nullptr;
+    std::vector<Extent> extents;
     std::vector<U8> write_buf;
-
-    // Position in the open-fd LRU list when file_handle != nullptr; end()
-    // otherwise.
-    std::list<EPTkey>::iterator lru_pos;
 
     // Position in the write-buffer LRU list when write_buf has capacity;
     // end() otherwise. Tracks the "active" set of write buffers so the
@@ -123,13 +148,15 @@ private:
   // of each pinning write_buf_size bytes forever.
   bool enforce_write_buf_budget();
 
-  // Transition a RAM-resident cell to Spilled: write its ram vector to a temp
-  // file, clear ram, set spilled flags. write_buf is now lazily allocated by
-  // append_spilled, not here. Returns false on I/O error.
+  // Transition a RAM-resident cell to Spilled: write its ram vector to
+  // the shared spill log, record the resulting extent on the cell, clear
+  // ram. write_buf is lazily allocated by append_spilled, not here.
+  // Returns false on I/O error.
   bool spill_cell(const EPTkey& key, CellBuffer& cell);
 
-  // Flush the cell's write_buf to its temp file, keeping its capacity for
-  // the next append. Returns false on I/O error.
+  // Flush the cell's write_buf to the shared spill log and append a
+  // new extent to the cell's extents vector, keeping write_buf's
+  // capacity for the next append. Returns false on I/O error.
   bool flush_write_buf(const EPTkey& key, CellBuffer& cell);
 
   // Flush + release the cell's write_buf capacity. Removes the cell from
@@ -142,18 +169,15 @@ private:
   // Caller is responsible for ensuring write_buf has capacity > 0.
   void touch_wb_lru(const EPTkey& key, CellBuffer& cell);
 
-  // Ensure the cell's file handle is open. Enforces fd cap by closing LRU entries.
-  bool ensure_open(const EPTkey& key, CellBuffer& cell, const char* mode);
+  // Open the shared spill log file lazily on the first spill, and create
+  // its parent spill directory if needed. Returns false on I/O or path
+  // conflict.
+  bool open_spill_log_if_needed();
 
-  // Close a cell's file handle and remove it from the LRU list.
-  void close_handle(CellBuffer& cell);
-
-  // Create the spill directory on first use. Returns false on conflict with
-  // any pre-existing <output>.copc-spill-* directory.
-  bool create_spill_dir_if_needed();
-
-  // Build the temp file path for a given key, inside spill_dir.
-  std::string build_cell_path(const EPTkey& key) const;
+  // Append `bytes` to the spill log, returning the file offset at which
+  // the run starts. Caller records (offset, n) as the cell's extent.
+  // Returns false on I/O error.
+  bool append_to_spill_log(const U8* bytes, std::size_t n, U64& out_offset);
 
   void fail(const std::string& msg);
 
@@ -162,15 +186,22 @@ private:
   U32 point_size;
   U64 ram_budget;
   U32 write_buf_size;
-  U32 fd_cap;
   U32 check_cadence;
 
   std::unordered_map<EPTkey, CellBuffer, EPTKeyHasher> cells;
   U64 agg_ram = 0;
   U32 appends_since_check = 0;
+  // Old per-cell-file LRU cap is dropped — the spill log is one FD.
+  // The member is gone from the public ctor and the implementation.
 
-  // LRU of cells whose file_handle is currently open. Front = least recently used.
-  std::list<EPTkey> lru;
+  // Single shared spill log: opened lazily on the first spill, all
+  // spilled bytes append here. Per-cell extents (offset, byte_size)
+  // hand out windows into this file. Removes per-cell file paths,
+  // file handles, and the open-fd LRU that the previous design had
+  // to maintain across thousands of cells.
+  FILE* spill_log_handle = nullptr;
+  std::string spill_log_path;
+  U64 spill_log_size = 0;  // current end-of-file = offset for the next append
 
   // Independent LRU of cells whose write_buf has capacity allocated. Front
   // is the least-recently-touched (next eviction candidate). The aggregate

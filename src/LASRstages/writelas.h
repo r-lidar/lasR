@@ -36,6 +36,10 @@ private:
   // -1 = no extra cap (writer's HARD_DEPTH_LIMIT). 0 = "compact mode":
   // never bump past the heuristic depth.
   short copc_max_extra_depth;
+  // -1 = use the writer's default (100k). >0 = user-supplied cap.
+  // Surfaced as max_points_per_chunk in the R API; wired through to
+  // COPCwriter::set_max_points_per_octant.
+  int copc_max_points_per_chunk;
   unsigned char version_minor;
   unsigned char point_format;
   std::vector<AttributeAccessor> core_accessors;
