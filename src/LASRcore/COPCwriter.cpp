@@ -496,15 +496,18 @@ bool COPCwriter::write_point(const LASpoint* p)
   // intake point, not at emit time (which would double-count everything).
   writer_las->update_inventory(effective);
 
-  // Serialize the point bytes once. Both the routing path (in-RAM resident)
-  // and the leaf-fallback path (spill->append) consume from this buffer.
+  // Serialize the point bytes once. write_scratch was sized to point_size
+  // at open() and is reused here to avoid one heap allocation per
+  // write_point() call (~360M on huge inputs). The routing loop mutates
+  // these bytes in place via std::swap_ranges on hash collision; on
+  // function return the buffer is logically dead until the next intake
+  // point overwrites it.
   const U32 point_size = copc_header->point_data_record_length;
-  std::vector<U8> bytes(point_size);
-  effective->copy_to(bytes.data());
-  const U64 hash = point_hash(bytes.data(), point_size);
+  effective->copy_to(write_scratch.data());
+  const U64 hash = point_hash(write_scratch.data(), point_size);
 
   // Top-down voxel routing with hash-based eviction (caveats 1 + 2).
-  return route_or_spill(std::move(bytes), hash, /*start_depth=*/0);
+  return route_or_spill(write_scratch.data(), hash, /*start_depth=*/0);
 }
 
 // Route a point's bytes into the in-RAM occupancy tables, evicting and
@@ -594,9 +597,8 @@ void COPCwriter::FlatI32U32Map::insert(I32 cell, U32 idx)
 // any rounding-induced inaccuracy not captured by capacity().
 static constexpr std::size_t RESIDENT_NODE_OVERHEAD = 8;
 
-bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_depth)
+bool COPCwriter::route_or_spill(U8* bytes, U64 hash, I32 start_depth)
 {
-  std::vector<U8> bytes = std::move(bytes_in);
   const I32 cap = max_points_per_octant > 0 ? max_points_per_octant : 100000;
   const std::size_t point_size = (std::size_t)copc_header->point_data_record_length;
 
@@ -608,7 +610,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
     {
       // Decode the bytes back into our scratch LASpoint so we can compute
       // octant key / voxel cell. Cheap: same copy_from used elsewhere.
-      point->copy_from(bytes.data());
+      point->copy_from(bytes);
       EPTkey k_d = hierarchy->compute_key_at(point, d);
 
       // Flushed octants no longer accept claims — descend.
@@ -637,7 +639,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
         const U32 idx = (U32)oct.cells.size();
         oct.cells.push_back(cell_d);
         oct.hashes.push_back(hash);
-        oct.bytes.insert(oct.bytes.end(), bytes.begin(), bytes.end());
+        oct.bytes.insert(oct.bytes.end(), bytes, bytes + point_size);
         oct.cell_to_idx.insert(cell_d, idx);
 
         const std::size_t cap_after =
@@ -663,7 +665,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
         // bytes end up in `bytes` and continue routing from depth+1.
         // Hash is a plain swap.
         U8* slot = oct.bytes.data() + (std::size_t)idx * point_size;
-        std::swap_ranges(bytes.data(), bytes.data() + point_size, slot);
+        std::swap_ranges(bytes, bytes + point_size, slot);
         std::swap(hash, oct.hashes[idx]);
         start_depth = d + 1;
         placed = false;
@@ -685,7 +687,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
     // Scoped so the `deepest` declaration doesn't get bypassed by the
     // `goto next_iter` above (clang refuses such jumps).
     {
-      point->copy_from(bytes.data());
+      point->copy_from(bytes);
       EPTkey deepest = hierarchy->compute_key_at(point, routing_max_depth);
       // Only fire on a genuine hard-limit hit. The auto single-chunk
       // fast path (routing_max_depth == 0) routes every point through
@@ -703,7 +705,7 @@ bool COPCwriter::route_or_spill(std::vector<U8>&& bytes_in, U64 hash, I32 start_
                 (int)deepest.d, (int)deepest.x, (int)deepest.y, (int)deepest.z);
         hard_depth_warned = true;
       }
-      if (!spill->append(deepest, bytes.data()))
+      if (!spill->append(deepest, bytes))
       {
         fail(std::string("COPCspill error: ") + spill->last_error());
         return false;

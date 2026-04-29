@@ -197,7 +197,11 @@ private:
   // that lose the hash compare. Falls through to spill->append at the
   // routing depth cap (user max_depth, or HARD_DEPTH_LIMIT in auto mode)
   // if no ancestor accepts. Returns false on spill error.
-  bool route_or_spill(std::vector<U8>&& bytes, U64 hash, I32 start_depth);
+  // `bytes` points to point_size scratch bytes that the caller owns; the
+  // routing loop mutates them in place via std::swap_ranges on hash
+  // collision. Caller's write_scratch is reused for this — avoids one
+  // heap allocation per write_point().
+  bool route_or_spill(U8* bytes, U64 hash, I32 start_depth);
 
   // Push a single hot octant's residents into spill and demote it to
   // flushed_octants. Used both by enforce_resident_budget() (intake-time
