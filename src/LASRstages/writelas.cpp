@@ -2,11 +2,15 @@
 
 #include "LASio.h"
 
+#include <cmath>      // std::isfinite
 #include <exception>  // std::exception_ptr, std::current_exception
 
 LASRlaswriter::LASRlaswriter()
 {
   lasio = nullptr;
+  copc_bbox_set = false;
+  copc_bbox_xmin = copc_bbox_ymin = copc_bbox_zmin = 0.0;
+  copc_bbox_xmax = copc_bbox_ymax = copc_bbox_zmax = 0.0;
 }
 
 LASRlaswriter::~LASRlaswriter() noexcept
@@ -46,6 +50,38 @@ bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
   copc_depth = stage.value("max_depth", -1);
   copc_max_extra_depth = stage.value("max_extra_depth", -1);
   copc_max_points_per_chunk = stage.value("max_points_per_chunk", -1);
+  // Optional caller-provided bbox override for the COPC writer. JSON
+  // shape: bbox = [xmin, ymin, zmin, xmax, ymax, zmax]. Only honoured
+  // when experimental_writer = TRUE and the output is .copc.laz.
+  // Validates that all 6 values are present and the box is non-degenerate.
+  if (stage.contains("bbox") && stage["bbox"].is_array() && stage["bbox"].size() == 6)
+  {
+    const auto& b = stage["bbox"];
+    copc_bbox_xmin = b[0].get<double>();
+    copc_bbox_ymin = b[1].get<double>();
+    copc_bbox_zmin = b[2].get<double>();
+    copc_bbox_xmax = b[3].get<double>();
+    copc_bbox_ymax = b[4].get<double>();
+    copc_bbox_zmax = b[5].get<double>();
+    // Reject non-finite values (NaN/Inf): the std::isless / > comparisons
+    // below would not reliably reject them, and they'd propagate into
+    // the octree geometry as garbage.
+    if (!std::isfinite(copc_bbox_xmin) || !std::isfinite(copc_bbox_xmax) ||
+        !std::isfinite(copc_bbox_ymin) || !std::isfinite(copc_bbox_ymax) ||
+        !std::isfinite(copc_bbox_zmin) || !std::isfinite(copc_bbox_zmax))
+    {
+      last_error = "write_copc bbox: all 6 values must be finite (no NaN/Inf)";
+      return false;
+    }
+    if (copc_bbox_xmin > copc_bbox_xmax ||
+        copc_bbox_ymin > copc_bbox_ymax ||
+        copc_bbox_zmin > copc_bbox_zmax)
+    {
+      last_error = "write_copc bbox: each min must be <= the corresponding max";
+      return false;
+    }
+    copc_bbox_set = true;
+  }
   version_minor = stage.value("version", 0xFF); // 0xFF auto-detect
   point_format = stage.value("pdrf", 0xFF);
 
@@ -211,6 +247,11 @@ bool LASRlaswriter::set_header(Header*& header)
     lasio->set_use_new_copc_writer(experimental_writer);
     lasio->set_copc_max_extra_depth(copc_max_extra_depth);
     lasio->set_copc_max_points_per_chunk(copc_max_points_per_chunk);
+    if (copc_bbox_set)
+    {
+      lasio->set_bbox_override(copc_bbox_xmin, copc_bbox_ymin, copc_bbox_zmin,
+                               copc_bbox_xmax, copc_bbox_ymax, copc_bbox_zmax);
+    }
   }
   catch (const std::exception& e)
   {

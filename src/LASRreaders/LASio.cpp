@@ -197,12 +197,21 @@ void LASio::create(const std::string& file)
     // own update_header(use_inventory=TRUE) will re-overwrite the count
     // from its inventory at close time, so this temporary value is only
     // visible to the open-time depth heuristic.
-    lasheader->min_x = saved_min_x;
-    lasheader->max_x = saved_max_x;
-    lasheader->min_y = saved_min_y;
-    lasheader->max_y = saved_max_y;
-    lasheader->min_z = saved_min_z;
-    lasheader->max_z = saved_max_z;
+    // bbox_override (set via set_bbox_override) wins over saved_* when
+    // present — the caller has explicitly told us the source header is
+    // stale. Validate that the override actually contains a non-degenerate
+    // bbox; otherwise fall back to the source header (which the writer
+    // will then validate / fail on).
+    const bool use_override = bbox_override_set &&
+        bbox_override_xmin <= bbox_override_xmax &&
+        bbox_override_ymin <= bbox_override_ymax &&
+        bbox_override_zmin <= bbox_override_zmax;
+    lasheader->min_x = use_override ? bbox_override_xmin : saved_min_x;
+    lasheader->max_x = use_override ? bbox_override_xmax : saved_max_x;
+    lasheader->min_y = use_override ? bbox_override_ymin : saved_min_y;
+    lasheader->max_y = use_override ? bbox_override_ymax : saved_max_y;
+    lasheader->min_z = use_override ? bbox_override_zmin : saved_min_z;
+    lasheader->max_z = use_override ? bbox_override_zmax : saved_max_z;
     if (saved_point_count <= U32_MAX)
       lasheader->number_of_point_records = (U32)saved_point_count;
     lasheader->extended_number_of_point_records = saved_point_count;

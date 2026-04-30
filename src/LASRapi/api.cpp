@@ -584,7 +584,7 @@ Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep
   return Pipeline(s);
 }
 
-Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density, bool experimental_writer, int max_extra_depth, int max_points_per_chunk)
+Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density, bool experimental_writer, int max_extra_depth, int max_points_per_chunk, std::vector<double> bbox)
 {
   std::string ext = ofile.substr(ofile.size()-9, ofile.size());
   if (ext != ".copc.laz") throw std::invalid_argument("File must be .copc.laz");
@@ -599,6 +599,8 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
   if (density == "dense")  d = 256;
   if (density == "denser") d = 512;
 
+  if (!bbox.empty() && bbox.size() != 6)
+    throw std::invalid_argument("write_copc bbox must have exactly 6 elements: c(xmin, ymin, zmin, xmax, ymax, zmax)");
 
   Stage s("write_las");
   s.set("output", ofile);
@@ -612,6 +614,8 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
     s.set("max_extra_depth", max_extra_depth);
   if (max_points_per_chunk > 0)
     s.set("max_points_per_chunk", max_points_per_chunk);
+  if (bbox.size() == 6)
+    s.set("bbox", bbox);
 
   return Pipeline(s);
 }

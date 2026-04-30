@@ -290,17 +290,17 @@ test_that("write_copc max_extra_depth = 0 produces a more compact hierarchy",
     # Skip the 5 leading doubles in the COPC info VLR (center xyz +
     # halfsize + spacing) to land on root_hier_offset.
     seek(con, 375 + 54 + 5*8)
-    hier_offset = readBin(con, "integer", n = 1, size = 8)
-    hier_size   = readBin(con, "integer", n = 1, size = 8)
+    hier_offset = readBin(con, "integer", n = 1, size = 8, endian = "little")
+    hier_size   = readBin(con, "integer", n = 1, size = 8, endian = "little")
     seek(con, hier_offset)
     n = hier_size %/% 32
     max_d = -1L
     for (i in seq_len(n)) {
-      d = readBin(con, "integer", n = 1, size = 4)
-      readBin(con, "integer", n = 3, size = 4)  # x,y,z
-      readBin(con, "integer", n = 1, size = 8)  # offset
-      bs = readBin(con, "integer", n = 1, size = 4)
-      pc = readBin(con, "integer", n = 1, size = 4)
+      d = readBin(con, "integer", n = 1, size = 4, endian = "little")
+      readBin(con, "integer", n = 3, size = 4, endian = "little")  # x,y,z
+      readBin(con, "integer", n = 1, size = 8, endian = "little")  # offset
+      bs = readBin(con, "integer", n = 1, size = 4, endian = "little")
+      pc = readBin(con, "integer", n = 1, size = 4, endian = "little")
       if (pc > 0 && d > max_d) max_d = d
     }
     max_d
@@ -312,6 +312,58 @@ test_that("write_copc max_extra_depth = 0 produces a more compact hierarchy",
   # otherwise max_extra_depth=0 was silently ignored.
   expect_lt(read_max_real_depth(o_compact),
             read_max_real_depth(o_default))
+})
+
+test_that("write_copc bbox= overrides the source header's bbox in the octree",
+{
+  # Pass a strictly inflated bbox to write_copc(bbox=) and verify the
+  # COPC info VLR carries that bbox (via center / halfsize fields), not
+  # the source header's. This mirrors the real-world fix for stale or
+  # loose source headers — caller knows the actual data bbox and tells
+  # the writer to size the octree from it.
+  f = system.file("extdata", "Megaplot.las", package = "lasR")
+  skip_if(f == "", "Megaplot.las not available")
+
+  # Read the source bbox from the LAS header (max_x at byte 179, min_x at
+  # 187, max_y at 195, min_y at 203, max_z at 211, min_z at 219; LAS spec
+  # ordering is max-then-min for each axis). summarise() doesn't expose
+  # the bbox so this is the most direct way.
+  src = exec(reader() + summarise(), on = f)
+  src_con = file(f, open = "rb")
+  on.exit(close(src_con), add = TRUE)
+  seek(src_con, 179)
+  raw = readBin(src_con, "double", n = 6, size = 8, endian = "little")
+  bb = c(raw[2], raw[4], raw[6], raw[1], raw[3], raw[5])  # → xmin,ymin,zmin,xmax,ymax,zmax
+  # Inflate by 5% on every axis (still encloses the real data, so the
+  # writer's clamped-bbox check passes). The inflated bbox is what we
+  # expect in the COPC info VLR.
+  dx = bb[4] - bb[1]; dy = bb[5] - bb[2]; dz = bb[6] - bb[3]
+  user_bbox = c(bb[1] - 0.05 * dx, bb[2] - 0.05 * dy, bb[3] - 0.05 * dz,
+                bb[4] + 0.05 * dx, bb[5] + 0.05 * dy, bb[6] + 0.05 * dz)
+
+  o = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(o), add = TRUE)
+  exec(write_copc(o, experimental_writer = TRUE, bbox = user_bbox), on = f)
+  expect_equal(exec(reader() + summarise(), on = o)$npoints, src$npoints)
+
+  con = file(o, open = "rb")
+  on.exit(close(con), add = TRUE)
+  seek(con, 375 + 54)  # COPC info VLR data starts here
+  cx = readBin(con, "double", n = 1, size = 8, endian = "little")
+  cy = readBin(con, "double", n = 1, size = 8, endian = "little")
+  cz = readBin(con, "double", n = 1, size = 8, endian = "little")
+  hs = readBin(con, "double", n = 1, size = 8, endian = "little")
+
+  exp_cx = (user_bbox[1] + user_bbox[4]) / 2
+  exp_cy = (user_bbox[2] + user_bbox[5]) / 2
+  exp_cz = (user_bbox[3] + user_bbox[6]) / 2
+  exp_hs = max(user_bbox[4] - user_bbox[1],
+               user_bbox[5] - user_bbox[2],
+               user_bbox[6] - user_bbox[3]) / 2
+  expect_equal(cx, exp_cx, tolerance = 1e-6)
+  expect_equal(cy, exp_cy, tolerance = 1e-6)
+  expect_equal(cz, exp_cz, tolerance = 1e-6)
+  expect_equal(hs, exp_hs, tolerance = 1e-6)
 })
 
 test_that("write_copc paginated hierarchy round-trips under tiny LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES",
@@ -350,8 +402,8 @@ test_that("write_copc paginated hierarchy round-trips under tiny LASR_COPC_MAX_H
   on.exit(close(con), add = TRUE)
   # Skip 5*F64 (center xyz, halfsize, spacing) to land on root_hier_offset.
   seek(con, 375 + 54 + 5*8)
-  root_hier_offset = readBin(con, "integer", n = 1, size = 8)
-  root_hier_size   = readBin(con, "integer", n = 1, size = 8)
+  root_hier_offset = readBin(con, "integer", n = 1, size = 8, endian = "little")
+  root_hier_size   = readBin(con, "integer", n = 1, size = 8, endian = "little")
   total_evlr_data  = file.info(o)$size - root_hier_offset
   expect_lt(root_hier_size, total_evlr_data)
   expect_gt(root_hier_size, 0)
