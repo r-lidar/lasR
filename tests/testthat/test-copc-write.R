@@ -314,6 +314,49 @@ test_that("write_copc max_extra_depth = 0 produces a more compact hierarchy",
             read_max_real_depth(o_default))
 })
 
+test_that("write_copc paginated hierarchy round-trips under tiny LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES",
+{
+  # Force the hierarchy eVLR into a multi-page layout by setting the
+  # per-page entry threshold to 2 — the writer absorbs each child
+  # subtree only while accumulated page entries + that subtree fit
+  # under the threshold; otherwise the subtree spawns its own child
+  # page (point_count = -1). The output must:
+  #   (a) round-trip the full point count via the COPC reader (which
+  #       walks child-page references and recurses through pages);
+  #   (b) have COPC info VLR's root_hier_size < total eVLR data length
+  #       (proves the post-close patch fired and root_hier_size is the
+  #       root page only, not the whole eVLR which LASlib's update_header
+  #       would otherwise write).
+  # bcts_1.laz at sparse density gives a ~depth-5 hierarchy (~50+
+  # entries), enough for pagination at threshold 2.
+  f = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
+  skip_if(f == "", "bcts_1.laz not available")
+
+  prev_page = Sys.getenv("LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES", unset = NA)
+  Sys.setenv(LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES = "2")
+  on.exit({
+    if (is.na(prev_page)) Sys.unsetenv("LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES")
+    else                  Sys.setenv(LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES = prev_page)
+  }, add = TRUE)
+
+  o = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(o), add = TRUE)
+  exec(write_copc(o, density = "sparse", experimental_writer = TRUE), on = f)
+
+  src_n = exec(reader() + summarise(), on = f)$npoints
+  expect_equal(exec(reader() + summarise(), on = o)$npoints, src_n)
+
+  con = file(o, open = "rb")
+  on.exit(close(con), add = TRUE)
+  # Skip 5*F64 (center xyz, halfsize, spacing) to land on root_hier_offset.
+  seek(con, 375 + 54 + 5*8)
+  root_hier_offset = readBin(con, "integer", n = 1, size = 8)
+  root_hier_size   = readBin(con, "integer", n = 1, size = 8)
+  total_evlr_data  = file.info(o)$size - root_hier_offset
+  expect_lt(root_hier_size, total_evlr_data)
+  expect_gt(root_hier_size, 0)
+})
+
 test_that("write_copc skip-sort fallback fires under tiny LASR_COPC_MAX_SORT_MEMORY",
 {
   # Sort-buffer cap protects against finalize-time OOM on oversized

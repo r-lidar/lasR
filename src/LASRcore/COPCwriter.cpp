@@ -82,6 +82,15 @@ namespace
     if (!end || *end != '\0' || n == 0) return 0;
     return (std::uint64_t)n;
   }
+  std::uint32_t env_max_entries_per_page()
+  {
+    const char* v = std::getenv("LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    unsigned long long n = std::strtoull(v, &end, 10);
+    if (!end || *end != '\0' || n == 0 || n > 0xFFFFFFFFu) return 0;
+    return (std::uint32_t)n;
+  }
 
   // Extract the three fields (GPS time, scanner channel, return number) used
   // as the within-chunk sort key. Layout matches PDRF 6/7/8 point records.
@@ -121,6 +130,28 @@ namespace
       h *= 1099511628211ULL;
     }
     return h;
+  }
+
+  // Endianness-safe LE encode/decode helpers. LAS is always little-endian
+  // by spec; LASlib uses put64bitsLE / get64bitsLE helpers internally.
+  // Our post-close patch fwrites multi-byte integers, so on big-endian
+  // builds (rare for R packages but possible) a native fread/fwrite
+  // would silently corrupt the file. These byte-by-byte helpers work on
+  // any host endianness — the few-microsecond cost is irrelevant for a
+  // handful of patches in close().
+  inline void put_u64_le(std::uint64_t v, U8* dst)
+  {
+    for (int i = 0; i < 8; ++i) dst[i] = (U8)((v >> (8*i)) & 0xFFu);
+  }
+  inline void put_u32_le(std::uint32_t v, U8* dst)
+  {
+    for (int i = 0; i < 4; ++i) dst[i] = (U8)((v >> (8*i)) & 0xFFu);
+  }
+  inline std::uint64_t get_u64_le(const U8* src)
+  {
+    std::uint64_t v = 0;
+    for (int i = 0; i < 8; ++i) v |= ((std::uint64_t)src[i] & 0xFFu) << (8*i);
+    return v;
   }
 
   // Number of "base" bytes for each legacy PDRF (format < 6). Anything beyond
@@ -436,6 +467,7 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   // it's not a steady-state allocation and the cap is a backstop, not a
   // budget partition.
   if (std::uint64_t e = env_max_sort_memory(); e > 0) max_sort_memory = e;
+  if (std::uint32_t e = env_max_entries_per_page(); e > 0) max_entries_per_page = e;
 
   // Optional one-shot diagnostic: when LASR_COPC_DEBUG_BUDGETS is set,
   // print the resolved (resident, ram, wb, sort-cap) so tests and operators
@@ -1062,14 +1094,35 @@ bool COPCwriter::finalize_and_write()
     spill->drop_octant(o.leaves);
   }
 
-  // 3) Install the hierarchy entries into the COPC eVLR placeholder.
+  // 3) Install the hierarchy bytes into the COPC eVLR placeholder.
+  // Build the paginated layout — for hierarchies that fit in one page
+  // (typical: <4096 entries by default), this produces a single page
+  // with no child references (semantically identical to the legacy flat
+  // layout). For larger hierarchies, subtrees that overflow the page
+  // are spawned as child pages referenced by entries with
+  // point_count = -1 — cloud readers can fetch one page at a time via
+  // byte-range requests instead of pulling the whole eVLR up front.
+  //
+  // Two-phase write: child-ref offsets are 0 placeholders here. The
+  // actual eVLR data start file position is only known after
+  // writer_las->close() runs writer->done() (which flushes LAZ encoder
+  // state). close() patches the file-on-disk after writer_las has
+  // closed — see the post-close patch block in close().
+  auto pag = hierarchy->build_paginated_evlr_data(max_entries_per_page);
+  const std::size_t n_entries_total = pag.data.size() / sizeof(LASvlr_copc_entry);
+  // LASlib owns evlrs[i].data after assignment and delete[]'s it via
+  // ~LASheader (lasdefinitions.hpp:684). new[] is mandatory per that
+  // contract — pag.data is a std::vector<U8>, so copy out.
+  LASvlr_copc_entry* ev_data = new LASvlr_copc_entry[n_entries_total];
+  std::memcpy(ev_data, pag.data.data(), pag.data.size());
+  // Stash patch state for close().
+  needs_root_size_patch = (pag.root_page_size != pag.data.size());
+  root_page_size_for_patch = pag.root_page_size;
+  child_refs_for_patch = std::move(pag.child_refs);
   // Look the placeholder up by (user_id, record_id) instead of evlrs[0]:
   // prepare_copc_header happens to add it first today, but a future patch
   // that inserts another eVLR earlier (e.g. CRS WKT eVLR for LAS 1.4)
   // would silently corrupt the COPC hierarchy via positional access.
-  const auto& entries = hierarchy->build_evlr_entries();
-  LASvlr_copc_entry* ev_data = new LASvlr_copc_entry[entries.size()];
-  for (size_t i = 0; i < entries.size(); i++) ev_data[i] = entries[i];
   // LASvlr/LASevlr::user_id is a fixed 16-byte field. LASlib's add_vlr
   // memsets the slot before write so the field is well-padded; add_evlr
   // does not, and uses realloc (not calloc) for subsequent slots, so
@@ -1102,7 +1155,7 @@ bool COPCwriter::finalize_and_write()
     fail("COPC writer: hierarchy eVLR placeholder (user_id=copc, record_id=1000) not found");
     return false;
   }
-  hier_evlr->record_length_after_header = (I64)(entries.size() * sizeof(LASvlr_copc_entry));
+  hier_evlr->record_length_after_header = (I64)pag.data.size();
   hier_evlr->data = (U8*)ev_data;
 
   // 4) Fill COPC info VLR fields we know now. LASwriterLAS::update_header
@@ -1236,6 +1289,105 @@ I64 COPCwriter::close()
 
   delete writer_las; writer_las = nullptr;
   if (spill) { spill->cleanup(); }
+
+  // Pagination v2 post-close patch. Two things to fix on disk:
+  //   (a) Child-page-reference entries' (offset, byte_size) fields,
+  //       which we left as 0 placeholders at finalize time because
+  //       writer_las->tell() didn't yet account for LAZ done()-flush
+  //       bytes. Now that the writer has fully closed, the on-disk
+  //       file's COPC info VLR has the correct root_hier_offset (=
+  //       absolute file offset of the eVLR data start), patched there
+  //       by LASlib's update_header (laswriter_las.cpp:1378-1385).
+  //   (b) root_hier_size: LASlib unconditionally sets it to the total
+  //       eVLR length, which is wrong when there are child pages —
+  //       readers expect only the root page's size.
+  // Both patches operate on tiny well-defined byte positions; if they
+  // fail, the file is corrupted (paginated layout pointing at garbage)
+  // — fail the close so the engine surfaces the error and the writer's
+  // output unlink kicks in.
+  if (!poisoned && finalize_ok && copc_header &&
+      (needs_root_size_patch || !child_refs_for_patch.empty()))
+  {
+    // The COPC info VLR is the first VLR after the LAS 1.4 header, and
+    // root_hier_offset / root_hier_size live at fixed offsets within
+    // that VLR's data. LASlib hardcodes the same constants when it
+    // patches root_hier_offset/size at write time
+    // (laswriter_las.cpp:1381 → `stream->seek(375 + 54 + 40)`); we
+    // hardcode the same numbers here so the two sides cannot drift.
+    // (For our writer copc_header->header_size is always 375 — we
+    // upgrade to LAS 1.4 in prepare_copc_header — so using the field
+    // would be equivalent today, but matching LASlib's literal is the
+    // load-bearing invariant.)
+    const I64 root_hier_offset_pos = 375 + 54 + 40;
+    const I64 root_hier_size_pos   = 375 + 54 + 48;
+
+    FILE* fp = std::fopen(output_path.c_str(), "r+b");
+    if (!fp)
+    {
+      finalize_ok = false;
+      fail("paginated hierarchy: cannot reopen output for post-close patch");
+    }
+    else
+    {
+      auto seek64 = [&](I64 pos) -> bool {
+#ifdef _WIN32
+        return _fseeki64(fp, (long long)pos, SEEK_SET) == 0;
+#else
+        return fseeko(fp, (off_t)pos, SEEK_SET) == 0;
+#endif
+      };
+      bool ok = true;
+      U64 evlr_data_start = 0;
+      // (1) Read root_hier_offset off disk to learn where the eVLR data
+      // starts in the file. We don't trust our cached writer_las->tell()
+      // value because of the done()-flush gap. Read into a fixed-size
+      // byte buffer and decode LE explicitly so the patch is correct
+      // on big-endian hosts (LAS is always little-endian by spec).
+      U8 le_buf[12];
+      if (ok && !seek64(root_hier_offset_pos)) { ok = false; }
+      if (ok && std::fread(le_buf, 1, 8, fp) != 8) { ok = false; }
+      if (ok) evlr_data_start = get_u64_le(le_buf);
+      // Sanity: the eVLR data must start past the LAS 1.4 header.
+      if (ok && evlr_data_start < 375u) { ok = false; }
+      // (2) Patch each child page reference in place. Each ChildPageRef
+      // identifies the entry's byte position within the eVLR payload;
+      // its absolute file position = evlr_data_start + byte_offset_in_payload.
+      // Within an entry (32 bytes), the layout is:
+      //   bytes 0-15: key (depth, x, y, z) — 4*I32
+      //   bytes 16-23: offset (U64)
+      //   bytes 24-27: byte_size (I32)
+      //   bytes 28-31: point_count (I32)
+      // We patch only offset and byte_size; point_count was already
+      // written as -1 by the initial eVLR write.
+      for (const auto& cref : child_refs_for_patch)
+      {
+        if (!ok) break;
+        const I64 entry_pos = (I64)evlr_data_start + (I64)cref.byte_offset_in_payload;
+        const std::uint64_t abs_target_offset =
+            evlr_data_start + cref.target_page_relative_offset;
+        put_u64_le(abs_target_offset, le_buf);
+        put_u32_le((std::uint32_t)cref.target_page_byte_size, le_buf + 8);
+        if (!seek64(entry_pos + 16))                 { ok = false; break; }
+        if (std::fwrite(le_buf, 1, 12, fp) != 12)    { ok = false; break; }
+      }
+      // (3) Patch root_hier_size if the layout is paginated.
+      if (ok && needs_root_size_patch)
+      {
+        put_u64_le(root_page_size_for_patch, le_buf);
+        if (!seek64(root_hier_size_pos))             { ok = false; }
+        else if (std::fwrite(le_buf, 1, 8, fp) != 8) { ok = false; }
+      }
+      // fclose may surface a delayed write error from a previous fwrite —
+      // treat its return code as part of the patch outcome so a flush
+      // failure can't silently leave the pagination metadata corrupt.
+      if (std::fclose(fp) != 0) ok = false;
+      if (!ok)
+      {
+        finalize_ok = false;
+        fail("paginated hierarchy: post-close on-disk patch failed");
+      }
+    }
+  }
 
   // If finalize or earlier write failed, the on-disk file is corrupt.
   // Unlink it and signal the caller via a -1 return so they can throw.
