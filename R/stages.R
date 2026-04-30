@@ -1501,10 +1501,12 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' @param max_extra_depth integer. \strong{Only honoured when} \code{experimental_writer = TRUE} ---
 #' the legacy LASlib writer has no equivalent knob. Auto-mode only: how many depth levels the writer
 #' is allowed to bump past the heuristic-chosen \code{max_depth} to keep chunks under
-#' \code{max_points_per_chunk}. Default NA = unlimited (the routing loop walks up to the writer's
-#' hard depth cap of 16). Setting \code{max_extra_depth = 0} is "compact mode" --- no bumping past
-#' the heuristic, fewer chunks, smaller hierarchy, smaller spill RAM footprint, at the cost of a
-#' coarser LOD on dense inputs. Ignored when \code{max_depth} is explicitly set (an explicit
+#' \code{max_points_per_chunk}. Default NA \eqn{=} 1 (single level of adaptive bumping; matches
+#' LAStools-reference file size on real inputs while preserving the chunk-size cap). Pass
+#' \code{max_extra_depth = -1} for the prior unbounded behaviour (routing loop walks up to the
+#' writer's hard depth cap of 16) --- finer LOD at the cost of larger files. Pass
+#' \code{max_extra_depth = 0} for "compact mode" --- no bumping past the heuristic, fewer chunks,
+#' smaller hierarchy. Ignored when \code{max_depth} is explicitly set (an explicit
 #' \code{max_depth} is a hard cap and bumping is already disabled in that mode).
 #' @param max_points_per_chunk integer. \strong{Only honoured when} \code{experimental_writer = TRUE}.
 #' Caps the number of points per LAZ chunk in the output COPC. Default NA = 100,000 (matches
@@ -1522,23 +1524,32 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' header's bbox.
 #'
 #' @section Tuning the experimental writer:
-#' All knobs below require \code{experimental_writer = TRUE}.
+#' All knobs below require \code{experimental_writer = TRUE}. Sizes and
+#' chunk counts in the table reference the sofi.copc.laz benchmark
+#' (362M points, 1.9 GB compressed) for relative comparisons; absolute
+#' numbers vary by input.
 #'
-#' \strong{Default (rich LOD).} \code{max_extra_depth = NA, max_points_per_chunk = NA}.
-#' Best for files served from cloud storage where progressive zoom matters.
-#' Produces deeper hierarchies, smaller chunks, more entries.
+#' \tabular{lll}{
+#'   \strong{Recipe} \tab \strong{When} \tab \strong{Settings} \cr
+#'   \strong{Default (size-balanced)} \tab Most users \tab
+#'     \code{density = "dense"}, \code{max_extra_depth = NA} (\eqn{=}1) \cr
+#'   \strong{LAStools-size} \tab Closest to LAStools file size; fewer chunks \tab
+#'     \code{density = "normal"}, \code{max_extra_depth = 1} \cr
+#'   \strong{Compact / LAStools-equivalent} \tab Fewer chunks, smaller eVLR \tab
+#'     \code{max_extra_depth = 0} \cr
+#'   \strong{Min file / min writer RAM} \tab Cold storage, batch-only access \tab
+#'     \code{max_extra_depth = 0}, \code{max_points_per_chunk = 500000} \cr
+#'   \strong{Rich cloud-LOD (prior default)} \tab Web viewers serving sparse zooms \tab
+#'     \code{max_extra_depth = -1} (unbounded) \cr
+#' }
 #'
-#' \strong{Compact mode (LAStools-equivalent).} \code{max_extra_depth = 0}.
-#' Caps the routing depth at the auto heuristic --- no adaptive bumping.
-#' Fewer chunks, smaller hierarchy eVLR, smaller writer RAM footprint at
-#' close. Coarser LOD on dense inputs, but the file is still fully valid
-#' COPC. Use when output size matters more than progressive-zoom quality.
-#'
-#' \strong{Minimum file / minimum writer RAM.} \code{max_extra_depth = 0,
-#' max_points_per_chunk = 500000}. Largest chunks, smallest hierarchy,
-#' fewest spill cells. Trade-off: a single LAZ chunk holds 500k points,
-#' so spatial random-access reads (zoom into a small area) load more
-#' irrelevant data per chunk.
+#' On the sofi benchmark the new default lands at 1.124x reference size
+#' with 22k chunks at depth 7 (matching the LAStools reference depth);
+#' the prior \code{max_extra_depth = -1} default produced 1.357x with
+#' 345k chunks at depth 11. The single-knob change captures most of the
+#' size win while preserving the \code{density = "dense"} contract for
+#' users who already rely on it. Pass \code{max_extra_depth = -1}
+#' explicitly to opt back into the prior unbounded behaviour.
 #'
 #' \strong{Memory budgets for huge inputs.} These environment variables
 #' control writer RAM:
@@ -1560,7 +1571,10 @@ write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", kee
 {
   ofile = normalizePath(ofile, mustWork = FALSE)
   if (is.na(max_depth)) max_depth = -1
-  if (is.na(max_extra_depth)) max_extra_depth = -1
+  # NA = use the default (1 level of adaptive depth bumping past the auto
+  # heuristic). Pass -1 explicitly to opt back into unbounded bumping
+  # (the prior default — finer LOD at the cost of much larger files).
+  if (is.na(max_extra_depth)) max_extra_depth = 1
   if (is.na(max_points_per_chunk)) max_points_per_chunk = -1
   if (is.null(bbox)) {
     bbox = numeric(0)

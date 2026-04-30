@@ -258,26 +258,32 @@ test_that("write_copc honours LASR_COPC_MEMORY_BUDGET (single global knob)",
 test_that("write_copc max_extra_depth = 0 produces a more compact hierarchy",
 {
   # Compact mode: in auto mode, disable adaptive depth bumping past the
-  # heuristic. On bcts_1.laz with sparse density the default (full
-  # bumping) reaches depth 5 (12,329 / 67,514 / 219,668 / 436,145 /
-  # 530,380 / 531,662 across cumulative depths). With max_extra_depth=0
-  # routing should stop at the auto-heuristic depth and the deepest
-  # entries collapse into shallower chunks — fewer chunks total, full
-  # point count reached at a shallower level.
+  # heuristic. On bcts_1.laz with sparse density the unbounded mode
+  # (max_extra_depth=-1) reaches depth 5 (12,329 / 67,514 / 219,668 /
+  # 436,145 / 530,380 / 531,662 across cumulative depths). With
+  # max_extra_depth=0 routing should stop at the auto-heuristic depth
+  # and the deepest entries collapse into shallower chunks — fewer
+  # chunks total, full point count reached at a shallower level.
+  #
+  # We compare unbounded vs compact (not default vs compact) so the
+  # test stays meaningful regardless of what the package default is —
+  # the new default of max_extra_depth=1 might give the same depth as
+  # compact on small inputs, masking the bug this test guards against.
   f = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
   skip_if(f == "", "bcts_1.laz not available")
 
-  o_default = tempfile(fileext = ".copc.laz")
+  o_unbounded = tempfile(fileext = ".copc.laz")
   o_compact = tempfile(fileext = ".copc.laz")
-  on.exit(unlink(c(o_default, o_compact)), add = TRUE)
+  on.exit(unlink(c(o_unbounded, o_compact)), add = TRUE)
 
-  exec(write_copc(o_default, density = "sparse", experimental_writer = TRUE), on = f)
+  exec(write_copc(o_unbounded, density = "sparse", experimental_writer = TRUE,
+                  max_extra_depth = -1), on = f)
   exec(write_copc(o_compact, density = "sparse", experimental_writer = TRUE,
                   max_extra_depth = 0), on = f)
 
   total = exec(reader() + summarise(), on = f)$npoints
   # Both must round-trip every point.
-  expect_equal(exec(reader() + summarise(), on = o_default)$npoints, total)
+  expect_equal(exec(reader() + summarise(), on = o_unbounded)$npoints, total)
   expect_equal(exec(reader() + summarise(), on = o_compact)$npoints, total)
 
   # The compact file's deepest non-empty chunk depth should be <= the
@@ -306,12 +312,12 @@ test_that("write_copc max_extra_depth = 0 produces a more compact hierarchy",
     max_d
   }
   # Strict less-than: bcts_1.laz at sparse density is known to bump
-  # past the auto heuristic in default mode (we observed depth 5 in
+  # past the auto heuristic in unbounded mode (we observed depth 5 in
   # earlier runs vs auto-heuristic ~depth 1-3 for ~530k pts at the
   # default cap). Compact must reach a strictly smaller max depth,
   # otherwise max_extra_depth=0 was silently ignored.
   expect_lt(read_max_real_depth(o_compact),
-            read_max_real_depth(o_default))
+            read_max_real_depth(o_unbounded))
 })
 
 test_that("write_copc bbox= overrides the source header's bbox in the octree",

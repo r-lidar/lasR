@@ -48,7 +48,10 @@ bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
   experimental_writer = stage.value("experimental_writer", false);
   copc_density = stage.value("density", 256);
   copc_depth = stage.value("max_depth", -1);
-  copc_max_extra_depth = stage.value("max_extra_depth", -1);
+  // JSON-default fallback if the key is missing matches the surface defaults
+  // (R/Python/api.h). Hand-written JSON configs without this key get the
+  // same single-level adaptive bumping that the language wrappers do.
+  copc_max_extra_depth = stage.value("max_extra_depth", 1);
   copc_max_points_per_chunk = stage.value("max_points_per_chunk", -1);
   // Optional caller-provided bbox override for the COPC writer. JSON
   // shape: bbox = [xmin, ymin, zmin, xmax, ymax, zmax]. Only honoured
