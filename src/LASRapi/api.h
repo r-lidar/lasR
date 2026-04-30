@@ -231,7 +231,7 @@ Pipeline summarise(double zwbin = 2, double iwbin = 50, std::vector<std::string>
 Pipeline triangulate(double max_edge = 0, std::vector<std::string> filter = {""}, std::string ofile = "", std::string use_attribute = "Z");
 Pipeline transform_with(std::string connect_uid, std::string operation = "-", std::string store_in_attribute = "", bool bilinear = true);
 Pipeline write_las(std::string ofile, std::vector<std::string> filter = {""}, bool keep_buffer = false, unsigned char version = 0xFF, unsigned char pdrf = 0xFF, bool experimental_writer = false);
-Pipeline write_copc(std::string ofile, std::vector<std::string> filter = {""}, bool keep_buffer = false, int max_depth = -1, std::string density = "dense", bool experimental_writer = false, int max_extra_depth = 1, int max_points_per_chunk = -1, std::vector<double> bbox = {});
+Pipeline write_copc(std::string ofile, std::vector<std::string> filter = {""}, bool keep_buffer = false, int max_depth = -1, std::string density = "normal", bool experimental_writer = false, int max_extra_depth = 1, int max_points_per_chunk = -1, std::vector<double> bbox = {});
 Pipeline write_pcd(std::string ofile, bool binary = true);
 Pipeline write_vpc(std::string ofile, bool absolute_path = false, bool use_gpstime = false);
 Pipeline write_lax(bool embedded = false, bool overwrite = false);
