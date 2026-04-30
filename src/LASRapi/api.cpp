@@ -610,8 +610,12 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
   s.set("experimental_writer", experimental_writer);
   if (max_depth >= 0)
     s.set("max_depth", max_depth);
-  if (max_extra_depth >= 0)
-    s.set("max_extra_depth", max_extra_depth);
+  // Always emit max_extra_depth into the JSON, including -1: that value
+  // is the documented "unbounded" knob, and the JSON-default fallback in
+  // writelas.cpp::set_parameters is now 1 (the surface default) — so
+  // silently dropping -1 here would misread an explicit "unbounded"
+  // request as the new default.
+  s.set("max_extra_depth", max_extra_depth);
   if (max_points_per_chunk > 0)
     s.set("max_points_per_chunk", max_points_per_chunk);
   if (bbox.size() == 6)

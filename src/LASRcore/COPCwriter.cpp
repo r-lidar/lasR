@@ -398,16 +398,20 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   //   - user-set:                  hard cap at max_depth, no bumping.
   //   - auto, max_depth == 0:      single-chunk fast path.
   //   - auto, max_depth > 0,
-  //     max_extra_depth >= 0:      compact-ish — bump up to N levels
-  //                                past the heuristic. max_extra_depth=0
-  //                                disables bumping entirely (LAStools-
-  //                                like compact mode); fewer chunks,
-  //                                smaller hierarchy + spill footprint
-  //                                at the cost of coarser LOD on dense
-  //                                inputs.
+  //     max_extra_depth >= 0:      bump up to N levels past the heuristic.
+  //                                max_extra_depth=0 disables bumping
+  //                                entirely (LAStools-like compact mode).
+  //                                max_extra_depth=1 is the surface
+  //                                default (R/Python/api.h) — single-
+  //                                level bumping balances LAStools-class
+  //                                file size against keeping chunks
+  //                                bounded by max_points_per_octant.
   //   - auto, max_depth > 0,
-  //     max_extra_depth < 0:       full bumping up to HARD_DEPTH_LIMIT
-  //                                (default — finest LOD).
+  //     max_extra_depth < 0:       opt-in unbounded bumping up to
+  //                                HARD_DEPTH_LIMIT (finest LOD;
+  //                                largest files; was the prior default
+  //                                before sofi-class inputs revealed
+  //                                the file-size cost).
   if (copc_depth_user_set)
     routing_max_depth = max_depth;
   else if (max_depth == 0)
@@ -975,11 +979,29 @@ bool COPCwriter::finalize_and_write()
     }
     if (largest_chunk > (U64)max_points_per_octant)
     {
-      const char* mitigation = copc_depth_user_set
-        ? "Raise max_depth (or leave it auto for adaptive bumping) "
-          "or accept the larger chunk."
-        : "A point cluster exhausted the hard depth limit; either "
-          "lower the cluster density or accept the larger chunk.";
+      // Differentiate the auto branch by where routing actually stopped:
+      // hitting HARD_DEPTH_LIMIT means a true pathological cluster, but
+      // stopping at the configured compact / max_extra_depth cap means
+      // the user can opt back into deeper bumping with a knob change.
+      // Without this distinction, compact-mode users would see a
+      // "hard depth limit" message that doesn't apply to them.
+      const char* mitigation;
+      if (copc_depth_user_set)
+      {
+        mitigation = "Raise max_depth (or leave it auto for adaptive bumping) "
+                     "or accept the larger chunk.";
+      }
+      else if (routing_max_depth == HARD_DEPTH_LIMIT)
+      {
+        mitigation = "A point cluster exhausted the writer's hard depth limit; "
+                     "either lower the cluster density or accept the larger chunk.";
+      }
+      else
+      {
+        mitigation = "Routing stopped at the configured cap (max_extra_depth past "
+                     "the auto heuristic); raise max_extra_depth (-1 = unbounded) "
+                     "or accept the larger chunk.";
+      }
       warning("largest COPC chunk has %llu points, exceeding the "
               "max_points_per_octant cap of %d (chunk at depth=%d, "
               "x=%d, y=%d, z=%d). Close-time sort will allocate ~%llu MB. "
