@@ -1512,6 +1512,14 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' hierarchy, fewer spill cells and less per-octant metadata, at the cost of larger close-time
 #' sort buffers and coarser spatial random access. Pairs naturally with \code{max_extra_depth = 0}
 #' (compact mode) when the goal is minimum file size / writer RAM.
+#' @param bbox numeric of length 6, or \code{NULL}. \strong{Only honoured when}
+#' \code{experimental_writer = TRUE}. Caller-provided bounding box
+#' \code{c(xmin, ymin, zmin, xmax, ymax, zmax)} that overrides the source header's bbox at
+#' open time --- the COPC writer sizes the octree from the declared bbox, so a stale or loose
+#' header silently produces a structurally suboptimal (still valid) COPC. Pass the actual data
+#' bbox here when you know the source header is wrong; the writer will validate that no point
+#' falls outside this box and fail loudly if any does. Default \code{NULL} = use the source
+#' header's bbox.
 #'
 #' @section Tuning the experimental writer:
 #' All knobs below require \code{experimental_writer = TRUE}.
@@ -1548,13 +1556,20 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' push the ancestor over \code{max_points_per_chunk}). This avoids tiny LAZ chunks. The
 #' floor is internal and not exposed via R; it matches LASlib's default and is rarely the
 #' wrong choice. Open an issue if your workload needs a different value.
-write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense", experimental_writer = FALSE, max_extra_depth = NA, max_points_per_chunk = NA)
+write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense", experimental_writer = FALSE, max_extra_depth = NA, max_points_per_chunk = NA, bbox = NULL)
 {
   ofile = normalizePath(ofile, mustWork = FALSE)
   if (is.na(max_depth)) max_depth = -1
   if (is.na(max_extra_depth)) max_extra_depth = -1
   if (is.na(max_points_per_chunk)) max_points_per_chunk = -1
-  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density, experimental_writer, max_extra_depth, max_points_per_chunk)
+  if (is.null(bbox)) {
+    bbox = numeric(0)
+  } else {
+    if (length(bbox) != 6L || !is.numeric(bbox) || anyNA(bbox))
+      stop("write_copc(bbox=): must be a numeric vector of 6 values c(xmin, ymin, zmin, xmax, ymax, zmax) with no NAs", call. = FALSE)
+    bbox = as.numeric(bbox)
+  }
+  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density, experimental_writer, max_extra_depth, max_points_per_chunk, bbox)
 }
 
 #' @export

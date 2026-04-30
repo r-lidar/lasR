@@ -38,6 +38,17 @@ public:
   void set_copc_max_extra_depth(int extra) { copc_max_extra_depth = extra; }
   void set_copc_max_points_per_chunk(int n) { copc_max_points_per_chunk = n; }
   void set_use_new_copc_writer(bool b) { use_new_copc_writer = b; }
+  // Caller-provided bbox that overrides the source header's bbox at COPC
+  // open() time. Use when the source header is stale or loose — the writer
+  // builds the octree from the declared bbox, so a wrong bbox produces a
+  // structurally suboptimal COPC. Has no effect on non-COPC writes.
+  void set_bbox_override(double xmin, double ymin, double zmin,
+                         double xmax, double ymax, double zmax)
+  {
+    bbox_override_xmin = xmin; bbox_override_ymin = ymin; bbox_override_zmin = zmin;
+    bbox_override_xmax = xmax; bbox_override_ymax = ymax; bbox_override_zmax = zmax;
+    bbox_override_set = true;
+  }
   int64_t p_count() override;
 
   // Tools
@@ -116,6 +127,18 @@ private:
   // max_points_per_octant=100000) sees the actual count instead of
   // the zero left by init() for the regular LAZ inventory path.
   uint64_t saved_point_count = 0;
+
+  // Optional caller-provided bbox override applied to lasheader before the
+  // COPC writer's open() builds the octree. Use when the source header is
+  // stale/loose and the caller knows the actual data bbox. Defaults to
+  // unset (use the source header's bbox via saved_min_x...).
+  double bbox_override_xmin = 0.0;
+  double bbox_override_ymin = 0.0;
+  double bbox_override_zmin = 0.0;
+  double bbox_override_xmax = 0.0;
+  double bbox_override_ymax = 0.0;
+  double bbox_override_zmax = 0.0;
+  bool bbox_override_set = false;
 };
 
 

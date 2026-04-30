@@ -23,7 +23,8 @@ write_copc(
   density = "dense",
   experimental_writer = FALSE,
   max_extra_depth = NA,
-  max_points_per_chunk = NA
+  max_points_per_chunk = NA,
+  bbox = NULL
 )
 
 write_pcd(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
@@ -73,6 +74,15 @@ LASlib). Raising this (e.g. 250000 or 500000) produces fewer, larger chunks --- 
 hierarchy, fewer spill cells and less per-octant metadata, at the cost of larger close-time
 sort buffers and coarser spatial random access. Pairs naturally with \code{max_extra_depth = 0}
 (compact mode) when the goal is minimum file size / writer RAM.}
+
+\item{bbox}{numeric of length 6, or \code{NULL}. \strong{Only honoured when}
+\code{experimental_writer = TRUE}. Caller-provided bounding box
+\code{c(xmin, ymin, zmin, xmax, ymax, zmax)} that overrides the source header's bbox at
+open time --- the COPC writer sizes the octree from the declared bbox, so a stale or loose
+header silently produces a structurally suboptimal (still valid) COPC. Pass the actual data
+bbox here when you know the source header is wrong; the writer will validate that no point
+falls outside this box and fail loudly if any does. Default \code{NULL} = use the source
+header's bbox.}
 
 \item{binary}{boolean. Write binary or ascii PCD files.}
 }

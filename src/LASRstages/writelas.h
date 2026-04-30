@@ -40,6 +40,13 @@ private:
   // Surfaced as max_points_per_chunk in the R API; wired through to
   // COPCwriter::set_max_points_per_octant.
   int copc_max_points_per_chunk;
+  // Optional caller-provided bbox passed to LASio at COPC create() time.
+  // copc_bbox_set + 6 doubles. Only honoured when experimental_writer = TRUE
+  // and the output is .copc.laz. Use when the source header is stale
+  // (declared bbox much larger than the actual data).
+  bool copc_bbox_set;
+  double copc_bbox_xmin, copc_bbox_ymin, copc_bbox_zmin;
+  double copc_bbox_xmax, copc_bbox_ymax, copc_bbox_zmax;
   unsigned char version_minor;
   unsigned char point_format;
   std::vector<AttributeAccessor> core_accessors;
