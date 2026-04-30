@@ -581,7 +581,7 @@ PYBIND11_MODULE(pylasr, m) {
     m.def("write_copc", &api::write_copc,
           "Write COPC file",
           py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""},
-          py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = "dense",
+          py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = "normal",
           py::arg("experimental_writer") = false, py::arg("max_extra_depth") = 1,
           py::arg("max_points_per_chunk") = -1, py::arg("bbox") = std::vector<double>{});
 
