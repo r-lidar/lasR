@@ -27,5 +27,5 @@ f <- system.file("extdata", "Example.las", package="lasR")
 
 pipeline <- add_rgb() + write_las()
 exec(pipeline, on = f)
-#> [1] "/tmp/Rtmpj40xB7/Example.las"
+#> [1] "/tmp/RtmpwRMB3f/Example.las"
 ```
