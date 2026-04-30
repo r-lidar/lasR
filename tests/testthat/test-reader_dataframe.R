@@ -125,6 +125,13 @@ test_that("reader_dataframe propagates the CRS",
   rast = rasterize(2)
   u = exec(read+rast, on = las)
 
-  expect_equal(terra::crs(u), wkt)
+  # Compare CRS semantically rather than as raw WKT bytes. PROJ versions
+  # differ in WKT formatting (e.g., PROJ 9.x emits "298.257222101004" for
+  # the NAD83 inverse flattening where older PROJ emits "298.257222101";
+  # macOS-release runners sometimes pull a newer PROJ than the test was
+  # written against). sf::st_crs(...) == sf::st_crs(...) normalizes via
+  # PROJ and returns TRUE iff both inputs describe the same CRS — what
+  # this test actually wants to assert.
+  expect_true(sf::st_crs(terra::crs(u)) == sf::st_crs(wkt))
 })
 
