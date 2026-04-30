@@ -260,6 +260,24 @@ private:
   bool poisoned = false;
   std::string error_msg;
   bool closed = false;
+
+  // Pagination v2 state — populated in finalize_and_write step 3,
+  // consumed in close() after writer_las has flushed the file.
+  // root_hier_size patch: LASlib's update_header (laswriter_las.cpp:1378-
+  // 1385) unconditionally writes root_hier_size = total eVLR length,
+  // but the COPC spec expects only the root page's size. We patch it.
+  // Child-page-reference patches: each entry with point_count = -1 in
+  // the eVLR data needs its (offset, byte_size) filled in with the
+  // absolute file position of its target page. We can't compute these
+  // before close() because writer_las->done() flushes LAZ encoder state
+  // and the actual eVLR data start position isn't known until the
+  // writer has fully closed.
+  bool needs_root_size_patch = false;
+  U64 root_page_size_for_patch = 0;
+  std::vector<COPChierarchy::ChildPageRef> child_refs_for_patch;
+  // Test/operator hook: env LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES sets the
+  // per-page entry threshold. 0 = use the default (4096 = 128 KB pages).
+  U32 max_entries_per_page = 0;
 };
 
 #endif
