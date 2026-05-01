@@ -170,5 +170,14 @@ test_that("callback works with many args",
   expect_equal(ans, 15)
 })
 
-
+test_that("callback works with default args",
+{
+  f = system.file("extdata", "Example.las", package="lasR")
+  fun = function(data, multiplier = 2) { return(mean(data$Z) * multiplier) }
+  read = reader_las()
+  call = callback(fun = fun, expose = "xyz")
+  pipeline = read + call
+  ans = exec(pipeline, on = f)
+  expect_equal(ans, 1951.8, tolerance = 0.01)
+})
 

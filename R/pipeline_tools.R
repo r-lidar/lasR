@@ -37,6 +37,19 @@ print.PipelinePtr <- function(x, ...)
     stop("Both operands must be of class PipelinePtr") # nocov
 
   ans = .APIOPERATIONS$merge_pipeline(e1, e2);
+
+  # Carry over SEXPs that callback/aggregate stages reference by raw address
+  # (func/args/call/env). The C++ pipeline stores their addresses in the JSON
+  # config, so the underlying R objects must outlive every '+' to avoid GC
+  # reusing the slot.
+  preserved <- c(attr(e1, "preserved"), attr(e2, "preserved"))
+  for (key in c("func", "args", "call", "env"))
+  {
+    v1 <- attr(e1, key); if (!is.null(v1)) preserved <- c(preserved, list(v1))
+    v2 <- attr(e2, key); if (!is.null(v2)) preserved <- c(preserved, list(v2))
+  }
+  if (length(preserved) > 0) attr(ans, "preserved") <- preserved
+
   return(ans)
 }
 
