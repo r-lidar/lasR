@@ -182,7 +182,7 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
 callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update = FALSE)
 {
   args <- list(...)
-  fargs <- formals(fun)
+  fargs <- as.list(formals(fun))
   fargs <- fargs[-1]
   fargs[names(args)] <- args
 
@@ -1563,4 +1563,3 @@ LASATTRIBUTES <- c("X", "Y", "Z", "Intensity",
                    "ScannerChannel", "NIR",
                    "UserData", "gpstime", "PointSourceID",
                    "R", "G", "B")
-
