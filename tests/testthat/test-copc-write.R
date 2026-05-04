@@ -180,6 +180,55 @@ test_that("write_copc honours a tiny LASR_COPC_RESIDENT_BUDGET (forces flush pat
   expect_equal(unname(tools::md5sum(o1)), unname(tools::md5sum(o2)))
 })
 
+test_that("write_copc protects shallow LODs from early resident-budget flushes",
+{
+  # Under a tight resident budget, unprotected shallow octants can be frozen
+  # before the whole input stream has had a chance to compete for their voxels.
+  # Protecting depths 0..2 should keep depth-1/depth-2 overview counts much
+  # richer while preserving the full point count.
+  f = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
+  skip_if(f == "", "bcts_1.laz not available")
+
+  prev_resident = Sys.getenv("LASR_COPC_RESIDENT_BUDGET", unset = NA)
+  prev_ram      = Sys.getenv("LASR_COPC_RAM_BUDGET",      unset = NA)
+  prev_wb       = Sys.getenv("LASR_COPC_SPILL_WRITE_BUDGET", unset = NA)
+  prev_protect  = Sys.getenv("LASR_COPC_PROTECTED_LOD_DEPTH", unset = NA)
+  on.exit({
+    if (is.na(prev_resident)) Sys.unsetenv("LASR_COPC_RESIDENT_BUDGET") else Sys.setenv(LASR_COPC_RESIDENT_BUDGET = prev_resident)
+    if (is.na(prev_ram))      Sys.unsetenv("LASR_COPC_RAM_BUDGET")      else Sys.setenv(LASR_COPC_RAM_BUDGET = prev_ram)
+    if (is.na(prev_wb))       Sys.unsetenv("LASR_COPC_SPILL_WRITE_BUDGET") else Sys.setenv(LASR_COPC_SPILL_WRITE_BUDGET = prev_wb)
+    if (is.na(prev_protect))  Sys.unsetenv("LASR_COPC_PROTECTED_LOD_DEPTH") else Sys.setenv(LASR_COPC_PROTECTED_LOD_DEPTH = prev_protect)
+  }, add = TRUE)
+
+  write_with_protection = function(depth) {
+    Sys.setenv(
+      LASR_COPC_RESIDENT_BUDGET = as.character(1024L * 1024L),
+      LASR_COPC_RAM_BUDGET = as.character(1024L * 1024L),
+      LASR_COPC_SPILL_WRITE_BUDGET = as.character(2L * 1024L * 1024L),
+      LASR_COPC_PROTECTED_LOD_DEPTH = as.character(depth)
+    )
+    o = tempfile(fileext = ".copc.laz")
+    on.exit(unlink(o), add = TRUE)
+    exec(write_copc(o, density = "normal", experimental_writer = TRUE), on = f)
+    c(
+      d0 = exec(reader_las(depth = 0) + summarise(), on = o)$npoints,
+      d1 = exec(reader_las(depth = 1) + summarise(), on = o)$npoints,
+      d2 = exec(reader_las(depth = 2) + summarise(), on = o)$npoints,
+      total = exec(reader() + summarise(), on = o)$npoints
+    )
+  }
+
+  unprotected = write_with_protection(0)
+  protected   = write_with_protection(2)
+  src_n       = exec(reader() + summarise(), on = f)$npoints
+
+  expect_equal(unprotected[["total"]], src_n)
+  expect_equal(protected[["total"]], src_n)
+  expect_equal(protected[["d0"]], unprotected[["d0"]])
+  expect_gt(protected[["d1"]], unprotected[["d1"]] * 2)
+  expect_gt(protected[["d2"]], unprotected[["d2"]] * 4)
+})
+
 test_that("write_copc honours LASR_COPC_MEMORY_BUDGET (single global knob)",
 {
   # Setting only LASR_COPC_MEMORY_BUDGET should split internally into the
