@@ -91,6 +91,7 @@ drop_caches() {
   else
     [[ "$DROP_CACHES" == "always" ]] && {
       echo "[run_writers] DROP_CACHES=always but no passwordless sudo" >&2; return 1; }
+    return 0
   fi
 }
 
