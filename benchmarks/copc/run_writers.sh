@@ -18,12 +18,14 @@ test -s "$RES/run_metadata.txt" || { echo "[run_writers] missing $RES/run_metada
 
 WARM_REPEATS=${WARM_REPEATS:-3}
 DROP_CACHES=${DROP_CACHES:-auto}   # auto|always|never
+WRITER_FILTER=${WRITER_FILTER:-}    # optional exact writer_id or comma-separated list
 INPUT_POINTS=$(awk '$1=="dataset_point_count"{print $2; exit}' "$RES/run_metadata.txt")
 
 # Writer matrix: <writer_id>|<wrapper_path>|<extra_argv_prefix>
 WRITERS=(
   "lasR-default|writers/write_lasR.R|default"
   "lasR-experimental|writers/write_lasR.R|experimental"
+  "lasR-experimental-dense|writers/write_lasR.R|experimental-dense"
   "pdal|writers/write_pdal.sh|"
   "untwine|writers/write_untwine.sh|"
   "lascopcindex|writers/write_lascopcindex.sh|"
@@ -138,9 +140,18 @@ run_one() {
   if [[ $exit_status -ne 0 ]]; then return $exit_status; fi
 }
 
+should_run_writer() {
+  local writer_id=$1
+  [[ -z "$WRITER_FILTER" ]] && return 0
+  [[ ",$WRITER_FILTER," == *",$writer_id,"* ]]
+}
+
 # write phase per writer: 1 cold + N warm
 for entry in "${WRITERS[@]}"; do
   IFS='|' read -r writer_id wrapper extra <<<"$entry"
+  if ! should_run_writer "$writer_id"; then
+    continue
+  fi
   echo "=== writer: $writer_id ==="
   drop_caches
   run_one "$writer_id" "$wrapper" "$extra" cold 0 || true
