@@ -220,6 +220,12 @@ private:
   I32 copc_density = 256;
   I32 max_points_per_octant = 100000; // used to estimate auto max_depth
   I32 min_points_per_chunk = 100;
+  // Shallow overview octants are kept replaceable until finalization so
+  // low-depth COPC reads sample the whole input stream instead of whatever
+  // spatial band happened to arrive before the resident budget first flushed.
+  // Internal/operator knob only: LASR_COPC_PROTECTED_LOD_DEPTH can lower this
+  // to 0/1 for tighter memory or raise it to 3 while tuning visualization.
+  I32 protected_lod_depth = 2;
   // Hard upper bound on adaptive depth bumping. Only consulted when
   // copc_depth was left at its auto sentinel (-1) at open() time — a user
   // who explicitly passed max_depth gets that value as a hard routing cap

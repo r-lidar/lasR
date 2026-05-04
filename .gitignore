@@ -23,3 +23,5 @@ python/build
 *.pyc
 CLAUDE.md
 .Rlib
+*settings.json
+*DS_Store*
