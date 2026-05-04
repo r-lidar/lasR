@@ -3,6 +3,7 @@ data/*
 !data/.gitkeep
 results/*
 !results/.gitkeep
+<<<<<<< HEAD
 !results/outputs/
 results/outputs/*
 !results/outputs/.gitkeep
@@ -11,3 +12,7 @@ results/logs/*
 !results/logs/.gitkeep
 potree_viewer/*
 *DS_Store*
+=======
+!results/outputs/.gitkeep
+!results/logs/.gitkeep
+>>>>>>> 985fe3cf (benchmarks/copc: scaffold harness layout)
