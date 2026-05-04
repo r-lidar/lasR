@@ -91,6 +91,17 @@ namespace
     if (!end || *end != '\0' || n == 0 || n > 0xFFFFFFFFu) return 0;
     return (std::uint32_t)n;
   }
+  int env_protected_lod_depth()
+  {
+    const char* v = std::getenv("LASR_COPC_PROTECTED_LOD_DEPTH");
+    if (!v || !*v) return -1;
+    char* end = nullptr;
+    long n = std::strtol(v, &end, 10);
+    if (!end || *end != '\0') return -1;
+    if (n < -1) return -1;
+    if (n > 16) return 16;
+    return (int)n;
+  }
 
   // Extract the three fields (GPS time, scanner channel, return number) used
   // as the within-chunk sort key. Layout matches PDRF 6/7/8 point records.
@@ -472,6 +483,7 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   // budget partition.
   if (std::uint64_t e = env_max_sort_memory(); e > 0) max_sort_memory = e;
   if (std::uint32_t e = env_max_entries_per_page(); e > 0) max_entries_per_page = e;
+  if (int e = env_protected_lod_depth(); e >= 0) protected_lod_depth = e;
 
   // Optional one-shot diagnostic: when LASR_COPC_DEBUG_BUDGETS is set,
   // print the resolved (resident, ram, wb, sort-cap) so tests and operators
@@ -480,11 +492,12 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   // public R API.
   if (const char* dbg = std::getenv("LASR_COPC_DEBUG_BUDGETS"); dbg && *dbg)
   {
-    warning("COPC budgets resolved: resident=%llu spill_ram=%llu spill_wb=%llu sort_cap=%llu (mem=%llu)\n",
+    warning("COPC budgets resolved: resident=%llu spill_ram=%llu spill_wb=%llu sort_cap=%llu protected_lod_depth=%d (mem=%llu)\n",
             (unsigned long long)resident_budget,
             (unsigned long long)spill_ram,
             (unsigned long long)spill_wb,
             (unsigned long long)max_sort_memory,
+            (int)protected_lod_depth,
             (unsigned long long)mem_budget);
   }
 
@@ -833,8 +846,8 @@ bool COPCwriter::flush_hot_octant(const EPTkey& key)
 
 bool COPCwriter::enforce_resident_budget()
 {
-  // Pick the heaviest hot octant from the incrementally-maintained
-  // octant_bytes table (O(N_octants), no inner voxel sum) and flush.
+  // Pick the heaviest unprotected hot octant from the incrementally-
+  // maintained octant_bytes table (O(N_octants), no inner voxel sum) and flush.
   // Drive resident_bytes below the LOW WATER mark (50% of budget) before
   // returning, so we don't get called again on the very next insert
   // — without hysteresis the previous version triggered per-point on
@@ -864,12 +877,30 @@ bool COPCwriter::enforce_resident_budget()
   // entire write because hysteresis prevents re-trigger on each insert.
   // Low_water at 40% (was 50%) leaves an extra 10% as headroom for
   // metadata, fragmentation, and transient peaks during finalize.
-  const std::uint64_t low_water = (std::uint64_t)((double)resident_budget * 0.4);
-  if (resident_bytes <= low_water || octant_bytes.empty()) return true;
+  // Shallow LODs are intentionally not flush candidates: freezing them
+  // early makes later points descend past those overview octants, so
+  // low-depth reads can show scan-order bands and blocky holes. Treat
+  // protected bytes as the irreducible floor and apply hysteresis to the
+  // remaining budget slice.
+  if (octant_bytes.empty()) return true;
+  std::uint64_t protected_bytes = 0;
+  for (const auto& kv : octant_bytes)
+    if (kv.first.d <= protected_lod_depth) protected_bytes += kv.second;
+
+  const std::uint64_t unprotected_budget =
+      (resident_budget > protected_bytes) ? (resident_budget - protected_bytes) : 0;
+  const std::uint64_t low_water =
+      protected_bytes + (std::uint64_t)((double)unprotected_budget * 0.4);
+  if (resident_bytes <= low_water) return true;
 
   std::vector<std::pair<std::uint64_t, EPTkey>> sorted;
   sorted.reserve(octant_bytes.size());
-  for (const auto& kv : octant_bytes) sorted.emplace_back(kv.second, kv.first);
+  for (const auto& kv : octant_bytes)
+  {
+    if (kv.first.d <= protected_lod_depth) continue;
+    sorted.emplace_back(kv.second, kv.first);
+  }
+  if (sorted.empty()) return true;
   // Heaviest first; (depth, x, y, z) tie-break preserves determinism.
   std::sort(sorted.begin(), sorted.end(),
             [&key_less](const auto& a, const auto& b) {
