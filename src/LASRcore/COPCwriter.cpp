@@ -102,6 +102,27 @@ namespace
     if (n > 16) return 16;
     return (int)n;
   }
+  int env_xy_lod_depth()
+  {
+    const char* v = std::getenv("LASR_COPC_XY_LOD_DEPTH");
+    if (!v || !*v) return -2;
+    char* end = nullptr;
+    long n = std::strtol(v, &end, 10);
+    if (!end || *end != '\0') return -2;
+    if (n < -1) return -2;
+    if (n > 16) return 16;
+    return (int)n;
+  }
+  int env_xy_lod_grid_multiplier()
+  {
+    const char* v = std::getenv("LASR_COPC_XY_LOD_GRID_MULTIPLIER");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    long n = std::strtol(v, &end, 10);
+    if (!end || *end != '\0' || n <= 0) return 0;
+    if (n > 16) return 16;
+    return (int)n;
+  }
 
   // Extract the three fields (GPS time, scanner channel, return number) used
   // as the within-chunk sort key. Layout matches PDRF 6/7/8 point records.
@@ -484,6 +505,8 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   if (std::uint64_t e = env_max_sort_memory(); e > 0) max_sort_memory = e;
   if (std::uint32_t e = env_max_entries_per_page(); e > 0) max_entries_per_page = e;
   if (int e = env_protected_lod_depth(); e >= 0) protected_lod_depth = e;
+  if (int e = env_xy_lod_depth(); e >= -1) xy_lod_depth = e;
+  if (int e = env_xy_lod_grid_multiplier(); e > 0) xy_lod_grid_multiplier = e;
 
   // Optional one-shot diagnostic: when LASR_COPC_DEBUG_BUDGETS is set,
   // print the resolved (resident, ram, wb, sort-cap) so tests and operators
@@ -492,12 +515,14 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   // public R API.
   if (const char* dbg = std::getenv("LASR_COPC_DEBUG_BUDGETS"); dbg && *dbg)
   {
-    warning("COPC budgets resolved: resident=%llu spill_ram=%llu spill_wb=%llu sort_cap=%llu protected_lod_depth=%d (mem=%llu)\n",
+    warning("COPC budgets resolved: resident=%llu spill_ram=%llu spill_wb=%llu sort_cap=%llu protected_lod_depth=%d xy_lod_depth=%d xy_lod_grid_multiplier=%d (mem=%llu)\n",
             (unsigned long long)resident_budget,
             (unsigned long long)spill_ram,
             (unsigned long long)spill_wb,
             (unsigned long long)max_sort_memory,
             (int)protected_lod_depth,
+            (int)xy_lod_depth,
+            (int)xy_lod_grid_multiplier,
             (unsigned long long)mem_budget);
   }
 
@@ -649,6 +674,41 @@ void COPCwriter::FlatI32U32Map::insert(I32 cell, U32 idx)
   ++count;
 }
 
+bool COPCwriter::FlatI32U32Map::erase(I32 cell)
+{
+  if (keys.empty()) return false;
+  const U32 mask = static_cast<U32>(keys.size() - 1);
+  U32 slot = mix(cell) & mask;
+  for (;;)
+  {
+    const I32 k = keys[slot];
+    if (k == -1) return false;
+    if (k == cell) break;
+    slot = (slot + 1u) & mask;
+  }
+
+  keys[slot] = -1;
+  values[slot] = 0u;
+  --count;
+
+  // Linear-probing deletion must reinsert the following cluster; otherwise
+  // find() could stop at the new empty slot before reaching keys displaced
+  // past it.
+  U32 next = (slot + 1u) & mask;
+  while (keys[next] != -1)
+  {
+    const I32 rekey = keys[next];
+    const U32 reval = values[next];
+    keys[next] = -1;
+    values[next] = 0u;
+    --count;
+    insert(rekey, reval);
+    next = (next + 1u) & mask;
+  }
+
+  return true;
+}
+
 // Small per-voxel slack added on top of the capacity-delta accounting.
 // With the FlatI32U32Map (no per-entry node allocations) the only
 // non-array per-voxel cost is the malloc bookkeeping amortised across
@@ -684,10 +744,34 @@ bool COPCwriter::route_or_spill(U8* bytes, U64 hash, I32 start_depth)
     {
       EPTkey k_d = hierarchy->compute_key_at(point, d);
 
-      // Flushed octants no longer accept claims — descend.
-      if (flushed_octants.count(k_d)) continue;
+      // Flushed non-XY octants no longer accept claims — descend. For
+      // intermediate XY overview octants, a flush is only a byte spill:
+      // keep accepting later batches until the total emitted count reaches
+      // the chunk cap. That keeps point RAM bounded but avoids freezing a
+      // low-depth chunk to whichever scan band arrived before the first
+      // memory-pressure flush.
+      const bool was_flushed = flushed_octants.count(k_d) != 0;
+      U64 already_flushed = 0;
+      if (was_flushed)
+      {
+        if (d > xy_lod_depth) continue;
+        auto fit = flushed_octant_points.find(k_d);
+        already_flushed = (fit != flushed_octant_points.end()) ? fit->second : 0;
+        if (already_flushed >= (U64)cap) continue;
+      }
 
-      I32 cell_d = hierarchy->compute_voxel_cell(point, k_d);
+      I32 cell_d = -1;
+      if (d <= xy_lod_depth)
+      {
+        const I32 base_grid = hierarchy->get_grid_size();
+        const I32 multiplier = (std::max)(1, xy_lod_grid_multiplier);
+        const I32 xy_grid = (base_grid <= 8192 / multiplier) ? base_grid * multiplier : 8192;
+        cell_d = hierarchy->compute_xy_cell(point, k_d, xy_grid);
+      }
+      else
+      {
+        cell_d = hierarchy->compute_voxel_cell(point, k_d);
+      }
       if (cell_d < 0) continue;
 
       auto& oct = occupancy[k_d];
@@ -695,8 +779,36 @@ bool COPCwriter::route_or_spill(U8* bytes, U64 hash, I32 start_depth)
       if (found_idx == UINT32_MAX)
       {
         // Voxel free. Claim it only if the octant still has cap room;
-        // otherwise descend further (chunk-size cap).
-        if ((I32)oct.cells.size() >= cap) continue;
+        // otherwise let shallow XY overview cells compete for an existing
+        // slot. This avoids freezing the first cap cells encountered in
+        // scan order at d=3-4: a later cell with a stronger deterministic
+        // hash can evict a previously selected cell, and the evicted point
+        // continues routing downward. The slot count and byte capacity stay
+        // unchanged, so this improves intermediate-depth mixing without
+        // increasing resident RAM.
+        const U64 total_claims = already_flushed + (U64)oct.cells.size();
+        if (total_claims >= (U64)cap)
+        {
+          if (d <= xy_lod_depth && !oct.cells.empty())
+          {
+            const U32 idx = (U32)(hash % (U64)oct.cells.size());
+            if (hash > oct.hashes[idx])
+            {
+              const I32 old_cell = oct.cells[idx];
+              U8* slot = oct.bytes.data() + (std::size_t)idx * point_size;
+              std::swap_ranges(bytes, bytes + point_size, slot);
+              std::swap(hash, oct.hashes[idx]);
+              oct.cell_to_idx.erase(old_cell);
+              oct.cells[idx] = cell_d;
+              oct.cell_to_idx.insert(cell_d, idx);
+              start_depth = d + 1;
+              placed = false;
+              need_decode = true;
+              goto next_iter;
+            }
+          }
+          continue;
+        }
         // Snapshot capacities before insertion so we can attribute any
         // vector growth (which doubles capacity) to this voxel's account.
         // Includes the FlatI32U32Map's two arrays.
@@ -838,6 +950,7 @@ bool COPCwriter::flush_hot_octant(const EPTkey& key)
   auto bb_it = octant_bytes.find(key);
   const std::size_t freed = (bb_it != octant_bytes.end()) ? bb_it->second : 0;
   if (bb_it != octant_bytes.end()) octant_bytes.erase(bb_it);
+  flushed_octant_points[key] += (U64)n;
   occupancy.erase(it);
   flushed_octants.insert(key);
   resident_bytes = (resident_bytes >= freed) ? (resident_bytes - freed) : 0;
@@ -846,13 +959,11 @@ bool COPCwriter::flush_hot_octant(const EPTkey& key)
 
 bool COPCwriter::enforce_resident_budget()
 {
-  // Pick the heaviest unprotected hot octant from the incrementally-
-  // maintained octant_bytes table (O(N_octants), no inner voxel sum) and flush.
-  // Drive resident_bytes below the LOW WATER mark (50% of budget) before
-  // returning, so we don't get called again on the very next insert
-  // — without hysteresis the previous version triggered per-point on
-  // huge inputs and dominated CPU (97% in this function on the sofi
-  // run before this fix).
+  // Pick the heaviest unprotected hot octants from the incrementally-
+  // maintained octant_bytes table (O(N_octants), no inner voxel sum) and
+  // flush until resident_bytes drops below the low-water mark. Without any
+  // hysteresis the previous version triggered per-point on huge inputs and
+  // dominated CPU (97% in this function on the sofi run before this fix).
   //
   // Tie-break on (depth, x, y, z) when multiple octants share the
   // heaviest size: flushing freezes that octant's voxel decisions and
@@ -875,9 +986,9 @@ bool COPCwriter::enforce_resident_budget()
   // Snapshot+sort once, then drain from heaviest until under low_water.
   // O(N log N) per call; typically called only a handful of times for an
   // entire write because hysteresis prevents re-trigger on each insert.
-  // Low_water at 40% (was 50%) leaves an extra 10% as headroom for
-  // metadata, fragmentation, and transient peaks during finalize.
-  // Shallow LODs are intentionally not flush candidates: freezing them
+  // Low_water at 40% leaves headroom for metadata, fragmentation, and
+  // transient peaks during finalize.
+  // Protected LODs are intentionally not flush candidates: freezing them
   // early makes later points descend past those overview octants, so
   // low-depth reads can show scan-order bands and blocky holes. Treat
   // protected bytes as the irreducible floor and apply hysteresis to the
@@ -911,7 +1022,8 @@ bool COPCwriter::enforce_resident_budget()
   for (const auto& kv : sorted)
   {
     if (resident_bytes <= low_water) break;
-    if (kv.first == 0) break;
+    // Defensive: skip if the octant was already drained earlier this pass.
+    if (occupancy.find(kv.second) == occupancy.end()) continue;
     if (!flush_hot_octant(kv.second)) return false;
   }
   return true;
