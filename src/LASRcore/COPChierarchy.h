@@ -48,6 +48,12 @@ public:
   // a non-negative cell id usable as a key into a per-octant occupancy set.
   I32 compute_voxel_cell(const LASpoint* p, const EPTkey& key) const;
 
+  // XY-only cell index within `key`'s xy_grid_size² grid. Used by the
+  // streaming COPC writer for low-depth overview chunks where map-view
+  // visual balance matters more than vertical occupancy. Returns a
+  // non-negative cell id usable in the same occupancy table as voxel cells.
+  I32 compute_xy_cell(const LASpoint* p, const EPTkey& key, I32 xy_grid_size) const;
+
   I32 get_max_depth() const { return max_depth; }
   I32 get_grid_size() const { return octree.get_gridsize(); }
 

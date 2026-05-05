@@ -126,9 +126,7 @@ private:
   // via the caller-passed buffer.
   //
   // FlatI32U32Map is an open-addressed I32→U32 hash table specialised
-  // for our usage: insert-or-update only (no per-entry erase — the
-  // whole octant is dropped at flush time), so we don't need
-  // tombstones; the cell-id key is non-negative so we sentinel empty
+  // for our usage. The cell-id key is non-negative so we sentinel empty
   // slots with -1; capacity is a power of 2 so slot index is a cheap
   // bitmask. ~12 B amortised per entry vs ~50 B for unordered_map.
   struct FlatI32U32Map
@@ -147,6 +145,11 @@ private:
     // Insert (cell -> idx) assuming cell is not already present. Grows
     // the table when load factor would exceed ~0.7.
     void insert(I32 cell, U32 idx);
+
+    // Erase a cell mapping if present. Used by shallow XY cap replacement,
+    // where a full overview octant keeps the same slot count but swaps a
+    // previously selected cell for a later competing cell.
+    bool erase(I32 cell);
   };
 
   struct HotOctant
@@ -167,12 +170,17 @@ private:
   std::unordered_map<EPTkey, HotOctant, EPTKeyHasher> occupancy;
 
   // Octants whose residents have already been flushed to spill due to RAM
-  // pressure. A flushed octant no longer accepts new claims at routing
-  // time — points descend past it. The flushed residents are baked into
-  // spill exactly as if they had been emitted from the in-RAM table
-  // normally; they just lose their replaceability (the hash-replace
-  // mechanism is disabled for that octant after flush).
+  // pressure. Non-XY flushed octants no longer accept new claims at routing
+  // time — points descend past them. Intermediate XY flushed octants may
+  // reopen for later batches up to the chunk cap, using
+  // flushed_octant_points to keep the total bounded.
   std::unordered_set<EPTkey, EPTKeyHasher> flushed_octants;
+
+  // Point counts already appended for flushed octants. For intermediate XY
+  // overview depths we can reopen a flushed octant for later batches until
+  // its total emitted count reaches max_points_per_octant. This keeps the
+  // same resident byte cap while avoiding a permanent scan-order snapshot.
+  std::unordered_map<EPTkey, U64, EPTKeyHasher> flushed_octant_points;
 
   // Per-octant byte usage, kept in sync with `occupancy` on every insert /
   // replace / evict / flush. Avoids the O(voxels) cost of re-summing each
@@ -224,8 +232,15 @@ private:
   // low-depth COPC reads sample the whole input stream instead of whatever
   // spatial band happened to arrive before the resident budget first flushed.
   // Internal/operator knob only: LASR_COPC_PROTECTED_LOD_DEPTH can lower this
-  // to 0/1 for tighter memory or raise it to 3 while tuning visualization.
+  // to 0/1 for tighter memory or raise it to 3/4 while tuning visualization.
   I32 protected_lod_depth = 2;
+  // Low-depth overview chunks are sampled in map space (XY) instead of full
+  // 3D voxel space. This avoids scan/height structure showing up as bands in
+  // coarse COPC reads. LASR_COPC_XY_LOD_DEPTH=-1 disables; the multiplier
+  // controls the XY grid resolution relative to copc_density.
+  I32 xy_lod_depth = 4;
+  I32 xy_lod_grid_multiplier = 2;
+
   // Hard upper bound on adaptive depth bumping. Only consulted when
   // copc_depth was left at its auto sentinel (-1) at open() time — a user
   // who explicitly passed max_depth gets that value as a hard routing cap
