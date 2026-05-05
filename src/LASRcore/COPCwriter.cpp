@@ -505,6 +505,18 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   if (std::uint64_t e = env_max_sort_memory(); e > 0) max_sort_memory = e;
   if (std::uint32_t e = env_max_entries_per_page(); e > 0) max_entries_per_page = e;
   if (int e = env_protected_lod_depth(); e >= 0) protected_lod_depth = e;
+  // Auto-tune xy_lod_depth to (routing_max_depth - 1) — i.e. one level
+  // above the leaf — so XY-LOD reopen-on-flush covers every intermediate
+  // (non-leaf) depth regardless of how deep the tree ends up. Without
+  // this, merged writes whose routing_max_depth exceeds the static
+  // default+1 (= 5) leave intermediate octants flushed-and-not-reopened,
+  // producing visible horizontal banding at d > xy_lod_depth (e.g. d=5
+  // of a 4-tile merge with routing_max_depth=6). routing_max_depth has
+  // already been resolved above (auto = max_depth + max_extra_depth, or
+  // user-set value, or HARD_DEPTH_LIMIT). The single-tile case
+  // (routing_max_depth=5 → xy_lod_depth=4) matches the previous static
+  // default, so behavior there is unchanged. Env override still wins.
+  xy_lod_depth = (std::max)(0, routing_max_depth - 1);
   if (int e = env_xy_lod_depth(); e >= -1) xy_lod_depth = e;
   if (int e = env_xy_lod_grid_multiplier(); e > 0) xy_lod_grid_multiplier = e;
 
