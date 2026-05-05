@@ -2,8 +2,7 @@
 
 This harness benchmarks lasR's COPC writer against PDAL, Untwine, and
 LAStools `lascopcindex`, then measures HTTP-range read performance of each
-writer's output through lasR's reader. See the design spec under
-`docs/superpowers/specs/`.
+writer's output through lasR's reader.
 
 ## Prerequisites
 
