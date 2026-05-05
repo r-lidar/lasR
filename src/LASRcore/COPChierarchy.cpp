@@ -3,6 +3,7 @@
 #include "print.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <functional>
 #include <limits>
@@ -28,6 +29,28 @@ EPTkey COPChierarchy::compute_key_at(const LASpoint* p, I32 depth) const
 I32 COPChierarchy::compute_voxel_cell(const LASpoint* p, const EPTkey& key) const
 {
   return octree.get_cell(p, key);
+}
+
+I32 COPChierarchy::compute_xy_cell(const LASpoint* p, const EPTkey& key, I32 xy_grid_size) const
+{
+  if (xy_grid_size < 2) xy_grid_size = octree.get_gridsize();
+  if (xy_grid_size < 2) return -1;
+
+  const F64 size = octree.get_halfsize() * 2.0;
+  const F64 octant_size = std::ldexp(size, -key.d);
+  if (!(octant_size > 0.0)) return -1;
+
+  const F64 minx = octant_size * key.x + (octree.get_center_x() - octree.get_halfsize());
+  const F64 miny = octant_size * key.y + (octree.get_center_y() - octree.get_halfsize());
+  const F64 grid_resolution = octant_size / xy_grid_size;
+  if (!(grid_resolution > 0.0)) return -1;
+
+  I32 xi = (I32)std::floor((p->get_x() - minx) / grid_resolution);
+  I32 yi = (I32)std::floor((p->get_y() - miny) / grid_resolution);
+  xi = (std::min)((std::max)(0, xi), xy_grid_size - 1);
+  yi = (std::min)((std::max)(0, yi), xy_grid_size - 1);
+
+  return yi * xy_grid_size + xi;
 }
 
 // Find the nearest existing ancestor of `key` in `octant_counts`. Returns

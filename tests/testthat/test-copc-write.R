@@ -168,6 +168,47 @@ test_that("write_copc produces progressive LOD across depths",
   expect_equal(exec(reader() + summarise(), on = o)$npoints, total)
 })
 
+test_that("write_copc uses XY-balanced shallow LOD sampling by default",
+{
+  # Low-depth overviews should be selected in map space so display reads are
+  # not biased by vertical/scanline structure. Compare the default against the
+  # internal escape hatch that restores pure 3D voxel-cell routing.
+  f = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
+  skip_if(f == "", "bcts_1.laz not available")
+
+  prev_xy_depth = Sys.getenv("LASR_COPC_XY_LOD_DEPTH", unset = NA)
+  prev_xy_mult  = Sys.getenv("LASR_COPC_XY_LOD_GRID_MULTIPLIER", unset = NA)
+  on.exit({
+    if (is.na(prev_xy_depth)) Sys.unsetenv("LASR_COPC_XY_LOD_DEPTH") else Sys.setenv(LASR_COPC_XY_LOD_DEPTH = prev_xy_depth)
+    if (is.na(prev_xy_mult))  Sys.unsetenv("LASR_COPC_XY_LOD_GRID_MULTIPLIER") else Sys.setenv(LASR_COPC_XY_LOD_GRID_MULTIPLIER = prev_xy_mult)
+  }, add = TRUE)
+
+  write_with_xy_depth = function(depth) {
+    Sys.unsetenv("LASR_COPC_XY_LOD_GRID_MULTIPLIER")
+    if (is.na(depth)) Sys.unsetenv("LASR_COPC_XY_LOD_DEPTH")
+    else Sys.setenv(LASR_COPC_XY_LOD_DEPTH = as.character(depth))
+
+    o = tempfile(fileext = ".copc.laz")
+    on.exit(unlink(o), add = TRUE)
+    exec(write_copc(o, density = "normal", experimental_writer = TRUE), on = f)
+    c(
+      d0 = exec(reader_las(depth = 0) + summarise(), on = o)$npoints,
+      d1 = exec(reader_las(depth = 1) + summarise(), on = o)$npoints,
+      d2 = exec(reader_las(depth = 2) + summarise(), on = o)$npoints,
+      total = exec(reader() + summarise(), on = o)$npoints
+    )
+  }
+
+  xy_default = write_with_xy_depth(NA)
+  xyz_only   = write_with_xy_depth(-1)
+  src_n      = exec(reader() + summarise(), on = f)$npoints
+
+  expect_equal(xy_default[["total"]], src_n)
+  expect_equal(xyz_only[["total"]], src_n)
+  expect_gt(xy_default[["d1"]], xyz_only[["d1"]] * 1.05)
+  expect_gt(xy_default[["d2"]], xyz_only[["d2"]] * 1.03)
+})
+
 test_that("write_copc honours a tiny LASR_COPC_RESIDENT_BUDGET (forces flush path)",
 {
   # bcts_1.laz holds enough points that a 1 MB resident budget will fire
@@ -223,11 +264,13 @@ test_that("write_copc protects shallow LODs from early resident-budget flushes",
   prev_ram      = Sys.getenv("LASR_COPC_RAM_BUDGET",      unset = NA)
   prev_wb       = Sys.getenv("LASR_COPC_SPILL_WRITE_BUDGET", unset = NA)
   prev_protect  = Sys.getenv("LASR_COPC_PROTECTED_LOD_DEPTH", unset = NA)
+  prev_xy_depth = Sys.getenv("LASR_COPC_XY_LOD_DEPTH", unset = NA)
   on.exit({
     if (is.na(prev_resident)) Sys.unsetenv("LASR_COPC_RESIDENT_BUDGET") else Sys.setenv(LASR_COPC_RESIDENT_BUDGET = prev_resident)
     if (is.na(prev_ram))      Sys.unsetenv("LASR_COPC_RAM_BUDGET")      else Sys.setenv(LASR_COPC_RAM_BUDGET = prev_ram)
     if (is.na(prev_wb))       Sys.unsetenv("LASR_COPC_SPILL_WRITE_BUDGET") else Sys.setenv(LASR_COPC_SPILL_WRITE_BUDGET = prev_wb)
     if (is.na(prev_protect))  Sys.unsetenv("LASR_COPC_PROTECTED_LOD_DEPTH") else Sys.setenv(LASR_COPC_PROTECTED_LOD_DEPTH = prev_protect)
+    if (is.na(prev_xy_depth)) Sys.unsetenv("LASR_COPC_XY_LOD_DEPTH") else Sys.setenv(LASR_COPC_XY_LOD_DEPTH = prev_xy_depth)
   }, add = TRUE)
 
   write_with_protection = function(depth) {
@@ -235,7 +278,8 @@ test_that("write_copc protects shallow LODs from early resident-budget flushes",
       LASR_COPC_RESIDENT_BUDGET = as.character(1024L * 1024L),
       LASR_COPC_RAM_BUDGET = as.character(1024L * 1024L),
       LASR_COPC_SPILL_WRITE_BUDGET = as.character(2L * 1024L * 1024L),
-      LASR_COPC_PROTECTED_LOD_DEPTH = as.character(depth)
+      LASR_COPC_PROTECTED_LOD_DEPTH = as.character(depth),
+      LASR_COPC_XY_LOD_DEPTH = "-1"
     )
     o = tempfile(fileext = ".copc.laz")
     on.exit(unlink(o), add = TRUE)
