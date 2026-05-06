@@ -210,6 +210,14 @@ class TestGeometricAnalysis(unittest.TestCase):
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
+    def test_callback(self):
+        """Test callback pipeline creation"""
+        def passthrough(data):
+            return data
+
+        pipeline = pylasr.callback(passthrough, expose="xyz")
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
     def test_triangulate(self):
         """Test triangulate pipeline creation"""
         pipeline = pylasr.triangulate(
