@@ -34,6 +34,36 @@ private:
 };
 
 
+#elif defined(USING_PYTHON)
+
+#include "Stage.h"
+#include <string>
+#include <vector>
+#include <pybind11/pybind11.h>
+
+namespace lasr_python_callback
+{
+  std::string register_callback(pybind11::object callable, pybind11::tuple args);
+}
+
+class LASRcallback : public Stage
+{
+public:
+  LASRcallback() = default;
+  bool process(PointCloud*& las) override;
+  bool set_parameters(const nlohmann::json&) override;
+  std::string get_name() const override { return "callback";  }
+  bool is_parallelizable() const override { return false; }
+
+  LASRcallback* clone() const override { return new LASRcallback(*this); };
+
+private:
+  bool modify = true;
+  bool drop_buffer = false;
+  std::string select;
+  std::string callback_id;
+};
+
 #else
 #pragma message("LASRcallback skipped: cannot be compiled without R")
 #endif

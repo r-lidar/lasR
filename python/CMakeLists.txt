@@ -224,6 +224,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/addattribute.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/boundaries.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/breakif.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/callback.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/csf.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/edit.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/focal.cpp
