@@ -291,6 +291,25 @@ void LASio::populate_header(Header* header, bool read_first_point)
     }
   }
 
+  // The LAS 1.4 spec also allows the WKT projection record (user_id "LASF_Projection",
+  // record_id 2112) to live in an Extended VLR. LASlib's vlr_geo_ogc_wkt flag and the
+  // vlrs[] array only cover regular VLRs, so we have to iterate evlrs[] separately.
+  if (!header->crs.is_valid())
+  {
+    for (unsigned int j = 0; j < lasreader->header.number_of_extended_variable_length_records; j++)
+    {
+      const LASevlr& evlr = lasreader->header.evlrs[j];
+      if (strncmp(evlr.user_id, "LASF_Projection", 16) == 0 && evlr.record_id == 2112 && evlr.data != nullptr)
+      {
+        char* data = (char*)evlr.data;
+        size_t len = strnlen(data, (size_t)evlr.record_length_after_header);
+        std::string wkt(data, len);
+        header->set_crs(wkt);
+        break;
+      }
+    }
+  }
+
   header->spatial_index = (lasreader->get_index() != nullptr) || (lasreader->get_copcindex() != nullptr);
 
 
