@@ -465,6 +465,52 @@ test_that("write_copc bbox= overrides the source header's bbox in the octree",
   expect_equal(hs, exp_hs, tolerance = 1e-6)
 })
 
+test_that("write_copc gpstime min/max ignore points with gpstime == 0",
+{
+  # A single synthetic point with gpstime=0 in an otherwise-valid dataset
+  # would otherwise drag the COPC info VLR's gpstime_minimum to 0
+  # (= 1980-01-06 in GPS-week-zero), which downstream tools display as a
+  # meaningless temporal extent. The writer must ignore gpstime==0 when
+  # computing min/max, and only fall back to 0/0 when no non-zero gpstime
+  # was ever seen.
+  f = system.file("extdata", "Topography.las", package = "lasR")
+
+  read_copc_gpstime = function(path) {
+    con = file(path, open = "rb"); on.exit(close(con))
+    # COPC info VLR data starts at 375 + 54. Skip 5*F64 (center xyz, halfsize,
+    # spacing) + 2*U64 (root_hier_offset/size) = 56 bytes to gpstime_minimum.
+    seek(con, 375 + 54 + 56)
+    c(min = readBin(con, "double", n = 1, size = 8, endian = "little"),
+      max = readBin(con, "double", n = 1, size = 8, endian = "little"))
+  }
+
+  # Case 1: original gpstime range carries through.
+  o1 = tempfile(fileext = ".copc.laz"); on.exit(unlink(o1), add = TRUE)
+  lasR::exec(write_copc(o1, experimental_writer = TRUE), on = f)
+  g1 = read_copc_gpstime(o1)
+  expect_gt(g1["min"], 0)
+  expect_gt(g1["max"], g1["min"])
+
+  # Case 2: zero out gpstime on ground class only. The COPC min/max must
+  # still reflect the non-ground points' real range, not 0.
+  o_mixed_las = tempfile(fileext = ".las"); on.exit(unlink(o_mixed_las), add = TRUE)
+  lasR::exec(reader() + edit_attribute(filter = "Classification == 2", attribute = "gpstime", value = 0) + write_las(o_mixed_las), on = f)
+  o_mixed = tempfile(fileext = ".copc.laz"); on.exit(unlink(o_mixed), add = TRUE)
+  lasR::exec(write_copc(o_mixed, experimental_writer = TRUE), on = o_mixed_las)
+  g_mixed = read_copc_gpstime(o_mixed)
+  expect_equal(unname(g_mixed["min"]), unname(g1["min"]), tolerance = 1e-9)
+  expect_equal(unname(g_mixed["max"]), unname(g1["max"]), tolerance = 1e-9)
+
+  # Case 3: zero out gpstime on every point. All zero -> COPC min/max = 0/0.
+  o_all_las = tempfile(fileext = ".las"); on.exit(unlink(o_all_las), add = TRUE)
+  lasR::exec(reader() + edit_attribute(attribute = "gpstime", value = 0) + write_las(o_all_las), on = f)
+  o_all = tempfile(fileext = ".copc.laz"); on.exit(unlink(o_all), add = TRUE)
+  lasR::exec(write_copc(o_all, experimental_writer = TRUE), on = o_all_las)
+  g_all = read_copc_gpstime(o_all)
+  expect_equal(unname(g_all["min"]), 0)
+  expect_equal(unname(g_all["max"]), 0)
+})
+
 test_that("write_copc paginated hierarchy round-trips under tiny LASR_COPC_MAX_HIERARCHY_PAGE_ENTRIES",
 {
   # Force the hierarchy eVLR into a multi-page layout by setting the
