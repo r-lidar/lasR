@@ -551,6 +551,7 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   data_min_y =  1e300; data_max_y = -1e300;
   data_min_z =  1e300; data_max_z = -1e300;
   have_any_point = false;
+  have_any_nonzero_gpstime = false;
 
   return true;
 }
@@ -577,8 +578,16 @@ bool COPCwriter::write_point(const LASpoint* p)
   const F64 y = effective->get_y();
   const F64 z = effective->get_z();
   const F64 t = effective->get_gps_time();
-  if (!have_any_point || t < gpstime_minimum) gpstime_minimum = t;
-  if (!have_any_point || t > gpstime_maximum) gpstime_maximum = t;
+  // Skip t == 0: PDRFs without gpstime return 0, and synthetic/water-fill
+  // points conventionally use gpstime=0. Including either in min/max would
+  // poison the COPC info VLR. If all points end up with gpstime=0 we fall
+  // back to 0/0 in finalize_and_write (see have_any_nonzero_gpstime check).
+  if (t != 0.0)
+  {
+    if (!have_any_nonzero_gpstime || t < gpstime_minimum) gpstime_minimum = t;
+    if (!have_any_nonzero_gpstime || t > gpstime_maximum) gpstime_maximum = t;
+    have_any_nonzero_gpstime = true;
+  }
   if (!have_any_point || x < data_min_x) data_min_x = x;
   if (!have_any_point || x > data_max_x) data_max_x = x;
   if (!have_any_point || y < data_min_y) data_min_y = y;
@@ -1358,7 +1367,9 @@ bool COPCwriter::finalize_and_write()
     return false;
   }
   LASvlr_copc_info* info = (LASvlr_copc_info*)info_vlr->data;
-  if (!have_any_point)
+  // Cases collapsed into one: no points written, no-gpstime PDRF, or every
+  // point had gpstime=0 (e.g. all synthetic). Report 0/0 in all of them.
+  if (!have_any_nonzero_gpstime)
   {
     gpstime_minimum = 0.0;
     gpstime_maximum = 0.0;

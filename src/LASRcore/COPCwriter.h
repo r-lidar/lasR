@@ -266,9 +266,14 @@ private:
   std::uint64_t max_sort_memory = 256ULL * 1024 * 1024;
   bool skip_sort_warned = false;
 
-  // Stats accumulated during write_point
+  // Stats accumulated during write_point. gpstime min/max only track non-zero
+  // values: a single synthetic point with gpstime=0 in an otherwise-valid
+  // dataset would otherwise drag gpstime_minimum to 0 (= 1980-01-06 in
+  // GPS-week-zero), which is meaningless. If no non-zero gpstime is ever seen
+  // (no-gpstime PDRF, or all points are synthetic) we report 0/0.
   F64 gpstime_minimum = 0.0;
   F64 gpstime_maximum = 0.0;
+  bool have_any_nonzero_gpstime = false;
   // Actual data bbox seen during intake. Compared against the declared
   // octree bbox at close() to warn when the input header is much looser
   // than the data (skewed octree structure — see "loose bbox" pitfall).
