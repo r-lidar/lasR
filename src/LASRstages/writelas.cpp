@@ -2,8 +2,24 @@
 
 #include "LASio.h"
 
+#include <algorithm>  // std::equal
+#include <cctype>
 #include <cmath>      // std::isfinite
 #include <exception>  // std::exception_ptr, std::current_exception
+
+namespace
+{
+  bool path_has_copc_suffix(const std::string& path)
+  {
+    static const std::string suffix = ".copc.laz";
+    if (path.size() < suffix.size()) return false;
+    return std::equal(suffix.rbegin(), suffix.rend(), path.rbegin(),
+                      [](char a, char b) {
+                        return std::tolower((unsigned char)a) ==
+                               std::tolower((unsigned char)b);
+                      });
+  }
+}
 
 LASRlaswriter::LASRlaswriter()
 {
@@ -11,6 +27,34 @@ LASRlaswriter::LASRlaswriter()
   copc_bbox_set = false;
   copc_bbox_xmin = copc_bbox_ymin = copc_bbox_zmin = 0.0;
   copc_bbox_xmax = copc_bbox_ymax = copc_bbox_zmax = 0.0;
+  catalog_xmin = catalog_ymin = catalog_zmin = 0.0;
+  catalog_xmax = catalog_ymax = catalog_zmax = 0.0;
+  catalog_total_points = 0;
+  catalog_bbox_valid = false;
+}
+
+bool LASRlaswriter::process(FileCollection*& ctg)
+{
+  // Capture the union bbox and total point count over all input files.
+  // Used by set_header() to (a) size the COPC output's octree to the
+  // union bbox, and (b) pick a non-trivial auto max_depth — the per-tile
+  // header count alone is file-1's only and too small for multi-file
+  // merges (compute_max_depth divides by max_points_per_octant and would
+  // otherwise pick a too-shallow depth).
+  if (ctg)
+  {
+    catalog_xmin = ctg->get_xmin();
+    catalog_ymin = ctg->get_ymin();
+    catalog_zmin = ctg->get_zmin();
+    catalog_xmax = ctg->get_xmax();
+    catalog_ymax = ctg->get_ymax();
+    catalog_zmax = ctg->get_zmax();
+    catalog_total_points = ctg->get_total_points();
+    catalog_bbox_valid = (catalog_xmin <= catalog_xmax) &&
+                         (catalog_ymin <= catalog_ymax) &&
+                         (catalog_zmin <= catalog_zmax);
+  }
+  return true;
 }
 
 LASRlaswriter::~LASRlaswriter() noexcept
@@ -244,6 +288,49 @@ bool LASRlaswriter::set_header(Header*& header)
   h.signature = "LASF";
   h.point_data_format = point_format;
   h.version_minor = version_minor;
+
+  // For multi-file merge into a single COPC output, override the per-tile
+  // bbox AND the per-tile point count with the FileCollection's union and
+  // total. The COPC writer uses these at open(): bbox sizes the octree,
+  // total point count drives the auto-max_depth heuristic. Without the
+  // count override, depth comes out from file 1's count alone and is
+  // far too shallow for the merged data set (single-chunk pseudo-COPC).
+  //
+  // Gate on (merged && copc-suffix output): per-file mode (`*` placeholder)
+  // creates one output per input tile, and each tile's output should use
+  // its own bbox/count — applying the catalog values there would inflate
+  // every per-tile output to cover the whole input set. Non-COPC writes
+  // ignore both fields at open anyway, but skip the override for clarity.
+  const bool merged_copc = merged && path_has_copc_suffix(template_filename);
+  if (merged_copc && experimental_writer && !catalog_bbox_valid)
+  {
+    // Catalog bbox is invalid (typically: legacy 4D-only VPC where the
+    // reader couldn't recover z bounds; or no FileCollection seen). With
+    // a missing catalog bbox, set_header would silently fall back to
+    // file-1's per-tile bbox/count — sizing the merged COPC's octree
+    // and auto-depth from a single tile, which produces a structurally
+    // bad output (clamping at close, too-shallow depth). Refuse loudly
+    // so the user fixes the input rather than getting a quietly skewed
+    // file. Only the new writer needs this guard: LASlib's
+    // LASwriterCOPC inventories at close and doesn't depend on accurate
+    // open-time bbox/count.
+    last_error = "Cannot write merged COPC: input catalog has no valid 3D "
+      "bounding box. This typically means the input is a legacy VPC whose "
+      "proj:bbox is 4-element (no z). Either regenerate the VPC with a "
+      "6-element properties.proj:bbox, or write per-tile COPC by using a "
+      "'*' placeholder in the output filename.";
+    return false;
+  }
+  if (catalog_bbox_valid && merged_copc)
+  {
+    h.min_x = catalog_xmin;
+    h.min_y = catalog_ymin;
+    h.min_z = catalog_zmin;
+    h.max_x = catalog_xmax;
+    h.max_y = catalog_ymax;
+    h.max_z = catalog_zmax;
+    h.number_of_point_records = catalog_total_points;
+  }
 
   try
   {
