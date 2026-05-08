@@ -2,6 +2,7 @@
 #include "openmp.h"
 
 #include <chrono>
+#include <cmath>
 
 LASRlocalmaximum::LASRlocalmaximum()
 {
@@ -146,7 +147,8 @@ bool LASRlocalmaximum::process(PointCloud*& las)
     }
 
     if (!las->get_point(i, &pp, &pointfilter)) { status[i] = NLM; } // The point was either filtered or withhelded
-    if (accessor(&pp) < min_height) { status[i] = NLM; }
+    double v = accessor(&pp);
+    if (std::isnan(v) || v < min_height) { status[i] = NLM; }
     if (status[i] == NLM) continue;
 
     Circle windows(pp.get_x(), pp.get_y(), hws);
