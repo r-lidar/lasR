@@ -60,6 +60,23 @@ void EPTio::open(const std::string& endpoint)
   if (opened)
     throw std::logic_error("Internal error: EPTio already opened");
 
+  // Short-circuit: use metadata from index if available
+  if (index) {
+    this->remote = index->remote;
+    this->base_path = index->base_path;
+    this->query_string = index->query_string;
+    this->ept_metadata = index->ept_metadata;
+    for (int i = 0; i < 6; ++i) {
+      cube_bounds[i] = index->cube_bounds[i];
+      conf_bounds[i] = index->conf_bounds[i];
+    }
+    this->srs_wkt = index->srs_wkt;
+    this->srs_epsg = index->srs_epsg;
+    this->probe_tile_path = index->probe_tile_path;
+    opened = true;
+    return;
+  }
+
   // Determine if remote
   this->remote = is_remote(endpoint);
 
@@ -316,6 +333,15 @@ void EPTio::query(const std::vector<std::string>& main_files,
 
 void EPTio::traverse_hierarchy(double qxmin, double qymin, double qxmax, double qymax)
 {
+  if (index && index->tiles_built) {
+    for (const auto& t : index->tiles) {
+      if (depth_limit >= 0 && t.key.d > depth_limit) continue;
+      if (t.xmax < qxmin || t.xmin > qxmax || t.ymax < qymin || t.ymin > qymax) continue;
+      tile_queue.push_back(t.key);
+      total_points += t.point_count;
+    }
+    return;
+  }
   EPTkey root(0, 0, 0, 0);
   load_hierarchy_page(root, qxmin, qymin, qxmax, qymax);
 }
