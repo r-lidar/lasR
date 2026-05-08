@@ -16,6 +16,8 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <filesystem>
 
 // To parse JSON VPC
@@ -727,6 +729,103 @@ bool FileCollection::set_chunk_size(double size, bool strict_clip)
       if (file_index.has_overlap(x-hsize, y-hsize, x+hsize, y+hsize))
         add_query(x-hsize, y-hsize, x+hsize, y+hsize, strict_clip);
     }
+  }
+
+  return true;
+}
+
+bool FileCollection::partition_ept(int target_partitions)
+{
+  if (!ept_index || get_format() != EPTFILE) return true;
+  if (queries.size() > 0) return true;
+  if (chunk_size > 0) return true;
+  if (target_partitions <= 0) return true;
+
+  try { ept_index->ensure_tiles(); }
+  catch (const std::exception& e) {
+    warning("EPT hierarchy walk failed (%s); falling back to grid chunking\n", e.what());
+    double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
+    double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
+    double size = std::sqrt((dx * dy) / (double)target_partitions);
+    return set_chunk_size(size, true);
+  }
+
+  if (ept_index->tiles.empty()) {
+    warning("EPT hierarchy yielded no tiles; falling back to grid chunking\n");
+    double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
+    double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
+    double size = std::sqrt((dx * dy) / (double)target_partitions);
+    return set_chunk_size(size, true);
+  }
+
+  // Determine partition depth d: smallest d with 4^d >= target.
+  int d = 0;
+  while ((1 << (2 * d)) < target_partitions) d++;
+
+  int max_tile_depth = 0;
+  for (const auto& t : ept_index->tiles)
+    if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
+  if (d > max_tile_depth) d = max_tile_depth;
+
+  const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
+  const double cell_size = cube_size / (double)(1 << d);
+  const int grid_n = 1 << d;
+
+  std::vector<int64_t> cell_points((size_t)grid_n * grid_n, 0);
+
+  for (const auto& t : ept_index->tiles) {
+    if (t.key.d >= d) {
+      int shift = t.key.d - d;
+      int cx = t.key.x >> shift;
+      int cy = t.key.y >> shift;
+      if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+      cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+    } else {
+      int span = 1 << (d - t.key.d);
+      int cx0 = t.key.x * span;
+      int cy0 = t.key.y * span;
+      for (int dy = 0; dy < span; ++dy)
+        for (int dx = 0; dx < span; ++dx) {
+          int cx = cx0 + dx;
+          int cy = cy0 + dy;
+          if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+          cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+        }
+    }
+  }
+
+  const double cxmin = ept_index->conf_bounds[0];
+  const double cymin = ept_index->conf_bounds[1];
+  const double cxmax = ept_index->conf_bounds[3];
+  const double cymax = ept_index->conf_bounds[4];
+
+  int emitted = 0;
+  for (int cy = 0; cy < grid_n; ++cy) {
+    for (int cx = 0; cx < grid_n; ++cx) {
+      if (cell_points[(size_t)cy * grid_n + cx] == 0) continue;
+
+      double cxmin_c = ept_index->cube_bounds[0] + cx * cell_size;
+      double cymin_c = ept_index->cube_bounds[1] + cy * cell_size;
+      double cxmax_c = cxmin_c + cell_size;
+      double cymax_c = cymin_c + cell_size;
+
+      if (cxmin_c < cxmin) cxmin_c = cxmin;
+      if (cymin_c < cymin) cymin_c = cymin;
+      if (cxmax_c > cxmax) cxmax_c = cxmax;
+      if (cymax_c > cymax) cymax_c = cymax;
+      if (cxmin_c >= cxmax_c || cymin_c >= cymax_c) continue;
+
+      add_query(cxmin_c, cymin_c, cxmax_c, cymax_c, true);
+      emitted++;
+    }
+  }
+
+  if (emitted == 0) {
+    warning("EPT partitioning produced no chunks after conforming clamp; falling back to grid chunking\n");
+    double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
+    double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
+    double size = std::sqrt((dx * dy) / (double)target_partitions);
+    return set_chunk_size(size, true);
   }
 
   return true;
