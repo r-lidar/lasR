@@ -154,3 +154,37 @@ test_that("remote EPT with depth works",
 
   expect_equal(ans_d1$npoints, ans_full$npoints)
 })
+
+test_that("remote EPT under concurrent_files matches sequential",
+{
+  skip_if_not_installed("httpuv")
+  skip_if_not(has_omp_support())
+
+  # Note: a counting custom app$call handler cannot be used here because
+  # httpuv routes app$call through the R event loop, which is blocked by
+  # the synchronous lasR exec call (deadlock). Existing remote tests use
+  # the C-native staticPaths path for this reason. The metadata-cache
+  # invariant (one ept.json fetch per pipeline, not per-chunk) is asserted
+  # at the C++ layer via cpp_ept_partition_inspect's tiles_built flag in
+  # tests/testthat/test-ept.R; this test verifies the parallel remote path
+  # produces identical results to sequential, exercising the same shared
+  # HierarchyIndex code paths over HTTP.
+
+  ept_local <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  data_dir <- dirname(ept_local)
+
+  port   <- httpuv::randomPort()
+  server <- httpuv::startServer("127.0.0.1", port,
+                                list(staticPaths = list("/" = data_dir)))
+  on.exit(httpuv::stopServer(server), add = TRUE)
+
+  url <- paste0("http://127.0.0.1:", port, "/ept.json")
+
+  ans_seq <- exec(reader() + summarise(), on = url, ncores = sequential())
+  ans_par <- exec(reader() + summarise(), on = url,
+                  ncores = concurrent_files(4))
+
+  expect_gt(ans_seq$npoints, 0)
+  expect_equal(ans_par$npoints, ans_seq$npoints)
+  expect_equal(ans_par$z_histogram, ans_seq$z_histogram)
+})
