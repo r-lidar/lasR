@@ -469,7 +469,7 @@ std::string EPTio::hierarchy_path(const EPTkey& key) const
     std::to_string(key.z) + ".json" + query_string;
 }
 
-std::string EPTio::read_file_contents(const std::string& path) const
+static std::string read_file_contents_impl(const std::string& path)
 {
   if (is_remote(path))
   {
@@ -506,6 +506,121 @@ std::string EPTio::read_file_contents(const std::string& path) const
   std::ostringstream ss;
   ss << file.rdbuf();
   return ss.str();
+}
+
+std::string EPTio::read_file_contents(const std::string& path) const
+{
+  return read_file_contents_impl(path);
+}
+
+std::shared_ptr<EPTio::HierarchyIndex>
+EPTio::HierarchyIndex::build_metadata(const std::string& endpoint)
+{
+  auto idx = std::make_shared<HierarchyIndex>();
+  idx->remote = is_remote(endpoint);
+
+  std::string clean_endpoint = endpoint;
+  size_t qpos = endpoint.find('?');
+  if (qpos != std::string::npos) {
+    idx->query_string = endpoint.substr(qpos);
+    clean_endpoint = endpoint.substr(0, qpos);
+  }
+
+  idx->base_path = clean_endpoint;
+  size_t pos = idx->base_path.rfind("ept.json");
+  if (pos == std::string::npos)
+    throw std::runtime_error("EPT endpoint must point to an ept.json file: " + endpoint);
+  idx->base_path = idx->base_path.substr(0, pos);
+  if (!idx->base_path.empty() && idx->base_path.back() != '/')
+    idx->base_path += '/';
+
+  // === Inline of parse_ept_json, writing into idx->* ===
+  std::string json_str = read_file_contents_impl(idx->base_path + "ept.json" + idx->query_string);
+  idx->ept_metadata = nlohmann::json::parse(json_str);
+
+  std::string data_type = idx->ept_metadata.value("dataType", "");
+  if (data_type != "laszip")
+    throw std::runtime_error("EPT dataset uses '" + data_type + "' format, only 'laszip' is supported");
+
+  auto bounds = idx->ept_metadata["bounds"];
+  if (!bounds.is_array() || bounds.size() != 6)
+    throw std::runtime_error("Invalid EPT bounds in ept.json");
+  for (int i = 0; i < 6; i++) idx->cube_bounds[i] = bounds[i].get<double>();
+
+  if (idx->ept_metadata.contains("boundsConforming")) {
+    auto cbounds = idx->ept_metadata["boundsConforming"];
+    if (cbounds.is_array() && cbounds.size() == 6) {
+      for (int i = 0; i < 6; i++) idx->conf_bounds[i] = cbounds[i].get<double>();
+    } else {
+      for (int i = 0; i < 6; i++) idx->conf_bounds[i] = idx->cube_bounds[i];
+    }
+  } else {
+    for (int i = 0; i < 6; i++) idx->conf_bounds[i] = idx->cube_bounds[i];
+  }
+
+  if (idx->ept_metadata.contains("srs")) {
+    auto srs = idx->ept_metadata["srs"];
+    idx->srs_wkt = srs.value("wkt", "");
+    std::string authority = srs.value("authority", "");
+    std::string horizontal = srs.value("horizontal", "");
+    if (idx->srs_wkt.empty() && authority == "EPSG" && !horizontal.empty()) {
+      try { idx->srs_epsg = std::stoi(horizontal); } catch (...) { idx->srs_epsg = 0; }
+    }
+  }
+
+  // === Inline of find_probe_tile, writing idx->probe_tile_path ===
+  std::deque<EPTkey> pages_to_visit;
+  pages_to_visit.push_back(EPTkey(0, 0, 0, 0));
+  while (!pages_to_visit.empty()) {
+    EPTkey page_key = pages_to_visit.front();
+    pages_to_visit.pop_front();
+
+    std::string hier_path = idx->base_path + "ept-hierarchy/" +
+      std::to_string(page_key.d) + "-" + std::to_string(page_key.x) + "-" +
+      std::to_string(page_key.y) + "-" + std::to_string(page_key.z) + ".json" + idx->query_string;
+    std::string h_str;
+    try { h_str = read_file_contents_impl(hier_path); }
+    catch (...) { continue; }
+    nlohmann::json hierarchy = nlohmann::json::parse(h_str);
+
+    for (auto& [key_str, value] : hierarchy.items()) {
+      int pc = value.get<int>();
+      if (pc <= 0) continue;
+      int d, x, y, z;
+      if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4) continue;
+      EPTkey k(d, x, y, z);
+      double cube_size = idx->cube_bounds[3] - idx->cube_bounds[0];
+      double node_size = cube_size / (1 << d);
+      std::string path = idx->base_path + "ept-data/" +
+        std::to_string(d) + "-" + std::to_string(x) + "-" +
+        std::to_string(y) + "-" + std::to_string(z) + ".laz" + idx->query_string;
+      try {
+        LASio probe;
+        probe.open(path);
+        probe.close();
+        idx->probe_tile_path = path;
+        return idx;
+      } catch (...) { continue; }
+    }
+    for (auto& [key_str, value] : hierarchy.items()) {
+      if (value.get<int>() != -1) continue;
+      int d, x, y, z;
+      if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4) continue;
+      pages_to_visit.push_back(EPTkey(d, x, y, z));
+    }
+  }
+  throw std::runtime_error("EPT dataset has no readable tiles to derive schema from: " + idx->base_path);
+}
+
+void EPTio::HierarchyIndex::ensure_tiles()
+{
+  if (tiles_built) return;
+  tiles_built = true;   // stub; full impl in Task 3
+}
+
+void EPTio::set_index(std::shared_ptr<const HierarchyIndex> idx)
+{
+  index = std::move(idx);
 }
 
 void EPTio::create(const std::string&)
