@@ -760,7 +760,10 @@ bool FileCollection::partition_ept(int target_partitions)
 
   // Determine partition depth d: smallest d with 4^d >= target.
   int d = 0;
-  while ((1 << (2 * d)) < target_partitions) d++;
+  while ((1 << (2 * d)) < target_partitions) {
+    if (d >= 16) break;   // EPT hard depth limit; protects shift from UB
+    d++;
+  }
 
   int max_tile_depth = 0;
   for (const auto& t : ept_index->tiles)
@@ -784,10 +787,10 @@ bool FileCollection::partition_ept(int target_partitions)
       int span = 1 << (d - t.key.d);
       int cx0 = t.key.x * span;
       int cy0 = t.key.y * span;
-      for (int dy = 0; dy < span; ++dy)
-        for (int dx = 0; dx < span; ++dx) {
-          int cx = cx0 + dx;
-          int cy = cy0 + dy;
+      for (int iy = 0; iy < span; ++iy)
+        for (int ix = 0; ix < span; ++ix) {
+          int cx = cx0 + ix;
+          int cy = cy0 + iy;
           if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
           cell_points[(size_t)cy * grid_n + cx] += t.point_count;
         }
