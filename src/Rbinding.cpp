@@ -35,6 +35,7 @@ namespace Rcpp
 #include "FileCollection.h"
 #include "EPTio.h"
 #include "ept_partition_gate.h"
+#include "readept.h"
 
 using namespace Rcpp;
 
@@ -528,12 +529,30 @@ bool cpp_ept_should_auto_partition(std::string format_signature,
       format, is_parallelizable, use_rcapi, ncpu_outer_loop);
 }
 
+// Returns 0=DROP, 1=CORE, 2=BUFFERED.
+int cpp_strict_clip_decide(double px, double py,
+                           double xmin, double xmax,
+                           double ymin, double ymax,
+                           double buffer,
+                           double catalog_xmax, double catalog_ymax)
+{
+  auto d = LASReptreader::strict_clip_decide(
+      px, py, xmin, xmax, ymin, ymax, buffer, catalog_xmax, catalog_ymax);
+  switch (d) {
+    case LASReptreader::DROP:     return 0;
+    case LASReptreader::CORE:     return 1;
+    case LASReptreader::BUFFERED: return 2;
+  }
+  return -1;
+}
+
 RCPP_MODULE(tests)
 {
   function("cpp_test1", &cpp_test1, "Test 1");
   function("cpp_test2", &cpp_test2, "Test 2");
   function("cpp_ept_partition_inspect", &cpp_ept_partition_inspect, "Inspect EPT partition");
   function("cpp_ept_should_auto_partition", &cpp_ept_should_auto_partition, "EPT auto-partition gate");
+  function("cpp_strict_clip_decide", &cpp_strict_clip_decide, "Strict-clip decision predicate");
 }
 
 
