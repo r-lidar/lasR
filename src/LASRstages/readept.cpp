@@ -9,6 +9,21 @@ LASReptreader::LASReptreader()
   streaming = true;
 }
 
+LASReptreader::StrictClipDecision LASReptreader::strict_clip_decide(
+    double px, double py,
+    double xmin, double xmax, double ymin, double ymax,
+    double buffer, double catalog_xmax, double catalog_ymax)
+{
+  const double bxmin = xmin - buffer;
+  const double bxmax = xmax + buffer;
+  const double bymin = ymin - buffer;
+  const double bymax = ymax + buffer;
+  if (px < bxmin || px > bxmax || py < bymin || py > bymax) return DROP;
+  bool owns_x = (px >= xmin) && (px < xmax || (px == xmax && xmax == catalog_xmax));
+  bool owns_y = (py >= ymin) && (py < ymax || (py == ymax && ymax == catalog_ymax));
+  return (owns_x && owns_y) ? CORE : BUFFERED;
+}
+
 bool LASReptreader::set_chunk(Chunk& chunk)
 {
   Stage::set_chunk(chunk);
@@ -83,16 +98,12 @@ bool LASReptreader::process(Point*& point)
     }
 
     if (chunk_strict_clip) {
-      const double bxmin = xmin - buffer;
-      const double bxmax = xmax + buffer;
-      const double bymin = ymin - buffer;
-      const double bymax = ymax + buffer;
-      const double px = point->get_x();
-      const double py = point->get_y();
-      if (px < bxmin || px > bxmax || py < bymin || py > bymax) continue;  // re-read
-      bool owns_x = (px >= xmin) && (px < xmax || (px == xmax && xmax == catalog_xmax));
-      bool owns_y = (py >= ymin) && (py < ymax || (py == ymax && ymax == catalog_ymax));
-      if (!(owns_x && owns_y)) point->set_buffered();
+      auto decision = strict_clip_decide(
+          point->get_x(), point->get_y(),
+          xmin, xmax, ymin, ymax, buffer,
+          catalog_xmax, catalog_ymax);
+      if (decision == DROP) continue;  // re-read
+      if (decision == BUFFERED) point->set_buffered();
     } else {
       if (point->inside_buffer(xmin, ymin, xmax, ymax, circular))
         point->set_buffered();
@@ -122,16 +133,12 @@ bool LASReptreader::process(PointCloud*& las)
     if (pointfilter.filter(&p)) continue;
 
     if (chunk_strict_clip) {
-      const double bxmin = xmin - buffer;
-      const double bxmax = xmax + buffer;
-      const double bymin = ymin - buffer;
-      const double bymax = ymax + buffer;
-      const double px = p.get_x();
-      const double py = p.get_y();
-      if (px < bxmin || px > bxmax || py < bymin || py > bymax) continue;
-      bool owns_x = (px >= xmin) && (px < xmax || (px == xmax && xmax == catalog_xmax));
-      bool owns_y = (py >= ymin) && (py < ymax || (py == ymax && ymax == catalog_ymax));
-      if (!(owns_x && owns_y)) p.set_buffered();
+      auto decision = strict_clip_decide(
+          p.get_x(), p.get_y(),
+          xmin, xmax, ymin, ymax, buffer,
+          catalog_xmax, catalog_ymax);
+      if (decision == DROP) continue;
+      if (decision == BUFFERED) p.set_buffered();
     } else if (p.inside_buffer(xmin, ymin, xmax, ymax, circular)) {
       p.set_buffered();
     }

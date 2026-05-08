@@ -26,6 +26,13 @@ public:
 
   void set_ept_index(std::shared_ptr<const EPTio::HierarchyIndex> idx) { ept_index = std::move(idx); }
 
+  // Per-point ownership decision under chunk.strict_clip.
+  enum StrictClipDecision { DROP, CORE, BUFFERED };
+  static StrictClipDecision strict_clip_decide(
+      double px, double py,
+      double xmin, double xmax, double ymin, double ymax,
+      double buffer, double catalog_xmax, double catalog_ymax);
+
 private:
   Header* header;
   EPTio* eptio;
