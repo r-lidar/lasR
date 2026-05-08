@@ -44,6 +44,7 @@ public:
   bool set_noprocess(const std::vector<bool>& b);
   bool set_chunk_size(double size);
   bool set_chunk_size(double size, bool strict_clip);
+  bool partition_ept(int target_partitions);
   bool get_chunk(int index, Chunk& chunk) const;
   int get_number_chunks() const;
   int get_number_files() const;
