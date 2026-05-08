@@ -589,32 +589,43 @@ bool FileCollection::add_pcd_file(std::string file, bool noprocess)
 
 bool FileCollection::add_ept_endpoint(std::string path, bool noprocess)
 {
-  if (files.size() > 0)
-  {
+  if (files.size() > 0) {
     last_error = "Only a single EPT endpoint is supported";
     return false;
   }
-
   std::replace(path.begin(), path.end(), '\\', '/');
 
-  Header header;
-  EPTio reader;
-
-  try
-  {
-    reader.open(path);
-    reader.populate_header(&header);
-    reader.close();
-  }
-  catch (const std::exception& e)
-  {
+  try {
+    ept_index = EPTio::HierarchyIndex::build_metadata(path);
+  } catch (const std::exception& e) {
     last_error = e.what();
     return false;
   }
 
+  Header header;
+  try {
+    LASio probe;
+    probe.open(ept_index->probe_tile_path);
+    probe.populate_header(&header);
+    probe.close();
+  } catch (const std::exception& e) {
+    last_error = e.what();
+    return false;
+  }
+
+  header.signature = "EPTF";
+  header.min_x = ept_index->conf_bounds[0];
+  header.min_y = ept_index->conf_bounds[1];
+  header.min_z = ept_index->conf_bounds[2];
+  header.max_x = ept_index->conf_bounds[3];
+  header.max_y = ept_index->conf_bounds[4];
+  header.max_z = ept_index->conf_bounds[5];
+  if (!ept_index->srs_wkt.empty()) header.set_crs(ept_index->srs_wkt);
+  else if (ept_index->srs_epsg > 0) header.set_crs(ept_index->srs_epsg);
+  header.spatial_index = true;
+
   add_header(header, noprocess);
   files.push_back(path);
-
   use_dataframe = false;
   return true;
 }

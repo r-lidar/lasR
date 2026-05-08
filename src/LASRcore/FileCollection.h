@@ -7,10 +7,12 @@
 #include "Chunk.h"
 #include "Shape.h"
 #include "Header.h"
+#include "EPTio.h"
 
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <memory>
 
 enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, PCDFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE, DATAFRAME, XPTR, REMOTELASFILE, EPTFILE, REMOTEEPTFILE};
 
@@ -58,6 +60,7 @@ public:
   void set_all_indexed();
   void clear();
   bool file_exists(std::string& file);
+  std::shared_ptr<const EPTio::HierarchyIndex> get_ept_index() const { return ept_index; }
 
   #ifdef USING_R
   void add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints);   // Special to build a FileCollection from a data.frame in R
@@ -101,6 +104,9 @@ private:
   // queries, partial read
   FileCollectionIndex file_index;
   std::vector<Shape*> queries;
+
+  // EPT shared metadata index (built when add_ept_endpoint succeeds)
+  std::shared_ptr<EPTio::HierarchyIndex> ept_index;
 };
 
 #endif
