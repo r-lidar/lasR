@@ -518,14 +518,26 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
 
 void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax)
 {
+  add_query(xmin, ymin, xmax, ymax, false);
+}
+
+void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax, bool strict_clip)
+{
   Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
   queries.push_back(rect);
+  queries_strict_clip.push_back(strict_clip);
 }
 
 void FileCollection::add_query(double xcenter, double ycenter, double radius)
 {
+  add_query(xcenter, ycenter, radius, false);
+}
+
+void FileCollection::add_query(double xcenter, double ycenter, double radius, bool strict_clip)
+{
   Circle* circ = new Circle(xcenter, ycenter, radius);
   queries.push_back(circ);
+  queries_strict_clip.push_back(strict_clip);
 }
 
 bool FileCollection::add_las_file(std::string file, bool noprocess)
@@ -688,6 +700,11 @@ bool FileCollection::set_noprocess(const std::vector<bool>& b)
 
 bool FileCollection::set_chunk_size(double size)
 {
+  return set_chunk_size(size, false);
+}
+
+bool FileCollection::set_chunk_size(double size, bool strict_clip)
+{
   chunk_size = 0;
 
   if (size > 0)
@@ -708,7 +725,7 @@ bool FileCollection::set_chunk_size(double size)
       double hsize = size/2;
 
       if (file_index.has_overlap(x-hsize, y-hsize, x+hsize, y+hsize))
-        add_query(x-hsize, y-hsize, x+hsize, y+hsize);
+        add_query(x-hsize, y-hsize, x+hsize, y+hsize, strict_clip);
     }
   }
 
@@ -768,6 +785,9 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
 {
   chunk.clear();
 
+  chunk.catalog_xmax = xmax;
+  chunk.catalog_ymax = ymax;
+
   const Header& h = headers[i];
 
   chunk.xmin = h.min_x;
@@ -817,6 +837,9 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
 {
   chunk.clear();
 
+  chunk.catalog_xmax = xmax;
+  chunk.catalog_ymax = ymax;
+
   // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
   Shape* q = queries[i];
   double minx = q->xmin();
@@ -853,6 +876,7 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   if (chunk.ymax > ymax) chunk.ymax = ymax;
   chunk.buffer = buffer;
   chunk.shape = q->type();
+  chunk.strict_clip = queries_strict_clip[i];
 
   // With an R data.frame there is no file and thus no neighboring files. We can exit.
   if (use_dataframe)
@@ -965,6 +989,7 @@ void FileCollection::clear()
 
   for (auto p : queries) delete p;
   queries.clear();
+  queries_strict_clip.clear();
 }
 
 bool FileCollection::file_exists(std::string& file)
