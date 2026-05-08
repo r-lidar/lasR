@@ -43,6 +43,7 @@ public:
   void add_query(double xcenter, double ycenter, double radius);
   bool set_noprocess(const std::vector<bool>& b);
   bool set_chunk_size(double size);
+  bool set_chunk_size(double size, bool strict_clip);
   bool get_chunk(int index, Chunk& chunk) const;
   int get_number_chunks() const;
   int get_number_files() const;
@@ -76,6 +77,8 @@ private:
   bool get_chunk_regular(int index, Chunk& chunk) const;
   bool get_chunk_with_query(int index, Chunk& chunk) const;
   PathType parse_path(const std::string& path);
+  void add_query(double xmin, double ymin, double xmax, double ymax, bool strict_clip);
+  void add_query(double xcenter, double ycenter, double radius, bool strict_clip);
 
 private:
 
@@ -104,6 +107,7 @@ private:
   // queries, partial read
   FileCollectionIndex file_index;
   std::vector<Shape*> queries;
+  std::vector<bool> queries_strict_clip;
 
   // EPT shared metadata index (built when add_ept_endpoint succeeds)
   std::shared_ptr<EPTio::HierarchyIndex> ept_index;
