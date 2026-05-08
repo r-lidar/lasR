@@ -10,6 +10,7 @@
 #include <vector>
 #include <deque>
 #include <cstdint>
+#include <memory>
 
 class LASio;
 class Header;
@@ -31,6 +32,33 @@ public:
     EPTkey(int d, int x, int y, int z) : d(d), x(x), y(y), z(z) {}
   };
 
+  struct TileEntry
+  {
+    EPTkey key;
+    int64_t point_count;
+    double xmin, ymin, zmin, xmax, ymax, zmax;
+  };
+
+  struct HierarchyIndex
+  {
+    nlohmann::json ept_metadata;
+    double cube_bounds[6];
+    double conf_bounds[6];
+    std::string srs_wkt;
+    int srs_epsg = 0;
+    std::string base_path;
+    std::string query_string;
+    bool remote = false;
+    std::string probe_tile_path;
+
+    std::vector<TileEntry> tiles;
+    int64_t total_points = 0;
+    bool tiles_built = false;
+
+    static std::shared_ptr<HierarchyIndex> build_metadata(const std::string& endpoint);
+    void ensure_tiles();
+  };
+
   EPTio();
   ~EPTio();
   void open(const std::string& endpoint) override;
@@ -45,6 +73,7 @@ public:
   int64_t p_count() override;
 
   void set_depth(int depth);
+  void set_index(std::shared_ptr<const HierarchyIndex> idx);
 
   void query(const std::vector<std::string>& main_files,
              const std::vector<std::string>& neighbour_files,
@@ -91,6 +120,11 @@ private:
   // Current tile reader
   LASio* current_tile;
   int64_t points_read;
+
+  // Optional shared metadata index (Task 2+). When set via set_index, future
+  // tasks will use this to share metadata across per-chunk readers; currently
+  // unused by the existing read path.
+  std::shared_ptr<const HierarchyIndex> index;
 };
 
 #endif
