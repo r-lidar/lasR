@@ -759,9 +759,10 @@ bool FileCollection::partition_ept(int target_partitions)
   }
 
   // Determine partition depth d: smallest d with 4^d >= target.
+  // Cap at 16 (EPT hard depth limit) before evaluating the shift, so
+  // huge target_partitions values from test helpers cannot trigger UB.
   int d = 0;
-  while ((1 << (2 * d)) < target_partitions) {
-    if (d >= 16) break;   // EPT hard depth limit; protects shift from UB
+  while (d < 16 && (1 << (2 * d)) < target_partitions) {
     d++;
   }
 
