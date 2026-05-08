@@ -2,6 +2,8 @@
 #define LASRREADEPT_H
 
 #include "Stage.h"
+#include <memory>
+#include "EPTio.h"
 
 class EPTio;
 
@@ -22,10 +24,16 @@ public:
   // multi-threading
   LASReptreader* clone() const override { return new LASReptreader(*this); };
 
+  void set_ept_index(std::shared_ptr<const EPTio::HierarchyIndex> idx) { ept_index = std::move(idx); }
+
 private:
   Header* header;
   EPTio* eptio;
   bool streaming;
+  std::shared_ptr<const EPTio::HierarchyIndex> ept_index;
+  bool chunk_strict_clip = false;
+  double catalog_xmax = 0;
+  double catalog_ymax = 0;
 };
 
 #endif

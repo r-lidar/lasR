@@ -22,6 +22,11 @@ bool LASReptreader::set_chunk(Chunk& chunk)
 
   eptio = new EPTio();
 
+  if (ept_index) eptio->set_index(ept_index);
+  chunk_strict_clip = chunk.strict_clip;
+  catalog_xmax = chunk.catalog_xmax;
+  catalog_ymax = chunk.catalog_ymax;
+
   try
   {
     eptio->query(
