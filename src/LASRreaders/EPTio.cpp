@@ -615,7 +615,53 @@ EPTio::HierarchyIndex::build_metadata(const std::string& endpoint)
 void EPTio::HierarchyIndex::ensure_tiles()
 {
   if (tiles_built) return;
-  tiles_built = true;   // stub; full impl in Task 3
+
+  std::deque<EPTkey> pages_to_visit;
+  pages_to_visit.push_back(EPTkey(0, 0, 0, 0));
+  double cube_size = cube_bounds[3] - cube_bounds[0];
+
+  while (!pages_to_visit.empty()) {
+    EPTkey page_key = pages_to_visit.front();
+    pages_to_visit.pop_front();
+
+    std::string hier_path = base_path + "ept-hierarchy/" +
+      std::to_string(page_key.d) + "-" + std::to_string(page_key.x) + "-" +
+      std::to_string(page_key.y) + "-" + std::to_string(page_key.z) + ".json" + query_string;
+    std::string json_str;
+    bool is_root = (page_key.d == 0 && page_key.x == 0 && page_key.y == 0 && page_key.z == 0);
+    try { json_str = read_file_contents_impl(hier_path); }
+    catch (const std::exception& e) {
+      if (is_root) throw std::runtime_error("Failed to read EPT hierarchy: " + hier_path + ": " + e.what());
+      warning("EPT sub-hierarchy file not found: %s\n", hier_path.c_str());
+      continue;
+    }
+
+    nlohmann::json hierarchy = nlohmann::json::parse(json_str);
+    for (auto& [key_str, value] : hierarchy.items()) {
+      int d, x, y, z;
+      if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4) continue;
+      EPTkey k(d, x, y, z);
+      int64_t pc = value.get<int64_t>();
+      if (pc > 0) {
+        TileEntry t;
+        t.key = k;
+        t.point_count = pc;
+        double node_size = cube_size / (1 << d);
+        t.xmin = cube_bounds[0] + x * node_size;
+        t.ymin = cube_bounds[1] + y * node_size;
+        t.zmin = cube_bounds[2] + z * node_size;
+        t.xmax = t.xmin + node_size;
+        t.ymax = t.ymin + node_size;
+        t.zmax = t.zmin + node_size;
+        tiles.push_back(t);
+        total_points += pc;
+      } else if (pc == -1) {
+        pages_to_visit.push_back(k);
+      }
+    }
+  }
+
+  tiles_built = true;
 }
 
 void EPTio::set_index(std::shared_ptr<const HierarchyIndex> idx)
