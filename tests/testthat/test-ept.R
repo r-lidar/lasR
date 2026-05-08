@@ -195,3 +195,76 @@ test_that("EPT non-parallelizable pipeline still produces correct results",
               on = ept, ncores = sequential())
   expect_equal(length(par), length(ser))
 })
+
+# ----- Strict-clip boundary policy (spec §5 test 5) -----
+#
+# Direct unit tests of the per-point ownership predicate. cpp_strict_clip_decide
+# returns 0=DROP, 1=CORE, 2=BUFFERED for a single (px, py) given the chunk
+# extent, buffer, and catalog global max. This catches floating-point boundary
+# bugs that integration tests can't easily reach because real-world point data
+# rarely lands exactly on a partition midline.
+
+DROP <- 0L; CORE <- 1L; BUFFERED <- 2L
+decide <- function(px, py, xmin, xmax, ymin, ymax,
+                   buffer = 0, catalog_xmax = xmax, catalog_ymax = ymax)
+{
+  lasR:::.APITEST$cpp_strict_clip_decide(
+    px, py, xmin, xmax, ymin, ymax, buffer,
+    catalog_xmax, catalog_ymax)
+}
+
+test_that("strict-clip: core, buffer-ring, and drop regions",
+{
+  # Chunk [0, 10] x [0, 10] with buffer = 2, NOT at global max.
+  # Catalog extends to 100, 100 so xmax/ymax carve-out won't fire.
+  expect_equal(decide(5,    5,   0, 10, 0, 10, 2, 100, 100), CORE)
+  expect_equal(decide(11,   5,   0, 10, 0, 10, 2, 100, 100), BUFFERED)
+  expect_equal(decide(11.9, 5,   0, 10, 0, 10, 2, 100, 100), BUFFERED)
+  expect_equal(decide(12.1, 5,   0, 10, 0, 10, 2, 100, 100), DROP)
+  expect_equal(decide(-1,   5,   0, 10, 0, 10, 2, 100, 100), BUFFERED)
+  expect_equal(decide(-2.1, 5,   0, 10, 0, 10, 2, 100, 100), DROP)
+})
+
+test_that("strict-clip: half-open ownership at the right/top edge",
+{
+  # px == xmax but xmax != catalog_xmax → not the rightmost cell → BUFFERED.
+  expect_equal(decide(10, 5, 0, 10, 0, 10, 2, 100, 100), BUFFERED)
+  expect_equal(decide(5, 10, 0, 10, 0, 10, 2, 100, 100), BUFFERED)
+})
+
+test_that("strict-clip: global-max-inclusive carve-out keeps rightmost edge",
+{
+  # px == xmax AND xmax == catalog_xmax → the rightmost cell owns its outer edge.
+  expect_equal(decide(10, 5, 0, 10, 0, 10, 2, 10, 100), CORE)
+  expect_equal(decide(5, 10, 0, 10, 0, 10, 2, 100, 10), CORE)
+  expect_equal(decide(10, 10, 0, 10, 0, 10, 2, 10, 10), CORE)
+})
+
+test_that("strict-clip: half-open at xmin includes the boundary",
+{
+  # px == xmin → owns_x = (px >= xmin) && (px < xmax) → CORE.
+  # The left/bottom edge is closed; the right/top edge is open (unless global max).
+  expect_equal(decide(0, 5, 0, 10, 0, 10, 2, 100, 100), CORE)
+  expect_equal(decide(5, 0, 0, 10, 0, 10, 2, 100, 100), CORE)
+})
+
+test_that("strict-clip: shared midline owned by exactly one of two adjacent cells",
+{
+  # Cell A:  [0, 5)  x [0, 10]      (its xmax = 5, NOT at global max)
+  # Cell B:  [5, 10] x [0, 10]      (its xmin = 5)
+  # Catalog xmax = 10 → only Cell B is "rightmost" in x.
+  # A point at exactly x = 5 must be CORE in Cell B and BUFFERED in Cell A.
+  expect_equal(decide(5, 5,   0, 5,  0, 10, 2, 10, 10), BUFFERED)
+  expect_equal(decide(5, 5,   5, 10, 0, 10, 2, 10, 10), CORE)
+})
+
+test_that("strict-clip: zero buffer collapses buffer ring to nothing",
+{
+  # With buffer = 0, the buffered extent equals the core extent. Any point
+  # strictly outside [xmin, xmax]×[ymin, ymax] is DROP, never BUFFERED.
+  expect_equal(decide(5,    5,   0, 10, 0, 10, 0, 100, 100), CORE)
+  expect_equal(decide(10.1, 5,   0, 10, 0, 10, 0, 100, 100), DROP)
+  expect_equal(decide(5,    -0.1, 0, 10, 0, 10, 0, 100, 100), DROP)
+  # px == xmax (not global) → still inside buffered extent → BUFFERED.
+  expect_equal(decide(10, 5, 0, 10, 0, 10, 0, 100, 100), BUFFERED)
+})
