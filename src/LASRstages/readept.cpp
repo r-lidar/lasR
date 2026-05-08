@@ -73,24 +73,34 @@ bool LASReptreader::process(Header*& header)
 // Streaming mode
 bool LASReptreader::process(Point*& point)
 {
-  if (point == nullptr)
-    point = new Point(&header->schema);
+  if (point == nullptr) point = new Point(&header->schema);
 
-  do
-  {
-    if (eptio->read_point(point))
-    {
+  while (true) {
+    if (!eptio->read_point(point)) {
+      delete point;
+      point = nullptr;
+      return true;
+    }
+
+    if (chunk_strict_clip) {
+      const double bxmin = xmin - buffer;
+      const double bxmax = xmax + buffer;
+      const double bymin = ymin - buffer;
+      const double bymax = ymax + buffer;
+      const double px = point->get_x();
+      const double py = point->get_y();
+      if (px < bxmin || px > bxmax || py < bymin || py > bymax) continue;  // re-read
+      bool owns_x = (px >= xmin) && (px < xmax || (px == xmax && xmax == catalog_xmax));
+      bool owns_y = (py >= ymin) && (py < ymax || (py == ymax && ymax == catalog_ymax));
+      if (!(owns_x && owns_y)) point->set_buffered();
+    } else {
       if (point->inside_buffer(xmin, ymin, xmax, ymax, circular))
         point->set_buffered();
     }
-    else
-    {
-      delete point;
-      point = nullptr;
-    }
-  } while (point != nullptr && pointfilter.filter(point));
 
-  return true;
+    if (pointfilter.filter(point)) continue;  // re-read on filter reject
+    return true;
+  }
 }
 
 // In memory mode
@@ -107,13 +117,26 @@ bool LASReptreader::process(PointCloud*& las)
 
   Point p(&header->schema);
 
-  while (eptio->read_point(&p))
-  {
+  while (eptio->read_point(&p)) {
     if (progress->interrupted()) break;
     if (pointfilter.filter(&p)) continue;
-    if (p.inside_buffer(xmin, ymin, xmax, ymax, circular)) p.set_buffered();
-    if (!las->add_point(p)) return false;
 
+    if (chunk_strict_clip) {
+      const double bxmin = xmin - buffer;
+      const double bxmax = xmax + buffer;
+      const double bymin = ymin - buffer;
+      const double bymax = ymax + buffer;
+      const double px = p.get_x();
+      const double py = p.get_y();
+      if (px < bxmin || px > bxmax || py < bymin || py > bymax) continue;
+      bool owns_x = (px >= xmin) && (px < xmax || (px == xmax && xmax == catalog_xmax));
+      bool owns_y = (py >= ymin) && (py < ymax || (py == ymax && ymax == catalog_ymax));
+      if (!(owns_x && owns_y)) p.set_buffered();
+    } else if (p.inside_buffer(xmin, ymin, xmax, ymax, circular)) {
+      p.set_buffered();
+    }
+
+    if (!las->add_point(p)) return false;
     progress->update(eptio->p_count());
     progress->show();
   }
