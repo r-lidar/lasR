@@ -31,6 +31,11 @@ namespace Rcpp
 
 #include <Rcpp.h>
 
+#include "Chunk.h"
+#include "FileCollection.h"
+#include "EPTio.h"
+#include "ept_partition_gate.h"
+
 using namespace Rcpp;
 
 // Generic tools that could be used by any API
@@ -482,10 +487,53 @@ SEXP cpp_test2(std::vector<std::string> on)
   return execute(file);
 }
 
+SEXP cpp_ept_partition_inspect(std::string endpoint, int target_partitions)
+{
+  FileCollection fc;
+  if (!fc.read({endpoint})) Rcpp::stop(last_error);
+  if (!fc.partition_ept(target_partitions)) Rcpp::stop(last_error);
+
+  int n = fc.get_number_chunks();
+  Rcpp::NumericMatrix bb(n, 4);
+  Rcpp::LogicalVector strict(n);
+  for (int i = 0; i < n; ++i) {
+    Chunk c;
+    fc.get_chunk(i, c);
+    bb(i, 0) = c.xmin; bb(i, 1) = c.ymin;
+    bb(i, 2) = c.xmax; bb(i, 3) = c.ymax;
+    strict[i] = c.strict_clip;
+  }
+  auto idx = fc.get_ept_index();
+  Rcpp::NumericVector cb(4);
+  cb[0] = idx->conf_bounds[0]; cb[1] = idx->conf_bounds[1];
+  cb[2] = idx->conf_bounds[3]; cb[3] = idx->conf_bounds[4];
+  return Rcpp::List::create(
+    Rcpp::_["nchunks"] = n,
+    Rcpp::_["bbox"] = bb,
+    Rcpp::_["strict_clip"] = strict,
+    Rcpp::_["conf_bounds"] = cb,
+    Rcpp::_["tiles_built"] = idx->tiles_built);
+}
+
+bool cpp_ept_should_auto_partition(std::string format_signature,
+                                   bool is_parallelizable,
+                                   bool use_rcapi,
+                                   int ncpu_outer_loop)
+{
+  PathType format = UNKNOWNFILE;
+  if (format_signature == "EPTF") format = EPTFILE;
+  else if (format_signature == "LASF") format = LASFILE;
+  else if (format_signature == "PCDF") format = PCDFILE;
+  return api_internal::should_auto_partition_ept(
+      format, is_parallelizable, use_rcapi, ncpu_outer_loop);
+}
+
 RCPP_MODULE(tests)
 {
   function("cpp_test1", &cpp_test1, "Test 1");
   function("cpp_test2", &cpp_test2, "Test 2");
+  function("cpp_ept_partition_inspect", &cpp_ept_partition_inspect, "Inspect EPT partition");
+  function("cpp_ept_should_auto_partition", &cpp_ept_should_auto_partition, "EPT auto-partition gate");
 }
 
 
