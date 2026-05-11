@@ -488,30 +488,52 @@ SEXP cpp_test2(std::vector<std::string> on)
   return execute(file);
 }
 
-SEXP cpp_ept_partition_inspect(std::string endpoint, int target_partitions)
+SEXP cpp_ept_partition_inspect(std::string endpoint, int target_partitions,
+                               Rcpp::List rects = Rcpp::List(),
+                               Rcpp::List circles = Rcpp::List())
 {
   FileCollection fc;
   if (!fc.read({endpoint})) Rcpp::stop(last_error);
+
+  for (int i = 0; i < rects.size(); ++i) {
+    Rcpp::NumericVector r = rects[i];
+    if (r.size() != 4) Rcpp::stop("Each rect must be c(xmin, ymin, xmax, ymax)");
+    fc.add_query(r[0], r[1], r[2], r[3]);
+  }
+  for (int i = 0; i < circles.size(); ++i) {
+    Rcpp::NumericVector c = circles[i];
+    if (c.size() != 3) Rcpp::stop("Each circle must be c(xcenter, ycenter, radius)");
+    fc.add_query(c[0], c[1], c[2]);
+  }
+
   if (!fc.partition_ept(target_partitions)) Rcpp::stop(last_error);
 
   int n = fc.get_number_chunks();
   Rcpp::NumericMatrix bb(n, 4);
   Rcpp::LogicalVector strict(n);
+  Rcpp::CharacterVector shape_type(n);
+  Rcpp::NumericVector owner_xmax(n), owner_ymax(n);
   for (int i = 0; i < n; ++i) {
     Chunk c;
     fc.get_chunk(i, c);
     bb(i, 0) = c.xmin; bb(i, 1) = c.ymin;
     bb(i, 2) = c.xmax; bb(i, 3) = c.ymax;
     strict[i] = c.strict_clip;
+    shape_type[i] = (c.shape == ShapeType::CIRCLE) ? "circle" : "rect";
+    owner_xmax[i] = c.catalog_xmax;
+    owner_ymax[i] = c.catalog_ymax;
   }
   auto idx = fc.get_ept_index();
   Rcpp::NumericVector cb(4);
   cb[0] = idx->conf_bounds[0]; cb[1] = idx->conf_bounds[1];
   cb[2] = idx->conf_bounds[3]; cb[3] = idx->conf_bounds[4];
   return Rcpp::List::create(
-    Rcpp::_["nchunks"] = n,
-    Rcpp::_["bbox"] = bb,
+    Rcpp::_["nchunks"]     = n,
+    Rcpp::_["bbox"]        = bb,
     Rcpp::_["strict_clip"] = strict,
+    Rcpp::_["shape_type"]  = shape_type,
+    Rcpp::_["owner_xmax"]  = owner_xmax,
+    Rcpp::_["owner_ymax"]  = owner_ymax,
     Rcpp::_["conf_bounds"] = cb,
     Rcpp::_["tiles_built"] = idx->tiles_built);
 }
@@ -591,7 +613,12 @@ RCPP_MODULE(tests)
 {
   function("cpp_test1", &cpp_test1, "Test 1");
   function("cpp_test2", &cpp_test2, "Test 2");
-  function("cpp_ept_partition_inspect", &cpp_ept_partition_inspect, "Inspect EPT partition");
+  function("cpp_ept_partition_inspect", &cpp_ept_partition_inspect,
+           Rcpp::List::create(Rcpp::_["endpoint"],
+                              Rcpp::_["target_partitions"],
+                              Rcpp::_["rects"]   = Rcpp::List(),
+                              Rcpp::_["circles"] = Rcpp::List()),
+           "Inspect EPT partition");
   function("cpp_ept_should_auto_partition", &cpp_ept_should_auto_partition, "EPT auto-partition gate");
   function("cpp_strict_clip_decide", &cpp_strict_clip_decide, "Strict-clip decision predicate");
   function("cpp_summary_buffer_decide", &cpp_summary_buffer_decide, "Summary buffer decision");
