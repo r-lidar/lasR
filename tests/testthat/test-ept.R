@@ -355,3 +355,39 @@ test_that("EPT partition: rect AOI outside conf_bounds passes through", {
   # the query — passthrough leaves the Shape* untouched, but the reported
   # chunk bbox reflects the no-file-match placeholder, not the original rect.
 })
+
+# ----- AOI partition: hierarchy walk failure (spec rev 5 test 9) -----
+
+test_that("EPT partition: malformed sub-hierarchy with AOI → passthrough + warning", {
+  src <- system.file("extdata", "ept-test-multi", package = "lasR")
+  dst <- file.path(tempdir(), "ept-broken-subhier")
+  unlink(dst, recursive = TRUE)
+  dir.create(dst, showWarnings = FALSE)
+  file.copy(file.path(src, "ept.json"), dst)
+  dir.create(file.path(dst, "ept-data"), showWarnings = FALSE)
+  dir.create(file.path(dst, "ept-hierarchy"), showWarnings = FALSE)
+  file.copy(list.files(file.path(src, "ept-data"), full.names = TRUE),
+            file.path(dst, "ept-data"))
+  file.copy(list.files(file.path(src, "ept-hierarchy"), full.names = TRUE),
+            file.path(dst, "ept-hierarchy"))
+
+  # Find a non-root sub-hierarchy page referenced from the root via -1.
+  root <- jsonlite::fromJSON(file.path(dst, "ept-hierarchy", "0-0-0-0.json"))
+  sub_keys <- names(root)[unlist(root) == -1]
+  skip_if(length(sub_keys) == 0,
+          "test fixture root has no -1 sub-page references")
+  broken_key <- sub_keys[1]
+  writeLines("{ not valid json",
+             file.path(dst, "ept-hierarchy", paste0(broken_key, ".json")))
+
+  endpoint <- file.path(dst, "ept.json")
+  msg <- capture.output(
+    insp <- lasR:::.APITEST$cpp_ept_partition_inspect(
+      endpoint, 16, list(c(273400, 5274400, 273600, 5274600))),
+    type = "message")
+  expect_equal(insp$nchunks, 1L)
+  expect_equal(as.character(insp$shape_type), "rect")
+  expect_equal(insp$bbox[1, ], c(273400, 5274400, 273600, 5274600))
+  expect_match(paste(msg, collapse = "\n"),
+               "AOI partitioning skipped|hierarchy")
+})
