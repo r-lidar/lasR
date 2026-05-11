@@ -751,15 +751,17 @@ bool FileCollection::set_chunk_size(double size, bool strict_clip)
 }
 
 // Deep-copies a Shape* by dispatching on its type. Used by the
-// exception-safe rebuild in partition_ept.
-static Shape* clone_shape(const Shape* s)
+// exception-safe rebuild in partition_ept. Returns unique_ptr so the
+// clone is freed if any push_back throws bad_alloc at the call site.
+static std::unique_ptr<Shape> clone_shape(const Shape* s)
 {
   switch (s->type()) {
     case ShapeType::RECTANGLE:
-      return new Rectangle(s->xmin(), s->ymin(), s->xmax(), s->ymax());
+      return std::unique_ptr<Shape>(
+          new Rectangle(s->xmin(), s->ymin(), s->xmax(), s->ymax()));
     case ShapeType::CIRCLE: {
       const Circle* c = static_cast<const Circle*>(s);
-      return new Circle(c->center.x, c->center.y, c->radius);
+      return std::unique_ptr<Shape>(new Circle(c->center.x, c->center.y, c->radius));
     }
     default:
       throw std::runtime_error("clone_shape: unsupported Shape type");
