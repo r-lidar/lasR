@@ -519,7 +519,11 @@ SEXP cpp_ept_partition_inspect(std::string endpoint, int target_partitions,
     bb(i, 0) = c.xmin; bb(i, 1) = c.ymin;
     bb(i, 2) = c.xmax; bb(i, 3) = c.ymax;
     strict[i] = c.strict_clip;
-    shape_type[i] = (c.shape == ShapeType::CIRCLE) ? "circle" : "rect";
+    switch (fc.get_query_type(i)) {
+      case ShapeType::CIRCLE:    shape_type[i] = "circle";  break;
+      case ShapeType::RECTANGLE: shape_type[i] = "rect";    break;
+      default:                   shape_type[i] = "unknown"; break;
+    }
     owner_xmax[i] = c.catalog_xmax;
     owner_ymax[i] = c.catalog_ymax;
   }
