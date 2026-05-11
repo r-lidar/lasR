@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <memory>
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
@@ -868,9 +869,133 @@ bool FileCollection::partition_ept(int target_partitions)
     return true;
   }
 
-  // ---- With-queries path: stub (Task 6 fills in the partitioning).
-  // For now: leave all queries untouched so the gate accepts AOIs
-  // without crashing.
+  // ---- With-queries path ----
+
+  // Compute clamped AOI bbox per rect query and aggregate area.
+  struct AoiBbox { double xmin, ymin, xmax, ymax; bool partitionable; };
+  std::vector<AoiBbox> aoi_bboxes(queries.size(),
+      AoiBbox{0, 0, 0, 0, false});
+
+  const double cxmin = ept_index->conf_bounds[0];
+  const double cymin = ept_index->conf_bounds[1];
+  const double cxmax = ept_index->conf_bounds[3];
+  const double cymax = ept_index->conf_bounds[4];
+
+  double aoi_area = 0.0;
+  for (size_t i = 0; i < queries.size(); ++i) {
+    Shape* q = queries[i];
+    if (q->type() != ShapeType::RECTANGLE) continue;
+    double bxmin = std::max(q->xmin(), cxmin);
+    double bymin = std::max(q->ymin(), cymin);
+    double bxmax = std::min(q->xmax(), cxmax);
+    double bymax = std::min(q->ymax(), cymax);
+    if (bxmin >= bxmax || bymin >= bymax) continue;  // disjoint → passthrough
+    aoi_bboxes[i] = {bxmin, bymin, bxmax, bymax, true};
+    aoi_area += (bxmax - bxmin) * (bymax - bymin);
+  }
+
+  if (aoi_area == 0.0) return true;  // nothing partitionable; leave queries unchanged
+
+  // Depth from area ratio. Cap to min(16, max_tile_depth) BEFORE shift.
+  const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
+  const double cube_area = cube_size * cube_size;
+  int d = 0;
+  if (target_partitions * cube_area / aoi_area > 1.0) {
+    d = (int)std::ceil(0.5 * std::log2(target_partitions * cube_area / aoi_area));
+    if (d < 0) d = 0;
+  }
+  int max_tile_depth = 0;
+  for (const auto& t : ept_index->tiles)
+    if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
+  int cap = (max_tile_depth < 16 ? max_tile_depth : 16);
+  if (d > cap) d = cap;
+
+  const double cell_size = cube_size / (double)(1 << d);
+  const int grid_n = 1 << d;
+
+  // Cell-points map over the full 2^d × 2^d grid.
+  std::vector<int64_t> cell_points((size_t)grid_n * grid_n, 0);
+  for (const auto& t : ept_index->tiles) {
+    if (t.key.d >= d) {
+      int shift = t.key.d - d;
+      int cx = t.key.x >> shift;
+      int cy = t.key.y >> shift;
+      if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+      cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+    } else {
+      int span = 1 << (d - t.key.d);
+      int cx0 = t.key.x * span;
+      int cy0 = t.key.y * span;
+      for (int iy = 0; iy < span; ++iy)
+        for (int ix = 0; ix < span; ++ix) {
+          int cx = cx0 + ix;
+          int cy = cy0 + iy;
+          if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+          cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+        }
+    }
+  }
+
+  // Build replacement off-side. unique_ptrs free cleanly if anything throws.
+  std::vector<std::unique_ptr<Shape>> new_q;
+  std::vector<bool>   new_sc;
+  std::vector<double> new_ox, new_oy;
+
+  auto push_passthrough = [&](size_t i) {
+    new_q.emplace_back(clone_shape(queries[i]));
+    new_sc.push_back(queries_strict_clip[i]);
+    new_ox.push_back(queries_owner_xmax[i]);
+    new_oy.push_back(queries_owner_ymax[i]);
+  };
+
+  for (size_t i = 0; i < queries.size(); ++i) {
+    if (!aoi_bboxes[i].partitionable) { push_passthrough(i); continue; }
+
+    const AoiBbox& a = aoi_bboxes[i];
+    int cx_lo = (int)std::floor((a.xmin - ept_index->cube_bounds[0]) / cell_size);
+    int cx_hi = (int)std::ceil ((a.xmax - ept_index->cube_bounds[0]) / cell_size);
+    int cy_lo = (int)std::floor((a.ymin - ept_index->cube_bounds[1]) / cell_size);
+    int cy_hi = (int)std::ceil ((a.ymax - ept_index->cube_bounds[1]) / cell_size);
+    if (cx_lo < 0) cx_lo = 0;
+    if (cy_lo < 0) cy_lo = 0;
+    if (cx_hi > grid_n) cx_hi = grid_n;
+    if (cy_hi > grid_n) cy_hi = grid_n;
+
+    int emitted_for_this = 0;
+    for (int cy = cy_lo; cy < cy_hi; ++cy) {
+      for (int cx = cx_lo; cx < cx_hi; ++cx) {
+        if (cell_points[(size_t)cy * grid_n + cx] == 0) continue;
+        double cell_xmin = ept_index->cube_bounds[0] + cx * cell_size;
+        double cell_ymin = ept_index->cube_bounds[1] + cy * cell_size;
+        double cell_xmax = cell_xmin + cell_size;
+        double cell_ymax = cell_ymin + cell_size;
+        double sxmin = std::max(cell_xmin, a.xmin);
+        double symin = std::max(cell_ymin, a.ymin);
+        double sxmax = std::min(cell_xmax, a.xmax);
+        double symax = std::min(cell_ymax, a.ymax);
+        if (sxmin >= sxmax || symin >= symax) continue;
+        new_q.emplace_back(std::unique_ptr<Shape>(
+            new Rectangle(sxmin, symin, sxmax, symax)));
+        new_sc.push_back(true);
+        new_ox.push_back(a.xmax);  // CLAMPED AOI xmax, NOT query.xmax()
+        new_oy.push_back(a.ymax);
+        emitted_for_this++;
+      }
+    }
+    if (emitted_for_this == 0) push_passthrough(i);
+  }
+
+  // Stage raw-pointer vector off-side so the commit is allocation-free.
+  std::vector<Shape*> raw_new;
+  raw_new.reserve(new_q.size());            // may throw bad_alloc — safe: catalog untouched
+  for (auto& up : new_q) raw_new.push_back(up.release());
+
+  // Commit (noexcept).
+  for (Shape* s : queries) delete s;
+  queries.swap(raw_new);
+  queries_strict_clip.swap(new_sc);
+  queries_owner_xmax.swap(new_ox);
+  queries_owner_ymax.swap(new_oy);
   return true;
 }
 
