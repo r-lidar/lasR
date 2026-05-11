@@ -39,6 +39,7 @@ private:
   bool streaming;
   std::shared_ptr<const EPTio::HierarchyIndex> ept_index;
   bool chunk_strict_clip = false;
+  // See Chunk::catalog_xmax for semantic.
   double catalog_xmax = 0;
   double catalog_ymax = 0;
 };

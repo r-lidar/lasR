@@ -56,6 +56,12 @@ struct Chunk
   int id;
   ShapeType shape;
   bool strict_clip;
+  // Outer boundary at/beyond which strict_clip_decide treats
+  // px == xmax as CORE (the "rightmost cell carve-out"). For
+  // catalog-wide reads this equals the catalog's xmax/ymax; for
+  // AOI-derived sub-queries it's the clamped AOI bbox (so
+  // partitioned and un-partitioned AOI reads agree on
+  // boundary-coincident points).
   double catalog_xmax;
   double catalog_ymax;
   std::string name;
