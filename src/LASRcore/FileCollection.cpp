@@ -526,19 +526,26 @@ void FileCollection::add_query(double xmin, double ymin, double xmax, double yma
 
 void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax, bool strict_clip)
 {
-  Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
-  queries.push_back(rect);
-  queries_strict_clip.push_back(strict_clip);
-  queries_owner_xmax.push_back(std::nan(""));
-  queries_owner_ymax.push_back(std::nan(""));
+  add_query(xmin, ymin, xmax, ymax, strict_clip, std::nan(""), std::nan(""));
 }
 
 void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax,
                                bool strict_clip,
                                double owner_xmax, double owner_ymax)
 {
-  Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
-  queries.push_back(rect);
+  // Reserve capacity in all four parallel vectors before mutating any of
+  // them. If any reserve throws bad_alloc, the unique_ptr below frees
+  // the shape and the catalog state is unchanged. Once all reserves
+  // succeed, the four push_backs are guaranteed allocation-free —
+  // preserving the invariant queries.size() == queries_strict_clip.size()
+  // == queries_owner_xmax.size() == queries_owner_ymax.size().
+  std::unique_ptr<Shape> rect(new Rectangle(xmin, ymin, xmax, ymax));
+  const size_t needed = queries.size() + 1;
+  queries.reserve(needed);
+  queries_strict_clip.reserve(needed);
+  queries_owner_xmax.reserve(needed);
+  queries_owner_ymax.reserve(needed);
+  queries.push_back(rect.release());
   queries_strict_clip.push_back(strict_clip);
   queries_owner_xmax.push_back(owner_xmax);
   queries_owner_ymax.push_back(owner_ymax);
@@ -551,8 +558,15 @@ void FileCollection::add_query(double xcenter, double ycenter, double radius)
 
 void FileCollection::add_query(double xcenter, double ycenter, double radius, bool strict_clip)
 {
-  Circle* circ = new Circle(xcenter, ycenter, radius);
-  queries.push_back(circ);
+  // Same reserve-then-push pattern as the rectangle overload above; see
+  // that comment for the invariant rationale.
+  std::unique_ptr<Shape> circ(new Circle(xcenter, ycenter, radius));
+  const size_t needed = queries.size() + 1;
+  queries.reserve(needed);
+  queries_strict_clip.reserve(needed);
+  queries_owner_xmax.reserve(needed);
+  queries_owner_ymax.reserve(needed);
+  queries.push_back(circ.release());
   queries_strict_clip.push_back(strict_clip);
   queries_owner_xmax.push_back(std::nan(""));
   queries_owner_ymax.push_back(std::nan(""));
