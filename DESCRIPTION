@@ -29,6 +29,7 @@ Imports:
     Rcpp
 Suggests:
     httpuv,
+    jsonlite,
     knitr,
     rmarkdown,
     sf,
