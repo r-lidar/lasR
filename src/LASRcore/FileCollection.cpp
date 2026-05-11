@@ -1104,11 +1104,6 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
 {
   chunk.clear();
 
-  chunk.catalog_xmax = xmax;
-  chunk.catalog_ymax = ymax;
-  if (!std::isnan(queries_owner_xmax[i])) chunk.catalog_xmax = queries_owner_xmax[i];
-  if (!std::isnan(queries_owner_ymax[i])) chunk.catalog_ymax = queries_owner_ymax[i];
-
   // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
   Shape* q = queries[i];
   double minx = q->xmin();
@@ -1144,6 +1139,10 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   if (chunk.ymin < ymin) chunk.ymin = ymin;
   if (chunk.ymax > ymax) chunk.ymax = ymax;
   chunk.buffer = buffer;
+  chunk.catalog_xmax = xmax;
+  chunk.catalog_ymax = ymax;
+  if (!std::isnan(queries_owner_xmax[i])) chunk.catalog_xmax = queries_owner_xmax[i];
+  if (!std::isnan(queries_owner_ymax[i])) chunk.catalog_ymax = queries_owner_ymax[i];
   chunk.shape = q->type();
   chunk.strict_clip = queries_strict_clip[i];
 
