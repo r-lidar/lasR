@@ -64,6 +64,7 @@ public:
   void clear();
   bool file_exists(std::string& file);
   std::shared_ptr<const EPTio::HierarchyIndex> get_ept_index() const { return ept_index; }
+  ShapeType get_query_type(int i) const { return queries[i]->type(); }
 
   #ifdef USING_R
   void add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints);   // Special to build a FileCollection from a data.frame in R
