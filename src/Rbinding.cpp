@@ -546,6 +546,47 @@ int cpp_strict_clip_decide(double px, double py,
   return -1;
 }
 
+// Replays summary.cpp's filter decision against a synthetic Point.
+// Returns true if the point would be DROPPED from the summary
+// (i.e., classified as buffer).
+bool cpp_summary_buffer_decide(bool buffered,
+                               double px, double py,
+                               double xmin, double ymin,
+                               double xmax, double ymax,
+                               bool circular)
+{
+  AttributeSchema schema;
+  schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved for lasR core engine");
+  schema.add_attribute("X", AttributeType::INT32, 1.0, 0.0, "X coordinate");
+  schema.add_attribute("Y", AttributeType::INT32, 1.0, 0.0, "Y coordinate");
+  Point p(&schema);
+  p.set_x(px);
+  p.set_y(py);
+  p.set_buffered(buffered);
+  // Production check from summary.cpp:36 after the contract fix:
+  return p.get_buffered() || p.inside_buffer(xmin, ymin, xmax, ymax, circular);
+}
+
+// Replays writelas.cpp's keep/drop decision (with keep_buffer=false).
+// Returns true if the point would be WRITTEN (kept), false if dropped.
+bool cpp_writelas_buffer_decide(bool buffered,
+                                double px, double py,
+                                double xmin, double ymin,
+                                double xmax, double ymax,
+                                bool circular)
+{
+  AttributeSchema schema;
+  schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved for lasR core engine");
+  schema.add_attribute("X", AttributeType::INT32, 1.0, 0.0, "X coordinate");
+  schema.add_attribute("Y", AttributeType::INT32, 1.0, 0.0, "Y coordinate");
+  Point p(&schema);
+  p.set_x(px);
+  p.set_y(py);
+  p.set_buffered(buffered);
+  // Production check from writelas.cpp:97 after the contract fix:
+  return !p.get_buffered() && !p.inside_buffer(xmin, ymin, xmax, ymax, circular);
+}
+
 RCPP_MODULE(tests)
 {
   function("cpp_test1", &cpp_test1, "Test 1");
@@ -553,6 +594,8 @@ RCPP_MODULE(tests)
   function("cpp_ept_partition_inspect", &cpp_ept_partition_inspect, "Inspect EPT partition");
   function("cpp_ept_should_auto_partition", &cpp_ept_should_auto_partition, "EPT auto-partition gate");
   function("cpp_strict_clip_decide", &cpp_strict_clip_decide, "Strict-clip decision predicate");
+  function("cpp_summary_buffer_decide", &cpp_summary_buffer_decide, "Summary buffer decision");
+  function("cpp_writelas_buffer_decide", &cpp_writelas_buffer_decide, "Writelas buffer decision");
 }
 
 
