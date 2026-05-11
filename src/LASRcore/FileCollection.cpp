@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <unordered_set>
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
@@ -912,43 +913,95 @@ bool FileCollection::partition_ept(int target_partitions)
 
   if (aoi_area == 0.0) return true;  // nothing partitionable; leave queries unchanged
 
-  // Depth from area ratio. Cap to min(16, max_tile_depth) BEFORE shift.
+  // Depth selection — float-safe with a hard cap, then int-cast.
+  //
+  // For tiny AOIs (e.g., a sub-meter query against a 100 km cube), the
+  // ratio cube_area/aoi_area can be huge and `wanted` would overflow
+  // to inf. Converting inf to int is UB. Compare in double-space
+  // against `cap` first, only cast when finite and in range.
   const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
   const double cube_area = cube_size * cube_size;
-  int d = 0;
-  if (target_partitions * cube_area / aoi_area > 1.0) {
-    d = (int)std::ceil(0.5 * std::log2(target_partitions * cube_area / aoi_area));
-    if (d < 0) d = 0;
-  }
   int max_tile_depth = 0;
   for (const auto& t : ept_index->tiles)
     if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
-  int cap = (max_tile_depth < 16 ? max_tile_depth : 16);
-  if (d > cap) d = cap;
+  const int cap = (max_tile_depth < 16 ? max_tile_depth : 16);
+
+  int d;
+  {
+    const double ratio = (double)target_partitions * cube_area / aoi_area;
+    if (!std::isfinite(ratio) || ratio <= 1.0) {
+      d = 0;
+    } else {
+      const double wanted = 0.5 * std::log2(ratio);
+      if (!std::isfinite(wanted) || wanted >= (double)cap) d = cap;
+      else if (wanted < 0.0) d = 0;
+      else { d = (int)std::ceil(wanted); if (d > cap) d = cap; }
+    }
+  }
 
   const double cell_size = cube_size / (double)(1 << d);
   const int grid_n = 1 << d;
 
-  // Cell-points map over the full 2^d × 2^d grid.
-  std::vector<int64_t> cell_points((size_t)grid_n * grid_n, 0);
+  // Per-AOI cell range and union range. The cell-occupancy map is
+  // restricted to the union — memory and walk time scale with the AOI
+  // footprint, not with grid_n^2. (A naive 2^d × 2^d int64_t map would
+  // be ~32 GiB at d=16; here it's bounded by the union of AOI cell
+  // ranges, which is at most O(target_partitions) cells for a
+  // well-chosen depth.)
+  struct AoiCellRange { int cx_lo, cx_hi, cy_lo, cy_hi; };
+  std::vector<AoiCellRange> aoi_ranges(queries.size(),
+      AoiCellRange{0, 0, 0, 0});
+  int u_cx_lo = grid_n, u_cy_lo = grid_n;
+  int u_cx_hi = 0,      u_cy_hi = 0;
+  for (size_t i = 0; i < queries.size(); ++i) {
+    if (!aoi_bboxes[i].partitionable) continue;
+    const AoiBbox& a = aoi_bboxes[i];
+    int cx_lo = (int)std::floor((a.xmin - ept_index->cube_bounds[0]) / cell_size);
+    int cx_hi = (int)std::ceil ((a.xmax - ept_index->cube_bounds[0]) / cell_size);
+    int cy_lo = (int)std::floor((a.ymin - ept_index->cube_bounds[1]) / cell_size);
+    int cy_hi = (int)std::ceil ((a.ymax - ept_index->cube_bounds[1]) / cell_size);
+    if (cx_lo < 0) cx_lo = 0;
+    if (cy_lo < 0) cy_lo = 0;
+    if (cx_hi > grid_n) cx_hi = grid_n;
+    if (cy_hi > grid_n) cy_hi = grid_n;
+    aoi_ranges[i] = {cx_lo, cx_hi, cy_lo, cy_hi};
+    if (cx_lo < u_cx_lo) u_cx_lo = cx_lo;
+    if (cy_lo < u_cy_lo) u_cy_lo = cy_lo;
+    if (cx_hi > u_cx_hi) u_cx_hi = cx_hi;
+    if (cy_hi > u_cy_hi) u_cy_hi = cy_hi;
+  }
+
+  // Sparse occupancy keyed by cy * grid_n + cx. Storing the cell as a
+  // single uint64 keeps memory proportional to the number of occupied
+  // cells inside the AOI union, never to grid_n^2.
+  const uint64_t G = (uint64_t)grid_n;
+  std::unordered_set<uint64_t> occupied;
   for (const auto& t : ept_index->tiles) {
     if (t.key.d >= d) {
       int shift = t.key.d - d;
       int cx = t.key.x >> shift;
       int cy = t.key.y >> shift;
-      if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
-      cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+      if (cx < u_cx_lo || cx >= u_cx_hi || cy < u_cy_lo || cy >= u_cy_hi) continue;
+      occupied.insert((uint64_t)cy * G + (uint64_t)cx);
     } else {
       int span = 1 << (d - t.key.d);
       int cx0 = t.key.x * span;
       int cy0 = t.key.y * span;
-      for (int iy = 0; iy < span; ++iy)
-        for (int ix = 0; ix < span; ++ix) {
+      // Pre-clip the splat range to the AOI union. Without this, a
+      // shallow tile at depth 0 in a deep grid would iterate up to
+      // 4^d cells per tile.
+      int ix0 = std::max(0, u_cx_lo - cx0);
+      int iy0 = std::max(0, u_cy_lo - cy0);
+      int ix1 = std::min(span, u_cx_hi - cx0);
+      int iy1 = std::min(span, u_cy_hi - cy0);
+      for (int iy = iy0; iy < iy1; ++iy) {
+        for (int ix = ix0; ix < ix1; ++ix) {
           int cx = cx0 + ix;
           int cy = cy0 + iy;
           if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
-          cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+          occupied.insert((uint64_t)cy * G + (uint64_t)cx);
         }
+      }
     }
   }
 
@@ -967,20 +1020,13 @@ bool FileCollection::partition_ept(int target_partitions)
   for (size_t i = 0; i < queries.size(); ++i) {
     if (!aoi_bboxes[i].partitionable) { push_passthrough(i); continue; }
 
-    const AoiBbox& a = aoi_bboxes[i];
-    int cx_lo = (int)std::floor((a.xmin - ept_index->cube_bounds[0]) / cell_size);
-    int cx_hi = (int)std::ceil ((a.xmax - ept_index->cube_bounds[0]) / cell_size);
-    int cy_lo = (int)std::floor((a.ymin - ept_index->cube_bounds[1]) / cell_size);
-    int cy_hi = (int)std::ceil ((a.ymax - ept_index->cube_bounds[1]) / cell_size);
-    if (cx_lo < 0) cx_lo = 0;
-    if (cy_lo < 0) cy_lo = 0;
-    if (cx_hi > grid_n) cx_hi = grid_n;
-    if (cy_hi > grid_n) cy_hi = grid_n;
+    const AoiBbox&     a = aoi_bboxes[i];
+    const AoiCellRange r = aoi_ranges[i];
 
     int emitted_for_this = 0;
-    for (int cy = cy_lo; cy < cy_hi; ++cy) {
-      for (int cx = cx_lo; cx < cx_hi; ++cx) {
-        if (cell_points[(size_t)cy * grid_n + cx] == 0) continue;
+    for (int cy = r.cy_lo; cy < r.cy_hi; ++cy) {
+      for (int cx = r.cx_lo; cx < r.cx_hi; ++cx) {
+        if (occupied.count((uint64_t)cy * G + (uint64_t)cx) == 0) continue;
         double cell_xmin = ept_index->cube_bounds[0] + cx * cell_size;
         double cell_ymin = ept_index->cube_bounds[1] + cy * cell_size;
         double cell_xmax = cell_xmin + cell_size;
