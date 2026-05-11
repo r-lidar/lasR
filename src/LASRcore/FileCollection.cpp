@@ -749,7 +749,6 @@ bool FileCollection::set_chunk_size(double size, bool strict_clip)
   return true;
 }
 
-namespace {
 // Deep-copies a Shape* by dispatching on its type. Used by the
 // exception-safe rebuild in partition_ept.
 static Shape* clone_shape(const Shape* s)
@@ -765,7 +764,6 @@ static Shape* clone_shape(const Shape* s)
       throw std::runtime_error("clone_shape: unsupported Shape type");
   }
 }
-}  // namespace
 
 bool FileCollection::partition_ept(int target_partitions)
 {
@@ -803,6 +801,8 @@ bool FileCollection::partition_ept(int target_partitions)
 
   // ---- No-queries path: today's behavior, byte-for-byte ----
   if (!had_queries) {
+    // Cap d at 16 (EPT hard depth limit) before evaluating the shift
+    // so huge target_partitions values cannot trigger UB.
     int d = 0;
     while (d < 16 && (1 << (2 * d)) < target_partitions) d++;
     int max_tile_depth = 0;
