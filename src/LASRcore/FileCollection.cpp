@@ -1110,6 +1110,8 @@ void FileCollection::clear()
   for (auto p : queries) delete p;
   queries.clear();
   queries_strict_clip.clear();
+  queries_owner_xmax.clear();
+  queries_owner_ymax.clear();
 }
 
 bool FileCollection::file_exists(std::string& file)
