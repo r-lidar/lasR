@@ -268,3 +268,40 @@ test_that("strict-clip: zero buffer collapses buffer ring to nothing",
   # px == xmax (not global) → still inside buffered extent → BUFFERED.
   expect_equal(decide(10, 5, 0, 10, 0, 10, 0, 100, 100), BUFFERED)
 })
+
+# ----- Ownership contract: get_buffered() short-circuit (spec rev 5 test 10) -----
+#
+# The reader flags interior-boundary points BUFFERED via strict_clip_decide,
+# but summary.cpp:36 / writelas.cpp:97 historically recomputed inside_buffer()
+# geometrically (inclusive >), reaching the opposite verdict at the boundary.
+# These tests pin the new contract: the flag wins; geometry is the fallback.
+
+test_that("summary honors get_buffered() flag (boundary semantics)", {
+  # Flag forces "in buffer" regardless of geometry.
+  expect_true(lasR:::.APITEST$cpp_summary_buffer_decide(
+    TRUE,  5, 5, 0, 0, 10, 10, FALSE))
+  # No flag, inside core → "not in buffer".
+  expect_false(lasR:::.APITEST$cpp_summary_buffer_decide(
+    FALSE, 5, 5, 0, 0, 10, 10, FALSE))
+  # No flag, on the inclusive xmax edge → geometric "not in buffer".
+  expect_false(lasR:::.APITEST$cpp_summary_buffer_decide(
+    FALSE, 10, 5, 0, 0, 10, 10, FALSE))
+  # No flag, past xmax → "in buffer" via geometry.
+  expect_true(lasR:::.APITEST$cpp_summary_buffer_decide(
+    FALSE, 11, 5, 0, 0, 10, 10, FALSE))
+})
+
+test_that("writelas honors get_buffered() flag (boundary semantics)", {
+  # Flag forces "drop" regardless of geometry.
+  expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    TRUE,  5, 5, 0, 0, 10, 10, FALSE))
+  # No flag, inside core → "write".
+  expect_true(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    FALSE, 5, 5, 0, 0, 10, 10, FALSE))
+  # No flag, on xmax edge → geometric "write" (inclusive).
+  expect_true(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    FALSE, 10, 5, 0, 0, 10, 10, FALSE))
+  # No flag, past xmax → "drop".
+  expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    FALSE, 11, 5, 0, 0, 10, 10, FALSE))
+})
