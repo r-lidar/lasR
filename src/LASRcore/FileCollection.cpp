@@ -528,6 +528,19 @@ void FileCollection::add_query(double xmin, double ymin, double xmax, double yma
   Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
   queries.push_back(rect);
   queries_strict_clip.push_back(strict_clip);
+  queries_owner_xmax.push_back(std::nan(""));
+  queries_owner_ymax.push_back(std::nan(""));
+}
+
+void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax,
+                               bool strict_clip,
+                               double owner_xmax, double owner_ymax)
+{
+  Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
+  queries.push_back(rect);
+  queries_strict_clip.push_back(strict_clip);
+  queries_owner_xmax.push_back(owner_xmax);
+  queries_owner_ymax.push_back(owner_ymax);
 }
 
 void FileCollection::add_query(double xcenter, double ycenter, double radius)
@@ -540,6 +553,8 @@ void FileCollection::add_query(double xcenter, double ycenter, double radius, bo
   Circle* circ = new Circle(xcenter, ycenter, radius);
   queries.push_back(circ);
   queries_strict_clip.push_back(strict_clip);
+  queries_owner_xmax.push_back(std::nan(""));
+  queries_owner_ymax.push_back(std::nan(""));
 }
 
 bool FileCollection::add_las_file(std::string file, bool noprocess)
@@ -942,6 +957,8 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
 
   chunk.catalog_xmax = xmax;
   chunk.catalog_ymax = ymax;
+  if (!std::isnan(queries_owner_xmax[i])) chunk.catalog_xmax = queries_owner_xmax[i];
+  if (!std::isnan(queries_owner_ymax[i])) chunk.catalog_ymax = queries_owner_ymax[i];
 
   // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
   Shape* q = queries[i];
