@@ -371,14 +371,19 @@ test_that("EPT partition: malformed sub-hierarchy with AOI → passthrough + war
   file.copy(list.files(file.path(src, "ept-hierarchy"), full.names = TRUE),
             file.path(dst, "ept-hierarchy"))
 
-  # Find a non-root sub-hierarchy page referenced from the root via -1.
-  root <- jsonlite::fromJSON(file.path(dst, "ept-hierarchy", "0-0-0-0.json"))
-  sub_keys <- names(root)[unlist(root) == -1]
-  skip_if(length(sub_keys) == 0,
-          "test fixture root has no -1 sub-page references")
-  broken_key <- sub_keys[1]
+  # Engineer a -1 sub-page reference in the root hierarchy. The
+  # fixture's root only contains leaves with positive counts, so we
+  # add our own pointer to a sub-page that exists on disk but is
+  # malformed. build_metadata returns on the first openable probe
+  # (one of the existing leaves) and never visits this; ensure_tiles
+  # walks the entire hierarchy and throws when it parses the malformed
+  # sub-page.
+  root_path <- file.path(dst, "ept-hierarchy", "0-0-0-0.json")
+  root <- jsonlite::fromJSON(root_path)
+  root[["2-0-0-0"]] <- -1L
+  jsonlite::write_json(root, root_path, auto_unbox = TRUE)
   writeLines("{ not valid json",
-             file.path(dst, "ept-hierarchy", paste0(broken_key, ".json")))
+             file.path(dst, "ept-hierarchy", "2-0-0-0.json"))
 
   endpoint <- file.path(dst, "ept.json")
   msg <- capture.output(
