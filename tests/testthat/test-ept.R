@@ -469,3 +469,35 @@ test_that("EPT partition: mixed rect + circle splits the rect, passes circle thr
   expect_gt(sum(rects), 1L)
   expect_equal(sum(circles), 1L)
 })
+
+test_that("EPT partition: rect AOI parallel read equals serial AOI read exactly", {
+  skip_if_not(has_omp_support())
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  q <- reader_rectangles(273360, 5274360, 273640, 5274640)
+  par <- exec(q + summarise(), on = ept, ncores = concurrent_files(4))
+  ser <- exec(q + summarise(), on = ept, ncores = sequential())
+  expect_equal(par$npoints,     ser$npoints)
+  expect_equal(par$z_histogram, ser$z_histogram)
+})
+
+test_that("EPT partition: rect AOI parallel write equals serial AOI summarise exactly", {
+  skip_if_not(has_omp_support())
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  out_par <- file.path(tempdir(), "ept-aoi-par")
+  dir.create(out_par, showWarnings = FALSE)
+  on.exit(unlink(out_par, recursive = TRUE), add = TRUE)
+
+  q <- reader_rectangles(273360, 5274360, 273640, 5274640)
+  exec(q + write_las(file.path(out_par, "*.las")), on = ept,
+       ncores = concurrent_files(4))
+  ser_npoints <- exec(q + summarise(), on = ept, ncores = sequential())$npoints
+
+  # The parallel write_las with the glob template uses keep_buffer=FALSE
+  # semantics (per-chunk files contain only their core, not buffer ring).
+  # Sum the per-chunk written totals; they must equal the canonical
+  # serial summarise count — no duplicates, no losses across the
+  # strict-clipped sub-queries.
+  par_total <- sum(sapply(list.files(out_par, full.names = TRUE),
+    function(f) exec(reader() + summarise(), on = f)$npoints))
+  expect_equal(par_total, ser_npoints)
+})
