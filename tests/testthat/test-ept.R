@@ -363,13 +363,16 @@ test_that("EPT partition: malformed sub-hierarchy with AOI → passthrough + war
   dst <- file.path(tempdir(), "ept-broken-subhier")
   unlink(dst, recursive = TRUE)
   dir.create(dst, showWarnings = FALSE)
-  file.copy(file.path(src, "ept.json"), dst)
+  on.exit(unlink(dst, recursive = TRUE), add = TRUE)
+  stopifnot(file.copy(file.path(src, "ept.json"), dst))
   dir.create(file.path(dst, "ept-data"), showWarnings = FALSE)
   dir.create(file.path(dst, "ept-hierarchy"), showWarnings = FALSE)
-  file.copy(list.files(file.path(src, "ept-data"), full.names = TRUE),
-            file.path(dst, "ept-data"))
-  file.copy(list.files(file.path(src, "ept-hierarchy"), full.names = TRUE),
-            file.path(dst, "ept-hierarchy"))
+  stopifnot(all(file.copy(
+    list.files(file.path(src, "ept-data"), full.names = TRUE),
+    file.path(dst, "ept-data"))))
+  stopifnot(all(file.copy(
+    list.files(file.path(src, "ept-hierarchy"), full.names = TRUE),
+    file.path(dst, "ept-hierarchy"))))
 
   # Engineer a -1 sub-page reference in the root hierarchy. The
   # fixture's root only contains leaves with positive counts, so we
@@ -394,5 +397,5 @@ test_that("EPT partition: malformed sub-hierarchy with AOI → passthrough + war
   expect_equal(as.character(insp$shape_type), "rect")
   expect_equal(insp$bbox[1, ], c(273400, 5274400, 273600, 5274600))
   expect_match(paste(msg, collapse = "\n"),
-               "AOI partitioning skipped|hierarchy")
+               "EPT hierarchy unavailable .* AOI partitioning skipped")
 })
