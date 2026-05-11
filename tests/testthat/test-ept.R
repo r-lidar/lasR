@@ -399,3 +399,73 @@ test_that("EPT partition: malformed sub-hierarchy with AOI → passthrough + war
   expect_match(paste(msg, collapse = "\n"),
                "EPT hierarchy unavailable .* AOI partitioning skipped")
 })
+
+# ----- AOI partition: emission + owner bounds (spec rev 5 tests 2, 3, 4, 7, 8) -----
+
+test_that("EPT partition: multi-tile rect AOI yields >1 strict-clipped sub-queries", {
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  insp <- lasR:::.APITEST$cpp_ept_partition_inspect(
+    ept, 16, list(c(273360, 5274360, 273640, 5274640)))
+  expect_gt(insp$nchunks, 1L)
+  expect_true(all(insp$strict_clip))
+  expect_true(all(as.character(insp$shape_type) == "rect"))
+  cb <- insp$conf_bounds
+  xmin_c <- max(273360, cb[1]); ymin_c <- max(5274360, cb[2])
+  xmax_c <- min(273640, cb[3]); ymax_c <- min(5274640, cb[4])
+  expect_true(all(insp$bbox[, 1] >= xmin_c - 1e-9))
+  expect_true(all(insp$bbox[, 2] >= ymin_c - 1e-9))
+  expect_true(all(insp$bbox[, 3] <= xmax_c + 1e-9))
+  expect_true(all(insp$bbox[, 4] <= ymax_c + 1e-9))
+  expect_true(all(abs(insp$owner_xmax - xmax_c) < 1e-9))
+  expect_true(all(abs(insp$owner_ymax - ymax_c) < 1e-9))
+})
+
+test_that("EPT partition: tiny AOI inside one cell emits one sub-query", {
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  aoi <- c(273500, 5274500, 273505, 5274505)
+  insp <- lasR:::.APITEST$cpp_ept_partition_inspect(ept, 16, list(aoi))
+  expect_equal(insp$nchunks, 1L)
+  expect_true(insp$strict_clip[1])
+  expect_equal(insp$bbox[1, ], aoi, tolerance = 1e-9)
+  expect_equal(insp$owner_xmax[1], aoi[3], tolerance = 1e-9)
+  expect_equal(insp$owner_ymax[1], aoi[4], tolerance = 1e-9)
+})
+
+test_that("EPT partition: AOI extending past conf_bounds uses clamped owner_xmax", {
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  base <- lasR:::.APITEST$cpp_ept_partition_inspect(ept, 1)
+  cb <- base$conf_bounds
+  aoi <- c(cb[1] + 10, cb[2] + 10, cb[3] + 1000, cb[4] + 1000)
+  insp <- lasR:::.APITEST$cpp_ept_partition_inspect(ept, 16, list(aoi))
+  expect_gt(insp$nchunks, 0L)
+  expect_true(all(insp$bbox[, 3] <= cb[3] + 1e-9))
+  expect_true(all(insp$bbox[, 4] <= cb[4] + 1e-9))
+  # CLAMPED owner_xmax (not the unclamped AOI max).
+  expect_true(all(abs(insp$owner_xmax - cb[3]) < 1e-9))
+  expect_true(all(abs(insp$owner_ymax - cb[4]) < 1e-9))
+})
+
+test_that("EPT partition: multiple disjoint AOIs each contribute sub-queries", {
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  # Each AOI straddles the cell midline at x=273500 so it splits into >=2
+  # sub-queries; the two AOIs are disjoint in y. Total nchunks > length(aois)
+  # exercises the "each AOI is independently partitioned" intent.
+  aois <- list(
+    c(273360, 5274360, 273510, 5274490),
+    c(273490, 5274510, 273640, 5274640))
+  insp <- lasR:::.APITEST$cpp_ept_partition_inspect(ept, 16, aois)
+  expect_gt(insp$nchunks, length(aois))
+  expect_true(all(insp$owner_xmax %in% c(aois[[1]][3], aois[[2]][3])))
+})
+
+test_that("EPT partition: mixed rect + circle splits the rect, passes circle through", {
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  insp <- lasR:::.APITEST$cpp_ept_partition_inspect(
+    ept, 16,
+    list(c(273360, 5274360, 273640, 5274640)),
+    list(c(273500, 5274500, 30)))
+  rects   <- as.character(insp$shape_type) == "rect"
+  circles <- as.character(insp$shape_type) == "circle"
+  expect_gt(sum(rects), 1L)
+  expect_equal(sum(circles), 1L)
+})
