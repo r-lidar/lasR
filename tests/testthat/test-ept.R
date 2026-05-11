@@ -289,6 +289,21 @@ test_that("summary honors get_buffered() flag (boundary semantics)", {
   # No flag, past xmax → "in buffer" via geometry.
   expect_true(lasR:::.APITEST$cpp_summary_buffer_decide(
     FALSE, 11, 5, 0, 0, 10, 10, FALSE))
+  # Motivating bug: flag set, point on xmax (non-global) → flag wins over geometry.
+  expect_true(lasR:::.APITEST$cpp_summary_buffer_decide(
+    TRUE,  10, 5, 0, 0, 10, 10, FALSE))
+  # No flag, past ymax → "in buffer" via Y-axis geometry.
+  expect_true(lasR:::.APITEST$cpp_summary_buffer_decide(
+    FALSE, 5, 11, 0, 0, 10, 10, FALSE))
+  # Flag set, point on ymax (non-global) → flag wins over Y-axis geometry.
+  expect_true(lasR:::.APITEST$cpp_summary_buffer_decide(
+    TRUE,  5, 10, 0, 0, 10, 10, FALSE))
+  # No flag, circular footprint, point outside inscribed circle but inside bbox → "in buffer".
+  expect_true(lasR:::.APITEST$cpp_summary_buffer_decide(
+    FALSE, 9, 9, 0, 0, 10, 10, TRUE))
+  # Flag set, circular footprint, point inside circle → flag wins over geometry.
+  expect_true(lasR:::.APITEST$cpp_summary_buffer_decide(
+    TRUE,  5, 5, 0, 0, 10, 10, TRUE))
 })
 
 test_that("writelas honors get_buffered() flag (boundary semantics)", {
@@ -304,4 +319,19 @@ test_that("writelas honors get_buffered() flag (boundary semantics)", {
   # No flag, past xmax → "drop".
   expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
     FALSE, 11, 5, 0, 0, 10, 10, FALSE))
+  # Motivating bug: flag set, point on xmax (non-global) → flag forces drop over geometry.
+  expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    TRUE,  10, 5, 0, 0, 10, 10, FALSE))
+  # No flag, past ymax → "drop" via Y-axis geometry.
+  expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    FALSE, 5, 11, 0, 0, 10, 10, FALSE))
+  # Flag set, point on ymax (non-global) → flag forces drop over Y-axis geometry.
+  expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    TRUE,  5, 10, 0, 0, 10, 10, FALSE))
+  # No flag, circular footprint, point outside inscribed circle but inside bbox → "drop".
+  expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    FALSE, 9, 9, 0, 0, 10, 10, TRUE))
+  # Flag set, circular footprint, point inside circle → flag forces drop over geometry.
+  expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
+    TRUE,  5, 5, 0, 0, 10, 10, TRUE))
 })
