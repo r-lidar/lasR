@@ -9,6 +9,7 @@
 #include "Header.h"
 #include "EPTio.h"
 
+#include <cmath>
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -79,6 +80,8 @@ private:
   bool get_chunk_with_query(int index, Chunk& chunk) const;
   PathType parse_path(const std::string& path);
   void add_query(double xmin, double ymin, double xmax, double ymax, bool strict_clip);
+  void add_query(double xmin, double ymin, double xmax, double ymax, bool strict_clip,
+                 double owner_xmax, double owner_ymax);  // NaN values fall through to catalog bounds
   void add_query(double xcenter, double ycenter, double radius, bool strict_clip);
 
 private:
@@ -109,6 +112,8 @@ private:
   FileCollectionIndex file_index;
   std::vector<Shape*> queries;
   std::vector<bool> queries_strict_clip;
+  std::vector<double> queries_owner_xmax;  // NaN = use catalog xmax
+  std::vector<double> queries_owner_ymax;  // NaN = use catalog ymax
 
   // EPT shared metadata index (built when add_ept_endpoint succeeds)
   std::shared_ptr<EPTio::HierarchyIndex> ept_index;
