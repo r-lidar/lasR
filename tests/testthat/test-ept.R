@@ -335,3 +335,23 @@ test_that("writelas honors get_buffered() flag (boundary semantics)", {
   expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(
     TRUE,  5, 5, 0, 0, 10, 10, TRUE))
 })
+
+# ----- AOI partition: passthrough cases (spec rev 5 tests 5, 6) -----
+
+test_that("EPT partition: circle AOI passes through", {
+  insp <- lasR:::.APITEST$cpp_ept_partition_inspect(
+    ept, 16, list(),
+    list(c(273500, 5274500, 50)))  # circle inside conf_bounds
+  expect_equal(insp$nchunks, 1L)
+  expect_equal(as.character(insp$shape_type), "circle")
+})
+
+test_that("EPT partition: rect AOI outside conf_bounds passes through", {
+  insp <- lasR:::.APITEST$cpp_ept_partition_inspect(
+    ept, 16, list(c(1, 2, 3, 4)))  # nowhere near the data
+  expect_equal(insp$nchunks, 1L)
+  expect_equal(as.character(insp$shape_type), "rect")
+  # Note: get_chunk_with_query zeros the chunk bbox when no files overlap
+  # the query — passthrough leaves the Shape* untouched, but the reported
+  # chunk bbox reflects the no-file-match placeholder, not the original rect.
+})

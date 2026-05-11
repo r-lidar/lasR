@@ -749,15 +749,39 @@ bool FileCollection::set_chunk_size(double size, bool strict_clip)
   return true;
 }
 
+namespace {
+// Deep-copies a Shape* by dispatching on its type. Used by the
+// exception-safe rebuild in partition_ept.
+static Shape* clone_shape(const Shape* s)
+{
+  switch (s->type()) {
+    case ShapeType::RECTANGLE:
+      return new Rectangle(s->xmin(), s->ymin(), s->xmax(), s->ymax());
+    case ShapeType::CIRCLE: {
+      const Circle* c = static_cast<const Circle*>(s);
+      return new Circle(c->center.x, c->center.y, c->radius);
+    }
+    default:
+      throw std::runtime_error("clone_shape: unsupported Shape type");
+  }
+}
+}  // namespace
+
 bool FileCollection::partition_ept(int target_partitions)
 {
   if (!ept_index || get_format() != EPTFILE) return true;
-  if (queries.size() > 0) return true;
   if (chunk_size > 0) return true;
   if (target_partitions <= 0) return true;
 
+  const bool had_queries = !queries.empty();
+
+  // Hierarchy walk; with-queries fallback diverges from no-queries fallback.
   try { ept_index->ensure_tiles(); }
   catch (const std::exception& e) {
+    if (had_queries) {
+      warning("EPT hierarchy unavailable (%s); AOI partitioning skipped\n", e.what());
+      return true;
+    }
     warning("EPT hierarchy walk failed (%s); falling back to grid chunking\n", e.what());
     double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
     double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
@@ -766,6 +790,10 @@ bool FileCollection::partition_ept(int target_partitions)
   }
 
   if (ept_index->tiles.empty()) {
+    if (had_queries) {
+      warning("EPT hierarchy yielded no tiles; AOI partitioning skipped\n");
+      return true;
+    }
     warning("EPT hierarchy yielded no tiles; falling back to grid chunking\n");
     double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
     double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
@@ -773,80 +801,76 @@ bool FileCollection::partition_ept(int target_partitions)
     return set_chunk_size(size, true);
   }
 
-  // Determine partition depth d: smallest d with 4^d >= target.
-  // Cap at 16 (EPT hard depth limit) before evaluating the shift, so
-  // huge target_partitions values from test helpers cannot trigger UB.
-  int d = 0;
-  while (d < 16 && (1 << (2 * d)) < target_partitions) {
-    d++;
-  }
+  // ---- No-queries path: today's behavior, byte-for-byte ----
+  if (!had_queries) {
+    int d = 0;
+    while (d < 16 && (1 << (2 * d)) < target_partitions) d++;
+    int max_tile_depth = 0;
+    for (const auto& t : ept_index->tiles)
+      if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
+    if (d > max_tile_depth) d = max_tile_depth;
 
-  int max_tile_depth = 0;
-  for (const auto& t : ept_index->tiles)
-    if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
-  if (d > max_tile_depth) d = max_tile_depth;
+    const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
+    const double cell_size = cube_size / (double)(1 << d);
+    const int grid_n = 1 << d;
 
-  const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
-  const double cell_size = cube_size / (double)(1 << d);
-  const int grid_n = 1 << d;
-
-  std::vector<int64_t> cell_points((size_t)grid_n * grid_n, 0);
-
-  for (const auto& t : ept_index->tiles) {
-    if (t.key.d >= d) {
-      int shift = t.key.d - d;
-      int cx = t.key.x >> shift;
-      int cy = t.key.y >> shift;
-      if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
-      cell_points[(size_t)cy * grid_n + cx] += t.point_count;
-    } else {
-      int span = 1 << (d - t.key.d);
-      int cx0 = t.key.x * span;
-      int cy0 = t.key.y * span;
-      for (int iy = 0; iy < span; ++iy)
-        for (int ix = 0; ix < span; ++ix) {
-          int cx = cx0 + ix;
-          int cy = cy0 + iy;
-          if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
-          cell_points[(size_t)cy * grid_n + cx] += t.point_count;
-        }
+    std::vector<int64_t> cell_points((size_t)grid_n * grid_n, 0);
+    for (const auto& t : ept_index->tiles) {
+      if (t.key.d >= d) {
+        int shift = t.key.d - d;
+        int cx = t.key.x >> shift;
+        int cy = t.key.y >> shift;
+        if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+        cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+      } else {
+        int span = 1 << (d - t.key.d);
+        int cx0 = t.key.x * span;
+        int cy0 = t.key.y * span;
+        for (int iy = 0; iy < span; ++iy)
+          for (int ix = 0; ix < span; ++ix) {
+            int cx = cx0 + ix;
+            int cy = cy0 + iy;
+            if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+            cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+          }
+      }
     }
-  }
 
-  const double cxmin = ept_index->conf_bounds[0];
-  const double cymin = ept_index->conf_bounds[1];
-  const double cxmax = ept_index->conf_bounds[3];
-  const double cymax = ept_index->conf_bounds[4];
+    const double cxmin = ept_index->conf_bounds[0];
+    const double cymin = ept_index->conf_bounds[1];
+    const double cxmax = ept_index->conf_bounds[3];
+    const double cymax = ept_index->conf_bounds[4];
 
-  int emitted = 0;
-  for (int cy = 0; cy < grid_n; ++cy) {
-    for (int cx = 0; cx < grid_n; ++cx) {
-      if (cell_points[(size_t)cy * grid_n + cx] == 0) continue;
-
-      double cxmin_c = ept_index->cube_bounds[0] + cx * cell_size;
-      double cymin_c = ept_index->cube_bounds[1] + cy * cell_size;
-      double cxmax_c = cxmin_c + cell_size;
-      double cymax_c = cymin_c + cell_size;
-
-      if (cxmin_c < cxmin) cxmin_c = cxmin;
-      if (cymin_c < cymin) cymin_c = cymin;
-      if (cxmax_c > cxmax) cxmax_c = cxmax;
-      if (cymax_c > cymax) cymax_c = cymax;
-      if (cxmin_c >= cxmax_c || cymin_c >= cymax_c) continue;
-
-      add_query(cxmin_c, cymin_c, cxmax_c, cymax_c, true);
-      emitted++;
+    int emitted = 0;
+    for (int cy = 0; cy < grid_n; ++cy) {
+      for (int cx = 0; cx < grid_n; ++cx) {
+        if (cell_points[(size_t)cy * grid_n + cx] == 0) continue;
+        double cxmin_c = ept_index->cube_bounds[0] + cx * cell_size;
+        double cymin_c = ept_index->cube_bounds[1] + cy * cell_size;
+        double cxmax_c = cxmin_c + cell_size;
+        double cymax_c = cymin_c + cell_size;
+        if (cxmin_c < cxmin) cxmin_c = cxmin;
+        if (cymin_c < cymin) cymin_c = cymin;
+        if (cxmax_c > cxmax) cxmax_c = cxmax;
+        if (cymax_c > cymax) cymax_c = cymax;
+        if (cxmin_c >= cxmax_c || cymin_c >= cymax_c) continue;
+        add_query(cxmin_c, cymin_c, cxmax_c, cymax_c, true);
+        emitted++;
+      }
     }
+    if (emitted == 0) {
+      warning("EPT partitioning produced no chunks after conforming clamp; falling back to grid chunking\n");
+      double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
+      double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
+      double size = std::sqrt((dx * dy) / (double)target_partitions);
+      return set_chunk_size(size, true);
+    }
+    return true;
   }
 
-  if (emitted == 0) {
-    warning("EPT partitioning produced no chunks after conforming clamp; falling back to grid chunking\n");
-    double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
-    double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
-    double size = std::sqrt((dx * dy) / (double)target_partitions);
-    return set_chunk_size(size, true);
-  }
-
+  // ---- With-queries path: stub (Task 6 fills in the partitioning).
+  // For now: leave all queries untouched so the gate accepts AOIs
+  // without crashing.
   return true;
 }
 
