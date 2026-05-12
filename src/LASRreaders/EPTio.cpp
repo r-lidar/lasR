@@ -11,10 +11,12 @@
 #endif
 
 #include <fstream>
+#include <future>
 #include <sstream>
 #include <algorithm>
 #include <stdexcept>
 #include <cmath>
+#include <utility>
 
 // Detect remote schemes regardless of GDAL availability so callers can produce
 // a clear "requires GDAL" error rather than letting an HTTPS URL fall through
@@ -297,6 +299,10 @@ void EPTio::query(const std::vector<std::string>& main_files,
   if (!opened)
     open(main_files[0]);
 
+  // Drain any in-flight prefetch from a prior query so it can't write
+  // into the queues we are about to reset.
+  cancel_prefetch();
+
   // Clear previous state
   tile_queue.clear();
   total_points = 0;
@@ -438,6 +444,46 @@ bool EPTio::read_point(Point* p)
   }
 }
 
+LASio* EPTio::open_tile_sync(const EPTkey& key)
+{
+  std::string path = tile_path(key);
+  LASio* tile = new LASio();
+  try
+  {
+    tile->open(path);
+    Header temp_header;
+    tile->populate_header(&temp_header);
+    return tile;
+  }
+  catch (const std::exception& e)
+  {
+    warning("Failed to open EPT tile %s: %s\n", path.c_str(), e.what());
+    delete tile;
+    return nullptr;
+  }
+}
+
+void EPTio::prefetch_next_tile()
+{
+  if (tile_queue.empty()) return;
+  EPTkey key = tile_queue.front();
+  tile_queue.pop_front();
+  next_tile_future = std::async(std::launch::async,
+    [this, key]() -> LASio* { return open_tile_sync(key); });
+}
+
+void EPTio::cancel_prefetch()
+{
+  if (!next_tile_future.valid()) return;
+  // Drain the future and discard the result (cannot cancel std::async
+  // mid-flight; we just wait it out and free the LASio if it succeeded).
+  LASio* leftover = next_tile_future.get();
+  if (leftover) {
+    leftover->close();
+    delete leftover;
+  }
+}
+
 bool EPTio::open_next_tile()
 {
   // Close previous tile
@@ -448,32 +494,33 @@ bool EPTio::open_next_tile()
     current_tile = nullptr;
   }
 
-  // No more tiles
-  if (tile_queue.empty())
-    return false;
+  // 1) Was a tile prefetched in the background? Consume that first.
+  if (next_tile_future.valid())
+  {
+    LASio* prefetched = next_tile_future.get();  // joins the worker
+    if (prefetched)
+    {
+      current_tile = prefetched;
+      // Kick off the next prefetch while the caller drains this tile.
+      prefetch_next_tile();
+      return true;
+    }
+    // Prefetch failed (warning already logged in open_tile_sync). Fall
+    // through to the queue — there may still be more tiles to try.
+  }
+
+  // 2) Synchronous open from the queue (first tile, or after a prefetch
+  //    failure with more tiles still queued).
+  if (tile_queue.empty()) return false;
 
   EPTkey key = tile_queue.front();
   tile_queue.pop_front();
+  current_tile = open_tile_sync(key);
+  if (!current_tile) return open_next_tile();  // try the next one
 
-  std::string path = tile_path(key);
-  current_tile = new LASio();
-
-  try
-  {
-    current_tile->open(path);
-    // populate_header initializes LASlib's point reader and extrabytes accessors
-    Header temp_header;
-    current_tile->populate_header(&temp_header);
-  }
-  catch (const std::exception& e)
-  {
-    warning("Failed to open EPT tile %s: %s\n", path.c_str(), e.what());
-    delete current_tile;
-    current_tile = nullptr;
-    // Try next tile
-    return open_next_tile();
-  }
-
+  // Background-fetch the tile after this one so its bytes are
+  // already arriving by the time we need it.
+  prefetch_next_tile();
   return true;
 }
 
@@ -642,49 +689,68 @@ void EPTio::HierarchyIndex::ensure_tiles()
 {
   if (tiles_built) return;
 
-  std::deque<EPTkey> pages_to_visit;
-  pages_to_visit.push_back(EPTkey(0, 0, 0, 0));
-  double cube_size = cube_bounds[3] - cube_bounds[0];
+  const double cube_size = cube_bounds[3] - cube_bounds[0];
 
-  while (!pages_to_visit.empty()) {
-    EPTkey page_key = pages_to_visit.front();
-    pages_to_visit.pop_front();
+  // Level-synchronized BFS with concurrent fetch at each level. The
+  // sequential BFS paid one HTTP RTT per sub-page; on a real remote EPT
+  // the hierarchy walk dominates first-read latency (~3 s for autzen-
+  // classified). HTTP/2 multiplex (enabled by add_ept_endpoint) lets
+  // many in-flight requests share one connection. Parsing and tile
+  // accumulation stay single-threaded so `tiles` / `total_points` need
+  // no locking.
+  std::vector<EPTkey> frontier;
+  frontier.push_back(EPTkey(0, 0, 0, 0));
 
-    std::string hier_path = base_path + "ept-hierarchy/" +
-      std::to_string(page_key.d) + "-" + std::to_string(page_key.x) + "-" +
-      std::to_string(page_key.y) + "-" + std::to_string(page_key.z) + ".json" + query_string;
-    std::string json_str;
-    bool is_root = (page_key.d == 0 && page_key.x == 0 && page_key.y == 0 && page_key.z == 0);
-    try { json_str = read_file_contents_impl(hier_path); }
-    catch (const std::exception& e) {
-      if (is_root) throw std::runtime_error("Failed to read EPT hierarchy: " + hier_path + ": " + e.what());
-      warning("EPT sub-hierarchy file not found: %s\n", hier_path.c_str());
-      continue;
+  while (!frontier.empty()) {
+    std::vector<std::future<std::pair<EPTkey, std::string>>> fetches;
+    fetches.reserve(frontier.size());
+
+    for (const EPTkey& k : frontier) {
+      fetches.push_back(std::async(std::launch::async,
+        [this, k]() -> std::pair<EPTkey, std::string> {
+          std::string path = base_path + "ept-hierarchy/" +
+            std::to_string(k.d) + "-" + std::to_string(k.x) + "-" +
+            std::to_string(k.y) + "-" + std::to_string(k.z) + ".json" + query_string;
+          try { return {k, read_file_contents_impl(path)}; }
+          catch (const std::exception& e) {
+            const bool is_root = (k.d == 0 && k.x == 0 && k.y == 0 && k.z == 0);
+            if (is_root) throw std::runtime_error("Failed to read EPT hierarchy: " + path + ": " + e.what());
+            warning("EPT sub-hierarchy file not found: %s\n", path.c_str());
+            return {k, ""};
+          }
+        }));
     }
 
-    nlohmann::json hierarchy = nlohmann::json::parse(json_str);
-    for (auto& [key_str, value] : hierarchy.items()) {
-      int d, x, y, z;
-      if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4) continue;
-      EPTkey k(d, x, y, z);
-      int64_t pc = value.get<int64_t>();
-      if (pc > 0) {
-        TileEntry t;
-        t.key = k;
-        t.point_count = pc;
-        double node_size = cube_size / (1 << d);
-        t.xmin = cube_bounds[0] + x * node_size;
-        t.ymin = cube_bounds[1] + y * node_size;
-        t.zmin = cube_bounds[2] + z * node_size;
-        t.xmax = t.xmin + node_size;
-        t.ymax = t.ymin + node_size;
-        t.zmax = t.zmin + node_size;
-        tiles.push_back(t);
-        total_points += pc;
-      } else if (pc == -1) {
-        pages_to_visit.push_back(k);
+    std::vector<EPTkey> next_frontier;
+    for (auto& fut : fetches) {
+      std::pair<EPTkey, std::string> result = fut.get();
+      if (result.second.empty()) continue;
+
+      nlohmann::json hierarchy = nlohmann::json::parse(result.second);
+      for (auto& [key_str, value] : hierarchy.items()) {
+        int d, x, y, z;
+        if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4) continue;
+        EPTkey k(d, x, y, z);
+        int64_t pc = value.get<int64_t>();
+        if (pc > 0) {
+          TileEntry t;
+          t.key = k;
+          t.point_count = pc;
+          double node_size = cube_size / (1 << d);
+          t.xmin = cube_bounds[0] + x * node_size;
+          t.ymin = cube_bounds[1] + y * node_size;
+          t.zmin = cube_bounds[2] + z * node_size;
+          t.xmax = t.xmin + node_size;
+          t.ymax = t.ymin + node_size;
+          t.zmax = t.zmin + node_size;
+          tiles.push_back(t);
+          total_points += pc;
+        } else if (pc == -1) {
+          next_frontier.push_back(k);
+        }
       }
     }
+    frontier = std::move(next_frontier);
   }
 
   tiles_built = true;
@@ -722,6 +788,10 @@ int64_t EPTio::p_count()
 
 void EPTio::close()
 {
+  // Drain the prefetch worker before tearing down state — its lambda
+  // captures `this` and can write into our queues if still running.
+  cancel_prefetch();
+
   if (current_tile)
   {
     current_tile->close();

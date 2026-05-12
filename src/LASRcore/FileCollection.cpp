@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <memory>
 #include <unordered_set>
@@ -666,6 +667,10 @@ bool FileCollection::add_ept_endpoint(std::string path, bool noprocess)
   if (CPLGetConfigOption("VSI_CACHE_SIZE", nullptr) == nullptr)
     CPLSetConfigOption("VSI_CACHE_SIZE", "67108864");  // 64 MiB
 #endif
+  // Suppress LASlib's per-tile HEAD size-warning. EPT tiles are small by
+  // construction; the warning was wasting one HTTP round-trip per open.
+  if (std::getenv("LASR_SKIP_REMOTE_SIZE_WARN") == nullptr)
+    setenv("LASR_SKIP_REMOTE_SIZE_WARN", "1", /*overwrite=*/0);
 
   try {
     ept_index = EPTio::HierarchyIndex::build_metadata(path);

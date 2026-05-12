@@ -10,6 +10,7 @@
 #include <vector>
 #include <deque>
 #include <cstdint>
+#include <future>
 #include <memory>
 
 class LASio;
@@ -86,6 +87,12 @@ private:
   void traverse_hierarchy(double qxmin, double qymin, double qxmax, double qymax);
   void load_hierarchy_page(const EPTkey& key, double qxmin, double qymin, double qxmax, double qymax);
   bool open_next_tile();
+  // open_tile_sync constructs a LASio at the given key, opens it, and
+  // populates the header (so the caller does not block on it again).
+  // Returns nullptr on failure (with a warning logged).
+  LASio* open_tile_sync(const EPTkey& key);
+  void prefetch_next_tile();
+  void cancel_prefetch();
   std::string read_file_contents(const std::string& path) const;
   std::string tile_path(const EPTkey& key) const;
   std::string hierarchy_path(const EPTkey& key) const;
@@ -119,6 +126,11 @@ private:
 
   // Current tile reader
   LASio* current_tile;
+  // Background-prefetched next tile. While read_point drains current_tile,
+  // open_next_tile starts an std::async opening the next queued tile in
+  // parallel. When current_tile is exhausted we just .get() the future
+  // and swap. Single-producer single-consumer; one future per EPTio.
+  std::future<LASio*> next_tile_future;
   int64_t points_read;
 
   // Optional shared metadata index (Task 2+). When set via set_index, future
