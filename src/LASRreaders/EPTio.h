@@ -83,14 +83,26 @@ public:
              std::vector<std::string> filters);
 
 private:
+  // TileLoadResult carries any warning text the worker would otherwise
+  // emit directly. R's C API (and lasR's warning() router) is not safe to
+  // call from a non-OpenMP background thread, so the std::async worker
+  // accumulates the message and the consumer thread emits it after
+  // future.get().
+  struct TileLoadResult
+  {
+    LASio* tile = nullptr;
+    std::string warning_msg;
+  };
+
   void parse_ept_json();
   void traverse_hierarchy(double qxmin, double qymin, double qxmax, double qymax);
   void load_hierarchy_page(const EPTkey& key, double qxmin, double qymin, double qxmax, double qymax);
   bool open_next_tile();
   // open_tile_sync constructs a LASio at the given key, opens it, and
   // populates the header (so the caller does not block on it again).
-  // Returns nullptr on failure (with a warning logged).
-  LASio* open_tile_sync(const EPTkey& key);
+  // Safe to call from a background thread: warning text is returned in
+  // TileLoadResult::warning_msg rather than emitted directly.
+  TileLoadResult open_tile_sync(const EPTkey& key);
   void prefetch_next_tile();
   void cancel_prefetch();
   std::string read_file_contents(const std::string& path) const;
@@ -130,7 +142,7 @@ private:
   // open_next_tile starts an std::async opening the next queued tile in
   // parallel. When current_tile is exhausted we just .get() the future
   // and swap. Single-producer single-consumer; one future per EPTio.
-  std::future<LASio*> next_tile_future;
+  std::future<TileLoadResult> next_tile_future;
   int64_t points_read;
 
   // Optional shared metadata index (Task 2+). When set via set_index, future
