@@ -314,15 +314,30 @@ test_that("callback honors get_buffered() flag (boundary semantics)", {
   # Flag forces "in buffer" regardless of geometry.
   expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
     TRUE,  5, 5, 0, 0, 10, 10, FALSE))
+  # No flag, inside core → "not in buffer".
   expect_false(lasR:::.APITEST$cpp_callback_buffer_decide(
     FALSE, 5, 5, 0, 0, 10, 10, FALSE))
+  # No flag, on inclusive xmax edge → geometric "not in buffer".
   expect_false(lasR:::.APITEST$cpp_callback_buffer_decide(
     FALSE, 10, 5, 0, 0, 10, 10, FALSE))
+  # No flag, past xmax → "in buffer" via geometry.
   expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
     FALSE, 11, 5, 0, 0, 10, 10, FALSE))
   # Motivating bug: flag set, point on xmax (non-global) → flag wins over geometry.
   expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
     TRUE,  10, 5, 0, 0, 10, 10, FALSE))
+  # No flag, past ymax → "in buffer" via Y-axis geometry.
+  expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
+    FALSE, 5, 11, 0, 0, 10, 10, FALSE))
+  # Flag set, point on ymax (non-global) → flag wins over Y-axis geometry.
+  expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
+    TRUE,  5, 10, 0, 0, 10, 10, FALSE))
+  # No flag, circular footprint, point outside inscribed circle but inside bbox.
+  expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
+    FALSE, 9, 9, 0, 0, 10, 10, TRUE))
+  # Flag set, circular footprint, point inside circle → flag wins.
+  expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
+    TRUE,  5, 5, 0, 0, 10, 10, TRUE))
 })
 
 test_that("writelas honors get_buffered() flag (boundary semantics)", {
