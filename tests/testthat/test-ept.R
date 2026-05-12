@@ -499,6 +499,30 @@ test_that("EPT partition: rect AOI parallel read equals serial AOI read exactly"
   expect_equal(par$z_histogram, ser$z_histogram)
 })
 
+test_that("EPT partition: long-thin rect AOI produces multi-cell partition", {
+  # The previous depth formula used aoi_area/cube_area, which undercounted
+  # long-thin AOIs: a strip ~280 m × 5 m has tiny area but spans the cube
+  # in x. The cell-count iteration picks a depth where the AOI covers
+  # multiple cells regardless of how degenerate one dimension is.
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  cb <- lasR:::.APITEST$cpp_ept_partition_inspect(ept, 1)$conf_bounds
+  ymid <- (cb[2] + cb[4]) / 2
+  thin <- c(cb[1] + 1, ymid - 2.5, cb[3] - 1, ymid + 2.5)
+  insp <- lasR:::.APITEST$cpp_ept_partition_inspect(ept, 16, list(thin))
+  expect_gt(insp$nchunks, 1L)
+  expect_true(all(insp$strict_clip))
+})
+
+test_that("EPT partition: thin AOI parallel read equals serial AOI read exactly", {
+  skip_if_not(has_omp_support())
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  q <- reader_rectangles(273360, 5274495, 273640, 5274505)  # thin strip
+  par <- exec(q + summarise(), on = ept, ncores = concurrent_files(4))
+  ser <- exec(q + summarise(), on = ept, ncores = sequential())
+  expect_equal(par$npoints,     ser$npoints)
+  expect_equal(par$z_histogram, ser$z_histogram)
+})
+
 test_that("EPT partition: rect AOI parallel write equals serial AOI summarise exactly", {
   skip_if_not(has_omp_support())
   ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
