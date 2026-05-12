@@ -306,6 +306,25 @@ test_that("summary honors get_buffered() flag (boundary semantics)", {
     TRUE,  5, 5, 0, 0, 10, 10, TRUE))
 })
 
+test_that("callback honors get_buffered() flag (boundary semantics)", {
+  # Same shape as the summary/writelas pins: the reader-set BUFFERED
+  # flag must drive callback's drop_buffer decision, otherwise the
+  # post-callback "Update the LAS" loop would re-classify points
+  # geometrically and miss strict-clipped boundary points.
+  # Flag forces "in buffer" regardless of geometry.
+  expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
+    TRUE,  5, 5, 0, 0, 10, 10, FALSE))
+  expect_false(lasR:::.APITEST$cpp_callback_buffer_decide(
+    FALSE, 5, 5, 0, 0, 10, 10, FALSE))
+  expect_false(lasR:::.APITEST$cpp_callback_buffer_decide(
+    FALSE, 10, 5, 0, 0, 10, 10, FALSE))
+  expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
+    FALSE, 11, 5, 0, 0, 10, 10, FALSE))
+  # Motivating bug: flag set, point on xmax (non-global) → flag wins over geometry.
+  expect_true(lasR:::.APITEST$cpp_callback_buffer_decide(
+    TRUE,  10, 5, 0, 0, 10, 10, FALSE))
+})
+
 test_that("writelas honors get_buffered() flag (boundary semantics)", {
   # Flag forces "drop" regardless of geometry.
   expect_false(lasR:::.APITEST$cpp_writelas_buffer_decide(

@@ -345,7 +345,13 @@ bool LASRcallback::process(PointCloud*& las)
       int i = 0;
       while (las->read_point())
       {
-        bool buffer = las->point.inside_buffer(xmin, ymin, xmax, ymax, circular);
+        // Honor the reader-set buffered flag first (strict-clip mode in
+        // EPTio marks interior-edge points as BUFFERED that geometric
+        // inside_buffer would call CORE). Falling through to the
+        // geometric recompute keeps non-EPT readers (which set the flag
+        // from inside_buffer themselves) working the same as before.
+        bool buffer = las->point.get_buffered() ||
+                      las->point.inside_buffer(xmin, ymin, xmax, ymax, circular);
         if (drop_buffer && buffer) continue;
 
         // for each element of the list
