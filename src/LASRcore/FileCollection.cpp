@@ -794,6 +794,42 @@ static std::unique_ptr<Shape> clone_shape(const Shape* s)
   }
 }
 
+int FileCollection::ept_pick_depth_for_aois(
+    double cube_xmin, double cube_ymin, double cube_size,
+    int max_tile_depth, int target_partitions,
+    const std::vector<std::array<double, 4>>& aoi_bboxes)
+{
+  // Iterate octree depth `d` upward; at each `d` count the integer
+  // cells covered by the union of AOI bboxes. Stop at the smallest
+  // `d` whose total cell count meets target_partitions, capped at
+  // min(16, max_tile_depth). Monotone in `d` so at most 17 steps.
+  //
+  // The previous heuristic used an area ratio
+  //   d = ceil(0.5 * log2(target * cube_area / aoi_area))
+  // which was correct for square AOIs but undercounted long-thin
+  // ones: a 280 m × 5 m strip in a 285 m cube has tiny area but
+  // already spans the cube in x.
+  const int cap = (max_tile_depth < 16 ? max_tile_depth : 16);
+  if (cap <= 0 || target_partitions <= 0) return 0;
+
+  auto cells_at = [&](int dd) -> int64_t {
+    const double cell = cube_size / (double)(int64_t{1} << dd);
+    int64_t total = 0;
+    for (const auto& a : aoi_bboxes) {
+      int64_t cx_lo = (int64_t)std::floor((a[0] - cube_xmin) / cell);
+      int64_t cx_hi = (int64_t)std::ceil ((a[2] - cube_xmin) / cell);
+      int64_t cy_lo = (int64_t)std::floor((a[1] - cube_ymin) / cell);
+      int64_t cy_hi = (int64_t)std::ceil ((a[3] - cube_ymin) / cell);
+      total += (cx_hi - cx_lo) * (cy_hi - cy_lo);
+    }
+    return total;
+  };
+
+  int d = 0;
+  while (d < cap && cells_at(d) < (int64_t)target_partitions) d++;
+  return d;
+}
+
 bool FileCollection::partition_ept(int target_partitions)
 {
   if (!ept_index || get_format() != EPTFILE) return true;
@@ -924,42 +960,23 @@ bool FileCollection::partition_ept(int target_partitions)
 
   if (!any_partitionable) return true;  // nothing partitionable; leave queries unchanged
 
-  // Depth selection.
-  //
-  // The previous heuristic was an area ratio
-  // `d = ceil(0.5 * log2(target * cube_area / aoi_area))`. That was
-  // correct for square AOIs but undercounted long-thin AOIs: e.g. a
-  // 10 m × 1000 m AOI in a 1 km cube has 1 % area but its long axis
-  // already spans many cells at any reasonable depth, so the
-  // area-based formula could pick `d = 0` even when the AOI clearly
-  // wants several partitions.
-  //
-  // Instead, iterate `d` upward and count the integer cells covered
-  // by the (clamped) AOIs at that depth. Stop at the smallest `d`
-  // whose total cell count meets `target_partitions`, capped at
-  // min(16, max_tile_depth). Monotone in `d` so at most 17 steps.
+  // Depth selection — see ept_pick_depth_for_aois for the rationale.
+  // The previous area-ratio heuristic undercounted long-thin AOIs;
+  // the cell-count iteration is what we want.
   const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
   int max_tile_depth = 0;
   for (const auto& t : ept_index->tiles)
     if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
-  const int cap = (max_tile_depth < 16 ? max_tile_depth : 16);
 
-  auto cells_covered_at = [&](int dd) -> int64_t {
-    const double cell = cube_size / (double)(int64_t{1} << dd);
-    int64_t total = 0;
-    for (const auto& a : aoi_bboxes) {
-      if (!a.partitionable) continue;
-      int64_t cx_lo = (int64_t)std::floor((a.xmin - ept_index->cube_bounds[0]) / cell);
-      int64_t cx_hi = (int64_t)std::ceil ((a.xmax - ept_index->cube_bounds[0]) / cell);
-      int64_t cy_lo = (int64_t)std::floor((a.ymin - ept_index->cube_bounds[1]) / cell);
-      int64_t cy_hi = (int64_t)std::ceil ((a.ymax - ept_index->cube_bounds[1]) / cell);
-      total += (cx_hi - cx_lo) * (cy_hi - cy_lo);
-    }
-    return total;
-  };
-
-  int d = 0;
-  while (d < cap && cells_covered_at(d) < (int64_t)target_partitions) d++;
+  std::vector<std::array<double, 4>> aoi_arrays;
+  aoi_arrays.reserve(aoi_bboxes.size());
+  for (const auto& a : aoi_bboxes) {
+    if (!a.partitionable) continue;
+    aoi_arrays.push_back({a.xmin, a.ymin, a.xmax, a.ymax});
+  }
+  const int d = ept_pick_depth_for_aois(
+      ept_index->cube_bounds[0], ept_index->cube_bounds[1], cube_size,
+      max_tile_depth, target_partitions, aoi_arrays);
 
   const double cell_size = cube_size / (double)(1 << d);
   const int grid_n = 1 << d;
