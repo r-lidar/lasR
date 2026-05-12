@@ -14,9 +14,12 @@
 #include <future>
 #include <sstream>
 #include <algorithm>
+#include <atomic>
+#include <cstring>
 #include <stdexcept>
 #include <cmath>
 #include <utility>
+#include <vector>
 
 // Detect remote schemes regardless of GDAL availability so callers can produce
 // a clear "requires GDAL" error rather than letting an HTTPS URL fall through
@@ -44,6 +47,18 @@ EPTio::EPTio()
   total_points = 0;
   current_tile = nullptr;
   points_read = 0;
+
+  // Prefetch depth. Default 4 saturates AWS S3 from a single EPTio (matches
+  // PDAL's readers.ept requests=15 default, capped at 4 since that's the
+  // measured plateau). Env override LASR_EPT_PREFETCH clamps to [1, 32].
+  prefetch_depth = 4;
+  if (const char* env = std::getenv("LASR_EPT_PREFETCH"))
+  {
+    try {
+      int v = std::stoi(env);
+      if (v >= 1 && v <= 32) prefetch_depth = v;
+    } catch (...) { /* keep default on garbage */ }
+  }
 
   for (int i = 0; i < 6; i++)
   {
@@ -448,6 +463,107 @@ EPTio::TileLoadResult EPTio::open_tile_sync(const EPTkey& key)
 {
   TileLoadResult r;
   std::string path = tile_path(key);
+
+#ifdef USING_GDAL
+  // For remote tiles, bulk-download the .laz bytes here in the worker
+  // thread and stash them in /vsimem/. The downstream LASio::open is then
+  // a pure in-RAM operation, so the consumer's read_point() calls never
+  // hit the network. This is the single biggest source of PDAL's per-thread
+  // throughput advantage — its readers.ept does the same thing via libcurl
+  // multi-handle.
+  //
+  // Without this, the prefetch worker only fetches the LAS header (~few KB)
+  // and the bulk of the I/O still happens lazily in the consumer thread,
+  // serialized with point decoding. Empirically that limited the speedup
+  // from deepening the prefetch queue to <5%.
+  if (remote)
+  {
+    std::string vsi_url =
+      (path.compare(0, 4, "http") == 0) ? std::string("/vsicurl/") + path : path;
+
+    VSILFILE* src = VSIFOpenL(vsi_url.c_str(), "rb");
+    if (src == nullptr)
+    {
+      r.warning_msg = "Failed to open EPT tile (remote fetch) " + path;
+      return r;
+    }
+    // Read the whole file into a vector — EPT tiles are bounded by the
+    // span (typically a few MB compressed), so this is a small fixed cost.
+    VSIFSeekL(src, 0, SEEK_END);
+    vsi_l_offset sz = VSIFTellL(src);
+    VSIFSeekL(src, 0, SEEK_SET);
+    std::vector<unsigned char> buf;
+    try { buf.resize(static_cast<size_t>(sz)); }
+    catch (const std::bad_alloc&) {
+      VSIFCloseL(src);
+      r.warning_msg = "Out of memory buffering EPT tile " + path;
+      return r;
+    }
+    size_t got = (sz > 0) ? VSIFReadL(buf.data(), 1, static_cast<size_t>(sz), src) : 0;
+    VSIFCloseL(src);
+    if (got != static_cast<size_t>(sz))
+    {
+      r.warning_msg = "Short read on EPT tile " + path +
+                      " (expected " + std::to_string(sz) +
+                      ", got " + std::to_string(got) + ")";
+      return r;
+    }
+
+    // Unique /vsimem/ key. Mix tile key, EPTio instance pointer, and a
+    // process-wide atomic counter so concurrent workers (across multiple
+    // EPTio instances, multiple outer chunks) never collide.
+    static std::atomic<uint64_t> vsimem_counter{0};
+    uint64_t seq = vsimem_counter.fetch_add(1, std::memory_order_relaxed);
+    char vsimem_buf[160];
+    snprintf(vsimem_buf, sizeof(vsimem_buf),
+             "/vsimem/lasR_ept/%p_%d-%d-%d-%d_%llu.laz",
+             static_cast<const void*>(this), key.d, key.x, key.y, key.z,
+             static_cast<unsigned long long>(seq));
+    std::string vsimem_path = vsimem_buf;
+
+    // VSIFileFromMemBuffer takes ownership iff bTakeOwnership=true. We pass
+    // false and free the buffer ourselves at unlink time — except VSIFile
+    // requires a heap buffer in either case. Allocate the canonical way
+    // GDAL expects (CPLMalloc) and memcpy in. The cost vs std::move-style
+    // ownership is one extra memcpy per tile (~few MB) — negligible next
+    // to the network fetch we just saved.
+    GByte* gdal_buf = static_cast<GByte*>(CPLMalloc(static_cast<size_t>(sz)));
+    if (gdal_buf == nullptr)
+    {
+      r.warning_msg = "Out of memory staging EPT tile " + path + " in /vsimem/";
+      return r;
+    }
+    std::memcpy(gdal_buf, buf.data(), static_cast<size_t>(sz));
+    VSILFILE* mem = VSIFileFromMemBuffer(vsimem_path.c_str(), gdal_buf, sz, TRUE);
+    if (mem == nullptr)
+    {
+      CPLFree(gdal_buf);
+      r.warning_msg = "Failed to register /vsimem/ buffer for EPT tile " + path;
+      return r;
+    }
+    VSIFCloseL(mem);
+
+    LASio* tile = new LASio();
+    try
+    {
+      tile->open(vsimem_path);
+      Header temp_header;
+      tile->populate_header(&temp_header);
+      r.tile = tile;
+      r.vsimem_path = vsimem_path;
+      return r;
+    }
+    catch (const std::exception& e)
+    {
+      r.warning_msg = "Failed to open buffered EPT tile " + path + ": " + e.what();
+      delete tile;
+      VSIUnlink(vsimem_path.c_str());
+      return r;
+    }
+  }
+#endif
+
+  // Local file path — open directly, no buffering needed.
   LASio* tile = new LASio();
   try
   {
@@ -467,70 +583,97 @@ EPTio::TileLoadResult EPTio::open_tile_sync(const EPTkey& key)
 
 void EPTio::prefetch_next_tile()
 {
-  if (tile_queue.empty()) return;
-  EPTkey key = tile_queue.front();
-  tile_queue.pop_front();
-  // Prefetch is opportunistic. std::async can throw under heavy outer
-  // parallelism for two specified reasons: std::system_error when the
-  // OS refuses to spawn another thread, and std::bad_alloc when the
-  // shared state cannot be allocated. Either way we must not lose the
-  // tile — push the key back and leave next_tile_future invalid, so
-  // the next open_next_tile call falls through to the synchronous
-  // open path. Catching std::exception covers both and is harmless
-  // for any future stdlib-defined failure mode.
-  try {
-    next_tile_future = std::async(std::launch::async,
-      [this, key]() -> TileLoadResult { return open_tile_sync(key); });
-  }
-  catch (const std::exception&) {
-    tile_queue.push_front(key);
-    // next_tile_future stays invalid; consumer ignores it.
+  // Top up the prefetch queue to prefetch_depth. std::async can throw under
+  // heavy outer parallelism for two specified reasons: std::system_error
+  // when the OS refuses to spawn another thread, and std::bad_alloc when
+  // the shared state cannot be allocated. On failure we put the key back
+  // and stop refilling so the consumer falls through to a synchronous
+  // open. Catching std::exception covers both and any future failure mode.
+  while ((int)prefetch_queue.size() < prefetch_depth && !tile_queue.empty())
+  {
+    EPTkey key = tile_queue.front();
+    tile_queue.pop_front();
+    try {
+      prefetch_queue.push_back(std::async(std::launch::async,
+        [this, key]() -> TileLoadResult { return open_tile_sync(key); }));
+    }
+    catch (const std::exception&) {
+      tile_queue.push_front(key);
+      break;  // OS is refusing threads; don't keep trying this turn
+    }
   }
 }
 
 void EPTio::cancel_prefetch()
 {
-  if (!next_tile_future.valid()) return;
-  // Drain the future and discard the result (cannot cancel std::async
-  // mid-flight; we just wait it out and free the LASio if it succeeded).
-  TileLoadResult leftover = next_tile_future.get();
-  if (leftover.tile) {
-    leftover.tile->close();
-    delete leftover.tile;
+  // Drain every in-flight prefetch — cannot cancel std::async mid-flight,
+  // so we just wait them out and free any LASio they produced. Warning
+  // text on a leftover is harmless to drop; we already gave up on these.
+  // /vsimem/ buffers held by leftovers must be unlinked or they leak.
+  while (!prefetch_queue.empty())
+  {
+    TileLoadResult leftover = prefetch_queue.front().get();
+    prefetch_queue.pop_front();
+    if (leftover.tile)
+    {
+      leftover.tile->close();
+      delete leftover.tile;
+    }
+#ifdef USING_GDAL
+    if (!leftover.vsimem_path.empty())
+      VSIUnlink(leftover.vsimem_path.c_str());
+#endif
   }
-  // Warning text on a leftover is harmless to drop — we already gave
-  // up on this tile.
 }
 
 bool EPTio::open_next_tile()
 {
-  // Close previous tile
+  // Close previous tile and release its /vsimem/ buffer (if any).
   if (current_tile)
   {
     current_tile->close();
     delete current_tile;
     current_tile = nullptr;
+#ifdef USING_GDAL
+    if (!current_vsimem_path.empty())
+      VSIUnlink(current_vsimem_path.c_str());
+#endif
+    current_vsimem_path.clear();
   }
 
-  // 1) Was a tile prefetched in the background? Consume that first.
-  if (next_tile_future.valid())
+  // Keep the prefetch queue full before consuming. First call lazily
+  // populates it; subsequent calls just top it back up to depth.
+  prefetch_next_tile();
+
+  // 1) Drain prefetched tiles in order, skipping any that failed to open.
+  while (!prefetch_queue.empty())
   {
-    TileLoadResult r = next_tile_future.get();  // joins the worker
+    TileLoadResult r = prefetch_queue.front().get();
+    prefetch_queue.pop_front();
     if (!r.warning_msg.empty())
       warning("%s\n", r.warning_msg.c_str());   // emitted on consumer thread
     if (r.tile)
     {
       current_tile = r.tile;
-      // Kick off the next prefetch while the caller drains this tile.
+      current_vsimem_path = r.vsimem_path;
+      // Top up the queue so the next call already has bytes arriving.
       prefetch_next_tile();
       return true;
     }
-    // Prefetch failed (warning surfaced above). Fall through to the
-    // queue — there may still be more tiles to try.
+    // Prefetch produced no tile but may still have left a /vsimem/ key
+    // (e.g. LASio::open threw after we registered the buffer); clean it
+    // up before moving on so we don't leak in-memory bytes.
+#ifdef USING_GDAL
+    if (!r.vsimem_path.empty())
+      VSIUnlink(r.vsimem_path.c_str());
+#endif
+    // This prefetch failed — try the next one and keep the queue full.
+    prefetch_next_tile();
   }
 
-  // 2) Synchronous open from the queue (first tile, or after a prefetch
-  //    failure with more tiles still queued).
+  // 2) Synchronous open fallback (only reached if every prefetch failed
+  //    AND tile_queue is empty — i.e. the dataset is exhausted, or async
+  //    dispatch keeps failing).
   if (tile_queue.empty()) return false;
 
   EPTkey key = tile_queue.front();
@@ -538,11 +681,17 @@ bool EPTio::open_next_tile()
   TileLoadResult r = open_tile_sync(key);
   if (!r.warning_msg.empty())
     warning("%s\n", r.warning_msg.c_str());
-  if (!r.tile) return open_next_tile();  // try the next one
+  if (!r.tile)
+  {
+#ifdef USING_GDAL
+    if (!r.vsimem_path.empty())
+      VSIUnlink(r.vsimem_path.c_str());
+#endif
+    return open_next_tile();  // try the next one
+  }
   current_tile = r.tile;
+  current_vsimem_path = r.vsimem_path;
 
-  // Background-fetch the tile after this one so its bytes are
-  // already arriving by the time we need it.
   prefetch_next_tile();
   return true;
 }
@@ -854,6 +1003,11 @@ void EPTio::close()
     current_tile->close();
     delete current_tile;
     current_tile = nullptr;
+#ifdef USING_GDAL
+    if (!current_vsimem_path.empty())
+      VSIUnlink(current_vsimem_path.c_str());
+#endif
+    current_vsimem_path.clear();
   }
 
   tile_queue.clear();
