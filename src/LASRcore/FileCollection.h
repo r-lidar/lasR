@@ -64,7 +64,7 @@ public:
   void clear();
   bool file_exists(std::string& file);
   std::shared_ptr<const EPTio::HierarchyIndex> get_ept_index() const { return ept_index; }
-  ShapeType get_query_type(int i) const { return queries[i]->type(); }
+  ShapeType get_query_type(int i) const { return queries[i].shape->type(); }
 
   #ifdef USING_R
   void add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints);   // Special to build a FileCollection from a data.frame in R
@@ -111,10 +111,23 @@ private:
 
   // queries, partial read
   FileCollectionIndex file_index;
-  std::vector<Shape*> queries;
-  std::vector<bool> queries_strict_clip;
-  std::vector<double> queries_owner_xmax;  // NaN = use catalog xmax
-  std::vector<double> queries_owner_ymax;  // NaN = use catalog ymax
+  // QueryRecord groups the per-query state that the four previous
+  // parallel vectors held independently. Using a struct preserves the
+  // size invariant by construction (no way to push the shape without
+  // the flags) and makes the rebuild in partition_ept a simple
+  // vector swap. The shape is owned via unique_ptr.
+  //
+  // owner_xmax / owner_ymax are NaN by default → get_chunk_with_query
+  // falls back to the catalog's xmax/ymax. AOI sub-queries emitted by
+  // partition_ept set these to the clamped AOI bbox so the strict-clip
+  // rightmost-edge carve-out fires on the AOI boundary.
+  struct QueryRecord {
+    std::unique_ptr<Shape> shape;
+    bool strict_clip = false;
+    double owner_xmax = std::nan("");
+    double owner_ymax = std::nan("");
+  };
+  std::vector<QueryRecord> queries;
 
   // EPT shared metadata index (built when add_ept_endpoint succeeds)
   std::shared_ptr<EPTio::HierarchyIndex> ept_index;

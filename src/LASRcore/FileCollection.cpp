@@ -538,22 +538,12 @@ void FileCollection::add_query(double xmin, double ymin, double xmax, double yma
                                bool strict_clip,
                                double owner_xmax, double owner_ymax)
 {
-  // Reserve capacity in all four parallel vectors before mutating any of
-  // them. If any reserve throws bad_alloc, the unique_ptr below frees
-  // the shape and the catalog state is unchanged. Once all reserves
-  // succeed, the four push_backs are guaranteed allocation-free —
-  // preserving the invariant queries.size() == queries_strict_clip.size()
-  // == queries_owner_xmax.size() == queries_owner_ymax.size().
-  std::unique_ptr<Shape> rect(new Rectangle(xmin, ymin, xmax, ymax));
-  const size_t needed = queries.size() + 1;
-  queries.reserve(needed);
-  queries_strict_clip.reserve(needed);
-  queries_owner_xmax.reserve(needed);
-  queries_owner_ymax.reserve(needed);
-  queries.push_back(rect.release());
-  queries_strict_clip.push_back(strict_clip);
-  queries_owner_xmax.push_back(owner_xmax);
-  queries_owner_ymax.push_back(owner_ymax);
+  QueryRecord q;
+  q.shape       = std::unique_ptr<Shape>(new Rectangle(xmin, ymin, xmax, ymax));
+  q.strict_clip = strict_clip;
+  q.owner_xmax  = owner_xmax;
+  q.owner_ymax  = owner_ymax;
+  queries.push_back(std::move(q));
 }
 
 void FileCollection::add_query(double xcenter, double ycenter, double radius)
@@ -563,18 +553,12 @@ void FileCollection::add_query(double xcenter, double ycenter, double radius)
 
 void FileCollection::add_query(double xcenter, double ycenter, double radius, bool strict_clip)
 {
-  // Same reserve-then-push pattern as the rectangle overload above; see
-  // that comment for the invariant rationale.
-  std::unique_ptr<Shape> circ(new Circle(xcenter, ycenter, radius));
-  const size_t needed = queries.size() + 1;
-  queries.reserve(needed);
-  queries_strict_clip.reserve(needed);
-  queries_owner_xmax.reserve(needed);
-  queries_owner_ymax.reserve(needed);
-  queries.push_back(circ.release());
-  queries_strict_clip.push_back(strict_clip);
-  queries_owner_xmax.push_back(std::nan(""));
-  queries_owner_ymax.push_back(std::nan(""));
+  QueryRecord q;
+  q.shape       = std::unique_ptr<Shape>(new Circle(xcenter, ycenter, radius));
+  q.strict_clip = strict_clip;
+  // owner_xmax / owner_ymax default to NaN; circles never carry an
+  // owner override (partition_ept passes circles through unchanged).
+  queries.push_back(std::move(q));
 }
 
 bool FileCollection::add_las_file(std::string file, bool noprocess)
@@ -927,7 +911,7 @@ bool FileCollection::partition_ept(int target_partitions)
 
   bool any_partitionable = false;
   for (size_t i = 0; i < queries.size(); ++i) {
-    Shape* q = queries[i];
+    const Shape* q = queries[i].shape.get();
     if (q->type() != ShapeType::RECTANGLE) continue;
     double bxmin = std::max(q->xmin(), cxmin);
     double bymin = std::max(q->ymin(), cymin);
@@ -1043,16 +1027,18 @@ bool FileCollection::partition_ept(int target_partitions)
     }
   }
 
-  // Build replacement off-side. unique_ptrs free cleanly if anything throws.
-  std::vector<std::unique_ptr<Shape>> new_q;
-  std::vector<bool>   new_sc;
-  std::vector<double> new_ox, new_oy;
+  // Build replacement off-side. Each QueryRecord owns its shape via
+  // unique_ptr, so if any push_back throws bad_alloc the in-flight
+  // records are freed cleanly and the live queries vector is untouched.
+  std::vector<QueryRecord> replacement;
 
   auto push_passthrough = [&](size_t i) {
-    new_q.emplace_back(clone_shape(queries[i]));
-    new_sc.push_back(queries_strict_clip[i]);
-    new_ox.push_back(queries_owner_xmax[i]);
-    new_oy.push_back(queries_owner_ymax[i]);
+    QueryRecord r;
+    r.shape       = clone_shape(queries[i].shape.get());
+    r.strict_clip = queries[i].strict_clip;
+    r.owner_xmax  = queries[i].owner_xmax;
+    r.owner_ymax  = queries[i].owner_ymax;
+    replacement.push_back(std::move(r));
   };
 
   for (size_t i = 0; i < queries.size(); ++i) {
@@ -1074,28 +1060,21 @@ bool FileCollection::partition_ept(int target_partitions)
         double sxmax = std::min(cell_xmax, a.xmax);
         double symax = std::min(cell_ymax, a.ymax);
         if (sxmin >= sxmax || symin >= symax) continue;
-        new_q.emplace_back(std::unique_ptr<Shape>(
-            new Rectangle(sxmin, symin, sxmax, symax)));
-        new_sc.push_back(true);
-        new_ox.push_back(a.xmax);  // CLAMPED AOI xmax, NOT query.xmax()
-        new_oy.push_back(a.ymax);
+        QueryRecord sub;
+        sub.shape       = std::unique_ptr<Shape>(new Rectangle(sxmin, symin, sxmax, symax));
+        sub.strict_clip = true;
+        sub.owner_xmax  = a.xmax;  // CLAMPED AOI xmax, NOT query.xmax()
+        sub.owner_ymax  = a.ymax;
+        replacement.push_back(std::move(sub));
         emitted_for_this++;
       }
     }
     if (emitted_for_this == 0) push_passthrough(i);
   }
 
-  // Stage raw-pointer vector off-side so the commit is allocation-free.
-  std::vector<Shape*> raw_new;
-  raw_new.reserve(new_q.size());            // may throw bad_alloc — safe: catalog untouched
-  for (auto& up : new_q) raw_new.push_back(up.release());
-
-  // Commit (noexcept).
-  for (Shape* s : queries) delete s;
-  queries.swap(raw_new);
-  queries_strict_clip.swap(new_sc);
-  queries_owner_xmax.swap(new_ox);
-  queries_owner_ymax.swap(new_oy);
+  // Atomic commit: vector::swap is noexcept; the old QueryRecords (and
+  // their unique_ptr shapes) are destroyed when `replacement` exits scope.
+  queries.swap(replacement);
   return true;
 }
 
@@ -1205,7 +1184,8 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   chunk.clear();
 
   // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
-  Shape* q = queries[i];
+  const QueryRecord& rec = queries[i];
+  const Shape* q = rec.shape.get();
   double minx = q->xmin();
   double miny = q->ymin();
   double maxx = q->xmax();
@@ -1241,10 +1221,10 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   chunk.buffer = buffer;
   chunk.catalog_xmax = xmax;
   chunk.catalog_ymax = ymax;
-  if (!std::isnan(queries_owner_xmax[i])) chunk.catalog_xmax = queries_owner_xmax[i];
-  if (!std::isnan(queries_owner_ymax[i])) chunk.catalog_ymax = queries_owner_ymax[i];
+  if (!std::isnan(rec.owner_xmax)) chunk.catalog_xmax = rec.owner_xmax;
+  if (!std::isnan(rec.owner_ymax)) chunk.catalog_ymax = rec.owner_ymax;
   chunk.shape = q->type();
-  chunk.strict_clip = queries_strict_clip[i];
+  chunk.strict_clip = rec.strict_clip;
 
   // With an R data.frame there is no file and thus no neighboring files. We can exit.
   if (use_dataframe)
@@ -1355,11 +1335,7 @@ void FileCollection::clear()
   noprocess.clear();
   files.clear();
 
-  for (auto p : queries) delete p;
-  queries.clear();
-  queries_strict_clip.clear();
-  queries_owner_xmax.clear();
-  queries_owner_ymax.clear();
+  queries.clear();  // unique_ptr in QueryRecord frees the shapes
 }
 
 bool FileCollection::file_exists(std::string& file)
@@ -1432,7 +1408,7 @@ FileCollection::FileCollection()
 
 FileCollection::~FileCollection()
 {
-  for (auto p : queries) delete p;
+  // QueryRecord destructor (unique_ptr<Shape>) handles cleanup.
 }
 
 void FileCollectionIndex::add(double xmin, double ymin, double xmax, double ymax)
