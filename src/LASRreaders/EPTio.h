@@ -88,10 +88,18 @@ private:
   // call from a non-OpenMP background thread, so the std::async worker
   // accumulates the message and the consumer thread emits it after
   // future.get().
+  //
+  // For remote tiles, the worker bulk-downloads the .laz bytes and stashes
+  // them in GDAL's /vsimem/ filesystem so the consumer reads from RAM
+  // (zero network on read_point). vsimem_path is the unique /vsimem/ path
+  // owned by this result — caller must VSIUnlink it after closing `tile`,
+  // because /vsimem/ files are not freed when LASio::close releases the
+  // VSI file handle.
   struct TileLoadResult
   {
     LASio* tile = nullptr;
     std::string warning_msg;
+    std::string vsimem_path;
   };
 
   void parse_ept_json();
@@ -136,13 +144,21 @@ private:
   std::deque<EPTkey> tile_queue;
   int64_t total_points;
 
-  // Current tile reader
+  // Current tile reader. For remote tiles, current_vsimem_path is the
+  // /vsimem/ key holding the buffered tile bytes — it must be VSIUnlink'd
+  // when current_tile is released (otherwise the bytes leak in GDAL's
+  // in-memory FS).
   LASio* current_tile;
-  // Background-prefetched next tile. While read_point drains current_tile,
-  // open_next_tile starts an std::async opening the next queued tile in
-  // parallel. When current_tile is exhausted we just .get() the future
-  // and swap. Single-producer single-consumer; one future per EPTio.
-  std::future<TileLoadResult> next_tile_future;
+  std::string current_vsimem_path;
+  // Background-prefetched tiles. While read_point drains current_tile,
+  // open_next_tile keeps the queue full at prefetch_depth so multiple
+  // HTTP fetches stay in flight against the EPT endpoint. AWS S3 is
+  // HTTP/1.1-only (no multiplexing), so the only way to overlap is more
+  // concurrent connections; depth=4 matches the saturation point we
+  // measured on usgs-lidar-public from us-east-2. Configurable per-process
+  // via LASR_EPT_PREFETCH env var (default 4, clamped to [1, 32]).
+  std::deque<std::future<TileLoadResult>> prefetch_queue;
+  int prefetch_depth;
   int64_t points_read;
 
   // Optional shared metadata index (Task 2+). When set via set_index, future
