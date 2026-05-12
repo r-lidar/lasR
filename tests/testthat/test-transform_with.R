@@ -106,6 +106,58 @@ test_that("tw can rotate with a matrix ",
   expect_equal(zrange, c(100.00, 129.97))
 })
 
+test_that("tw with operator '=' stores raster value as-is into a per-point attribute",
+{
+  f = system.file("extdata", "MixedConifer.las", package="lasR")
+
+  reader = reader_las(filter = "-keep_first")
+  chm = rasterize(1, "max")
+  lmx = local_maximum(5)
+  tree = region_growing(chm, lmx, max_cr = 10)
+  exby = add_extrabytes("int", "MYTID", "tree segmentation ID")
+  # Use nearest-neighbor sampling so the integer label is preserved exactly.
+  set  = transform_with(tree, operator = "=", store_in_attribute = "MYTID", bilinear = FALSE)
+
+  olas = templas()
+  pipeline = reader + chm + lmx + tree + exby + set + write_las(olas)
+  ans = exec(pipeline, on = f)
+
+  read = reader_las() + callback(function(data) { return(data$MYTID) }, expose = "E")
+  ids  = exec(read, on = ans$write_las)
+
+  expect_true(any(ids > 0))                  # at least some points were labelled
+  expect_true(any(ids == 0))                 # unsegmented points kept their default 0 (not deleted)
+
+  # With nearest-neighbor sampling the per-point IDs must be a subset of the raster IDs.
+  raster_ids = sort(unique(na.omit(as.numeric(ans$region_growing[]))))
+  point_ids  = sort(unique(ids[ids > 0]))
+  expect_true(all(point_ids %in% raster_ids))
+})
+
+test_that("tw operator '=' requires store_in_attribute",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+
+  mesh = triangulate(50, filter = keep_ground())
+  dtm  = rasterize(1, mesh, ofile = "")
+  bad  = transform_with(dtm, operator = "=")
+  pipeline = reader_las() + mesh + dtm + bad
+
+  expect_error(exec(pipeline, on = f), "store_in_attribute")
+})
+
+test_that("tw rejects an unsupported operator",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+
+  mesh = triangulate(50, filter = keep_ground())
+  dtm  = rasterize(1, mesh, ofile = "")
+  bad  = transform_with(dtm, operator = "*")
+  pipeline = reader_las() + mesh + dtm + bad
+
+  expect_error(exec(pipeline, on = f), "invalid operator")
+})
+
 test_that("tw fails with non orthogonal matrix",
 {
   f <- system.file("extdata", "Example.las", package="lasR")

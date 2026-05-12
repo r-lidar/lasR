@@ -362,6 +362,14 @@ class TestTransformations(unittest.TestCase):
         pipeline = pylasr.transform_with(raster, operation="-", bilinear=True)
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
+    def test_transform_with_set_operator(self):
+        """transform_with(operation='=') stores raster value as-is in a named attribute"""
+        raster = pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
+        pipeline = pylasr.transform_with(
+            raster, operation="=", store_in_attribute="treeID"
+        )
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
 
 class TestReaders(unittest.TestCase):
     """Test reader pipeline functions"""

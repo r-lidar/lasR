@@ -1362,9 +1362,12 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #'
 #' @param stage A stage that produces a triangulation, raster, or Rotation-Translation Matrix (RTM),
 #' sometimes also referred to as an "Affine Transformation Matrix". Can also be a 4x4 RTM matrix.
-#' @param operator A string. '-' and '+' are supported (only with a triangulation or a raster).
+#' @param operator A string. '-', '+' and '=' are supported (only with a triangulation or a
+#' raster). With '=' the raster (or TIN) value is stored as-is into `store_in_attribute`
+#' without any Z arithmetic; this is the typical way to attach a per-point label such as a
+#' tree-segmentation ID. '=' requires `store_in_attribute` to be set.
 #' @param store_in_attribute A string. Use an extra byte attribute to store the result (only with
-#' a triangulation or a raster).
+#' a triangulation or a raster). Required when `operator = "="`.
 #' @param bilinear bool. If the stage is a raster stage, the Z values are interpolated with a bilinear
 #' interpolation. FALSE to desactivate it.
 #'
