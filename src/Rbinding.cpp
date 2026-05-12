@@ -613,6 +613,26 @@ bool cpp_writelas_buffer_decide(bool buffered,
   return !p.get_buffered() && !p.inside_buffer(xmin, ymin, xmax, ymax, circular);
 }
 
+// Directly exercises FileCollection::ept_pick_depth_for_aois so the
+// depth-selection logic can be tested without standing up an EPT
+// endpoint (the local fixture has max_tile_depth=1, which masks the
+// behavior under test). Returns the picked depth.
+int cpp_ept_pick_depth(double cube_xmin, double cube_ymin, double cube_size,
+                       int max_tile_depth, int target_partitions,
+                       Rcpp::List rects)
+{
+  std::vector<std::array<double, 4>> aois;
+  aois.reserve(rects.size());
+  for (int i = 0; i < rects.size(); ++i) {
+    Rcpp::NumericVector r = rects[i];
+    if (r.size() != 4) Rcpp::stop("Each rect must be c(xmin, ymin, xmax, ymax)");
+    aois.push_back({r[0], r[1], r[2], r[3]});
+  }
+  return FileCollection::ept_pick_depth_for_aois(
+      cube_xmin, cube_ymin, cube_size,
+      max_tile_depth, target_partitions, aois);
+}
+
 // Replays the buffer classification inside callback.cpp's drop_buffer
 // decision (around line 350). Returns true if the point is classified
 // as buffer (i.e., would be skipped when drop_buffer=true).
@@ -649,6 +669,7 @@ RCPP_MODULE(tests)
   function("cpp_summary_buffer_decide", &cpp_summary_buffer_decide, "Summary buffer decision");
   function("cpp_writelas_buffer_decide", &cpp_writelas_buffer_decide, "Writelas buffer decision");
   function("cpp_callback_buffer_decide", &cpp_callback_buffer_decide, "Callback buffer decision");
+  function("cpp_ept_pick_depth", &cpp_ept_pick_depth, "EPT partition depth selection");
 }
 
 

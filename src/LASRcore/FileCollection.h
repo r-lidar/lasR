@@ -9,6 +9,7 @@
 #include "Header.h"
 #include "EPTio.h"
 
+#include <array>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -65,6 +66,17 @@ public:
   bool file_exists(std::string& file);
   std::shared_ptr<const EPTio::HierarchyIndex> get_ept_index() const { return ept_index; }
   ShapeType get_query_type(int i) const { return queries[i].shape->type(); }
+
+  // Pick the octree depth at which the union of AOI bboxes (each
+  // {xmin, ymin, xmax, ymax}) covers at least `target_partitions`
+  // integer cells, capped at min(16, max_tile_depth). Used by
+  // partition_ept's with-queries path and exposed for unit tests so
+  // the same predicate can be exercised without an EPT endpoint.
+  // Returns the chosen depth; 0 ≤ d ≤ min(16, max_tile_depth).
+  static int ept_pick_depth_for_aois(
+      double cube_xmin, double cube_ymin, double cube_size,
+      int max_tile_depth, int target_partitions,
+      const std::vector<std::array<double, 4>>& aoi_bboxes);
 
   #ifdef USING_R
   void add_dataframe(double xmin, double ymin, double xmax, double ymax, int npoints);   // Special to build a FileCollection from a data.frame in R
