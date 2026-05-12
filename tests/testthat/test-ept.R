@@ -499,6 +499,47 @@ test_that("EPT partition: rect AOI parallel read equals serial AOI read exactly"
   expect_equal(par$z_histogram, ser$z_histogram)
 })
 
+test_that("EPT partition: depth iteration picks min d meeting target cell count", {
+  # Unit-level test of the depth predicate. The local fixture's
+  # max_tile_depth=1 caps both old (area ratio) and new (cell-count)
+  # formulas to d=1, so an end-to-end test on it cannot discriminate.
+  # cpp_ept_pick_depth bypasses the EPT loader so we can exercise
+  # depths that real fixtures wouldn't reach.
+  pick <- lasR:::.APITEST$cpp_ept_pick_depth
+
+  # Square AOI fully covering the cube, target=4. cells_at(d=1) = 2*2 = 4.
+  expect_equal(pick(0, 0, 285, 8, 4, list(c(0, 0, 285, 285))), 1L)
+
+  # Square AOI fully covering the cube, target=16. cells_at(d=2) = 4*4 = 16.
+  expect_equal(pick(0, 0, 285, 8, 16, list(c(0, 0, 285, 285))), 2L)
+
+  # Long-thin AOI (280 × 5) with cap=8: the new formula correctly picks
+  # d=4 because the x dim spans 16 cells at d=4 while y stays at 1.
+  # Old formula picked d=5 (area ratio over-estimated). Validates the
+  # primary motivating case for the change.
+  expect_equal(pick(0, 0, 285, 8, 16, list(c(0, 0, 280, 5))), 4L)
+
+  # Same AOI under a shallow cap (max_tile_depth=2): clamped to d=2
+  # even though more cells would be needed to reach target=16.
+  expect_equal(pick(0, 0, 285, 2, 16, list(c(0, 0, 280, 5))), 2L)
+
+  # Two small disjoint AOIs that need d=2 to separate. At d=0 each AOI
+  # covers 1 cell so the sum is 2 — still < target=8. At d=1 each AOI
+  # still covers 1 cell (sum 2). At d=2 (cell=71.25m) each AOI covers
+  # ceil(30/71.25)=1 in each dim so sum=2 — still < target. Loop falls
+  # through to d=cap=3 where cells_at = ceil(30/35.6)=1 per side → 2
+  # total. With target=8 unreachable, d ends at cap. Verifies the cap
+  # behavior.
+  expect_equal(pick(0, 0, 285, 3, 8, list(
+    c(0,   0,   30,  30),
+    c(120, 120, 150, 150)
+  )), 3L)
+
+  # Degenerate inputs: target=0 → d=0. max_tile_depth=0 → d=0.
+  expect_equal(pick(0, 0, 285, 8, 0, list(c(0, 0, 100, 100))), 0L)
+  expect_equal(pick(0, 0, 285, 0, 16, list(c(0, 0, 100, 100))), 0L)
+})
+
 test_that("EPT partition: long-thin rect AOI produces multi-cell partition", {
   # The previous depth formula used aoi_area/cube_area, which undercounted
   # long-thin AOIs: a strip ~280 m × 5 m has tiny area but spans the cube
