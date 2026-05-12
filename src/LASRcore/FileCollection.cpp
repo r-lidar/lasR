@@ -925,7 +925,7 @@ bool FileCollection::partition_ept(int target_partitions)
   const double cxmax = ept_index->conf_bounds[3];
   const double cymax = ept_index->conf_bounds[4];
 
-  double aoi_area = 0.0;
+  bool any_partitionable = false;
   for (size_t i = 0; i < queries.size(); ++i) {
     Shape* q = queries[i];
     if (q->type() != ShapeType::RECTANGLE) continue;
@@ -935,36 +935,47 @@ bool FileCollection::partition_ept(int target_partitions)
     double bymax = std::min(q->ymax(), cymax);
     if (bxmin >= bxmax || bymin >= bymax) continue;  // disjoint → passthrough
     aoi_bboxes[i] = {bxmin, bymin, bxmax, bymax, true};
-    aoi_area += (bxmax - bxmin) * (bymax - bymin);
+    any_partitionable = true;
   }
 
-  if (aoi_area == 0.0) return true;  // nothing partitionable; leave queries unchanged
+  if (!any_partitionable) return true;  // nothing partitionable; leave queries unchanged
 
-  // Depth selection — float-safe with a hard cap, then int-cast.
+  // Depth selection.
   //
-  // For tiny AOIs (e.g., a sub-meter query against a 100 km cube), the
-  // ratio cube_area/aoi_area can be huge and `wanted` would overflow
-  // to inf. Converting inf to int is UB. Compare in double-space
-  // against `cap` first, only cast when finite and in range.
+  // The previous heuristic was an area ratio
+  // `d = ceil(0.5 * log2(target * cube_area / aoi_area))`. That was
+  // correct for square AOIs but undercounted long-thin AOIs: e.g. a
+  // 10 m × 1000 m AOI in a 1 km cube has 1 % area but its long axis
+  // already spans many cells at any reasonable depth, so the
+  // area-based formula could pick `d = 0` even when the AOI clearly
+  // wants several partitions.
+  //
+  // Instead, iterate `d` upward and count the integer cells covered
+  // by the (clamped) AOIs at that depth. Stop at the smallest `d`
+  // whose total cell count meets `target_partitions`, capped at
+  // min(16, max_tile_depth). Monotone in `d` so at most 17 steps.
   const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
-  const double cube_area = cube_size * cube_size;
   int max_tile_depth = 0;
   for (const auto& t : ept_index->tiles)
     if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
   const int cap = (max_tile_depth < 16 ? max_tile_depth : 16);
 
-  int d;
-  {
-    const double ratio = (double)target_partitions * cube_area / aoi_area;
-    if (!std::isfinite(ratio) || ratio <= 1.0) {
-      d = 0;
-    } else {
-      const double wanted = 0.5 * std::log2(ratio);
-      if (!std::isfinite(wanted) || wanted >= (double)cap) d = cap;
-      else if (wanted < 0.0) d = 0;
-      else { d = (int)std::ceil(wanted); if (d > cap) d = cap; }
+  auto cells_covered_at = [&](int dd) -> int64_t {
+    const double cell = cube_size / (double)(int64_t{1} << dd);
+    int64_t total = 0;
+    for (const auto& a : aoi_bboxes) {
+      if (!a.partitionable) continue;
+      int64_t cx_lo = (int64_t)std::floor((a.xmin - ept_index->cube_bounds[0]) / cell);
+      int64_t cx_hi = (int64_t)std::ceil ((a.xmax - ept_index->cube_bounds[0]) / cell);
+      int64_t cy_lo = (int64_t)std::floor((a.ymin - ept_index->cube_bounds[1]) / cell);
+      int64_t cy_hi = (int64_t)std::ceil ((a.ymax - ept_index->cube_bounds[1]) / cell);
+      total += (cx_hi - cx_lo) * (cy_hi - cy_lo);
     }
-  }
+    return total;
+  };
+
+  int d = 0;
+  while (d < cap && cells_covered_at(d) < (int64_t)target_partitions) d++;
 
   const double cell_size = cube_size / (double)(1 << d);
   const int grid_n = 1 << d;
