@@ -444,8 +444,9 @@ bool EPTio::read_point(Point* p)
   }
 }
 
-LASio* EPTio::open_tile_sync(const EPTkey& key)
+EPTio::TileLoadResult EPTio::open_tile_sync(const EPTkey& key)
 {
+  TileLoadResult r;
   std::string path = tile_path(key);
   LASio* tile = new LASio();
   try
@@ -453,13 +454,14 @@ LASio* EPTio::open_tile_sync(const EPTkey& key)
     tile->open(path);
     Header temp_header;
     tile->populate_header(&temp_header);
-    return tile;
+    r.tile = tile;
+    return r;
   }
   catch (const std::exception& e)
   {
-    warning("Failed to open EPT tile %s: %s\n", path.c_str(), e.what());
+    r.warning_msg = "Failed to open EPT tile " + path + ": " + e.what();
     delete tile;
-    return nullptr;
+    return r;
   }
 }
 
@@ -469,7 +471,7 @@ void EPTio::prefetch_next_tile()
   EPTkey key = tile_queue.front();
   tile_queue.pop_front();
   next_tile_future = std::async(std::launch::async,
-    [this, key]() -> LASio* { return open_tile_sync(key); });
+    [this, key]() -> TileLoadResult { return open_tile_sync(key); });
 }
 
 void EPTio::cancel_prefetch()
@@ -477,11 +479,13 @@ void EPTio::cancel_prefetch()
   if (!next_tile_future.valid()) return;
   // Drain the future and discard the result (cannot cancel std::async
   // mid-flight; we just wait it out and free the LASio if it succeeded).
-  LASio* leftover = next_tile_future.get();
-  if (leftover) {
-    leftover->close();
-    delete leftover;
+  TileLoadResult leftover = next_tile_future.get();
+  if (leftover.tile) {
+    leftover.tile->close();
+    delete leftover.tile;
   }
+  // Warning text on a leftover is harmless to drop — we already gave
+  // up on this tile.
 }
 
 bool EPTio::open_next_tile()
@@ -497,16 +501,18 @@ bool EPTio::open_next_tile()
   // 1) Was a tile prefetched in the background? Consume that first.
   if (next_tile_future.valid())
   {
-    LASio* prefetched = next_tile_future.get();  // joins the worker
-    if (prefetched)
+    TileLoadResult r = next_tile_future.get();  // joins the worker
+    if (!r.warning_msg.empty())
+      warning("%s\n", r.warning_msg.c_str());   // emitted on consumer thread
+    if (r.tile)
     {
-      current_tile = prefetched;
+      current_tile = r.tile;
       // Kick off the next prefetch while the caller drains this tile.
       prefetch_next_tile();
       return true;
     }
-    // Prefetch failed (warning already logged in open_tile_sync). Fall
-    // through to the queue — there may still be more tiles to try.
+    // Prefetch failed (warning surfaced above). Fall through to the
+    // queue — there may still be more tiles to try.
   }
 
   // 2) Synchronous open from the queue (first tile, or after a prefetch
@@ -515,8 +521,11 @@ bool EPTio::open_next_tile()
 
   EPTkey key = tile_queue.front();
   tile_queue.pop_front();
-  current_tile = open_tile_sync(key);
-  if (!current_tile) return open_next_tile();  // try the next one
+  TileLoadResult r = open_tile_sync(key);
+  if (!r.warning_msg.empty())
+    warning("%s\n", r.warning_msg.c_str());
+  if (!r.tile) return open_next_tile();  // try the next one
+  current_tile = r.tile;
 
   // Background-fetch the tile after this one so its bytes are
   // already arriving by the time we need it.
@@ -698,55 +707,89 @@ void EPTio::HierarchyIndex::ensure_tiles()
   // many in-flight requests share one connection. Parsing and tile
   // accumulation stay single-threaded so `tiles` / `total_points` need
   // no locking.
+  //
+  // Bound the number of in-flight std::async tasks per level. Without a
+  // cap, a fan-out node with hundreds of sub-pages would spawn that many
+  // OS threads at once — likely to throw std::system_error or destroy
+  // throughput via context-switch overhead. 8 matches our typical
+  // ncpu_outer_loop budget.
+  //
+  // Workers must not call warning() / Rprintf directly: that touches R's
+  // C API from a non-OpenMP thread. Errors are returned as text via the
+  // result struct and surfaced on the consumer (main) thread.
+  struct PageFetchResult {
+    EPTkey key;
+    std::string content;
+    std::string warning_msg;       // emitted by consumer thread
+    bool root_failure = false;     // root JSON missing → fatal
+    std::string root_failure_msg;
+  };
+
+  constexpr size_t max_concurrent = 8;
   std::vector<EPTkey> frontier;
   frontier.push_back(EPTkey(0, 0, 0, 0));
 
   while (!frontier.empty()) {
-    std::vector<std::future<std::pair<EPTkey, std::string>>> fetches;
-    fetches.reserve(frontier.size());
-
-    for (const EPTkey& k : frontier) {
-      fetches.push_back(std::async(std::launch::async,
-        [this, k]() -> std::pair<EPTkey, std::string> {
-          std::string path = base_path + "ept-hierarchy/" +
-            std::to_string(k.d) + "-" + std::to_string(k.x) + "-" +
-            std::to_string(k.y) + "-" + std::to_string(k.z) + ".json" + query_string;
-          try { return {k, read_file_contents_impl(path)}; }
-          catch (const std::exception& e) {
-            const bool is_root = (k.d == 0 && k.x == 0 && k.y == 0 && k.z == 0);
-            if (is_root) throw std::runtime_error("Failed to read EPT hierarchy: " + path + ": " + e.what());
-            warning("EPT sub-hierarchy file not found: %s\n", path.c_str());
-            return {k, ""};
-          }
-        }));
-    }
-
     std::vector<EPTkey> next_frontier;
-    for (auto& fut : fetches) {
-      std::pair<EPTkey, std::string> result = fut.get();
-      if (result.second.empty()) continue;
 
-      nlohmann::json hierarchy = nlohmann::json::parse(result.second);
-      for (auto& [key_str, value] : hierarchy.items()) {
-        int d, x, y, z;
-        if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4) continue;
-        EPTkey k(d, x, y, z);
-        int64_t pc = value.get<int64_t>();
-        if (pc > 0) {
-          TileEntry t;
-          t.key = k;
-          t.point_count = pc;
-          double node_size = cube_size / (1 << d);
-          t.xmin = cube_bounds[0] + x * node_size;
-          t.ymin = cube_bounds[1] + y * node_size;
-          t.zmin = cube_bounds[2] + z * node_size;
-          t.xmax = t.xmin + node_size;
-          t.ymax = t.ymin + node_size;
-          t.zmax = t.zmin + node_size;
-          tiles.push_back(t);
-          total_points += pc;
-        } else if (pc == -1) {
-          next_frontier.push_back(k);
+    for (size_t batch_start = 0; batch_start < frontier.size(); batch_start += max_concurrent) {
+      const size_t batch_end = std::min(batch_start + max_concurrent, frontier.size());
+      std::vector<std::future<PageFetchResult>> fetches;
+      fetches.reserve(batch_end - batch_start);
+
+      for (size_t i = batch_start; i < batch_end; ++i) {
+        EPTkey k = frontier[i];
+        fetches.push_back(std::async(std::launch::async,
+          [this, k]() -> PageFetchResult {
+            PageFetchResult r;
+            r.key = k;
+            std::string path = base_path + "ept-hierarchy/" +
+              std::to_string(k.d) + "-" + std::to_string(k.x) + "-" +
+              std::to_string(k.y) + "-" + std::to_string(k.z) + ".json" + query_string;
+            try { r.content = read_file_contents_impl(path); return r; }
+            catch (const std::exception& e) {
+              const bool is_root = (k.d == 0 && k.x == 0 && k.y == 0 && k.z == 0);
+              if (is_root) {
+                r.root_failure = true;
+                r.root_failure_msg = "Failed to read EPT hierarchy: " + path + ": " + e.what();
+              } else {
+                r.warning_msg = "EPT sub-hierarchy file not found: " + path;
+              }
+              return r;
+            }
+          }));
+      }
+
+      for (auto& fut : fetches) {
+        PageFetchResult result = fut.get();
+        if (result.root_failure)
+          throw std::runtime_error(result.root_failure_msg);
+        if (!result.warning_msg.empty())
+          warning("%s\n", result.warning_msg.c_str());
+        if (result.content.empty()) continue;
+
+        nlohmann::json hierarchy = nlohmann::json::parse(result.content);
+        for (auto& [key_str, value] : hierarchy.items()) {
+          int d, x, y, z;
+          if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4) continue;
+          EPTkey k(d, x, y, z);
+          int64_t pc = value.get<int64_t>();
+          if (pc > 0) {
+            TileEntry t;
+            t.key = k;
+            t.point_count = pc;
+            double node_size = cube_size / (1 << d);
+            t.xmin = cube_bounds[0] + x * node_size;
+            t.ymin = cube_bounds[1] + y * node_size;
+            t.zmin = cube_bounds[2] + z * node_size;
+            t.xmax = t.xmin + node_size;
+            t.ymax = t.ymin + node_size;
+            t.zmax = t.zmin + node_size;
+            tiles.push_back(t);
+            total_points += pc;
+          } else if (pc == -1) {
+            next_frontier.push_back(k);
+          }
         }
       }
     }
