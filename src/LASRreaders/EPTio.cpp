@@ -470,16 +470,19 @@ void EPTio::prefetch_next_tile()
   if (tile_queue.empty()) return;
   EPTkey key = tile_queue.front();
   tile_queue.pop_front();
-  // Prefetch is opportunistic. If std::async can't spawn the thread
-  // (e.g. system_error from a resource exhaustion under heavy outer
-  // parallelism) we must not lose the tile — push the key back and
-  // leave next_tile_future invalid, so the next open_next_tile call
-  // falls through to the synchronous open path.
+  // Prefetch is opportunistic. std::async can throw under heavy outer
+  // parallelism for two specified reasons: std::system_error when the
+  // OS refuses to spawn another thread, and std::bad_alloc when the
+  // shared state cannot be allocated. Either way we must not lose the
+  // tile — push the key back and leave next_tile_future invalid, so
+  // the next open_next_tile call falls through to the synchronous
+  // open path. Catching std::exception covers both and is harmless
+  // for any future stdlib-defined failure mode.
   try {
     next_tile_future = std::async(std::launch::async,
       [this, key]() -> TileLoadResult { return open_tile_sync(key); });
   }
-  catch (const std::system_error&) {
+  catch (const std::exception&) {
     tile_queue.push_front(key);
     // next_tile_future stays invalid; consumer ignores it.
   }
