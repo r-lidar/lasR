@@ -73,8 +73,12 @@ BOOL LASreaderLAS::open(const char* file_name, I32 io_buffer_size, BOOL peek_onl
       vsi_path = file_name;
     }
 
-    // Size warning for non-COPC files
-    if (strstr(file_name, ".copc.") == NULL)
+    // Size warning for non-COPC files. The VSIStatL does a HEAD request,
+    // which is expensive when tens or hundreds of small remote files are
+    // opened in sequence (e.g. EPT tile fetches). lasR sets
+    // LASR_SKIP_REMOTE_SIZE_WARN=1 during EPT reads to suppress it.
+    if (strstr(file_name, ".copc.") == NULL &&
+        !std::getenv("LASR_SKIP_REMOTE_SIZE_WARN"))
     {
       VSIStatBufL stat_buf;
       if (VSIStatL(vsi_path.c_str(), &stat_buf) == 0)
