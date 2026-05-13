@@ -904,8 +904,35 @@ bool FileCollection::partition_ept(int target_partitions)
 
   const bool had_queries = !queries.empty();
 
+  // Pre-extract AOI rectangles so the hierarchy walk can prune subtrees that
+  // sit entirely outside the AOI. Without this, a continent-scale EPT (e.g.
+  // 80B-point USGS Sierra Nevada) does a full breadth-first hierarchy
+  // enumeration before partitioning, which dominates startup. The same
+  // bboxes are recomputed inside the with-queries path below for the
+  // AoiBbox struct used by partition logic — kept local to avoid churning
+  // that block.
+  std::vector<std::array<double, 4>> walk_aoi_bboxes;
+  if (had_queries) {
+    const double cxmin0 = ept_index->conf_bounds[0];
+    const double cymin0 = ept_index->conf_bounds[1];
+    const double cxmax0 = ept_index->conf_bounds[3];
+    const double cymax0 = ept_index->conf_bounds[4];
+    walk_aoi_bboxes.reserve(queries.size());
+    for (const auto& qr : queries) {
+      const Shape* q = qr.shape.get();
+      if (q->type() != ShapeType::RECTANGLE) continue;
+      const double bxmin = std::max(q->xmin(), cxmin0);
+      const double bymin = std::max(q->ymin(), cymin0);
+      const double bxmax = std::min(q->xmax(), cxmax0);
+      const double bymax = std::min(q->ymax(), cymax0);
+      if (bxmin >= bxmax || bymin >= bymax) continue;
+      walk_aoi_bboxes.push_back({bxmin, bymin, bxmax, bymax});
+    }
+  }
+
   // Hierarchy walk; with-queries fallback diverges from no-queries fallback.
-  try { ept_index->ensure_tiles(); }
+  // The AOI filter is empty for the no-queries path (full walk, cacheable).
+  try { ept_index->ensure_tiles(walk_aoi_bboxes); }
   catch (const std::exception& e) {
     if (had_queries) {
       warning("EPT hierarchy unavailable (%s); AOI partitioning skipped\n", e.what());
