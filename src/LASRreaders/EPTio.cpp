@@ -857,11 +857,42 @@ EPTio::HierarchyIndex::build_metadata(const std::string& endpoint)
   throw std::runtime_error("EPT dataset has no readable tiles to derive schema from: " + idx->base_path);
 }
 
-void EPTio::HierarchyIndex::ensure_tiles()
+void EPTio::HierarchyIndex::ensure_tiles(
+    const std::vector<std::array<double, 4>>& aoi_bboxes)
 {
-  if (tiles_built) return;
+  // Full-walk cache short-circuit. AOI-filtered walks deliberately do not
+  // consult or set tiles_built — see the header doc for the reuse contract.
+  if (tiles_built && aoi_bboxes.empty()) return;
+
+  // Reset before walking. `tiles` / `total_points` are append-only inside
+  // the BFS; if a previous AOI-filtered walk left partial state, a later
+  // call (any AOI scope, including the no-filter full walk) must start
+  // fresh or it will double-count or silently drop nodes outside the prior
+  // AOI from the canonical full enumeration.
+  tiles.clear();
+  total_points = 0;
 
   const double cube_size = cube_bounds[3] - cube_bounds[0];
+  const bool has_aoi_filter = !aoi_bboxes.empty();
+
+  // 2D-only AOI intersection: EPT octree z-extent is unbounded for our
+  // purposes here, and a hierarchy node's bbox spans the full cube z-range
+  // at depth 0, so we cull on xy only. This matches partition_ept's own
+  // 2D cell-occupancy logic at the call site.
+  auto key_intersects_aoi = [&](const EPTkey& k) -> bool {
+    if (!has_aoi_filter) return true;
+    const double node_size = cube_size / (double)(1 << k.d);
+    const double nxmin = cube_bounds[0] + k.x * node_size;
+    const double nymin = cube_bounds[1] + k.y * node_size;
+    const double nxmax = nxmin + node_size;
+    const double nymax = nymin + node_size;
+    for (const auto& a : aoi_bboxes) {
+      if (nxmax <= a[0] || nxmin >= a[2]) continue;
+      if (nymax <= a[1] || nymin >= a[3]) continue;
+      return true;
+    }
+    return false;
+  };
 
   // Level-synchronized BFS with concurrent fetch at each level. The
   // sequential BFS paid one HTTP RTT per sub-page; on a real remote EPT
@@ -902,6 +933,10 @@ void EPTio::HierarchyIndex::ensure_tiles()
 
       for (size_t i = batch_start; i < batch_end; ++i) {
         EPTkey k = frontier[i];
+        // Out-of-AOI subtree: skip the JSON fetch entirely. All descendants
+        // of an out-of-AOI parent are themselves out-of-AOI, so there's
+        // nothing in this branch we'd want to enumerate.
+        if (!key_intersects_aoi(k)) continue;
         fetches.push_back(std::async(std::launch::async,
           [this, k]() -> PageFetchResult {
             PageFetchResult r;
@@ -936,6 +971,12 @@ void EPTio::HierarchyIndex::ensure_tiles()
           int d, x, y, z;
           if (sscanf(key_str.c_str(), "%d-%d-%d-%d", &d, &x, &y, &z) != 4) continue;
           EPTkey k(d, x, y, z);
+          // AOI prune at child level too: a fetched parent's JSON enumerates
+          // up to 8 octree children — most may sit outside the AOI even when
+          // the parent overlaps it. Dropping them here keeps `tiles` /
+          // `next_frontier` proportional to the AOI footprint instead of
+          // the full subtree.
+          if (!key_intersects_aoi(k)) continue;
           int64_t pc = value.get<int64_t>();
           if (pc > 0) {
             TileEntry t;
@@ -959,7 +1000,10 @@ void EPTio::HierarchyIndex::ensure_tiles()
     frontier = std::move(next_frontier);
   }
 
-  tiles_built = true;
+  // Only the full walk is cacheable. An AOI-filtered run leaves a partial
+  // `tiles` set scoped to the caller's AOI — a future un-filtered call must
+  // be allowed to re-walk.
+  if (!has_aoi_filter) tiles_built = true;
 }
 
 void EPTio::set_index(std::shared_ptr<const HierarchyIndex> idx)

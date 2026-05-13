@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <future>
 #include <memory>
+#include <array>
 
 class LASio;
 class Header;
@@ -57,7 +58,19 @@ public:
     bool tiles_built = false;
 
     static std::shared_ptr<HierarchyIndex> build_metadata(const std::string& endpoint);
-    void ensure_tiles();
+
+    // Walk the EPT hierarchy from the root, populating `tiles` and
+    // `total_points`. The default (no AOI filter) caches the full walk via
+    // `tiles_built` so subsequent calls are no-ops.
+    //
+    // When `aoi_bboxes` is non-empty, prune the BFS to subtrees whose node
+    // bbox intersects any rect in {xmin,ymin,xmax,ymax}. This is the fast
+    // path for partition_ept on huge EPTs (e.g. continent-scale archives)
+    // where enumerating the full hierarchy would dominate startup. The
+    // result is NOT cached: tiles_built stays false so a later un-filtered
+    // call still walks everything. Callers must reuse only inside the same
+    // logical AOI scope.
+    void ensure_tiles(const std::vector<std::array<double, 4>>& aoi_bboxes = {});
   };
 
   EPTio();
