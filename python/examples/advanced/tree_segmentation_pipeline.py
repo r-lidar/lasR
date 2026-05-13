@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 import os
+import time
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -84,11 +86,14 @@ class Config:
     chm_res: float
     max_cr: float
     parallel_mode: str
+    workers: int
     max_edge: float
     aoi: tuple[float, float, float, float] | None
     aoi_depth: int
     verbose: bool
     progress: bool
+    profile_file: Path | None
+    write_copc: bool
 
     @classmethod
     def from_env(cls) -> Config:
@@ -116,11 +121,18 @@ class Config:
             chm_res=env_float("LASR_TREE_CHM_RES", 1.0),
             max_cr=env_float("LASR_TREE_MAX_CR", 10.0),
             parallel_mode=os.environ.get("LASR_TREE_PARALLEL", "sequential").lower(),
+            workers=int(os.environ.get("LASR_TREE_WORKERS", "0")),
             max_edge=env_float("LASR_TREE_MAX_EDGE", 0.0),
             aoi=env_bbox("LASR_TREE_AOI"),
             aoi_depth=int(os.environ.get("LASR_TREE_AOI_DEPTH", "-1")),
             verbose=os.environ.get("LASR_TREE_VERBOSE", "0") not in ("", "0", "false", "False"),
             progress=os.environ.get("LASR_TREE_PROGRESS", "0") not in ("", "0", "false", "False"),
+            profile_file=(
+                env_path("LASR_TREE_PROFILE_FILE", "")
+                if os.environ.get("LASR_TREE_PROFILE_FILE", "")
+                else None
+            ),
+            write_copc=os.environ.get("LASR_TREE_WRITE_COPC", "1") not in ("", "0", "false", "False"),
         )
 
 
@@ -131,18 +143,37 @@ def _half_cores() -> int:
     return max(1, (os.cpu_count() or 2) // 2)
 
 
+def _worker_count() -> int:
+    return CFG.workers if CFG.workers > 0 else _half_cores()
+
+
 def _apply_parallel_strategy(pipeline) -> None:
     if CFG.parallel_mode == "sequential":
         pipeline.set_sequential_strategy()
     elif CFG.parallel_mode == "concurrent-points":
-        pipeline.set_concurrent_points_strategy(_half_cores())
+        pipeline.set_concurrent_points_strategy(_worker_count())
     elif CFG.parallel_mode == "concurrent-files":
-        pipeline.set_concurrent_files_strategy(_half_cores())
+        pipeline.set_concurrent_files_strategy(_worker_count())
     else:
         raise ValueError(
             "LASR_TREE_PARALLEL must be sequential|concurrent-points|concurrent-files, "
             f"got {CFG.parallel_mode!r}"
         )
+
+
+_STAGE_TIMES: list[tuple[str, float]] = []
+
+
+@contextmanager
+def stage_timer(label: str):
+    start = time.perf_counter()
+    print(f"[stage] {label}: start", flush=True)
+    try:
+        yield
+    finally:
+        elapsed = time.perf_counter() - start
+        _STAGE_TIMES.append((label, elapsed))
+        print(f"[stage] {label}: {elapsed:.2f}s", flush=True)
 
 
 def remove_outputs(*paths: Path) -> None:
@@ -177,6 +208,8 @@ def execute_pipeline(pipeline, label: str) -> None:
 
     pipeline.set_progress(CFG.progress)
     pipeline.set_verbose(CFG.verbose)
+    if CFG.profile_file is not None:
+        pipeline.set_profile_file(str(CFG.profile_file))
     _apply_parallel_strategy(pipeline)
     pipeline.set_buffer(0)
     pipeline.set_chunk(0)
@@ -186,12 +219,10 @@ def execute_pipeline(pipeline, label: str) -> None:
 
 
 def run_pylasr_segmentation() -> None:
-    remove_outputs(
-        CFG.out_copc,
-        CFG.chm_raster,
-        CFG.tree_raster,
-        CFG.raw_tops,
-    )
+    cleanup = [CFG.chm_raster, CFG.tree_raster, CFG.raw_tops]
+    if CFG.write_copc:
+        cleanup.insert(0, CFG.out_copc)
+    remove_outputs(*cleanup)
 
     tri = pylasr.triangulate(
         max_edge=CFG.max_edge, filter=["Classification %in% 2 9"]
@@ -221,21 +252,21 @@ def run_pylasr_segmentation() -> None:
         max_cr=CFG.max_cr,
         ofile=str(CFG.tree_raster),
     )
-    # Assign per-point treeID directly from the region_growing raster using the
-    # '=' operator (nearest-cell sampling preserves the integer label), then
-    # write a labeled COPC.
-    tid_eb = pylasr.add_attribute("int", "treeID", "tree segmentation ID")
-    tid_set = pylasr.transform_with(
-        tree, operation="=", store_in_attribute="treeID", bilinear=False
-    )
-    # Drop HAG before the writer so the output schema carries only treeID.
-    drop_hag = pylasr.remove_attribute("HAG")
-    writer = pylasr.write_copc(str(CFG.out_copc))
 
-    pipeline = (
-        tri + hag_eb + hag + chm + lmx + tree
-        + tid_eb + tid_set + drop_hag + writer
-    )
+    pipeline = tri + hag_eb + hag + chm + lmx + tree
+    if CFG.write_copc:
+        # Assign per-point treeID directly from the region_growing raster using
+        # the '=' operator (nearest-cell sampling preserves the integer label),
+        # then write a labeled COPC. Drop HAG before the writer so the output
+        # schema carries only treeID.
+        tid_eb = pylasr.add_attribute("int", "treeID", "tree segmentation ID")
+        tid_set = pylasr.transform_with(
+            tree, operation="=", store_in_attribute="treeID", bilinear=False
+        )
+        drop_hag = pylasr.remove_attribute("HAG")
+        writer = pylasr.write_copc(str(CFG.out_copc))
+        pipeline = pipeline + tid_eb + tid_set + drop_hag + writer
+
     execute_pipeline(pipeline, "pylasr segmentation")
 
 
@@ -524,15 +555,67 @@ def main() -> None:
         CFG.raw_tops,
     )
 
-    run_pylasr_segmentation()
-    best_apex, top_count = read_tops_and_write_outputs()
-    crown_count = polygonize_tree_raster(best_apex)
+    with stage_timer("lasR pipeline (copc+tri+hag+chm+lmx+region_growing)"):
+        run_pylasr_segmentation()
+    with stage_timer("read tops + write tree_tops.fgb"):
+        best_apex, top_count = read_tops_and_write_outputs()
+    with stage_timer("polygonize + write tree_crowns.fgb"):
+        crown_count = polygonize_tree_raster(best_apex)
 
     print(f"Tops: {top_count}")
     print(f"Crowns: {crown_count}")
     print(f"Wrote: {CFG.out_copc}")
     print(f"Wrote: {CFG.out_tops}")
     print(f"Wrote: {CFG.out_crowns}")
+
+    total = sum(t for _, t in _STAGE_TIMES)
+    print("\n=== Stage timings (python) ===")
+    for label, secs in _STAGE_TIMES:
+        share = (secs / total * 100.0) if total > 0 else 0.0
+        print(f"  {secs:7.2f}s  ({share:5.1f}%)  {label}")
+    print(f"  {total:7.2f}s  (100.0%)  TOTAL")
+
+    if CFG.profile_file is not None and CFG.profile_file.exists():
+        print_lasr_profile(CFG.profile_file)
+
+
+def print_lasr_profile(path: Path) -> None:
+    # The lasR Profiler writes CSV "name, start, end, thread". Each row is
+    # one (stage, chunk, thread) sample. We aggregate by stage name and
+    # report both wall (max-end - min-start across all rows of that stage)
+    # and CPU (sum of end-start) so parallel slack is visible.
+    rows: list[tuple[str, float, float, int]] = []
+    with path.open() as fh:
+        header = fh.readline()  # discard
+        for line in fh:
+            parts = [p.strip() for p in line.rstrip("\n").split(",")]
+            if len(parts) < 4:
+                continue
+            try:
+                rows.append((parts[0], float(parts[1]), float(parts[2]), int(parts[3])))
+            except ValueError:
+                continue
+    if not rows:
+        return
+
+    by_stage: dict[str, list[tuple[float, float, int]]] = {}
+    order: list[str] = []
+    for name, s, e, t in rows:
+        if name not in by_stage:
+            by_stage[name] = []
+            order.append(name)
+        by_stage[name].append((s, e, t))
+
+    pipeline_wall = max(e for _, _, e, _ in rows) - min(s for _, s, _, _ in rows)
+    print(f"\n=== lasR per-stage profile (from {path}) ===")
+    print(f"{'stage':<22} {'wall(s)':>9} {'cpu(s)':>9} {'%wall':>7} {'calls':>6}")
+    for name in order:
+        entries = by_stage[name]
+        wall = max(e for _, e, _ in entries) - min(s for s, _, _ in entries)
+        cpu = sum(e - s for s, e, _ in entries)
+        share = (wall / pipeline_wall * 100.0) if pipeline_wall > 0 else 0.0
+        print(f"{name:<22} {wall:>9.2f} {cpu:>9.2f} {share:>7.1f} {len(entries):>6}")
+    print(f"{'TOTAL(pipeline wall)':<22} {pipeline_wall:>9.2f}")
 
 
 if __name__ == "__main__":
