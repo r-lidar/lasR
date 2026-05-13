@@ -13,7 +13,8 @@ script_path <- if (length(script_arg)) {
 }
 
 script_dir <- dirname(script_path)
-repo_dir <- normalizePath(file.path(script_dir, "..", ".."))
+# script_dir = <repo>/python/examples/advanced, so repo_dir is three levels up.
+repo_dir <- normalizePath(file.path(script_dir, "..", "..", ".."))
 
 input_las <- Sys.getenv(
   "LASR_TREE_INPUT",
@@ -29,18 +30,14 @@ dir.create(r_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(py_dir, recursive = TRUE, showWarnings = FALSE)
 
 r_outputs <- list(
-  las = file.path(r_dir, "input_treeid.laz"),
+  copc = file.path(r_dir, "input_treeid.copc.laz"),
   tops = file.path(r_dir, "tree_tops.fgb"),
-  crowns = file.path(r_dir, "tree_crowns.fgb"),
-  dtm = file.path(r_dir, "tree_segmentation_dtm.tif"),
-  tree = file.path(r_dir, "tree_segmentation_treeid.tif")
+  crowns = file.path(r_dir, "tree_crowns.fgb")
 )
 py_outputs <- list(
-  las = file.path(py_dir, "input_treeid.laz"),
+  copc = file.path(py_dir, "input_treeid.copc.laz"),
   tops = file.path(py_dir, "tree_tops.fgb"),
-  crowns = file.path(py_dir, "tree_crowns.fgb"),
-  dtm = file.path(py_dir, "tree_segmentation_dtm.tif"),
-  tree = file.path(py_dir, "tree_segmentation_treeid.tif")
+  crowns = file.path(py_dir, "tree_crowns.fgb")
 )
 
 env_var <- function(name, value) paste0(name, "=", value)
@@ -59,18 +56,16 @@ parallel_mode <- Sys.getenv("LASR_TREE_PARALLEL", unset = "sequential")
 pipeline_env <- function(outputs) {
   vars <- c(
     env_var("LASR_TREE_INPUT", input_las),
-    env_var("LASR_TREE_OUT_LAS", outputs$las),
+    env_var("LASR_TREE_OUT_COPC", outputs$copc),
     env_var("LASR_TREE_OUT_TOPS", outputs$tops),
     env_var("LASR_TREE_OUT_CROWNS", outputs$crowns),
-    env_var("LASR_TREE_OUT_DTM_RASTER", outputs$dtm),
-    env_var("LASR_TREE_OUT_TREE_RASTER", outputs$tree),
     env_var("LASR_TREE_PARALLEL", parallel_mode)
   )
   # Forward optional tuning parameters only when set, so each pipeline falls
   # back to its own default otherwise.
   for (name in c("LASR_TREE_MIN_HEIGHT", "LASR_TREE_WINDOW_SIZE",
-                 "LASR_TREE_DTM_RES",   "LASR_TREE_CHM_RES",
-                 "LASR_TREE_MAX_CR")) {
+                 "LASR_TREE_CHM_RES",   "LASR_TREE_MAX_CR",
+                 "LASR_TREE_AOI",       "LASR_TREE_AOI_DEPTH")) {
     val <- Sys.getenv(name, unset = "")
     if (nzchar(val)) vars <- c(vars, env_var(name, val))
   }
@@ -104,9 +99,23 @@ read_vector <- function(path) {
   st_read(path, quiet = TRUE)
 }
 
-read_tree_raster <- function(path) {
-  if (!file.exists(path)) stop("Missing raster output: ", path, call. = FALSE)
-  rast(path)
+# Read (X, Y, treeID) from a labeled COPC via lasR's callback. Reusing the
+# same reader as the pipelines avoids adding an rlas/pdal dependency for the
+# comparison.
+read_treeids <- function(path) {
+  if (!file.exists(path)) stop("Missing COPC output: ", path, call. = FALSE)
+  # expose = "xyzE" gives X/Y/Z plus all extrabytes (treeID).
+  # no_las_update keeps the returned data.frame as a *result* instead of
+  # treating it as a point-cloud replacement. When the pipeline has a single
+  # result-producing stage, exec() returns the data.frame directly (not
+  # wrapped in a named list), so accept either shape.
+  pipeline <- lasR::reader() + lasR::callback(
+    function(data) data.frame(X = data$X, Y = data$Y, treeID = data$treeID),
+    expose = "xyzE",
+    no_las_update = TRUE
+  )
+  ans <- lasR::exec(pipeline, on = path)
+  if (is.data.frame(ans)) ans else ans$callback
 }
 
 numeric_summary <- function(x) {
@@ -158,30 +167,23 @@ st_crs(py_tops) <- NA
 st_crs(r_crowns) <- NA
 st_crs(py_crowns) <- NA
 
-r_tree <- read_tree_raster(r_outputs$tree)
-py_tree <- read_tree_raster(py_outputs$tree)
-r_dtm <- read_tree_raster(r_outputs$dtm)
-py_dtm <- read_tree_raster(py_outputs$dtm)
-same_grid <- compareGeom(r_tree, py_tree, stopOnError = FALSE)
-if (!same_grid) {
-  py_tree <- resample(py_tree, r_tree, method = "near")
-}
-
-same_dtm_grid <- compareGeom(r_dtm, py_dtm, stopOnError = FALSE)
-if (!same_dtm_grid) {
-  py_dtm <- resample(py_dtm, r_dtm, method = "bilinear")
-}
-
-r_values <- values(r_tree, mat = FALSE)
-py_values <- values(py_tree, mat = FALSE)
-r_dtm_values <- values(r_dtm, mat = FALSE)
-py_dtm_values <- values(py_dtm, mat = FALSE)
-r_mask <- !is.na(r_values) & r_values > 0
-py_mask <- !is.na(py_values) & py_values > 0
-overlap <- r_mask & py_mask
-union <- r_mask | py_mask
-dtm_overlap <- is.finite(r_dtm_values) & is.finite(py_dtm_values)
-dtm_delta <- py_dtm_values[dtm_overlap] - r_dtm_values[dtm_overlap]
+# Per-point treeID parity: join the two clouds by rounded (X, Y) and compare
+# treeID label-by-label. Both pipelines write to the same grid, so a 0.01 m
+# (cm) rounding matches the LAS scale and avoids floating-point misses.
+r_pts  <- read_treeids(r_outputs$copc)
+py_pts <- read_treeids(py_outputs$copc)
+xy_key <- function(df) paste(round(df$X, 2), round(df$Y, 2), sep = ":")
+r_pts$key  <- xy_key(r_pts)
+py_pts$key <- xy_key(py_pts)
+joined <- merge(
+  r_pts[, c("key", "treeID")],
+  py_pts[, c("key", "treeID")],
+  by = "key", suffixes = c("_R", "_py")
+)
+n_points_r  <- nrow(r_pts)
+n_points_py <- nrow(py_pts)
+n_joined    <- nrow(joined)
+n_match     <- if (n_joined) sum(joined$treeID_R == joined$treeID_py) else 0L
 
 r_areas <- as.numeric(st_area(r_crowns))
 py_areas <- as.numeric(st_area(py_crowns))
@@ -191,25 +193,25 @@ count_table <- data.frame(
     "tops",
     "unique top treeID",
     "crowns",
-    "unique raster treeID",
-    "raster crown cells",
-    "LAZ size bytes"
+    "labeled points",
+    "labeled points > 0",
+    "COPC size bytes"
   ),
   R = c(
     nrow(r_tops),
     length(unique(r_tops$treeID)),
     nrow(r_crowns),
-    length(unique(r_values[r_mask])),
-    sum(r_mask),
-    file.info(r_outputs$las)$size
+    n_points_r,
+    sum(r_pts$treeID > 0L),
+    file.info(r_outputs$copc)$size
   ),
   pylasr = c(
     nrow(py_tops),
     length(unique(py_tops$treeID)),
     nrow(py_crowns),
-    length(unique(py_values[py_mask])),
-    sum(py_mask),
-    file.info(py_outputs$las)$size
+    n_points_py,
+    sum(py_pts$treeID > 0L),
+    file.info(py_outputs$copc)$size
   )
 )
 count_table$delta <- count_table$pylasr - count_table$R
@@ -229,41 +231,16 @@ nearest_table <- rbind(
   nearest_summary(py_tops, r_tops, "pylasr top -> nearest R top")
 )
 
-raster_table <- data.frame(
+point_table <- data.frame(
   metric = c(
-    "same_grid",
-    "mask_intersection_cells",
-    "mask_union_cells",
-    "mask_iou",
-    "raw_treeID_equal_on_overlap"
+    "joined_points",
+    "treeID_equal_on_joined",
+    "fraction_treeID_equal"
   ),
   value = c(
-    as.character(same_grid),
-    as.character(sum(overlap)),
-    as.character(sum(union)),
-    sprintf("%.6f", sum(overlap) / sum(union)),
-    sprintf("%.6f", mean(r_values[overlap] == py_values[overlap], na.rm = TRUE))
-  )
-)
-
-dtm_table <- data.frame(
-  metric = c(
-    "same_grid",
-    "overlap_cells",
-    "median_delta_pylasr_minus_R",
-    "mean_delta_pylasr_minus_R",
-    "median_abs_delta",
-    "p95_abs_delta",
-    "max_abs_delta"
-  ),
-  value = c(
-    as.character(same_dtm_grid),
-    as.character(sum(dtm_overlap)),
-    sprintf("%.6f", median(dtm_delta, na.rm = TRUE)),
-    sprintf("%.6f", mean(dtm_delta, na.rm = TRUE)),
-    sprintf("%.6f", median(abs(dtm_delta), na.rm = TRUE)),
-    sprintf("%.6f", unname(quantile(abs(dtm_delta), 0.95, na.rm = TRUE))),
-    sprintf("%.6f", max(abs(dtm_delta), na.rm = TRUE))
+    as.character(n_joined),
+    as.character(n_match),
+    if (n_joined) sprintf("%.6f", n_match / n_joined) else "NA"
   )
 )
 
@@ -288,11 +265,8 @@ report <- c(
   "Nearest Top Matching",
   capture.output(print(nearest_table, row.names = FALSE, digits = 4)),
   "",
-  "Raster Mask Comparison",
-  capture.output(print(raster_table, row.names = FALSE, digits = 6)),
-  "",
-  "DTM Comparison",
-  capture.output(print(dtm_table, row.names = FALSE, digits = 6)),
+  "Per-Point treeID Comparison (COPC)",
+  capture.output(print(point_table, row.names = FALSE, digits = 6)),
   "",
   "Direct ID Overlap",
   capture.output(print(id_table, row.names = FALSE, digits = 4))

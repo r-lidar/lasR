@@ -97,7 +97,7 @@ class Config:
 
         return cls(
             input_las=env_input("LASR_TREE_INPUT", str(DEFAULT_INPUT_LAS)),
-            out_copc=env_path("LASR_TREE_OUT_COPC", "/tmp/tree_segmentation_input.copc.laz"),
+            out_copc=env_path("LASR_TREE_OUT_COPC", "/tmp/input_treeid.copc.laz"),
             out_tops=env_path("LASR_TREE_OUT_TOPS", "/tmp/tree_tops.fgb"),
             out_crowns=env_path("LASR_TREE_OUT_CROWNS", "/tmp/tree_crowns.fgb"),
             chm_raster=env_path(
@@ -116,7 +116,7 @@ class Config:
             chm_res=env_float("LASR_TREE_CHM_RES", 1.0),
             max_cr=env_float("LASR_TREE_MAX_CR", 10.0),
             parallel_mode=os.environ.get("LASR_TREE_PARALLEL", "sequential").lower(),
-            max_edge=env_float("LASR_TREE_MAX_EDGE", 15.0),
+            max_edge=env_float("LASR_TREE_MAX_EDGE", 0.0),
             aoi=env_bbox("LASR_TREE_AOI"),
             aoi_depth=int(os.environ.get("LASR_TREE_AOI_DEPTH", "-1")),
             verbose=os.environ.get("LASR_TREE_VERBOSE", "0") not in ("", "0", "false", "False"),
@@ -187,13 +187,12 @@ def execute_pipeline(pipeline, label: str) -> None:
 
 def run_pylasr_segmentation() -> None:
     remove_outputs(
-        CFG.out_copc, CFG.chm_raster, CFG.tree_raster, CFG.raw_tops
+        CFG.out_copc,
+        CFG.chm_raster,
+        CFG.tree_raster,
+        CFG.raw_tops,
     )
 
-    # Write a COPC of the unmodified source cloud before any stage mutates the
-    # schema (add_attribute below adds HAG). Placing write_copc first keeps the
-    # output schema identical to the source.
-    copc = pylasr.write_copc(str(CFG.out_copc))
     tri = pylasr.triangulate(
         max_edge=CFG.max_edge, filter=["Classification %in% 2 9"]
     )
@@ -222,8 +221,21 @@ def run_pylasr_segmentation() -> None:
         max_cr=CFG.max_cr,
         ofile=str(CFG.tree_raster),
     )
+    # Assign per-point treeID directly from the region_growing raster using the
+    # '=' operator (nearest-cell sampling preserves the integer label), then
+    # write a labeled COPC.
+    tid_eb = pylasr.add_attribute("int", "treeID", "tree segmentation ID")
+    tid_set = pylasr.transform_with(
+        tree, operation="=", store_in_attribute="treeID", bilinear=False
+    )
+    # Drop HAG before the writer so the output schema carries only treeID.
+    drop_hag = pylasr.remove_attribute("HAG")
+    writer = pylasr.write_copc(str(CFG.out_copc))
 
-    pipeline = copc + tri + hag_eb + hag + chm + lmx + tree
+    pipeline = (
+        tri + hag_eb + hag + chm + lmx + tree
+        + tid_eb + tid_set + drop_hag + writer
+    )
     execute_pipeline(pipeline, "pylasr segmentation")
 
 
