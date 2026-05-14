@@ -4,6 +4,7 @@
 - New: `classify_with_ivf` gains a parameter `filter` (#289)
 - Change: `drop_noise()` and `keep_noise()` now filter classes 7 and 18 instead of 18 only (#283)
 - New: record `use_attribute` as a field in `local_maximum()` output (#310)
+- New: operator `=` in `transform_with()` to assign a field (#314)
 
 # lasR 0.20.0
 
