@@ -1,5 +1,6 @@
 #include "LASio.h"
 #include "Progress.h"
+#include "macros.h"
 
 #include "lasreader.hpp"
 #include "laswriter.hpp"
