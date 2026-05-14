@@ -522,7 +522,7 @@ PYBIND11_MODULE(pylasr, m) {
                 throw std::invalid_argument("The stage must be a triangulation or a raster stage or a matrix stage.");
         }
         return api::transform_with(uid, operation, store_in_attribute, bilinear);
-    }, "Transform points using raster or matrix",
+    }, "Transform points using raster or matrix. operation: '-' or '+' to combine with point Z (e.g. HAG = Z - DTM); '=' to store the raster/TIN value as-is into store_in_attribute (requires store_in_attribute, typical for tree-ID style labels).",
     py::arg("connect_uid"), py::arg("operation") = "-", py::arg("store_in_attribute") = "", py::arg("bilinear") = true);
 
     // CRS operations
