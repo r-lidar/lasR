@@ -1,5 +1,7 @@
 #include "LASio.h"
 #include "Progress.h"
+#include "COPCwriter.h"
+#include "print.h"
 
 #include "lasreader.hpp"
 #include "laswriter.hpp"
@@ -9,6 +11,17 @@
 
 #define EPSILON 1e-9
 
+namespace
+{
+  bool path_has_copc_suffix(const std::string& path)
+  {
+    static const std::string suffix = ".copc.laz";
+    if (path.size() < suffix.size()) return false;
+    return std::equal(suffix.rbegin(), suffix.rend(), path.rbegin(),
+                      [](char a, char b) { return std::tolower((unsigned char)a) == std::tolower((unsigned char)b); });
+  }
+}
+
 LASio::LASio()
 {
   lasreadopener = nullptr;
@@ -16,6 +29,7 @@ LASio::LASio()
   lasreader = nullptr;
   lasheader = nullptr;
   laswriter = nullptr;
+  copcwriter = nullptr;
   point = nullptr;
 
   intensity = AttributeAccessor("Intensity");
@@ -42,14 +56,30 @@ LASio::LASio()
   copc_density = 256;
 }
 
-LASio::~LASio()
+LASio::~LASio() noexcept
 {
-  close();
+  // Destructors must not throw — close() will throw a runtime_error when
+  // the COPC writer's finalize fails, but if we let it propagate from a
+  // destructor (especially during stack unwinding from another exception)
+  // it triggers std::terminate. Swallow and log instead. Callers that
+  // care about close-time errors must call close() explicitly.
+  try
+  {
+    close();
+  }
+  catch (const std::exception& e)
+  {
+    eprint("LASio::~LASio: error during close (suppressed): %s\n", e.what());
+  }
+  catch (...)
+  {
+    eprint("LASio::~LASio: unknown error during close (suppressed)\n");
+  }
 }
 
 bool LASio::query(const std::vector<std::string>& main_files, const std::vector<std::string>& neighbour_files, double xmin, double ymin, double xmax, double ymax, double buffer, bool circle, std::vector<std::string> filters)
 {
-  if (laswriter)
+  if (laswriter || copcwriter)
     throw std::logic_error("Internal error. This interface has been created as a writer"); // # nocov
 
   // Keep only LASlib string that start with - (e.g. -drop_z_above 50) and drop condition
@@ -139,7 +169,7 @@ void LASio::open(const std::string& file)
   if (lasheader != nullptr)
     throw std::logic_error("Internal error. LASheader already initialized."); // # nocov
 
-  if (laswriter)
+  if (laswriter || copcwriter)
     throw std::logic_error("Internal error. This interface has been created as a writer"); // # nocov
 
   lasreadopener = new LASreadOpener;
@@ -158,21 +188,71 @@ void LASio::create(const std::string& file)
   if (lasreader)
     throw std::logic_error("Internal error. This interface has been created as a reader"); // # nocov
 
-  laswriteopener = new LASwriteOpener;
-  laswriteopener->set_file_name(file.c_str());
-  laswriter = laswriteopener->open(lasheader);
+  if (path_has_copc_suffix(file) && use_new_copc_writer)
+  {
+    // Apply the bbox + point count stashed during init() to lasheader so
+    // the COPC writer can build its octree from the correct geometry and
+    // pick a non-trivial auto max_depth. Non-COPC writes leave lasheader's
+    // bbox/count untouched and rely on inventory-at-close. The COPC writer's
+    // own update_header(use_inventory=TRUE) will re-overwrite the count
+    // from its inventory at close time, so this temporary value is only
+    // visible to the open-time depth heuristic.
+    // bbox_override (set via set_bbox_override) wins over saved_* when
+    // present — the caller has explicitly told us the source header is
+    // stale. Validate that the override actually contains a non-degenerate
+    // bbox; otherwise fall back to the source header (which the writer
+    // will then validate / fail on).
+    const bool use_override = bbox_override_set &&
+        bbox_override_xmin <= bbox_override_xmax &&
+        bbox_override_ymin <= bbox_override_ymax &&
+        bbox_override_zmin <= bbox_override_zmax;
+    lasheader->min_x = use_override ? bbox_override_xmin : saved_min_x;
+    lasheader->max_x = use_override ? bbox_override_xmax : saved_max_x;
+    lasheader->min_y = use_override ? bbox_override_ymin : saved_min_y;
+    lasheader->max_y = use_override ? bbox_override_ymax : saved_max_y;
+    lasheader->min_z = use_override ? bbox_override_zmin : saved_min_z;
+    lasheader->max_z = use_override ? bbox_override_zmax : saved_max_z;
+    if (saved_point_count <= U32_MAX)
+      lasheader->number_of_point_records = (U32)saved_point_count;
+    lasheader->extended_number_of_point_records = saved_point_count;
 
-  if (!laswriter)
-    throw std::runtime_error("LASlib internal error. Cannot open LASwriter."); // # nocov
-
-  laswriter->set_copc_depth(copc_depth);
-  if (copc_density <= 64)
-    laswriter->set_copc_sparse();
-  else if ((copc_density > 64) && (copc_density <= 128))
-    laswriter->set_copc_normal();
+    copcwriter = new COPCwriter;
+    copcwriter->set_copc_depth(copc_depth);
+    copcwriter->set_copc_density(copc_density);
+    copcwriter->set_copc_max_extra_depth(copc_max_extra_depth);
+    if (copc_max_points_per_chunk > 0)
+      copcwriter->set_max_points_per_octant(copc_max_points_per_chunk);
+    if (!copcwriter->open(file.c_str(), lasheader, LAS_TOOLS_IO_OBUFFER_SIZE))
+    {
+      std::string err = copcwriter->last_error();
+      delete copcwriter;
+      copcwriter = nullptr;
+      throw std::runtime_error("Cannot open COPC writer: " + err);
+    }
+  }
   else
-    laswriter->set_copc_dense();
+  {
+    laswriteopener = new LASwriteOpener;
+    laswriteopener->set_file_name(file.c_str());
+    laswriter = laswriteopener->open(lasheader);
 
+    if (!laswriter)
+      throw std::runtime_error("LASlib internal error. Cannot open LASwriter."); // # nocov
+
+    // For .copc.laz outputs LASlib returns a LASwriterCOPC. Forward the
+    // depth/density settings before any points are written. These calls
+    // are no-ops on the regular LAZ path.
+    if (path_has_copc_suffix(file))
+    {
+      laswriter->set_copc_depth(copc_depth);
+      if (copc_density <= 64)
+        laswriter->set_copc_sparse();
+      else if (copc_density <= 128)
+        laswriter->set_copc_normal();
+      else
+        laswriter->set_copc_dense();
+    }
+  }
 }
 
 void LASio::populate_header(Header* header, bool read_first_point)
@@ -443,10 +523,17 @@ void LASio::init(const Header* header)
   lasheader->y_offset             = header->schema.attributes[AttributeCore::Y].value_offset;
   lasheader->z_offset             = header->schema.attributes[AttributeCore::Z].value_offset;
   lasheader->number_of_point_records = 0;
-  /*lasheader->min_x                = xmin;
-  lasheader->min_y                = ymin;
-  lasheader->max_x                = xmax;
-  lasheader->max_y                = ymax;*/
+  // Stash the source bbox for COPCwriter to consume at create() time. The
+  // regular LAZ path leaves lasheader's bbox at default — inventory updates
+  // it at close time. The COPC writer needs an accurate bbox up front to
+  // size the octree, so it'll be applied to lasheader inside create().
+  saved_min_x = header->min_x;
+  saved_max_x = header->max_x;
+  saved_min_y = header->min_y;
+  saved_max_y = header->max_y;
+  saved_min_z = header->min_z;
+  saved_max_z = header->max_z;
+  saved_point_count = header->number_of_point_records;
   std::strncpy(lasheader->generating_software, "lasr with LASlib", 32);
 
   if (header->adjusted_standard_gps_time)
@@ -565,8 +652,16 @@ bool LASio::write_point(Point* p)
   for (int i = 0 ; i < extrabytes_offsets.size() ; i++)
     point->set_attribute(i, p->data + extrabytes_offsets[i]);
 
-  laswriter->write_point(point);
-  laswriter->update_inventory(point);
+  if (copcwriter)
+  {
+    if (!copcwriter->write_point(point))
+      throw std::runtime_error("COPC writer failed: " + copcwriter->last_error());
+  }
+  else
+  {
+    laswriter->write_point(point);
+    laswriter->update_inventory(point);
+  }
 
   return true;
 }
@@ -664,7 +759,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
 
 bool LASio::is_opened()
 {
-  return (lasreader != nullptr || laswriter != nullptr);
+  return (lasreader != nullptr || laswriter != nullptr || copcwriter != nullptr);
 }
 
 int64_t LASio::p_count()
@@ -691,6 +786,27 @@ void LASio::close()
 
     delete lasheader;
     lasheader = nullptr;
+  }
+
+  if (copcwriter)
+  {
+    // close() returns -1 on finalize failure; the writer also unlinks the
+    // partial output file on its end so the caller doesn't see a corrupt
+    // .copc.laz on disk. Propagate the error so the pipeline doesn't
+    // silently report success on a write that failed.
+    const int64_t rc = copcwriter->close();
+    std::string err;
+    if (rc < 0) err = copcwriter->last_error();
+    delete copcwriter;
+    copcwriter = nullptr;
+
+    delete lasheader;
+    lasheader = nullptr;
+
+    if (rc < 0)
+    {
+      throw std::runtime_error("COPC writer failed at close: " + err);
+    }
   }
 
   if (lasreadopener)

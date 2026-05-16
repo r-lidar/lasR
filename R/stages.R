@@ -1466,6 +1466,10 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' on the attributes of the point cloud. It writes either LAS 1.2 or LAS 1.4
 #' @param pdrf integer. LAS point data record format. NULL or NA means it is auto-detected based
 #' on the attributes of the point cloud.
+#' @param experimental_writer bool. When TRUE and the output is a `.copc.laz` file, use the new
+#' bounded-memory streaming COPC writer instead of LASlib's in-memory `LASwriterCOPC`. The new
+#' writer is experimental: it spills to disk if needed and produces deterministic output, but is
+#' not yet the default. Has no effect for non-COPC outputs.
 #' @template param-filter
 #'
 #' @examples
@@ -1478,27 +1482,113 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' @export
 #' @md
 #' @rdname write
-write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE, version = NULL, pdrf = NULL)
+write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buffer = FALSE, version = NULL, pdrf = NULL, experimental_writer = FALSE)
 {
   validate_filter(filter)
   if (is.null(version)) version = 0xFF
   if (is.null(pdrf)) pdrf = 0xFF
   if (is.na(version)) version = 0xFF
   if (is.na(pdrf)) pdrf = 0xFF
-  return(.APISTAGES$write_las(ofile, filter, keep_buffer, version, pdrf))
+  return(.APISTAGES$write_las(ofile, filter, keep_buffer, version, pdrf, experimental_writer))
 }
 
 #' @export
 #' @rdname write
 #' @param max_depth integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes
 #' @param density character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
-#' With 'sparce' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
-#' is light. Normal is 128, dense is 256.
-write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "dense")
+#' With 'sparse' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
+#' is light. Normal is 128, dense is 256. Default \code{"normal"} balances writer memory and file size; pass
+#' \code{"dense"} for richer coarse-LOD on visualization-first inputs at the cost of ~2.5x writer peak RAM
+#' on sofi-class inputs (4.6 GB vs 1.8 GB).
+#' @param max_extra_depth integer. \strong{Only honoured when} \code{experimental_writer = TRUE} ---
+#' the legacy LASlib writer has no equivalent knob. Auto-mode only: how many depth levels the writer
+#' is allowed to bump past the heuristic-chosen \code{max_depth} to keep chunks under
+#' \code{max_points_per_chunk}. Default NA \eqn{=} 1 (single level of adaptive bumping; matches
+#' LAStools-reference file size on real inputs while preserving the chunk-size cap). Pass
+#' \code{max_extra_depth = -1} for the prior unbounded behaviour (routing loop walks up to the
+#' writer's hard depth cap of 16) --- finer LOD at the cost of larger files. Pass
+#' \code{max_extra_depth = 0} for "compact mode" --- no bumping past the heuristic, fewer chunks,
+#' smaller hierarchy. Ignored when \code{max_depth} is explicitly set (an explicit
+#' \code{max_depth} is a hard cap and bumping is already disabled in that mode).
+#' @param max_points_per_chunk integer. \strong{Only honoured when} \code{experimental_writer = TRUE}.
+#' Caps the number of points per LAZ chunk in the output COPC. Default NA = 100,000 (matches
+#' LASlib). Raising this (e.g. 250000 or 500000) produces fewer, larger chunks --- smaller
+#' hierarchy, fewer spill cells and less per-octant metadata, at the cost of larger close-time
+#' sort buffers and coarser spatial random access. Pairs naturally with \code{max_extra_depth = 0}
+#' (compact mode) when the goal is minimum file size / writer RAM.
+#' @param bbox numeric of length 6, or \code{NULL}. \strong{Only honoured when}
+#' \code{experimental_writer = TRUE}. Caller-provided bounding box
+#' \code{c(xmin, ymin, zmin, xmax, ymax, zmax)} that overrides the source header's bbox at
+#' open time --- the COPC writer sizes the octree from the declared bbox, so a stale or loose
+#' header silently produces a structurally suboptimal (still valid) COPC. Pass the actual data
+#' bbox here when you know the source header is wrong; the writer will validate that no point
+#' falls outside this box and fail loudly if any does. Default \code{NULL} = use the source
+#' header's bbox.
+#'
+#' @section Tuning the experimental writer:
+#' All knobs below require \code{experimental_writer = TRUE}. Sizes and
+#' chunk counts in the table reference the sofi.copc.laz benchmark
+#' (362M points, 1.9 GB compressed) for relative comparisons; absolute
+#' numbers vary by input.
+#'
+#' \tabular{lll}{
+#'   \strong{Recipe} \tab \strong{When} \tab \strong{Settings} \cr
+#'   \strong{Default (size + RAM balanced)} \tab Most users \tab
+#'     \code{density = "normal"}, \code{max_extra_depth = NA} (\eqn{=}1) \cr
+#'   \strong{Rich coarse-LOD} \tab Visualization, sparse-zoom web viewers \tab
+#'     \code{density = "dense"} (\eqn{\sim}2.5x peak RAM, \eqn{\sim}9\% larger output) \cr
+#'   \strong{Compact / LAStools-equivalent} \tab Fewer chunks, smaller eVLR \tab
+#'     \code{max_extra_depth = 0} \cr
+#'   \strong{Min file / min writer RAM} \tab Cold storage, batch-only access \tab
+#'     \code{max_extra_depth = 0}, \code{max_points_per_chunk = 500000} \cr
+#'   \strong{Maximum LOD (prior default)} \tab When file size is irrelevant \tab
+#'     \code{max_extra_depth = -1} (unbounded) \cr
+#' }
+#'
+#' On the sofi benchmark (362M points) the default lands at 1.036x
+#' reference file size with 22k chunks at depth 7 (matching the
+#' LAStools reference depth) and 1.79 GB peak writer RAM. The prior
+#' default (\code{density = "dense"} + unbounded \code{max_extra_depth})
+#' produced 1.357x with 345k chunks at depth 11 and 3.24 GB peak RAM.
+#' The two changes together capture the file-size win (\eqn{-}24\%),
+#' the RAM win (\eqn{-}45\%), and a smaller wall-time win (\eqn{-}13\%)
+#' by routing through fewer voxels and fewer chunks. Pass
+#' \code{density = "dense"} or \code{max_extra_depth = -1} explicitly
+#' to opt back into the prior behaviour on either axis.
+#'
+#' \strong{Memory budgets for huge inputs.} These environment variables
+#' control writer RAM:
+#' \itemize{
+#'   \item \code{LASR_COPC_MEMORY_BUDGET} --- single global budget (bytes), split internally as ~35\% routing residents / 35\% pre-spill / 8\% write buffers / 22\% reserve. Easiest to set.
+#'   \item \code{LASR_COPC_RESIDENT_BUDGET}, \code{LASR_COPC_RAM_BUDGET}, \code{LASR_COPC_SPILL_WRITE_BUDGET} --- fine-grained per-component overrides (each takes precedence over the global split if set).
+#'   \item \code{LASR_COPC_MAX_SORT_MEMORY} --- caps the close-time per-chunk sort buffer (default 256 MB). When a chunk exceeds this the writer falls back to streamed unsorted emit (file is still valid; LAZ ratio slightly worse for the affected chunk).
+#' }
+#' Defaults are tuned for a few-GB input on a laptop. For multi-billion-point inputs (e.g.
+#' \code{LASR_COPC_MEMORY_BUDGET=4294967296} for a 4 GB total budget) raise the global knob
+#' rather than tuning each component.
+#'
+#' \strong{Collapse heuristic.} The writer absorbs any final octant holding fewer than 100
+#' points into its nearest existing ancestor (cap-aware: skips when the absorption would
+#' push the ancestor over \code{max_points_per_chunk}). This avoids tiny LAZ chunks. The
+#' floor is internal and not exposed via R; it matches LASlib's default and is rarely the
+#' wrong choice. Open an issue if your workload needs a different value.
+write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "normal", experimental_writer = FALSE, max_extra_depth = NA, max_points_per_chunk = NA, bbox = NULL)
 {
   ofile = normalizePath(ofile, mustWork = FALSE)
   if (is.na(max_depth)) max_depth = -1
-  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density)
+  # NA = use the default (1 level of adaptive depth bumping past the auto
+  # heuristic). Pass -1 explicitly to opt back into unbounded bumping
+  # (the prior default — finer LOD at the cost of much larger files).
+  if (is.na(max_extra_depth)) max_extra_depth = 1
+  if (is.na(max_points_per_chunk)) max_points_per_chunk = -1
+  if (is.null(bbox)) {
+    bbox = numeric(0)
+  } else {
+    if (length(bbox) != 6L || !is.numeric(bbox) || anyNA(bbox))
+      stop("write_copc(bbox=): must be a numeric vector of 6 values c(xmin, ymin, zmin, xmax, ymax, zmax) with no NAs", call. = FALSE)
+    bbox = as.numeric(bbox)
+  }
+  .APISTAGES$write_copc(ofile, filter, keep_buffer, max_depth, density, experimental_writer, max_extra_depth, max_points_per_chunk, bbox)
 }
 
 #' @export
