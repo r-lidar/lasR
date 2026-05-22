@@ -51,10 +51,19 @@ bool LASRptd::process(PointCloud*& las)
     PTD::PTD ptd(params, bb);
     ptd.set_logger(logger);
 
+    unsigned int i = 0;
     while (las->read_point())
     {
       if (pointfilter.filter(&las->point)) continue;
       ptd.insert_point(las->point.get_x(), las->point.get_y(), las->point.get_z(), las->current_point);
+      i++;
+    }
+
+    // Bypass exception thrown by PTD::run to avoid breaking the pipeline (#317)
+    if (i == 0)
+    {
+      warning("0 point to process");
+      return true;
     }
 
     ptd.run();
