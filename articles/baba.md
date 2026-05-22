@@ -23,6 +23,7 @@ typical 20 meters.
 ## Exemple 1
 
 ``` r
+
 f <- system.file("extdata", "Megaplot.las", package="lasR")
 aba  = rasterize(20, "zmean")      # ABA
 baba = rasterize(c(5,20), "zmean") # BABA
@@ -48,6 +49,7 @@ This approach also enables the mapping of point density with a finer
 resolution, among other possibilities.
 
 ``` r
+
 f <- system.file("extdata", "Topography.las", package="lasR")
 c1 <- rasterize(1, "count")
 c2  <- rasterize(c(1,4), "count")

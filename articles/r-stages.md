@@ -30,6 +30,7 @@ always named `ScanAngle` and is numeric. Also flags are named
 `Withheld`, `Synthetic` and `Keypoint`.
 
 ``` r
+
 pipeline = rasterize(10, median(Intensity))
 ans = exec(pipeline, on = f)
 
@@ -66,6 +67,7 @@ loads the point cloud as a `data.frame` and invokes the `meanz()`
 function on the `data.frame`.
 
 ``` r
+
 meanz = function(data){ return(mean(data$Z)) }
 call = callback(meanz, expose = "xyz")
 ans = exec(call, on = f)
@@ -92,6 +94,7 @@ these points will not be processed in subsequent stages, they are
 discarded.
 
 ``` r
+
 edit_points = function(data)
 {
   data$Classification[5:7] = c(2L,2L,2L)
@@ -134,6 +137,7 @@ this updates the points at the C++ level. Here, we use
 `no_las_update = TRUE` to explicitly return the result.
 
 ``` r
+
 read_las = function(f, select = "xyzi", filter = "")
 {
   load = function(data) { return(data) }
@@ -158,6 +162,7 @@ Ground points can also be classified using an R function, such as the
 one provided by the `RCSF` package:
 
 ``` r
+
 csf = function(data)
 {
   id = RCSF::CSF(data)
@@ -212,6 +217,7 @@ because
 is an internal function that knows how to deal with the buffer.
 
 ``` r
+
 count = function(data) { length(data$X) }
 del = triangulate(filter = keep_ground())
 npts = callback(count, expose = "x")
@@ -232,6 +238,7 @@ In this case, there is no reason to use a buffer, and the files are not
 buffered. The counts are equal.
 
 ``` r
+
 ans = exec(npts + sum, on = f)
 ans$callback[[1]]+ ans$callback[[2]]
 #> [1] 1355607
@@ -246,6 +253,7 @@ for each point. If `TRUE`, the point is in the buffer. The buffer is
 exposed only if the user includes the letter `'b'`.
 
 ``` r
+
 count_buffer_aware = function(data) {
   bbox = attr(data, "bbox")
   npoints = sum(!data$Buffer)

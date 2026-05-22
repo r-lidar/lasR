@@ -9,7 +9,7 @@ point cloud in the pipeline but does not produce any output.
 ## Usage
 
 ``` r
-classify_with_ivf(res = 5, n = 6L, class = 18L)
+classify_with_ivf(res = 5, n = 6L, class = 18L, filter = "")
 ```
 
 ## Arguments
@@ -26,6 +26,15 @@ classify_with_ivf(res = 5, n = 6L, class = 18L)
 - class:
 
   integer. The class to assign to the points that match the condition.
+
+- filter:
+
+  the 'filter' argument allows filtering of the point-cloud to work with
+  points of interest. For a given stage when a filter is applied, only
+  the points that meet the criteria are processed. The most common
+  strings are `Classification == 2"`, `"Z > 2"`, `"Intensity < 100"`.
+  For more details see
+  [filters](https://r-lidar.github.io/lasR/reference/filters.md).
 
 ## Value
 

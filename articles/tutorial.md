@@ -59,6 +59,7 @@ only this stage, the header of the files are read, but no computation is
 actually applied. No result is returned.
 
 ``` r
+
 pipeline = reader()
 exec(pipeline, on = f)
 #> NULL
@@ -91,6 +92,7 @@ triangulation of the ground points, but we get no output because
 everything is lost.
 
 ``` r
+
 pipeline = reader() + triangulate(filter = "Classification == 2")
 ans = exec(pipeline, on = f)
 ans
@@ -101,6 +103,7 @@ In the following pipeline the triangulation is stored in a geopackage
 file by providing an argument `ofile`:
 
 ``` r
+
 pipeline = reader() + triangulate(filter = keep_ground(), ofile = tempgpkg())
 ans = exec(pipeline, on = f)
 ans
@@ -125,6 +128,7 @@ which is a shortcut for `"Classification == 2"`. We can also triangulate
 the first returns. This produce a meshed Digital Surface Model.
 
 ``` r
+
 read = reader()
 del = triangulate(filter = keep_first(), ofile = tempgpkg())
 ans = exec(read+del, on = f)
@@ -134,6 +138,7 @@ We can also perform both triangulations in the same pipeline. **The idea
 of `lasR` is to execute all the tasks in one pass using a pipeline:**
 
 ``` r
+
 read = reader()
 del1 = triangulate(filter = keep_ground(), ofile = tempgpkg())
 del2 = triangulate(filter = keep_first(), ofile = tempgpkg())
@@ -179,19 +184,20 @@ and rasterized. By default,
 writes the raster in a temporary file, so the result is not discarded.
 
 ``` r
+
 # omitting reader() for the example
 del = triangulate(filter = keep_ground())
 dtm = rasterize(1, del)
 pipeline = del + dtm
 ans = exec(pipeline, on = f)
 ans
-#> class       : SpatRaster 
+#> class       : SpatRaster
 #> size        : 286, 286, 1  (nrow, ncol, nlyr)
 #> resolution  : 1, 1  (x, y)
 #> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)
-#> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) 
-#> source      : file27094203152e.tif 
-#> name        : file27094203152e
+#> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949)
+#> source      : file270d3a6499ef.tif
+#> name        : file270d3a6499ef
 ```
 
 Here, [`exec()`](https://r-lidar.github.io/lasR/reference/exec.md)
@@ -201,6 +207,7 @@ returns nothing (`NULL`). Therefore, the pipeline contains two stages,
 but only one returns something.
 
 ``` r
+
 terra::plot(ans, col = gray.colors(25,0,1), mar = c(1, 1, 1, 3))
 ```
 
@@ -233,6 +240,7 @@ interpreted as `z_max` in absence of explicit attribute). The output is
 a named `list` with two `SpatRaster`.
 
 ``` r
+
 del <- triangulate(filter = keep_first())
 chm1 <- rasterize(2, "max")
 chm2 <- rasterize(0.5, del)
@@ -284,6 +292,7 @@ and
 return nothing. The output is `NULL`.
 
 ``` r
+
 del = triangulate(filter = keep_ground())
 norm = transform_with(del, "-")
 pipeline = del + norm
@@ -309,6 +318,7 @@ the second rasterization occurs after
 thus being applied to the transformed point cloud.
 
 ``` r
+
 del = triangulate(filter = keep_ground())
 norm = transform_with(del, "-")
 chm1 = rasterize(2, "max")
@@ -339,6 +349,7 @@ by normalization. Finally, we write the normalized point cloud with the
 suffix `_normalized`.
 
 ``` r
+
 write1 = write_las(paste0(tempdir(), "/*_ground.laz"), filter = keep_ground())
 write2 = write_las(paste0(tempdir(), "/*_normalized.laz"), )
 del = triangulate(filter = keep_ground())
@@ -346,8 +357,8 @@ norm = transform_with(del, "-")
 pipeline =  write1 + del + norm + write2
 ans = exec(pipeline, on = f)
 ans
-#>  - write_las : /tmp/Rtmpe4v7lA/bcts_1_ground.laz /tmp/Rtmpe4v7lA/bcts_2_ground.laz 
-#>  - write_las.1 : /tmp/Rtmpe4v7lA/bcts_1_normalized.laz /tmp/Rtmpe4v7lA/bcts_2_normalized.laz
+#>  - write_las : /tmp/Rtmp1pfclj/bcts_1_ground.laz /tmp/Rtmp1pfclj/bcts_2_ground.laz 
+#>  - write_las.1 : /tmp/Rtmp1pfclj/bcts_1_normalized.laz /tmp/Rtmp1pfclj/bcts_2_normalized.laz
 ```
 
 It is crucial to include a wildcard `*` in the file path; otherwise, a
@@ -358,11 +369,12 @@ files are read, and points are sequentially written to the single file
 `dataset_merged.laz`, naturally forming a merge pipeline.
 
 ``` r
+
 ofile = paste0(tempdir(), "/dataset_merged.laz")
 merge = reader() + write_las(ofile)
 ans = exec(merge, on = f)
 ans
-#> [1] "/tmp/Rtmpe4v7lA/dataset_merged.laz"
+#> [1] "/tmp/Rtmp1pfclj/dataset_merged.laz"
 ```
 
 ## Local maximum
@@ -374,6 +386,7 @@ in the chm. `lm1` and `lm2` are expected to produce relatively close
 results but not strictly identical.
 
 ``` r
+
 chm = rasterize(1, "max")
 lm1 = local_maximum(3)
 lm2 = local_maximum_raster(chm, 3)
@@ -408,6 +421,7 @@ Every intermediate output can be exported, and in this tutorial, we
 export everything to display all the outputs.
 
 ``` r
+
 del = triangulate(filter = keep_first())
 chm = rasterize(0.5, del)
 chm2 = pit_fill(chm)
@@ -418,6 +432,7 @@ ans = exec(pipeline, on = f)
 ```
 
 ``` r
+
 col = grDevices::colorRampPalette(c("blue", "cyan2", "yellow", "red"))(25)
 col2 = grDevices::colorRampPalette(c("purple", "blue", "cyan2", "yellow", "red", "green"))(50)
 terra::plot(ans$rasterize, col = col, mar = c(1, 1, 1, 3))
@@ -442,6 +457,7 @@ triangles with large edges due to the absence of points results in a
 more complex structure.
 
 ``` r
+
 del = triangulate(15, filter = keep_ground(), ofile = tempgpkg())
 ans = exec(del, on = f)
 
@@ -456,6 +472,7 @@ algorithm computes the contour of the mesh, producing a concave hull
 with holes:
 
 ``` r
+
 del = triangulate(15, filter = keep_ground())
 bound = hulls(del)
 ans = exec(del+bound, on = f)
@@ -498,6 +515,7 @@ triangulation is performed without edge artifacts. Notice the use of
 to perform the triangulation and normalization.
 
 ``` r
+
 my_metric_fun = function(data) { mean(data$Z) }
 tri <- triangulate(filter = keep_ground())
 trans <- transform_with(tri)
@@ -510,6 +528,7 @@ The following pipeline, on the contrary, works exactly the same but
 operates only on circular plots.
 
 ``` r
+
 pipeline = reader_circles(xcenter, ycenter, 11.28) + pipeline
 ```
 
@@ -526,6 +545,7 @@ files. The stage reports the number of points, number of first returns,
 histograms, and other metrics.
 
 ``` r
+
 read = reader()
 summary = summarise()
 pipeline = read + summary
@@ -545,6 +565,7 @@ described in this tutorial). We can see that it summarizes the point
 cloud in its current state in the pipeline.
 
 ``` r
+
 pipeline = summarise() + sampling_voxel(4) + summarise()
 ans = exec(pipeline, on = f)
 print(head(ans[[1]]))
@@ -589,6 +610,7 @@ computes the metrics without including buffer points and
 not write the buffer points.
 
 ``` r
+
 ofiles_plot <- paste0(tempdir(), "/plot_*.las")
 ofiles_plot_norm <- paste0(tempdir(), "/plot_*_norm.las")
 
@@ -628,6 +650,7 @@ Without a wildcard, the output is a single raster that covers the entire
 point cloud with two patches of populated pixels.
 
 ``` r
+
 ofile = paste0(tempdir(), "/chm.tif")   # no wildcard
 
 x = c(885100, 885100)
@@ -645,6 +668,7 @@ With a wildcard, the output contains two rasters that cover regions of
 interest.
 
 ``` r
+
 ofile = paste0(tempdir(), "/chm_*.tif") # wildcard
 
 x = c(885100, 885100)
@@ -668,6 +692,7 @@ it. Instead of providing paths to files or folder it is possible to pass
 a `LAScatalog` or a `LAS` object to the readers.
 
 ``` r
+
 library(lasR)
 library(lidR)
 
@@ -696,6 +721,7 @@ anywhere. Let’s assume we have a dataset with 100 files and a pipeline
 that reads, computes the hulls, and computes the DTM.
 
 ``` r
+
 read = reader()
 hll = hulls()
 tri = triangulate(filter = keep_ground())
@@ -708,6 +734,7 @@ a reduced region of interest defined by the user with
 [`stop_if_outside()`](https://r-lidar.github.io/lasR/reference/stop_if_outside.md).
 
 ``` r
+
 stopif <- stop_if_outside(880000, 620000, 885000, 630000)
 pipeline <- read + hll + stopif + tri + dtm
 ```
@@ -719,6 +746,7 @@ pipeline to a subset of the files that encompass the bounding boxes
 defined by the user.
 
 ``` r
+
 pipeline <- stopif + read + hll + tri + dtm
 ```
 
@@ -729,6 +757,7 @@ before [`reader()`](https://r-lidar.github.io/lasR/reference/reader.md)
 in this specific case.
 
 ``` r
+
 pipeline <- read + stopif + hll + tri + dtm
 ```
 
@@ -748,6 +777,7 @@ possible to load a point cloud in memory with
 [`read_cloud()`](https://r-lidar.github.io/lasR/reference/read_cloud.md)
 
 ``` r
+
 f <- c(system.file("extdata", "Topography.las", package="lasR"))
 cloud = read_cloud(f)
 cloud
@@ -786,16 +816,17 @@ modified. See above the point cloud was 73,400 point. After applying the
 pipeline the object only has 23,780 points
 
 ``` r
+
 pipeline = dtm() + sampling_poisson(2)
 ans = exec(pipeline, on = cloud)
 ans
-#> class       : SpatRaster 
+#> class       : SpatRaster
 #> size        : 286, 286, 1  (nrow, ncol, nlyr)
 #> resolution  : 1, 1  (x, y)
 #> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)
-#> coord. ref. :  
-#> source      : file270931a06a3b.tif 
-#> name        : file270931a06a3b
+#> coord. ref. : 
+#> source      : file270d566388f2.tif
+#> name        : file270d566388f2
 cloud
 #> Source       : LASF (v1.2)
 #> Size         : 737.18 kB

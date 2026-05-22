@@ -7,7 +7,7 @@ coverage](https://codecov.io/gh/r-lidar/lasR/branch/main/graph/badge.svg)](https
 **Fast Airborne LiDAR Data Processing**
 
 The `lasr` library (pronounced “laser”) is a C++ library for large scale
-airborne point cloud processing with C++, R an Python APIs. It enables
+airborne point cloud processing with C++, R and Python APIs. It enables
 the creation and execution of **complex processing pipelines** on
 massive lidar data. It can read and write `.las`, `.laz`, `.copc.laz`
 (local and remote storage) and `.pcd` files, compute metrics using an
@@ -46,6 +46,7 @@ There is no current plan to release `lasR` on CRAN. Instead, it is
 hosted on `r-universe`:
 
 ``` r
+
 install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')
 ```
 
@@ -59,6 +60,7 @@ users have access to the newest features and bug fixes without waiting
 for a formal release cycle.
 
 ``` r
+
 library(lasR)
 #> lasR 0.1.3 is now available. You are using 0.1.1
 #> install.packages('lasR', repos = 'https://r-lidar.r-universe.dev')
@@ -105,6 +107,7 @@ examples see the
 ### R
 
 ``` r
+
 library(lasR)
 folder = "/folder/of/laz/tiles/"
 pipeline = classify_with_sor() + delete_noise() + chm(1) + dtm(1)

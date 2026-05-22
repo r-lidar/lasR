@@ -39,11 +39,11 @@ dtm(res = 1, add_class = NULL, ofile = temptif())
 f <- system.file("extdata", "Topography.las", package="lasR")
 pipeline <- reader() + dtm()
 exec(pipeline, on = f)
-#> class       : SpatRaster 
+#> class       : SpatRaster
 #> size        : 286, 286, 1  (nrow, ncol, nlyr)
 #> resolution  : 1, 1  (x, y)
 #> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)
-#> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949) 
-#> source      : file226542b46a4a.tif 
-#> name        : file226542b46a4a 
+#> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949)
+#> source      : file2267c2c0111.tif
+#> name        : file2267c2c0111
 ```

@@ -13,29 +13,56 @@ However, working with remote data introduces some constraints:
 - Network latency can slow down access
 - Random reads may be less efficient than local disk access
 
-It is **strongly recommended** to use cloud-optimized formats (COPC)
-with proper spatial or depth queries. This format is designed for
-efficient partial access over the network.
+It is **strongly recommended** to use cloud-optimized formats (COPC or
+EPT) with proper spatial or depth queries. These formats are designed
+for efficient partial access over the network.
 
 ## Protocols supported
 
-| Prefix       | Protocol                         | Authentication                                                |
-|--------------|----------------------------------|---------------------------------------------------------------|
-| `/vsicurl/`  | HTTP/HTTPS                       | None, or `.netrc`                                             |
-| `/vsis3/`    | Amazon S3                        | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` env vars        |
-| `/vsigs/`    | Google Cloud Storage             | `GOOGLE_APPLICATION_CREDENTIALS` env var                      |
-| `/vsiaz/`    | Azure Blob Storage               | `AZURE_STORAGE_ACCOUNT` + `AZURE_STORAGE_ACCESS_KEY` env vars |
-| `/vsiadls/`  | Azure Data Lake Storage Gen2     | Same as `/vsiaz/`                                             |
-| `/vsioss/`   | Alibaba Cloud OSS                | `OSS_ACCESS_KEY_ID` + `OSS_SECRET_ACCESS_KEY` env vars        |
-| `/vsiswift/` | OpenStack Swift (OVH, Rackspace) | `SWIFT_AUTH_TOKEN` + `SWIFT_STORAGE_URL` env vars             |
+| Prefix | Protocol | Authentication |
+|----|----|----|
+| `/vsicurl/` | HTTP/HTTPS | None, or `.netrc` |
+| `/vsis3/` | Amazon S3 | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` env vars |
+| `/vsigs/` | Google Cloud Storage | `GOOGLE_APPLICATION_CREDENTIALS` env var |
+| `/vsiaz/` | Azure Blob Storage | `AZURE_STORAGE_ACCOUNT` + `AZURE_STORAGE_ACCESS_KEY` env vars |
+| `/vsiadls/` | Azure Data Lake Storage Gen2 | Same as `/vsiaz/` |
+| `/vsioss/` | Alibaba Cloud OSS | `OSS_ACCESS_KEY_ID` + `OSS_SECRET_ACCESS_KEY` env vars |
+| `/vsiswift/` | OpenStack Swift (OVH, Rackspace) | `SWIFT_AUTH_TOKEN` + `SWIFT_STORAGE_URL` env vars |
 
 ## Examples
 
+### COPC
+
 ``` r
+
 url <- "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz"
 pipeline <-  reader_circles(637368.8, 851944.8, 15) + write_las()
 ans <- exec(pipeline, on = url)
 ```
 
-To deal with a collection of tiled remotes files we recommend using a
-VPC file that indexes remotes files.
+### EPT (Entwine Point Tiles)
+
+`lasR` can read EPT datasets by pointing to the `ept.json` endpoint. EPT
+is a directory-based octree format where each tile is a separate LAZ
+file. Only tiles that intersect the query region are downloaded.
+
+``` r
+
+url <- "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/IA_FullState/ept.json"
+
+# Read only the root level of the octree
+ans <- exec(reader(depth = 0) + summarise(), on = url)
+
+# Spatial query — fetches only the tiles that overlap
+pipeline <- reader_circles(-10421000, 5102000, 500, depth = 6) + write_las()
+ans <- exec(pipeline, on = url)
+```
+
+The `depth` parameter controls how deep into the octree hierarchy to
+read (0 = root only). This parameter works for both COPC and EPT
+formats. Only LAZ-encoded EPT datasets are supported.
+
+### VPC
+
+To deal with a collection of tiled remote files we recommend using a VPC
+file that indexes remote files.

@@ -1,10 +1,13 @@
 # Transform a Point Cloud Using Another Stage
 
 This stage uses another stage to modify the point cloud in the pipeline.
-When used with a Delaunay triangulation or a raster, it performs an
-operation to modify the Z coordinate of the point cloud. The
-interpolation method is linear in the triangle mesh and bilinear in the
-raster. This can typically be used to build a normalization stage.  
+When used with a Delaunay triangulation or a raster and `operator = "-"`
+or `"+"`, the interpolated value is combined with the point Z coordinate
+(typically to build a normalization stage). When used with
+`operator = "="`, the interpolated value is written as-is into
+`store_in_attribute` without any Z arithmetic - useful for attaching
+per-point labels such as a tree-segmentation ID. The interpolation
+method is linear in the triangle mesh and bilinear in the raster.  
 When used with a 4x4 Rotation-Translation Matrix, it multiplies the
 coordinates of the points to apply the rigid transformation described by
 the matrix. This stage modifies the point cloud in the pipeline but does
@@ -26,13 +29,16 @@ transform_with(stage, operator = "-", store_in_attribute = "", bilinear = TRUE)
 
 - operator:
 
-  A string. '-' and '+' are supported (only with a triangulation or a
-  raster).
+  A string. '-', '+' and '=' are supported (only with a triangulation or
+  a raster). With '=' the raster (or TIN) value is stored as-is into
+  `store_in_attribute` without any Z arithmetic; this is the typical way
+  to attach a per-point label such as a tree-segmentation ID. '='
+  requires `store_in_attribute` to be set.
 
 - store_in_attribute:
 
   A string. Use an extra byte attribute to store the result (only with a
-  triangulation or a raster).
+  triangulation or a raster). Required when `operator = "="`.
 
 - bilinear:
 
@@ -88,6 +94,20 @@ exec(pipeline, on = f)
 #> [4,] 0.0000000  0.0000000    0    1
 #> 
 #> $write_las
-#> [1] "/tmp/RtmpwRMB3f/Topography.las"
+#> [1] "/tmp/RtmpNQtePu/Topography.las"
 #> 
+
+# store a raster value as-is into an extra byte attribute (operator = "=").
+# Here we attach a tree-segmentation ID from region_growing() to each point.
+# Use add_extrabytes() with a wide enough type (tree IDs can exceed 255, so
+# 'UserData' - a 1-byte 0-255 LAS field - is not suitable here).
+g <- system.file("extdata", "MixedConifer.las", package="lasR")
+chm  <- rasterize(1, "max", filter = keep_first())
+lmx  <- local_maximum_raster(chm, 5)
+tree <- region_growing(chm, lmx, max_cr = 10)
+eb   <- add_extrabytes("int", "tree_id", "Tree segmentation ID")
+# bilinear = FALSE so the integer label is taken from the nearest pixel as-is.
+attr <- transform_with(tree, operator = "=", store_in_attribute = "tree_id", bilinear = FALSE)
+pipeline <- chm + lmx + tree + eb + attr + write_las()
+ans <- exec(pipeline, on = g)
 ```

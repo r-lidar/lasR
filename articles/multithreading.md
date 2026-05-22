@@ -20,6 +20,7 @@ globally for the entiere session with
 ## Sequential strategy
 
 ``` r
+
 set_parallel_strategy(sequential())
 # or
 exec(pipeline, on = f, ncores = sequential())
@@ -37,6 +38,7 @@ waiting to be processed. This is represented in the figure below.
 ## Concurrent points strategy
 
 ``` r
+
 set_parallel_strategy(concurrent_points(4))
 # or
 exec(pipeline, on = f, ncores = concurrent_points(4))
@@ -57,6 +59,7 @@ this way.
 ## Concurrent files strategy
 
 ``` r
+
 set_parallel_strategy(concurrent_files(4))
 # or
 exec(pipeline, on = f, ncores = concurrent_files(4))
@@ -82,6 +85,7 @@ vignette.
 ## Nested strategy
 
 ``` r
+
 set_parallel_strategy(nested(4, 2))
 # or
 exec(pipeline, on = f, ncores = nested(4, 2))
@@ -102,6 +106,7 @@ inject user-defined R code and use the R C API (see [R
 stages](https://r-lidar.github.io/lasR/articles/r-stages.md))
 
 ``` r
+
 rasterize(20, user_function(Z))
 callback(user_function(data))
 ```

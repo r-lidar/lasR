@@ -1,5 +1,24 @@
 # Changelog
 
+## lasR 0.21.0
+
+- New: Support of Entwine Point Tile format
+- New: `classify_with_ivf` gains a parameter `filter`
+  ([\#289](https://github.com/r-lidar/lasR/issues/289))
+- Change:
+  [`drop_noise()`](https://r-lidar.github.io/lasR/reference/filters.md)
+  and
+  [`keep_noise()`](https://r-lidar.github.io/lasR/reference/filters.md)
+  now filter classes 7 and 18 instead of 18 only
+  ([\#283](https://github.com/r-lidar/lasR/issues/283))
+- New: record `use_attribute` as a field in
+  [`local_maximum()`](https://r-lidar.github.io/lasR/reference/local_maximum.md)
+  output ([\#310](https://github.com/r-lidar/lasR/issues/310))
+- New: operator `=` in
+  [`transform_with()`](https://r-lidar.github.io/lasR/reference/transform_with.md)
+  to assign a field
+  ([\#314](https://github.com/r-lidar/lasR/issues/314))
+
 ## lasR 0.20.1
 
 - Enhance: documentation of `classify_with_ptd`
@@ -10,6 +29,7 @@
 - NEW: Support of remote files
 
 ``` r
+
 url <- "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz"
 pipeline <-  reader_circles(637368.8, 851944.8, 15) + summarise()
 ans <- exec(pipeline, on = url)
@@ -87,12 +107,14 @@ ans <- exec(pipeline, on = url)
   progress). Accessible in R API via
 
   ``` r
+
   exec(..., progress_file = "path/to/progress.ext", log_file = "path/to/log.ext")
   ```
 
   Accessible in the C++ API via two members
 
   ``` r
+
   Pipeline::set_progress_file(std::string);
   Pipeline::set_profile_file(std::string);
   ```
@@ -158,6 +180,7 @@ execute(file);
 in `R`:
 
 ``` r
+
 library(lasR)
 
 pipeline = info() + 
@@ -444,6 +467,7 @@ all the unit tests are passing.
   memory.
 
   ``` r
+
   f <- system.file("extdata", "Topography.las", package="lasR")
   pc <- read_cloud(f)
   u = exec(chm(5), on = pc)
@@ -474,6 +498,7 @@ all the unit tests are passing.
   example:
 
   ``` r
+
   sampling_poisson(1, filter = keep_ground())
   ```
 
@@ -1066,6 +1091,7 @@ time to around 0.1 seconds, greatly improving overall performance.
   was not possible with the previous syntax.
 
   ``` r
+
   ctg = lidR::readLAScatalog()
   pipeline = reader_las() + rasterize(...)
   exec(pipeline, on = ctg)
@@ -1074,6 +1100,7 @@ time to around 0.1 seconds, greatly improving overall performance.
 - New: the processor is now able to process by chunk like `lidR`
 
   ``` r
+
   pipeline = reader_las() + rasterize(...)
   exec(pipeline, on = file, chunk = 500)
   ```
@@ -1085,6 +1112,7 @@ time to around 0.1 seconds, greatly improving overall performance.
 - New: it is now possible to write the following:
 
   ``` r
+
   dtm = dtm()
   pipeline <- read + dtm + transform_with(dtm[[2]])
   ```
@@ -1093,6 +1121,7 @@ time to around 0.1 seconds, greatly improving overall performance.
   adds a default reader
 
   ``` r
+
   pipeline = rasterize(...)
   exec(pipeline, on = ctg)
   ```

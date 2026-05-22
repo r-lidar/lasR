@@ -67,17 +67,20 @@ understand the precedence rules:
 The first option is by explicitly naming each option. This option is
 deprecated and used for convenience and backward compatibility.
 
+
     exec(pipeline, on = f, progress = TRUE, ncores = 8)
 
 The second option is by passing a `list` to the `with` argument. This
 option is more explicit and should be preferred. The `with` argument
 takes precedence over the explicit arguments.
 
+
     exec(pipeline, on = f, with = list(progress = TRUE, chunk = 500))
 
 The third option is by using a `LAScatalog` from the `lidR` package. A
 `LAScatalog` already carries some processing options that are respected
 by the `lasR` package. The options from a `LAScatalog` take precedence.
+
 
     exec(pipeline, on = ctg, ncores = 4)
 
@@ -87,6 +90,7 @@ options if they do not have access to the
 [`exec()`](https://r-lidar.github.io/lasR/reference/exec.md) function.
 This may happen when a developer creates a function that executes a
 pipeline internally, and users cannot provide any options.
+
 
     set_exec_options(progress = TRUE, ncores = concurrent_files(2))
     exec(pipeline, on = f)

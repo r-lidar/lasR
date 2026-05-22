@@ -72,11 +72,11 @@ ans$summary$metrics
 #>       z_sd |a|_mean
 #> 1 1.459199 21.66667
 ans$rasterize
-#> class       : SpatRaster 
+#> class       : SpatRaster
 #> size        : 1, 4, 10  (nrow, ncol, nlyr)
 #> resolution  : 5, 5  (x, y)
 #> extent      : 339000, 339020, 5248000, 5248005  (xmin, xmax, ymin, ymax)
-#> coord. ref. : NAD83 / UTM zone 17N (EPSG:26917) 
-#> source      : file22651669da6c.tif 
-#> names       : z_max, i_min, r_mean, n_median, z_sd, c_sd, ... 
+#> coord. ref. : NAD83 / UTM zone 17N (EPSG:26917)
+#> source      : file22678c9b5ba.tif
+#> names       : z_max, i_min, r_mean, n_median, z_sd, c_sd, ...
 ```

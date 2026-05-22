@@ -24,6 +24,7 @@ processed simultaneously. In `lidR` this is done using the package
 ### Code
 
 ``` r
+
 # lidR
 future::plan(future::multicore(...))
 chm = rasterize_canopy(ctg, 1, p2r())
@@ -44,6 +45,7 @@ exec(pipeline, on = ctg)
 ### Code
 
 ``` r
+
 # lidR
 future::plan(future::multicore(...))
 dtm = rasterize_terrain(ctg, 1, tin())
@@ -70,6 +72,7 @@ memory management.
 ### Code
 
 ``` r
+
 # lidR
 future::plan(future::multicore(...))
 custom_function = function(z,i) { list(avgz = mean(z), avgi = mean(i)) }
@@ -97,6 +100,7 @@ exec(pipeline, on = folder)
 ### Code
 
 ``` r
+
 # lidR
 future::plan(future::multicore(...))
 opt_output_files(ctg) <- paste0(tempdir(), "/*_norm")
@@ -117,6 +121,7 @@ processor(pipeline)
 ### Code
 
 ``` r
+
 # lidR
 future::plan(future::multicore(...))
 tree = locate_trees(ctg, lmf(5))
@@ -144,6 +149,7 @@ during tree segmentation.
 ### Code
 
 ``` r
+
 del = triangulate(filter = keep_ground())
 norm = transform_with(del)
 dtm = rasterize(1, del)

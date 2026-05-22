@@ -6,19 +6,11 @@ instead.
 ## Usage
 
 ``` r
-reader_las(filter = "", select = "*", copc_depth = NULL, ...)
+reader_las(filter = "", select = "*", depth = NULL, ...)
 
-reader_las_coverage(filter = "", select = "*", copc_depth = NULL, ...)
+reader_las_coverage(filter = "", select = "*", depth = NULL, ...)
 
-reader_las_circles(
-  xc,
-  yc,
-  r,
-  filter = "",
-  select = "*",
-  copc_depth = NULL,
-  ...
-)
+reader_las_circles(xc, yc, r, filter = "", select = "*", depth = NULL, ...)
 
 reader_las_rectangles(
   xmin,
@@ -27,7 +19,7 @@ reader_las_rectangles(
   ymax,
   filter = "",
   select = "*",
-  copc_depth = NULL,
+  depth = NULL,
   ...
 )
 ```
@@ -38,7 +30,7 @@ reader_las_rectangles(
 
   see [reader](https://r-lidar.github.io/lasR/reference/reader.md)
 
-- select, copc_depth:
+- select, depth:
 
   see [reader](https://r-lidar.github.io/lasR/reference/reader.md)
 
