@@ -12,7 +12,17 @@
 #include <tuple>
 #include <vector>
 
+// Shewchuk's adaptive-precision predicates (vendored under hporro/). Used to
+// make the incircle test below exact; see in_circle() for why.
+#include "hporro/pred3d.h"
+
 namespace delaunator {
+
+// Initialize Shewchuk's predicate constants exactly once, at library load
+// time (single-threaded), before any triangulation runs. exactinit() only
+// fills global rounding constants, so a namespace-scope initializer is the
+// simplest race-free way to guarantee incircle() is ready.
+static const REAL g_exact_predicates_eps = exactinit();
 
 //@see https://stackoverflow.com/questions/33333363/built-in-mod-vs-custom-mod-function-improve-the-performance-of-modulus-op/33333636#33333636
 inline size_t fast_mod(const size_t i, const size_t c) {
@@ -143,20 +153,22 @@ inline bool in_circle(
     const double cy,
     const double px,
     const double py) {
-  const double dx = ax - px;
-  const double dy = ay - py;
-  const double ex = bx - px;
-  const double ey = by - py;
-  const double fx = cx - px;
-  const double fy = cy - py;
-
-  const double ap = dx * dx + dy * dy;
-  const double bp = ex * ex + ey * ey;
-  const double cp = fx * fx + fy * fy;
-
-  return (dx * (ey * cp - bp * fy) -
-          dy * (ex * cp - bp * fx) +
-          ap * (ex * fy - ey * fx)) < 0.0;
+  // The naive determinant (kept below for reference) is numerically the same
+  // matrix as Shewchuk's incircle(a, b, c, p): both equal
+  //   | a-p  |a-p|^2 |
+  //   | b-p  |b-p|^2 |
+  //   | c-p  |c-p|^2 |
+  // and the original code returned (det < 0). But a non-robust double
+  // evaluation flips the sign on near-cocircular configurations -- abundant in
+  // dense, near-collinear LiDAR ground returns -- which makes legalize()'s
+  // flip loop oscillate forever (100% CPU, no progress). The adaptive
+  // predicate yields a globally consistent sign, so Lawson legalization is
+  // guaranteed to terminate. The sign convention (< 0.0) is unchanged.
+  const REAL pa[2] = {ax, ay};
+  const REAL pb[2] = {bx, by};
+  const REAL pc[2] = {cx, cy};
+  const REAL pd[2] = {px, py};
+  return incircle(pa, pb, pc, pd) < 0.0;
 }
 
 constexpr double EPSILON = 1e-9;//std::numeric_limits<double>::epsilon();
