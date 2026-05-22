@@ -1,7 +1,6 @@
 #include "PCDio.h"
 #include "Header.h"
 #include "PointSchema.h"
-#include "Progress.h"
 
 #include <limits>
 #include <iomanip> // For std::setprecision
