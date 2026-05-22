@@ -36,10 +36,10 @@ test_that("remote COPC with copc_depth works",
 
   url <- paste0("http://127.0.0.1:", port, "/example.copc.laz")
 
-  pipeline_remote <- reader(copc_depth = 0) + summarise()
+  pipeline_remote <- reader(depth = 0) + summarise()
   ans_remote <- exec(pipeline_remote, on = url)
 
-  pipeline_local <- reader(copc_depth = 0) + summarise()
+  pipeline_local <- reader(depth = 0) + summarise()
   ans_local <- exec(pipeline_local, on = f)
 
   expect_equal(ans_remote$npoints, ans_local$npoints)
@@ -78,13 +78,13 @@ test_that("public remote COPC endpoint works",
 
   url <- "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz"
 
-  pipeline <- reader(copc_depth = 0) + summarise()
+  pipeline <- reader(depth = 0) + summarise()
   ans <- exec(pipeline, on = url)
 
   expect_true(ans$npoints > 0)
   expect_true(ans$npoints < 100000)
 
-  pipeline <- reader(copc_depth = 1) + summarise()
+  pipeline <- reader(depth = 1) + summarise()
   ans <- exec(pipeline, on = url)
 
   expect_true(ans$npoints > 100000)
@@ -115,4 +115,42 @@ test_that("Build a VPC file from remote file",
   expect_true(file.exists(o))
   expect_equal(ans$pc.count, 10653336)
   expect_equal(ans$`proj:bbox`[[1]], c(635577.79, 848882.150, 639003.730, 853537.660))
+})
+
+test_that("remote EPT reads correctly via HTTP",
+{
+  skip_if_not_installed("httpuv")
+
+  ept_local <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  data_dir <- dirname(ept_local)
+
+  port <- httpuv::randomPort()
+  server <- httpuv::startServer("127.0.0.1", port, list(staticPaths = list("/" = data_dir)))
+  on.exit(httpuv::stopServer(server), add = TRUE)
+
+  url <- paste0("http://127.0.0.1:", port, "/ept.json")
+
+  ans_remote <- exec(reader() + summarise(), on = url)
+  ans_local <- exec(reader() + summarise(), on = ept_local)
+
+  expect_equal(ans_remote$npoints, ans_local$npoints)
+})
+
+test_that("remote EPT with depth works",
+{
+  skip_if_not_installed("httpuv")
+
+  ept_local <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  data_dir <- dirname(ept_local)
+
+  port <- httpuv::randomPort()
+  server <- httpuv::startServer("127.0.0.1", port, list(staticPaths = list("/" = data_dir)))
+  on.exit(httpuv::stopServer(server), add = TRUE)
+
+  url <- paste0("http://127.0.0.1:", port, "/ept.json")
+
+  ans_full <- exec(reader() + summarise(), on = url)
+  ans_d1 <- exec(reader(depth = 1) + summarise(), on = url)
+
+  expect_equal(ans_d1$npoints, ans_full$npoints)
 })

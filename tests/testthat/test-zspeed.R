@@ -7,6 +7,8 @@ test_that("Computation speed is ok",
   b = runif(1) > 0.75
   skip_if_not(b, "Skipping randomly long test (ran only on 25%)")
 
+  unset_parallel_strategy()
+
   las = read_cloud(file)
 
   dt = system.time(

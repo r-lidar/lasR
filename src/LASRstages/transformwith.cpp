@@ -8,9 +8,23 @@ bool LASRtransformwith::set_parameters(const nlohmann::json& stage)
   attribute = stage.value("store_in_attribute", "");
   bilinear = stage.value("bilinear", true);
 
-  this->op = SUB;
-  if (op == "-") this->op = SUB;
-  if (op == "+") this->op = ADD;
+  if (op == "-")
+    this->op = SUB;
+  else if (op == "+")
+    this->op = ADD;
+  else if (op == "=")
+    this->op = SET;
+  else
+  {
+    last_error = "invalid operator '" + op + "'. Supported operators are '-', '+' and '='";
+    return false;
+  }
+
+  if (this->op == SET && attribute.empty())
+  {
+    last_error = "operator '=' requires 'store_in_attribute' to be set";
+    return false;
+  }
 
   return true;
 }
@@ -180,6 +194,12 @@ bool LASRtransformwith::process(PointCloud*& las)
 
       if (z == NA_F64)
       {
+        // SET assigns a label/value into a named attribute; on nodata
+        // we leave the existing attribute value untouched rather than
+        // dropping the point (which is the right behavior for HAG-style
+        // normalization but not for label-style assignment).
+        if (op == SET) continue;
+
         las->delete_point();
         deleted++;
         continue;
@@ -189,6 +209,7 @@ bool LASRtransformwith::process(PointCloud*& las)
       {
       case SUB: z = las->point.get_z() - z; break;
       case ADD: z = las->point.get_z() + z; break;
+      case SET: /* z is already the raster/TIN value, no Z math */ break;
       default: last_error = "internal error, invalid operator"; return false; break; // # nocov
       }
 

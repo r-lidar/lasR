@@ -182,7 +182,7 @@ aggregate_q = function(res, call, filter, ofile, env, ...)
 callback = function(fun, expose = "xyz", ..., drop_buffer = FALSE, no_las_update = FALSE)
 {
   args <- list(...)
-  fargs <- formals(fun)
+  fargs <- as.list(formals(fun))
   fargs <- fargs[-1]
   fargs[names(args)] <- args
 
@@ -243,10 +243,11 @@ classify_with_ipf = function(r = 1, n = 0L, class = 18L) { .APISTAGES$classify_w
 #' @param res numeric. Resolution of the voxels. Can be a vector of 3 for x,y and z resolutions
 #' @param n integer. The maximal number of 'other points' in the 27 voxels.
 #' @param class integer. The class to assign to the points that match the condition.
+#' @template param-filter
 #' @template return-pointcloud
 #'
 #' @export
-classify_with_ivf = function(res = 5, n = 6L, class = 18L) { .APISTAGES$classify_with_ivf(res, n, class) }
+classify_with_ivf = function(res = 5, n = 6L, class = 18L, filter = "") { .APISTAGES$classify_with_ivf(res, n, class, filter) }
 
 #' Classify ground points
 #'
@@ -958,12 +959,17 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' `reader_rectangles()` read and process only some selected regions of interest. If the chosen
 #' reader has no options i.e. using `reader()` it can be omitted.
 #'
+#' Supported input formats: LAS, LAZ, COPC, PCD, and EPT (Entwine Point Tiles).
+#' EPT endpoints are detected automatically from `ept.json` paths or URLs.
+#' For remote files, COPC and EPT are strongly recommended as they support
+#' efficient spatial streaming (only relevant data is downloaded).
+#'
 #' @template param-filter
 #' @param xc,yc,r numeric. Circle centres and radius or radii.
 #' @param xmin,ymin,xmax,ymax numeric. Coordinates of the rectangles
 #' @param select character. Unused. Reserved for future versions.
-#' @param copc_depth integer. If the files are COPC file is is possible to read the point hierarchy
-#' up to a given level. COPC hierarchy is 0-index. The first level is 0 not 1.
+#' @param depth integer. Maximum octree depth level for COPC or EPT data. Depth is 0-indexed.
+#' When NULL (default), all levels are read.
 #' @param ... passed to other readers
 #'
 #' @examples
@@ -977,7 +983,7 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' ans <- exec(pipeline, on = f)
 #' # terra::plot(ans)
 #'
-#' # read_las() with no option can be omitted
+#' # reader() with no option can be omitted
 #' ans <- exec(rasterize(10, "zmax"), on = f)
 #' # terra::plot(ans)
 #'
@@ -993,41 +999,46 @@ rasterize = function(res, operators = "max", filter = "", ofile = temptif(), ...
 #' # terra::plot(ans)
 #' @export
 #' @md
-reader = function(filter = "", select = "*", copc_depth = NULL, ...)
+reader = function(filter = "", select = "*", depth = NULL, ...)
 {
   p <- list(...)
   circle <- !is.null(p$xc)
   rectangle <-!is.null(p$xmin)
 
-  if (circle) return(reader_circles(p$xc, p$yc, p$r, filter = filter, select = select, copc_depth = copc_depth, ...))
-  if (rectangle) return(reader_rectangles(p$xmin, p$ymin, p$xmax, p$ymax, filter = filter, select = select, copc_depth = copc_depth,  ...))
-  return(reader_coverage(filter = filter, select = select, copc_depth = copc_depth, ...))
+  # xc/yc/r and xmin/ymin/xmax/ymax flow through ... — do not pass them positionally,
+  # otherwise they spill into copc_depth/ept_depth slots and corrupt argument matching.
+  if (circle) return(reader_circles(filter = filter, select = select, depth = depth, ...))
+  if (rectangle) return(reader_rectangles(filter = filter, select = select, depth = depth, ...))
+  return(reader_coverage(filter = filter, select = select, depth = depth, ...))
 }
 
 #' @export
 #' @rdname reader
-reader_coverage = function(filter = "", select = "*", copc_depth = NULL, ...)
+reader_coverage = function(filter = "", select = "*", depth = NULL, ...)
 {
   validate_filter(filter, TRUE)
-  if (is.null(copc_depth)) copc_depth = -1
-  .APISTAGES$reader_coverage(filter, select, copc_depth)
+  depth <- resolve_depth(depth, ...)
+  if (is.null(depth)) depth = -1
+  .APISTAGES$reader_coverage(filter, select, depth)
 }
 
 #' @export
 #' @rdname reader
-reader_circles = function(xc, yc, r, filter = "", select = "*", copc_depth = NULL, ...)
+reader_circles = function(xc, yc, r, filter = "", select = "*", depth = NULL, ...)
 {
   validate_filter(filter, TRUE)
-  if (is.null(copc_depth)) copc_depth = -1
-  .APISTAGES$reader_circles(xc, yc, r, filter, select, copc_depth)
+  depth <- resolve_depth(depth, ...)
+  if (is.null(depth)) depth = -1
+  .APISTAGES$reader_circles(xc, yc, r, filter, select, depth)
 }
 
 #' @export
 #' @rdname reader
-reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", copc_depth = NULL, ...)
+reader_rectangles = function(xmin, ymin, xmax, ymax, filter = "", select = "*", depth = NULL, ...)
 {
-  if (is.null(copc_depth)) copc_depth = -1
-  .APISTAGES$reader_rectangles(xmin, ymin, xmax, ymax, filter, select, copc_depth)
+  depth <- resolve_depth(depth, ...)
+  if (is.null(depth)) depth = -1
+  .APISTAGES$reader_rectangles(xmin, ymin, xmax, ymax, filter, select, depth)
 }
 
 #' Region growing
@@ -1337,9 +1348,11 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #' Transform a Point Cloud Using Another Stage
 #'
 #' This stage uses another stage to modify the point cloud in the pipeline. When used with a Delaunay
-#' triangulation or a raster, it performs an operation to modify the Z coordinate of the point cloud.
-#' The interpolation method is linear in the triangle mesh and bilinear in the raster. This can typically
-#' be used to build a normalization stage.\cr
+#' triangulation or a raster and `operator = "-"` or `"+"`, the interpolated value is combined with the
+#' point Z coordinate (typically to build a normalization stage). When used with `operator = "="`, the
+#' interpolated value is written as-is into `store_in_attribute` without any Z arithmetic - useful for
+#' attaching per-point labels such as a tree-segmentation ID. The interpolation method is linear in the
+#' triangle mesh and bilinear in the raster.\cr
 #' When used with a 4x4 Rotation-Translation Matrix, it multiplies the coordinates of the points to apply
 #' the rigid transformation described by the matrix. This stage modifies the point cloud in the pipeline
 #' but does not produce any output.
@@ -1353,9 +1366,12 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #'
 #' @param stage A stage that produces a triangulation, raster, or Rotation-Translation Matrix (RTM),
 #' sometimes also referred to as an "Affine Transformation Matrix". Can also be a 4x4 RTM matrix.
-#' @param operator A string. '-' and '+' are supported (only with a triangulation or a raster).
+#' @param operator A string. '-', '+' and '=' are supported (only with a triangulation or a
+#' raster). With '=' the raster (or TIN) value is stored as-is into `store_in_attribute`
+#' without any Z arithmetic; this is the typical way to attach a per-point label such as a
+#' tree-segmentation ID. '=' requires `store_in_attribute` to be set.
 #' @param store_in_attribute A string. Use an extra byte attribute to store the result (only with
-#' a triangulation or a raster).
+#' a triangulation or a raster). Required when `operator = "="`.
 #' @param bilinear bool. If the stage is a raster stage, the Z values are interpolated with a bilinear
 #' interpolation. FALSE to desactivate it.
 #'
@@ -1380,6 +1396,20 @@ triangulate = function(max_edge = 0, filter = "", ofile = "", use_attribute = "Z
 #'
 #' pipeline = transform_with(m) + write_las()
 #' exec(pipeline, on = f)
+#'
+#' # store a raster value as-is into an extra byte attribute (operator = "=").
+#' # Here we attach a tree-segmentation ID from region_growing() to each point.
+#' # Use add_extrabytes() with a wide enough type (tree IDs can exceed 255, so
+#' # 'UserData' - a 1-byte 0-255 LAS field - is not suitable here).
+#' g <- system.file("extdata", "MixedConifer.las", package="lasR")
+#' chm  <- rasterize(1, "max", filter = keep_first())
+#' lmx  <- local_maximum_raster(chm, 5)
+#' tree <- region_growing(chm, lmx, max_cr = 10)
+#' eb   <- add_extrabytes("int", "tree_id", "Tree segmentation ID")
+#' # bilinear = FALSE so the integer label is taken from the nearest pixel as-is.
+#' attr <- transform_with(tree, operator = "=", store_in_attribute = "tree_id", bilinear = FALSE)
+#' pipeline <- chm + lmx + tree + eb + attr + write_las()
+#' ans <- exec(pipeline, on = g)
 #' @seealso
 #' \link{triangulate}
 #' \link{write_las}
@@ -1554,4 +1584,3 @@ LASATTRIBUTES <- c("X", "Y", "Z", "Intensity",
                    "ScannerChannel", "NIR",
                    "UserData", "gpstime", "PointSourceID",
                    "R", "G", "B")
-

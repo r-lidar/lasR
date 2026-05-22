@@ -79,16 +79,16 @@ def test_remote_copc_read(http_server):
 
 
 def test_remote_copc_depth(http_server):
-    """Test that copc_depth works with remote files."""
+    """Test that depth works with remote files."""
     import pylasr
 
     local_file = os.path.join(get_test_data_dir(), "example.copc.laz")
     remote_url = f"{http_server}/example.copc.laz"
 
-    pipeline_local = pylasr.reader_coverage(copc_depth=0) + pylasr.summarise()
+    pipeline_local = pylasr.reader_coverage(depth=0) + pylasr.summarise()
     ans_local = pipeline_local.execute([local_file])
 
-    pipeline_remote = pylasr.reader_coverage(copc_depth=0) + pylasr.summarise()
+    pipeline_remote = pylasr.reader_coverage(depth=0) + pylasr.summarise()
     ans_remote = pipeline_remote.execute([remote_url])
 
     assert _get_npoints(ans_remote) == _get_npoints(ans_local)
@@ -103,6 +103,6 @@ def test_public_copc_endpoint():
     import pylasr
 
     url = "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz"
-    pipeline = pylasr.reader_coverage(copc_depth=0) + pylasr.summarise()
+    pipeline = pylasr.reader_coverage(depth=0) + pylasr.summarise()
     ans = pipeline.execute([url])
     assert _get_npoints(ans) > 0

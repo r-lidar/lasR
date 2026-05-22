@@ -65,6 +65,8 @@ bool LASRivf::process(PointCloud*& las)
 
   while (las->read_point())
   {
+    if (pointfilter.filter(&las->point)) continue;
+
     // 4. Update Index Calculation
     int nx = std::floor((las->point.get_x() - rxmin) * inv_res_x);
     int ny = std::floor((las->point.get_y() - rymin) * inv_res_y);
@@ -110,6 +112,8 @@ bool LASRivf::process(PointCloud*& las)
   // Second Pass
   while (las->read_point())
   {
+    if (pointfilter.filter(&las->point)) continue;
+
     // Repeat index calculation
     int nx = std::floor((las->point.get_x() - rxmin) * inv_res_x);
     int ny = std::floor((las->point.get_y() - rymin) * inv_res_y);

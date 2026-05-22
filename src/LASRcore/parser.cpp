@@ -27,6 +27,7 @@
 #include "spikefree.h"
 #include "readlas.h"
 #include "readpcd.h"
+#include "readept.h"
 #include "regiongrowing.h"
 #include "setcrs.h"
 #include "sor.h"
@@ -60,6 +61,8 @@ static SEXP get_element(SEXP list, const char *str)
   if (Rf_isNull(elmt)) throw std::string("element '") + str +  "' not found"; // # nocov
   return elmt;
 }
+#elif defined(USING_PYTHON)
+#include "callback.h"
 #endif
 
 template <typename T>
@@ -129,6 +132,8 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     ,{"aggregate",           create_instance<LASRaggregate>},
     {"callback",             create_instance<LASRcallback>},
     {"xptr",                 create_instance<LASRxptr>}
+    #elif defined(USING_PYTHON)
+    ,{"callback",            create_instance<LASRcallback>}
     #endif
   };
 
@@ -267,6 +272,12 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
             case PCDFILE:
             {
               auto v = std::make_unique<LASRpcdreader>();
+              pipeline.push_back(std::move(v));
+              break;
+            }
+            case EPTFILE:
+            {
+              auto v = std::make_unique<LASReptreader>();
               pipeline.push_back(std::move(v));
               break;
             }

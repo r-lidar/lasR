@@ -7,6 +7,7 @@
 #include <filesystem>
 
 #include "LASRapi/api.h"
+#include "callback.h"
 
 namespace py = pybind11;
 
@@ -289,7 +290,8 @@ PYBIND11_MODULE(pylasr, m) {
           "Classify noise using Isolated Voxel Filter (Non-Cubic)",
           py::arg("res") = std::vector<double>{5.0, 5.0, 5.0},
           py::arg("n") = 6,
-          py::arg("classification") = 18
+          py::arg("classification") = 18,
+          py::arg("filter") = std::vector<std::string>{""}
     );
 
     m.def("classify_with_csf", &api::classify_with_csf,
@@ -412,17 +414,17 @@ PYBIND11_MODULE(pylasr, m) {
     // Readers
     m.def("reader_coverage", &api::reader_coverage,
           "Read points from coverage area",
-          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("copc_depth") = -1);
+          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("depth") = -1);
 
     m.def("reader_circles", &api::reader_circles,
           "Read points from circular areas",
           py::arg("xc"), py::arg("yc"), py::arg("r"),
-          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("copc_depth") = -1);
+          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("depth") = -1);
 
     m.def("reader_rectangles", &api::reader_rectangles,
           "Read points from rectangular areas",
           py::arg("xmin"), py::arg("ymin"), py::arg("xmax"), py::arg("ymax"),
-          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("copc_depth") = -1);
+          py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("depth") = -1);
 
     // Local maxima
     m.def("local_maximum", &api::local_maximum,
@@ -439,6 +441,45 @@ PYBIND11_MODULE(pylasr, m) {
     "Find local maxima in raster",
     py::arg("connect_uid"), py::arg("ws"), py::arg("min_height") = 2.0,
     py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "");
+
+    m.def("callback", [](py::object fun, const std::string& expose, py::object args, bool drop_buffer, bool no_las_update) {
+        if (!py::hasattr(fun, "__call__"))
+            throw py::type_error("fun must be callable");
+
+        py::tuple callback_args;
+        if (args.is_none())
+        {
+            callback_args = py::tuple();
+        }
+        else if (py::isinstance<py::tuple>(args))
+        {
+            callback_args = args.cast<py::tuple>();
+        }
+        else if (py::isinstance<py::list>(args))
+        {
+            py::list list_args = args.cast<py::list>();
+            callback_args = py::tuple(list_args.size());
+            for (py::ssize_t i = 0; i < list_args.size(); ++i)
+                callback_args[i] = list_args[i];
+        }
+        else
+        {
+            throw py::type_error("args must be None, a tuple, or a list");
+        }
+
+        std::string id = lasr_python_callback::register_callback(fun, callback_args);
+
+        api::Stage s("callback");
+        s.set("fun", id);
+        s.set("args", "");
+        s.set("expose", expose);
+        s.set("drop_buffer", drop_buffer);
+        s.set("no_las_update", no_las_update);
+        return api::Pipeline(s);
+    },
+    "Run a Python callback on point-cloud chunks. The callable receives a dict of NumPy arrays and may return a dict to update point attributes.",
+    py::arg("fun"), py::arg("expose") = "xyz", py::arg("args") = py::none(),
+    py::arg("drop_buffer") = false, py::arg("no_las_update") = false);
 
     // Triangulation and hulls
     m.def("triangulate", &api::triangulate,
@@ -481,7 +522,7 @@ PYBIND11_MODULE(pylasr, m) {
                 throw std::invalid_argument("The stage must be a triangulation or a raster stage or a matrix stage.");
         }
         return api::transform_with(uid, operation, store_in_attribute, bilinear);
-    }, "Transform points using raster or matrix",
+    }, "Transform points using raster or matrix. operation: '-' or '+' to combine with point Z (e.g. HAG = Z - DTM); '=' to store the raster/TIN value as-is into store_in_attribute (requires store_in_attribute, typical for tree-ID style labels).",
     py::arg("connect_uid"), py::arg("operation") = "-", py::arg("store_in_attribute") = "", py::arg("bilinear") = true);
 
     // CRS operations

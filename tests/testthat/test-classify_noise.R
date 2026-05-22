@@ -20,6 +20,16 @@ test_that("classify noise with ivf works with non cubic voxels",
   expect_error(classify_with_ivf(res = c(5,5), n = 50), "res must be of length 3")
 })
 
+test_that("classify noise with ivf support filter",
+{
+  f <- system.file("extdata", "Topography.las", package="lasR")
+  class = classify_with_ivf(res = c(5,5,10), n = 50, filter = drop_class(9))
+  ans = exec(class+summarise(), f)
+
+  expect_equal(ans$npoints_per_class, c(`1` = 61229, `2` = 8059, `9` = 3897, `18` = 218))
+})
+
+
 
 test_that("classify noise with ivf works using unorder map",
 {

@@ -1,5 +1,4 @@
 #include "LASio.h"
-#include "Progress.h"
 
 #include "lasreader.hpp"
 #include "laswriter.hpp"
@@ -62,7 +61,14 @@ bool LASio::query(const std::vector<std::string>& main_files, const std::vector<
     std::string trimmed = (start == std::string::npos) ? "" : filter.substr(start);
 
     // Check if the trimmed string starts with '-'
-    if (!trimmed.empty() && trimmed[0] == '-') sfilter += trimmed + " ";
+    if (!trimmed.empty() && trimmed[0] == '-')
+    {
+      // Translate unified -depth to LASlib's -max_depth for COPC
+      if (trimmed.compare(0, 7, "-depth ") == 0)
+        trimmed = "-max_depth " + trimmed.substr(7);
+
+      sfilter += trimmed + " ";
+    }
   }
 
   //print("LASlib filters = '%s'\n", sfilter.c_str());
@@ -186,7 +192,7 @@ void LASio::populate_header(Header* header, bool read_first_point)
   header->max_y = lasreader->header.max_y;
   header->min_z = lasreader->header.min_z;
   header->max_z = lasreader->header.max_z;
-  header->number_of_point_records = MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records);
+  header->number_of_point_records = std::max(static_cast<U64>(lasreader->header.number_of_point_records), lasreader->header.extended_number_of_point_records);
   header->x_offset = lasreader->header.x_offset;
   header->y_offset = lasreader->header.y_offset;
   header->z_offset = lasreader->header.z_offset;
@@ -277,6 +283,27 @@ void LASio::populate_header(Header* header, bool read_first_point)
       {
         char* data = (char*)lasreader->header.vlrs[j].data;
         int len = strnlen(data, lasreader->header.vlrs[j].record_length_after_header);
+        std::string wkt(data, len);
+        header->set_crs(wkt);
+        break;
+      }
+    }
+  }
+
+  // The LAS 1.4 spec also allows the WKT projection record (user_id "LASF_Projection",
+  // record_id 2112) to live in an Extended VLR. LASlib's vlr_geo_ogc_wkt flag and the
+  // vlrs[] array only cover regular VLRs, so we have to iterate evlrs[] separately.
+  #ifdef USING_GDAL
+  if (!header->crs.is_valid())
+  #endif
+  {
+    for (unsigned int j = 0; j < lasreader->header.number_of_extended_variable_length_records; j++)
+    {
+      const LASevlr& evlr = lasreader->header.evlrs[j];
+      if (strncmp(evlr.user_id, "LASF_Projection", 16) == 0 && evlr.record_id == 2112 && evlr.data != nullptr)
+      {
+        char* data = (char*)evlr.data;
+        size_t len = strnlen(data, (size_t)evlr.record_length_after_header);
         std::string wkt(data, len);
         header->set_crs(wkt);
         break;
@@ -440,7 +467,7 @@ void LASio::init(const Header* header)
   reset_accessor();
 
   extrabytes_offsets.clear();
-  for (int i = 0 ; i < header->schema.attributes.size() ; i++)
+  for (size_t i = 0 ; i < header->schema.attributes.size() ; i++)
   {
     const Attribute& attribute = header->schema.attributes[i];
 
@@ -536,7 +563,7 @@ bool LASio::write_point(Point* p)
   point->set_extended_number_of_returns(numberofreturns(p));
   point->set_extended_classification(classification(p));
 
-  for (int i = 0 ; i < extrabytes_offsets.size() ; i++)
+  for (size_t i = 0 ; i < extrabytes_offsets.size() ; i++)
     point->set_attribute(i, p->data + extrabytes_offsets[i]);
 
   laswriter->write_point(point);
@@ -592,7 +619,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
 
   lasquadtree->setup(lasreader->header.min_x, lasreader->header.max_x, lasreader->header.min_y, lasreader->header.max_y, t);
 
-  uint64_t n = MAX(lasreader->header.number_of_point_records, lasreader->header.extended_number_of_point_records);
+  uint64_t n = std::max(static_cast<U64>(lasreader->header.number_of_point_records), lasreader->header.extended_number_of_point_records);
 
   LASindex lasindex;
   lasindex.prepare(lasquadtree, 1000);

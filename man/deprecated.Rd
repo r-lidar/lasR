@@ -8,19 +8,11 @@
 \alias{reader_las_rectangles}
 \title{Deprecated}
 \usage{
-reader_las(filter = "", select = "*", copc_depth = NULL, ...)
+reader_las(filter = "", select = "*", depth = NULL, ...)
 
-reader_las_coverage(filter = "", select = "*", copc_depth = NULL, ...)
+reader_las_coverage(filter = "", select = "*", depth = NULL, ...)
 
-reader_las_circles(
-  xc,
-  yc,
-  r,
-  filter = "",
-  select = "*",
-  copc_depth = NULL,
-  ...
-)
+reader_las_circles(xc, yc, r, filter = "", select = "*", depth = NULL, ...)
 
 reader_las_rectangles(
   xmin,
@@ -29,14 +21,14 @@ reader_las_rectangles(
   ymax,
   filter = "",
   select = "*",
-  copc_depth = NULL,
+  depth = NULL,
   ...
 )
 }
 \arguments{
 \item{filter}{see \link{reader}}
 
-\item{select, copc_depth}{see \link{reader}}
+\item{select, depth}{see \link{reader}}
 
 \item{...}{see \link{reader}}
 

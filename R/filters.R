@@ -61,11 +61,11 @@ drop_ground = function() { make_filter("Classification != 2") }
 
 #' @rdname filters
 #' @export
-keep_noise = function() { make_filter("Classification == 18") }
+keep_noise = function() { make_filter("Classification %in% 7 18") }
 
 #' @rdname filters
 #' @export
-drop_noise = function() { make_filter("Classification != 18") }
+drop_noise = function() { make_filter("Classification %out% 7 18") }
 
 #' @rdname filters
 #' @export
@@ -126,6 +126,21 @@ print.laslibfilter = function(x, ...)
   ans <- c(e1, e2)
   ans <- make_filter(ans)
   return(ans)
+}
+
+resolve_depth <- function(depth, ...)
+{
+  p = list(...)
+  has_old <- !is.null(p$copc_depth) || !is.null(p$ept_depth)
+  if (has_old)
+  {
+    if (!is.null(depth))
+      stop("Cannot specify both 'depth' and 'copc_depth'/'ept_depth'. Use 'depth' only.")
+
+    warning("'copc_depth' and 'ept_depth' are deprecated. Use 'depth' instead.", call. = FALSE)
+    depth <- if (!is.null(p$copc_depth)) p$copc_depth else p$ept_depth
+  }
+  return(depth)
 }
 
 validate_filter <- function(condition, allow_laslib_filter)

@@ -210,6 +210,14 @@ class TestGeometricAnalysis(unittest.TestCase):
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
+    def test_callback(self):
+        """Test callback pipeline creation"""
+        def passthrough(data):
+            return data
+
+        pipeline = pylasr.callback(passthrough, expose="xyz")
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
     def test_triangulate(self):
         """Test triangulate pipeline creation"""
         pipeline = pylasr.triangulate(
@@ -354,6 +362,14 @@ class TestTransformations(unittest.TestCase):
         pipeline = pylasr.transform_with(raster, operation="-", bilinear=True)
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
+    def test_transform_with_set_operator(self):
+        """transform_with(operation='=') stores raster value as-is in a named attribute"""
+        raster = pylasr.rasterize(res=1.0, window=1.0, operators=["max"])
+        pipeline = pylasr.transform_with(
+            raster, operation="=", store_in_attribute="treeID"
+        )
+        self.assertIsInstance(pipeline, pylasr.Pipeline)
+
 
 class TestReaders(unittest.TestCase):
     """Test reader pipeline functions"""
@@ -364,7 +380,7 @@ class TestReaders(unittest.TestCase):
 
     def test_reader_coverage(self):
         """Test reader_coverage pipeline creation"""
-        pipeline = pylasr.reader_coverage(filter=[""], select="*", copc_depth=-1)
+        pipeline = pylasr.reader_coverage(filter=[""], select="*", depth=-1)
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
     def test_reader_circles(self):
@@ -375,7 +391,7 @@ class TestReaders(unittest.TestCase):
             r=[50.0, 50.0],
             filter=[""],
             select="*",
-            copc_depth=-1,
+            depth=-1,
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
@@ -388,7 +404,7 @@ class TestReaders(unittest.TestCase):
             ymax=[50.0, 150.0],
             filter=[""],
             select="*",
-            copc_depth=-1,
+            depth=-1,
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
