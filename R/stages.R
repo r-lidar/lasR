@@ -296,7 +296,9 @@ classify_with_csf = function(slope_smooth = FALSE, class_threshold = 0.5, cloth_
 #' densification method by Axelsson (2000) (see references). The approach involves iteratively
 #' constructing a triangulated surface model (TIN) to classify ground points (see details). **This
 #' algorithm is much more robust than the CSF in \link{classify_with_csf} and should be
-#' preferred**.
+#' preferred**. This methods also detect and thus classify low noise points i.e. points that are
+#' part of ground point by construction but that are likely low outlier. Ground point are assigned class
+#' 2. Low outliers are assigned class 7.
 #'
 #' The method begins by identifying local low points, assuming at least one ground-level point exists
 #' within any X meters area. Initially, the triangles of the TIN model are mostly below the ground

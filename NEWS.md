@@ -1,3 +1,4 @@
+
 # lasR 0.21.0
 
 - New: Support of Entwine Point Tile format
@@ -5,6 +6,10 @@
 - Change: `drop_noise()` and `keep_noise()` now filter classes 7 and 18 instead of 18 only (#283)
 - New: record `use_attribute` as a field in `local_maximum()` output (#310)
 - New: operator `=` in `transform_with()` to assign a field (#314)
+
+# lasR 0.20.1
+
+- Enhance: documentation of `classify_with_ptd` (#288)
 
 # lasR 0.20.0
 
@@ -14,7 +19,6 @@ url <- "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz"
 pipeline <-  reader_circles(637368.8, 851944.8, 15) + summarise()
 ans <- exec(pipeline, on = url)
 ```
-
 
 # lasR 0.19.0
 
