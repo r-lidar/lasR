@@ -94,6 +94,7 @@ class Config:
     progress: bool
     profile_file: Path | None
     write_copc: bool
+    lmx_classes: str
 
     @classmethod
     def from_env(cls) -> Config:
@@ -133,6 +134,13 @@ class Config:
                 else None
             ),
             write_copc=os.environ.get("LASR_TREE_WRITE_COPC", "1") not in ("", "0", "false", "False"),
+            # Space-separated ASPRS classes that the local_maximum stage will
+            # consider as candidate tree tops. Default "1 3 4 5" = unclassified
+            # + low/med/high vegetation; this suppresses spurious tops over
+            # water (class 9), noise (7, 18), buildings (6), bridges (17).
+            # Set to "" or "0" to disable the class filter entirely (legacy
+            # behavior — keeps every HAG-above-threshold point).
+            lmx_classes=os.environ.get("LASR_TREE_LMX_CLASSES", "1 3 4 5").strip(),
         )
 
 
@@ -235,10 +243,13 @@ def run_pylasr_segmentation() -> None:
         operators=["HAG_max"],
         ofile=str(CFG.chm_raster),
     )
+    lmx_filters = [f"HAG > {CFG.min_height:g}"]
+    if CFG.lmx_classes and CFG.lmx_classes != "0":
+        lmx_filters.append(f"Classification %in% {CFG.lmx_classes}")
     lmx = pylasr.local_maximum(
         ws=CFG.window_size,
         min_height=CFG.min_height,
-        filter=[f"HAG > {CFG.min_height:g}"],
+        filter=lmx_filters,
         ofile=str(CFG.raw_tops),
         use_attribute="HAG",
         record_attributes=True,
