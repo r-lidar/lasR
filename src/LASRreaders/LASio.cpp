@@ -241,6 +241,19 @@ void LASio::populate_header(Header* header, bool read_first_point)
     header->schema.add_attribute("NIR", AttributeType::UINT16, 1, 0, "Near infrared channel value");
   }
 
+  // #117: Some files have a malformed Extra Bytes VLR that declares more extra-byte
+  // attributes than the point record length actually reserves. LASlib then leaves the
+  // point's extra_bytes buffer unallocated (or shorter than declared) while
+  // number_attributes > 0, so reading those attributes dereferences null/out-of-bounds
+  // memory and segfaults. Detect it once here; read_point() skips the unbacked
+  // attributes and leaves them at 0 (the behaviour CloudCompare exhibits).
+  if (lasreader->header.number_attributes > 0 &&
+      lasreader->point.extra_bytes_number < lasreader->header.get_attributes_size())
+  {
+    warning("Malformed file: the Extra Bytes VLR declares %d byte(s) of extra attributes but each point record only reserves %d. Unbacked extra attributes are read as 0.\n",
+            (int)lasreader->header.get_attributes_size(), (int)lasreader->point.extra_bytes_number);
+  }
+
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
   {
     std::string name(lasreader->header.attributes[i].name);
@@ -523,6 +536,11 @@ bool LASio::read_point(Point* p)
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
   {
     if (lasreader->header.attributes[i].data_type > 10) continue; // Don't read deprecated types
+    // #117: skip extra-byte attributes that the point record does not actually back
+    // (malformed Extra Bytes VLR, see populate_header) to avoid a null/OOB dereference.
+    if (lasreader->point.extra_bytes == nullptr ||
+        lasreader->header.attribute_starts[i] + lasreader->header.attribute_sizes[i] > lasreader->point.extra_bytes_number)
+      continue;
     extrabytes[i](p, lasreader->point.get_attribute_as_float(i));
   }
   eof_bit(p, lasreader->point.get_edge_of_flight_line());
