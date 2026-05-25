@@ -4,6 +4,7 @@
 
 # lasR 0.21.0
 
+- Fix: #117 segfault when reading a file with a malformed Extra Bytes VLR that declares more extra-byte attributes than the point record length reserves. Such attributes are now read as 0 and a warning is emitted instead of crashing.
 - New: Support of Entwine Point Tile format
 - New: `classify_with_ivf` gains a parameter `filter` (#289)
 - Change: `drop_noise()` and `keep_noise()` now filter classes 7 and 18 instead of 18 only (#283)
