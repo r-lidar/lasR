@@ -116,8 +116,8 @@ ans
 #> 6  POINT Z (481302.9 3812929 2...
 #> 7  POINT Z (481265.3 3812996 1...
 #> 8  POINT Z (481302.9 3812969 2...
-#> 9  POINT Z (481302 3812947 18.58)
-#> 10 POINT Z (481261.8 3812999 1...
+#> 9  POINT Z (481261.8 3812999 1...
+#> 10 POINT Z (481302 3812947 18.58)
 
 chm <- rasterize(1, "max")
 lmf <- local_maximum_raster(chm, 5)
@@ -150,7 +150,7 @@ ans
 #> 10 POINT Z (481261.8 3812999 1...
 #> 
 #> $write_las
-#> [1] "/tmp/RtmpnhFzkD/MixedConifer.las"
+#> [1] "/tmp/RtmpOZWUki/MixedConifer.las"
 #> 
 
 # Storing in an new attribute without geospatial output
@@ -158,5 +158,5 @@ attr <- add_extrabytes("uchar", "lm", "local maximum flag")
 lmf <- local_maximum(5, ofile = "", store_in_attribute = "lm")
 ans <- exec(attr + lmf + write_las(), on = f)
 ans
-#> [1] "/tmp/RtmpnhFzkD/MixedConifer.las"
+#> [1] "/tmp/RtmpOZWUki/MixedConifer.las"
 ```

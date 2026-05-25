@@ -1,5 +1,10 @@
 # Changelog
 
+## lasR 0.21.1
+
+- Fix [\#323](https://github.com/r-lidar/lasR/issues/323) streaming
+  bounding box filter
+
 ## lasR 0.21.0
 
 - Fix: [\#117](https://github.com/r-lidar/lasR/issues/117) segfault when
