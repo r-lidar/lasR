@@ -1,6 +1,7 @@
 # lasR 0.21.1
 
 - Fix #323 streaming bounding box filter
+- Fix #317 ptd by passes if 0 points instead of error.
 
 # lasR 0.21.0
 
