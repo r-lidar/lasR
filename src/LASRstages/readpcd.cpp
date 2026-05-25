@@ -79,7 +79,7 @@ bool LASRpcdreader::process(Point*& point)
   {
     if (pcdio->read_point(point))
     {
-      if (point->inside_buffer(xmin, ymin, ymax, ymax, circular))
+      if (point->inside_buffer(xmin, ymin, xmax, ymax, circular))
         point->set_buffered();
     }
     else
