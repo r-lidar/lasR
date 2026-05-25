@@ -2,6 +2,11 @@
 
 ## lasR 0.21.0
 
+- Fix: [\#117](https://github.com/r-lidar/lasR/issues/117) segfault when
+  reading a file with a malformed Extra Bytes VLR that declares more
+  extra-byte attributes than the point record length reserves. Such
+  attributes are now read as 0 and a warning is emitted instead of
+  crashing.
 - New: Support of Entwine Point Tile format
 - New: `classify_with_ivf` gains a parameter `filter`
   ([\#289](https://github.com/r-lidar/lasR/issues/289))

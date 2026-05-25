@@ -77,6 +77,6 @@ ans$rasterize
 #> resolution  : 5, 5  (x, y)
 #> extent      : 339000, 339020, 5248000, 5248005  (xmin, xmax, ymin, ymax)
 #> coord. ref. : NAD83 / UTM zone 17N (EPSG:26917)
-#> source      : file22678c9b5ba.tif
+#> source      : file22793e0480cf.tif
 #> names       : z_max, i_min, r_mean, n_median, z_sd, c_sd, ...
 ```

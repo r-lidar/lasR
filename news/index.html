@@ -48,7 +48,8 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.21.0" id="lasr-0210">lasR 0.21.0<a class="anchor" aria-label="anchor" href="#lasr-0210"></a></h2>
-<ul><li>New: Support of Entwine Point Tile format</li>
+<ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/117" class="external-link">#117</a> segfault when reading a file with a malformed Extra Bytes VLR that declares more extra-byte attributes than the point record length reserves. Such attributes are now read as 0 and a warning is emitted instead of crashing.</li>
+<li>New: Support of Entwine Point Tile format</li>
 <li>New: <code>classify_with_ivf</code> gains a parameter <code>filter</code> (<a href="https://github.com/r-lidar/lasR/issues/289" class="external-link">#289</a>)</li>
 <li>Change: <code><a href="../reference/filters.html">drop_noise()</a></code> and <code><a href="../reference/filters.html">keep_noise()</a></code> now filter classes 7 and 18 instead of 18 only (<a href="https://github.com/r-lidar/lasR/issues/283" class="external-link">#283</a>)</li>
 <li>New: record <code>use_attribute</code> as a field in <code><a href="../reference/local_maximum.html">local_maximum()</a></code> output (<a href="https://github.com/r-lidar/lasR/issues/310" class="external-link">#310</a>)</li>
