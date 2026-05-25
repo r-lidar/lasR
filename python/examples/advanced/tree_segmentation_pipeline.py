@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import math
 import os
 import time
+import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -155,6 +157,117 @@ def _worker_count() -> int:
     return CFG.workers if CFG.workers > 0 else _half_cores()
 
 
+def _read_mem_available_bytes() -> int | None:
+    """Best-effort available RAM in bytes (Linux /proc/meminfo MemAvailable)."""
+    try:
+        with open("/proc/meminfo") as fh:
+            for line in fh:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) * 1024  # kB -> bytes
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
+def _fetch_ept_metadata(uri: str) -> dict | None:
+    """Load ept.json (remote URL or local path). Returns None on any failure."""
+    try:
+        if is_remote(uri):
+            with urllib.request.urlopen(uri, timeout=30) as resp:
+                return json.load(resp)
+        with open(uri) as fh:
+            return json.load(fh)
+    except (OSError, ValueError) as exc:
+        print(
+            f"[auto-partition] could not read EPT metadata ({exc}); "
+            "leaving partition count to engine default",
+            flush=True,
+        )
+        return None
+
+
+def _auto_ept_partitions(workers: int) -> int | None:
+    """Size the EPT partition count so peak memory fits available RAM.
+
+    Peak memory during concurrent-files processing is roughly
+    ``workers x points_per_chunk x bytes_per_point``, and
+    ``points_per_chunk = aoi_points / partitions``. Solving for the smallest
+    safe partition count gives
+    ``partitions = aoi_points / (budget / (workers x bytes_per_point))``.
+
+    ``aoi_points`` is estimated from the archive's *average* map-space density
+    (ept.json ``points`` / conforming-bounds area) times the AOI area. Real
+    AOIs tend to sit in denser-than-average regions (valleys, forest), so the
+    estimate is inflated by ``LASR_TREE_DENSITY_HEADROOM`` (default 3.0) for
+    safety -- on CA_CarrHirzDeltaFires the local AOI ran ~3x the archive mean.
+    Returns None when any input is missing (caller then leaves the engine
+    default / user env in place).
+    """
+    if CFG.aoi is None:
+        return None
+    meta = _fetch_ept_metadata(CFG.input_las)
+    if not meta:
+        return None
+    try:
+        total_points = float(meta["points"])
+        cxmin, cymin, _, cxmax, cymax, _ = meta["boundsConforming"]
+    except (KeyError, ValueError, TypeError):
+        return None
+    map_area = (cxmax - cxmin) * (cymax - cymin)
+    if map_area <= 0 or total_points <= 0:
+        return None
+    map_density = total_points / map_area  # points per map-unit^2
+
+    xmin, ymin, xmax, ymax = CFG.aoi
+    aoi_area = (xmax - xmin) * (ymax - ymin)
+    headroom = env_float("LASR_TREE_DENSITY_HEADROOM", 3.0)
+    aoi_points = map_density * aoi_area * headroom
+
+    avail = _read_mem_available_bytes()
+    if avail is None:
+        return None
+    fraction = env_float("LASR_TREE_MEM_FRACTION", 0.7)
+    bytes_per_point = env_float("LASR_TREE_BYTES_PER_POINT", 100.0)
+    pts_per_slot = (avail * fraction) / (max(1, workers) * bytes_per_point)
+    if pts_per_slot <= 0:
+        return None
+
+    target = max(workers, min(4096, math.ceil(aoi_points / pts_per_slot)))
+
+    print(
+        f"[auto-partition] density~{map_density:.1f} pts/m^2 . "
+        f"AOI {aoi_area:.3g} m^2 . est~{aoi_points:.3g} pts (headroom x{headroom:g})",
+        flush=True,
+    )
+    print(
+        f"[auto-partition] mem avail {avail / 1e9:.1f} GB x{fraction:g} / "
+        f"({workers} workers x{bytes_per_point:g} B/pt) -> "
+        f"{pts_per_slot / 1e6:.1f}M pts/slot -> LASR_EPT_PARTITIONS={target}",
+        flush=True,
+    )
+    return target
+
+
+def _maybe_set_ept_partitions() -> None:
+    """Export a memory-sized LASR_EPT_PARTITIONS for concurrent-files EPT runs.
+
+    No-op unless: concurrent-files strategy, a remote ept.json input, an AOI is
+    set, and the user has not pinned LASR_EPT_PARTITIONS themselves (env wins).
+    """
+    if CFG.parallel_mode != "concurrent-files":
+        return
+    if not (
+        is_remote(CFG.input_las)
+        and CFG.input_las.rstrip("/").endswith("ept.json")
+    ):
+        return
+    if os.environ.get("LASR_EPT_PARTITIONS"):
+        return  # explicit user override wins
+    target = _auto_ept_partitions(_worker_count())
+    if target is not None:
+        os.environ["LASR_EPT_PARTITIONS"] = str(target)
+
+
 def _apply_parallel_strategy(pipeline) -> None:
     if CFG.parallel_mode == "sequential":
         pipeline.set_sequential_strategy()
@@ -219,6 +332,7 @@ def execute_pipeline(pipeline, label: str) -> None:
     if CFG.profile_file is not None:
         pipeline.set_profile_file(str(CFG.profile_file))
     _apply_parallel_strategy(pipeline)
+    _maybe_set_ept_partitions()
     pipeline.set_buffer(0)
     pipeline.set_chunk(0)
 
