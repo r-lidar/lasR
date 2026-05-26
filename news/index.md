@@ -6,6 +6,12 @@
   bounding box filter
 - Fix [\#317](https://github.com/r-lidar/lasR/issues/317) ptd by passes
   if 0 points instead of error.
+- Fix:
+  [`classify_with_csf()`](https://r-lidar.github.io/lasR/reference/classify_with_csf.md)
+  no longer reads one element past the end of the ground-index vector
+  once all ground points have been matched, which caused an
+  out-of-bounds heap read on nearly every call
+  ([\#321](https://github.com/r-lidar/lasR/issues/321))
 
 ## lasR 0.21.0
 

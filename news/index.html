@@ -50,6 +50,7 @@
 <h2 class="pkg-version" data-toc-text="0.21.1" id="lasr-0211">lasR 0.21.1<a class="anchor" aria-label="anchor" href="#lasr-0211"></a></h2>
 <ul><li>Fix <a href="https://github.com/r-lidar/lasR/issues/323" class="external-link">#323</a> streaming bounding box filter</li>
 <li>Fix <a href="https://github.com/r-lidar/lasR/issues/317" class="external-link">#317</a> ptd by passes if 0 points instead of error.</li>
+<li>Fix: <code><a href="../reference/classify_with_csf.html">classify_with_csf()</a></code> no longer reads one element past the end of the ground-index vector once all ground points have been matched, which caused an out-of-bounds heap read on nearly every call (<a href="https://github.com/r-lidar/lasR/issues/321" class="external-link">#321</a>)</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.21.0" id="lasr-0210">lasR 0.21.0<a class="anchor" aria-label="anchor" href="#lasr-0210"></a></h2>
