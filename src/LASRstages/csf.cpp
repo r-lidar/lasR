@@ -47,7 +47,7 @@ bool LASRcsf::process(PointCloud*& las)
   {
     if (pointfilter.filter(&las->point)) continue;
 
-    if (i == ground[k])
+    if (k < (int)ground.size() && i == ground[k])
     {
       k++;
       if (set_and_get_classification(&las->point) != 9) set_and_get_classification(&las->point, classification);
@@ -194,7 +194,7 @@ else
   int k = 0;
   while(las->read_point())
   {
-    if (i == ground[k])
+    if (k < (int)ground.size() && i == ground[k])
     {
       k++;
       if (las->pointoint.classification != 9) // Preserve water
