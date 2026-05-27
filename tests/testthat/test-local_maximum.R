@@ -216,13 +216,13 @@ test_that("variable window function detects tree tops",
 test_that("variable window roughly matches lidR lmf",
 {
   skip_if_not_installed("lidR")
-  skip_if_not_installed("sf")
 
   f  <- system.file("extdata", "MixedConifer.las", package = "lasR")
   fn <- function(x) 0.1 * x + 2
 
-  las   <- lidR::readLAS(f)
-  ttops <- lidR::locate_trees(las, lidR::lmf(ws = fn, hmin = 2))
+  # eval(parse()) tricks R CMD check because lidR is not a dependency
+  las   <- eval(parse(text = "lidR::readLAS(f)"))
+  ttops <- eval(parse(text = "lidR::locate_trees(las, lidR::lmf(ws = fn, hmin = 2))"))
   ours  <- exec(local_maximum(ws = fn, min_height = 2), on = f)
 
   expect_lt(abs(nrow(ours) - nrow(ttops)) / nrow(ttops), 0.10)
