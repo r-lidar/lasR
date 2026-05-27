@@ -17,7 +17,7 @@ public:
   bool process(PointCloud*& las) override;
   bool write() override;
   void clear(bool last) override;
-  double need_buffer() const override { return ws; }
+  double need_buffer() const override { return variable_ws ? max_ws : ws; }
   bool need_points() const override { return !use_raster; }
   bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uuid) override;
   bool set_parameters(const nlohmann::json&) override;
@@ -34,6 +34,14 @@ private:
 
   double ws;
   double min_height;
+
+  bool variable_ws = false;
+  std::vector<double> ws_lut;
+  double ws_lut_min = 0;
+  double ws_lut_step = 0.5;
+  double max_ws = 0;
+
+  double window_at(double v) const;
 
   std::string attribute;
   std::string use_attribute;
