@@ -1,5 +1,6 @@
 # lasR 0.21.1
 
+- New: `local_maximum()` and `local_maximum_raster()` now accept `ws` as a function for variable-size moving windows.
 - Fix #323 streaming bounding box filter
 
 # lasR 0.21.0

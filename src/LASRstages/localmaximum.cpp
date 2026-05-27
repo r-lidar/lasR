@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <algorithm>
 
 LASRlocalmaximum::LASRlocalmaximum()
 {
@@ -12,9 +13,53 @@ LASRlocalmaximum::LASRlocalmaximum()
   this->attribute = "";
 }
 
+double LASRlocalmaximum::window_at(double v) const
+{
+  if (!variable_ws || ws_lut.empty()) return ws;
+
+  double pos = (v - ws_lut_min) / ws_lut_step;
+  if (pos <= 0) return ws_lut.front();
+  if (pos >= (double)(ws_lut.size() - 1)) return ws_lut.back();
+
+  size_t i = (size_t)pos;
+  double frac = pos - (double)i;
+  return ws_lut[i] * (1.0 - frac) + ws_lut[i + 1] * frac;
+}
+
 bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
 {
   ws = stage.at("ws");
+  variable_ws = stage.contains("ws_lut") && !stage.at("ws_lut").empty();
+  if (variable_ws)
+  {
+    ws_lut = stage.at("ws_lut").get<std::vector<double>>();
+    ws_lut_min = stage.value("ws_lut_min", 0.0);
+    ws_lut_step = stage.value("ws_lut_step", 0.5);
+
+    // Validate here, not only in R: a hand-written JSON pipeline (the
+    // standalone binary) reaches this code without the R-side checks.
+    // Guards against division by zero and negative/non-finite windows.
+    if (ws_lut_step <= 0)
+    {
+      last_error = "ws_lut_step must be > 0";
+      return false;
+    }
+    for (double r : ws_lut)
+    {
+      if (!std::isfinite(r) || r <= 0)
+      {
+        last_error = "ws_lut must contain only finite positive values";
+        return false;
+      }
+    }
+
+    max_ws = *std::max_element(ws_lut.begin(), ws_lut.end());
+  }
+  else
+  {
+    max_ws = ws;
+  }
+
   min_height = stage.value("min_height", 2.0);
 
   use_attribute = stage.value("use_attribute", "Z");
@@ -114,7 +159,6 @@ bool LASRlocalmaximum::process(PointCloud*& las)
   progress->set_ncpu(ncpu);
 
   // Local maximum algorithm
-  double hws = ws/2;
   std::vector<char> status(las->npoints);
   std::fill(status.begin(), status.end(), UKN);
 
@@ -151,6 +195,7 @@ bool LASRlocalmaximum::process(PointCloud*& las)
     if (std::isnan(v) || v < min_height) { status[i] = NLM; }
     if (status[i] == NLM) continue;
 
+    double hws = window_at(v) / 2;
     Circle windows(pp.get_x(), pp.get_y(), hws);
     std::vector<Point> points;
     las->query(&windows, points, &pointfilter);
@@ -160,9 +205,25 @@ bool LASRlocalmaximum::process(PointCloud*& las)
     for (auto& pt : points)
     {
       int fid = las->get_index(&pt);
-      if (accessor(&pt) == accessor(&pp) && (pt.get_x() != pp.get_x() || pt.get_y() != pp.get_y()) && status[fid] == LMX) status[i] = NLM; // Handle duplicated height for different points
-      if (accessor(&pt) > accessor(&pp)) status[i] = NLM;  // If the point is above the central one, the central one is not a LM
-      if (accessor(&pt) < accessor(&pp)) status[fid] = NLM; // If the point is below the central we can pretag it as not a LM (no data race)
+
+      // Handle duplicated height for different points.
+      if (accessor(&pt) == accessor(&pp) &&
+          (pt.get_x() != pp.get_x() || pt.get_y() != pp.get_y()) &&
+          status[fid] == LMX)
+        status[i] = NLM;
+
+      // If the point is above the central one, the central one is not a LM.
+      if (accessor(&pt) > accessor(&pp))
+        status[i] = NLM;
+
+      // Fixed window only: a lower neighbour inside our window also has
+      // us inside its identical window, so it cannot be a maximum. With
+      // a variable window the neighbour's window is smaller/asymmetric,
+      // so this pre-tag is unsound; judge each point by its own window.
+      // FUTURE: pre-tag the lower neighbour only when the candidate lies
+      // within that neighbour's own window.
+      if (!variable_ws && accessor(&pt) < accessor(&pp))
+        status[fid] = NLM;
     }
 
     if (status[i] == UKN) status[i] = LMX; // If the status is still unknown it is a local max

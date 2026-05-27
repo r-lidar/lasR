@@ -432,7 +432,9 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("ws"), py::arg("min_height") = 2.0,
           py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "",
           py::arg("use_attribute") = "Z", py::arg("record_attributes") = false,
-          py::arg("store_in_attributes") = "");
+          py::arg("store_in_attributes") = "",
+          py::arg("ws_lut") = std::vector<double>{}, py::arg("ws_lut_min") = 0.0,
+          py::arg("ws_lut_step") = 0.5);
 
     m.def("local_maximum_raster", [](py::object connect_uid, int ws, double min_height, std::vector<std::string> filter, std::string ofile) {
         std::string uid = extract_uid(connect_uid);
