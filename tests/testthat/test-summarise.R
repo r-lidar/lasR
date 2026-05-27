@@ -75,3 +75,38 @@ test_that("summary can compute metrics on multiple file",
   expect_equal(dim(u$metrics), c(3, 4))
   expect_equal(u$npoints, sum(u$metrics$count))
 })
+
+test_that("summary reports area, point density and pulse density",
+{
+  f = system.file("extdata", "Example.las", package="lasR")
+
+  read = reader_las()
+  summ = summarise()
+  pipeline = read + summ
+  u = exec(pipeline, on = f)
+
+  expect_false(is.null(u$area))
+  expect_false(is.null(u$density))
+  expect_false(is.null(u$pulse_density))
+
+  expect_gt(u$area, 0)
+  expect_equal(u$density, u$npoints / u$area)
+  expect_equal(u$pulse_density, unname(u$npoints_per_return["1"]) / u$area)
+  expect_gt(u$density, 0)
+  expect_gt(u$pulse_density, 0)
+})
+
+test_that("summary pulse density uses first returns on multiple files",
+{
+  f = paste0(system.file(package="lasR"), "/extdata/bcts")
+  f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+
+  read = reader_las()
+  summ = summarise()
+  pipeline = read + summ
+  u = exec(pipeline, on = f)
+
+  expect_gt(u$area, 0)
+  expect_equal(u$density, 2834350 / u$area)
+  expect_equal(u$pulse_density, 1981696 / u$area)
+})
