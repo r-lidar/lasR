@@ -224,7 +224,7 @@ Pipeline load_matrix(std::vector<double> matrix, bool check)
   return Pipeline(s);
 }
 
-Pipeline local_maximum(double ws, double min_height, std::vector<std::string> filter, std::string ofile, std::string use_attribute, bool record_attributes, std::string store_in_attribute)
+Pipeline local_maximum(double ws, double min_height, std::vector<std::string> filter, std::string ofile, std::string use_attribute, bool record_attributes, std::string store_in_attribute, std::vector<double> ws_lut, double ws_lut_min, double ws_lut_step)
 {
   Stage s("local_maximum");
   s.set("ws", ws);
@@ -234,12 +234,18 @@ Pipeline local_maximum(double ws, double min_height, std::vector<std::string> fi
   s.set("use_attribute", use_attribute);
   s.set("record_attributes", record_attributes);
   s.set("store_in_attribute", store_in_attribute);
+  if (!ws_lut.empty())
+  {
+    s.set("ws_lut", ws_lut);
+    s.set("ws_lut_min", ws_lut_min);
+    s.set("ws_lut_step", ws_lut_step);
+  }
   s.set_vector();
 
   return Pipeline(s);
 }
 
-Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_height, std::vector<std::string> filter, std::string ofile)
+Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_height, std::vector<std::string> filter, std::string ofile, std::vector<double> ws_lut, double ws_lut_min, double ws_lut_step)
 {
   Stage s("local_maximum");
   s.set("connect", connect_uid);
@@ -247,6 +253,12 @@ Pipeline local_maximum_raster(std::string connect_uid, double ws, double min_hei
   s.set("min_height", min_height);
   s.set("filter", filter);
   s.set("output", ofile);
+  if (!ws_lut.empty())
+  {
+    s.set("ws_lut", ws_lut);
+    s.set("ws_lut_min", ws_lut_min);
+    s.set("ws_lut_step", ws_lut_step);
+  }
   s.set_vector();
 
   return Pipeline(s);

@@ -643,14 +643,59 @@ load_matrix = function(matrix, check = TRUE)
   .APISTAGES$load_matrix(as.numeric(t(matrix)), check)
 }
 
+# Fixed sampling grid for variable-window ws() functions. 0-200 m at
+# 0.5 m covers real canopy heights; values outside clamp in C++.
+.WS_LUT_MAX = 200
+.WS_LUT_STEP = 0.5
+
+.build_ws_lut = function(ws)
+{
+  if (is.numeric(ws))
+  {
+    if (length(ws) != 1L)
+      stop("'ws' must be a single number or a function")
+    if (is.na(ws) || ws <= 0)
+      stop("'ws' must be a positive number")
+    return(NULL)
+  }
+
+  if (!is.function(ws))
+    stop("'ws' must be a number or a function")
+
+  grid = seq(0, .WS_LUT_MAX, by = .WS_LUT_STEP)
+  radii = ws(grid)
+
+  if (!is.numeric(radii))
+    stop("the function 'ws' did not return a correct output")
+  if (length(radii) == 1L)
+    radii = rep(radii, length(grid))
+  if (length(radii) != length(grid))
+    stop("the function 'ws' did not return a correct output")
+  if (anyNA(radii))
+    stop("the function 'ws' returned NA values")
+  if (any(radii <= 0))
+    stop("the function 'ws' returned negative or null values")
+  if (max(radii) > 100)
+    warning(
+      "the function 'ws' returns very large windows (> 100 m); ",
+      "check the attribute and its units")
+
+  list(lut = as.numeric(radii), min = 0, step = .WS_LUT_STEP)
+}
+
 #' Local Maximum
 #'
-#' The Local Maximum stage identifies points that are locally maximum. The window size is
-#' fixed and circular. This stage does not modify the point cloud. It produces a derived product
+#' The Local Maximum stage identifies points that are locally maximum. The window is
+#' circular. This stage does not modify the point cloud. It produces a derived product
 #' in vector format. The function `local_maximum_raster` applies on a raster instead of the point cloud
 #'
-#' @param ws numeric. Diameter of the moving window used to detect the local maxima in the units of
-#' the input data (usually meters).
+#' @param ws numeric or function. The diameter of the moving window used
+#'   to detect the local maxima. A single number gives a fixed circular
+#'   window. A function of one argument gives a variable window: it
+#'   receives the \code{use_attribute} value (height by default) and must
+#'   return a positive window diameter for each point, e.g.
+#'   \code{function(x) 0.1 * x + 3}. The function is sampled once over a
+#'   0-200 m grid at 0.5 m steps; heights outside that range are clamped.
 #' @param min_height numeric. Minimum height of a local maximum. Threshold below which a point cannot be a
 #' local maximum. Default is 2.
 #' @template param-attribute
@@ -676,6 +721,9 @@ load_matrix = function(matrix, check = TRUE)
 #' ans <- exec(read + lmf, on = f)
 #' ans
 #'
+#' # Variable window: larger search window for taller trees
+#' lmf <- local_maximum(function(x) 0.1 * x + 3)
+#'
 #' chm <- rasterize(1, "max")
 #' lmf <- local_maximum_raster(chm, 5)
 #' ans <- exec(read + chm + lmf, on = f)
@@ -696,7 +744,15 @@ load_matrix = function(matrix, check = TRUE)
 #' @md
 local_maximum = function(ws, min_height = 2, filter = "", ofile = tempgpkg(), use_attribute = "Z", record_attributes = FALSE, store_in_attribute = "")
 {
-  return(.APISTAGES$local_maximum(ws, min_height, filter,  ofile, use_attribute, record_attributes, store_in_attribute))
+  lut = .build_ws_lut(ws)
+  if (is.null(lut))
+    return(.APISTAGES$local_maximum(
+      ws, min_height, filter, ofile, use_attribute, record_attributes,
+      store_in_attribute, numeric(0), 0, 0.5))
+
+  return(.APISTAGES$local_maximum(
+    0, min_height, filter, ofile, use_attribute, record_attributes,
+    store_in_attribute, lut$lut, lut$min, lut$step))
 }
 
 #' @export
@@ -707,7 +763,15 @@ local_maximum_raster = function(raster, ws, min_height = 2, filter = "", ofile =
   if (!info$raster)  stop("the stage must be a raster stage")
   ofile = normalizePath(ofile, mustWork = FALSE)
 
-  .APISTAGES$local_maximum_raster(connect = info[["uid"]], ws, min_height, filter, ofile)
+  lut = .build_ws_lut(ws)
+  if (is.null(lut))
+    return(.APISTAGES$local_maximum_raster(
+      connect = info[["uid"]], ws, min_height, filter, ofile,
+      numeric(0), 0, 0.5))
+
+  .APISTAGES$local_maximum_raster(
+    connect = info[["uid"]], 0, min_height, filter, ofile,
+    lut$lut, lut$min, lut$step)
 }
 
 # ===== N ====
