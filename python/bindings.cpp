@@ -436,13 +436,15 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("ws_lut") = std::vector<double>{}, py::arg("ws_lut_min") = 0.0,
           py::arg("ws_lut_step") = 0.5);
 
-    m.def("local_maximum_raster", [](py::object connect_uid, int ws, double min_height, std::vector<std::string> filter, std::string ofile) {
+    m.def("local_maximum_raster", [](py::object connect_uid, double ws, double min_height, std::vector<std::string> filter, std::string ofile, std::vector<double> ws_lut, double ws_lut_min, double ws_lut_step) {
         std::string uid = extract_uid(connect_uid);
-        return api::local_maximum_raster(uid, ws, min_height, filter, ofile);
+        return api::local_maximum_raster(uid, ws, min_height, filter, ofile, ws_lut, ws_lut_min, ws_lut_step);
     },
     "Find local maxima in raster",
     py::arg("connect_uid"), py::arg("ws"), py::arg("min_height") = 2.0,
-    py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "");
+    py::arg("filter") = std::vector<std::string>{""}, py::arg("ofile") = "",
+    py::arg("ws_lut") = std::vector<double>{}, py::arg("ws_lut_min") = 0.0,
+    py::arg("ws_lut_step") = 0.5);
 
     m.def("callback", [](py::object fun, const std::string& expose, py::object args, bool drop_buffer, bool no_las_update) {
         if (!py::hasattr(fun, "__call__"))
