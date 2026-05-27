@@ -12,6 +12,7 @@ class LASRsummary: public Stage
 {
 public:
   LASRsummary();
+  bool set_chunk(Chunk& chunk) override;
   bool process(Point*& p) override;
   bool process(PointCloud*& las) override;
   bool is_streamable() const override { return !metrics_engine.active(); }
@@ -47,6 +48,7 @@ private:
   uint64_t nsingle;
   uint64_t nwithheld;
   uint64_t nsynthetic;
+  double area;
   double zwbin;
   double iwbin;
   std::map<int, uint64_t> npoints_per_return;
