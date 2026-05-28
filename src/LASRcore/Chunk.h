@@ -26,6 +26,9 @@ struct Chunk
     shape = ShapeType::UNKNOWN;
     buffer = 0;
     process = true;
+    strict_clip = false;
+    catalog_xmax = 0;
+    catalog_ymax = 0;
     name.clear();
     main_files.clear();
     neighbour_files.clear();
@@ -52,6 +55,15 @@ struct Chunk
   bool process;
   int id;
   ShapeType shape;
+  bool strict_clip;
+  // Outer boundary at/beyond which strict_clip_decide treats
+  // px == xmax as CORE (the "rightmost cell carve-out"). For
+  // catalog-wide reads this equals the catalog's xmax/ymax; for
+  // AOI-derived sub-queries it's the clamped AOI bbox (so
+  // partitioned and un-partitioned AOI reads agree on
+  // boundary-coincident points).
+  double catalog_xmax;
+  double catalog_ymax;
   std::string name;
   std::vector<std::string> main_files;
   std::vector<std::string> neighbour_files;

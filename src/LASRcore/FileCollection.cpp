@@ -6,6 +6,10 @@
 #include "Grid.h"
 #include "PointSchema.h"
 
+#ifdef USING_GDAL
+#include <cpl_conv.h>
+#endif
+
 // To read the header of files
 #include "PCDio.h"
 #include "LASio.h"
@@ -16,7 +20,11 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <filesystem>
+#include <memory>
+#include <unordered_set>
 
 // To parse JSON VPC
 #include <nlohmann/json.hpp>
@@ -518,14 +526,39 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
 
 void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax)
 {
-  Rectangle* rect = new Rectangle(xmin, ymin, xmax, ymax);
-  queries.push_back(rect);
+  add_query(xmin, ymin, xmax, ymax, false);
+}
+
+void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax, bool strict_clip)
+{
+  add_query(xmin, ymin, xmax, ymax, strict_clip, std::nan(""), std::nan(""));
+}
+
+void FileCollection::add_query(double xmin, double ymin, double xmax, double ymax,
+                               bool strict_clip,
+                               double owner_xmax, double owner_ymax)
+{
+  QueryRecord q;
+  q.shape       = std::unique_ptr<Shape>(new Rectangle(xmin, ymin, xmax, ymax));
+  q.strict_clip = strict_clip;
+  q.owner_xmax  = owner_xmax;
+  q.owner_ymax  = owner_ymax;
+  queries.push_back(std::move(q));
 }
 
 void FileCollection::add_query(double xcenter, double ycenter, double radius)
 {
-  Circle* circ = new Circle(xcenter, ycenter, radius);
-  queries.push_back(circ);
+  add_query(xcenter, ycenter, radius, false);
+}
+
+void FileCollection::add_query(double xcenter, double ycenter, double radius, bool strict_clip)
+{
+  QueryRecord q;
+  q.shape       = std::unique_ptr<Shape>(new Circle(xcenter, ycenter, radius));
+  q.strict_clip = strict_clip;
+  // owner_xmax / owner_ymax default to NaN; circles never carry an
+  // owner override (partition_ept passes circles through unchanged).
+  queries.push_back(std::move(q));
 }
 
 bool FileCollection::add_las_file(std::string file, bool noprocess)
@@ -589,32 +622,66 @@ bool FileCollection::add_pcd_file(std::string file, bool noprocess)
 
 bool FileCollection::add_ept_endpoint(std::string path, bool noprocess)
 {
-  if (files.size() > 0)
-  {
+  if (files.size() > 0) {
     last_error = "Only a single EPT endpoint is supported";
     return false;
   }
-
   std::replace(path.begin(), path.end(), '\\', '/');
 
-  Header header;
-  EPTio reader;
+  // Tune GDAL/VSI defaults for remote EPT reads. Without these, every
+  // /vsicurl/ open does sibling-directory HEAD probing (≈10× more HTTP
+  // requests than the actual range fetch), no chunk caching means
+  // overlapping AOI sub-queries re-fetch the same bytes, and HTTP/1.1
+  // serializes per host. Measured impact on autzen-classified
+  // concurrent_files(4): warm-cache reads 42 s → 0.9 s, cold-cache
+  // reads 43 s → 13 s.
+  //
+  // CPLSetConfigOption falls through to env vars on read, so any
+  // user override (e.g. Sys.setenv) keeps precedence — only set when
+  // unset. Scope: process-wide for all subsequent VSI ops, fine for
+  // lasR's typical usage.
+#ifdef USING_GDAL
+  if (CPLGetConfigOption("GDAL_DISABLE_READDIR_ON_OPEN", nullptr) == nullptr)
+    CPLSetConfigOption("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR");
+  if (CPLGetConfigOption("GDAL_HTTP_MULTIPLEX", nullptr) == nullptr)
+    CPLSetConfigOption("GDAL_HTTP_MULTIPLEX", "YES");
+  if (CPLGetConfigOption("VSI_CACHE", nullptr) == nullptr)
+    CPLSetConfigOption("VSI_CACHE", "TRUE");
+  if (CPLGetConfigOption("VSI_CACHE_SIZE", nullptr) == nullptr)
+    CPLSetConfigOption("VSI_CACHE_SIZE", "67108864");  // 64 MiB
+#endif
 
-  try
-  {
-    reader.open(path);
-    reader.populate_header(&header);
-    reader.close();
-  }
-  catch (const std::exception& e)
-  {
+  try {
+    ept_index = EPTio::HierarchyIndex::build_metadata(path);
+  } catch (const std::exception& e) {
     last_error = e.what();
     return false;
   }
 
+  Header header;
+  try {
+    LASio probe;
+    probe.open(ept_index->probe_tile_path);
+    probe.populate_header(&header);
+    probe.close();
+  } catch (const std::exception& e) {
+    last_error = e.what();
+    return false;
+  }
+
+  header.signature = "EPTF";
+  header.min_x = ept_index->conf_bounds[0];
+  header.min_y = ept_index->conf_bounds[1];
+  header.min_z = ept_index->conf_bounds[2];
+  header.max_x = ept_index->conf_bounds[3];
+  header.max_y = ept_index->conf_bounds[4];
+  header.max_z = ept_index->conf_bounds[5];
+  if (!ept_index->srs_wkt.empty()) header.set_crs(ept_index->srs_wkt);
+  else if (ept_index->srs_epsg > 0) header.set_crs(ept_index->srs_epsg);
+  header.spatial_index = true;
+
   add_header(header, noprocess);
   files.push_back(path);
-
   use_dataframe = false;
   return true;
 }
@@ -677,6 +744,11 @@ bool FileCollection::set_noprocess(const std::vector<bool>& b)
 
 bool FileCollection::set_chunk_size(double size)
 {
+  return set_chunk_size(size, false);
+}
+
+bool FileCollection::set_chunk_size(double size, bool strict_clip)
+{
   chunk_size = 0;
 
   if (size > 0)
@@ -697,10 +769,356 @@ bool FileCollection::set_chunk_size(double size)
       double hsize = size/2;
 
       if (file_index.has_overlap(x-hsize, y-hsize, x+hsize, y+hsize))
-        add_query(x-hsize, y-hsize, x+hsize, y+hsize);
+        add_query(x-hsize, y-hsize, x+hsize, y+hsize, strict_clip);
     }
   }
 
+  return true;
+}
+
+// Deep-copies a Shape* by dispatching on its type. Used by the
+// exception-safe rebuild in partition_ept. Returns unique_ptr so the
+// clone is freed if any push_back throws bad_alloc at the call site.
+static std::unique_ptr<Shape> clone_shape(const Shape* s)
+{
+  switch (s->type()) {
+    case ShapeType::RECTANGLE:
+      return std::unique_ptr<Shape>(
+          new Rectangle(s->xmin(), s->ymin(), s->xmax(), s->ymax()));
+    case ShapeType::CIRCLE: {
+      const Circle* c = static_cast<const Circle*>(s);
+      return std::unique_ptr<Shape>(new Circle(c->center.x, c->center.y, c->radius));
+    }
+    default:
+      throw std::runtime_error("clone_shape: unsupported Shape type");
+  }
+}
+
+int FileCollection::ept_pick_depth_for_aois(
+    double cube_xmin, double cube_ymin, double cube_size,
+    int max_tile_depth, int target_partitions,
+    const std::vector<std::array<double, 4>>& aoi_bboxes)
+{
+  // Iterate octree depth `d` upward; at each `d` count the integer
+  // cells covered by the union of AOI bboxes. Stop at the smallest
+  // `d` whose total cell count meets target_partitions, capped at
+  // min(16, max_tile_depth). Monotone in `d` so at most 17 steps.
+  //
+  // The previous heuristic used an area ratio
+  //   d = ceil(0.5 * log2(target * cube_area / aoi_area))
+  // which was correct for square AOIs but undercounted long-thin
+  // ones: a 280 m × 5 m strip in a 285 m cube has tiny area but
+  // already spans the cube in x.
+  const int cap = (max_tile_depth < 16 ? max_tile_depth : 16);
+  if (cap <= 0 || target_partitions <= 0) return 0;
+
+  auto cells_at = [&](int dd) -> int64_t {
+    const double cell = cube_size / (double)(int64_t{1} << dd);
+    int64_t total = 0;
+    for (const auto& a : aoi_bboxes) {
+      int64_t cx_lo = (int64_t)std::floor((a[0] - cube_xmin) / cell);
+      int64_t cx_hi = (int64_t)std::ceil ((a[2] - cube_xmin) / cell);
+      int64_t cy_lo = (int64_t)std::floor((a[1] - cube_ymin) / cell);
+      int64_t cy_hi = (int64_t)std::ceil ((a[3] - cube_ymin) / cell);
+      total += (cx_hi - cx_lo) * (cy_hi - cy_lo);
+    }
+    return total;
+  };
+
+  int d = 0;
+  while (d < cap && cells_at(d) < (int64_t)target_partitions) d++;
+  return d;
+}
+
+bool FileCollection::partition_ept(int target_partitions)
+{
+  if (!ept_index || get_format() != EPTFILE) return true;
+  if (chunk_size > 0) return true;
+  if (target_partitions <= 0) return true;
+
+  const bool had_queries = !queries.empty();
+
+  // Pre-extract AOI rectangles so the hierarchy walk can prune subtrees that
+  // sit entirely outside the AOI. Without this, a continent-scale EPT (e.g.
+  // 80B-point USGS Sierra Nevada) does a full breadth-first hierarchy
+  // enumeration before partitioning, which dominates startup. The same
+  // bboxes are recomputed inside the with-queries path below for the
+  // AoiBbox struct used by partition logic — kept local to avoid churning
+  // that block.
+  std::vector<std::array<double, 4>> walk_aoi_bboxes;
+  if (had_queries) {
+    const double cxmin0 = ept_index->conf_bounds[0];
+    const double cymin0 = ept_index->conf_bounds[1];
+    const double cxmax0 = ept_index->conf_bounds[3];
+    const double cymax0 = ept_index->conf_bounds[4];
+    walk_aoi_bboxes.reserve(queries.size());
+    for (const auto& qr : queries) {
+      const Shape* q = qr.shape.get();
+      if (q->type() != ShapeType::RECTANGLE) continue;
+      const double bxmin = std::max(q->xmin(), cxmin0);
+      const double bymin = std::max(q->ymin(), cymin0);
+      const double bxmax = std::min(q->xmax(), cxmax0);
+      const double bymax = std::min(q->ymax(), cymax0);
+      if (bxmin >= bxmax || bymin >= bymax) continue;
+      walk_aoi_bboxes.push_back({bxmin, bymin, bxmax, bymax});
+    }
+  }
+
+  // Hierarchy walk; with-queries fallback diverges from no-queries fallback.
+  // The AOI filter is empty for the no-queries path (full walk, cacheable).
+  try { ept_index->ensure_tiles(walk_aoi_bboxes); }
+  catch (const std::exception& e) {
+    if (had_queries) {
+      warning("EPT hierarchy unavailable (%s); AOI partitioning skipped\n", e.what());
+      return true;
+    }
+    warning("EPT hierarchy walk failed (%s); falling back to grid chunking\n", e.what());
+    double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
+    double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
+    double size = std::sqrt((dx * dy) / (double)target_partitions);
+    return set_chunk_size(size, true);
+  }
+
+  if (ept_index->tiles.empty()) {
+    if (had_queries) {
+      warning("EPT hierarchy yielded no tiles; AOI partitioning skipped\n");
+      return true;
+    }
+    warning("EPT hierarchy yielded no tiles; falling back to grid chunking\n");
+    double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
+    double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
+    double size = std::sqrt((dx * dy) / (double)target_partitions);
+    return set_chunk_size(size, true);
+  }
+
+  // ---- No-queries path: today's behavior, byte-for-byte ----
+  if (!had_queries) {
+    // Cap d at 16 (EPT hard depth limit) before evaluating the shift
+    // so huge target_partitions values cannot trigger UB.
+    int d = 0;
+    while (d < 16 && (1 << (2 * d)) < target_partitions) d++;
+    int max_tile_depth = 0;
+    for (const auto& t : ept_index->tiles)
+      if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
+    if (d > max_tile_depth) d = max_tile_depth;
+
+    const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
+    const double cell_size = cube_size / (double)(1 << d);
+    const int grid_n = 1 << d;
+
+    std::vector<int64_t> cell_points((size_t)grid_n * grid_n, 0);
+    for (const auto& t : ept_index->tiles) {
+      if (t.key.d >= d) {
+        int shift = t.key.d - d;
+        int cx = t.key.x >> shift;
+        int cy = t.key.y >> shift;
+        if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+        cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+      } else {
+        int span = 1 << (d - t.key.d);
+        int cx0 = t.key.x * span;
+        int cy0 = t.key.y * span;
+        for (int iy = 0; iy < span; ++iy)
+          for (int ix = 0; ix < span; ++ix) {
+            int cx = cx0 + ix;
+            int cy = cy0 + iy;
+            if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+            cell_points[(size_t)cy * grid_n + cx] += t.point_count;
+          }
+      }
+    }
+
+    const double cxmin = ept_index->conf_bounds[0];
+    const double cymin = ept_index->conf_bounds[1];
+    const double cxmax = ept_index->conf_bounds[3];
+    const double cymax = ept_index->conf_bounds[4];
+
+    int emitted = 0;
+    for (int cy = 0; cy < grid_n; ++cy) {
+      for (int cx = 0; cx < grid_n; ++cx) {
+        if (cell_points[(size_t)cy * grid_n + cx] == 0) continue;
+        double cxmin_c = ept_index->cube_bounds[0] + cx * cell_size;
+        double cymin_c = ept_index->cube_bounds[1] + cy * cell_size;
+        double cxmax_c = cxmin_c + cell_size;
+        double cymax_c = cymin_c + cell_size;
+        if (cxmin_c < cxmin) cxmin_c = cxmin;
+        if (cymin_c < cymin) cymin_c = cymin;
+        if (cxmax_c > cxmax) cxmax_c = cxmax;
+        if (cymax_c > cymax) cymax_c = cymax;
+        if (cxmin_c >= cxmax_c || cymin_c >= cymax_c) continue;
+        add_query(cxmin_c, cymin_c, cxmax_c, cymax_c, true);
+        emitted++;
+      }
+    }
+    if (emitted == 0) {
+      warning("EPT partitioning produced no chunks after conforming clamp; falling back to grid chunking\n");
+      double dx = ept_index->conf_bounds[3] - ept_index->conf_bounds[0];
+      double dy = ept_index->conf_bounds[4] - ept_index->conf_bounds[1];
+      double size = std::sqrt((dx * dy) / (double)target_partitions);
+      return set_chunk_size(size, true);
+    }
+    return true;
+  }
+
+  // ---- With-queries path ----
+
+  // Compute clamped AOI bbox per rect query and aggregate area.
+  struct AoiBbox { double xmin, ymin, xmax, ymax; bool partitionable; };
+  std::vector<AoiBbox> aoi_bboxes(queries.size(),
+      AoiBbox{0, 0, 0, 0, false});
+
+  const double cxmin = ept_index->conf_bounds[0];
+  const double cymin = ept_index->conf_bounds[1];
+  const double cxmax = ept_index->conf_bounds[3];
+  const double cymax = ept_index->conf_bounds[4];
+
+  bool any_partitionable = false;
+  for (size_t i = 0; i < queries.size(); ++i) {
+    const Shape* q = queries[i].shape.get();
+    if (q->type() != ShapeType::RECTANGLE) continue;
+    double bxmin = std::max(q->xmin(), cxmin);
+    double bymin = std::max(q->ymin(), cymin);
+    double bxmax = std::min(q->xmax(), cxmax);
+    double bymax = std::min(q->ymax(), cymax);
+    if (bxmin >= bxmax || bymin >= bymax) continue;  // disjoint → passthrough
+    aoi_bboxes[i] = {bxmin, bymin, bxmax, bymax, true};
+    any_partitionable = true;
+  }
+
+  if (!any_partitionable) return true;  // nothing partitionable; leave queries unchanged
+
+  // Depth selection — see ept_pick_depth_for_aois for the rationale.
+  // The previous area-ratio heuristic undercounted long-thin AOIs;
+  // the cell-count iteration is what we want.
+  const double cube_size = ept_index->cube_bounds[3] - ept_index->cube_bounds[0];
+  int max_tile_depth = 0;
+  for (const auto& t : ept_index->tiles)
+    if (t.key.d > max_tile_depth) max_tile_depth = t.key.d;
+
+  std::vector<std::array<double, 4>> aoi_arrays;
+  aoi_arrays.reserve(aoi_bboxes.size());
+  for (const auto& a : aoi_bboxes) {
+    if (!a.partitionable) continue;
+    aoi_arrays.push_back({a.xmin, a.ymin, a.xmax, a.ymax});
+  }
+  const int d = ept_pick_depth_for_aois(
+      ept_index->cube_bounds[0], ept_index->cube_bounds[1], cube_size,
+      max_tile_depth, target_partitions, aoi_arrays);
+
+  const double cell_size = cube_size / (double)(1 << d);
+  const int grid_n = 1 << d;
+
+  // Per-AOI cell range and union range. The cell-occupancy map is
+  // restricted to the union — memory and walk time scale with the AOI
+  // footprint, not with grid_n^2. (A naive 2^d × 2^d int64_t map would
+  // be ~32 GiB at d=16; here it's bounded by the union of AOI cell
+  // ranges, which is at most O(target_partitions) cells for a
+  // well-chosen depth.)
+  struct AoiCellRange { int cx_lo, cx_hi, cy_lo, cy_hi; };
+  std::vector<AoiCellRange> aoi_ranges(queries.size(),
+      AoiCellRange{0, 0, 0, 0});
+  int u_cx_lo = grid_n, u_cy_lo = grid_n;
+  int u_cx_hi = 0,      u_cy_hi = 0;
+  for (size_t i = 0; i < queries.size(); ++i) {
+    if (!aoi_bboxes[i].partitionable) continue;
+    const AoiBbox& a = aoi_bboxes[i];
+    int cx_lo = (int)std::floor((a.xmin - ept_index->cube_bounds[0]) / cell_size);
+    int cx_hi = (int)std::ceil ((a.xmax - ept_index->cube_bounds[0]) / cell_size);
+    int cy_lo = (int)std::floor((a.ymin - ept_index->cube_bounds[1]) / cell_size);
+    int cy_hi = (int)std::ceil ((a.ymax - ept_index->cube_bounds[1]) / cell_size);
+    if (cx_lo < 0) cx_lo = 0;
+    if (cy_lo < 0) cy_lo = 0;
+    if (cx_hi > grid_n) cx_hi = grid_n;
+    if (cy_hi > grid_n) cy_hi = grid_n;
+    aoi_ranges[i] = {cx_lo, cx_hi, cy_lo, cy_hi};
+    if (cx_lo < u_cx_lo) u_cx_lo = cx_lo;
+    if (cy_lo < u_cy_lo) u_cy_lo = cy_lo;
+    if (cx_hi > u_cx_hi) u_cx_hi = cx_hi;
+    if (cy_hi > u_cy_hi) u_cy_hi = cy_hi;
+  }
+
+  // Sparse occupancy keyed by cy * grid_n + cx. Storing the cell as a
+  // single uint64 keeps memory proportional to the number of occupied
+  // cells inside the AOI union, never to grid_n^2.
+  const uint64_t G = (uint64_t)grid_n;
+  std::unordered_set<uint64_t> occupied;
+  for (const auto& t : ept_index->tiles) {
+    if (t.key.d >= d) {
+      int shift = t.key.d - d;
+      int cx = t.key.x >> shift;
+      int cy = t.key.y >> shift;
+      if (cx < u_cx_lo || cx >= u_cx_hi || cy < u_cy_lo || cy >= u_cy_hi) continue;
+      occupied.insert((uint64_t)cy * G + (uint64_t)cx);
+    } else {
+      int span = 1 << (d - t.key.d);
+      int cx0 = t.key.x * span;
+      int cy0 = t.key.y * span;
+      // Pre-clip the splat range to the AOI union. Without this, a
+      // shallow tile at depth 0 in a deep grid would iterate up to
+      // 4^d cells per tile.
+      int ix0 = std::max(0, u_cx_lo - cx0);
+      int iy0 = std::max(0, u_cy_lo - cy0);
+      int ix1 = std::min(span, u_cx_hi - cx0);
+      int iy1 = std::min(span, u_cy_hi - cy0);
+      for (int iy = iy0; iy < iy1; ++iy) {
+        for (int ix = ix0; ix < ix1; ++ix) {
+          int cx = cx0 + ix;
+          int cy = cy0 + iy;
+          if (cx < 0 || cx >= grid_n || cy < 0 || cy >= grid_n) continue;
+          occupied.insert((uint64_t)cy * G + (uint64_t)cx);
+        }
+      }
+    }
+  }
+
+  // Build replacement off-side. Each QueryRecord owns its shape via
+  // unique_ptr, so if any push_back throws bad_alloc the in-flight
+  // records are freed cleanly and the live queries vector is untouched.
+  std::vector<QueryRecord> replacement;
+
+  auto push_passthrough = [&](size_t i) {
+    QueryRecord r;
+    r.shape       = clone_shape(queries[i].shape.get());
+    r.strict_clip = queries[i].strict_clip;
+    r.owner_xmax  = queries[i].owner_xmax;
+    r.owner_ymax  = queries[i].owner_ymax;
+    replacement.push_back(std::move(r));
+  };
+
+  for (size_t i = 0; i < queries.size(); ++i) {
+    if (!aoi_bboxes[i].partitionable) { push_passthrough(i); continue; }
+
+    const AoiBbox&     a = aoi_bboxes[i];
+    const AoiCellRange r = aoi_ranges[i];
+
+    int emitted_for_this = 0;
+    for (int cy = r.cy_lo; cy < r.cy_hi; ++cy) {
+      for (int cx = r.cx_lo; cx < r.cx_hi; ++cx) {
+        if (occupied.count((uint64_t)cy * G + (uint64_t)cx) == 0) continue;
+        double cell_xmin = ept_index->cube_bounds[0] + cx * cell_size;
+        double cell_ymin = ept_index->cube_bounds[1] + cy * cell_size;
+        double cell_xmax = cell_xmin + cell_size;
+        double cell_ymax = cell_ymin + cell_size;
+        double sxmin = std::max(cell_xmin, a.xmin);
+        double symin = std::max(cell_ymin, a.ymin);
+        double sxmax = std::min(cell_xmax, a.xmax);
+        double symax = std::min(cell_ymax, a.ymax);
+        if (sxmin >= sxmax || symin >= symax) continue;
+        QueryRecord sub;
+        sub.shape       = std::unique_ptr<Shape>(new Rectangle(sxmin, symin, sxmax, symax));
+        sub.strict_clip = true;
+        sub.owner_xmax  = a.xmax;  // CLAMPED AOI xmax, NOT query.xmax()
+        sub.owner_ymax  = a.ymax;
+        replacement.push_back(std::move(sub));
+        emitted_for_this++;
+      }
+    }
+    if (emitted_for_this == 0) push_passthrough(i);
+  }
+
+  // Atomic commit: vector::swap is noexcept; the old QueryRecords (and
+  // their unique_ptr shapes) are destroyed when `replacement` exits scope.
+  queries.swap(replacement);
   return true;
 }
 
@@ -757,6 +1175,9 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
 {
   chunk.clear();
 
+  chunk.catalog_xmax = xmax;
+  chunk.catalog_ymax = ymax;
+
   const Header& h = headers[i];
 
   chunk.xmin = h.min_x;
@@ -807,7 +1228,8 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   chunk.clear();
 
   // Some shape are provided. We are performing queries i.e not processing the entire collection file by file
-  Shape* q = queries[i];
+  const QueryRecord& rec = queries[i];
+  const Shape* q = rec.shape.get();
   double minx = q->xmin();
   double miny = q->ymin();
   double maxx = q->xmax();
@@ -841,7 +1263,12 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   if (chunk.ymin < ymin) chunk.ymin = ymin;
   if (chunk.ymax > ymax) chunk.ymax = ymax;
   chunk.buffer = buffer;
+  chunk.catalog_xmax = xmax;
+  chunk.catalog_ymax = ymax;
+  if (!std::isnan(rec.owner_xmax)) chunk.catalog_xmax = rec.owner_xmax;
+  if (!std::isnan(rec.owner_ymax)) chunk.catalog_ymax = rec.owner_ymax;
   chunk.shape = q->type();
+  chunk.strict_clip = rec.strict_clip;
 
   // With an R data.frame there is no file and thus no neighboring files. We can exit.
   if (use_dataframe)
@@ -952,8 +1379,7 @@ void FileCollection::clear()
   noprocess.clear();
   files.clear();
 
-  for (auto p : queries) delete p;
-  queries.clear();
+  queries.clear();  // unique_ptr in QueryRecord frees the shapes
 }
 
 bool FileCollection::file_exists(std::string& file)
@@ -1026,7 +1452,7 @@ FileCollection::FileCollection()
 
 FileCollection::~FileCollection()
 {
-  for (auto p : queries) delete p;
+  // QueryRecord destructor (unique_ptr<Shape>) handles cleanup.
 }
 
 void FileCollectionIndex::add(double xmin, double ymin, double xmax, double ymax)

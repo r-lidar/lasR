@@ -26,6 +26,7 @@
 
 #include "Engine.h"
 #include "FileCollection.h"
+#include "ept_partition_gate.h"
 
 #include "DrawflowParser.h"
 #include "nlohmann/json.hpp"
@@ -152,6 +153,24 @@ ReturnType execute(const std::string& config_file)
     bool is_parallelizable = pipeline.is_parallelizable();  // concurrent-files
 
     FileCollection* lascatalog = pipeline.get_catalog(); // the pipeline owns the catalog
+
+    if (api_internal::should_auto_partition_ept(
+            lascatalog->get_format(), is_parallelizable,
+            use_rcapi, ncpu_outer_loop))
+    {
+      int target = 4 * ncpu_outer_loop;
+      if (const char* env = getenv("LASR_EPT_PARTITIONS")) {
+        int parsed = 0;
+        try { parsed = std::stoi(env); } catch (...) { parsed = 0; }
+        if (parsed > 0 && parsed <= 4096) {
+          target = parsed;
+        } else {
+          warning("Ignoring invalid LASR_EPT_PARTITIONS=%s (must be 1..4096)\n", env);
+        }
+      }
+      if (!lascatalog->partition_ept(target))
+        throw std::runtime_error(last_error);
+    }
 
     int n = lascatalog->get_number_chunks();
 

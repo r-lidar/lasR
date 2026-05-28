@@ -35,7 +35,7 @@ bool LASRsummary::process(Point*& p)
 {
   if (p->get_deleted()) return true;
   if (pointfilter.filter(p)) return true;
-  if (p->inside_buffer(xmin, ymin, xmax, ymax, circular)) return true; // avoid counting buffer points
+  if (p->get_buffered() || p->inside_buffer(xmin, ymin, xmax, ymax, circular)) return true; // avoid counting buffer points
 
   npoints++;
   npoints_per_return[get_returnnumber(p)]++;
