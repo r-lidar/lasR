@@ -8,6 +8,7 @@
 #include <R_ext/Error.h>
 
 #include <string>
+#include <thread>
 #include <vector>
 
 #define MESSAGELVL 0
@@ -17,7 +18,14 @@
 // Global vector to store messages
 std::vector<std::pair<int, std::string>> message_queue;
 
-// Function to print and clear the queue (only called by thread 0)
+// Thread id captured at library load = the main R thread. Used to decide who
+// may touch R's C API (Rprintf/REprintf). omp_get_thread_num() is unsafe for
+// this check: it returns 0 for std::async / background threads that are not in
+// any OpenMP team, which would let them call into R off the main thread.
+static const std::thread::id g_main_thread_id = std::this_thread::get_id();
+
+// Function to print and clear the queue (only called by the main thread, under
+// the queue_mutex critical)
 void print_queue()
 {
   for (const auto &message : message_queue)
@@ -45,17 +53,18 @@ void print_queue()
 // Function to add a message to the queue
 void thread_safe_print(int level, const char *buffer)
 {
+  // A SINGLE lock guards both the push and the drain, so the global queue is
+  // never mutated concurrently. Only the main R thread drains it (i.e. touches
+  // R's C API). Previously push used critical(queue_mutex) and drain used
+  // critical(Rprint) -- two different locks on the same std::vector -- so a
+  // worker's push_back could run concurrently with the main thread's
+  // clear()/iterate, corrupting the heap under load (segfault / double free
+  // observed on large concurrent EPT reads).
   #pragma omp critical (queue_mutex)
   {
     message_queue.push_back({level, buffer});
-  }
-
-  if (omp_get_thread_num() == 0)
-  {
-    #pragma omp critical (Rprint)
-    {
+    if (std::this_thread::get_id() == g_main_thread_id)
       print_queue();
-    }
   }
 }
 
