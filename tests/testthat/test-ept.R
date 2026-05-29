@@ -514,6 +514,26 @@ test_that("EPT partition: rect AOI parallel read equals serial AOI read exactly"
   expect_equal(par$z_histogram, ser$z_histogram)
 })
 
+test_that("EPT auto-partition default target is 32 when LASR_EPT_PARTITIONS unset", {
+  skip_if_not(has_omp_support())
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  aoi <- c(273360, 5274360, 273640, 5274640)
+  q <- reader_rectangles(aoi[1], aoi[2], aoi[3], aoi[4]) + summarise()
+  logf <- tempfile()
+  on.exit(unlink(logf), add = TRUE)
+  prev <- Sys.getenv("LASR_EPT_PARTITIONS", unset = NA)
+  on.exit({
+    if (is.na(prev)) Sys.unsetenv("LASR_EPT_PARTITIONS") else Sys.setenv(LASR_EPT_PARTITIONS = prev)
+  }, add = TRUE)
+  Sys.unsetenv("LASR_EPT_PARTITIONS")
+  exec(q, on = ept, ncores = concurrent_files(16), verbose = TRUE,
+       log_file = logf, progress = FALSE)
+  chunks <- as.integer(sub(".*Chunks: ([0-9]+).*", "\\1",
+                           grep("Chunks:", readLines(logf), value = TRUE)[1]))
+  insp32 <- lasR:::.APITEST$cpp_ept_partition_inspect(ept, 32, list(aoi))
+  expect_equal(chunks, insp32$nchunks)
+})
+
 test_that("EPT partition: depth iteration picks min d meeting target cell count", {
   # Unit-level test of the depth predicate. The local fixture's
   # max_tile_depth=1 caps both old (area ratio) and new (cell-count)

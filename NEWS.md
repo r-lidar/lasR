@@ -1,5 +1,6 @@
 # lasR 0.21.0
 
+- Change: EPT auto-partition default target is 32 when `LASR_EPT_PARTITIONS` is unset (was `4 × concurrent_files` workers).
 - New: `local_maximum()` and `local_maximum_raster()` now accept `ws` as a function for variable-size moving windows.
 - New: Support of Entwine Point Tile format
 - New: `classify_with_ivf` gains a parameter `filter` (#289)

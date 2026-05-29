@@ -158,7 +158,7 @@ ReturnType execute(const std::string& config_file)
             lascatalog->get_format(), is_parallelizable,
             use_rcapi, ncpu_outer_loop))
     {
-      int target = 4 * ncpu_outer_loop;
+      int target = api_internal::default_ept_auto_partitions;
       if (const char* env = getenv("LASR_EPT_PARTITIONS")) {
         int parsed = 0;
         try { parsed = std::stoi(env); } catch (...) { parsed = 0; }
