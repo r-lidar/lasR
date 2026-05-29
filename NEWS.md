@@ -1,5 +1,6 @@
 # lasR 0.21.0
 
+- Change: EPT auto-partition default target is 32 when `LASR_EPT_PARTITIONS` is unset (was `4 × concurrent_files` workers).
 - New: Support of Entwine Point Tile format
 - New: `classify_with_ivf` gains a parameter `filter` (#289)
 - Change: `drop_noise()` and `keep_noise()` now filter classes 7 and 18 instead of 18 only (#283)
