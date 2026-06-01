@@ -65,6 +65,10 @@ private:
   double catalog_zmax;
   uint64_t catalog_total_points;
   bool catalog_bbox_valid;
+  // CRS of the captured catalog bbox. If the points are reprojected upstream
+  // (transform_crs), this differs from the output header CRS and the bbox must be
+  // reprojected before it is used to size the merged COPC octree.
+  CRS catalog_crs;
 
   LASio* lasio;
 };

@@ -10,14 +10,18 @@ class OGRCoordinateTransformation;
 //
 // Unlike 'set_crs' (which only relabels the CRS without touching the coordinates),
 // 'transform_crs' actually reprojects every point using PROJ/GDAL. It rewrites the
-// X/Y/Z coordinates, picks appropriate scale factors and offsets for the target CRS,
-// updates the bounding box and tags the data (and every downstream stage/writer) with
-// the target CRS.
+// X/Y coordinates (Z is preserved as-is), picks appropriate scale factors and offsets
+// for the target CRS, updates the bounding box and tags the data (and every downstream
+// stage/writer) with the target CRS.
 class LASRtransformcrs : public Stage
 {
 public:
   LASRtransformcrs();
   LASRtransformcrs(const LASRtransformcrs& other);
+  // Owns a raw OGRCoordinateTransformation*; the copy constructor (used by clone())
+  // rebuilds it per clone. Forbid copy-assignment so the implicitly-generated one
+  // cannot shallow-copy the pointer and double-free it.
+  LASRtransformcrs& operator=(const LASRtransformcrs&) = delete;
   ~LASRtransformcrs();
 
   bool set_parameters(const nlohmann::json&) override;
@@ -39,7 +43,6 @@ public:
 
 private:
   bool build_transform();
-  bool transform_bbox(double& xmin, double& ymin, double& xmax, double& ymax);
 
 private:
   CRS source_crs;

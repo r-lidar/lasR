@@ -50,6 +50,7 @@ bool LASRlaswriter::process(FileCollection*& ctg)
     catalog_ymax = ctg->get_ymax();
     catalog_zmax = ctg->get_zmax();
     catalog_total_points = ctg->get_total_points();
+    catalog_crs = ctg->get_crs();
     catalog_bbox_valid = (catalog_xmin <= catalog_xmax) &&
                          (catalog_ymin <= catalog_ymax) &&
                          (catalog_zmin <= catalog_zmax);
@@ -323,11 +324,28 @@ bool LASRlaswriter::set_header(Header*& header)
   }
   if (catalog_bbox_valid && merged_copc)
   {
-    h.min_x = catalog_xmin;
-    h.min_y = catalog_ymin;
+    double cxmin = catalog_xmin, cymin = catalog_ymin;
+    double cxmax = catalog_xmax, cymax = catalog_ymax;
+
+    // The catalog bbox is captured from the input FileCollection in the source CRS. If the
+    // points were reprojected upstream (transform_crs), the output header CRS differs and
+    // the bbox must be reprojected, otherwise the COPC octree is sized in the source CRS
+    // while the written points are in the target CRS (every point would fall outside it).
+    // Z is preserved by transform_crs, so the catalog z bounds remain valid.
+    if (catalog_crs.is_valid() && h.crs.is_valid() && !(catalog_crs == h.crs))
+    {
+      if (!reproject_bbox(catalog_crs, h.crs, cxmin, cymin, cxmax, cymax))
+      {
+        last_error = "write_las: failed to reproject the catalog bounding box to the output CRS for the merged COPC octree.";
+        return false;
+      }
+    }
+
+    h.min_x = cxmin;
+    h.min_y = cymin;
     h.min_z = catalog_zmin;
-    h.max_x = catalog_xmax;
-    h.max_y = catalog_ymax;
+    h.max_x = cxmax;
+    h.max_y = cymax;
     h.max_z = catalog_zmax;
     h.number_of_point_records = catalog_total_points;
   }
