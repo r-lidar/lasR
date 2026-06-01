@@ -540,6 +540,20 @@ PYBIND11_MODULE(pylasr, m) {
       return api::Pipeline(s);
       }, "Set CRS using EPSG code or WKT string", py::arg("crs"));
 
+      m.def("transform_crs", [](py::object crs) -> api::Pipeline {
+      api::Stage s("transform_crs");
+      if (py::isinstance<py::int_>(crs)) {
+            s.set("epsg", crs.cast<int>());
+            s.set("wkt", "");
+      } else if (py::isinstance<py::str>(crs)) {
+            s.set("epsg", 0);
+            s.set("wkt", crs.cast<std::string>());
+      } else {
+            throw std::invalid_argument("crs must be either EPSG code (int) or WKT string");
+      }
+      return api::Pipeline(s);
+      }, "Reproject the point cloud to the target CRS (EPSG code or WKT string)", py::arg("crs"));
+
     // Stop conditions
     m.def("stop_if_outside", &api::stop_if_outside,
           "Stop processing if outside bounds",

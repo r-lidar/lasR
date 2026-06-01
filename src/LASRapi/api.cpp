@@ -429,6 +429,24 @@ Pipeline set_crs_wkt(std::string wkt)
   return Pipeline(s);
 }
 
+Pipeline transform_crs_epsg(int epsg)
+{
+  Stage s("transform_crs");
+  s.set("epsg", epsg);
+  s.set("wkt", "");
+
+  return Pipeline(s);
+}
+
+Pipeline transform_crs_wkt(std::string wkt)
+{
+  Stage s("transform_crs");
+  s.set("epsg", 0);
+  s.set("wkt", wkt);
+
+  return Pipeline(s);
+}
+
 Pipeline sampling_voxel(double res, std::vector<std::string> filter, std::string method, int shuffle_size)
 {
   static const std::vector<std::string> choices = {"random"};

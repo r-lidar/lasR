@@ -1130,6 +1130,41 @@ set_crs = function(x)
   stop("Invalid argument")
 }
 
+#' Reproject the point cloud
+#'
+#' Reproject (transform) the point cloud from its current CRS to a target CRS. Unlike
+#' \link{set_crs}, which only **assigns** a CRS without modifying the coordinates, this stage
+#' **reprojects** every point using PROJ/GDAL. The X, Y and Z coordinates are recomputed, the
+#' scale factors and offsets are adapted to the target CRS (e.g. switching between metres and
+#' degrees), the bounding box is updated and the target CRS is assigned to the data and to all
+#' subsequent stages of the pipeline.
+#'
+#' The source CRS is the CRS carried by the files being read or the one assigned with
+#' \link{set_crs} earlier in the pipeline. The stage therefore typically appears after the
+#' \link{reader}. A point that falls outside the domain of the transformation is dropped.
+#'
+#' @param crs integer or string. EPSG code or WKT string of the **target** CRS, understood by GDAL.
+#' @export
+#' @md
+#' @examples
+#' \dontrun{
+#' f = system.file("extdata", "Topography.las", package="lasR")
+#'
+#' # Reproject from the file CRS to WGS 84 (lon/lat) and write the result
+#' pipeline = reader_las() + transform_crs(4326) + write_las()
+#' exec(pipeline, on = f)
+#'
+#' # Reproject then rasterize: the output raster is in the target CRS
+#' pipeline = reader_las() + transform_crs(32619) + rasterize(10, "max")
+#' exec(pipeline, on = f)
+#' }
+transform_crs = function(crs)
+{
+  if (is.numeric(crs)) { return(.APISTAGES$transform_crs_epsg(crs)) }
+  if (is.character(crs)) { return(.APISTAGES$transform_crs_wkt(crs)) }
+  stop("Invalid argument")
+}
+
 #' Sample the point cloud
 #'
 #' Sample the point cloud, keeping one random point per pixel or per voxel or perform a poisson sampling.
