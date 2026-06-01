@@ -204,10 +204,11 @@ bool LASRtransformcrs::process(PointCloud*& las)
   // scope. While reading, get_x()/get_y() decode with the source scale/offset because the
   // schema is not modified until the very end.
 
-  // For INT32 storage, pick X/Y scale factors suited to the target CRS. Reusing a projected
-  // scale (e.g. 0.01 m) for a geographic target would give ~1 km resolution, while reusing a
-  // geographic scale (e.g. 1e-7 deg) for a projected target would overflow the 32-bit stored
-  // integers. (Unused for float/double storage.)
+  // Pick X/Y scale factors suited to the target CRS. Reusing a projected scale (e.g. 0.01 m)
+  // for a geographic target would give ~1 km resolution, while reusing a geographic scale
+  // (e.g. 1e-7 deg) for a projected target would overflow the 32-bit stored integers. These
+  // apply to INT32 storage directly and, for float/double storage, are still used by
+  // write_las() when it quantizes the coordinates to LAS int32.
   double new_sx = attr_x.scale_factor;
   double new_sy = attr_y.scale_factor;
   if (target_crs.is_geographic())
@@ -222,16 +223,18 @@ bool LASRtransformcrs::process(PointCloud*& las)
   }
   // else (projected -> projected): keep the existing scale factors.
 
-  // For INT32 storage, choose X/Y offsets near the reprojected data so the stored integers
-  // stay small. The reprojected center of the source bounding box is the natural choice,
-  // but it can itself fall outside the transform domain (e.g. data straddling a projection
-  // or UTM-zone boundary, so the centroid is undefined) even when the points are fine.
-  // Probe the center, then the bbox corners and edge midpoints, and use the first that
-  // reprojects. If none do, fall back to 0 (every point will be dropped below anyway).
-  // Never abort the stage here.
+  // Choose X/Y offsets near the reprojected data so the stored/written integers stay small.
+  // Needed for INT32 storage and ALSO for float/double storage: write_las() quantizes to LAS
+  // int32 using the scale/offset recorded on the header, so a representative offset must be
+  // computed for every storage type even though in-memory float/double decoding ignores it.
+  // The reprojected
+  // center of the source bounding box is the natural choice, but it can itself fall outside the
+  // transform domain (e.g. data straddling a projection or UTM-zone boundary, so the centroid
+  // is undefined) even when the points are fine. Probe the center, then the bbox corners and
+  // edge midpoints, and use the first that reprojects. If none do, fall back to 0 (every point
+  // will be dropped below anyway). Never abort the stage here.
   double ox = 0.0;
   double oy = 0.0;
-  if (x_int || y_int)
   {
     const double mnx = las->header->min_x, mxx = las->header->max_x;
     const double mny = las->header->min_y, mxy = las->header->max_y;
@@ -314,22 +317,29 @@ bool LASRtransformcrs::process(PointCloud*& las)
   }
   flush(n);
 
-  // Switch INT32 axes to the target CRS scale/offset so future decodes of the freshly
-  // written integers yield the reprojected coordinates. Float/double axes store the
-  // coordinate directly and need no scale/offset change.
+  // Record the target CRS scale/offset on the lasR header for BOTH axes regardless of storage
+  // type: write_las() quantizes the reprojected coordinates to LAS int32 using these, so they
+  // must be sized for the target CRS even for float/double sources (otherwise sub-unit lon/lat
+  // collapses under the default 1.0 scale factor when written to LAS).
+  las->header->x_scale_factor = new_sx;
+  las->header->y_scale_factor = new_sy;
+  las->header->x_offset = ox;
+  las->header->y_offset = oy;
+
+  // The in-memory schema scale/offset are only meaningful for INT32 storage (LAS), where the
+  // stored integers must decode to the reprojected coordinates. For float/double storage (PCD)
+  // the coordinate is stored directly and every in-memory accessor (get_x, AttributeAccessor,
+  // the kd-tree) expects identity scale/offset, so the schema is left untouched; the LAS writer
+  // reads the header scale/offset for those axes instead.
   if (x_int)
   {
     attr_x.scale_factor = new_sx;
     attr_x.value_offset = ox;
-    las->header->x_scale_factor = new_sx;
-    las->header->x_offset = ox;
   }
   if (y_int)
   {
     attr_y.scale_factor = new_sy;
     attr_y.value_offset = oy;
-    las->header->y_scale_factor = new_sy;
-    las->header->y_offset = oy;
   }
 
   // Tag the data with the target CRS.

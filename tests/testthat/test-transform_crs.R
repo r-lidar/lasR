@@ -169,6 +169,35 @@ test_that("transform_crs reprojects PCD float coordinates without corrupting the
   expect_equal(unname(out["zmax"]), unname(src["zmax"]), tolerance = 1e-4)
 })
 
+test_that("transform_crs writes reprojected PCD float coordinates correctly to LAS",
+{
+  # Regression for the PCD-float -> LAS path. The in-memory float schema keeps identity
+  # scale/offset (so callbacks/get_x read the coordinate directly), but write_las() quantizes
+  # to LAS int32. If it used the float schema's 1.0 scale, sub-degree lon/lat would all collapse
+  # to 0. transform_crs records a target-appropriate scale/offset on the header and the LAS
+  # writer uses it for float/double axes. Here the PCD coords are treated as Web Mercator metres
+  # then reprojected to lon/lat, giving tiny sub-degree values that expose the bug.
+  f <- system.file("extdata", "pcd_ascii.pcd", package = "lasR")
+  inmem <- read_range_xyz(f, set_crs(3857) + transform_crs(4326))
+
+  o <- tempfile(fileext = ".las")
+  on.exit(unlink(o), add = TRUE)
+  exec(reader_las() + set_crs(3857) + transform_crs(4326) + write_las(o), on = f, noread = TRUE)
+  onlas <- read_range_xyz(o)
+
+  expect_equal(unname(onlas["n"]), unname(inmem["n"]))
+  # Reprojected lon/lat are sub-degree but non-zero; the bug collapsed every coordinate to 0.
+  expect_gt(abs(unname(onlas["xmin"])), 1e-5)
+  expect_gt(abs(unname(onlas["ymin"])), 1e-6)
+  expect_false(isTRUE(all.equal(unname(onlas["xmin"]), unname(onlas["xmax"]))))
+  # And they match the in-memory reprojected coordinates within LAS quantization (~1e-7). The
+  # values are tiny, so compare with an absolute (not relative) tolerance.
+  expect_lt(abs(unname(onlas["xmin"]) - unname(inmem["xmin"])), 1e-6)
+  expect_lt(abs(unname(onlas["xmax"]) - unname(inmem["xmax"])), 1e-6)
+  expect_lt(abs(unname(onlas["ymin"]) - unname(inmem["ymin"])), 1e-6)
+  expect_lt(abs(unname(onlas["ymax"]) - unname(inmem["ymax"])), 1e-6)
+})
+
 test_that("transform_crs scales the tile buffer to the target CRS units",
 {
   # triangulate() requires a 20 (source-metre) buffer. After reprojecting metres -> degrees
