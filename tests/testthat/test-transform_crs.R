@@ -240,6 +240,27 @@ test_that("transform_crs scales the tile buffer to the target CRS units",
   expect_gt(terra::ncell(r), 0)
 })
 
+test_that("transform_crs does not inflate projected buffers from geographic sources",
+{
+  # The inverse direction must not multiply a projected downstream buffer by the
+  # degrees-to-metres ratio. That used to turn triangulate()'s 20 m halo into a
+  # multi-million-metre raster buffer and fail with std::bad_alloc.
+  skip_if_not_installed("terra")
+
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  geo <- tempfile(fileext = ".las")
+  tif <- tempfile(fileext = ".tif")
+  on.exit(unlink(c(geo, tif)), add = TRUE)
+
+  exec(reader_las() + transform_crs(4326) + write_las(geo), on = f, noread = TRUE)
+  exec(reader_las() + transform_crs(32619) + triangulate() + rasterize(10, "max", ofile = tif), on = geo)
+
+  r <- terra::rast(tif)
+  expect_lt(terra::ncol(r), 1000)
+  expect_lt(terra::nrow(r), 1000)
+  expect_gt(terra::ncell(r), 0)
+})
+
 test_that("transform_crs then COPC write sizes the octree in the target CRS",
 {
   # A merged COPC write sizes its octree from the catalog (input) bbox, which is in the

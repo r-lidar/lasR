@@ -10,12 +10,16 @@
 LASRtransformcrs::LASRtransformcrs()
 {
   transform = nullptr;
+  target_to_source_buffer_scale = 1.0;
+  target_to_source_buffer_scale_valid = false;
 }
 
 LASRtransformcrs::LASRtransformcrs(const LASRtransformcrs& other) : Stage(other)
 {
   source_crs = other.source_crs;
   target_crs = other.target_crs;
+  target_to_source_buffer_scale = other.target_to_source_buffer_scale;
+  target_to_source_buffer_scale_valid = other.target_to_source_buffer_scale_valid;
   // OGRCoordinateTransformation is not thread-safe and not trivially copyable.
   // Each clone lazily rebuilds its own transform from source_crs/target_crs.
   transform = nullptr;
@@ -115,14 +119,43 @@ void LASRtransformcrs::get_extent(double& xmin, double& ymin, double& xmax, doub
   // get_pipeline_info() without files) leave the extent unchanged.
   if (source_crs.is_valid() && target_crs.is_valid())
   {
+    const double sxmin = xmin, symin = ymin, sxmax = xmax, symax = ymax;
     if (reproject_bbox(source_crs, target_crs, xmin, ymin, xmax, ymax))
     {
+      const double src_diag = std::hypot(sxmax - sxmin, symax - symin);
+      const double tgt_diag = std::hypot(xmax - xmin, ymax - ymin);
+      if (src_diag > 0 && tgt_diag > 0)
+      {
+        target_to_source_buffer_scale = src_diag / tgt_diag;
+        target_to_source_buffer_scale_valid = true;
+      }
+
       this->xmin = xmin;
       this->ymin = ymin;
       this->xmax = xmax;
       this->ymax = ymax;
     }
   }
+}
+
+double LASRtransformcrs::translate_buffer_to_input(double downstream_buffer) const
+{
+  if (!target_to_source_buffer_scale_valid) return downstream_buffer;
+
+  // Fixed-distance stages after a projected -> geographic reprojection still ask for a
+  // physical halo (e.g. triangulate()'s 20 source metres). The transform stage converts
+  // that halo to target degrees in set_chunk(), so the reader-side buffer should remain
+  // in the projected source units here. In the inverse direction, and for projected CRSs
+  // with different local units/scales, convert the target-side halo back to source units
+  // so the reader does not request an enormous geographic buffer or under-read a projected
+  // one. set_chunk() applies the opposite conversion before downstream stages consume it.
+  if (source_crs.is_geographic() && target_crs.is_geographic())
+    return downstream_buffer;
+
+  if (target_crs.is_geographic() && !source_crs.is_geographic())
+    return downstream_buffer;
+
+  return downstream_buffer * target_to_source_buffer_scale;
 }
 
 bool LASRtransformcrs::set_chunk(Chunk& chunk)
@@ -136,18 +169,17 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
 
     if (reproject_bbox(source_crs, target_crs, x0, y0, x1, y1))
     {
-      // The tile buffer is a distance expressed in the source CRS units. Scale it to the
-      // target CRS by the local linear factor of the transform (ratio of the reprojected
-      // diagonal to the source diagonal) so downstream buffer-consuming stages (rasterize,
-      // focal, triangulate, ...) don't combine a source-unit buffer with a target-unit
-      // resolution (e.g. a 50 m buffer interpreted as 50 degrees, or vice versa).
+      // The reader consumes the chunk buffer in source coordinates. Downstream stages
+      // consume it after the coordinates have been transformed, so convert the source-side
+      // halo to target units before passing the chunk along.
       const double src_diag = std::hypot(sxmax - sxmin, symax - symin);
       const double tgt_diag = std::hypot(x1 - x0, y1 - y0);
-      if (src_diag > 0 && tgt_diag > 0)
+      if (src_diag > 0 && tgt_diag > 0 &&
+          !(source_crs.is_geographic() && target_crs.is_geographic()))
       {
         chunk.buffer *= tgt_diag / src_diag;
-        buffer = chunk.buffer;
       }
+      buffer = chunk.buffer;
 
       this->xmin = x0;
       this->ymin = y0;
@@ -277,7 +309,11 @@ bool LASRtransformcrs::process(PointCloud*& las)
     unsigned char* ptr = base + a.offset;
     if (is_int)
     {
-      long raw = std::lround((value - off) / new_s);
+      const double scaled = (value - off) / new_s;
+      const double max_i = static_cast<double>(std::numeric_limits<int>::max()) + 0.5;
+      const double min_i = static_cast<double>(std::numeric_limits<int>::min()) - 0.5;
+      if (!std::isfinite(scaled) || scaled > max_i || scaled < min_i) return false;
+      long long raw = std::llround(scaled);
       if (raw > std::numeric_limits<int>::max() || raw < std::numeric_limits<int>::min()) return false;
       *reinterpret_cast<int*>(ptr) = static_cast<int>(raw);
     }
@@ -359,7 +395,6 @@ bool LASRtransformcrs::process(PointCloud*& las)
   const size_t n_dropped = n_outside + n_range;
   if (n_dropped > 0) las->delete_deleted();
 
-  las->seek(0);
   las->update_header();
 
   if (las->npoints == 0)

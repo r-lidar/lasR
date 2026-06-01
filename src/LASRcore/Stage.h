@@ -94,6 +94,7 @@ public:
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
   virtual void get_extent(double& xmin, double& ymin, double& xmax, double& ymax) { return; };
+  virtual double translate_buffer_to_input(double downstream_buffer) const { return downstream_buffer; };
 
   virtual bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uid) { return true; };
 
