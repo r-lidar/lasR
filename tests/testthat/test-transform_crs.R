@@ -198,6 +198,28 @@ test_that("transform_crs writes reprojected PCD float coordinates correctly to L
   expect_lt(abs(unname(onlas["ymax"]) - unname(inmem["ymax"])), 1e-6)
 })
 
+test_that("transform_crs keeps projected precision for projected PCD writes to LAS",
+{
+  # Projected -> projected from a float source. The PCD schema scale is a placeholder (1.0), so
+  # transform_crs must pick a fine projected scale (1 cm) for the LAS quantization rather than
+  # reuse it. Otherwise the LAS output is quantized to whole units (~0.3 m error here). (For an
+  # INT32/LAS source the real schema scale is reused, exercised by the other tests above.)
+  f <- system.file("extdata", "pcd_ascii.pcd", package = "lasR")
+  inmem <- read_range_xyz(f, set_crs(3857) + transform_crs(32619))
+
+  o <- tempfile(fileext = ".las")
+  on.exit(unlink(o), add = TRUE)
+  exec(reader_las() + set_crs(3857) + transform_crs(32619) + write_las(o), on = f, noread = TRUE)
+  onlas <- read_range_xyz(o)
+
+  expect_equal(unname(onlas["n"]), unname(inmem["n"]))
+  # Round-trip preserves the reprojected coordinates to centimetre level, not whole units.
+  expect_lt(abs(unname(onlas["xmin"]) - unname(inmem["xmin"])), 0.02)
+  expect_lt(abs(unname(onlas["xmax"]) - unname(inmem["xmax"])), 0.02)
+  expect_lt(abs(unname(onlas["ymin"]) - unname(inmem["ymin"])), 0.02)
+  expect_lt(abs(unname(onlas["ymax"]) - unname(inmem["ymax"])), 0.02)
+})
+
 test_that("transform_crs scales the tile buffer to the target CRS units",
 {
   # triangulate() requires a 20 (source-metre) buffer. After reprojecting metres -> degrees

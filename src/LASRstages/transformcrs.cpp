@@ -207,21 +207,32 @@ bool LASRtransformcrs::process(PointCloud*& las)
   // Pick X/Y scale factors suited to the target CRS. Reusing a projected scale (e.g. 0.01 m)
   // for a geographic target would give ~1 km resolution, while reusing a geographic scale
   // (e.g. 1e-7 deg) for a projected target would overflow the 32-bit stored integers. These
-  // apply to INT32 storage directly and, for float/double storage, are still used by
-  // write_las() when it quantizes the coordinates to LAS int32.
-  double new_sx = attr_x.scale_factor;
-  double new_sy = attr_y.scale_factor;
+  // apply to INT32 storage directly and, for float/double storage, are used by write_las()
+  // when it quantizes the coordinates to LAS int32.
+  //
+  // For an INT32 source the schema scale is the real LAS quantization step, so it is reused for
+  // a projected target. For a float/double source (e.g. PCD) the schema scale is a placeholder
+  // (typically 1.0) that is meaningless as a quantization step, so a target-appropriate scale is
+  // always chosen -- otherwise a projected->projected transform would write LAS at whole-unit
+  // resolution.
+  double new_sx;
+  double new_sy;
   if (target_crs.is_geographic())
   {
-    new_sx = 1e-7; // ~1.1 cm at the equator
-    new_sy = 1e-7;
+    new_sx = new_sy = 1e-7; // ~1.1 cm at the equator
   }
-  else if (source_crs.is_geographic())
+  else if (x_int && y_int && !source_crs.is_geographic())
   {
-    new_sx = 0.01; // 1 cm for a projected target coming from degrees
-    new_sy = 0.01;
+    // Projected -> projected with real (INT32) scales: keep them.
+    new_sx = attr_x.scale_factor;
+    new_sy = attr_y.scale_factor;
   }
-  // else (projected -> projected): keep the existing scale factors.
+  else
+  {
+    // Projected target from a geographic source, or float/double storage whose schema scale is
+    // a placeholder: 1 cm is a sensible default resolution for a projected CRS.
+    new_sx = new_sy = 0.01;
+  }
 
   // Choose X/Y offsets near the reprojected data so the stored/written integers stay small.
   // Needed for INT32 storage and ALSO for float/double storage: write_las() quantizes to LAS
