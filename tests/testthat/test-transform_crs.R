@@ -132,3 +132,84 @@ test_that("transform_crs reprojects the coverage extent for downstream rasteriza
   # The raster is correctly placed, so it actually contains the points
   expect_gt(sum(terra::values(r), na.rm = TRUE), 0)
 })
+
+read_range_xyz = function(f, pipeline = NULL)
+{
+  cb = callback(function(d) c(xmin = min(d$X), xmax = max(d$X),
+                              ymin = min(d$Y), ymax = max(d$Y),
+                              zmin = min(d$Z), zmax = max(d$Z),
+                              n = length(d$X),
+                              nfinite = sum(is.finite(d$X) & is.finite(d$Y) & is.finite(d$Z))),
+                expose = "xyz")
+  if (is.null(pipeline)) exec(cb, on = f, noread = TRUE)
+  else exec(pipeline + cb, on = f, noread = TRUE)
+}
+
+test_that("transform_crs reprojects PCD float coordinates without corrupting them",
+{
+  # PCD stores X/Y/Z as raw float/double (not scaled int32) and carries no CRS. Writing
+  # reprojected coordinates with the int32 setter used to reinterpret the float bytes and
+  # produce NaN. Assign a geographic CRS then reproject to Web Mercator.
+  f <- system.file("extdata", "pcd_ascii.pcd", package = "lasR")
+
+  src <- read_range_xyz(f)
+  out <- read_range_xyz(f, set_crs(4326) + transform_crs(3857))
+
+  # No corruption (the bug produced NaN) and no points spuriously dropped.
+  expect_equal(unname(out["nfinite"]), unname(out["n"]))
+  expect_equal(unname(out["n"]), unname(src["n"]))
+  expect_true(all(is.finite(out)))
+
+  # Coordinates were really reprojected from degrees to metres (magnitudes blow up).
+  expect_gt(abs(unname(out["xmin"])), 1e6)
+  expect_gt(abs(unname(out["ymin"])), 1e5)
+
+  # Z (elevation) is preserved unchanged.
+  expect_equal(unname(out["zmin"]), unname(src["zmin"]), tolerance = 1e-4)
+  expect_equal(unname(out["zmax"]), unname(src["zmax"]), tolerance = 1e-4)
+})
+
+test_that("transform_crs scales the tile buffer to the target CRS units",
+{
+  # triangulate() requires a 20 (source-metre) buffer. After reprojecting metres -> degrees
+  # that buffer must be expressed in degrees (~1.8e-4) for the downstream rasterize halo; if
+  # it stayed at 20 it would be read as 20 degrees and the master raster would balloon by
+  # ceil(20 / 1e-4) ~ 1e5 pixels per side (out of memory). The fix keeps the raster small.
+  skip_if_not_installed("terra")
+
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  tif <- tempfile(fileext = ".tif")
+
+  exec(reader_las() + transform_crs(4326) + triangulate() + rasterize(0.0002, "max", ofile = tif), on = f)
+
+  r <- terra::rast(tif)
+  # ~0.004 deg coverage at 0.0002 deg => ~20 px plus a small (correctly scaled) halo.
+  expect_lt(terra::ncol(r), 1000)
+  expect_lt(terra::nrow(r), 1000)
+  expect_gt(terra::ncell(r), 0)
+})
+
+test_that("transform_crs then COPC write sizes the octree in the target CRS",
+{
+  # A merged COPC write sizes its octree from the catalog (input) bbox, which is in the
+  # source CRS. After transform_crs the points are in the target CRS, so that bbox must be
+  # reprojected; otherwise every reprojected point falls outside the octree extent and the
+  # output is structurally broken (clamped / empty).
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  o <- tempfile(fileext = ".copc.laz")
+  on.exit(unlink(o), add = TRUE)
+
+  src_n <- exec(reader_las() + summarise(), on = f)$npoints
+  expect_error(exec(reader_las() + transform_crs(4326) + write_las(o, experimental_writer = TRUE), on = f), NA)
+
+  # Re-read the COPC: all points survive (a mis-sized octree would clamp/drop them) and
+  # the coordinates are the reprojected lon/lat, not the source metres.
+  expect_equal(read_epsg(o), 4326L)
+  expect_equal(exec(reader_las() + summarise(), on = o)$npoints, src_n)
+
+  r <- read_range_xyz(o)
+  expect_gt(unname(r["xmin"]), -70.93)
+  expect_lt(unname(r["xmax"]), -70.90)
+  expect_gt(unname(r["ymin"]), 47.60)
+  expect_lt(unname(r["ymax"]), 47.62)
+})

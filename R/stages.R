@@ -1134,10 +1134,14 @@ set_crs = function(x)
 #'
 #' Reproject (transform) the point cloud from its current CRS to a target CRS. Unlike
 #' \link{set_crs}, which only **assigns** a CRS without modifying the coordinates, this stage
-#' **reprojects** every point using PROJ/GDAL. The X, Y and Z coordinates are recomputed, the
-#' scale factors and offsets are adapted to the target CRS (e.g. switching between metres and
-#' degrees), the bounding box is updated and the target CRS is assigned to the data and to all
-#' subsequent stages of the pipeline.
+#' **reprojects** every point using PROJ/GDAL. The horizontal X and Y coordinates are
+#' reprojected, the scale factors and offsets are adapted to the target CRS (e.g. switching
+#' between metres and degrees), the bounding box is updated and the target CRS is assigned to
+#' the data and to all subsequent stages of the pipeline.
+#'
+#' Only the horizontal coordinates are reprojected: **Z (elevation) is preserved unchanged**,
+#' matching the behaviour of `gdaltransform`, `sf` and `terra` for 2D targets. Vertical datum
+#' transformations (compound/vertical CRS) are out of scope.
 #'
 #' The source CRS is the CRS carried by the files being read or the one assigned with
 #' \link{set_crs} earlier in the pipeline. The stage therefore typically appears after the
