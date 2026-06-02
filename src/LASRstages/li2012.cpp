@@ -135,6 +135,29 @@ bool LASRli2012::process(PointCloud*& las)
     }
   }
 
+  // --- Working set U: filter-passing indices, sorted by Z descending.
+  //     std::sort (NOT stable_sort) to match lidR's tie behaviour. ---
+  std::vector<int> order;
+  order.reserve(las->npoints);
+  std::vector<double> Z_cache(las->npoints,
+      std::numeric_limits<double>::quiet_NaN());
+  {
+    Point sort_pp;
+    sort_pp.set_schema(&las->header->schema);
+    for (size_t i = 0; i < las->npoints; ++i)
+    {
+      if (!las->get_point(i, &sort_pp, &pointfilter)) continue;
+      Z_cache[i] = sort_pp.get_z();
+      order.push_back((int)i);
+    }
+  }
+  std::sort(order.begin(), order.end(),
+            [&Z_cache](int a, int b) { return Z_cache[a] > Z_cache[b]; });
+
+  // inU[k] flags whether order[k] is still in the working set. We never delete
+  // from order; flipping inU is the equivalent of lidR's U.swap(temp).
+  std::vector<char> inU(order.size(), 1);
+
   return true;
 }
 
