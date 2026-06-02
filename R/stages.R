@@ -1104,6 +1104,80 @@ remove_attributes = function(names) { .APISTAGES$remove_attributes(names) }
 #' @rdname add_rgb
 remove_rgb = function() { .APISTAGES$remove_rgb() }
 
+# ==== Li ====
+
+#' Individual tree segmentation (Li et al. 2012)
+#'
+#' Point-cloud individual tree segmentation based on Li et al. (2012).
+#' A top-down region-growing method that operates directly on the
+#' point cloud (contrast with \link{region_growing}, which works on a
+#' CHM). It assigns a per-point integer tree ID to a user-declared
+#' INT32 extrabyte. Most useful at higher densities (>= ~8 first
+#' returns/m^2) to recover sub-canopy/understory trees that a
+#' CHM-based method cannot resolve. Known to be slow: ~O(n^2) worst
+#' case; `speed_up` is the lever.
+#'
+#' @param dt1 numeric. Threshold 1. See page 79 of Li et al. (2012).
+#'   Default 1.5.
+#' @param dt2 numeric. Threshold 2. See page 79 of Li et al. (2012).
+#'   Default 2.
+#' @param R numeric. Search radius (window size) for the internal
+#'   local-maximum test. See page 79 of Li et al. (2012). Default 2.
+#'   If `R = 0` the local-maximum step is skipped (all points are
+#'   treated as candidate apexes -- much faster).
+#' @param Zu numeric. If point elevation exceeds Zu, `dt2` is used;
+#'   otherwise `dt1`. Default 15.
+#' @param hmin numeric. Minimum height for a detected tree. Points
+#'   below this never become apexes. Default 2.
+#' @param speed_up numeric. Maximum crown radius. Any value at least
+#'   as large as the widest crown is correct; smaller values are
+#'   faster but may under-segment. Default 10.
+#' @param store_in_attribute character. Name of the INT32 extrabyte
+#'   to receive per-point tree IDs. Must be pre-declared with
+#'   `add_extrabytes("int", "treeID", "...")` and have scale = 1 and
+#'   offset = 0. Default `"treeID"`.
+#' @param filter character. Point filter (e.g. `"-keep_first"`).
+#'   Filtered points get NA treeIDs and do not participate in growth.
+#'
+#' @details
+#' **Cross-tile behaviour.** Trees that cross tile boundaries receive
+#' a single global ID via apex-keyed deduplication. The stage
+#' declares `need_buffer() = 2 * speed_up + R / 2` so the engine
+#' always provides enough halo regardless of `opt_chunk_buffer`.
+#' The *partition* into trees is deterministic; absolute tree IDs
+#' vary across concurrent-files runs (deterministic only modulo
+#' relabeling).
+#'
+#' **Pre-declaration requirement.** `store_in_attribute` must be of
+#' type `int` (INT32) with scale = 1 and offset = 0, otherwise the
+#' stage errors. Declare it with
+#' `add_extrabytes("int", "treeID", "Li 2012 tree ID")`.
+#'
+#' @references
+#' Li, W., Guo, Q., Jakubowski, M. K., & Kelly, M. (2012). A new
+#' method for segmenting individual trees from the lidar point cloud.
+#' *Photogrammetric Engineering & Remote Sensing*, 78(1), 75-84.
+#'
+#' @export
+#'
+#' @examples
+#' f <- system.file("extdata", "MixedConifer.las", package="lasR")
+#'
+#' del   <- triangulate(filter = keep_ground())
+#' norm  <- transform_with(del)
+#' addid <- add_extrabytes("int", "treeID", "Li 2012 tree ID")
+#' seg   <- li2012(hmin = 2, speed_up = 10)
+#' wlas  <- write_las(ofile = paste0(tempdir(), "/{*}.laz"))
+#' exec(reader_las() + del + norm + addid + seg + wlas, on = f)
+#' @md
+li2012 = function(dt1 = 1.5, dt2 = 2, R = 2, Zu = 15, hmin = 2,
+                  speed_up = 10, store_in_attribute = "treeID",
+                  filter = "")
+{
+  .APISTAGES$li2012(dt1, dt2, R, Zu, hmin, speed_up,
+                    store_in_attribute, filter)
+}
+
 # ==== S =====
 
 #' Set the CRS of the pipeline
