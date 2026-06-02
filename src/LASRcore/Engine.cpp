@@ -454,15 +454,20 @@ bool Engine::need_points() const
 
 double Engine::need_buffer()
 {
-  for (auto&& stage : pipeline)
+  double required = 0;
+
+  for (auto it = pipeline.rbegin(); it != pipeline.rend(); ++it)
   {
+    Stage* stage = it->get();
     if (!stage->is_streamable())
     {
-      buffer = MAX(buffer, stage->need_buffer());
+      required = MAX(required, stage->need_buffer());
     }
+
+    required = stage->translate_buffer_to_input(required);
   }
 
-  return buffer;
+  return MAX(buffer, required);
 }
 
 void Engine::sort()

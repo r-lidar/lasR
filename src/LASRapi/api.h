@@ -220,6 +220,8 @@ Pipeline remove_rgb();
 Pipeline keep_attributes(std::vector<std::string> names);
 Pipeline set_crs_epsg(int epsg);
 Pipeline set_crs_wkt(std::string wkt);
+Pipeline transform_crs_epsg(int epsg);
+Pipeline transform_crs_wkt(std::string wkt);
 Pipeline sampling_voxel(double res = 2, std::vector<std::string> filter = {""}, std::string method = "random", int shuffle_size = std::numeric_limits<int>::max());
 Pipeline sampling_pixel(double res = 2,  std::vector<std::string> filter = {""}, std::string method = "random", std::string use_attribute = "Z", int shuffle_size = std::numeric_limits<int>::max());
 Pipeline sampling_poisson(double distance = 2,  std::vector<std::string> filter = {""}, int shuffle_size = std::numeric_limits<int>::max());
