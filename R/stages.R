@@ -1141,12 +1141,18 @@ remove_rgb = function() { .APISTAGES$remove_rgb() }
 #'
 #' @details
 #' **Cross-tile behaviour.** Trees that cross tile boundaries receive
-#' a single global ID via apex-keyed deduplication. The stage
-#' declares `need_buffer() = 2 * speed_up + R / 2` so the engine
-#' always provides enough halo regardless of `opt_chunk_buffer`.
-#' The *partition* into trees is deterministic; absolute tree IDs
-#' vary across concurrent-files runs (deterministic only modulo
-#' relabeling).
+#' a single global ID via apex-keyed deduplication, so a tree is never
+#' split into different IDs across a seam. The stage declares
+#' `need_buffer() = 2 * speed_up + R / 2` so the engine always provides
+#' a halo regardless of `opt_chunk_buffer`. Under concurrent-files
+#' processing the segmentation closely matches, but is not bit-identical
+#' to, single-file processing: a small fraction of points near tile
+#' seams may be assigned to a different tree, because Li 2012 is a
+#' greedy global method whose near-seam decisions can depend on context
+#' beyond any fixed buffer (tiled segmentation in other implementations,
+#' including lidR's catalog `segment_trees`, carries the same caveat).
+#' The result is deterministic given the tiling, and absolute tree IDs
+#' are arbitrary (consistent only modulo relabeling).
 #'
 #' **Pre-declaration requirement.** `store_in_attribute` must be of
 #' type `int` (INT32) with scale = 1 and offset = 0, otherwise the
