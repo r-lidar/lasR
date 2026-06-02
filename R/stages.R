@@ -1167,7 +1167,9 @@ remove_rgb = function() { .APISTAGES$remove_rgb() }
 #' @export
 #'
 #' @examples
-#' f <- system.file("extdata", "MixedConifer.las", package="lasR")
+#' # Megaplot.las is a forest plot with ground points and no pre-existing
+#' # treeID attribute, so add_extrabytes("treeID") below does not collide.
+#' f <- system.file("extdata", "Megaplot.las", package="lasR")
 #'
 #' del   <- triangulate(filter = keep_ground())
 #' norm  <- transform_with(del)

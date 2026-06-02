@@ -76,7 +76,9 @@ stage errors. Declare it with
 \code{add_extrabytes("int", "treeID", "Li 2012 tree ID")}.
 }
 \examples{
-f <- system.file("extdata", "MixedConifer.las", package="lasR")
+# Megaplot.las is a forest plot with ground points and no pre-existing
+# treeID attribute, so add_extrabytes("treeID") below does not collide.
+f <- system.file("extdata", "Megaplot.las", package="lasR")
 
 del   <- triangulate(filter = keep_ground())
 norm  <- transform_with(del)
