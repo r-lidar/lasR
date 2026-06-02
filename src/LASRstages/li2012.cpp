@@ -92,6 +92,49 @@ bool LASRli2012::process(PointCloud*& las)
     return true;  // every point already TREEID_NA from the fill above
   }
 
+  // --- Local-maximum precompute. Matches lidR filter_local_maxima(R, 0, true):
+  //     half-window = R/2, circular window, on Z. R==0 => every point is a
+  //     candidate apex (short-circuit). ---
+  std::vector<char> is_lm(las->npoints, 0);
+
+  if (R == 0)
+  {
+    std::fill(is_lm.begin(), is_lm.end(), 1);
+  }
+  else
+  {
+    if (verbose) print("Building spatial index for local-max pass\n");
+    las->build_partition();
+
+    const double hws = R / 2.0;
+    Point lm_pp;
+    lm_pp.set_schema(&las->header->schema);
+
+    for (size_t i = 0; i < las->npoints; ++i)
+    {
+      if (!las->get_point(i, &lm_pp, &pointfilter)) continue;
+      double z_i = lm_pp.get_z();
+
+      Circle window(lm_pp.get_x(), lm_pp.get_y(), hws);
+      std::vector<Point> neighbours;
+      las->query(&window, neighbours, &pointfilter);
+
+      bool higher_found = false;
+      bool tied_with_existing_lm = false;
+      for (auto& nb : neighbours)
+      {
+        int j = las->get_index(&nb);
+        if (j == (int)i) continue;
+        double z_j = nb.get_z();
+        if (z_j > z_i) { higher_found = true; break; }
+        // lidR tie-break: if a tied neighbour is already tagged LM, current
+        // point loses (first-tagged wins).
+        if (z_j == z_i && is_lm[j]) { tied_with_existing_lm = true; break; }
+      }
+      if (!higher_found && !tied_with_existing_lm) is_lm[i] = 1;
+    }
+  }
+
   return true;
 }
 
