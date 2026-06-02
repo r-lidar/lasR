@@ -51,9 +51,7 @@ test_that("li2012 yields all-NA when hmin exceeds the highest point", {
   expect_true(all(is.na(d$segID)))
 })
 
-test_that("li2012 leaves all points NA when run as a no-op (pre-growth-loop)", {
-  # Until the growth loop (Task 7), the stage produces all-NA segID for valid
-  # input -- this asserts the initial-fill path is wired up. (Updated in Task 7.)
+test_that("li2012 produces non-NA tree IDs on MixedConifer", {
   f <- system.file("extdata", "MixedConifer.las", package = "lasR")
   addid <- add_extrabytes("int", "segID", "Li 2012 tree ID")
   seg <- li2012(store_in_attribute = "segID")
@@ -61,5 +59,8 @@ test_that("li2012 leaves all points NA when run as a no-op (pre-growth-loop)", {
   wlas <- write_las(ofile = out_path)
   exec(reader_las() + addid + seg + wlas, on = f)
   d <- read_points(out_path)
-  expect_true(all(is.na(d$segID)))
+  expect_gt(sum(!is.na(d$segID)), 0)
+  ids <- na.omit(d$segID)
+  expect_true(all(ids > 0))          # tree IDs are positive (register_apex pre-increments from 0)
+  expect_true(all(ids == as.integer(ids)))
 })
