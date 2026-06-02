@@ -1,5 +1,13 @@
 #include "li2012.h"
 #include "PointSchema.h"
+#include "print.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+
+// File-local NA sentinel. INT32_MIN == R's NA_INTEGER, so R callers see NA.
+static constexpr int32_t TREEID_NA = std::numeric_limits<int32_t>::min();
 
 LASRli2012::LASRli2012()
   : unicity_table(std::make_shared<
@@ -57,7 +65,33 @@ bool LASRli2012::process(PointCloud*& las)
     return false;
   }
 
-  // Algorithm proper lands in Tasks 4-10.
+  AttributeAccessor set_treeid(store_in_attribute);
+
+  // --- Initial fill: every point starts as TREEID_NA. ---
+  for (size_t i = 0; i < las->npoints; ++i)
+  {
+    las->seek(i);
+    set_treeid(&las->point, (double)TREEID_NA);
+  }
+
+  // --- hmin pre-check: max-Z over filter-passing points only. ---
+  double maxZ = -std::numeric_limits<double>::infinity();
+  {
+    Point pp;
+    pp.set_schema(&las->header->schema);
+    for (size_t i = 0; i < las->npoints; ++i)
+    {
+      if (!las->get_point(i, &pp, &pointfilter)) continue;
+      double z = pp.get_z();
+      if (z > maxZ) maxZ = z;
+    }
+  }
+  if (maxZ < hmin)
+  {
+    warning("'hmin' is higher than the highest point. No tree segmented.\n");
+    return true;  // every point already TREEID_NA from the fill above
+  }
+
   return true;
 }
 
