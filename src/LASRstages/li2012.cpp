@@ -1,4 +1,5 @@
 #include "li2012.h"
+#include "PointSchema.h"
 
 LASRli2012::LASRli2012()
   : unicity_table(std::make_shared<
@@ -33,7 +34,30 @@ bool LASRli2012::set_parameters(const nlohmann::json& stage)
 
 bool LASRli2012::process(PointCloud*& las)
 {
-  // Stub — implementation lands in Tasks 4-10.
+  if (!las) { last_error = "Uninitialized PointCloud"; return false; }
+  if (las->npoints == 0) return true;  // nothing to do
+
+  // Validate store_in_attribute exists with the right type and scale.
+  // Only INT32 with scale=1 and offset=0 round-trips integer tree IDs
+  // and the NA sentinel safely.
+  int idx = las->header->schema.get_attribute_index(store_in_attribute);
+  if (idx < 0)
+  {
+    last_error = store_in_attribute +
+      " is not present in the point cloud. "
+      "Use add_extrabytes() before li2012().";
+    return false;
+  }
+  const Attribute& attr = las->header->schema.attributes[idx];
+  if (attr.type != INT32 || attr.scale_factor != 1.0 ||
+      attr.value_offset != 0.0)
+  {
+    last_error = store_in_attribute +
+      " must be of type 'int' with scale=1 and offset=0.";
+    return false;
+  }
+
+  // Algorithm proper lands in Tasks 4-10.
   return true;
 }
 
