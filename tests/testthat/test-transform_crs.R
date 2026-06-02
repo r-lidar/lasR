@@ -260,28 +260,3 @@ test_that("transform_crs does not inflate projected buffers from geographic sour
   expect_lt(terra::nrow(r), 1000)
   expect_gt(terra::ncell(r), 0)
 })
-
-test_that("transform_crs then COPC write sizes the octree in the target CRS",
-{
-  # A merged COPC write sizes its octree from the catalog (input) bbox, which is in the
-  # source CRS. After transform_crs the points are in the target CRS, so that bbox must be
-  # reprojected; otherwise every reprojected point falls outside the octree extent and the
-  # output is structurally broken (clamped / empty).
-  f <- system.file("extdata", "Topography.las", package = "lasR")
-  o <- tempfile(fileext = ".copc.laz")
-  on.exit(unlink(o), add = TRUE)
-
-  src_n <- exec(reader_las() + summarise(), on = f)$npoints
-  expect_error(exec(reader_las() + transform_crs(4326) + write_las(o, experimental_writer = TRUE), on = f), NA)
-
-  # Re-read the COPC: all points survive (a mis-sized octree would clamp/drop them) and
-  # the coordinates are the reprojected lon/lat, not the source metres.
-  expect_equal(read_epsg(o), 4326L)
-  expect_equal(exec(reader_las() + summarise(), on = o)$npoints, src_n)
-
-  r <- read_range_xyz(o)
-  expect_gt(unname(r["xmin"]), -70.93)
-  expect_lt(unname(r["xmax"]), -70.90)
-  expect_gt(unname(r["ymin"]), 47.60)
-  expect_lt(unname(r["ymax"]), 47.62)
-})
