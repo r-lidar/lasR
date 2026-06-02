@@ -68,6 +68,7 @@ RCPP_MODULE(stages)
   function("info", &api::info, "Filter points with a grid layout");
   function("load_raster", &api::load_raster, "Load a raster from file");
   function("load_matrix", &api::load_matrix, "Load a 4x4 matrix");
+  function("li2012", &api::li2012, "Li 2012 point-cloud individual tree segmentation");
   function("local_maximum", &api::local_maximum, "Local maximum filter on a point cloud");
   function("local_maximum_raster", &api::local_maximum_raster, "Local maximum filter on a raster");
   function("neighborhood_metrics", &nonapi::neighborhood_metrics, "Local metrics");

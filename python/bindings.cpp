@@ -426,6 +426,18 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("xmin"), py::arg("ymin"), py::arg("xmax"), py::arg("ymax"),
           py::arg("filter") = std::vector<std::string>{""}, py::arg("select") = "*", py::arg("depth") = -1);
 
+    // Li 2012 point-cloud individual tree segmentation
+    m.def("li2012", &api::li2012,
+          "Li 2012 point-cloud individual tree segmentation",
+          py::arg("dt1") = 1.5,
+          py::arg("dt2") = 2.0,
+          py::arg("R") = 2.0,
+          py::arg("Zu") = 15.0,
+          py::arg("hmin") = 2.0,
+          py::arg("speed_up") = 10.0,
+          py::arg("store_in_attribute") = "treeID",
+          py::arg("filter") = std::vector<std::string>{""});
+
     // Local maxima
     m.def("local_maximum", &api::local_maximum,
           "Find local maxima in point cloud",

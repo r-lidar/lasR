@@ -213,6 +213,10 @@ Pipeline rasterize_triangulation(std::string connect_uid, double res, std::strin
 Pipeline reader_coverage(std::vector<std::string> filter = {""}, std::string select = "*", int depth = -1);
 Pipeline reader_circles(std::vector<double> xc, std::vector<double> yc, std::vector<double> r, std::vector<std::string> filter = {""}, std::string select = "*", int depth = -1);
 Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, std::vector<double> xmax, std::vector<double> ymax, std::vector<std::string> filter = {""}, std::string select = "*", int depth = -1);
+Pipeline li2012(double dt1, double dt2, double R, double Zu,
+                double hmin, double speed_up,
+                std::string store_in_attribute,
+                std::vector<std::string> filter);
 Pipeline region_growing(std::string connect_uid_raster, std::string connect_uid_seeds, double th_tree = 2, double th_seed = 0.45, double th_cr = 0.55, double max_cr = 20, std::string ofile = "");
 Pipeline remove_attribute(std::string name);
 Pipeline remove_attributes(std::vector<std::string> names);

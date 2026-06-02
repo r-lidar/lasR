@@ -354,6 +354,23 @@ Pipeline reader_rectangles(std::vector<double> xmin, std::vector<double> ymin, s
   return Pipeline(s);
 }
 
+Pipeline li2012(double dt1, double dt2, double R, double Zu,
+                double hmin, double speed_up,
+                std::string store_in_attribute,
+                std::vector<std::string> filter)
+{
+  Stage s("li2012");
+  s.set("dt1", dt1);
+  s.set("dt2", dt2);
+  s.set("R", R);
+  s.set("Zu", Zu);
+  s.set("hmin", hmin);
+  s.set("speed_up", speed_up);
+  s.set("store_in_attribute", store_in_attribute);
+  s.set("filter", filter);
+  return Pipeline(s);
+}
+
 Pipeline region_growing(std::string connect_uid_raster, std::string connect_uid_seeds, double th_tree, double th_seed, double th_cr, double max_cr, std::string ofile)
 {
   Stage s("region_growing");

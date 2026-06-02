@@ -1,5 +1,6 @@
 # lasR 0.21.1
 
+- New: `li2012()` individual tree segmentation, a native point-cloud port of the Li et al. (2012) algorithm (cf. `lidR::li2012()`). Writes per-point integer tree IDs to a pre-declared INT32 extra byte. Trees that straddle tile boundaries receive a single globally-unique ID via apex-keyed deduplication, so the stage is safe under concurrent-files processing.
 - Fix #323 streaming bounding box filter
 
 # lasR 0.21.0

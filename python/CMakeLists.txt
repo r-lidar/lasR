@@ -232,6 +232,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/ivf.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/loadmatrix.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/loadraster.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/li2012.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/localmaximum.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/nnmetrics.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/nothing.cpp
