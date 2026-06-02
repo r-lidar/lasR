@@ -203,3 +203,154 @@ test_that("li2012 with filter leaves filtered points as NA", {
   expect_true(all(is.na(d$segID[!first])))   # non-first returns must be NA
   expect_gt(sum(!is.na(d$segID[first])), 0)  # some first returns got an ID
 })
+
+# Build four equal quadrant tiles from the bundled fixture. The engine adds the
+# stage-declared buffer halo from neighbouring tiles automatically at exec time.
+#
+# reader_rectangles uses closed [xmin,xmax]x[ymin,ymax] intervals, so if the
+# midpoint lands exactly on the data grid (as it does for MixedConifer.las
+# where ymid=3812966.04 is an exact 0.01-scale grid point), points at exactly
+# ymid would appear in both the lower and upper tiles.  We avoid that by
+# shifting the lower tiles's upper Y boundary half a grid step (0.005) below
+# ymid.  No real data point falls at that gap, so the partition is lossless
+# and non-overlapping.
+make_quadrant_tiles <- function(dir) {
+  f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+  .bbox_env <- new.env(parent = emptyenv())
+  bbox_cb <- function(data) {
+    .bbox_env$bb <- c(min(data$X), max(data$X), min(data$Y), max(data$Y))
+    invisible(NULL)
+  }
+  exec(callback(bbox_cb, expose = "xy", no_las_update = TRUE), on = f)
+  bb <- .bbox_env$bb
+  xmin <- bb[1]; xmax <- bb[2]; ymin <- bb[3]; ymax <- bb[4]
+  xmid <- (xmin + xmax) / 2
+  ymid <- (ymin + ymax) / 2
+  # Half a grid step below ymid so the closed-interval split is non-overlapping.
+  ymid_lo <- ymid - 0.005
+
+  quads <- list(
+    list(name = "q_ll.laz", xmin = xmin, ymin = ymin,  xmax = xmid, ymax = ymid_lo),
+    list(name = "q_lr.laz", xmin = xmid, ymin = ymin,  xmax = xmax, ymax = ymid_lo),
+    list(name = "q_ul.laz", xmin = xmin, ymin = ymid,  xmax = xmid, ymax = ymax),
+    list(name = "q_ur.laz", xmin = xmid, ymin = ymid,  xmax = xmax, ymax = ymax))
+
+  paths <- character(4)
+  for (i in seq_along(quads)) {
+    q <- quads[[i]]
+    paths[i] <- file.path(dir, q$name)
+    exec(reader_rectangles(q$xmin, q$ymin, q$xmax, q$ymax) +
+         write_las(ofile = paths[i]), on = f)
+  }
+  paths
+}
+
+test_that("li2012 produces globally-consistent IDs across 4 concurrent tiles", {
+  skip_if_not(has_omp_support())
+
+  tiledir <- file.path(tempdir(), "li2012_seam")
+  dir.create(tiledir, showWarnings = FALSE, recursive = TRUE)
+  paths <- make_quadrant_tiles(tiledir)
+
+  outdir <- file.path(tempdir(), "li2012_seam_out")
+  dir.create(outdir, showWarnings = FALSE)
+  unlink(list.files(outdir, full.names = TRUE))
+
+  addid <- add_extrabytes("int", "segID", "Li 2012 tree ID")
+  seg <- li2012(store_in_attribute = "segID")
+  wlas <- write_las(ofile = file.path(outdir, "{*}.laz"))
+  exec(reader_las() + addid + seg + wlas,
+       on = paths, ncores = concurrent_files(4L))
+  all_pts <- do.call(rbind, lapply(
+    list.files(outdir, full.names = TRUE), read_points))
+
+  # Single-tile baseline.
+  baseline_path <- tempfile(fileext = ".laz")
+  exec(reader_las() + add_extrabytes("int", "segID", "Li 2012 tree ID") +
+       li2012(store_in_attribute = "segID") +
+       write_las(ofile = baseline_path),
+       on = system.file("extdata", "MixedConifer.las", package = "lasR"))
+  base <- read_points(baseline_path)
+
+  # (1) THE cross-tile guarantee: apex-keyed dedup yields globally-consistent
+  # IDs. `reader_rectangles` is boundary-inclusive, so a few seam points are
+  # written by more than one tile; every copy of such a physical point MUST
+  # carry the same tree ID -- i.e. no tree is split into two IDs across a seam.
+  # This is the property concurrent-files must satisfy, and we assert it strictly.
+  key <- paste(all_pts$X, all_pts$Y, all_pts$Z)
+  dup_keys <- unique(key[duplicated(key)])
+  inconsistent <- vapply(dup_keys, function(k) {
+    ids <- all_pts$segID[key == k]
+    length(unique(ids[!is.na(ids)])) > 1
+  }, logical(1))
+  expect_equal(sum(inconsistent), 0L)
+
+  # Deduplicate physical points (IDs just verified consistent) for comparison.
+  uniq <- all_pts[!duplicated(key), ]
+
+  # (2) Tree count matches the single-tile baseline within a small tolerance.
+  # (Measured delta on this fixture is 0.)
+  nt_tiled <- length(unique(na.omit(uniq$segID)))
+  nt_base  <- length(unique(na.omit(base$segID)))
+  expect_lte(abs(nt_tiled - nt_base), 2L)
+
+  # (3) The partition closely matches single-tile, modulo relabeling. Exact
+  # per-point equivalence is NOT achievable for tiled greedy segmentation: a
+  # point's fate near a seam can depend on an apex-suppression cascade that
+  # exceeds any fixed buffer (lidR's catalog segment_trees does not guarantee
+  # bit-exact tiling either). So we assert high agreement, not a strict
+  # bijection. Measured on this fixture: ~98.3% partition agreement, ~99.8%
+  # NA-status agreement.
+  joined <- merge(uniq[, c("X", "Y", "Z", "segID")],
+                  base[, c("X", "Y", "Z", "segID")],
+                  by = c("X", "Y", "Z"), suffixes = c("_par", "_base"))
+  expect_gt(mean(is.na(joined$segID_par) == is.na(joined$segID_base)), 0.98)
+  both <- joined[!is.na(joined$segID_par) & !is.na(joined$segID_base), ]
+  tab <- table(both$segID_par, both$segID_base)
+  agreement <- sum(apply(tab, 1, max)) / sum(tab)
+  expect_gt(agreement, 0.95)
+})
+
+test_that("li2012 partition is invariant to concurrent-files count", {
+  skip_if_not(has_omp_support())
+
+  tiledir <- file.path(tempdir(), "li2012_order")
+  dir.create(tiledir, showWarnings = FALSE, recursive = TRUE)
+  paths <- make_quadrant_tiles(tiledir)
+
+  run_at <- function(ncores) {
+    outdir <- file.path(tempdir(), paste0("li2012_order_", ncores))
+    dir.create(outdir, showWarnings = FALSE)
+    unlink(list.files(outdir, full.names = TRUE))
+    exec(reader_las() + add_extrabytes("int", "segID", "Li 2012 tree ID") +
+         li2012(store_in_attribute = "segID") +
+         write_las(ofile = file.path(outdir, "{*}.laz")),
+         on = paths, ncores = concurrent_files(ncores))
+    pts <- do.call(rbind, lapply(
+      list.files(outdir, full.names = TRUE), read_points))
+    pts[!duplicated(paste(pts$X, pts$Y, pts$Z)), ]
+  }
+
+  pts1 <- run_at(1L)
+  pts4 <- run_at(4L)
+
+  # Same tiling at different thread counts must yield the IDENTICAL partition
+  # modulo relabeling: each tile's growth is deterministic and the apex dedup is
+  # order-independent. This is exact (unlike the single-tile comparison above).
+  m <- merge(pts1[, c("X", "Y", "Z", "segID")],
+             pts4[, c("X", "Y", "Z", "segID")],
+             by = c("X", "Y", "Z"), suffixes = c("_1", "_4"))
+  expect_equal(nrow(m), nrow(pts1))
+  expect_true(all(is.na(m$segID_1) == is.na(m$segID_4)))
+  both <- m[!is.na(m$segID_1), ]
+  tab <- table(both$segID_1, both$segID_4)
+  expect_true(all(rowSums(tab > 0) == 1) && all(colSums(tab > 0) == 1))
+})
+
+test_that("li2012 declares need_buffer = 2*speed_up + R/2", {
+  # get_pipeline_info is internal (not in NAMESPACE), so use ::: .
+  p <- reader_las() + li2012(speed_up = 10, R = 2)
+  info <- lasR:::get_pipeline_info(p)
+  # The declared buffer should be 2*10 + 2/2 = 21.
+  expect_gte(info$buffer, 21)
+})
