@@ -30,6 +30,7 @@ Imports:
 Suggests:
     httpuv,
     knitr,
+    lidR,
     rmarkdown,
     sf,
     terra,
