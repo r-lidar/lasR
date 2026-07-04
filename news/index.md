@@ -2,16 +2,21 @@
 
 ## lasR 0.21.1
 
-- Fix [\#323](https://github.com/r-lidar/lasR/issues/323) streaming
-  bounding box filter
-- Fix [\#317](https://github.com/r-lidar/lasR/issues/317) ptd by passes
-  if 0 points instead of error.
-- Fix:
+- Fix: [\#323](https://github.com/r-lidar/lasR/issues/323): streaming
+  bounding box filter.
+- Fix: [\#317](https://github.com/r-lidar/lasR/issues/317): `ptd` now
+  bypasses processing when there are 0 points instead of throwing an
+  error.
+- Fix: [\#321](https://github.com/r-lidar/lasR/issues/321)
   [`classify_with_csf()`](https://r-lidar.github.io/lasR/reference/classify_with_csf.md)
   no longer reads one element past the end of the ground-index vector
-  once all ground points have been matched, which caused an
-  out-of-bounds heap read on nearly every call
-  ([\#321](https://github.com/r-lidar/lasR/issues/321))
+  once all ground points have been matched, preventing an out-of-bounds
+  heap read on nearly every call.
+- Fix: [\#335](https://github.com/r-lidar/lasR/issues/335):
+  [`rasterize()`](https://r-lidar.github.io/lasR/reference/rasterize.md)
+  with streamable metrics and a computation resolution different from
+  the raster resolution (buffered rasterization) was not applying
+  buffering.
 
 ## lasR 0.21.0
 
