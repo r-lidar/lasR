@@ -1,8 +1,9 @@
 # lasR 0.21.1
 
-- Fix #323 streaming bounding box filter
-- Fix #317 ptd by passes if 0 points instead of error.
-- Fix: `classify_with_csf()` no longer reads one element past the end of the ground-index vector once all ground points have been matched, which caused an out-of-bounds heap read on nearly every call (#321)
+- Fix: #323: streaming bounding box filter.
+- Fix: #317: `ptd` now bypasses processing when there are 0 points instead of throwing an error.
+- Fix: #321 `classify_with_csf()` no longer reads one element past the end of the ground-index vector once all ground points have been matched, preventing an out-of-bounds heap read on nearly every call.
+- Fix: #335: `rasterize()` with streamable metrics and a computation resolution different from the raster resolution (buffered rasterization) was not applying buffering.
 
 # lasR 0.21.0
 

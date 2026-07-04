@@ -73,3 +73,16 @@ test_that("Rasterize works with a moving window and multiple files",
   expect_equal(sum(is.na(u[[1]][])), 5L)
   expect_equal(sum(is.na(u[[2]][])), 2L)
 })
+
+test_that("Rasterize works with a moving window and multiple files but is never streamable",
+{
+  density = rasterize(res = c(1, 5), operators = "count")
+  u = lasR:::get_pipeline_info(density)
+  expect_equal(u$streamable, FALSE)
+  expect_equal(u$buffer, 2)
+
+  density = rasterize(res = c(1, 1), operators = "count")
+  u = lasR:::get_pipeline_info(density)
+  expect_equal(u$streamable, TRUE)
+  expect_equal(u$buffer, 0)
+})
