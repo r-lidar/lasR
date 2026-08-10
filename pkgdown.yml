@@ -1,5 +1,5 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   baba: baba.html
@@ -9,7 +9,7 @@ articles:
   remote: remote.html
   tutorial: tutorial.html
   why: why.html
-last_built: 2026-07-04T05:44Z
+last_built: 2026-08-10T08:01Z
 urls:
   reference: https://r-lidar.github.io/lasR/reference
   article: https://r-lidar.github.io/lasR/articles

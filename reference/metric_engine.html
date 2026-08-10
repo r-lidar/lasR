@@ -114,7 +114,8 @@ rather than an error.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">metrics</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"z_max"</span>, <span class="st">"i_min"</span>, <span class="st">"r_mean"</span>, <span class="st">"n_median"</span>, <span class="st">"z_sd"</span>, <span class="st">"c_sd"</span>, <span class="st">"t_cv"</span>, <span class="st">"u_sum"</span>, <span class="st">"z_p95"</span>, <span class="st">"|a|_mean"</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">metrics</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"z_max"</span>, <span class="st">"i_min"</span>, <span class="st">"r_mean"</span>, <span class="st">"n_median"</span>, <span class="st">"z_sd"</span>,</span></span>
+<span class="r-in"><span>            <span class="st">"c_sd"</span>,  <span class="st">"t_cv"</span>,  <span class="st">"u_sum"</span>,  <span class="st">"z_p95"</span>,    <span class="st">"|a|_mean"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"Example.las"</span>, package<span class="op">=</span><span class="st">"lasR"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="summarise.html">summarise</a></span><span class="op">(</span>metrics <span class="op">=</span> <span class="va">metrics</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="rasterize.html">rasterize</a></span><span class="op">(</span><span class="fl">5</span>, operators <span class="op">=</span> <span class="va">metrics</span><span class="op">)</span></span></span>
@@ -130,7 +131,7 @@ rather than an error.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> resolution  : 5, 5  (x, y)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> extent      : 339000, 339020, 5248000, 5248005  (xmin, xmax, ymin, ymax)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> coord. ref. : NAD83 / UTM zone 17N (EPSG:26917)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file22b019fdbdfe.tif</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> source      : file230f409b985f.tif</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> names       : z_max, i_min, r_mean, n_median, z_sd, c_sd, ...</span>
 </code></pre></div>
     </div>
@@ -143,7 +144,7 @@ rather than an error.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

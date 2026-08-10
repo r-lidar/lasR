@@ -89,14 +89,14 @@ f <- system.file("extdata", "Topography.las", package="lasR")
 gnd = keep_class(c(2,9))
 reader(gnd)
 #> -----------
-#> reader (uid:4a49d5727b8b)
+#> reader (uid:fb3f18936cd5)
 #>   filter : [Classification %in% 2 9] 
 #>   output :  
 #> -----------
 #> 
 triangulate(filter = keep_ground())
 #> -----------
-#> triangulate (uid:5140b6d9a5c2)
+#> triangulate (uid:566f7c4f4cfd)
 #>   use_attribute : Z 
 #>   max_edge : 0.00 
 #>   filter : [Classification == 2] 
@@ -105,12 +105,12 @@ triangulate(filter = keep_ground())
 #> 
 rasterize(1, "max", filter = "Z > 5")
 #> -----------
-#> rasterize (uid:8c356f163745)
+#> rasterize (uid:cbfab7d4219a)
 #>   method : [max] 
 #>   window : 1.00 
 #>   res : 1.00 
 #>   filter : [Z > 5] 
-#>   output : /tmp/RtmpqAbBsh/file22b058d0cf50.tif 
+#>   output : /tmp/RtmpVtwaxc/file230f1a2cc87e.tif 
 #> -----------
 #> 
 ```

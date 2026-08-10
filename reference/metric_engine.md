@@ -61,7 +61,8 @@ Because extra attribute are never failing, `ntensity_mean` will return
 ## Examples
 
 ``` r
-metrics = c("z_max", "i_min", "r_mean", "n_median", "z_sd", "c_sd", "t_cv", "u_sum", "z_p95", "|a|_mean")
+metrics = c("z_max", "i_min", "r_mean", "n_median", "z_sd",
+            "c_sd",  "t_cv",  "u_sum",  "z_p95",    "|a|_mean")
 f <- system.file("extdata", "Example.las", package="lasR")
 p <- summarise(metrics = metrics)
 r <- rasterize(5, operators = metrics)
@@ -77,6 +78,6 @@ ans$rasterize
 #> resolution  : 5, 5  (x, y)
 #> extent      : 339000, 339020, 5248000, 5248005  (xmin, xmax, ymin, ymax)
 #> coord. ref. : NAD83 / UTM zone 17N (EPSG:26917)
-#> source      : file22b019fdbdfe.tif
+#> source      : file230f409b985f.tif
 #> names       : z_max, i_min, r_mean, n_median, z_sd, c_sd, ...
 ```
