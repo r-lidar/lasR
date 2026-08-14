@@ -92,6 +92,36 @@ test_that("callback can return any object",
   ans = exec(read+call, on = f)
 
   expect_equal(ans, 975.9, tolerance = 0.01)
+
+
+  meanzi = function(data){ return(list(mean(data$Z), mean(data$Intensity))) }
+  read = reader_las()
+  call = callback(meanzi, expose = "xyzi")
+  ans = exec(read+call, on = f)
+
+  expect_equal(ans, list(975.9, 78.6), tolerance = 0.01)
+})
+
+test_that("callback can return any object with multiple files #338",
+{
+  f = paste0(system.file(package="lasR"), "/extdata/bcts/")
+  f = list.files(f, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+  f = f[1:2]
+
+  meanz = function(data){ return(mean(data$Z)) }
+  read = reader_las()
+  call = callback(meanz, expose = "xyz")
+  ans = exec(read+call, on = f)
+
+  expect_equal(ans, list(332.58, 335.15), tolerance = 0.01)
+
+
+  meanzi = function(data){ return(list(mean(data$Z), mean(data$Intensity))) }
+  read = reader_las()
+  call = callback(meanzi, expose = "xyzi")
+  ans = exec(read+call, on = f)
+
+  expect_equal(ans, list(list(332.58, 38.23), list(335.15, 30.17)), tolerance = 0.01)
 })
 
 test_that("callback works if all the points are not exposed",
