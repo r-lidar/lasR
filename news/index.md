@@ -1,5 +1,10 @@
 # Changelog
 
+## lasR 0.21.2
+
+- Fix: [\#338](https://github.com/r-lidar/lasR/issues/338) callback
+  returning R object with multiple files
+
 ## lasR 0.21.1
 
 - Fix: [\#323](https://github.com/r-lidar/lasR/issues/323): streaming

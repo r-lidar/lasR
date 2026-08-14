@@ -46,6 +46,6 @@ exec(pipeline, on = f)
 #> [4,] 0.0000000  0.0000000    0    1
 #> 
 #> $write_las
-#> [1] "/tmp/RtmpVtwaxc/file230f7daa6e98.las"
+#> [1] "/tmp/RtmpzfAIAV/file221d58b3d7a7.las"
 #> 
 ```
