@@ -116,23 +116,23 @@ ans[[1]]
 #> resolution  : 1, 1  (x, y)
 #> extent      : 273357, 273643, 5274357, 5274643  (xmin, xmax, ymin, ymax)
 #> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949)
-#> source      : file221d33b02b23.tif
-#> name        : file221d33b02b23
+#> source      : file2287647cb327.tif
+#> name        : file2287647cb327
 ans[[2]]
 #> class       : SpatRaster
 #> size        : 30, 30, 1  (nrow, ncol, nlyr)
 #> resolution  : 10, 10  (x, y)
 #> extent      : 273350, 273650, 5274350, 5274650  (xmin, xmax, ymin, ymax)
 #> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949)
-#> source      : file221d3b3fa33b.tif
-#> name        : file221d3b3fa33b
+#> source      : file22872550b7ca.tif
+#> name        : file22872550b7ca
 ans[[3]]
 #> class       : SpatRaster
 #> size        : 144, 144, 1  (nrow, ncol, nlyr)
 #> resolution  : 2, 2  (x, y)
 #> extent      : 273356, 273644, 5274356, 5274644  (xmin, xmax, ymin, ymax)
 #> coord. ref. : NAD83(CSRS) / MTM zone 7 (EPSG:2949)
-#> source      : file221d656eb864.tif
+#> source      : file2287188ec032.tif
 #> name        : max
 
 # Demonstration of buffered rasterization
