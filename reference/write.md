@@ -100,5 +100,5 @@ tri  <- triangulate(filter = keep_ground())
 normalize <- tri + transform_with(tri)
 pipeline <- read + normalize + write_las(paste0(tempdir(), "/*_norm.las"))
 exec(pipeline, on = f)
-#> [1] "/tmp/RtmpoWAJst/Topography_norm.las"
+#> [1] "/tmp/Rtmp8O2r5T/Topography_norm.las"
 ```

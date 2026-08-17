@@ -26,7 +26,7 @@ string. Path to a temporary file.
 
 ``` r
 tempshp()
-#> [1] "/tmp/RtmpoWAJst/file22873936f70d.shp"
+#> [1] "/tmp/Rtmp8O2r5T/file21d44944996b.shp"
 templaz()
-#> [1] "/tmp/RtmpoWAJst/file2287109efb3c.laz"
+#> [1] "/tmp/Rtmp8O2r5T/file21d46cbc5871.laz"
 ```
