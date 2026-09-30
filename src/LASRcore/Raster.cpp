@@ -4,6 +4,7 @@
 #include "print.h"
 
 #include <cmath>
+#include <algorithm>
 
 // Default constructor creates a Raster from (0,0) to (0,0) with a resolution of 0
 // GDALdataset is NOT initialized.
@@ -52,6 +53,7 @@ Raster::Raster(const Raster& raster) : Grid(raster), GDALdataset()
   GDALdataset::set_raster(this->xmin, this->ymax, this->ncols, this->nrows, this->xres);
   buffer = raster.buffer;
   circular = raster.circular;
+  footprint = raster.footprint;
   set_nbands(raster.nBands);
   band_names = raster.band_names;
   nodata = raster.nodata;
@@ -254,6 +256,7 @@ void Raster::set_chunk(const Chunk& chunk)
 {
   buffer = std::ceil(chunk.buffer/xres); // buffer in pixel
   circular = chunk.shape == ShapeType::CIRCLE;
+  footprint = chunk.footprint;
 
   //print("Chunk %.1lf %.1lf %.1lf %.1lf (+%.1lf m)\n", chunk.xmin, chunk.xmax, chunk.ymin, chunk.ymax, chunk.buffer);
 
@@ -434,7 +437,7 @@ bool Raster::write()
   CPLErr err;
   for (auto i = 1 ; i <= nBands ; ++i)
   {
-    if (buffer == 0)
+    if (buffer == 0 && footprint.empty())
     {
       err = dataset->GetRasterBand(i)->RasterIO(GF_Write, xoffset, yoffset, ncols, nrows, &data[(i-1)*ncells], ncols, nrows, eType, 0, 0);
     }
@@ -457,21 +460,43 @@ bool Raster::write()
 
       std::vector<float> data_no_buffer(ncols_no_buffer*nrows_no_buffer);
       std::fill(data_no_buffer.begin(), data_no_buffer.end(), nodata);
+
+      // With a footprint, the cells whose centre is outside the footprint belong to another chunk
+      std::vector<char> outside;
+      if (!footprint.empty()) outside.assign(ncols_no_buffer*nrows_no_buffer, 0);
+      std::vector<double> crossings;
+
       for (int row = buffer ; row < nrows - buffer ; ++row)
       {
+        int new_row = (row - buffer);
+
+        if (!footprint.empty())
+          footprint.crossings(ymax - (row + 0.5) * yres, crossings); // not y_from_row(): no rounding
+
         for (int col = buffer ; col < ncols - buffer ; ++col)
         {
           int originalIndex = row * ncols + col + (i-1)*ncells;
 
-          int new_row = (row - buffer);
           int new_col = (col - buffer);
           int modifiedIndex = new_row * ncols_no_buffer + new_col;
 
           float val = data[originalIndex];
 
-          // Remove the buffer but the query is circular
-          if (circular)
+          if (!footprint.empty())
           {
+            double x = xmin + (col + 0.5) * xres;
+            size_t n = crossings.end() - std::upper_bound(crossings.begin(), crossings.end(), x);
+            if (n % 2 == 0)
+            {
+              // Outside the reprojected circle of a circular query: remove, as below.
+              // Outside the reprojected tile: see keep_written_values()
+              if (circular) val = NA_F32_RASTER;
+              else outside[modifiedIndex] = 1;
+            }
+          }
+          else if (circular)
+          {
+            // Remove the buffer but the query is circular
             float centerx = (float)ncols_no_buffer/2;
             float centery = (float)nrows_no_buffer/2;
             float dx = new_col - centerx;
@@ -484,7 +509,33 @@ bool Raster::write()
         }
       }
 
-      err = dataset->GetRasterBand(i)->RasterIO(GF_Write, xoffset, yoffset, ncols_no_buffer, nrows_no_buffer, &data_no_buffer[0], ncols_no_buffer, nrows_no_buffer, eType, 0, 0);
+      if (!outside.empty())
+      {
+        if (!keep_written_values(i, xoffset, yoffset, ncols_no_buffer, nrows_no_buffer, outside, data_no_buffer))
+          return false;
+      }
+
+      // Only write the part of the window inside the file. The chunk may extend beyond the
+      // file: e.g. after transform_crs(), a circular query becomes a circle that contains the
+      // reprojected circle, and is larger than it.
+      GDALRasterBand* band = dataset->GetRasterBand(i);
+      int c0 = std::max(0, -xoffset);
+      int r0 = std::max(0, -yoffset);
+      int c1 = std::min(ncols_no_buffer, band->GetXSize() - xoffset);
+      int r1 = std::min(nrows_no_buffer, band->GetYSize() - yoffset);
+      if (c0 == 0 && r0 == 0 && c1 == ncols_no_buffer && r1 == nrows_no_buffer)
+      {
+        err = band->RasterIO(GF_Write, xoffset, yoffset, ncols_no_buffer, nrows_no_buffer, &data_no_buffer[0], ncols_no_buffer, nrows_no_buffer, eType, 0, 0);
+      }
+      else if (c1 > c0 && r1 > r0)
+      {
+        GSpacing size = GDALGetDataTypeSizeBytes(eType);
+        err = band->RasterIO(GF_Write, xoffset + c0, yoffset + r0, c1 - c0, r1 - r0, &data_no_buffer[r0 * ncols_no_buffer + c0], c1 - c0, r1 - r0, eType, size, size * ncols_no_buffer);
+      }
+      else
+      {
+        err = CE_None;
+      }
     }
 
     // Handle errors
@@ -492,6 +543,52 @@ bool Raster::write()
     {
       last_error = std::string(CPLGetLastErrorMsg()); // # nocov
       return false; // # nocov
+    }
+  }
+
+  return true;
+}
+
+// After a reprojection the chunks are rotated and their bounding boxes overlap: the raster of a
+// chunk covers cells of its neighbours, computed from their points read as buffer points. These
+// cells belong to the neighbours, and are computed from an incomplete neighbourhood if the
+// buffer is smaller than the overlap. They must not overwrite the values written by the chunk
+// that owns them, nor these values be overwritten with NA. So, in the window about to be written:
+// - an NA cell never overwrites a value already written;
+// - a cell outside the footprint (flagged in 'outside') is written only if no value was written
+//   there yet; its owner, if any, overwrites it later.
+// The result does not depend on the order in which the chunks are written.
+bool Raster::keep_written_values(int band, int xoffset, int yoffset, int nc, int nr, const std::vector<char>& outside, std::vector<float>& out)
+{
+  // The window may be partly outside the file (the raster of a chunk is larger than its core).
+  // Only the part inside the file is read.
+  GDALRasterBand* b = dataset->GetRasterBand(band);
+  int X = b->GetXSize();
+  int Y = b->GetYSize();
+  int c0 = std::max(0, -xoffset);
+  int r0 = std::max(0, -yoffset);
+  int c1 = std::min(nc, X - xoffset);
+  int r1 = std::min(nr, Y - yoffset);
+  if (c1 <= c0 || r1 <= r0) return true;
+
+  int w = c1 - c0;
+  int h = r1 - r0;
+  std::vector<float> existing(w*h);
+  CPLErr err = b->RasterIO(GF_Read, xoffset + c0, yoffset + r0, w, h, &existing[0], w, h, GDT_Float32, 0, 0);
+  if (err != CE_None)
+  {
+    last_error = std::string(CPLGetLastErrorMsg()); // # nocov
+    return false; // # nocov
+  }
+
+  for (int r = r0 ; r < r1 ; ++r)
+  {
+    for (int c = c0 ; c < c1 ; ++c)
+    {
+      int k = r * nc + c;
+      float old = existing[(r - r0) * w + (c - c0)];
+      if (is_na(old)) continue;
+      if (outside[k] || is_na(out[k])) out[k] = old;
     }
   }
 

@@ -457,23 +457,33 @@ double Engine::need_buffer()
   // Walk the pipeline backwards so a stage that changes the coordinates (transform_crs) can
   // express the buffer required by the stages that follow it in the units of the stages that
   // precede it. Buffers in data units and fixed distances are not converted the same way, so
-  // they are tracked separately.
+  // they are tracked separately. The buffer of the streamable stages is only required if a stage
+  // upstream misaligns the chunks with their grids (see Stage::misaligns_chunks()).
   double required_data_units = 0;
   double required_fixed = 0;
+  double streamed_data_units = 0;
+  double streamed_fixed = 0;
 
   for (auto it = pipeline.rbegin(); it != pipeline.rend(); ++it)
   {
     Stage* stage = it->get();
-    if (!stage->is_streamable())
+    double& data_units = stage->is_streamable() ? streamed_data_units : required_data_units;
+    double& fixed = stage->is_streamable() ? streamed_fixed : required_fixed;
+    if (stage->is_buffer_in_data_units())
+      data_units = MAX(data_units, stage->need_buffer());
+    else
+      fixed = MAX(fixed, stage->need_buffer());
+
+    if (stage->misaligns_chunks())
     {
-      if (stage->is_buffer_in_data_units())
-        required_data_units = MAX(required_data_units, stage->need_buffer());
-      else
-        required_fixed = MAX(required_fixed, stage->need_buffer());
+      required_data_units = MAX(required_data_units, streamed_data_units);
+      required_fixed = MAX(required_fixed, streamed_fixed);
     }
 
     required_data_units = stage->translate_buffer_to_input(required_data_units, true);
     required_fixed = stage->translate_buffer_to_input(required_fixed, false);
+    streamed_data_units = stage->translate_buffer_to_input(streamed_data_units, true);
+    streamed_fixed = stage->translate_buffer_to_input(streamed_fixed, false);
   }
 
   return MAX(buffer, MAX(required_data_units, required_fixed));

@@ -36,6 +36,7 @@ public:
   bool set_chunk(Chunk& chunk) override;
   void get_extent(double& xmin, double& ymin, double& xmax, double& ymax) override;
   double translate_buffer_to_input(double downstream_buffer, bool data_units) const override;
+  bool misaligns_chunks() const override { return true; }
 
   std::string get_name() const override { return "transform_crs"; }
 
@@ -53,6 +54,9 @@ private:
   bool target_to_source_buffer_scale_valid;
   double data_units_buffer_scale;
   bool data_units_buffer_scale_valid;
+  double global_offset_x;
+  double global_offset_y;
+  bool global_offset_valid;
 };
 
 #endif

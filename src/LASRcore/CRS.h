@@ -3,6 +3,7 @@
 
 #include "error.h"
 #include <string>
+#include <vector>
 #include <gdal_priv.h>
 
 class CRS
@@ -35,10 +36,16 @@ private:
 // corners. Returns false if the CRS are invalid, the transformation cannot be built, or no
 // sample reprojects (the box is entirely outside the transform domain). An empty/unset box
 // (min > max) is left unchanged and returns true.
-bool reproject_bbox(const CRS& source, const CRS& target, double& xmin, double& ymin, double& xmax, double& ymax);
+// If `ring_x` and `ring_y` are given, they receive the reprojected boundary samples, in order
+// around the box, or are left empty if a sample does not reproject.
+bool reproject_bbox(const CRS& source, const CRS& target, double& xmin, double& ymin, double& xmax, double& ymax, std::vector<double>* ring_x = nullptr, std::vector<double>* ring_y = nullptr);
 
-// Bounding box, in `target` CRS, of the circle (xc, yc, r) of `source` CRS. Same densification
-// and padding as reproject_bbox(). Returns false in the same cases.
-bool reproject_circle_bbox(const CRS& source, const CRS& target, double xc, double yc, double r, double& xmin, double& ymin, double& xmax, double& ymax);
+// Reproject the circle (xc, yc, r) of `source` CRS into `target` CRS. (cx, cy) receives the
+// reprojected centre and `radius` the largest distance from it to the reprojected circle, with
+// the same densification and padding as reproject_bbox(), so the circle (cx, cy, radius) contains
+// the whole reprojected circle. `ring_x` and `ring_y` receive the reprojected samples of the
+// circle as in reproject_bbox(). Returns false if the CRS are invalid, the transformation cannot
+// be built, or the centre or every sample of the circle is outside the transform domain.
+bool reproject_circle(const CRS& source, const CRS& target, double xc, double yc, double r, double& cx, double& cy, double& radius, std::vector<double>* ring_x = nullptr, std::vector<double>* ring_y = nullptr);
 
 #endif

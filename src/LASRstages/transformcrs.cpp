@@ -14,6 +14,9 @@ LASRtransformcrs::LASRtransformcrs()
   target_to_source_buffer_scale_valid = false;
   data_units_buffer_scale = 1.0;
   data_units_buffer_scale_valid = false;
+  global_offset_x = 0;
+  global_offset_y = 0;
+  global_offset_valid = false;
 }
 
 LASRtransformcrs::LASRtransformcrs(const LASRtransformcrs& other) : Stage(other)
@@ -24,6 +27,9 @@ LASRtransformcrs::LASRtransformcrs(const LASRtransformcrs& other) : Stage(other)
   target_to_source_buffer_scale_valid = other.target_to_source_buffer_scale_valid;
   data_units_buffer_scale = other.data_units_buffer_scale;
   data_units_buffer_scale_valid = other.data_units_buffer_scale_valid;
+  global_offset_x = other.global_offset_x;
+  global_offset_y = other.global_offset_y;
+  global_offset_valid = other.global_offset_valid;
   // OGRCoordinateTransformation is not thread-safe and not trivially copyable.
   // Each clone lazily rebuilds its own transform from source_crs/target_crs.
   transform = nullptr;
@@ -195,6 +201,10 @@ void LASRtransformcrs::get_extent(double& xmin, double& ymin, double& xmax, doub
         }
       }
 
+      global_offset_x = (xmin + xmax) / 2;
+      global_offset_y = (ymin + ymax) / 2;
+      global_offset_valid = std::isfinite(global_offset_x) && std::isfinite(global_offset_y);
+
       this->xmin = xmin;
       this->ymin = ymin;
       this->xmax = xmax;
@@ -242,13 +252,59 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
     const double sxmin = chunk.xmin, symin = chunk.ymin, sxmax = chunk.xmax, symax = chunk.ymax;
     double x0 = sxmin, y0 = symin, x1 = sxmax, y1 = symax;
 
-    // A circle is not a circle in the target CRS: bound the reprojected circle instead.
+    // The core of the chunk handed to the next stages. The reprojected chunk is neither an
+    // axis-aligned rectangle nor a circle. A rectangular chunk becomes the bounding box of the
+    // reprojected rectangle. A circular chunk stays circular: its centre is the reprojected
+    // centre and its radius the largest distance to the reprojected circle, so it contains the
+    // whole reprojected circle. Both also cover slivers of the neighbouring chunks, so the exact
+    // shape of the core is also handed as a polygon (the footprint), used by the stages that
+    // write rasters and tree tops. The points of these slivers were read as buffer points and
+    // flagged as such by the reader in the source CRS: stages that remove the buffer (write_las,
+    // summarise, callback) honor this flag first, and only fall back to a geometric test against
+    // the chunk. That test must never exclude a core point, so the chunk contains the whole
+    // reprojected core, plus a margin for the rounding of the reprojected coordinates stored as
+    // scaled integers in process(): half a quantization step, i.e. 5e-8 for a geographic target
+    // and at most 0.01 for a projected target with a scale factor up to 0.02.
+    const double margin = target_crs.is_geographic() ? 1e-7 : 0.01;
     const bool is_circle = chunk.shape == ShapeType::CIRCLE;
+    std::vector<double> ring_x, ring_y;
     bool reprojected;
     if (is_circle)
-      reprojected = reproject_circle_bbox(source_crs, target_crs, (sxmin + sxmax) / 2, (symin + symax) / 2, (sxmax - sxmin) / 2, x0, y0, x1, y1);
+    {
+      double cx, cy, radius;
+      reprojected = reproject_circle(source_crs, target_crs, (sxmin + sxmax) / 2, (symin + symax) / 2, (sxmax - sxmin) / 2, cx, cy, radius, &ring_x, &ring_y);
+      if (reprojected)
+      {
+        radius += margin;
+        x0 = cx - radius;
+        y0 = cy - radius;
+        x1 = cx + radius;
+        y1 = cy + radius;
+      }
+    }
     else
-      reprojected = reproject_bbox(source_crs, target_crs, x0, y0, x1, y1);
+    {
+      reprojected = reproject_bbox(source_crs, target_crs, x0, y0, x1, y1, &ring_x, &ring_y);
+      if (reprojected)
+      {
+        x0 -= margin;
+        y0 -= margin;
+        x1 += margin;
+        y1 += margin;
+      }
+    }
+
+    // An upstream stage already gave the exact footprint of the chunk (e.g. a previous
+    // transform_crs): reproject it rather than the box or circle that contains it.
+    if (reprojected && !chunk.footprint.empty())
+    {
+      if (!build_transform()) return false;
+      ring_x = chunk.footprint.x;
+      ring_y = chunk.footprint.y;
+      std::vector<int> ok(ring_x.size(), 0);
+      transform->Transform((int)ring_x.size(), ring_x.data(), ring_y.data(), nullptr, ok.data());
+      if (std::find(ok.begin(), ok.end(), 0) != ok.end()) { ring_x.clear(); ring_y.clear(); }
+    }
 
     if (reprojected)
     {
@@ -264,21 +320,6 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
       }
       buffer = chunk.buffer;
 
-      // The reprojected chunk is not an axis-aligned rectangle, so the core of the chunk handed to
-      // the next stages is its bounding box. It also covers slivers of the neighbouring chunks.
-      // The points of these slivers were read as buffer points and flagged as such by the reader
-      // in the source CRS: stages that remove the buffer (write_las, summarise, callback) honor this
-      // flag first, and only fall back to a geometric test against this box. That test must never
-      // exclude a core point, so the box contains the whole reprojected core, plus a margin for the
-      // rounding of the reprojected coordinates stored as scaled integers in process(): half a
-      // quantization step, i.e. 5e-8 for a geographic target and at most 0.01 for a projected
-      // target with a scale factor up to 0.02.
-      const double margin = target_crs.is_geographic() ? 1e-7 : 0.01;
-      x0 -= margin;
-      y0 -= margin;
-      x1 += margin;
-      y1 += margin;
-
       this->xmin = x0;
       this->ymin = y0;
       this->xmax = x1;
@@ -289,15 +330,17 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
       chunk.xmax = x1;
       chunk.ymax = y1;
 
-      // The next stages work on this rectangle. The exact source circle is carried by the buffer
-      // flag of the points.
-      if (is_circle) chunk.shape = ShapeType::RECTANGLE;
+      // Empty if a sample of the boundary is outside the transformation domain: the next stages
+      // then use the chunk box or circle.
+      chunk.footprint.x = ring_x;
+      chunk.footprint.y = ring_y;
     }
     else
     {
       // The whole chunk extent is outside the transformation domain. Do not abort the run:
       // process() drops the individual out-of-domain points and keeps the rest. Leave the
       // chunk extent unreprojected (it produces no output anyway) and warn.
+      chunk.footprint.clear();
       warning("transform_crs: could not reproject a chunk extent (outside the transformation domain).\n");
     }
   }
@@ -396,6 +439,24 @@ bool LASRtransformcrs::process(PointCloud*& las)
     {
       double tx = cand_x[i], ty = cand_y[i];
       if (transform->Transform(1, &tx, &ty, nullptr)) { ox = tx; oy = ty; break; }
+    }
+  }
+
+  // When the reprojected coverage is known, every chunk uses the same offset: its centre. A point
+  // read in several chunks (as a core point in one, as a buffer point in its neighbours) then gets
+  // the same coordinates and the same stored integers in all of them, and the stages that
+  // identify points by their stored integers (e.g. the tree tops of local_maximum) recognize it.
+  // Keep the offset of the chunk if its points would not fit in 32-bit integers around this one.
+  if (global_offset_valid)
+  {
+    const double lim = 2e9;
+    const double b = buffer;
+    const double reach_x = std::max(std::fabs(xmin - b - global_offset_x), std::fabs(xmax + b - global_offset_x)) / new_sx;
+    const double reach_y = std::max(std::fabs(ymin - b - global_offset_y), std::fabs(ymax + b - global_offset_y)) / new_sy;
+    if (reach_x < lim && reach_y < lim)
+    {
+      ox = global_offset_x;
+      oy = global_offset_y;
     }
   }
 

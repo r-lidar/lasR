@@ -434,3 +434,78 @@ test_that("transform_crs converts the buffers of downstream stages given in data
               callback(halo, expose = "xyzb", drop_buffer = FALSE), on = geo, chunk = 0.0013)
   expect_halo(res, 50)
 })
+
+test_that("transform_crs keeps rasters of circular queries inside the circle",
+{
+  # The chunk of a circular query stays circular after transform_crs, and rasters are masked
+  # with the reprojected circle: no cell outside the query circle may hold a value, and the
+  # circle is covered as without transform_crs.
+  skip_if_not_installed("terra")
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  xc <- 273500
+  yc <- 5274500
+  r <- 60
+  tif <- tempfile(fileext = ".tif")
+  on.exit(unlink(tif), add = TRUE)
+
+  # Area covered by the cells with a value, in source square metres
+  area <- function(rr, epsg)
+  {
+    e <- as.vector(terra::ext(rr))
+    p <- rbind(c(e[1], e[3]), c(e[2], e[3]), c(e[1], e[4]))
+    if (!is.na(epsg)) p <- terra::project(p, paste0("EPSG:", epsg), "EPSG:2949")
+    w <- sqrt(sum((p[2, ] - p[1, ])^2))
+    h <- sqrt(sum((p[3, ] - p[1, ])^2))
+    sum(!is.na(terra::values(rr)[, 1])) * w * h / terra::ncell(rr)
+  }
+
+  exec(reader_circles(xc, yc, r) + rasterize(2, "max", ofile = tif), on = f, buffer = 20)
+  expected <- area(terra::rast(tif), NA)
+  unlink(tif)
+
+  for (epsg in c(32619, 4326))
+  {
+    res <- if (epsg == 4326) 2.5e-5 else 2
+    exec(reader_circles(xc, yc, r) + transform_crs(epsg) + rasterize(res, "max", ofile = tif), on = f, buffer = 20)
+    rr <- terra::rast(tif)
+    valid <- !is.na(terra::values(rr)[, 1])
+    xy <- terra::xyFromCell(rr, which(valid))
+    back <- terra::project(xy, paste0("EPSG:", epsg), "EPSG:2949")
+    d <- sqrt((back[, 1] - xc)^2 + (back[, 2] - yc)^2)
+    expect_lte(max(d), r + 4) # 2 cells of tolerance, the same as without transform_crs
+    expect_equal(area(rr, epsg), expected, tolerance = 0.05)
+    unlink(tif)
+  }
+})
+
+test_that("transform_crs does not corrupt rasters at the seams of rotated tiles",
+{
+  # The reprojected tiles are rotated, so their bounding boxes overlap. The raster of a tile
+  # must not overwrite the cells of its neighbours with NA or with values computed from an
+  # incomplete neighbourhood. A tiled run must give the same raster as a single chunk.
+  skip_if_not_installed("terra")
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+
+  td <- tempfile("transform_crs_rtiles_")
+  dir.create(td)
+  on.exit(unlink(td, recursive = TRUE), add = TRUE)
+
+  exec(reader_las() + write_las(file.path(td, "tile_*.las")), on = f, chunk = 100)
+  tiles <- list.files(td, pattern = "^tile_.*\\.las$", full.names = TRUE)
+  exec(write_lax(), on = tiles)
+  expect_gt(length(tiles), 1)
+
+  o1 <- file.path(td, "single.tif")
+  o2 <- file.path(td, "tiled.tif")
+  for (epsg in c(32619, 3857))
+  {
+    pipe <- function(o) reader_las() + transform_crs(epsg) + rasterize(2, "max", ofile = o)
+    exec(pipe(o1), on = f)
+    exec(pipe(o2), on = tiles)
+    a <- terra::values(terra::rast(o1))[, 1]
+    b <- terra::values(terra::rast(o2))[, 1]
+    expect_equal(length(a), length(b))
+    expect_equal(sum(is.na(b) & !is.na(a)), 0) # no holes
+    expect_equal(sum(abs(b - a) > 1e-6, na.rm = TRUE), 0) # no wrong values
+  }
+})
