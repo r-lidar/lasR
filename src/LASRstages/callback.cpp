@@ -43,7 +43,9 @@ namespace{
 LASRcallback::LASRcallback()
 {
   ans = R_NilValue;
-  ans = PROTECT(Rf_allocVector(VECSXP, 0)); nsexpprotected++;
+  ans = PROTECT(Rf_allocVector(VECSXP, 0));
+  R_PreserveObject(ans);
+  UNPROTECT(1);
 }
 
 bool LASRcallback::set_parameters(const nlohmann::json& stage)
@@ -284,15 +286,19 @@ bool LASRcallback::process(PointCloud*& las)
   {
     UNPROTECT(nsexpprotected); // unprotect all the vectors (ncols) + 5 objects created in this function;
     nsexpprotected = 0;
-    PROTECT(res); nsexpprotected++;
-    PROTECT(ans); nsexpprotected++;
 
     if (verbose)  print(" Output the result\n");
 
-    // push_back res in ans
+    PROTECT(res); nsexpprotected++;
+
     int i = Rf_length(ans);
-    ans = Rf_lengthgets(ans, i+1);
-    SET_VECTOR_ELT(ans, i, res);
+    SEXP new_ans = PROTECT(Rf_lengthgets(ans, i + 1));
+    SET_VECTOR_ELT(new_ans, i, res);
+
+    R_ReleaseObject(ans);
+    ans = new_ans;
+    R_PreserveObject(ans);
+    UNPROTECT(1); // new_ans
   }
   // Else it is the original data_frame. We update las with it.
   else if (!error)
@@ -446,6 +452,8 @@ SEXP LASRcallback::to_R()
 
   if (Rf_length(ans) == 1)
     return VECTOR_ELT(ans, 0);
+
+  R_ReleaseObject(ans);
 
   return ans;
 }
