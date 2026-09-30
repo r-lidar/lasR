@@ -16,7 +16,6 @@ public:
   bool process() override;
   bool process(PointCloud*& las) override;
   bool write() override;
-  bool set_chunk(Chunk& chunk) override;
   void clear(bool last) override;
   double need_buffer() const override { return ws; }
   bool need_points() const override { return !use_raster; }
@@ -25,6 +24,7 @@ public:
   std::string get_name() const override { return "local_maximum"; }
   std::vector<PointLAS>& get_maxima() { return lm; };
   bool is_parallelized() const override { return true; };
+  bool set_chunk(Chunk& chunk) override;
 
   // multi-threading
   LASRlocalmaximum* clone() const override { return new LASRlocalmaximum(*this); };
@@ -36,10 +36,6 @@ private:
   double ws;
   double min_height;
 
-  bool from_raster;     // process(PointCloud) is processing the cells of a raster
-  double cell_radius;   // half the diagonal of the cells of this raster
-  Footprint footprint;  // Exact core of the chunk if the chunk box is not exact (see Chunk.h)
-
   std::string attribute;
   std::string use_attribute;
   std::vector<PointLAS> lm;
@@ -48,6 +44,10 @@ private:
   std::shared_ptr<std::unordered_map<uint64_t, unsigned int>> unicity_table;
 
   enum states {UKN, NLM, LMX};
+
+  bool from_raster;     // process(PointCloud) is processing the cells of a raster
+  double cell_radius;   // half the diagonal of the cells of this raster
+  Footprint footprint;  // Exact core of the chunk if the chunk box is not exact (see Chunk.h)
 };
 
 #endif

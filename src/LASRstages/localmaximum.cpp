@@ -1,9 +1,10 @@
 #include "localmaximum.h"
 #include "openmp.h"
 
+#include <cstring>
+
 #include <chrono>
 #include <cmath>
-#include <cstring>
 
 LASRlocalmaximum::LASRlocalmaximum()
 {
@@ -13,35 +14,6 @@ LASRlocalmaximum::LASRlocalmaximum()
   this->counter = std::make_shared<unsigned int>(0);
   this->unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
   this->attribute = "";
-}
-
-// A 64-bit key that identifies a point by its location, the same in every chunk the point is read
-// in. The stored X and Y integers are used when X and Y are stored as integers. They are cast to
-// unsigned 32-bit before being combined: a negative Y must not fill the 32 high bits. Otherwise
-// (float or double X and Y), the stored values are exact copies of the coordinates and the key
-// mixes all their bits.
-static uint64_t fid_key(const Point& p)
-{
-  const AttributeSchema* schema = p.schema;
-  if (schema->attributes[AttributeCore::X].type == AttributeType::INT32 &&
-      schema->attributes[AttributeCore::Y].type == AttributeType::INT32)
-  {
-    return ((uint64_t)(uint32_t)p.get_X() << 32) | (uint64_t)(uint32_t)p.get_Y();
-  }
-
-  double x = p.get_x();
-  double y = p.get_y();
-  uint64_t bx, by;
-  std::memcpy(&bx, &x, sizeof(bx));
-  std::memcpy(&by, &y, sizeof(by));
-  auto mix = [](uint64_t z)
-  {
-    z += 0x9e3779b97f4a7c15ULL;
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
-    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
-    return z ^ (z >> 31);
-  };
-  return mix(bx ^ mix(by));
 }
 
 bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
@@ -82,6 +54,35 @@ bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
   if (connections.size() > 0) use_raster = true;
 
   return true;
+}
+
+// A 64-bit key that identifies a point by its location, the same in every chunk the point is read
+// in. The stored X and Y integers are used when X and Y are stored as integers. They are cast to
+// unsigned 32-bit before being combined: a negative Y must not fill the 32 high bits. Otherwise
+// (float or double X and Y), the stored values are exact copies of the coordinates and the key
+// mixes all their bits.
+static uint64_t fid_key(const Point& p)
+{
+  const AttributeSchema* schema = p.schema;
+  if (schema->attributes[AttributeCore::X].type == AttributeType::INT32 &&
+      schema->attributes[AttributeCore::Y].type == AttributeType::INT32)
+  {
+    return ((uint64_t)(uint32_t)p.get_X() << 32) | (uint64_t)(uint32_t)p.get_Y();
+  }
+
+  double x = p.get_x();
+  double y = p.get_y();
+  uint64_t bx, by;
+  std::memcpy(&bx, &x, sizeof(bx));
+  std::memcpy(&by, &y, sizeof(by));
+  auto mix = [](uint64_t z)
+  {
+    z += 0x9e3779b97f4a7c15ULL;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    return z ^ (z >> 31);
+  };
+  return mix(bx ^ mix(by));
 }
 
 bool LASRlocalmaximum::process()

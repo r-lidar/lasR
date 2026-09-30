@@ -91,11 +91,11 @@ struct Chunk
     id = 0;
     shape = ShapeType::UNKNOWN;
     buffer = 0;
-    footprint.clear();
     process = true;
     name.clear();
     main_files.clear();
     neighbour_files.clear();
+    footprint.clear();
   };
 
   // # nocov start
@@ -119,10 +119,10 @@ struct Chunk
   bool process;
   int id;
   ShapeType shape;
-  Footprint footprint;
   std::string name;
   std::vector<std::string> main_files;
   std::vector<std::string> neighbour_files;
+  Footprint footprint;
 };
 
 #endif
