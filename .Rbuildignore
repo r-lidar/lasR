@@ -35,3 +35,4 @@
 ^Makefile$
 ^.vscode$
 ^python$
+^.*\.pro$
