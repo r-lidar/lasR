@@ -1385,6 +1385,20 @@ bool COPCwriter::finalize_and_write()
   //    COPC info VLR has the right values. Disable use_inventory when no
   //    points were written so the declared bbox carried in copc_header
   //    survives the flush.
+  //    Without the inventory, LASlib writes the point counts from
+  //    copc_header, which still holds the source's count (LASio::create
+  //    sets it for the open-time depth heuristic, and prepare_copc_header
+  //    moves it to the extended fields for LAS < 1.4 sources). Zero every
+  //    count so the header matches the 0 points in the file; this also
+  //    makes LASwriterLAS::close see npoints == p_count == 0 rather than
+  //    warning "written 0 points but expected N" for LAS 1.4 sources.
+  if (!have_any_point)
+  {
+    copc_header->number_of_point_records = 0;
+    copc_header->extended_number_of_point_records = 0;
+    for (U32 i = 0; i < 5; i++) copc_header->number_of_points_by_return[i] = 0;
+    for (U32 i = 0; i < 15; i++) copc_header->extended_number_of_points_by_return[i] = 0;
+  }
   const BOOL use_inventory = have_any_point ? TRUE : FALSE;
   if (!writer_las->update_header(copc_header, use_inventory, TRUE))
   {

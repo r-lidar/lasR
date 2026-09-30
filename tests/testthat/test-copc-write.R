@@ -626,3 +626,76 @@ test_that("write_copc skip-sort fallback fires under tiny LASR_COPC_MAX_SORT_MEM
   warn_lines = grep("exceeding the sort-buffer cap", err_text, value = TRUE)
   expect_length(warn_lines, 1L)
 })
+
+test_that("write_copc declares 0 points when the writer is opened but every point is filtered out",
+{
+  # The writer is opened on the first point, before the filter and buffer
+  # tests, so a tile whose points are all rejected still produces a file.
+  # That file must declare 0 points with either writer. The experimental
+  # writer used to leave the source point count in the LAS 1.4 extended
+  # count for LAS < 1.4 sources (the file held 0 points), and printed a
+  # spurious "written 0 points but expected N" for LAS 1.4 sources.
+  read_counts = function(path) {
+    con = file(path, open = "rb"); on.exit(close(con))
+    seek(con, 25)
+    minor = readBin(con, "integer", n = 1, size = 1, signed = FALSE)
+    # Legacy number_of_point_records + 5 legacy by-return counts (U32).
+    seek(con, 107)
+    legacy = readBin(con, "integer", n = 6, size = 4, endian = "little")
+    # Extended number_of_point_records + 15 extended by-return counts (U64),
+    # read as pairs of 32-bit words so any non-zero byte is detected.
+    seek(con, 247)
+    extended = readBin(con, "integer", n = 32, size = 4, endian = "little")
+    list(minor = minor, legacy = legacy, extended = extended)
+  }
+
+  capture_stderr = function(expr) {
+    err_file = tempfile()
+    on.exit(unlink(err_file))
+    con = file(err_file, open = "wt")
+    value = tryCatch({
+      sink(con, type = "message")
+      tryCatch(expr, error = function(e) e)
+    }, finally = {
+      sink(NULL, type = "message")
+      close(con)
+    })
+    list(value = value, text = readLines(err_file, warn = FALSE))
+  }
+
+  # Topography.las is LAS 1.2 (PDRF 1): the writer promotes it to LAS 1.4.
+  # las14_pdrf6.laz is already LAS 1.4 (PDRF 6).
+  for (src in c("Topography.las", "las14_pdrf6.laz"))
+  {
+    f = system.file("extdata", src, package = "lasR")
+    for (experimental in c(FALSE, TRUE))
+    {
+      label = paste0(src, ", experimental_writer = ", experimental)
+      o = tempfile(fileext = ".copc.laz")
+      on.exit(unlink(o), add = TRUE)
+
+      w = capture_stderr(exec(write_copc(o, filter = "Z > 1000000", experimental_writer = experimental), on = f))
+      expect_false(inherits(w$value, "error"), label = label)
+      expect_true(file.exists(o), label = label)
+      expect_false(any(grepl("but expected", w$text)), label = label)
+
+      h = read_counts(o)
+      expect_equal(h$minor, 4L, label = label)
+      expect_equal(h$legacy, rep(0L, 6), label = label)
+      expect_equal(h$extended, rep(0L, 32), label = label)
+
+      # lasR discards a file that declares 0 points, exactly as for the
+      # legacy writer's output. The read-back is only attempted once the
+      # header says 0: a header that declares points the file does not
+      # hold makes the LAZ reader loop after its end-of-file error.
+      if (all(h$extended == 0L))
+      {
+        r = capture_stderr(exec(reader() + summarise(), on = o))
+        msg = if (inherits(r$value, "error")) conditionMessage(r$value) else ""
+        expect_match(msg, "There is no file to read", label = label)
+        expect_true(any(grepl("containing 0 point was discarded", r$text)), label = label)
+      }
+      unlink(o)
+    }
+  }
+})
