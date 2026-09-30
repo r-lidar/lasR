@@ -119,15 +119,67 @@ test_that("EPT strict-clip core ownership is unique (no duplicates, no losses)",
   on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
   ofiles <- file.path(out_dir, "*.las")
 
-  exec(reader() + write_las(ofiles), on = ept, ncores = concurrent_files(4))
-  written <- list.files(out_dir, pattern = "\\.las$", full.names = TRUE)
-  expect_gt(length(written), 1)
+  old <- get_parallel_strategy()
+  on.exit(if (is.null(old)) unset_parallel_strategy() else set_parallel_strategy(old), add = TRUE)
+  set_parallel_strategy(concurrent_files(4))
 
+  exec(reader() + write_las(ofiles), on = ept)
+  written <- list.files(out_dir, pattern = "\\.las$", full.names = TRUE)
+  # A templated writer makes one file per chunk, so the endpoint is not
+  # partitioned and the layout matches sequential()
+  expect_length(written, 1L)
+
+  # Every source point is written exactly once
   total_par <- sum(sapply(written, function(f)
     exec(reader() + summarise(), on = f)$npoints))
-  total_ser <- exec(reader() + summarise(), on = ept,
-                    ncores = sequential())$npoints
-  expect_equal(total_par, total_ser)
+  expect_equal(total_par, jsonlite::fromJSON(ept)$points)
+})
+
+test_that("EPT per-chunk templated outputs do not depend on the parallel strategy",
+{
+  skip_if_not(has_omp_support())
+  old <- get_parallel_strategy()
+  on.exit(if (is.null(old)) unset_parallel_strategy() else set_parallel_strategy(old), add = TRUE)
+
+  # Runs `stage(dir)` after `read` under `strategy` and returns the files it
+  # wrote (basenames) with their total number of points.
+  run <- function(read, stage, strategy)
+  {
+    d <- tempfile("ept-template-")
+    dir.create(d)
+    on.exit(unlink(d, recursive = TRUE))
+    set_parallel_strategy(strategy)
+    exec(read + stage(d), on = ept)
+    files <- sort(list.files(d))
+    set_parallel_strategy(sequential())
+    n <- sum(vapply(file.path(d, files), function(f)
+      if (grepl("\\.las$", f)) exec(reader() + summarise(), on = f)$npoints else 0, numeric(1)))
+    list(files = files, npoints = n)
+  }
+
+  las <- function(d) write_las(file.path(d, "*.las"))
+  tif <- function(d) rasterize(5, "zmax", ofile = file.path(d, "*.tif"))
+  aoi <- reader_rectangles(273360, 5274360, 273640, 5274640)
+
+  # One rectangle AOI: one file named as under sequential()
+  ser <- run(aoi, las, sequential())
+  par <- run(aoi, las, concurrent_files(4))
+  expect_length(ser$files, 1L)
+  expect_equal(par$files, ser$files)
+  expect_equal(par$npoints, ser$npoints)
+
+  # Whole endpoint, no AOI
+  ser <- run(reader(), las, sequential())
+  par <- run(reader(), las, concurrent_files(4))
+  expect_length(ser$files, 1L)
+  expect_equal(par$files, ser$files)
+  expect_equal(par$npoints, ser$npoints)
+
+  # Templated raster output
+  ser <- run(aoi, tif, sequential())
+  par <- run(aoi, tif, concurrent_files(4))
+  expect_length(ser$files, 1L)
+  expect_equal(par$files, ser$files)
 })
 
 test_that("EPT explicit chunk override produces correct results",
@@ -169,21 +221,24 @@ test_that("EPT auto-partition gate matches all downgrade scenarios",
 {
   gate <- lasR:::.APITEST$cpp_ept_should_auto_partition
 
-  # Positive: EPT + parallelizable + no R callback + outer > 1
-  expect_true(gate("EPTF", TRUE, FALSE, 4))
+  # Positive: EPT + parallelizable + no R callback + outer > 1 + no per-chunk files
+  expect_true(gate("EPTF", TRUE, FALSE, 4, FALSE))
 
   # Downgrade A: pipeline not parallelizable
-  expect_false(gate("EPTF", FALSE, FALSE, 4))
+  expect_false(gate("EPTF", FALSE, FALSE, 4, FALSE))
 
   # Downgrade B: pipeline injects R code (use_rcapi)
-  expect_false(gate("EPTF", TRUE, TRUE, 4))
+  expect_false(gate("EPTF", TRUE, TRUE, 4, FALSE))
 
   # Downgrade C: only one outer thread requested
-  expect_false(gate("EPTF", TRUE, FALSE, 1))
+  expect_false(gate("EPTF", TRUE, FALSE, 1, FALSE))
+
+  # Downgrade D: a stage writes one file per chunk (templated output path)
+  expect_false(gate("EPTF", TRUE, FALSE, 4, TRUE))
 
   # Format guard: non-EPT sources are not auto-partitioned
-  expect_false(gate("LASF", TRUE, FALSE, 4))
-  expect_false(gate("PCDF", TRUE, FALSE, 4))
+  expect_false(gate("LASF", TRUE, FALSE, 4, FALSE))
+  expect_false(gate("PCDF", TRUE, FALSE, 4, FALSE))
 })
 
 test_that("EPT non-parallelizable pipeline still produces correct results",
@@ -629,26 +684,29 @@ test_that("EPT partition: thin AOI parallel read equals serial AOI read exactly"
   expect_equal(par$z_histogram, ser$z_histogram)
 })
 
-test_that("EPT partition: rect AOI parallel write equals serial AOI summarise exactly", {
+test_that("EPT partition: rect AOI parallel write equals serial AOI write exactly", {
   skip_if_not(has_omp_support())
   ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
   out_par <- file.path(tempdir(), "ept-aoi-par")
+  out_ser <- file.path(tempdir(), "ept-aoi-ser")
   dir.create(out_par, showWarnings = FALSE)
-  on.exit(unlink(out_par, recursive = TRUE), add = TRUE)
+  dir.create(out_ser, showWarnings = FALSE)
+  on.exit(unlink(c(out_par, out_ser), recursive = TRUE), add = TRUE)
+  old <- get_parallel_strategy()
+  on.exit(if (is.null(old)) unset_parallel_strategy() else set_parallel_strategy(old), add = TRUE)
 
   q <- reader_rectangles(273360, 5274360, 273640, 5274640)
-  exec(q + write_las(file.path(out_par, "*.las")), on = ept,
-       ncores = concurrent_files(4))
-  ser_npoints <- exec(q + summarise(), on = ept, ncores = sequential())$npoints
+  set_parallel_strategy(concurrent_files(4))
+  exec(q + write_las(file.path(out_par, "*.las")), on = ept)
+  set_parallel_strategy(sequential())
+  exec(q + write_las(file.path(out_ser, "*.las")), on = ept)
 
-  # The parallel write_las with the glob template uses keep_buffer=FALSE
-  # semantics (per-chunk files contain only their core, not buffer ring).
-  # Sum the per-chunk written totals; they must equal the canonical
-  # serial summarise count — no duplicates, no losses across the
-  # strict-clipped sub-queries.
-  par_total <- sum(sapply(list.files(out_par, full.names = TRUE),
+  # A templated writer disables AOI partitioning, so both runs write one
+  # file per AOI with the same name and the same points.
+  expect_equal(list.files(out_par), list.files(out_ser))
+  total <- function(d) sum(sapply(list.files(d, full.names = TRUE),
     function(f) exec(reader() + summarise(), on = f)$npoints))
-  expect_equal(par_total, ser_npoints)
+  expect_equal(total(out_par), total(out_ser))
 })
 
 test_that("local EPT read leaves GDAL configuration options untouched", {

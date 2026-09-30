@@ -551,14 +551,15 @@ SEXP cpp_ept_partition_inspect(std::string endpoint, int target_partitions,
 bool cpp_ept_should_auto_partition(std::string format_signature,
                                    bool is_parallelizable,
                                    bool use_rcapi,
-                                   int ncpu_outer_loop)
+                                   int ncpu_outer_loop,
+                                   bool writes_per_chunk_files)
 {
   PathType format = UNKNOWNFILE;
   if (format_signature == "EPTF") format = EPTFILE;
   else if (format_signature == "LASF") format = LASFILE;
   else if (format_signature == "PCDF") format = PCDFILE;
   return api_internal::should_auto_partition_ept(
-      format, is_parallelizable, use_rcapi, ncpu_outer_loop);
+      format, is_parallelizable, use_rcapi, ncpu_outer_loop, writes_per_chunk_files);
 }
 
 // Returns 0=DROP, 1=CORE, 2=BUFFERED.

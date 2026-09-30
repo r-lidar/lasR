@@ -156,7 +156,7 @@ ReturnType execute(const std::string& config_file)
 
     if (api_internal::should_auto_partition_ept(
             lascatalog->get_format(), is_parallelizable,
-            use_rcapi, ncpu_outer_loop))
+            use_rcapi, ncpu_outer_loop, pipeline.writes_per_chunk_files()))
     {
       int target = api_internal::default_ept_auto_partitions;
       if (const char* env = getenv("LASR_EPT_PARTITIONS")) {
