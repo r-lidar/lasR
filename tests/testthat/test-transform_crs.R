@@ -433,6 +433,12 @@ test_that("transform_crs converts the buffers of downstream stages given in data
   res <- exec(reader_las() + transform_crs(32619) + rasterize(c(1, 101), "max", ofile = "") +
               callback(halo, expose = "xyzb", drop_buffer = FALSE), on = geo, chunk = 0.0013)
   expect_halo(res, 50)
+
+  # Geographic -> projected with a fixed-distance buffer: triangulate() needs 20 metres on both
+  # axes. The ratio of the extent diagonals used to load only ~16 metres along the longitude.
+  res <- exec(reader_las() + transform_crs(32619) + triangulate() +
+              callback(halo, expose = "xyzb", drop_buffer = FALSE), on = geo, chunk = 0.0013)
+  expect_halo(res, 20)
 })
 
 test_that("transform_crs keeps rasters of circular queries inside the circle",

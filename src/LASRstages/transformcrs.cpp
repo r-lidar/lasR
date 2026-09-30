@@ -240,6 +240,12 @@ double LASRtransformcrs::translate_buffer_to_input(double downstream_buffer, boo
   if (target_crs.is_geographic() && !source_crs.is_geographic())
     return downstream_buffer;
 
+  // Towards a projected CRS the fixed distance is a distance in the target CRS, like a buffer in
+  // data units: use the same conservative scale so the reader loads at least that distance on both
+  // axes. The ratio of the extent diagonals under-reads along the longitude.
+  if (data_units_buffer_scale_valid)
+    return downstream_buffer * data_units_buffer_scale;
+
   return downstream_buffer * target_to_source_buffer_scale;
 }
 
