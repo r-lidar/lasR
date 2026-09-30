@@ -589,6 +589,10 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
   std::string ext = ofile.substr(ofile.size()-9, ofile.size());
   if (ext != ".copc.laz") throw std::invalid_argument("File must be .copc.laz");
 
+  // Empty density = the writer's own default: "normal" for the experimental
+  // writer, "dense" for the legacy LASlib writer.
+  if (density.empty()) density = experimental_writer ? "normal" : "dense";
+
   static const std::vector<std::string> choices = {"sparse", "normal", "dense", "denser"};
   auto it = std::find(choices.begin(), choices.end(), density);
   if (it == choices.end()) throw std::invalid_argument("Invalid argument 'density'. Available options are 'sparse'', 'normal', 'dense', 'denser'");

@@ -90,11 +90,13 @@ bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
 {
   keep_buffer = stage.value("keep_buffer", false);
   experimental_writer = stage.value("experimental_writer", false);
-  // JSON-default fallback matches the surface defaults (R/Python/api.h).
-  // 128 = "normal" density (per the api::write_copc translation table).
-  // Hand-written JSON configs without this key get the same balanced
-  // size/RAM default that the language wrappers do.
-  copc_density = stage.value("density", 128);
+  // JSON-default fallback matches the surface defaults (R/Python/api.h),
+  // which depend on the writer: 128 = "normal" for the experimental writer,
+  // 256 = "dense" for the legacy LASlib writer (per the api::write_copc
+  // translation table). experimental_writer must be read first. Hand-written
+  // JSON configs without this key, and write_las(), which never sets it, get
+  // the same default that the language wrappers do.
+  copc_density = stage.value("density", experimental_writer ? 128 : 256);
   copc_depth = stage.value("max_depth", -1);
   // JSON-default fallback if the key is missing matches the surface defaults
   // (R/Python/api.h). Hand-written JSON configs without this key get the

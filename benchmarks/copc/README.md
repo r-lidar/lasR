@@ -22,6 +22,9 @@ Tools must be on `$PATH`:
 `benchmarks/copc/run_all.sh` fetches input, runs writers, runs reads, builds
 report. Outputs land in `benchmarks/copc/results/`.
 
+`lasR-default` is the legacy LASlib writer run at density `"normal"`, the same
+as `lasR-experimental`, while the legacy writer's own default is `"dense"`.
+
 `benchmarks/copc/run_multitile_validation.sh` renders per-depth density rasters
 of the single-tile output, merges the 2×2 tile block into one COPC and checks
 the tile seams, for every point and per octree depth. It needs `terra`.

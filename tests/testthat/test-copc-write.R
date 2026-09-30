@@ -699,3 +699,43 @@ test_that("write_copc declares 0 points when the writer is opened but every poin
     }
   }
 })
+
+test_that("write_copc resolves the default density per writer",
+{
+  # The legacy LASlib writer defaults to density "dense" (grid 256) and the
+  # experimental writer to "normal" (grid 128); explicit values keep
+  # working for both. write_las() has no density argument, so a .copc.laz
+  # written with it gets the JSON fallback, which follows the same rule.
+  # Both writers store spacing = 2 * halfsize / gridsize in the COPC info
+  # VLR, so the grid size can be read back from the file.
+  f = system.file("extdata", "Megaplot.las", package = "lasR")
+
+  gridsize = function(stage, o) {
+    exec(stage, on = f)
+    con = file(o, open = "rb"); on.exit(close(con))
+    seek(con, 375 + 54 + 24)  # COPC info VLR: skip center x/y/z
+    halfsize = readBin(con, "double", n = 1, size = 8, endian = "little")
+    spacing  = readBin(con, "double", n = 1, size = 8, endian = "little")
+    round(2 * halfsize / spacing)
+  }
+
+  o = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(o), add = TRUE)
+
+  legacy_default = gridsize(write_copc(o), o)
+  legacy_dense   = gridsize(write_copc(o, density = "dense"), o)
+  legacy_normal  = gridsize(write_copc(o, density = "normal"), o)
+  expect_equal(legacy_default, legacy_dense)
+  expect_equal(legacy_default, 256)
+  expect_equal(legacy_normal, 128)
+
+  exp_default = gridsize(write_copc(o, experimental_writer = TRUE), o)
+  exp_normal  = gridsize(write_copc(o, density = "normal", experimental_writer = TRUE), o)
+  exp_dense   = gridsize(write_copc(o, density = "dense", experimental_writer = TRUE), o)
+  expect_equal(exp_default, exp_normal)
+  expect_equal(exp_default, 128)
+  expect_equal(exp_dense, 256)
+
+  expect_equal(gridsize(write_las(o), o), 256)
+  expect_equal(gridsize(write_las(o, experimental_writer = TRUE), o), 128)
+})

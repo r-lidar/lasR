@@ -1507,9 +1507,11 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' @param max_depth integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes
 #' @param density character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
 #' With 'sparse' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
-#' is light. Normal is 128, dense is 256. Default \code{"normal"} balances writer memory and file size; pass
-#' \code{"dense"} for richer coarse-LOD on visualization-first inputs at the cost of ~2.5x writer peak RAM
-#' on sofi-class inputs (4.6 GB vs 1.8 GB).
+#' is light. Normal is 128, dense is 256. Both writers honour it. Default \code{NULL} uses the writer's own
+#' default: \code{"dense"} for the legacy LASlib writer, and \code{"normal"} for the experimental writer
+#' (\code{experimental_writer = TRUE}), where it balances writer memory and file size. With the experimental
+#' writer, pass \code{"dense"} for richer coarse-LOD on visualization-first inputs at the cost of ~2.5x writer
+#' peak RAM on sofi-class inputs (4.6 GB vs 1.8 GB).
 #' @param max_extra_depth integer. \strong{Only honoured when} \code{experimental_writer = TRUE} ---
 #' the legacy LASlib writer has no equivalent knob. Auto-mode only: how many depth levels the writer
 #' is allowed to bump past the heuristic-chosen \code{max_depth} to keep chunks under
@@ -1536,7 +1538,9 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' header's bbox.
 #'
 #' @section Tuning the experimental writer:
-#' All knobs below require \code{experimental_writer = TRUE}. Sizes and
+#' All knobs below require \code{experimental_writer = TRUE}, except
+#' \code{density}, which the legacy writer also honours (its default is
+#' \code{"dense"}); the figures below are for the experimental writer. Sizes and
 #' chunk counts in the table reference the sofi.copc.laz benchmark
 #' (362M points, 1.9 GB compressed) for relative comparisons; absolute
 #' numbers vary by input.
@@ -1582,10 +1586,13 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' push the ancestor over \code{max_points_per_chunk}). This avoids tiny LAZ chunks. The
 #' floor is internal and not exposed via R; it matches LASlib's default and is rarely the
 #' wrong choice. Open an issue if your workload needs a different value.
-write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = "normal", experimental_writer = FALSE, max_extra_depth = NA, max_points_per_chunk = NA, bbox = NULL)
+write_copc = function(ofile = paste0(tempdir(), "/*.copc.laz"), filter = "", keep_buffer = FALSE, max_depth = NA, density = NULL, experimental_writer = FALSE, max_extra_depth = NA, max_points_per_chunk = NA, bbox = NULL)
 {
   ofile = normalizePath(ofile, mustWork = FALSE)
   if (is.na(max_depth)) max_depth = -1
+  # NULL = the writer's own default, resolved by the C++ API from an empty
+  # string: "normal" for the experimental writer, "dense" for the legacy one.
+  if (is.null(density)) density = ""
   # NA = use the default (1 level of adaptive depth bumping past the auto
   # heuristic). Pass -1 explicitly to opt back into unbounded bumping
   # (the prior default — finer LOD at the cost of much larger files).

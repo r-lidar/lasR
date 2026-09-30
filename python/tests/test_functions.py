@@ -451,6 +451,16 @@ class TestWriters(unittest.TestCase):
         )
         self.assertIsInstance(pipeline, pylasr.Pipeline)
 
+    def test_write_copc_default_density(self):
+        """write_copc's default density is "dense" (256) for the legacy writer
+        and "normal" (128) for the experimental one; explicit values are kept"""
+        legacy = pylasr.write_copc("output.copc.laz").to_string()
+        experimental = pylasr.write_copc("output.copc.laz", experimental_writer=True).to_string()
+        legacy_normal = pylasr.write_copc("output.copc.laz", density="normal").to_string()
+        self.assertIn("density : 256", legacy)
+        self.assertIn("density : 128", experimental)
+        self.assertIn("density : 128", legacy_normal)
+
     def test_write_pcd(self):
         """Test write_pcd pipeline creation"""
         pipeline = pylasr.write_pcd("output.pcd", binary=True)

@@ -20,7 +20,7 @@ write_copc(
   filter = "",
   keep_buffer = FALSE,
   max_depth = NA,
-  density = "normal",
+  density = NULL,
   experimental_writer = FALSE,
   max_extra_depth = NA,
   max_points_per_chunk = NA,
@@ -57,9 +57,11 @@ not yet the default. Has no effect for non-COPC outputs.}
 
 \item{density}{character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
 With 'sparse' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
-is light. Normal is 128, dense is 256. Default \code{"normal"} balances writer memory and file size; pass
-\code{"dense"} for richer coarse-LOD on visualization-first inputs at the cost of ~2.5x writer peak RAM
-on sofi-class inputs (4.6 GB vs 1.8 GB).}
+is light. Normal is 128, dense is 256. Both writers honour it. Default \code{NULL} uses the writer's own
+default: \code{"dense"} for the legacy LASlib writer, and \code{"normal"} for the experimental writer
+(\code{experimental_writer = TRUE}), where it balances writer memory and file size. With the experimental
+writer, pass \code{"dense"} for richer coarse-LOD on visualization-first inputs at the cost of ~2.5x writer
+peak RAM on sofi-class inputs (4.6 GB vs 1.8 GB).}
 
 \item{max_extra_depth}{integer. \strong{Only honoured when} \code{experimental_writer = TRUE} ---
 the legacy LASlib writer has no equivalent knob. Auto-mode only: how many depth levels the writer
@@ -107,7 +109,9 @@ either yet.
 }
 \section{Tuning the experimental writer}{
 
-All knobs below require \code{experimental_writer = TRUE}. Sizes and
+All knobs below require \code{experimental_writer = TRUE}, except
+\code{density}, which the legacy writer also honours (its default is
+\code{"dense"}); the figures below are for the experimental writer. Sizes and
 chunk counts in the table reference the sofi.copc.laz benchmark
 (362M points, 1.9 GB compressed) for relative comparisons; absolute
 numbers vary by input.

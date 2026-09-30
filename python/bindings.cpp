@@ -578,10 +578,25 @@ PYBIND11_MODULE(pylasr, m) {
           py::arg("pdrf") = py::none(),
           py::arg("experimental_writer") = false);
 
-    m.def("write_copc", &api::write_copc,
+    m.def("write_copc",
+          [](const std::string &ofile,
+             std::vector<std::string> filter,
+             bool keep_buffer,
+             int max_depth,
+             std::optional<std::string> density,
+             bool experimental_writer,
+             int max_extra_depth,
+             int max_points_per_chunk,
+             std::vector<double> bbox)
+          {
+              // None = the writer's own default, resolved by api::write_copc:
+              // "normal" for the experimental writer, "dense" for the legacy one.
+              return api::write_copc(ofile, filter, keep_buffer, max_depth, density.value_or(""),
+                                     experimental_writer, max_extra_depth, max_points_per_chunk, bbox);
+          },
           "Write COPC file",
           py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""},
-          py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = "normal",
+          py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = py::none(),
           py::arg("experimental_writer") = false, py::arg("max_extra_depth") = 1,
           py::arg("max_points_per_chunk") = -1, py::arg("bbox") = std::vector<double>{});
 
