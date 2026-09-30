@@ -69,14 +69,15 @@ means a more even density in map view):
 - In its coarse levels the normal preset of the experimental writer has a CV
   of 0.15 to 0.20. The four other writers are between 0.42 and 0.54.
 - The dense preset is between 0.27 and 0.65, with its highest value at
-  depth 3.
+  depth 3. That level has horizontal density bands, tracked in [#342](https://github.com/r-lidar/lasR/issues/342).
 - `validate_lod_visual.R` labels a CV below 0.6 GOOD. By that threshold every
   entry is GOOD except the dense preset at depth 3. The threshold does not
   separate the writers; the values do.
 
 ### 2.2 Density rasters
 
-One figure per writer, one panel per depth. All panels of a figure share one
+One figure per writer, one panel per depth; the dense preset is left out
+until [#342](https://github.com/r-lidar/lasR/issues/342) is resolved. All panels of a figure share one
 colour scale, dominated by the full-depth panel, so the first two or three
 panels are nearly uniform in colour for every writer; the table above is the
 better guide for those levels.
@@ -91,19 +92,6 @@ better guide for those levels.
 - Depth 3: a few axis-aligned square patches of higher density, two to three
   cells wide. They are not present in the full-depth panel. Their cause was not
   investigated.
-
-#### lasR-experimental-dense
-
-![lasR-experimental-dense density per depth](figures/2026-09-30/lod_lasR-experimental-dense.png)
-
-- Depth 3: alternating horizontal bands of lower and higher density across
-  the full width of the tile, each several tens of metres high. This is the
-  CV of 0.653 in the table.
-- Depth 2: rectangular regions of slightly different density with straight
-  edges.
-- Depth 4: a few short horizontal line segments of lower density.
-- None of these is present in the full-depth panel or in the normal preset.
-  Their cause was not investigated.
 
 #### Untwine, PDAL, lascopcindex, lasR legacy
 
@@ -336,7 +324,7 @@ file that share X, Y, Z, GPS time and return number with another point.
 | Points per level | Normal preset: 65,567 at depth 0, 342,737 at depth 1, five levels below the root |
 | Evenness of the coarse levels in map view | Normal preset CV 0.15 to 0.20; other writers 0.42 to 0.54; dense preset 0.27 to 0.65 |
 | Patterns in the normal preset | Bands of 15 to 42 % higher density where a point column spans two octree cells in z; a few small square patches at depth 3 |
-| Patterns in the dense preset | Horizontal bands at depth 3, not investigated |
+| Patterns in the dense preset | Horizontal density bands at depth 3, tracked in [#342](https://github.com/r-lidar/lasR/issues/342) |
 | Multi-tile merge without `bbox` | Works: 4 tiles, 195,852,101 points, depth 6 |
 | Points lost in the merge | None |
 | Points duplicated in the merge | 953, exactly on shared tile edges; the same happens when the tiles are read with unmodified `devel` |
