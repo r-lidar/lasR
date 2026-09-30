@@ -8,6 +8,7 @@
 
 #ifdef USING_GDAL
 #include <cpl_vsi.h>
+#include <cpl_multiproc.h>
 #endif
 
 #include <fstream>
@@ -37,6 +38,35 @@ static bool is_remote(const std::string& path)
   if (path.compare(0, 10, "/vsiswift/") == 0) return true;
   return false;
 }
+
+// Declared first in the body of a std::async worker, it frees the thread's
+// GDAL thread-local state when the body ends. std::async(std::launch::async)
+// starts a new OS thread per call. On Windows, GDAL keeps per-thread state
+// (the /vsicurl/ connection cache with its curl multi handle and sockets, the
+// PROJ context opened by Header::set_crs) in Win32 TLS, which has no
+// thread-exit destructor: GDAL's DllMain cleanup is MSVC-only, and Rtools
+// links GDAL statically. Without this every worker would leak that state.
+// GDAL's own thread wrapper calls CPLCleanupTLS() after the thread body in the
+// same way. On POSIX the TLS key destructor would free the state at thread
+// exit anyway, so freeing it a moment earlier changes nothing.
+// CPLCleanupTLS() on POSIX reads GDAL's TLS key without checking that it was
+// created. In lasR it always exists by then (the FileCollection's CRS has used
+// GDAL), but calling CPLGetTLS() first makes the guard safe on its own.
+namespace {
+struct WorkerThreadGdalCleanup
+{
+  WorkerThreadGdalCleanup() = default;
+  WorkerThreadGdalCleanup(const WorkerThreadGdalCleanup&) = delete;
+  WorkerThreadGdalCleanup& operator=(const WorkerThreadGdalCleanup&) = delete;
+  ~WorkerThreadGdalCleanup()
+  {
+#ifdef USING_GDAL
+    CPLGetTLS(CTLS_ERRORCONTEXT);
+    CPLCleanupTLS();
+#endif
+  }
+};
+}  // namespace
 
 EPTio::EPTio()
 {
@@ -595,7 +625,10 @@ void EPTio::prefetch_next_tile()
     tile_queue.pop_front();
     try {
       prefetch_queue.push_back(std::async(std::launch::async,
-        [this, key]() -> TileLoadResult { return open_tile_sync(key); }));
+        [this, key]() -> TileLoadResult {
+          WorkerThreadGdalCleanup gdal_cleanup;
+          return open_tile_sync(key);
+        }));
     }
     catch (const std::exception&) {
       tile_queue.push_front(key);
@@ -939,6 +972,7 @@ void EPTio::HierarchyIndex::ensure_tiles(
         if (!key_intersects_aoi(k)) continue;
         fetches.push_back(std::async(std::launch::async,
           [this, k]() -> PageFetchResult {
+            WorkerThreadGdalCleanup gdal_cleanup;
             PageFetchResult r;
             r.key = k;
             std::string path = base_path + "ept-hierarchy/" +
