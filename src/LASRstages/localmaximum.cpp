@@ -3,13 +3,45 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstring>
 
 LASRlocalmaximum::LASRlocalmaximum()
 {
   this->use_raster = false;
+  this->from_raster = false;
+  this->cell_radius = 0;
   this->counter = std::make_shared<unsigned int>(0);
   this->unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
   this->attribute = "";
+}
+
+// A 64-bit key that identifies a point by its location, the same in every chunk the point is read
+// in. The stored X and Y integers are used when X and Y are stored as integers. They are cast to
+// unsigned 32-bit before being combined: a negative Y must not fill the 32 high bits. Otherwise
+// (float or double X and Y), the stored values are exact copies of the coordinates and the key
+// mixes all their bits.
+static uint64_t fid_key(const Point& p)
+{
+  const AttributeSchema* schema = p.schema;
+  if (schema->attributes[AttributeCore::X].type == AttributeType::INT32 &&
+      schema->attributes[AttributeCore::Y].type == AttributeType::INT32)
+  {
+    return ((uint64_t)(uint32_t)p.get_X() << 32) | (uint64_t)(uint32_t)p.get_Y();
+  }
+
+  double x = p.get_x();
+  double y = p.get_y();
+  uint64_t bx, by;
+  std::memcpy(&bx, &x, sizeof(bx));
+  std::memcpy(&by, &y, sizeof(by));
+  auto mix = [](uint64_t z)
+  {
+    z += 0x9e3779b97f4a7c15ULL;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    return z ^ (z >> 31);
+  };
+  return mix(bx ^ mix(by));
 }
 
 bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
@@ -67,7 +99,10 @@ bool LASRlocalmaximum::process()
 
   // Process the LAS
   use_raster = false; // deactivate to process a LAS
+  from_raster = true;
+  cell_radius = std::hypot(raster.get_xres(), raster.get_yres()) / 2;
   bool success = process(ptr);
+  from_raster = false;
   use_raster = true;
 
   return success;
@@ -167,14 +202,31 @@ bool LASRlocalmaximum::process(PointCloud*& las)
 
     if (status[i] == UKN) status[i] = LMX; // If the status is still unknown it is a local max
 
-    if (status[i] == LMX)
+    // When the chunk box is not exact (after transform_crs(), see Chunk.h), it also covers parts
+    // of the neighbouring chunks, where the tree tops are found from an incomplete neighbourhood
+    // and are also found by the chunk that owns them. Only keep the tree tops of this chunk: the
+    // points that the reader did not flag as buffer points, or the cells whose centre is inside
+    // the footprint. The cells whose centre is less than half a cell outside are kept too: the
+    // chunks of a file collection are the bounding boxes of the files, with narrow gaps between
+    // them where a cell centre may fall. The tree tops kept by two chunks have the same FID and
+    // are written once.
+    bool owned = true;
+    if (!footprint.empty() && status[i] == LMX)
+    {
+      if (from_raster)
+        owned = footprint.contains(pp.get_x(), pp.get_y()) || footprint.distance(pp.get_x(), pp.get_y()) <= cell_radius;
+      else
+        owned = !pp.get_buffered();
+    }
+
+    if (status[i] == LMX && owned)
     {
       #pragma omp critical(assign_lm_ids)
       {
         // If the point is in the buffer we must guarantee it will be assigned the same ID the next
         // time we meet it. FID is a 64 bit geographic ID that is guaranteed to be unique. But we need
         // a 32 bit ID so we have a correspondence table.
-        uint64_t FID = ((uint64_t)pp.get_X() << 32) | (uint64_t)(pp.get_Y());
+        uint64_t FID = fid_key(pp);
         auto it = unicity_table->find(FID);
 
         PointLAS plas;
@@ -240,6 +292,26 @@ bool LASRlocalmaximum::process(PointCloud*& las)
     float second = (float)duration.count()/1000.0f;
     print("  Local Maximum Filter took %.2f sec.\n", second);
     // # nocov end
+  }
+
+  return true;
+}
+
+bool LASRlocalmaximum::set_chunk(Chunk& chunk)
+{
+  if (!StageVector::set_chunk(chunk)) return false;
+  footprint = chunk.footprint;
+
+  // With a footprint, process() decides which tree tops belong to this chunk. The box of the chunk
+  // must not remove the tree tops kept just outside the footprint (see process()).
+  if (!footprint.empty())
+  {
+    Chunk box = chunk;
+    box.xmin -= chunk.buffer;
+    box.ymin -= chunk.buffer;
+    box.xmax += chunk.buffer;
+    box.ymax += chunk.buffer;
+    vector.set_chunk(box);
   }
 
   return true;

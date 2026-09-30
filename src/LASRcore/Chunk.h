@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 // The exact footprint of a chunk as a closed polygon (the last vertex is not repeated). It is
 // set only when a stage changes the coordinates in a way that makes the chunk box inexact: after
@@ -37,6 +39,25 @@ struct Footprint
       xs.push_back(x[lo] + (py - y[lo]) * (x[hi] - x[lo]) / (y[hi] - y[lo]));
     }
     std::sort(xs.begin(), xs.end());
+  }
+
+  // Distance from (px, py) to the boundary
+  double distance(double px, double py) const
+  {
+    double best = std::numeric_limits<double>::infinity();
+    size_t n = x.size();
+    for (size_t i = 0, j = n - 1; i < n; j = i++)
+    {
+      double dx = x[i] - x[j];
+      double dy = y[i] - y[j];
+      double l2 = dx*dx + dy*dy;
+      double t = (l2 > 0) ? ((px - x[j]) * dx + (py - y[j]) * dy) / l2 : 0;
+      t = std::max(0.0, std::min(1.0, t));
+      double ex = x[j] + t * dx - px;
+      double ey = y[j] + t * dy - py;
+      best = std::min(best, std::sqrt(ex*ex + ey*ey));
+    }
+    return best;
   }
 
   bool contains(double px, double py) const

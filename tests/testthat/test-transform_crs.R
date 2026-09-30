@@ -509,3 +509,50 @@ test_that("transform_crs does not corrupt rasters at the seams of rotated tiles"
     expect_equal(sum(abs(b - a) > 1e-6, na.rm = TRUE), 0) # no wrong values
   }
 })
+
+test_that("transform_crs does not duplicate or lose local maxima across tiles",
+{
+  # Tree tops in the overlapping bounding boxes of rotated tiles are found in two tiles. Each
+  # must be written once, and tree tops must not be confused with one another.
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+
+  td <- tempfile("transform_crs_lmtiles_")
+  dir.create(td)
+  on.exit(unlink(td, recursive = TRUE), add = TRUE)
+
+  exec(reader_las() + write_las(file.path(td, "tile_*.las")), on = f, chunk = 100)
+  tiles <- list.files(td, pattern = "^tile_.*\\.las$", full.names = TRUE)
+  exec(write_lax(), on = tiles)
+  expect_gt(length(tiles), 1)
+
+  lmxyz <- function(v) sf::st_coordinates(v)[, 1:3, drop = FALSE]
+  skip_if_not_installed("sf")
+
+  for (epsg in c(32619, 4326))
+  {
+    ws <- if (epsg == 4326) 5e-5 else 5
+    pipe <- function(o) reader_las() + transform_crs(epsg) + local_maximum(ws, min_height = 0, ofile = file.path(td, o))
+    single <- lmxyz(exec(pipe(paste0("s", epsg, ".gpkg")), on = f))
+    tiled <- lmxyz(exec(pipe(paste0("t", epsg, ".gpkg")), on = tiles, buffer = 30))
+    expect_gt(nrow(single), 100)
+    expect_equal(nrow(tiled), nrow(single))
+    key <- function(m) sort(paste(sprintf("%.7f", m[, 1]), sprintf("%.7f", m[, 2]), sprintf("%.3f", m[, 3])))
+    expect_identical(key(tiled), key(single))
+  }
+
+  # Tree tops found on a raster
+  for (epsg in c(32619, 3857))
+  {
+    pipe <- function(o)
+    {
+      chm <- rasterize(1, "max", ofile = file.path(td, paste0(o, ".tif")))
+      lmx <- local_maximum_raster(chm, 5, min_height = 0, ofile = file.path(td, paste0(o, ".gpkg")))
+      reader_las() + transform_crs(epsg) + chm + lmx
+    }
+    single <- lmxyz(exec(pipe(paste0("rs", epsg)), on = f)[[2]])
+    tiled <- lmxyz(exec(pipe(paste0("rt", epsg)), on = tiles, buffer = 10)[[2]])
+    expect_gt(nrow(single), 100)
+    key <- function(m) sort(paste(sprintf("%.2f", m[, 1]), sprintf("%.2f", m[, 2])))
+    expect_identical(key(tiled), key(single))
+  }
+})
