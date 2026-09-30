@@ -118,3 +118,22 @@ test_that("reader_las works (filter case sensitive)",
 })
 
 
+test_that("reader does not segfault on a malformed Extra Bytes VLR (#117)",
+{
+  # malformed_extrabytes.las has an Extra Bytes VLR that declares a UINT16 attribute
+  # ("TestEB") but the point record length does not reserve room for it. LASlib then
+  # leaves the point's extra_bytes buffer unallocated while number_attributes > 0, so
+  # reading the attribute used to dereference a null pointer and crash R (#117).
+  f = system.file("extdata", "malformed_extrabytes.las", package="lasR")
+
+  res = NULL
+  cb = callback(function(data) { res <<- data ; NULL }, expose = "*")
+
+  # Must not crash: before the fix this segfaulted the whole R process.
+  expect_error(exec(reader_las() + cb, on = f), NA)
+
+  expect_equal(nrow(res), 10L)
+  expect_true("TestEB" %in% names(res))
+  # The unbacked extra attribute is read as 0 (as CloudCompare does) rather than crashing.
+  expect_true(all(res$TestEB == 0))
+})

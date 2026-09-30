@@ -10,6 +10,8 @@ LASRsummary::LASRsummary()
   nwithheld = 0;
   nsynthetic = 0;
 
+  get_synthetic = AttributeAccessor("Synthetic");
+  get_withheld = AttributeAccessor("Withheld");
   get_intensity = AttributeAccessor("Intensity");
   get_returnnumber = AttributeAccessor("ReturnNumber");
   get_classification = AttributeAccessor("Classification");
@@ -40,6 +42,8 @@ bool LASRsummary::process(Point*& p)
   npoints_per_class[get_classification(p)]++;
 
   if (get_number_of_returns(p) == 1) nsingle++;
+  if (get_synthetic(p) == 1) nsynthetic++;
+  if (get_withheld(p) == 1) nwithheld++;
 
   //(p->get_scan_direction_flag() == 0) ? npoints_per_sdf.first++ : npoints_per_sdf.second++;
 
@@ -355,6 +359,8 @@ nlohmann::json LASRsummary::to_json() const
 
 void LASRsummary::reset_accessors()
 {
+  get_withheld.reset();
+  get_synthetic.reset();
   get_intensity.reset();
   get_returnnumber.reset();
   get_classification.reset();

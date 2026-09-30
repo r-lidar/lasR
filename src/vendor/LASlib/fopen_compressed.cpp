@@ -39,8 +39,12 @@
 #include <windows.h>
 #endif
 
+#ifdef USING_R
 #include "print.h"
-
+#else
+#define eprint(...) fprintf(stderr, __VA_ARGS__)
+#define print(...)  fprintf(stdout, __VA_ARGS__)
+#endif
 enum PIPES { READ_HANDLE, WRITE_HANDLE }; /* Constants 0 and 1 for READ and WRITE */
 
 // open a 7zipped/ZIPped/gzipped/rarzipped file as if they were regular a file

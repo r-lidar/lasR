@@ -2,6 +2,7 @@
 #include "openmp.h"
 
 #include <chrono>
+#include <cmath>
 
 LASRlocalmaximum::LASRlocalmaximum()
 {
@@ -31,6 +32,19 @@ bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
     vector.add_field("ReturnNumber", OFTInteger);
     vector.add_field("Classification", OFTInteger);
     vector.add_field("ScanAngle", OFTReal);
+
+    // When use_attribute selects a non-standard attribute (e.g. an extrabyte
+    // such as "HAG"), expose it as a real-valued field so callers can read the
+    // value used for the local-maximum test back from the output vector.
+    if (use_attribute != "Z" &&
+        use_attribute != "Intensity" &&
+        use_attribute != "gpstime" &&
+        use_attribute != "ReturnNumber" &&
+        use_attribute != "Classification" &&
+        use_attribute != "ScanAngle")
+    {
+      vector.add_field(use_attribute, OFTReal);
+    }
   }
 
   if (connections.size() > 0) use_raster = true;
@@ -133,7 +147,8 @@ bool LASRlocalmaximum::process(PointCloud*& las)
     }
 
     if (!las->get_point(i, &pp, &pointfilter)) { status[i] = NLM; } // The point was either filtered or withhelded
-    if (accessor(&pp) < min_height) { status[i] = NLM; }
+    double v = accessor(&pp);
+    if (std::isnan(v) || v < min_height) { status[i] = NLM; }
     if (status[i] == NLM) continue;
 
     Circle windows(pp.get_x(), pp.get_y(), hws);
@@ -170,6 +185,23 @@ bool LASRlocalmaximum::process(PointCloud*& las)
         plas.return_number = get_return(&pp);
         plas.scan_angle = get_angle(&pp);
         plas.number_of_returns = get_number(&pp);
+
+        // Stash the use_attribute value alongside the LM so Vector::write can
+        // emit it as a feature field. Mirrors the field registered in
+        // set_parameters() for non-standard use_attribute values.
+        if (record_attributes &&
+            use_attribute != "Z" &&
+            use_attribute != "Intensity" &&
+            use_attribute != "gpstime" &&
+            use_attribute != "ReturnNumber" &&
+            use_attribute != "Classification" &&
+            use_attribute != "ScanAngle")
+        {
+          if (plas.extrabytes == nullptr)
+            plas.extrabytes = new std::unordered_map<std::string, double>();
+          (*plas.extrabytes)[use_attribute] = accessor(&pp);
+        }
+
         if (it == unicity_table->end())
         {
           (*unicity_table)[FID] = *counter;

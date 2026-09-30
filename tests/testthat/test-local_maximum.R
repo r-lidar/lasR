@@ -45,6 +45,28 @@ test_that("local maximum works with extra bytes",
   expect_equal(length(z), 7L)
 })
 
+test_that("local maximum records use_attribute as a vector field",
+{
+  f <- system.file("extdata", "MixedConifer.las", package = "lasR")
+
+  tri    <- triangulate(filter = keep_ground_and_water())
+  hag_eb <- add_extrabytes("double", "HAG", "Height Above Ground")
+  hag    <- transform_with(tri, store_in_attribute = "HAG")
+  lmf    <- local_maximum(
+    ws = 3,
+    min_height = 2,
+    filter = "HAG > 2",
+    use_attribute = "HAG",
+    record_attributes = TRUE
+  )
+
+  ans <- exec(reader() + tri + hag_eb + hag + lmf, on = f)
+
+  expect_true("HAG" %in% names(ans))
+  expect_type(ans$HAG, "double")
+  expect_true(all(ans$HAG > 2))
+})
+
 #test_that("local maximum fails with missing extra bytes",
 #{
 #  f <- system.file("extdata", "extra_byte.las", package="lasR")

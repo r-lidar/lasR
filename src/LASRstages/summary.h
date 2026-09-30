@@ -35,6 +35,8 @@ private:
   void merge_maps(std::map<int, uint64_t>& map1, const std::map<int, uint64_t>& map2);
 
 private:
+  AttributeAccessor get_synthetic;
+  AttributeAccessor get_withheld;
   AttributeAccessor get_intensity;
   AttributeAccessor get_returnnumber;
   AttributeAccessor get_classification;

@@ -1,9 +1,20 @@
+# lasR 0.21.1
+
+- Fix #323 streaming bounding box filter
+
 # lasR 0.21.0
 
 - Change: EPT auto-partition default target is 32 when `LASR_EPT_PARTITIONS` is unset (was `4 × concurrent_files` workers).
+- Fix: #117 segfault when reading a file with a malformed Extra Bytes VLR that declares more extra-byte attributes than the point record length reserves. Such attributes are now read as 0 and a warning is emitted instead of crashing.
 - New: Support of Entwine Point Tile format
 - New: `classify_with_ivf` gains a parameter `filter` (#289)
 - Change: `drop_noise()` and `keep_noise()` now filter classes 7 and 18 instead of 18 only (#283)
+- New: record `use_attribute` as a field in `local_maximum()` output (#310)
+- New: operator `=` in `transform_with()` to assign a field (#314)
+
+# lasR 0.20.1
+
+- Enhance: documentation of `classify_with_ptd` (#288)
 
 # lasR 0.20.0
 
@@ -13,7 +24,6 @@ url <- "https://s3.amazonaws.com/hobu-lidar/autzen-classified.copc.laz"
 pipeline <-  reader_circles(637368.8, 851944.8, 15) + summarise()
 ans <- exec(pipeline, on = url)
 ```
-
 
 # lasR 0.19.0
 

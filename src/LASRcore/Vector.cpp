@@ -4,6 +4,8 @@
 
 #include "cpl_error.h"
 
+#include <cmath>
+
 Vector::Vector() : GDALdataset()
 {
   writetype = UNDEFINED;
@@ -130,6 +132,22 @@ bool Vector::write(const std::vector<PointLAS>& batch, bool write_attributes)
       feature->SetField("ReturnNumber", p.return_number);
       feature->SetField("Classification", p.classification);
       feature->SetField("ScanAngle", p.scan_angle);
+
+      // Write any additional registered fields (e.g. use_attribute requested
+      // by local_maximum) whose values are stashed in PointLAS::extrabytes.
+      for (const auto& field : fields)
+      {
+        const std::string& name = field.first;
+        if (name == "Intensity" ||
+            name == "gpstime" ||
+            name == "ReturnNumber" ||
+            name == "Classification" ||
+            name == "ScanAngle") continue;
+
+        double value = p.get_extrabyte(name);
+        if (!std::isnan(value))
+          feature->SetField(name.c_str(), value);
+      }
     }
 
     if (layer->CreateFeature(feature) != OGRERR_NONE)

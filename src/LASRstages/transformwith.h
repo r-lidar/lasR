@@ -22,7 +22,7 @@ private:
   int op;
   bool bilinear;
   std::string attribute;
-  enum operators {ADD, SUB};
+  enum operators {ADD, SUB, SET};
 };
 
 #endif
