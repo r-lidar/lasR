@@ -316,3 +316,51 @@ test_that("transform_crs keeps circular queries exact after a projected -> geogr
   s <- exec(reader_circles(xc, yc, r) + transform_crs(4326) + summarise(), on = f, buffer = 20)
   expect_equal(s$npoints, expected)
 })
+
+test_that("transform_crs converts the buffers of downstream stages given in data units",
+{
+  # rasterize() with a window asks for a buffer in the units of the coordinates it receives:
+  # degrees after transform_crs(4326), metres after transform_crs(32619). The reader works in
+  # the source CRS, so this buffer must be converted into source units, and must be large
+  # enough in every direction: 1 degree of latitude is longer than 1 degree of longitude.
+  # The buffer points loaded by the reader are exposed by the callback ('b' = buffer flag).
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+
+  halo <- function(d)
+  {
+    core <- d$Buffer == 0
+    c(cxmin = min(d$X[core]), cxmax = max(d$X[core]), cymin = min(d$Y[core]), cymax = max(d$Y[core]),
+      xmin = min(d$X), xmax = max(d$X), ymin = min(d$Y), ymax = max(d$Y))
+  }
+
+  # For each side of each chunk that has at least 'need' of data beyond it, the reader must have
+  # loaded buffer points up to 'need' away (minus the point spacing).
+  expect_halo <- function(res, need)
+  {
+    res <- do.call(rbind, res)
+    expect_gt(nrow(res), 1)
+    ext <- c(min(res[, "xmin"]), max(res[, "xmax"]), min(res[, "ymin"]), max(res[, "ymax"]))
+    w <- res[, "cxmin"] - ext[1] >= need
+    e <- ext[2] - res[, "cxmax"] >= need
+    s <- res[, "cymin"] - ext[3] >= need
+    n <- ext[4] - res[, "cymax"] >= need
+    expect_true(any(w) && any(e) && any(s) && any(n))
+    halos <- c((res[, "cxmin"] - res[, "xmin"])[w], (res[, "xmax"] - res[, "cxmax"])[e],
+               (res[, "cymin"] - res[, "ymin"])[s], (res[, "ymax"] - res[, "cymax"])[n])
+    expect_gt(min(halos), 0.95 * need)
+  }
+
+  # Projected -> geographic. need_buffer = (1.1e-3 - 1e-4) / 2 = 5e-4 degrees.
+  res <- exec(reader_las() + transform_crs(4326) + rasterize(c(1e-4, 1.1e-3), "max", ofile = "") +
+              callback(halo, expose = "xyzb", drop_buffer = FALSE), on = f, chunk = 100)
+  expect_halo(res, 5e-4)
+
+  # Geographic -> projected. need_buffer = (101 - 1) / 2 = 50 metres.
+  geo <- tempfile(fileext = ".las")
+  on.exit(unlink(c(geo, sub("\\.las$", ".lax", geo))), add = TRUE)
+  exec(reader_las() + transform_crs(4326) + write_las(geo), on = f)
+  exec(write_lax(), on = geo)
+  res <- exec(reader_las() + transform_crs(32619) + rasterize(c(1, 101), "max", ofile = "") +
+              callback(halo, expose = "xyzb", drop_buffer = FALSE), on = geo, chunk = 0.0013)
+  expect_halo(res, 50)
+})

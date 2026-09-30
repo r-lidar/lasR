@@ -12,6 +12,8 @@ LASRtransformcrs::LASRtransformcrs()
   transform = nullptr;
   target_to_source_buffer_scale = 1.0;
   target_to_source_buffer_scale_valid = false;
+  data_units_buffer_scale = 1.0;
+  data_units_buffer_scale_valid = false;
 }
 
 LASRtransformcrs::LASRtransformcrs(const LASRtransformcrs& other) : Stage(other)
@@ -20,6 +22,8 @@ LASRtransformcrs::LASRtransformcrs(const LASRtransformcrs& other) : Stage(other)
   target_crs = other.target_crs;
   target_to_source_buffer_scale = other.target_to_source_buffer_scale;
   target_to_source_buffer_scale_valid = other.target_to_source_buffer_scale_valid;
+  data_units_buffer_scale = other.data_units_buffer_scale;
+  data_units_buffer_scale_valid = other.data_units_buffer_scale_valid;
   // OGRCoordinateTransformation is not thread-safe and not trivially copyable.
   // Each clone lazily rebuilds its own transform from source_crs/target_crs.
   transform = nullptr;
@@ -111,6 +115,56 @@ bool LASRtransformcrs::build_transform()
   return true;
 }
 
+// Largest number of source units needed to cover one target unit, in any direction, over the
+// extent xmin..ymax of the source CRS. At each point of a grid covering the extent, the Jacobian J
+// of the source -> target transformation is estimated by finite differences. A target
+// displacement (dx, dy) comes from the source displacement J^-1 (dx, dy), so a source box
+// expanded by b on each side covers a target box expanded by d on each side if b >= d * |J^-1|,
+// with |.| the maximum absolute row sum norm. It covers the smaller target disc of radius d too.
+// Returns 0 if the scale cannot be estimated.
+static double max_source_units_per_target_unit(OGRCoordinateTransformation* ct, double xmin, double ymin, double xmax, double ymax, bool source_is_geographic)
+{
+  const int n = 5; // n x n samples
+
+  double step = std::max(xmax - xmin, ymax - ymin) * 1e-3;
+  if (!(step > 0)) step = source_is_geographic ? 1e-6 : 0.1;
+
+  std::vector<double> xs, ys;
+  for (int i = 0; i < n; ++i)
+  {
+    for (int j = 0; j < n; ++j)
+    {
+      double x = xmin + (xmax - xmin) * i / (n - 1);
+      double y = ymin + (ymax - ymin) * j / (n - 1);
+      xs.push_back(x);        ys.push_back(y);
+      xs.push_back(x + step); ys.push_back(y);
+      xs.push_back(x);        ys.push_back(y + step);
+    }
+  }
+
+  std::vector<int> ok(xs.size(), 0);
+  ct->Transform((int)xs.size(), xs.data(), ys.data(), nullptr, ok.data());
+
+  double scale = 0;
+  for (size_t k = 0; k < xs.size(); k += 3)
+  {
+    if (!ok[k] || !ok[k+1] || !ok[k+2]) continue;
+
+    const double a = (xs[k+1] - xs[k]) / step; // d x_target / d x_source
+    const double b = (xs[k+2] - xs[k]) / step; // d x_target / d y_source
+    const double c = (ys[k+1] - ys[k]) / step; // d y_target / d x_source
+    const double d = (ys[k+2] - ys[k]) / step; // d y_target / d y_source
+    const double det = a * d - b * c;
+    if (!std::isfinite(det) || det == 0) continue;
+
+    // J^-1 = [d -b; -c a] / det
+    const double s = std::max(std::fabs(d) + std::fabs(b), std::fabs(c) + std::fabs(a)) / std::fabs(det);
+    if (std::isfinite(s)) scale = std::max(scale, s);
+  }
+
+  return scale;
+}
+
 void LASRtransformcrs::get_extent(double& xmin, double& ymin, double& xmax, double& ymax)
 {
   // The source CRS is known once set_crs() has been called by the parser. When it is
@@ -130,6 +184,17 @@ void LASRtransformcrs::get_extent(double& xmin, double& ymin, double& xmax, doub
         target_to_source_buffer_scale_valid = true;
       }
 
+      if (build_transform())
+      {
+        // Add 1% to account for the variations of the scale between the samples.
+        double scale = max_source_units_per_target_unit(transform, sxmin, symin, sxmax, symax, source_crs.is_geographic());
+        if (scale > 0)
+        {
+          data_units_buffer_scale = scale * 1.01;
+          data_units_buffer_scale_valid = true;
+        }
+      }
+
       this->xmin = xmin;
       this->ymin = ymin;
       this->xmax = xmax;
@@ -138,8 +203,18 @@ void LASRtransformcrs::get_extent(double& xmin, double& ymin, double& xmax, doub
   }
 }
 
-double LASRtransformcrs::translate_buffer_to_input(double downstream_buffer) const
+double LASRtransformcrs::translate_buffer_to_input(double downstream_buffer, bool data_units) const
 {
+  // A buffer in data units (a resolution, a window size...) is a distance in the target CRS, in
+  // any direction. Express it in source units with the largest local ratio between the two CRS
+  // so the reader loads at least that distance in every direction, whatever the direction of the
+  // transformation (projected <-> geographic, or between two projected CRS).
+  if (data_units)
+  {
+    if (!data_units_buffer_scale_valid) return downstream_buffer;
+    return downstream_buffer * data_units_buffer_scale;
+  }
+
   if (!target_to_source_buffer_scale_valid) return downstream_buffer;
 
   // Fixed-distance stages after a projected -> geographic reprojection still ask for a

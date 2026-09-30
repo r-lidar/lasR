@@ -35,7 +35,7 @@ public:
   // following stages must be expressed in the target CRS.
   bool set_chunk(Chunk& chunk) override;
   void get_extent(double& xmin, double& ymin, double& xmax, double& ymax) override;
-  double translate_buffer_to_input(double downstream_buffer) const override;
+  double translate_buffer_to_input(double downstream_buffer, bool data_units) const override;
 
   std::string get_name() const override { return "transform_crs"; }
 
@@ -51,6 +51,8 @@ private:
   OGRCoordinateTransformation* transform;
   double target_to_source_buffer_scale;
   bool target_to_source_buffer_scale_valid;
+  double data_units_buffer_scale;
+  bool data_units_buffer_scale_valid;
 };
 
 #endif

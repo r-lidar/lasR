@@ -454,20 +454,29 @@ bool Engine::need_points() const
 
 double Engine::need_buffer()
 {
-  double required = 0;
+  // Walk the pipeline backwards so a stage that changes the coordinates (transform_crs) can
+  // express the buffer required by the stages that follow it in the units of the stages that
+  // precede it. Buffers in data units and fixed distances are not converted the same way, so
+  // they are tracked separately.
+  double required_data_units = 0;
+  double required_fixed = 0;
 
   for (auto it = pipeline.rbegin(); it != pipeline.rend(); ++it)
   {
     Stage* stage = it->get();
     if (!stage->is_streamable())
     {
-      required = MAX(required, stage->need_buffer());
+      if (stage->is_buffer_in_data_units())
+        required_data_units = MAX(required_data_units, stage->need_buffer());
+      else
+        required_fixed = MAX(required_fixed, stage->need_buffer());
     }
 
-    required = stage->translate_buffer_to_input(required);
+    required_data_units = stage->translate_buffer_to_input(required_data_units, true);
+    required_fixed = stage->translate_buffer_to_input(required_fixed, false);
   }
 
-  return MAX(buffer, required);
+  return MAX(buffer, MAX(required_data_units, required_fixed));
 }
 
 void Engine::sort()
