@@ -654,3 +654,36 @@ test_that("transform_crs gives the same coordinates under concurrent_files as se
     expect_identical(cf$points, ref$points)
   }
 })
+
+test_that("transform_crs gives the same raster tiled or not at resolutions without an exact binary value",
+{
+  # The raster of a chunk is written at an offset computed by dividing its origin by the
+  # resolution. After a reprojection, the origin of the chunks is never on the tile grid, and the
+  # quotient could land just below the integer, shifting the whole chunk by one cell.
+  skip_if_not_installed("terra")
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+
+  td <- tempfile("transform_crs_rres_")
+  dir.create(td)
+  on.exit(unlink(td, recursive = TRUE), add = TRUE)
+
+  exec(reader_las() + write_las(file.path(td, "tile_*.las")), on = f, chunk = 100)
+  tiles <- list.files(td, pattern = "^tile_.*\\.las$", full.names = TRUE)
+  exec(write_lax(), on = tiles)
+  expect_gt(length(tiles), 1)
+
+  o1 <- file.path(td, "single.tif")
+  o2 <- file.path(td, "tiled.tif")
+  for (x in list(list(epsg = 32619, res = 1.2), list(epsg = 4326, res = 1e-5)))
+  {
+    pipe <- function(o) reader_las() + transform_crs(x$epsg) + rasterize(x$res, "max", ofile = o)
+    a <- exec(pipe(o1), on = f)
+    b <- exec(pipe(o2), on = tiles, buffer = 30)
+    expect_equal(as.vector(terra::ext(b)), as.vector(terra::ext(a)))
+    a <- terra::values(a)[, 1]
+    b <- terra::values(b)[, 1]
+    expect_gt(sum(!is.na(a)), 30000)
+    expect_identical(is.na(b), is.na(a))
+    expect_identical(b, a)
+  }
+})

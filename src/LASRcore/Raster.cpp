@@ -6,6 +6,20 @@
 #include <cmath>
 #include <algorithm>
 
+// Offset, in cells, of a position on the grid of a raster: q is the position minus the origin of
+// the raster, divided by the resolution. The rasters of the chunks are snapped to the same grid as
+// the raster on disk (multiples of the resolution, see Grid and Raster::set_chunk()), so q is an
+// integer up to the floating-point error. With a resolution that has no exact binary value (0.1,
+// 1.2, 1e-5...) this error can put q just below the integer, and flooring it shifts a whole chunk
+// by one cell. Round it when it is an integer up to that error, floor it otherwise (a grid that is
+// not aligned).
+static int grid_offset(double q)
+{
+  const double r = std::round(q);
+  if (std::fabs(q - r) < 1e-6) return (int)r;
+  return (int)std::floor(q);
+}
+
 // Default constructor creates a Raster from (0,0) to (0,0) with a resolution of 0
 // GDALdataset is NOT initialized.
 // data is NOT initialized
@@ -380,8 +394,8 @@ bool Raster::get_chunk(const Chunk& chunk, int band_index)
 
   // We usually work only with a chunk. We need to compute the xy offsets considering that
   // we only have partial data in memory
-  int xoffset = std::floor((minx - geo_transform[0]) / geo_transform[1]);
-  int yoffset = std::floor((maxy - geo_transform[3]) / geo_transform[5]);
+  int xoffset = grid_offset((minx - geo_transform[0]) / geo_transform[1]);
+  int yoffset = grid_offset((maxy - geo_transform[3]) / geo_transform[5]);
 
   // Read raster data
   void* gdal_buffer = CPLMalloc(ncells*sizeof(float));
@@ -429,8 +443,8 @@ bool Raster::write()
 
   // We usually work only with a chunk. We need to compute the xy offsets considering that
   // we only have partial data in memory
-  int xoffset = std::floor((xmin + buffer*xres - geo_transform[0]) / geo_transform[1]);
-  int yoffset = std::floor((ymax - buffer*yres - geo_transform[3]) / geo_transform[5]);
+  int xoffset = grid_offset((xmin + buffer*xres - geo_transform[0]) / geo_transform[1]);
+  int yoffset = grid_offset((ymax - buffer*yres - geo_transform[3]) / geo_transform[5]);
 
   // Write the data to the raster band. If the raster is buffered we only write the main data
   // without the buffer
