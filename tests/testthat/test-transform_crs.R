@@ -133,6 +133,31 @@ test_that("transform_crs reprojects the coverage extent for downstream rasteriza
   expect_gt(sum(terra::values(r), na.rm = TRUE), 0)
 })
 
+# First points of pcd_ascii.pcd as stored in memory (float32), reprojected with gdaltransform
+# (GDAL 3.8.4), e.g.
+# echo "-121.08580017089844 -24.701700210571289" | gdaltransform -s_srs EPSG:3857 -t_srs EPSG:32619
+pcd_first_3857_to_32619 = rbind(
+  c(11307805.660534, -70.084096),
+  c(11307806.093565, -70.068780),
+  c(11307806.075293, -68.985245),
+  c(11307805.326651, -68.482200),
+  c(11307805.508877, -68.541214))
+
+# echo "-121.08580017089844 -24.701700210571289" | gdaltransform -s_srs EPSG:4326 -t_srs EPSG:3857
+pcd_first_4326_to_3857 = rbind(
+  c(-13479209.617321, -2839149.455157),
+  c(-13462333.170775, -2838487.834834),
+  c(-13463045.733739, -2791766.151913),
+  c(-13492222.596736, -2770123.289379),
+  c(-13485120.747508, -2772660.732461))
+
+read_first_xy = function(f, pipeline = NULL, n = 5)
+{
+  cb = callback(function(d) unname(as.matrix(d[seq_len(n), c("X", "Y")])), expose = "xy")
+  if (is.null(pipeline)) exec(cb, on = f)
+  else exec(pipeline + cb, on = f)
+}
+
 read_range_xyz = function(f, pipeline = NULL)
 {
   cb = callback(function(d) c(xmin = min(d$X), xmax = max(d$X),
@@ -163,6 +188,10 @@ test_that("transform_crs reprojects PCD float coordinates without corrupting the
   # Coordinates were really reprojected from degrees to metres (magnitudes blow up).
   expect_gt(abs(unname(out["xmin"])), 1e6)
   expect_gt(abs(unname(out["ymin"])), 1e5)
+
+  # And they are not rounded to the precision of a float32 (1 m at these magnitudes).
+  xy <- read_first_xy(f, set_crs(4326) + transform_crs(3857))
+  expect_lt(max(abs(xy - pcd_first_4326_to_3857)), 1e-3)
 
   # Z (elevation) is preserved unchanged.
   expect_equal(unname(out["zmin"]), unname(src["zmin"]), tolerance = 1e-4)
@@ -200,24 +229,65 @@ test_that("transform_crs writes reprojected PCD float coordinates correctly to L
 
 test_that("transform_crs keeps projected precision for projected PCD writes to LAS",
 {
-  # Projected -> projected from a float source. The PCD schema scale is a placeholder (1.0), so
-  # transform_crs must pick a fine projected scale (1 cm) for the LAS quantization rather than
-  # reuse it. Otherwise the LAS output is quantized to whole units (~0.3 m error here). (For an
-  # INT32/LAS source the real schema scale is reused, exercised by the other tests above.)
+  # Projected -> projected from a float32 source (PCD TYPE F SIZE 4). The reprojected eastings
+  # (~1.13e7) are beyond the precision of a float32 (1 m), so X/Y must be promoted to double in
+  # memory. The PCD schema scale is a placeholder (1.0), so transform_crs must also pick a fine
+  # projected scale (1 cm) for the LAS quantization rather than reuse it. Both are checked against
+  # gdaltransform on both axes with an absolute tolerance.
   f <- system.file("extdata", "pcd_ascii.pcd", package = "lasR")
-  inmem <- read_range_xyz(f, set_crs(3857) + transform_crs(32619))
+  pipeline <- set_crs(3857) + transform_crs(32619)
+
+  inmem <- read_first_xy(f, pipeline)
+  expect_lt(max(abs(inmem - pcd_first_3857_to_32619)), 1e-3)
 
   o <- tempfile(fileext = ".las")
   on.exit(unlink(o), add = TRUE)
-  exec(reader_las() + set_crs(3857) + transform_crs(32619) + write_las(o), on = f, noread = TRUE)
-  onlas <- read_range_xyz(o)
+  exec(reader_las() + pipeline + write_las(o), on = f, noread = TRUE)
 
-  expect_equal(unname(onlas["n"]), unname(inmem["n"]))
-  # Round-trip preserves the reprojected coordinates to centimetre level, not whole units.
-  expect_lt(abs(unname(onlas["xmin"]) - unname(inmem["xmin"])), 0.02)
-  expect_lt(abs(unname(onlas["xmax"]) - unname(inmem["xmax"])), 0.02)
-  expect_lt(abs(unname(onlas["ymin"]) - unname(inmem["ymin"])), 0.02)
-  expect_lt(abs(unname(onlas["ymax"]) - unname(inmem["ymax"])), 0.02)
+  expect_equal(unname(read_range_xyz(o)["n"]), unname(read_range_xyz(f)["n"]))
+  onlas <- read_first_xy(o)
+  expect_lt(max(abs(onlas - pcd_first_3857_to_32619)), 0.01)
+})
+
+test_that("transform_crs keeps the other attributes when promoting float X/Y to double",
+{
+  # Promoting X/Y from float to double re-lays out every point: the attributes stored after X/Y
+  # (Z, intensity, gpstime, ...) are moved and must be preserved.
+  f <- system.file("extdata", "Example.pcd", package = "lasR")
+  read_all <- function(pipeline = NULL)
+  {
+    cb <- callback(function(d) d, expose = "*", no_las_update = TRUE)
+    if (is.null(pipeline)) exec(cb, on = f) else exec(pipeline + cb, on = f)
+  }
+
+  src <- read_all()
+  out <- read_all(set_crs(32617) + transform_crs(32618))
+
+  expect_equal(nrow(out), nrow(src))
+  for (name in setdiff(names(src), c("X", "Y")))
+    expect_equal(out[[name]], src[[name]], label = name)
+
+  # First point (339002.88 5248000.50 stored as float32):
+  # echo "339002.875 5248000.5" | gdaltransform -s_srs EPSG:32617 -t_srs EPSG:32618
+  expect_lt(abs(out$X[1] - -113858.765517), 1e-3)
+  expect_lt(abs(out$Y[1] - 5277949.797934), 1e-3)
+})
+
+test_that("transform_crs writes reprojected PCD float coordinates to PCD without precision loss",
+{
+  f <- system.file("extdata", "pcd_ascii.pcd", package = "lasR")
+  n <- unname(read_range_xyz(f)["n"])
+
+  for (binary in c(TRUE, FALSE))
+  {
+    o <- tempfile(fileext = ".pcd")
+    exec(set_crs(3857) + transform_crs(32619) + write_pcd(o, binary = binary), on = f)
+
+    expect_equal(unname(read_range_xyz(o)["n"]), n)
+    xy <- read_first_xy(o)
+    expect_lt(max(abs(xy - pcd_first_3857_to_32619)), 1e-3)
+    unlink(c(o, sub("\\.pcd$", ".bbox", o)))
+  }
 })
 
 test_that("transform_crs scales the tile buffer to the target CRS units",

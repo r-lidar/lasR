@@ -1143,6 +1143,10 @@ set_crs = function(x)
 #' matching the behaviour of `gdaltransform`, `sf` and `terra` for 2D targets. Vertical datum
 #' transformations (compound/vertical CRS) are out of scope.
 #'
+#' X and Y stored as 32-bit floats (e.g. PCD files with `TYPE F` and `SIZE 4`) cannot hold
+#' reprojected coordinates precisely (about 1 m at a magnitude of 10 million), so they are
+#' converted to 64-bit doubles before being reprojected.
+#'
 #' The source CRS is the CRS carried by the files being read or the one assigned with
 #' \link{set_crs} earlier in the pipeline. The stage therefore typically appears after the
 #' \link{reader}. A point that falls outside the domain of the transformation is dropped.

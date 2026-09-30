@@ -326,8 +326,14 @@ bool LASRtransformcrs::process(PointCloud*& las)
     return false;
   }
 
+  // A float (e.g. PCD TYPE F SIZE 4) has 24 bits of precision: 0.5 to 1 m for projected
+  // coordinates of millions of metres, and about 1 m for longitudes. It cannot hold reprojected
+  // coordinates, so float X/Y are promoted to double before storing the reprojected values.
+  if (attr_x.type == AttributeType::FLOAT && !las->promote_float_to_double(AttributeCore::X)) return false;
+  if (attr_y.type == AttributeType::FLOAT && !las->promote_float_to_double(AttributeCore::Y)) return false;
+
   // LAS stores X/Y as scaled 32-bit integers (scale/offset matter); PCD and other formats
-  // may store them as float/double, which carry the coordinate directly and ignore
+  // may store them as double, which carry the coordinate directly and ignore
   // scale/offset (see Point::get_core_attribute_as_double). Both cases are handled below.
   const bool x_int = (attr_x.type == AttributeType::INT32);
   const bool y_int = (attr_y.type == AttributeType::INT32);
@@ -419,9 +425,7 @@ bool LASRtransformcrs::process(PointCloud*& las)
       if (raw > std::numeric_limits<int>::max() || raw < std::numeric_limits<int>::min()) return false;
       *reinterpret_cast<int*>(ptr) = static_cast<int>(raw);
     }
-    else if (a.type == AttributeType::FLOAT)
-      *reinterpret_cast<float*>(ptr) = static_cast<float>(value);
-    else // DOUBLE
+    else // DOUBLE (float X/Y were promoted to double above)
       *reinterpret_cast<double*>(ptr) = value;
     return true;
   };

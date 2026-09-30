@@ -21,7 +21,7 @@
 - Change: `drop_noise()` and `keep_noise()` now filter classes 7 and 18 instead of 18 only (#283)
 - New: record `use_attribute` as a field in `local_maximum()` output (#310)
 - New: operator `=` in `transform_with()` to assign a field (#314)
-- New: `transform_crs()` reprojects the point cloud to a target CRS (EPSG code or WKT). Unlike `set_crs()`, which only assigns a CRS, `transform_crs()` reprojects the X/Y coordinates with PROJ/GDAL, adapts the scale factors and offsets to the target CRS, updates the bounding box and tags downstream stages and writers with the target CRS.
+- New: `transform_crs()` reprojects the point cloud to a target CRS (EPSG code or WKT). Unlike `set_crs()`, which only assigns a CRS, `transform_crs()` reprojects the X/Y coordinates with PROJ/GDAL, adapts the scale factors and offsets to the target CRS, updates the bounding box and tags downstream stages and writers with the target CRS. X/Y stored as 32-bit floats (e.g. PCD) are converted to 64-bit doubles so the reprojected coordinates keep their precision.
 
 # lasR 0.20.1
 
