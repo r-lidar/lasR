@@ -15,7 +15,9 @@ bool LASRrasterize::set_parameters(const nlohmann::json& stage)
     window = (window > res) ? (window-res)/2 : 0;
     raster = Raster(xmin, ymin, xmax, ymax, res, methods.size());
 
-    if (!metric_engine.parse(methods))
+    streamable = window == 0;
+
+    if (!metric_engine.parse(methods, streamable))
     {
       return false;
     }

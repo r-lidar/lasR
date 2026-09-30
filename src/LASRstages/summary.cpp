@@ -9,6 +9,7 @@ LASRsummary::LASRsummary()
   nsingle = 0;
   nwithheld = 0;
   nsynthetic = 0;
+  area = 0;
 
   get_synthetic = AttributeAccessor("Synthetic");
   get_withheld = AttributeAccessor("Withheld");
@@ -16,6 +17,18 @@ LASRsummary::LASRsummary()
   get_returnnumber = AttributeAccessor("ReturnNumber");
   get_classification = AttributeAccessor("Classification");
   get_number_of_returns = AttributeAccessor("NumberOfReturns");
+}
+
+bool LASRsummary::set_chunk(Chunk& chunk)
+{
+  Stage::set_chunk(chunk);
+
+  // Accumulate the area of each chunk's core extent (buffer excluded) to get
+  // the bounding-box area of the coverage. Used to derive point and pulse
+  // density (npoints / area). Matches lidR's density(LAScatalog) semantics.
+  area += (xmax - xmin) * (ymax - ymin);
+
+  return true;
 }
 
 bool LASRsummary::set_parameters(const nlohmann::json& stage)
@@ -95,6 +108,7 @@ void LASRsummary::merge(const Stage* other)
   nsingle += o->nsingle;
   nwithheld += o->nwithheld;
   nsynthetic += o->nsynthetic;
+  area += o->area;
 
   merge_maps(npoints_per_return, o->npoints_per_return);
   merge_maps(npoints_per_class, o->npoints_per_class);
@@ -139,7 +153,7 @@ SEXP LASRsummary::to_R()
 {
   bool use_metrics = metrics_engine.active();
 
-  int n = 10;
+  int n = 13;
   if (use_metrics) n++;
 
   // Create a list
@@ -157,7 +171,10 @@ SEXP LASRsummary::to_R()
   SET_STRING_ELT(names, 7, Rf_mkChar("i_histogram"));
   SET_STRING_ELT(names, 8, Rf_mkChar("crs"));
   SET_STRING_ELT(names, 9, Rf_mkChar("epsg"));
-  if (use_metrics) SET_STRING_ELT(names, 10, Rf_mkChar("metrics"));
+  SET_STRING_ELT(names, 10, Rf_mkChar("area"));
+  SET_STRING_ELT(names, 11, Rf_mkChar("density"));
+  SET_STRING_ELT(names, 12, Rf_mkChar("pulse_density"));
+  if (use_metrics) SET_STRING_ELT(names, 13, Rf_mkChar("metrics"));
   Rf_setAttrib(list, R_NamesSymbol, names);
 
   // BASIC STATS
@@ -257,6 +274,18 @@ SEXP LASRsummary::to_R()
 
   SEXP R_epsg = PROTECT(Rf_ScalarInteger(crs.get_epsg())); nsexpprotected++;
 
+  // DENSITY
+  // Point density = npoints / area. Pulse density = first returns / area,
+  // where the first-return count (ReturnNumber == 1) is the number of pulses.
+
+  uint64_t first_returns = npoints_per_return.count(1) ? npoints_per_return.at(1) : 0;
+  double density = (area > 0) ? (double)npoints / area : 0;
+  double pulse_density = (area > 0) ? (double)first_returns / area : 0;
+
+  SEXP R_area = PROTECT(Rf_ScalarReal(area)); nsexpprotected++;
+  SEXP R_density = PROTECT(Rf_ScalarReal(density)); nsexpprotected++;
+  SEXP R_pulse_density = PROTECT(Rf_ScalarReal(pulse_density)); nsexpprotected++;
+
   // Assign the elements to the list
   SET_VECTOR_ELT(list, 0, R_npoints);
   SET_VECTOR_ELT(list, 1, R_nsingle);
@@ -268,6 +297,9 @@ SEXP LASRsummary::to_R()
   SET_VECTOR_ELT(list, 7, R_ihistogram);
   SET_VECTOR_ELT(list, 8, R_wkt);
   SET_VECTOR_ELT(list, 9, R_epsg);
+  SET_VECTOR_ELT(list, 10, R_area);
+  SET_VECTOR_ELT(list, 11, R_density);
+  SET_VECTOR_ELT(list, 12, R_pulse_density);
 
   // Metrics
 
@@ -303,7 +335,7 @@ SEXP LASRsummary::to_R()
     INTEGER(rnms)[1] = -nrows;
     Rf_setAttrib(df, R_RowNamesSymbol, rnms);
 
-    SET_VECTOR_ELT(list, 10, df);
+    SET_VECTOR_ELT(list, 13, df);
   }
 
   return list;
@@ -343,6 +375,13 @@ nlohmann::json LASRsummary::to_json() const
   crs_obj["wkt"] = crs.get_wkt();
   crs_obj["epsg"] = crs.get_epsg();
   data["crs"] = crs_obj;
+
+  // Density: point density = npoints / area; pulse density = first returns
+  // (ReturnNumber == 1) / area.
+  uint64_t first_returns = npoints_per_return.count(1) ? npoints_per_return.at(1) : 0;
+  data["area"] = area;
+  data["density"] = (area > 0) ? (double)npoints / area : 0;
+  data["pulse_density"] = (area > 0) ? (double)first_returns / area : 0;
 
   // Add metrics if active
   if (use_metrics) {
