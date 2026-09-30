@@ -28,12 +28,12 @@ public:
 private:
   void clean_copc_ext(std::string& path);
 
-  bool keep_buffer; // user parameter: also write the points of the buffer
-  bool keep_all;    // current chunk: write every point, see set_chunk()
+  bool keep_buffer;
   short copc_density;
   short copc_depth;
   unsigned char version_minor;
   unsigned char point_format;
+  bool keep_all; // current chunk: write every point, see set_chunk()
   std::vector<AttributeAccessor> core_accessors;
 
   LASio* lasio;
