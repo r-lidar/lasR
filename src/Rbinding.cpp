@@ -36,6 +36,10 @@ namespace Rcpp
 #include "EPTio.h"
 #include "ept_partition_gate.h"
 #include "readept.h"
+#include "Engine.h"
+#include "Progress.h"
+
+#include <fstream>
 
 #ifdef USING_GDAL
 #include <cpl_conv.h>
@@ -709,6 +713,46 @@ Rcpp::CharacterMatrix cpp_ept_gdal_options_while_open(std::string endpoint,
   return out;
 }
 
+// Runs the pipeline that generate_json() wrote in `config_file` sequentially
+// with the real Engine, after partition_ept(target_partitions) has split its
+// EPT catalog into strict-clip chunks. execute.cpp partitions only when its
+// gate allows it, and the gate keeps write_las away from partitioned chunks;
+// this lets tests exercise a stage on such chunks anyway. Returns the number
+// of chunks.
+int cpp_ept_exec_partitioned(std::string config_file, int target_partitions)
+{
+  std::ifstream fjson(config_file);
+  if (!fjson.is_open()) Rcpp::stop("Could not open " + config_file);
+  nlohmann::json json;
+  fjson >> json;
+
+  Engine pipeline;
+  if (!pipeline.parse(json["pipeline"], false)) Rcpp::stop(last_error);
+
+  FileCollection* catalog = pipeline.get_catalog();
+  if (catalog->get_format() != EPTFILE) Rcpp::stop("The pipeline does not read an EPT endpoint");
+  if (!catalog->partition_ept(target_partitions)) Rcpp::stop(last_error);
+
+  Progress progress;
+  progress.set_display(false);
+  pipeline.set_progress(&progress);
+  pipeline.set_ncpu(1);
+  pipeline.set_ncpu_concurrent_files(1);
+  if (!pipeline.pre_run()) Rcpp::stop(last_error);
+
+  int n = catalog->get_number_chunks();
+  for (int i = 0; i < n; ++i)
+  {
+    Chunk chunk;
+    if (!catalog->get_chunk(i, chunk)) Rcpp::stop(last_error);
+    if (chunk.is_empty() || !chunk.process) continue;
+    if (!pipeline.set_chunk(chunk)) Rcpp::stop(last_error);
+    if (!pipeline.run()) Rcpp::stop(last_error);
+  }
+  pipeline.clear(true);
+  return n;
+}
+
 // TRUE when this GDAL can scope an option to a path prefix (GDAL >= 3.6).
 bool cpp_gdal_path_specific_options()
 {
@@ -738,6 +782,7 @@ RCPP_MODULE(tests)
   function("cpp_gdal_options", &cpp_gdal_options, "Current GDAL configuration options");
   function("cpp_ept_gdal_options_while_open", &cpp_ept_gdal_options_while_open, "GDAL configuration options while an EPT endpoint is open");
   function("cpp_gdal_path_specific_options", &cpp_gdal_path_specific_options, "GDAL supports path-specific options");
+  function("cpp_ept_exec_partitioned", &cpp_ept_exec_partitioned, "Run a pipeline on a partitioned EPT endpoint");
 }
 
 

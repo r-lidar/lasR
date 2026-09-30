@@ -28,7 +28,8 @@ public:
 private:
   void clean_copc_ext(std::string& path);
 
-  bool keep_buffer;
+  bool keep_buffer; // user parameter: also write the points of the buffer
+  bool keep_all;    // current chunk: write every point, see set_chunk()
   short copc_density;
   short copc_depth;
   unsigned char version_minor;

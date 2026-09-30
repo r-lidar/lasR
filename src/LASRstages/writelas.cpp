@@ -4,6 +4,8 @@
 
 LASRlaswriter::LASRlaswriter()
 {
+  keep_buffer = false;
+  keep_all = false;
   lasio = nullptr;
 }
 
@@ -94,7 +96,7 @@ bool LASRlaswriter::process(Point*& p)
   }
 
   //  If the point in not in the buffer we can write it
-  if (keep_buffer || (!p->get_buffered() && !p->inside_buffer(xmin, ymin, xmax, ymax, circular)))
+  if (keep_all || (!p->get_buffered() && !p->inside_buffer(xmin, ymin, xmax, ymax, circular)))
   {
     if (!pointfilter.filter(p))
     {
@@ -186,7 +188,13 @@ bool LASRlaswriter::set_header(Header*& header)
 bool LASRlaswriter::set_chunk(Chunk& chunk)
 {
   Stage::set_chunk(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax);
-  if (chunk.buffer == 0) keep_buffer = true;
+
+  // Without a buffer every point the reader returns is written. Strict-clip
+  // chunks (EPT partitions) are the exception: the reader flags a point lying
+  // on a seam shared by two chunks as buffered in all chunks but one, and
+  // writing it anyway would duplicate it. This is decided per chunk so the
+  // user's keep_buffer is not overwritten.
+  keep_all = keep_buffer || (chunk.buffer == 0 && !chunk.strict_clip);
   circular = chunk.shape == ShapeType::CIRCLE;
   return true;
 }

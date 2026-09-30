@@ -725,3 +725,82 @@ test_that("local EPT read leaves GDAL configuration options untouched", {
   expect_true(all(is.na(opts())))
   expect_true(all(is.na(opts(tile))))
 })
+
+# ----- write_las ownership on partition seams -----
+#
+# ept-test-seam holds four depth-1 tiles of a 100 m cube. partition_ept(4)
+# splits it at x = 50 and y = 50, and seven points (Intensity 161 to 167) lie
+# exactly on these seams. Intensity is a unique point id. With buffer 0, the
+# reader flags a seam point BUFFERED in the lower/left chunk and CORE in the
+# upper/right one, so write_las must write it once.
+
+seam_ept <- system.file("extdata", "ept-test-seam", "ept.json", package = "lasR")
+seam_ids <- 161:167
+
+# Runs `pipeline` on seam_ept with the real Engine after partition_ept(4) has
+# split the endpoint, whatever the auto-partition gate in execute.cpp decides
+# (it keeps write_las away from partitioned chunks). Returns the chunk count.
+exec_partitioned <- function(pipeline)
+{
+  json <- lasR:::.APIOPERATIONS$generate_json(pipeline, seam_ept, lasR:::parse_options(seam_ept, NULL))
+  on.exit(unlink(json))
+  lasR:::.APITEST$cpp_ept_exec_partitioned(json, 4L)
+}
+
+# Point ids (Intensity) stored in LAS files
+point_ids <- function(files)
+{
+  ids <- lapply(files, function(f)
+    exec(reader() + callback(function(data) data, expose = "i", no_las_update = TRUE), on = f)$Intensity)
+  unlist(ids)
+}
+
+test_that("write_las writes a point on a partition seam once", {
+  n <- jsonlite::fromJSON(seam_ept)$points
+  d <- tempfile("ept-seam-")
+  dir.create(d)
+  on.exit(unlink(d, recursive = TRUE), add = TRUE)
+
+  # One merged file
+  out <- file.path(d, "merged.las")
+  expect_equal(exec_partitioned(reader() + write_las(out)), 4L)
+  ids <- point_ids(out)
+  expect_length(ids, n)
+  expect_setequal(ids, seq_len(n))
+
+  # One file per chunk
+  expect_equal(exec_partitioned(reader() + write_las(file.path(d, "*.las"))), 4L)
+  files <- setdiff(list.files(d, pattern = "\\.las$", full.names = TRUE), out)
+  expect_length(files, 4L)
+  ids <- point_ids(files)
+  expect_length(ids, n)
+  expect_setequal(ids, seq_len(n))
+})
+
+test_that("write_las keep_buffer = TRUE still writes the buffered seam points", {
+  n <- jsonlite::fromJSON(seam_ept)$points
+  out <- tempfile("ept-seam-", fileext = ".las")
+  on.exit(unlink(out), add = TRUE)
+
+  exec_partitioned(reader() + write_las(out, keep_buffer = TRUE))
+  ids <- point_ids(out)
+  expect_setequal(ids, seq_len(n))
+  expect_setequal(unique(ids[duplicated(ids)]), seam_ids)
+})
+
+test_that("templated write_las on an EPT with seam points has no duplicates under concurrent_files", {
+  skip_if_not(has_omp_support())
+  n <- jsonlite::fromJSON(seam_ept)$points
+  d <- tempfile("ept-seam-")
+  dir.create(d)
+  on.exit(unlink(d, recursive = TRUE), add = TRUE)
+  old <- get_parallel_strategy()
+  on.exit(if (is.null(old)) unset_parallel_strategy() else set_parallel_strategy(old), add = TRUE)
+
+  set_parallel_strategy(concurrent_files(4))
+  exec(reader() + write_las(file.path(d, "*.las")), on = seam_ept)
+  set_parallel_strategy(sequential())
+  ids <- point_ids(list.files(d, full.names = TRUE))
+  expect_length(ids, n)
+  expect_setequal(ids, seq_len(n))
+})
