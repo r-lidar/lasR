@@ -40,6 +40,10 @@ Each writer's output for tile 502378 was read back with `reader(depth = d)`
 and counted on a 10 m grid. A read at depth `d` returns levels 0 to `d`, so the
 counts are cumulative.
 
+`lasR-default`, labelled "lasR legacy" in the figures, is the legacy LASlib
+writer run at density `"normal"`, the same as `lasR-experimental`, while the
+legacy writer's own default is `"dense"`.
+
 Points returned:
 
 | writer | d0 | d1 | d2 | d3 | d4 | d5 |
