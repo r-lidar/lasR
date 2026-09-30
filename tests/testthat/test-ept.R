@@ -390,6 +390,36 @@ test_that("EPT partition: rect AOI outside conf_bounds passes through", {
   # chunk bbox reflects the no-file-match placeholder, not the original rect.
 })
 
+test_that("EPT partition: AOIs with nothing to partition skip the hierarchy walk", {
+  # Only rectangles overlapping the data are partitioned. When there is none,
+  # partition_ept() must not enumerate the whole hierarchy (tiles_built is
+  # set only by an unfiltered walk); readers keep their own pruned walks.
+  circles <- lasR:::.APITEST$cpp_ept_partition_inspect(
+    ept, 16, list(), list(c(273500, 5274500, 50), c(273400, 5274400, 10)))
+  expect_equal(circles$nchunks, 2L)
+  expect_false(circles$tiles_built)
+
+  disjoint <- lasR:::.APITEST$cpp_ept_partition_inspect(
+    ept, 16, list(c(1, 2, 3, 4)), list(c(273500, 5274500, 50)))
+  expect_equal(disjoint$nchunks, 2L)
+  expect_false(disjoint$tiles_built)
+})
+
+test_that("EPT circle AOIs read the same under concurrent_files and sequential", {
+  skip_if_not(has_omp_support())
+  old <- get_parallel_strategy()
+  on.exit(if (is.null(old)) unset_parallel_strategy() else set_parallel_strategy(old), add = TRUE)
+
+  q <- reader_circles(c(273500, 5274400), c(5274500, 5274400), c(50, 10)) + summarise()
+  set_parallel_strategy(sequential())
+  ser <- exec(q, on = ept)
+  set_parallel_strategy(concurrent_files(2))
+  par <- exec(q, on = ept)
+  expect_gt(ser$npoints, 0)
+  expect_equal(par$npoints, ser$npoints)
+  expect_equal(par$z_histogram, ser$z_histogram)
+})
+
 # ----- AOI partition: hierarchy walk failure (spec rev 5 test 9) -----
 
 test_that("EPT partition: malformed sub-hierarchy with AOI → passthrough + warning", {

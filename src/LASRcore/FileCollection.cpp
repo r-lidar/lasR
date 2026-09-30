@@ -940,6 +940,12 @@ bool FileCollection::partition_ept(int target_partitions)
       if (bxmin >= bxmax || bymin >= bymax) continue;
       walk_aoi_bboxes.push_back({bxmin, bymin, bxmax, bymax});
     }
+
+    // No rectangle overlaps the data (circles only, or disjoint rectangles):
+    // there is nothing to partition. Return before ensure_tiles(), which
+    // would otherwise walk the whole hierarchy unpruned. The readers then
+    // run their own per-chunk walks, pruned by each query's bbox.
+    if (walk_aoi_bboxes.empty()) return true;
   }
 
   // Hierarchy walk; with-queries fallback diverges from no-queries fallback.
