@@ -556,3 +556,49 @@ test_that("transform_crs does not duplicate or lose local maxima across tiles",
     expect_identical(key(tiled), key(single))
   }
 })
+
+test_that("transform_crs keeps the buffer seeds of region_growing across tiles",
+{
+  # local_maximum() writes only the tree tops of its own tile after transform_crs(), but the
+  # downstream stages must still receive the tree tops of the buffer, as without transform_crs().
+  # Otherwise region_growing() has no seed for the crowns that straddle a tile seam and labels
+  # them wrongly. A tiled run must give the same crowns as a single chunk, up to a relabelling.
+  # The tiles are processed sequentially so the comparison depends on the seeds only.
+  skip_if_not_installed("terra")
+  f <- system.file("extdata", "Megaplot.las", package = "lasR")
+
+  strategy <- get_parallel_strategy()
+  on.exit(if (is.null(strategy)) unset_parallel_strategy() else set_parallel_strategy(strategy), add = TRUE)
+  set_parallel_strategy(sequential())
+
+  td <- tempfile("transform_crs_rgtiles_")
+  dir.create(td)
+  on.exit(unlink(td, recursive = TRUE), add = TRUE)
+
+  exec(reader_las() + write_las(file.path(td, "tile_*.las")), on = f, chunk = 60)
+  tiles <- list.files(td, pattern = "^tile_.*\\.las$", full.names = TRUE)
+  exec(write_lax(), on = tiles)
+  expect_gt(length(tiles), 1)
+
+  for (epsg in c(32617, 3857))
+  {
+    pipe <- function(o)
+    {
+      chm <- rasterize(1, "max")
+      lmx <- local_maximum_raster(chm, 5, min_height = 2)
+      rg <- region_growing(chm, lmx, max_cr = 20, ofile = file.path(td, o))
+      reader_las() + transform_crs(epsg) + chm + lmx + rg
+    }
+    single <- exec(pipe(paste0("s", epsg, ".tif")), on = f)
+    tiled <- exec(pipe(paste0("t", epsg, ".tif")), on = tiles, buffer = 30)
+    a <- terra::values(single[[3]])[, 1]
+    b <- terra::values(tiled[[3]])[, 1]
+    expect_equal(length(a), length(b))
+    expect_identical(is.na(a), is.na(b))
+    ok <- !is.na(a) & !is.na(b)
+    na <- length(unique(a[ok]))
+    expect_gt(na, 100)
+    expect_equal(length(unique(b[ok])), na) # same number of crowns
+    expect_equal(nrow(unique(cbind(a[ok], b[ok]))), na) # same crowns, up to a relabelling
+  }
+})

@@ -205,12 +205,13 @@ bool LASRlocalmaximum::process(PointCloud*& las)
 
     // When the chunk box is not exact (after transform_crs(), see Chunk.h), it also covers parts
     // of the neighbouring chunks, where the tree tops are found from an incomplete neighbourhood
-    // and are also found by the chunk that owns them. Only keep the tree tops of this chunk: the
-    // points that the reader did not flag as buffer points, or the cells whose centre is inside
-    // the footprint. The cells whose centre is less than half a cell outside are kept too: the
-    // chunks of a file collection are the bounding boxes of the files, with narrow gaps between
-    // them where a cell centre may fall. The tree tops kept by two chunks have the same FID and
-    // are written once.
+    // and are also found by the chunk that owns them. Only the tree tops of this chunk are written
+    // (see write()): the points that the reader did not flag as buffer points, or the cells whose
+    // centre is inside the footprint. The cells whose centre is less than half a cell outside are
+    // written too: the chunks of a file collection are the bounding boxes of the files, with
+    // narrow gaps between them where a cell centre may fall. The tree tops written by two chunks
+    // have the same FID and are written once. All the tree tops, buffer included, are kept in lm
+    // for the downstream stages (region_growing, ...), as without transform_crs().
     bool owned = true;
     if (!footprint.empty() && status[i] == LMX)
     {
@@ -220,7 +221,7 @@ bool LASRlocalmaximum::process(PointCloud*& las)
         owned = !pp.get_buffered();
     }
 
-    if (status[i] == LMX && owned)
+    if (status[i] == LMX)
     {
       #pragma omp critical(assign_lm_ids)
       {
@@ -267,6 +268,8 @@ bool LASRlocalmaximum::process(PointCloud*& las)
           lm.push_back(plas);
           lm.back().FID = it->second;
         }
+
+        lm_owned.push_back(owned);
       }
     }
   }
@@ -326,10 +329,21 @@ bool LASRlocalmaximum::write()
 
   if (lm.size() == 0) return true;
 
+  // With a footprint, only write the tree tops that belong to this chunk (see process())
+  std::vector<PointLAS> owned_lm;
+  if (!footprint.empty())
+  {
+    for (size_t k = 0 ; k < lm.size() ; ++k)
+    {
+      if (lm_owned[k]) owned_lm.push_back(lm[k]);
+    }
+  }
+  const std::vector<PointLAS>& out = footprint.empty() ? lm : owned_lm;
+
   bool success;
   #pragma omp critical (write_localmax)
   {
-    success = vector.write(lm, record_attributes);
+    success = vector.write(out, record_attributes);
   }
 
   if (!success)
@@ -354,6 +368,7 @@ bool LASRlocalmaximum::write()
 void LASRlocalmaximum::clear(bool last)
 {
   lm.clear();
+  lm_owned.clear();
 }
 
 bool LASRlocalmaximum::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)
