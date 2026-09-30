@@ -48,4 +48,11 @@ bool reproject_bbox(const CRS& source, const CRS& target, double& xmin, double& 
 // be built, or the centre or every sample of the circle is outside the transform domain.
 bool reproject_circle(const CRS& source, const CRS& target, double xc, double yc, double r, double& cx, double& cy, double& radius, std::vector<double>* ring_x = nullptr, std::vector<double>* ring_y = nullptr);
 
+// The same with a coordinate transformation built by the caller. PROJ may choose a different
+// coordinate operation (e.g. a grid shift or none) each time a transformation is built between
+// the same CRS, depending on the thread. Using the transformation that reprojects the points
+// keeps the extents consistent with the points.
+bool reproject_bbox(OGRCoordinateTransformation* ct, double& xmin, double& ymin, double& xmax, double& ymax, std::vector<double>* ring_x = nullptr, std::vector<double>* ring_y = nullptr);
+bool reproject_circle(OGRCoordinateTransformation* ct, double xc, double yc, double r, double& cx, double& cy, double& radius, std::vector<double>* ring_x = nullptr, std::vector<double>* ring_y = nullptr);
+
 #endif

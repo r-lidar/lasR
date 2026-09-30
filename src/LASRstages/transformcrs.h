@@ -40,7 +40,8 @@ public:
 
   std::string get_name() const override { return "transform_crs"; }
 
-  // multi-threading: each clone must own its own (non thread-safe) transform object
+  // multi-threading: each clone must own its own (non thread-safe) transform object, a copy of
+  // the transform of the original (see the copy constructor)
   LASRtransformcrs* clone() const override { return new LASRtransformcrs(*this); }
 
 private:

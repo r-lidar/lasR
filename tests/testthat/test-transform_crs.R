@@ -569,13 +569,8 @@ test_that("transform_crs keeps the buffer seeds of region_growing across tiles",
   # downstream stages must still receive the tree tops of the buffer, as without transform_crs().
   # Otherwise region_growing() has no seed for the crowns that straddle a tile seam and labels
   # them wrongly. A tiled run must give the same crowns as a single chunk, up to a relabelling.
-  # The tiles are processed sequentially so the comparison depends on the seeds only.
   skip_if_not_installed("terra")
   f <- system.file("extdata", "Megaplot.las", package = "lasR")
-
-  strategy <- get_parallel_strategy()
-  on.exit(if (is.null(strategy)) unset_parallel_strategy() else set_parallel_strategy(strategy), add = TRUE)
-  set_parallel_strategy(sequential())
 
   td <- tempfile("transform_crs_rgtiles_")
   dir.create(td)
@@ -606,5 +601,56 @@ test_that("transform_crs keeps the buffer seeds of region_growing across tiles",
     expect_gt(na, 100)
     expect_equal(length(unique(b[ok])), na) # same number of crowns
     expect_equal(nrow(unique(cbind(a[ok], b[ok]))), na) # same crowns, up to a relabelling
+  }
+})
+
+test_that("transform_crs gives the same coordinates under concurrent_files as sequentially",
+{
+  # Between a NAD83 and a WGS84 based CRS, PROJ has several candidate coordinate operations, and it
+  # may choose a different one when the transformation is built in another thread: e.g. a grid
+  # shift that moves the points by 0.4 m when PROJ network access is enabled for the contexts
+  # created after the main one, as terra and sf do on load. Every thread must use the operation
+  # chosen once on the main thread, so the points of every tile move exactly as sequentially,
+  # and the buffer is removed exactly: no point is lost or duplicated.
+  skip_if_not(has_omp_support())
+  invisible(requireNamespace("terra", quietly = TRUE))
+
+  f <- system.file("extdata", "Megaplot.las", package = "lasR") # NAD83 / UTM zone 17N
+
+  strategy <- get_parallel_strategy()
+  on.exit(if (is.null(strategy)) unset_parallel_strategy() else set_parallel_strategy(strategy), add = TRUE)
+
+  td <- tempfile("transform_crs_cf_")
+  dir.create(td)
+  on.exit(unlink(td, recursive = TRUE), add = TRUE)
+
+  set_parallel_strategy(sequential())
+  exec(reader_las() + write_las(file.path(td, "tile_*.las")), on = f, chunk = 60)
+  tiles <- list.files(td, pattern = "^tile_.*\\.las$", full.names = TRUE)
+  exec(write_lax(), on = tiles)
+  expect_gt(length(tiles), 4)
+  n <- exec(summarise(), on = tiles)$npoints
+
+  xyzt <- function(x) exec(callback(function(d) d, expose = "xyzt", no_las_update = TRUE), on = x)
+
+  run <- function(strategy, k)
+  {
+    set_parallel_strategy(strategy)
+    tpl <- file.path(td, paste0("out", k, "_*.las"))
+    s <- exec(reader_las() + transform_crs(32617) + summarise() + write_las(tpl), on = tiles, buffer = 30)
+    set_parallel_strategy(sequential())
+    outs <- sort(list.files(td, pattern = paste0("^out", k, "_.*\\.las$"), full.names = TRUE))
+    list(npoints = s$summary$npoints, points = do.call(rbind, lapply(outs, xyzt)))
+  }
+
+  ref <- run(sequential(), 0)
+  expect_equal(ref$npoints, n)
+  expect_equal(nrow(ref$points), n)
+
+  for (k in 1:2)
+  {
+    cf <- run(concurrent_files(4), k)
+    expect_equal(cf$npoints, n)
+    expect_identical(cf$points, ref$points)
   }
 })

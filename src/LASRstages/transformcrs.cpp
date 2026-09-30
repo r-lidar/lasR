@@ -6,6 +6,10 @@
 #include <vector>
 #include <limits>
 #include <algorithm>
+#include <mutex>
+
+// Serializes the copies of the transformation of the stage cloned concurrently by each thread.
+static std::mutex transform_clone_mutex;
 
 LASRtransformcrs::LASRtransformcrs()
 {
@@ -30,9 +34,21 @@ LASRtransformcrs::LASRtransformcrs(const LASRtransformcrs& other) : Stage(other)
   global_offset_x = other.global_offset_x;
   global_offset_y = other.global_offset_y;
   global_offset_valid = other.global_offset_valid;
-  // OGRCoordinateTransformation is not thread-safe and not trivially copyable.
-  // Each clone lazily rebuilds its own transform from source_crs/target_crs.
+  // OGRCoordinateTransformation is not thread-safe and not trivially copyable: each clone owns its
+  // own. It must use the coordinate operation chosen once by the stage on the main thread, not
+  // one chosen again by PROJ in the thread of the clone. PROJ may choose a different one there,
+  // e.g. a grid shift if PROJ network access is enabled for the contexts created after the main
+  // one (as terra and sf do on load): a NAD83 to WGS84 transformation then moves the points of
+  // some chunks by 0.4 m. Clone() keeps the operation(s) chosen for the original. Without it
+  // (GDAL < 3.1), each clone lazily rebuilds its own transform from source_crs/target_crs.
   transform = nullptr;
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,1,0)
+  if (other.transform != nullptr)
+  {
+    std::lock_guard<std::mutex> lock(transform_clone_mutex);
+    transform = other.transform->Clone();
+  }
+#endif
 }
 
 LASRtransformcrs::~LASRtransformcrs()
@@ -79,9 +95,18 @@ bool LASRtransformcrs::set_parameters(const nlohmann::json& stage)
 void LASRtransformcrs::set_crs(const CRS& crs)
 {
   // The CRS flowing into this stage is the source of the reprojection.
+  if (transform != nullptr && !(crs == source_crs))
+  {
+    OGRCoordinateTransformation::DestroyCT(transform);
+    transform = nullptr;
+  }
   source_crs = crs;
   // The next stages (and writers) must see the target CRS.
   this->crs = target_crs;
+
+  // Choose the coordinate operation now, on the main thread, before the stage is cloned for each
+  // thread. See the copy constructor.
+  if (source_crs.is_valid() && target_crs.is_valid()) build_transform();
 }
 
 bool LASRtransformcrs::build_transform()
@@ -180,7 +205,7 @@ void LASRtransformcrs::get_extent(double& xmin, double& ymin, double& xmax, doub
   if (source_crs.is_valid() && target_crs.is_valid())
   {
     const double sxmin = xmin, symin = ymin, sxmax = xmax, symax = ymax;
-    if (reproject_bbox(source_crs, target_crs, xmin, ymin, xmax, ymax))
+    if (build_transform() && reproject_bbox(transform, xmin, ymin, xmax, ymax))
     {
       const double src_diag = std::hypot(sxmax - sxmin, symax - symin);
       const double tgt_diag = std::hypot(xmax - xmin, ymax - ymin);
@@ -190,15 +215,12 @@ void LASRtransformcrs::get_extent(double& xmin, double& ymin, double& xmax, doub
         target_to_source_buffer_scale_valid = true;
       }
 
-      if (build_transform())
+      // Add 1% to account for the variations of the scale between the samples.
+      double scale = max_source_units_per_target_unit(transform, sxmin, symin, sxmax, symax, source_crs.is_geographic());
+      if (scale > 0)
       {
-        // Add 1% to account for the variations of the scale between the samples.
-        double scale = max_source_units_per_target_unit(transform, sxmin, symin, sxmax, symax, source_crs.is_geographic());
-        if (scale > 0)
-        {
-          data_units_buffer_scale = scale * 1.01;
-          data_units_buffer_scale_valid = true;
-        }
+        data_units_buffer_scale = scale * 1.01;
+        data_units_buffer_scale_valid = true;
       }
 
       global_offset_x = (xmin + xmax) / 2;
@@ -255,6 +277,9 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
 
   if (source_crs.is_valid() && target_crs.is_valid())
   {
+    // The chunk extent is reprojected with the transformation of the points (see reproject_bbox()).
+    if (!build_transform()) return false;
+
     const double sxmin = chunk.xmin, symin = chunk.ymin, sxmax = chunk.xmax, symax = chunk.ymax;
     double x0 = sxmin, y0 = symin, x1 = sxmax, y1 = symax;
 
@@ -278,7 +303,7 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
     if (is_circle)
     {
       double cx, cy, radius;
-      reprojected = reproject_circle(source_crs, target_crs, (sxmin + sxmax) / 2, (symin + symax) / 2, (sxmax - sxmin) / 2, cx, cy, radius, &ring_x, &ring_y);
+      reprojected = reproject_circle(transform, (sxmin + sxmax) / 2, (symin + symax) / 2, (sxmax - sxmin) / 2, cx, cy, radius, &ring_x, &ring_y);
       if (reprojected)
       {
         radius += margin;
@@ -290,7 +315,7 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
     }
     else
     {
-      reprojected = reproject_bbox(source_crs, target_crs, x0, y0, x1, y1, &ring_x, &ring_y);
+      reprojected = reproject_bbox(transform, x0, y0, x1, y1, &ring_x, &ring_y);
       if (reprojected)
       {
         x0 -= margin;
@@ -304,7 +329,6 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
     // transform_crs): reproject it rather than the box or circle that contains it.
     if (reprojected && !chunk.footprint.empty())
     {
-      if (!build_transform()) return false;
       ring_x = chunk.footprint.x;
       ring_y = chunk.footprint.y;
       std::vector<int> ok(ring_x.size(), 0);

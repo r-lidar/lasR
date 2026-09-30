@@ -233,6 +233,21 @@ bool reproject_bbox(const CRS& source, const CRS& target, double& xmin, double& 
   OGRCoordinateTransformation* ct = create_transform(source, target);
   if (ct == nullptr) return false;
 
+  bool success = reproject_bbox(ct, xmin, ymin, xmax, ymax, ring_x, ring_y);
+  OGRCoordinateTransformation::DestroyCT(ct);
+  return success;
+}
+
+bool reproject_bbox(OGRCoordinateTransformation* ct, double& xmin, double& ymin, double& xmax, double& ymax, std::vector<double>* ring_x, std::vector<double>* ring_y)
+{
+  if (ring_x) ring_x->clear();
+  if (ring_y) ring_y->clear();
+
+  if (ct == nullptr) return false;
+
+  // Nothing to do for an empty/unset extent.
+  if (xmin > xmax || ymin > ymax) return true;
+
   // Sample the boundary in order around the box, counterclockwise from (xmin, ymin). Every other
   // sample of each edge, corners included, is a coarse sample.
   const int N = NSEGMENTS;
@@ -250,7 +265,6 @@ bool reproject_bbox(const CRS& source, const CRS& target, double& xmin, double& 
 
   bool all_ok;
   bool success = transform_boundary_bbox(ct, xs, ys, coarse, xmin, ymin, xmax, ymax, all_ok);
-  OGRCoordinateTransformation::DestroyCT(ct);
 
   if (success && all_ok && ring_x && ring_y)
   {
@@ -272,6 +286,19 @@ bool reproject_circle(const CRS& source, const CRS& target, double xc, double yc
   OGRCoordinateTransformation* ct = create_transform(source, target);
   if (ct == nullptr) return false;
 
+  bool success = reproject_circle(ct, xc, yc, r, cx, cy, radius, ring_x, ring_y);
+  OGRCoordinateTransformation::DestroyCT(ct);
+  return success;
+}
+
+bool reproject_circle(OGRCoordinateTransformation* ct, double xc, double yc, double r, double& cx, double& cy, double& radius, std::vector<double>* ring_x, std::vector<double>* ring_y)
+{
+  if (ring_x) ring_x->clear();
+  if (ring_y) ring_y->clear();
+
+  if (ct == nullptr) return false;
+  if (!(r >= 0)) return false;
+
   // The centre first, then the samples of the circle, counterclockwise.
   const double pi = 3.14159265358979323846;
   const int N = NSEGMENTS;
@@ -288,7 +315,6 @@ bool reproject_circle(const CRS& source, const CRS& target, double xc, double yc
   }
 
   ct->Transform((int)xs.size(), xs.data(), ys.data(), nullptr, ok.data());
-  OGRCoordinateTransformation::DestroyCT(ct);
 
   if (!ok[0]) return false;
   cx = xs[0];
