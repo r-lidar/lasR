@@ -51,7 +51,8 @@ rather than an error.
 }
 
 \examples{
-metrics = c("z_max", "i_min", "r_mean", "n_median", "z_sd", "c_sd", "t_cv", "u_sum", "z_p95", "|a|_mean")
+metrics = c("z_max", "i_min", "r_mean", "n_median", "z_sd",
+            "c_sd",  "t_cv",  "u_sum",  "z_p95",    "|a|_mean")
 f <- system.file("extdata", "Example.las", package="lasR")
 p <- summarise(metrics = metrics)
 r <- rasterize(5, operators = metrics)
