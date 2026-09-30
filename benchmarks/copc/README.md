@@ -21,3 +21,20 @@ Tools must be on `$PATH`:
 
 `benchmarks/copc/run_all.sh` fetches input, runs writers, runs reads, builds
 report. Outputs land in `benchmarks/copc/results/`.
+
+`benchmarks/copc/run_multitile_validation.sh` renders per-depth density rasters
+of the single-tile output, merges the 2×2 tile block into one COPC and checks
+the tile seams, for every point and per octree depth. It needs `terra`.
+
+`Rscript check_z_plane_bands.R <copc> [res_m] [max_depth]` reports whether the
+denser cells of the coarse levels are the ones whose point column crosses an
+octree cell boundary in z.
+
+## Reports
+
+- `REPORT-2026-09-30.md` — write and read benchmark of the six writers.
+- `REPORT-LOD-MULTITILE-2026-09-30.md` — LOD quality, multi-tile merge and
+  tile-boundary check.
+
+`results/` is not committed. The figures the reports use are kept in
+`figures/`.
