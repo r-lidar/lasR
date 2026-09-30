@@ -114,7 +114,7 @@ test_that("Build a VPC file from remote file",
 
   expect_true(file.exists(o))
   expect_equal(ans$pc.count, 10653336)
-  expect_equal(ans$`proj:bbox`[[1]], c(635577.79, 848882.150, 639003.730, 853537.660))
+  expect_equal(ans$`proj:bbox`[[1]], c(635577.79, 848882.150, 406.14, 639003.730, 853537.660, 615.26))
 })
 
 test_that("remote EPT reads correctly via HTTP",
