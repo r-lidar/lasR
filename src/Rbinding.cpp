@@ -37,6 +37,12 @@ namespace Rcpp
 #include "ept_partition_gate.h"
 #include "readept.h"
 
+#ifdef USING_GDAL
+#include <cpl_conv.h>
+#include <cpl_vsi.h>
+#include <gdal_version.h>
+#endif
+
 using namespace Rcpp;
 
 // Generic tools that could be used by any API
@@ -654,6 +660,64 @@ bool cpp_callback_buffer_decide(bool buffered,
   return p.get_buffered() || p.inside_buffer(xmin, ymin, xmax, ymax, circular);
 }
 
+// Value of each GDAL configuration option in `keys` as GDAL resolves it when
+// opening `path`: a path-specific option (GDAL >= 3.6), then the global
+// configuration option, then the environment. NA when unset. An empty `path`
+// gives the plain CPLGetConfigOption() lookup.
+static Rcpp::CharacterVector gdal_option_values(const std::vector<std::string>& keys,
+                                                const std::string& path)
+{
+  Rcpp::CharacterVector out(keys.size());
+  out.names() = Rcpp::wrap(keys);
+  for (size_t i = 0; i < keys.size(); ++i) {
+    const char* v = nullptr;
+#if defined(USING_GDAL) && GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0)
+    v = path.empty() ? CPLGetConfigOption(keys[i].c_str(), nullptr)
+                     : VSIGetPathSpecificOption(path.c_str(), keys[i].c_str(), nullptr);
+#elif defined(USING_GDAL)
+    v = CPLGetConfigOption(keys[i].c_str(), nullptr);
+#endif
+    if (v == nullptr) out[i] = NA_STRING;
+    else out[i] = v;
+  }
+  return out;
+}
+
+Rcpp::CharacterVector cpp_gdal_options(std::vector<std::string> keys, std::string path)
+{
+  return gdal_option_values(keys, path);
+}
+
+// The same lookup for each of `paths` while a FileCollection holds `endpoint`,
+// that is while exec() is reading it. Returns a keys x paths matrix. The
+// collection is destroyed before returning.
+Rcpp::CharacterMatrix cpp_ept_gdal_options_while_open(std::string endpoint,
+                                                      std::vector<std::string> keys,
+                                                      std::vector<std::string> paths)
+{
+  Rcpp::CharacterMatrix out(keys.size(), paths.size());
+  {
+    FileCollection fc;
+    if (!fc.read({endpoint})) Rcpp::stop(last_error);
+    for (size_t j = 0; j < paths.size(); ++j) {
+      Rcpp::CharacterVector v = gdal_option_values(keys, paths[j]);
+      for (size_t i = 0; i < keys.size(); ++i) out(i, j) = v[i];
+    }
+  }
+  Rcpp::rownames(out) = Rcpp::wrap(keys);
+  return out;
+}
+
+// TRUE when this GDAL can scope an option to a path prefix (GDAL >= 3.6).
+bool cpp_gdal_path_specific_options()
+{
+#if defined(USING_GDAL) && GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0)
+  return true;
+#else
+  return false;
+#endif
+}
+
 RCPP_MODULE(tests)
 {
   function("cpp_test1", &cpp_test1, "Test 1");
@@ -670,6 +734,9 @@ RCPP_MODULE(tests)
   function("cpp_writelas_buffer_decide", &cpp_writelas_buffer_decide, "Writelas buffer decision");
   function("cpp_callback_buffer_decide", &cpp_callback_buffer_decide, "Callback buffer decision");
   function("cpp_ept_pick_depth", &cpp_ept_pick_depth, "EPT partition depth selection");
+  function("cpp_gdal_options", &cpp_gdal_options, "Current GDAL configuration options");
+  function("cpp_ept_gdal_options_while_open", &cpp_ept_gdal_options_while_open, "GDAL configuration options while an EPT endpoint is open");
+  function("cpp_gdal_path_specific_options", &cpp_gdal_path_specific_options, "GDAL supports path-specific options");
 }
 
 

@@ -620,3 +620,20 @@ test_that("EPT partition: rect AOI parallel write equals serial AOI summarise ex
     function(f) exec(reader() + summarise(), on = f)$npoints))
   expect_equal(par_total, ser_npoints)
 })
+
+test_that("local EPT read leaves GDAL configuration options untouched", {
+  old_env <- unset_ept_gdal_env()
+  on.exit(restore_env(old_env), add = TRUE)
+
+  ept <- system.file("extdata", "ept-test-multi", "ept.json", package = "lasR")
+  tile <- file.path(dirname(ept), "ept-data", "1-0-0-0.laz")
+  opts <- function(path = "") lasR:::.APITEST$cpp_gdal_options(ept_gdal_keys, path)
+
+  expect_true(all(is.na(opts())))
+  during <- lasR:::.APITEST$cpp_ept_gdal_options_while_open(ept, ept_gdal_keys, c("", tile))
+  expect_true(all(is.na(during)))
+
+  exec(reader() + summarise(), on = ept)
+  expect_true(all(is.na(opts())))
+  expect_true(all(is.na(opts(tile))))
+})

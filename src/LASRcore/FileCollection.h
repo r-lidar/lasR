@@ -19,6 +19,7 @@
 enum PathType {DIRECTORY, VPCFILE, LASFILE, LAXFILE, PCDFILE, OTHERFILE, MISSINGFILE, UNKNOWNFILE, DATAFRAME, XPTR, REMOTELASFILE, EPTFILE, REMOTEEPTFILE};
 
 class Header;
+class EptGdalTuning;
 
 class FileCollectionIndex
 {
@@ -143,6 +144,10 @@ private:
 
   // EPT shared metadata index (built when add_ept_endpoint succeeds)
   std::shared_ptr<EPTio::HierarchyIndex> ept_index;
+
+  // GDAL/VSI tuning applied by add_ept_endpoint for a remote endpoint and
+  // undone when the collection is destroyed, i.e. at the end of the exec.
+  std::unique_ptr<EptGdalTuning> ept_gdal_tuning;
 };
 
 #endif

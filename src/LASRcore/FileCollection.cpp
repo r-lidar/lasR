@@ -8,6 +8,8 @@
 
 #ifdef USING_GDAL
 #include <cpl_conv.h>
+#include <cpl_vsi.h>
+#include <gdal_version.h>
 #endif
 
 // To read the header of files
@@ -69,6 +71,100 @@ static std::string filename_from_url(const std::string& url)
   if (name.size() > 5 && name.substr(name.size() - 5) == ".copc")
     name = name.substr(0, name.size() - 5);
   return name;
+}
+
+// Tunes GDAL's virtual file system for reading one remote EPT endpoint and
+// undoes the tuning when destroyed. FileCollection holds it, so it lasts for
+// one exec(). Without it, every /vsicurl/ open lists the parent "directory"
+// first (about 10x more HTTP requests than the range fetch itself), and
+// overlapping AOI sub-queries re-fetch the same bytes. Measured on
+// autzen-classified with concurrent_files(4): warm-cache reads 42 s -> 0.9 s,
+// cold-cache reads 43 s -> 13 s.
+//
+// - GDAL_DISABLE_READDIR_ON_OPEN is read per path by /vsicurl/ since GDAL 3.6,
+//   so it is scoped to the endpoint prefix with VSISetPathSpecificOption and
+//   other datasets keep their sidecar-file discovery. Older GDAL only reads it
+//   globally.
+// - GDAL_HTTP_MULTIPLEX, VSI_CACHE and VSI_CACHE_SIZE are only read with
+//   CPLGetConfigOption, so they are set process-wide while this object lives.
+//
+// A value the user already set (environment variable, CPLSetConfigOption or
+// path-specific option) is never overridden, and on destruction an option is
+// removed only if it still holds the value set here.
+class EptGdalTuning
+{
+public:
+  explicit EptGdalTuning(const std::string& prefix) : prefix(prefix)
+  {
+#ifdef USING_GDAL
+    set_path_option("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR");
+    set_global_option("GDAL_HTTP_MULTIPLEX", "YES");
+    set_global_option("VSI_CACHE", "TRUE");
+    set_global_option("VSI_CACHE_SIZE", "67108864");  // 64 MiB
+#endif
+  }
+
+  ~EptGdalTuning()
+  {
+#ifdef USING_GDAL
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0)
+    for (const auto& kv : path_options)
+    {
+      const char* current = VSIGetPathSpecificOption(prefix.c_str(), kv.first.c_str(), nullptr);
+      if (current != nullptr && kv.second == current)
+        VSISetPathSpecificOption(prefix.c_str(), kv.first.c_str(), nullptr);
+    }
+#endif
+    for (const auto& kv : global_options)
+    {
+      const char* current = CPLGetConfigOption(kv.first.c_str(), nullptr);
+      if (current != nullptr && kv.second == current)
+        CPLSetConfigOption(kv.first.c_str(), nullptr);
+    }
+#endif
+  }
+
+  EptGdalTuning(const EptGdalTuning&) = delete;
+  EptGdalTuning& operator=(const EptGdalTuning&) = delete;
+
+private:
+#ifdef USING_GDAL
+  void set_path_option(const char* key, const char* value)
+  {
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0)
+    // Falls back to CPLGetConfigOption(), so this also sees global and environment values
+    if (VSIGetPathSpecificOption(prefix.c_str(), key, nullptr) != nullptr) return;
+    VSISetPathSpecificOption(prefix.c_str(), key, value);
+    path_options.emplace_back(key, value);
+#else
+    set_global_option(key, value);
+#endif
+  }
+
+  void set_global_option(const char* key, const char* value)
+  {
+    if (CPLGetConfigOption(key, nullptr) != nullptr) return;
+    CPLSetConfigOption(key, value);
+    global_options.emplace_back(key, value);
+  }
+#endif
+
+  std::string prefix;
+  std::vector<std::pair<std::string, std::string>> path_options;
+  std::vector<std::pair<std::string, std::string>> global_options;
+};
+
+// VSI path prefix under which GDAL sees every file of an EPT endpoint: the
+// directory holding ept.json, with http(s) URLs mapped to /vsicurl/ as EPTio
+// and LASio do when they open them.
+static std::string ept_vsi_prefix(const std::string& endpoint)
+{
+  std::string dir = endpoint.substr(0, endpoint.find('?'));
+  size_t pos = dir.rfind('/');
+  dir = (pos == std::string::npos) ? std::string() : dir.substr(0, pos + 1);
+  if (dir.compare(0, 7, "http://") == 0 || dir.compare(0, 8, "https://") == 0)
+    dir = "/vsicurl/" + dir;
+  return dir;
 }
 
 bool FileCollection::read(const std::vector<std::string>& files, bool progress)
@@ -628,28 +724,10 @@ bool FileCollection::add_ept_endpoint(std::string path, bool noprocess)
   }
   std::replace(path.begin(), path.end(), '\\', '/');
 
-  // Tune GDAL/VSI defaults for remote EPT reads. Without these, every
-  // /vsicurl/ open does sibling-directory HEAD probing (≈10× more HTTP
-  // requests than the actual range fetch), no chunk caching means
-  // overlapping AOI sub-queries re-fetch the same bytes, and HTTP/1.1
-  // serializes per host. Measured impact on autzen-classified
-  // concurrent_files(4): warm-cache reads 42 s → 0.9 s, cold-cache
-  // reads 43 s → 13 s.
-  //
-  // CPLSetConfigOption falls through to env vars on read, so any
-  // user override (e.g. Sys.setenv) keeps precedence — only set when
-  // unset. Scope: process-wide for all subsequent VSI ops, fine for
-  // lasR's typical usage.
-#ifdef USING_GDAL
-  if (CPLGetConfigOption("GDAL_DISABLE_READDIR_ON_OPEN", nullptr) == nullptr)
-    CPLSetConfigOption("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR");
-  if (CPLGetConfigOption("GDAL_HTTP_MULTIPLEX", nullptr) == nullptr)
-    CPLSetConfigOption("GDAL_HTTP_MULTIPLEX", "YES");
-  if (CPLGetConfigOption("VSI_CACHE", nullptr) == nullptr)
-    CPLSetConfigOption("VSI_CACHE", "TRUE");
-  if (CPLGetConfigOption("VSI_CACHE_SIZE", nullptr) == nullptr)
-    CPLSetConfigOption("VSI_CACHE_SIZE", "67108864");  // 64 MiB
-#endif
+  // Tune GDAL/VSI for a remote endpoint until this collection is destroyed.
+  // A local ept.json is read without touching any GDAL option.
+  if (is_remote_path(path))
+    ept_gdal_tuning.reset(new EptGdalTuning(ept_vsi_prefix(path)));
 
   try {
     ept_index = EPTio::HierarchyIndex::build_metadata(path);
