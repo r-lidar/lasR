@@ -1,6 +1,7 @@
 # lasR 0.22
 
 - New: `summarise()` reports area, point density and pulse density
+- Fix: heap-corrupting data race in thread_safe_print #328
 
 # lasR 0.21.2
 
