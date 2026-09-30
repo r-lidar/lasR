@@ -24,6 +24,15 @@ It also produces an histogram of Z and Intensity attributes for the \strong{enti
 It can also compute some metrics \strong{for each file or chunk} with the same metric engine than \link{rasterize}.
 This stage does not modify the point cloud. It produces a summary as a \code{list}.
 }
+\details{
+The returned list includes \code{npoints}, \code{npoints_per_return}, \code{npoints_per_class},
+the Z and Intensity histograms, the \code{crs}/\code{epsg}, and the coverage \code{area} (the
+sum of the processed bounding boxes, buffer excluded) together with \code{density}
+(point density = \code{npoints / area}) and \code{pulse_density} (pulse density =
+first returns / \code{area}). Following the convention used by \code{lidR}, the number
+of pulses is the number of first returns (\code{ReturnNumber == 1}); it is not
+derived from \code{gpstime}-based pulse identification.
+}
 \examples{
 f <- system.file("extdata", "Topography.las", package="lasR")
 read <- reader()
