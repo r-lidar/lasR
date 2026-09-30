@@ -167,7 +167,15 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
     const double sxmin = chunk.xmin, symin = chunk.ymin, sxmax = chunk.xmax, symax = chunk.ymax;
     double x0 = sxmin, y0 = symin, x1 = sxmax, y1 = symax;
 
-    if (reproject_bbox(source_crs, target_crs, x0, y0, x1, y1))
+    // A circle is not a circle in the target CRS: bound the reprojected circle instead.
+    const bool is_circle = chunk.shape == ShapeType::CIRCLE;
+    bool reprojected;
+    if (is_circle)
+      reprojected = reproject_circle_bbox(source_crs, target_crs, (sxmin + sxmax) / 2, (symin + symax) / 2, (sxmax - sxmin) / 2, x0, y0, x1, y1);
+    else
+      reprojected = reproject_bbox(source_crs, target_crs, x0, y0, x1, y1);
+
+    if (reprojected)
     {
       // The reader consumes the chunk buffer in source coordinates. Downstream stages
       // consume it after the coordinates have been transformed, so convert the source-side
@@ -181,6 +189,21 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
       }
       buffer = chunk.buffer;
 
+      // The reprojected chunk is not an axis-aligned rectangle, so the core of the chunk handed to
+      // the next stages is its bounding box. It also covers slivers of the neighbouring chunks.
+      // The points of these slivers were read as buffer points and flagged as such by the reader
+      // in the source CRS: stages that remove the buffer (write_las, summarise, callback) honor this
+      // flag first, and only fall back to a geometric test against this box. That test must never
+      // exclude a core point, so the box contains the whole reprojected core, plus a margin for the
+      // rounding of the reprojected coordinates stored as scaled integers in process(): half a
+      // quantization step, i.e. 5e-8 for a geographic target and at most 0.01 for a projected
+      // target with a scale factor up to 0.02.
+      const double margin = target_crs.is_geographic() ? 1e-7 : 0.01;
+      x0 -= margin;
+      y0 -= margin;
+      x1 += margin;
+      y1 += margin;
+
       this->xmin = x0;
       this->ymin = y0;
       this->xmax = x1;
@@ -190,6 +213,10 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
       chunk.ymin = y0;
       chunk.xmax = x1;
       chunk.ymax = y1;
+
+      // The next stages work on this rectangle. The exact source circle is carried by the buffer
+      // flag of the points.
+      if (is_circle) chunk.shape = ShapeType::RECTANGLE;
     }
     else
     {

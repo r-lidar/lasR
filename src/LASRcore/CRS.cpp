@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -137,13 +138,8 @@ void CRS::dump() const
 
 // # nocov end
 
-bool reproject_bbox(const CRS& source, const CRS& target, double& xmin, double& ymin, double& xmax, double& ymax)
+static OGRCoordinateTransformation* create_transform(const CRS& source, const CRS& target)
 {
-  if (!source.is_valid() || !target.is_valid()) return false;
-
-  // Nothing to do for an empty/unset extent.
-  if (xmin > xmax || ymin > ymax) return true;
-
   OGRSpatialReference oSourceSRS = source.get_crs();
   OGRSpatialReference oTargetSRS = target.get_crs();
 
@@ -156,51 +152,122 @@ bool reproject_bbox(const CRS& source, const CRS& target, double& xmin, double& 
   OGRCoordinateTransformation* ct = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
   CPLPopErrorHandler();
 
-  if (ct == nullptr) return false;
+  return ct;
+}
 
-  const int N = 8; // number of samples per edge
-  std::vector<double> xs;
-  std::vector<double> ys;
-  xs.reserve(4 * (N + 1));
-  ys.reserve(4 * (N + 1));
-
-  for (int i = 0; i <= N; ++i)
-  {
-    double tx = xmin + (xmax - xmin) * i / N;
-    double ty = ymin + (ymax - ymin) * i / N;
-
-    xs.push_back(tx);   ys.push_back(ymin); // bottom edge
-    xs.push_back(tx);   ys.push_back(ymax); // top edge
-    xs.push_back(xmin); ys.push_back(ty);   // left edge
-    xs.push_back(xmax); ys.push_back(ty);   // right edge
-  }
-
+// Transform the samples of a closed boundary and return the bounding box of the transformed
+// boundary. The samples flagged 'coarse' (every other sample) describe the same boundary at half
+// the density. Each side of the bounding box is moved outward by what doubling the density added
+// on that side: the transformed boundary is curved between two samples, and this gain bounds what
+// still lies beyond the samples (about a quarter of it for a smooth curve). Returns false if no
+// sample reprojects.
+static bool transform_boundary_bbox(OGRCoordinateTransformation* ct, std::vector<double>& xs, std::vector<double>& ys, const std::vector<bool>& coarse, double& xmin, double& ymin, double& xmax, double& ymax)
+{
   std::vector<int> ok(xs.size(), 0);
   ct->Transform((int)xs.size(), xs.data(), ys.data(), nullptr, ok.data());
-  OGRCoordinateTransformation::DestroyCT(ct);
 
-  double nxmin = std::numeric_limits<double>::max();
-  double nymin = std::numeric_limits<double>::max();
-  double nxmax = std::numeric_limits<double>::lowest();
-  double nymax = std::numeric_limits<double>::lowest();
+  const double big = std::numeric_limits<double>::max();
+  double fxmin = big, fymin = big, fxmax = -big, fymax = -big; // all the samples
+  double cxmin = big, cymin = big, cxmax = -big, cymax = -big; // the coarse samples only
   bool any = false;
+  bool any_coarse = false;
 
   for (size_t i = 0; i < xs.size(); ++i)
   {
     if (!ok[i]) continue;
     any = true;
-    nxmin = std::min(nxmin, xs[i]);
-    nymin = std::min(nymin, ys[i]);
-    nxmax = std::max(nxmax, xs[i]);
-    nymax = std::max(nymax, ys[i]);
+    fxmin = std::min(fxmin, xs[i]);
+    fymin = std::min(fymin, ys[i]);
+    fxmax = std::max(fxmax, xs[i]);
+    fymax = std::max(fymax, ys[i]);
+
+    if (!coarse[i]) continue;
+    any_coarse = true;
+    cxmin = std::min(cxmin, xs[i]);
+    cymin = std::min(cymin, ys[i]);
+    cxmax = std::max(cxmax, xs[i]);
+    cymax = std::max(cymax, ys[i]);
   }
 
   if (!any) return false;
 
-  xmin = nxmin;
-  ymin = nymin;
-  xmax = nxmax;
-  ymax = nymax;
+  xmin = fxmin;
+  ymin = fymin;
+  xmax = fxmax;
+  ymax = fymax;
+
+  if (any_coarse)
+  {
+    xmin -= cxmin - fxmin;
+    ymin -= cymin - fymin;
+    xmax += fxmax - cxmax;
+    ymax += fymax - cymax;
+  }
+
   return true;
 }
 
+// Number of segments per edge (rectangle) or around the perimeter (circle). Must be even.
+static const int NSEGMENTS = 64;
+
+bool reproject_bbox(const CRS& source, const CRS& target, double& xmin, double& ymin, double& xmax, double& ymax)
+{
+  if (!source.is_valid() || !target.is_valid()) return false;
+
+  // Nothing to do for an empty/unset extent.
+  if (xmin > xmax || ymin > ymax) return true;
+
+  OGRCoordinateTransformation* ct = create_transform(source, target);
+  if (ct == nullptr) return false;
+
+  const int N = NSEGMENTS;
+  std::vector<double> xs;
+  std::vector<double> ys;
+  std::vector<bool> coarse;
+  xs.reserve(4 * (N + 1));
+  ys.reserve(4 * (N + 1));
+  coarse.reserve(4 * (N + 1));
+
+  for (int i = 0; i <= N; ++i)
+  {
+    double tx = xmin + (xmax - xmin) * i / N;
+    double ty = ymin + (ymax - ymin) * i / N;
+    bool c = (i % 2 == 0);
+
+    xs.push_back(tx);   ys.push_back(ymin); coarse.push_back(c); // bottom edge
+    xs.push_back(tx);   ys.push_back(ymax); coarse.push_back(c); // top edge
+    xs.push_back(xmin); ys.push_back(ty);   coarse.push_back(c); // left edge
+    xs.push_back(xmax); ys.push_back(ty);   coarse.push_back(c); // right edge
+  }
+
+  bool success = transform_boundary_bbox(ct, xs, ys, coarse, xmin, ymin, xmax, ymax);
+  OGRCoordinateTransformation::DestroyCT(ct);
+  return success;
+}
+
+bool reproject_circle_bbox(const CRS& source, const CRS& target, double xc, double yc, double r, double& xmin, double& ymin, double& xmax, double& ymax)
+{
+  if (!source.is_valid() || !target.is_valid()) return false;
+  if (!(r >= 0)) return false;
+
+  OGRCoordinateTransformation* ct = create_transform(source, target);
+  if (ct == nullptr) return false;
+
+  const double pi = 3.14159265358979323846;
+  const int N = NSEGMENTS;
+  std::vector<double> xs(N);
+  std::vector<double> ys(N);
+  std::vector<bool> coarse(N);
+
+  for (int i = 0; i < N; ++i)
+  {
+    double a = 2 * pi * i / N;
+    xs[i] = xc + r * std::cos(a);
+    ys[i] = yc + r * std::sin(a);
+    coarse[i] = (i % 2 == 0);
+  }
+
+  bool success = transform_boundary_bbox(ct, xs, ys, coarse, xmin, ymin, xmax, ymax);
+  OGRCoordinateTransformation::DestroyCT(ct);
+  return success;
+}

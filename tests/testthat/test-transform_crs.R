@@ -260,3 +260,59 @@ test_that("transform_crs does not inflate projected buffers from geographic sour
   expect_lt(terra::nrow(r), 1000)
   expect_gt(terra::ncell(r), 0)
 })
+
+test_that("transform_crs does not duplicate buffer points across buffered tiles",
+{
+  # A reprojection rotates the tiles, so the axis-aligned bounding box of a reprojected tile
+  # also covers slivers of its neighbours. With a buffer, the points of these slivers are read
+  # as buffer points. write_las() and summarise() must rely on the buffer flag set by the
+  # reader in the source CRS, otherwise they are written and counted twice.
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  xyz <- function(x) exec(callback(function(d) d, expose = "xyz", no_las_update = TRUE), on = x)
+  src <- xyz(f)
+
+  td <- tempfile("transform_crs_tiles_")
+  dir.create(td)
+  on.exit(unlink(td, recursive = TRUE), add = TRUE)
+
+  exec(reader_las() + write_las(file.path(td, "tile_*.las")), on = f, chunk = 100)
+  tiles <- list.files(td, pattern = "^tile_.*\\.las$", full.names = TRUE)
+  exec(write_lax(), on = tiles)
+  expect_gt(length(tiles), 1)
+
+  for (epsg in c(4326, 32619))
+  {
+    tpl <- file.path(td, paste0("out", epsg, "_*.las"))
+    exec(reader_las() + transform_crs(epsg) + write_las(tpl), on = tiles, buffer = 30)
+    outs <- list.files(td, pattern = paste0("^out", epsg, "_.*\\.las$"), full.names = TRUE)
+    expect_length(outs, length(tiles))
+
+    out <- do.call(rbind, lapply(outs, xyz))
+    expect_equal(nrow(out), nrow(src))
+    expect_true(identical(sort(out$Z), sort(src$Z)))
+
+    s <- exec(reader_las() + transform_crs(epsg) + summarise(), on = tiles, buffer = 30)
+    expect_equal(s$npoints, nrow(src))
+  }
+})
+
+test_that("transform_crs keeps circular queries exact after a projected -> geographic transform",
+{
+  # After reprojecting to lon/lat the query circle is no longer a circle. Buffer points must
+  # still be excluded according to the source circle.
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  src <- exec(callback(function(d) d, expose = "xyz", no_las_update = TRUE), on = f)
+
+  xc <- 273500
+  yc <- 5274500
+  r <- 60
+  expected <- sum((src$X - xc)^2 + (src$Y - yc)^2 <= r^2)
+
+  o <- tempfile(fileext = ".las")
+  on.exit(unlink(o), add = TRUE)
+  exec(reader_circles(xc, yc, r) + transform_crs(4326) + write_las(o), on = f, buffer = 20)
+  expect_equal(exec(summarise(), on = o, noread = TRUE)$npoints, expected)
+
+  s <- exec(reader_circles(xc, yc, r) + transform_crs(4326) + summarise(), on = f, buffer = 20)
+  expect_equal(s$npoints, expected)
+})
