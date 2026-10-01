@@ -1,7 +1,18 @@
+# lasR 0.22
+
+- New: `summarise()` reports area, point density and pulse density
+- Fix: heap-corrupting data race in thread_safe_print #328
+
+# lasR 0.21.2
+
+- Fix: #338 callback returning R object with multiple files
+
 # lasR 0.21.1
 
-- New: `local_maximum()` and `local_maximum_raster()` now accept `ws` as a function for variable-size moving windows.
-- Fix #323 streaming bounding box filter
+- Fix: #323: streaming bounding box filter.
+- Fix: #317: `ptd` now bypasses processing when there are 0 points instead of throwing an error.
+- Fix: #321 `classify_with_csf()` no longer reads one element past the end of the ground-index vector once all ground points have been matched, preventing an out-of-bounds heap read on nearly every call.
+- Fix: #335: `rasterize()` with streamable metrics and a computation resolution different from the raster resolution (buffered rasterization) was not applying buffering.
 
 # lasR 0.21.0
 
