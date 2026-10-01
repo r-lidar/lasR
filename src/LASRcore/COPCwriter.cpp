@@ -113,6 +113,20 @@ namespace
     if (n > 16) return 16;
     return (int)n;
   }
+  // Parse LASR_COPC_HIERARCHY_ENTRY_LIMIT env var. Returns 0 if unset,
+  // invalid, <= 0 or above INT32_MAX. The COPC hierarchy stores a chunk's
+  // point count and byte size as int32, so the limit can only be lowered,
+  // never raised past INT32_MAX. Lowering it lets a small write exercise the
+  // finalize guard that would otherwise need 2^31 points in one chunk.
+  std::uint64_t env_hierarchy_entry_limit()
+  {
+    const char* v = std::getenv("LASR_COPC_HIERARCHY_ENTRY_LIMIT");
+    if (!v || !*v) return 0;
+    char* end = nullptr;
+    long long n = std::strtoll(v, &end, 10);
+    if (!end || *end != '\0' || n <= 0 || n > (long long)I32_MAX) return 0;
+    return (std::uint64_t)n;
+  }
   int env_xy_lod_grid_multiplier()
   {
     const char* v = std::getenv("LASR_COPC_XY_LOD_GRID_MULTIPLIER");
@@ -271,14 +285,23 @@ bool COPCwriter::prepare_copc_header(const LASheader* source_header)
   }
 
   // Version bump to 1.4: move legacy point counts to the extended fields.
+  // A count goes there only while its extended field is still 0: a total
+  // above U32_MAX fits only in the extended field, and LASio::create stores
+  // it there with the legacy field left at 0. Overwriting it with the legacy
+  // 0 would size the octree for an empty file (auto max_depth 0, every point
+  // in the root chunk). A count that fits in 32 bits is unaffected: LASio
+  // sets both fields to it, and a header with only the legacy field set
+  // still has it copied.
   if (source_header->version_minor < 4)
   {
     copc_header->version_minor = 4;
-    copc_header->extended_number_of_point_records = copc_header->number_of_point_records;
+    if (copc_header->extended_number_of_point_records == 0)
+      copc_header->extended_number_of_point_records = copc_header->number_of_point_records;
     copc_header->number_of_point_records = 0;
     for (U32 i = 0; i < 5; i++)
     {
-      copc_header->extended_number_of_points_by_return[i] = copc_header->number_of_points_by_return[i];
+      if (copc_header->extended_number_of_points_by_return[i] == 0)
+        copc_header->extended_number_of_points_by_return[i] = copc_header->number_of_points_by_return[i];
       copc_header->number_of_points_by_return[i] = 0;
     }
   }
@@ -503,6 +526,7 @@ bool COPCwriter::open(const char* file_name, const LASheader* source_header, I32
   // it's not a steady-state allocation and the cap is a backstop, not a
   // budget partition.
   if (std::uint64_t e = env_max_sort_memory(); e > 0) max_sort_memory = e;
+  if (std::uint64_t e = env_hierarchy_entry_limit(); e > 0) hierarchy_entry_limit = e;
   if (std::uint32_t e = env_max_entries_per_page(); e > 0) max_entries_per_page = e;
   if (int e = env_protected_lod_depth(); e >= 0) protected_lod_depth = e;
   // Auto-tune xy_lod_depth to (routing_max_depth - 1) — i.e. one level
@@ -1050,6 +1074,45 @@ bool COPCwriter::enforce_resident_budget()
   return true;
 }
 
+bool COPCwriter::fits_hierarchy_entry(const EPTkey& key, U64 value, const char* what)
+{
+  if (value <= hierarchy_entry_limit) return true;
+
+  // Advice per depth mode (see the routing cap in open()). The auto
+  // single-chunk fast path (heuristic max_depth 0) never bumps, so
+  // max_extra_depth has no effect there: only an explicit max_depth or a
+  // smaller max_points_per_chunk (which deepens the heuristic) helps.
+  const char* mitigation;
+  if (copc_depth_user_set)
+    mitigation = "Raise max_depth, or leave it on auto, so the points spread "
+                 "over more, smaller chunks.";
+  else if (routing_max_depth == 0)
+    mitigation = "The automatic max_depth chose a single chunk; set max_depth "
+                 "or lower max_points_per_chunk so the points spread over "
+                 "more, smaller chunks.";
+  else
+    mitigation = "Raise max_extra_depth (-1 = unbounded) or lower "
+                 "max_points_per_chunk so the points spread over more, "
+                 "smaller chunks.";
+  char msg[512];
+  std::snprintf(msg, sizeof(msg),
+    "COPC writer: the chunk at depth=%d x=%d y=%d z=%d has %llu %s, more than "
+    "the %llu a COPC hierarchy entry can record (int32). %s",
+    (int)key.d, (int)key.x, (int)key.y, (int)key.z,
+    (unsigned long long)value, what,
+    (unsigned long long)hierarchy_entry_limit, mitigation);
+  fail(msg);
+  return false;
+}
+
+bool COPCwriter::record_hierarchy_entry(const EPTkey& key, U64 offset, U64 byte_size, U64 point_count)
+{
+  if (!fits_hierarchy_entry(key, point_count, "points")) return false;
+  if (!fits_hierarchy_entry(key, byte_size, "bytes of compressed data")) return false;
+  hierarchy->record_chunk(key, offset, (I32)byte_size, (I32)point_count);
+  return true;
+}
+
 bool COPCwriter::finalize_and_write()
 {
   if (poisoned) return false;
@@ -1123,6 +1186,15 @@ bool COPCwriter::finalize_and_write()
   //    Copy the emit order up front because record_chunk mutates entries.
   std::vector<COPChierarchy::FinalOctant> emit_copy = hierarchy->emit_order();
 
+  // A hierarchy entry records the chunk's point count as int32. Check every
+  // chunk before emitting any of them, so an oversized one fails before
+  // hours of streaming rather than after. The byte size is only known once
+  // a chunk is written; record_hierarchy_entry checks it.
+  for (const auto& o : emit_copy)
+  {
+    if (!fits_hierarchy_entry(o.key, o.point_count, "points")) return false;
+  }
+
   // Up-front oversize scan. Voxel-routing + cap-aware collapse keep every
   // routed chunk under max_points_per_octant; a force-accept at the
   // routing depth cap (user max_depth in user-set mode, HARD_DEPTH_LIMIT
@@ -1190,7 +1262,7 @@ bool COPCwriter::finalize_and_write()
   {
     if (o.point_count == 0)
     {
-      hierarchy->record_chunk(o.key, 0, 0, 0);
+      if (!record_hierarchy_entry(o.key, 0, 0, 0)) return false;
       continue;
     }
 
@@ -1273,8 +1345,8 @@ bool COPCwriter::finalize_and_write()
       fail("LASwriterLAS::chunk failed");
       return false;
     }
-    const I32 chunk_size = (I32)(writer_las->tell() - chunk_offset);
-    hierarchy->record_chunk(o.key, (U64)chunk_offset, chunk_size, (I32)o.point_count);
+    const I64 chunk_size = writer_las->tell() - chunk_offset;
+    if (!record_hierarchy_entry(o.key, (U64)chunk_offset, (U64)chunk_size, o.point_count)) return false;
 
     // Release spill resources for this octant.
     spill->drop_octant(o.leaves);

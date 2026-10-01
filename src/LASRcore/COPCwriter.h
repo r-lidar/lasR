@@ -88,6 +88,14 @@ private:
   // Drive the finalization sequence (called from close()).
   bool finalize_and_write();
 
+  // A COPC hierarchy entry stores a chunk's byte size and point count as
+  // int32. fits_hierarchy_entry fails the writer, naming the chunk, when
+  // `value` exceeds hierarchy_entry_limit. record_hierarchy_entry checks
+  // both values before handing them to COPChierarchy::record_chunk, so no
+  // entry is cast past INT32_MAX into a wrapped, corrupt hierarchy.
+  bool fits_hierarchy_entry(const EPTkey& key, U64 value, const char* what);
+  bool record_hierarchy_entry(const EPTkey& key, U64 offset, U64 byte_size, U64 point_count);
+
   void fail(const std::string& msg);
 
 private:
@@ -265,6 +273,10 @@ private:
   // raise the routing budget without inflating finalize peak memory.
   std::uint64_t max_sort_memory = 256ULL * 1024 * 1024;
   bool skip_sort_warned = false;
+  // Largest point count / byte size one hierarchy entry can record. The COPC
+  // hierarchy stores both as int32. Set at open(); only lowered, by the
+  // LASR_COPC_HIERARCHY_ENTRY_LIMIT env var (for tests).
+  std::uint64_t hierarchy_entry_limit = (std::uint64_t)I32_MAX;
 
   // Stats accumulated during write_point. gpstime min/max only track non-zero
   // values: a single synthetic point with gpstime=0 in an otherwise-valid

@@ -739,3 +739,114 @@ test_that("write_copc resolves the default density per writer",
   expect_equal(gridsize(write_las(o), o), 256)
   expect_equal(gridsize(write_las(o, experimental_writer = TRUE), o), 128)
 })
+
+test_that("write_copc sizes a merged octree from a catalog count above 32 bits for a legacy point format",
+{
+  # A merged COPC write sizes the octree's auto max_depth from the catalog's
+  # total point count. A total above 4,294,967,295 fits only in the LAS 1.4
+  # extended count, and the experimental writer used to overwrite it with the
+  # zero legacy count while upgrading a LAS < 1.4 header to 1.4. The octree
+  # was then sized for 0 points: depth 0, every point in the root chunk.
+  # A VPC declares the count, so a small LAS 1.2 / PDRF 1 file listed with
+  # a count just under and just over 32 bits reproduces this without billions
+  # of points. Both counts give the same auto depth, so both outputs must
+  # carry the same multi-level hierarchy.
+  f = system.file("extdata", "Megaplot.las", package = "lasR")
+
+  read_hierarchy = function(path) {
+    con = file(path, open = "rb"); on.exit(close(con))
+    # Skip the 5 leading doubles in the COPC info VLR (center xyz +
+    # halfsize + spacing) to land on root_hier_offset.
+    seek(con, 375 + 54 + 5*8)
+    hier_offset = readBin(con, "integer", n = 1, size = 8, endian = "little")
+    hier_size   = readBin(con, "integer", n = 1, size = 8, endian = "little")
+    seek(con, hier_offset)
+    n = hier_size %/% 32
+    entries = matrix(0L, nrow = n, ncol = 5,
+                     dimnames = list(NULL, c("d", "x", "y", "z", "point_count")))
+    for (i in seq_len(n)) {
+      key = readBin(con, "integer", n = 4, size = 4, endian = "little")
+      readBin(con, "integer", n = 1, size = 8, endian = "little")  # offset
+      readBin(con, "integer", n = 1, size = 4, endian = "little")  # byte_size
+      entries[i, ] = c(key, readBin(con, "integer", n = 1, size = 4, endian = "little"))
+    }
+    entries
+  }
+
+  vpc = tempfile(fileext = ".vpc")
+  o32 = tempfile(fileext = ".copc.laz")
+  o64 = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(c(vpc, o32, o64)), add = TRUE)
+
+  exec(write_vpc(vpc), on = f)
+  json = readLines(vpc, warn = FALSE)
+  expect_length(grep('"pc:count": *[0-9]+', json), 1L)
+
+  write_merged = function(count, o) {
+    writeLines(sub('"pc:count": *[0-9]+', paste0('"pc:count": ', count), json), vpc)
+    exec(write_copc(o, experimental_writer = TRUE), on = vpc)
+  }
+  write_merged("4000000000", o32)
+  write_merged("5000000000", o64)
+
+  h32 = read_hierarchy(o32)
+  h64 = read_hierarchy(o64)
+  expect_gt(max(h32[h32[, "point_count"] > 0, "d"]), 0L)
+  expect_equal(h64, h32)
+
+  src_n = exec(reader() + summarise(), on = f)$npoints
+  expect_equal(exec(reader() + summarise(), on = o64)$npoints, src_n)
+})
+
+test_that("write_copc fails and removes the output when a chunk does not fit a hierarchy entry",
+{
+  # A COPC hierarchy entry stores a chunk's point count and byte size as
+  # int32. A chunk past INT32_MAX (e.g. billions of points under an
+  # explicit max_depth that is far too shallow) used to be cast and wrap
+  # into a corrupt file. LASR_COPC_HIERARCHY_ENTRY_LIMIT lowers the limit so
+  # a small file trips the same guard. Megaplot.las (81,590 points) is
+  # written as a single root chunk (auto max_depth 0), so a limit of 1,000
+  # trips the point count and a limit of 100,000 trips only the compressed
+  # byte size. In that mode max_extra_depth has no effect, so the message
+  # must point to max_depth or max_points_per_chunk instead.
+  f = system.file("extdata", "Megaplot.las", package = "lasR")
+  old_limit = Sys.getenv("LASR_COPC_HIERARCHY_ENTRY_LIMIT", unset = NA)
+  on.exit(if (is.na(old_limit)) Sys.unsetenv("LASR_COPC_HIERARCHY_ENTRY_LIMIT")
+          else Sys.setenv(LASR_COPC_HIERARCHY_ENTRY_LIMIT = old_limit), add = TRUE)
+
+  cases = list(c(limit = "1000",   pattern = "has 81590 points, more than the 1000"),
+               c(limit = "100000", pattern = "bytes of compressed data, more than the 100000"))
+  for (case in cases)
+  {
+    o = tempfile(fileext = ".copc.laz")
+    on.exit(unlink(o), add = TRUE)
+    Sys.setenv(LASR_COPC_HIERARCHY_ENTRY_LIMIT = case[["limit"]])
+    label = paste("limit", case[["limit"]])
+    err = expect_error(exec(write_copc(o, experimental_writer = TRUE), on = f),
+                       case[["pattern"]], label = label)
+    expect_match(conditionMessage(err), "set max_depth or lower max_points_per_chunk",
+                 fixed = TRUE, label = label)
+    expect_no_match(conditionMessage(err), "max_extra_depth", fixed = TRUE)
+    expect_false(file.exists(o), label = label)
+    residues = list.files(dirname(o), pattern = paste0(basename(o), ".copc-spill-"))
+    expect_length(residues, 0L)
+  }
+
+  # An invalid, non-positive or above-INT32_MAX value keeps the default.
+  for (limit in c("abc", "0", "-5", "2147483648"))
+  {
+    Sys.setenv(LASR_COPC_HIERARCHY_ENTRY_LIMIT = limit)
+    o = tempfile(fileext = ".copc.laz")
+    on.exit(unlink(o), add = TRUE)
+    expect_error(exec(write_copc(o, experimental_writer = TRUE), on = f), NA,
+                 label = paste("limit", limit))
+  }
+
+  # The default limit (INT32_MAX) writes the same file without error.
+  Sys.unsetenv("LASR_COPC_HIERARCHY_ENTRY_LIMIT")
+  o = tempfile(fileext = ".copc.laz")
+  on.exit(unlink(o), add = TRUE)
+  expect_error(exec(write_copc(o, experimental_writer = TRUE), on = f), NA)
+  expect_equal(exec(reader() + summarise(), on = o)$npoints,
+               exec(reader() + summarise(), on = f)$npoints)
+})
