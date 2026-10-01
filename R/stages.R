@@ -1505,13 +1505,18 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' @export
 #' @rdname write
 #' @param max_depth integer. Maximum depth of the hierarchy. Default is NA meaning that is auto computes
-#' @param density character. Can be 'sparse', 'normal' or 'dense'. It controls the point density per octant.
+#' @param density character. Can be 'sparse', 'normal', 'dense' or 'denser'. It controls the point density per octant.
 #' With 'sparse' each Octree octant is subdivided into 64 x 64 x 64 cells which mean that the density of point
-#' is light. Normal is 128, dense is 256. Both writers honour it. Default \code{NULL} uses the writer's own
+#' is light. Normal is 128, dense is 256, denser is 512. Both writers honour it. Default \code{NULL} uses the writer's own
 #' default: \code{"dense"} for the legacy LASlib writer, and \code{"normal"} for the experimental writer
 #' (\code{experimental_writer = TRUE}), where it balances writer memory and file size. With the experimental
-#' writer, pass \code{"dense"} for richer coarse-LOD on visualization-first inputs at the cost of ~2.5x writer
-#' peak RAM on sofi-class inputs (4.6 GB vs 1.8 GB).
+#' writer, pass \code{"dense"} for richer coarse-LOD on visualization-first inputs. The experimental writer
+#' samples the coarse levels on a 2D grid twice as fine as \code{density} (256 x 256 cells for
+#' \code{"normal"}) and keeps one point per cell in one chunk, so the grid side is limited to the square
+#' root of \code{max_points_per_chunk}, and the writer prints a warning when it reduces the grid. At the
+#' default 100,000 the limit is 316 x 316: \code{"dense"} (512 x 512) and \code{"denser"} (1024 x 1024) both
+#' use 316 x 316, and need \code{max_points_per_chunk} of at least 262,144 or 1,048,576 for their full grid.
+#' A \code{max_points_per_chunk} below 65,536 reduces the grid of \code{"normal"} too.
 #' @param max_extra_depth integer. \strong{Only honoured when} \code{experimental_writer = TRUE} ---
 #' the legacy LASlib writer has no equivalent knob. Auto-mode only: how many depth levels the writer
 #' is allowed to bump past the heuristic-chosen \code{max_depth} to keep chunks under
@@ -1550,7 +1555,7 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #'   \strong{Default (size + RAM balanced)} \tab Most users \tab
 #'     \code{density = "normal"}, \code{max_extra_depth = NA} (\eqn{=}1) \cr
 #'   \strong{Rich coarse-LOD} \tab Visualization, sparse-zoom web viewers \tab
-#'     \code{density = "dense"} (\eqn{\sim}2.5x peak RAM, \eqn{\sim}9\% larger output) \cr
+#'     \code{density = "dense"}, plus \code{max_points_per_chunk = 262144} for the full grid (see \code{density}) \cr
 #'   \strong{Compact / LAStools-equivalent} \tab Fewer chunks, smaller eVLR \tab
 #'     \code{max_extra_depth = 0} \cr
 #'   \strong{Min file / min writer RAM} \tab Cold storage, batch-only access \tab
@@ -1567,8 +1572,8 @@ write_las = function(ofile = paste0(tempdir(), "/*.las"), filter = "", keep_buff
 #' The two changes together capture the file-size win (\eqn{-}24\%),
 #' the RAM win (\eqn{-}45\%), and a smaller wall-time win (\eqn{-}13\%)
 #' by routing through fewer voxels and fewer chunks. Pass
-#' \code{density = "dense"} or \code{max_extra_depth = -1} explicitly
-#' to opt back into the prior behaviour on either axis.
+#' \code{max_extra_depth = -1} explicitly to opt back into the prior depth
+#' behaviour; for the coarse-level grid, see \code{density}.
 #'
 #' \strong{Memory budgets for huge inputs.} These environment variables
 #' control writer RAM:

@@ -251,6 +251,46 @@ test_that("write_copc honours a tiny LASR_COPC_RESIDENT_BUDGET (forces flush pat
   expect_equal(unname(tools::md5sum(o1)), unname(tools::md5sum(o2)))
 })
 
+test_that("write_copc coarse levels do not depend on the resident budget (#342)",
+{
+  # A memory-pressure flush used to reset a coarse (XY) octant's cell
+  # table. The reopened octant took a second point in cells it had already
+  # spilled until it reached max_points_per_chunk, and then no point at
+  # all, so the per-depth point counts depended on the budget (depth 1 of
+  # this file gained 91% with "normal"). Protecting no depth and a 1 MB
+  # budget force such flushes on a small file. Which point a spilled cell
+  # keeps can still depend on when the flush happened, which moves the
+  # deeper levels by a few points, hence the 1% tolerance.
+  f = system.file("extdata", "bcts", "bcts_1.laz", package = "lasR")
+  skip_if(f == "", "bcts_1.laz not available")
+
+  prev_resident = Sys.getenv("LASR_COPC_RESIDENT_BUDGET", unset = NA)
+  prev_protect  = Sys.getenv("LASR_COPC_PROTECTED_LOD_DEPTH", unset = NA)
+  on.exit({
+    if (is.na(prev_resident)) Sys.unsetenv("LASR_COPC_RESIDENT_BUDGET") else Sys.setenv(LASR_COPC_RESIDENT_BUDGET = prev_resident)
+    if (is.na(prev_protect))  Sys.unsetenv("LASR_COPC_PROTECTED_LOD_DEPTH") else Sys.setenv(LASR_COPC_PROTECTED_LOD_DEPTH = prev_protect)
+  }, add = TRUE)
+
+  counts_per_depth = function(density) {
+    o = tempfile(fileext = ".copc.laz")
+    on.exit(unlink(o), add = TRUE)
+    exec(write_copc(o, density = density, experimental_writer = TRUE), on = f)
+    sapply(0:3, function(d) exec(reader(depth = d) + summarise(), on = o)$npoints)
+  }
+
+  for (density in c("normal", "dense"))
+  {
+    Sys.unsetenv(c("LASR_COPC_RESIDENT_BUDGET", "LASR_COPC_PROTECTED_LOD_DEPTH"))
+    ref = counts_per_depth(density)
+
+    Sys.setenv(LASR_COPC_RESIDENT_BUDGET = as.character(1024L * 1024L),
+               LASR_COPC_PROTECTED_LOD_DEPTH = "0")
+    tight = counts_per_depth(density)
+
+    expect_lt(max(abs(tight / ref - 1)), 0.01, label = paste0("relative change per depth (", density, ")"))
+  }
+})
+
 test_that("write_copc protects shallow LODs from early resident-budget flushes",
 {
   # Under a tight resident budget, unprotected shallow octants can be frozen

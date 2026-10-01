@@ -153,11 +153,6 @@ private:
     // Insert (cell -> idx) assuming cell is not already present. Grows
     // the table when load factor would exceed ~0.7.
     void insert(I32 cell, U32 idx);
-
-    // Erase a cell mapping if present. Used by shallow XY cap replacement,
-    // where a full overview octant keeps the same slot count but swaps a
-    // previously selected cell for a later competing cell.
-    bool erase(I32 cell);
   };
 
   struct HotOctant
@@ -179,28 +174,38 @@ private:
 
   // Octants whose residents have already been flushed to spill due to RAM
   // pressure. Non-XY flushed octants no longer accept new claims at routing
-  // time — points descend past them. Intermediate XY flushed octants may
-  // reopen for later batches up to the chunk cap, using
-  // flushed_octant_points to keep the total bounded.
+  // time — points descend past them. Intermediate XY flushed octants
+  // reopen for later batches: cells in flushed_xy_cells stay closed, the
+  // other cells can still be claimed.
   std::unordered_set<EPTkey, EPTKeyHasher> flushed_octants;
 
-  // Point counts already appended for flushed octants. For intermediate XY
-  // overview depths we can reopen a flushed octant for later batches until
-  // its total emitted count reaches max_points_per_octant. This keeps the
-  // same resident byte cap while avoiding a permanent scan-order snapshot.
+  // Point counts already appended for flushed octants. A reopened XY octant
+  // counts them against the chunk cap.
   std::unordered_map<EPTkey, U64, EPTKeyHasher> flushed_octant_points;
+
+  // XY cells already in spill for each flushed overview octant, one bit per
+  // cell of the xy_grid_size x xy_grid_size grid. A reopened octant must not
+  // claim these cells again: the spilled point can no longer be replaced, so
+  // a second point in the same cell would be a duplicate, and duplicates
+  // would use up the cap before the cells read later get a point (#342).
+  // The bitsets are counted in resident_bytes and are never flushed.
+  std::unordered_map<EPTkey, std::vector<U64>, EPTKeyHasher> flushed_xy_cells;
+  std::uint64_t flushed_xy_cell_bytes = 0;
+  // Bytes of one bitset, resolved in open() from xy_grid_size.
+  std::uint64_t xy_bitset_bytes = 0;
 
   // Per-octant byte usage, kept in sync with `occupancy` on every insert /
   // replace / evict / flush. Avoids the O(voxels) cost of re-summing each
   // octant's bytes on every enforce_resident_budget call (which on a 364M
   // point input under tight budget triggers per-point and dominates CPU).
-  // The aggregate `resident_bytes` is the sum over all entries.
+  // `resident_bytes` is the sum over all entries plus flushed_xy_cell_bytes.
   std::unordered_map<EPTkey, std::uint64_t, EPTKeyHasher> octant_bytes;
 
-  // Aggregate bytes held in `occupancy`. Tracked incrementally on
-  // insert / replace / evict so we can keep total resident memory below a
-  // configurable budget (resident_budget). When the budget is exceeded the
-  // heaviest hot octant is flushed to spill and demoted to flushed_octants.
+  // Aggregate bytes held in `occupancy`, plus the flushed-cell bitsets.
+  // Tracked incrementally on insert / replace / evict / flush so we can keep
+  // total resident memory below a configurable budget (resident_budget).
+  // When the budget is exceeded the heaviest hot octant is flushed to spill
+  // and demoted to flushed_octants.
   std::uint64_t resident_bytes = 0;
   // Default 256 MB to match COPCspill's default budget. The two budgets are
   // independent — spill bytes don't count against this one and vice versa —
@@ -222,8 +227,10 @@ private:
   // Push a single hot octant's residents into spill and demote it to
   // flushed_octants. Used both by enforce_resident_budget() (intake-time
   // memory pressure) and by finalize_and_write() (close-time fold).
+  // remember_cells records an XY octant's cells in flushed_xy_cells; the
+  // close-time fold passes false because routing has stopped.
   // Returns false on spill error.
-  bool flush_hot_octant(const EPTkey& key);
+  bool flush_hot_octant(const EPTkey& key, bool remember_cells);
 
   // If resident_bytes > resident_budget, flush the heaviest hot octant(s)
   // until under budget. Called from route_or_spill() after each successful
@@ -248,6 +255,13 @@ private:
   // controls the XY grid resolution relative to copc_density.
   I32 xy_lod_depth = 4;
   I32 xy_lod_grid_multiplier = 2;
+  // XY grid side used at depths <= xy_lod_depth, resolved in open():
+  // copc_density * xy_lod_grid_multiplier, limited to
+  // floor(sqrt(max_points_per_octant)) so that one point per cell always
+  // fits in one chunk. With more cells than the cap, a full octant holds a
+  // subset of its cells, and a flush freezes that subset to the part of the
+  // octant read so far (#342).
+  I32 xy_grid_size = 0;
 
   // Hard upper bound on adaptive depth bumping. Only consulted when
   // copc_depth was left at its auto sentinel (-1) at open() time — a user
