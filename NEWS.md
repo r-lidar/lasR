@@ -2,6 +2,7 @@
 
 - New: `summarise()` reports area, point density and pulse density
 - New: `local_maximum()` supports variable windows size.
+- Fix: `summarise()` area, density and pulse density for circular queries used the bounding square instead of the disc
 - Fix: heap-corrupting data race in thread_safe_print #328
 
 # lasR 0.21.2

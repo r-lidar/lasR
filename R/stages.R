@@ -1354,10 +1354,12 @@ spikefree = function(res = 0.5, freeze_distance = 1, height_buffer = 0.5, filter
 #'
 #' The returned list includes `npoints`, `npoints_per_return`, `npoints_per_class`,
 #' the Z and Intensity histograms, the `crs`/`epsg`, and the coverage `area` (the
-#' sum of the processed bounding boxes, buffer excluded) together with `density`
-#' (point density = `npoints / area`) and `pulse_density` (pulse density =
-#' first returns / `area`). Following the convention used by `lidR`, the number
-#' of pulses is the number of first returns (`ReturnNumber == 1`); it is not
+#' sum of the processed bounding boxes, buffer excluded; circular queries such as
+#' `reader_circles()` use the area of the disc that lies within the processed extent,
+#' i.e. `pi * r^2` for a disc within the coverage, instead of the bounding square)
+#' together with `density` (point density = `npoints / area`) and `pulse_density`
+#' (pulse density = first returns / `area`). Following the convention used by `lidR`,
+#' the number of pulses is the number of first returns (`ReturnNumber == 1`); it is not
 #' derived from `gpstime`-based pulse identification.
 #'
 #' @param zwbin,iwbin numeric. Width of the bins for the histograms of Z and Intensity.
