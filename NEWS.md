@@ -1,6 +1,7 @@
 # lasR 0.22
 
 - New: `summarise()` reports area, point density and pulse density
+- New: `local_maximum()` supports variable windows size.
 - Fix: heap-corrupting data race in thread_safe_print #328
 
 # lasR 0.21.2

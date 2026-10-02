@@ -689,7 +689,8 @@ load_matrix = function(matrix, check = TRUE)
 #'
 #' The Local Maximum stage identifies points that are locally maximum. The window is
 #' circular. This stage does not modify the point cloud. It produces a derived product
-#' in vector format. The function `local_maximum_raster` applies on a raster instead of the point cloud
+#' in vector format. The function `local_maximum_raster` applies on a raster instead 
+#' of the point cloud
 #'
 #' @param ws numeric or function. The diameter of the moving window used
 #'   to detect the local maxima. A single number gives a fixed circular

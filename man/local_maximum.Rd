@@ -24,8 +24,13 @@ local_maximum_raster(
 )
 }
 \arguments{
-\item{ws}{numeric. Diameter of the moving window used to detect the local maxima in the units of
-the input data (usually meters).}
+\item{ws}{numeric or function. The diameter of the moving window used
+to detect the local maxima. A single number gives a fixed circular
+window. A function of one argument gives a variable window: it
+receives the \code{use_attribute} value (height by default) and must
+return a positive window diameter for each point, e.g.
+\code{function(x) 0.1 * x + 3}. The function is sampled once over a
+0-200 m grid at 0.5 m steps; heights outside that range are clamped.}
 
 \item{min_height}{numeric. Minimum height of a local maximum. Threshold below which a point cannot be a
 local maximum. Default is 2.}
@@ -63,9 +68,10 @@ any other format supported by GDAL. Vector stages may produce geometries with Z 
 Thus, it is discouraged to store them in formats with no 3D support, such as shapefiles.
 }
 \description{
-The Local Maximum stage identifies points that are locally maximum. The window size is
-fixed and circular. This stage does not modify the point cloud. It produces a derived product
-in vector format. The function \code{local_maximum_raster} applies on a raster instead of the point cloud
+The Local Maximum stage identifies points that are locally maximum. The window is
+circular. This stage does not modify the point cloud. It produces a derived product
+in vector format. The function \code{local_maximum_raster} applies on a raster instead
+of the point cloud
 }
 \examples{
 f <- system.file("extdata", "MixedConifer.las", package = "lasR")
@@ -73,6 +79,9 @@ read <- reader()
 lmf <- local_maximum(5)
 ans <- exec(read + lmf, on = f)
 ans
+
+# Variable window: larger search window for taller trees
+lmf <- local_maximum(function(x) 0.1 * x + 3)
 
 chm <- rasterize(1, "max")
 lmf <- local_maximum_raster(chm, 5)

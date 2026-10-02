@@ -225,7 +225,7 @@ test_that("variable window roughly matches lidR lmf",
   ttops <- eval(parse(text = "lidR::locate_trees(las, lidR::lmf(ws = fn, hmin = 2))"))
   ours  <- exec(local_maximum(ws = fn, min_height = 2), on = f)
 
-  expect_lt(abs(nrow(ours) - nrow(ttops)) / nrow(ttops), 0.10)
+  expect_equal(nrow(ours), nrow(ttops))
 })
 
 test_that("variable window works on a raster",
