@@ -559,12 +559,13 @@ Pipeline transform_with(std::string connect_uid, std::string operation, std::str
   return Pipeline(s);
 }
 
-Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep_buffer, unsigned char version, unsigned char pdrf)
+Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep_buffer, unsigned char version, unsigned char pdrf, bool experimental_writer)
 {
   Stage s("write_las");
   s.set("output", ofile);
   s.set("filter", filter);
   s.set("keep_buffer", keep_buffer);
+  s.set("experimental_writer", experimental_writer);
   if (version != 0xFF)
   {
     if (version < 0 || version > 4)
@@ -595,10 +596,14 @@ Pipeline write_las(std::string ofile, std::vector<std::string> filter, bool keep
   return Pipeline(s);
 }
 
-Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density)
+Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool keep_buffer, int max_depth, std::string density, bool experimental_writer, int max_extra_depth, int max_points_per_chunk, std::vector<double> bbox)
 {
   std::string ext = ofile.substr(ofile.size()-9, ofile.size());
   if (ext != ".copc.laz") throw std::invalid_argument("File must be .copc.laz");
+
+  // Empty density = the writer's own default: "normal" for the experimental
+  // writer, "dense" for the legacy LASlib writer.
+  if (density.empty()) density = experimental_writer ? "normal" : "dense";
 
   static const std::vector<std::string> choices = {"sparse", "normal", "dense", "denser"};
   auto it = std::find(choices.begin(), choices.end(), density);
@@ -610,14 +615,27 @@ Pipeline write_copc(std::string ofile, std::vector<std::string> filter, bool kee
   if (density == "dense")  d = 256;
   if (density == "denser") d = 512;
 
+  if (!bbox.empty() && bbox.size() != 6)
+    throw std::invalid_argument("write_copc bbox must have exactly 6 elements: c(xmin, ymin, zmin, xmax, ymax, zmax)");
 
   Stage s("write_las");
   s.set("output", ofile);
   s.set("filter", filter);
   s.set("keep_buffer", keep_buffer);
   s.set("density", d);
+  s.set("experimental_writer", experimental_writer);
   if (max_depth >= 0)
     s.set("max_depth", max_depth);
+  // Always emit max_extra_depth into the JSON, including -1: that value
+  // is the documented "unbounded" knob, and the JSON-default fallback in
+  // writelas.cpp::set_parameters is now 1 (the surface default) — so
+  // silently dropping -1 here would misread an explicit "unbounded"
+  // request as the new default.
+  s.set("max_extra_depth", max_extra_depth);
+  if (max_points_per_chunk > 0)
+    s.set("max_points_per_chunk", max_points_per_chunk);
+  if (bbox.size() == 6)
+    s.set("bbox", bbox);
 
   return Pipeline(s);
 }
