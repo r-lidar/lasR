@@ -165,15 +165,29 @@ std::vector<int> Grid::four_local_neighbours(double x, double y) const
   return neighbors;
 }
 
+// Index of the cell that contains the position q, in cells from the origin of the grid. A point on
+// the edge of two cells belongs to the next one. The origins of the grids of the chunks and of the
+// whole raster are multiples of the resolution, but with a resolution that has no exact binary
+// value (1.2, 1.4, 1e-5...) q can land just below the integer for a point on an edge, depending on
+// the origin: the point would then go to a different cell in each chunk and in the whole raster.
+// Treat q as an integer when it is one up to the floating-point error.
+static int cell_index(double q)
+{
+  const double r = std::round(q);
+  if (std::fabs(q - r) < 1e-6) return (int)r;
+  return (int)std::floor(q);
+}
+
 int Grid::cell_from_xy(double x, double y) const
 {
   if (x < xmin || x > xmax || y < ymin || y > ymax)
     return -1;
 
-  int col = std::floor((x - xmin) / xres);
-  int row = std::floor((ymax - y) / yres);
-  if (y == ymin) row = nrows-1;
-  if (x == xmax) col = ncols-1;
+  int col = cell_index((x - xmin) / xres);
+  int row = cell_index((ymax - y) / yres);
+  // A point on the last edge (or within the floating-point error of it) is in the last cell.
+  if (y == ymin || row >= nrows) row = nrows-1;
+  if (x == xmax || col >= ncols) col = ncols-1;
   return cell_from_row_col(row, col);
 }
 

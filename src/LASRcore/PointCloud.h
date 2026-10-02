@@ -63,6 +63,7 @@ public:
   bool remove_rgb();
   bool remove_attribute(const std::string&);
   bool remove_attributes(const std::vector<std::string>&);
+  bool promote_float_to_double(int index);
   bool keep_attributes(const std::vector<std::string>&);
   bool seek(size_t pos);
   bool read_point(bool include_withhelded = false);

@@ -22,6 +22,7 @@ public:
   bool interpolate(std::vector<double>& res, const Raster* raster = nullptr);
   bool contour(std::vector<Edge>& edges) const;
   double need_buffer() const override { return 20.0; }
+  bool is_buffer_in_data_units() const override { return false; }
   void clear(bool last) override;
   bool write() override;
   bool set_parameters(const nlohmann::json&) override;

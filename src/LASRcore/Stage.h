@@ -92,8 +92,19 @@ public:
   virtual bool is_parallelized() const { return false; };  // concurrent-points
   virtual bool use_rcapi() const { return false; };
   virtual double need_buffer() const { return 0; };
+  // Whether need_buffer() is expressed in the units of the coordinates the stage receives (e.g. a
+  // resolution or a window size given by the user) or is a fixed distance (e.g. the 20 m of
+  // triangulate()). Both are converted differently when a stage upstream changes the coordinates.
+  virtual bool is_buffer_in_data_units() const { return true; };
   virtual bool need_points() const { return true; };
   virtual void get_extent(double& xmin, double& ymin, double& xmax, double& ymax) { return; };
+  virtual double translate_buffer_to_input(double downstream_buffer, bool data_units) const { return downstream_buffer; };
+  // Whether the chunks are no longer aligned with the grids of the following stages. A streamable
+  // stage does not need a buffer only because the chunk edges fall on the edges of its cells (e.g.
+  // rasterize() with a resolution that divides the tile size). After a reprojection the chunks
+  // are rotated, so the cells along the edges contain points of two chunks and the streamable
+  // stages need their buffer too.
+  virtual bool misaligns_chunks() const { return false; };
 
   virtual bool connect(const std::list<std::unique_ptr<Stage>>&, const std::string& uid) { return true; };
 
