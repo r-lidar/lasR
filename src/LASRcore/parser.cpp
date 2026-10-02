@@ -540,6 +540,10 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
         current_crs = p->get_crs();
         p->set_filter(filters);
 
+        if (auto* eptr = dynamic_cast<LASReptreader*>(p)) {
+          eptr->set_ept_index(catalog->get_ept_index());
+        }
+
         // Create empty files that will be filled later during the processing
         if (!p->set_output_file(output)) return false;
 
