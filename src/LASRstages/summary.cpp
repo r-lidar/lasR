@@ -1,6 +1,8 @@
 #include "summary.h"
 #include "openmp.h"
 
+#include <algorithm>
+#include <cmath>
 #include <iterator>
 
 LASRsummary::LASRsummary()
@@ -24,9 +26,45 @@ bool LASRsummary::set_chunk(Chunk& chunk)
   Stage::set_chunk(chunk);
 
   // Accumulate the area of each chunk's core extent (buffer excluded) to get
-  // the bounding-box area of the coverage. Used to derive point and pulse
-  // density (npoints / area). Matches lidR's density(LAScatalog) semantics.
-  area += (xmax - xmin) * (ymax - ymin);
+  // the area of the coverage. Used to derive point and pulse density
+  // (npoints / area). For files and rectangular queries this is the sum of the
+  // bounding boxes, like lidR's density(LAScatalog). For a circular query only
+  // the points selected by inside_buffer() in process() are counted: the points
+  // of the extent that lie within the disc of radius r = w/2 (half the width of
+  // the extent) centred on the extent. The area is therefore the area of that
+  // disc intersected with the extent, not the area of the extent. For a query
+  // within the coverage the extent is the bounding square of the circle and
+  // this is the disc area pi * r^2. For a query crossing the coverage edge the
+  // extent is clipped to the coverage: if h >= w the whole disc of radius w/2
+  // lies in the extent (pi * r^2), otherwise (clipped in y) the region is the
+  // strip of that disc of half-height h/2, symmetric about its centre. An
+  // extent can also be inverted when a query lies outside the coverage but
+  // within the buffer: it selects no point and adds no area.
+  const double pi = 3.14159265358979323846;
+  double w = std::max(0.0, xmax - xmin);
+  double h = std::max(0.0, ymax - ymin);
+
+  if (chunk.shape == ShapeType::CIRCLE)
+  {
+    double r = w / 2;
+    if (w > 0 && h > 0)
+    {
+      if (h >= w)
+      {
+        area += pi * r * r;
+      }
+      else
+      {
+        // Area of the disc between y = -a and y = +a, with a < r
+        double a = h / 2;
+        area += 2 * (a * std::sqrt(r * r - a * a) + r * r * std::asin(a / r));
+      }
+    }
+  }
+  else
+  {
+    area += w * h;
+  }
 
   return true;
 }
