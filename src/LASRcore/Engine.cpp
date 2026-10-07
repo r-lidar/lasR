@@ -437,6 +437,17 @@ bool Engine::use_rcapi() const
   return b;
 }
 
+bool Engine::writes_per_chunk_files() const
+{
+  for (auto&& stage : pipeline)
+  {
+    if (stage->writes_per_chunk_files())
+      return true;
+  }
+
+  return false;
+}
+
 bool Engine::need_points() const
 {
   bool b = false;

@@ -18,6 +18,7 @@
 
 # lasR 0.21.0
 
+- Change: EPT auto-partition default target is 32 when `LASR_EPT_PARTITIONS` is unset (was `4 × concurrent_files` workers).
 - Fix: #117 segfault when reading a file with a malformed Extra Bytes VLR that declares more extra-byte attributes than the point record length reserves. Such attributes are now read as 0 and a warning is emitted instead of crashing.
 - New: Support of Entwine Point Tile format
 - New: `classify_with_ivf` gains a parameter `filter` (#289)
