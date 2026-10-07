@@ -85,6 +85,8 @@ RCPP_MODULE(stages)
   function("keep_attributes", &api::keep_attributes, "Keep named attributes from the point cloud");
   function("set_crs_epsg", &api::set_crs_epsg, "Set CRS using an EPSG code");
   function("set_crs_wkt", &api::set_crs_wkt, "Set CRS using a WKT string");
+  function("transform_crs_epsg", &api::transform_crs_epsg, "Reproject the point cloud using an EPSG code");
+  function("transform_crs_wkt", &api::transform_crs_wkt, "Reproject the point cloud using a WKT string");
   function("sampling_voxel", &api::sampling_voxel, "Sample the point cloud using voxel-based sampling");
   function("sampling_pixel", &api::sampling_pixel, "Sample the point cloud using pixel-based sampling");
   function("sampling_poisson", &api::sampling_poisson, "Sample the point cloud using Poisson disk sampling");

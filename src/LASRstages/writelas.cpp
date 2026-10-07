@@ -94,7 +94,7 @@ bool LASRlaswriter::process(Point*& p)
   }
 
   //  If the point in not in the buffer we can write it
-  if (keep_buffer || !p->inside_buffer(xmin, ymin, xmax, ymax, circular))
+  if (keep_buffer || (!p->get_buffered() && !p->inside_buffer(xmin, ymin, xmax, ymax, circular)))
   {
     if (!pointfilter.filter(p))
     {
