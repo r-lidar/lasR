@@ -1,0 +1,13 @@
+# downloaded inputs and runtime outputs are not committed
+data/*
+!data/.gitkeep
+results/*
+!results/.gitkeep
+!results/outputs/
+results/outputs/*
+!results/outputs/.gitkeep
+!results/logs/
+results/logs/*
+!results/logs/.gitkeep
+potree_viewer/*
+*DS_Store*

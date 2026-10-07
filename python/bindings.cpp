@@ -566,24 +566,43 @@ PYBIND11_MODULE(pylasr, m) {
              std::vector<std::string> filter = {""},
              bool keep_buffer = false,
              std::optional<unsigned char> version = std::nullopt,
-             std::optional<unsigned char> pdrf = std::nullopt)
+             std::optional<unsigned char> pdrf = std::nullopt,
+             bool experimental_writer = false)
           {
               unsigned char v = version.has_value() ? version.value() : 0xFF;
               unsigned char p = pdrf.has_value() ? pdrf.value() : 0xFF;
 
-              return api::write_las(ofile, filter, keep_buffer, v, p);
+              return api::write_las(ofile, filter, keep_buffer, v, p, experimental_writer);
           },
           "Write LAS/LAZ file",
           py::arg("ofile"),
           py::arg("filter") = std::vector<std::string>{""},
           py::arg("keep_buffer") = false,
           py::arg("version") = py::none(),
-          py::arg("pdrf") = py::none());
+          py::arg("pdrf") = py::none(),
+          py::arg("experimental_writer") = false);
 
-    m.def("write_copc", &api::write_copc,
+    m.def("write_copc",
+          [](const std::string &ofile,
+             std::vector<std::string> filter,
+             bool keep_buffer,
+             int max_depth,
+             std::optional<std::string> density,
+             bool experimental_writer,
+             int max_extra_depth,
+             int max_points_per_chunk,
+             std::vector<double> bbox)
+          {
+              // None = the writer's own default, resolved by api::write_copc:
+              // "normal" for the experimental writer, "dense" for the legacy one.
+              return api::write_copc(ofile, filter, keep_buffer, max_depth, density.value_or(""),
+                                     experimental_writer, max_extra_depth, max_points_per_chunk, bbox);
+          },
           "Write COPC file",
           py::arg("ofile"), py::arg("filter") = std::vector<std::string>{""},
-          py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = "dense");
+          py::arg("keep_buffer") = false, py::arg("max_depth") = -1, py::arg("density") = py::none(),
+          py::arg("experimental_writer") = false, py::arg("max_extra_depth") = 1,
+          py::arg("max_points_per_chunk") = -1, py::arg("bbox") = std::vector<double>{});
 
     m.def("write_pcd", &api::write_pcd,
           "Write PCD file",
