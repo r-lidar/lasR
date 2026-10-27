@@ -20,6 +20,10 @@ Useful links:
 **Maintainer**: Jean-Romain Roussel <info@r-lidar.com> \[copyright
 holder\]
 
+Authors:
+
+- Jean-Romain Roussel <info@r-lidar.com> \[copyright holder\]
+
 Other contributors:
 
 - Alexey Grigoryev <agrigoriev@gmail.com> \[contributor\]

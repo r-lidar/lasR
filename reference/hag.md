@@ -32,5 +32,5 @@ hag()
 f <- system.file("extdata", "Topography.las", package="lasR")
 pipeline <- reader() + normalize() + write_las()
 exec(pipeline, on = f)
-#> [1] "/tmp/RtmpmcxIja/Topography.las"
+#> [1] "/tmp/Rtmpkbcb4u/Topography.las"
 ```

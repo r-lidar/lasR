@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.21.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.21.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,10 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.21.3" id="lasr-0213">lasR 0.21.3<a class="anchor" aria-label="anchor" href="#lasr-0213"></a></h2>
+<ul><li>Fix: extra-byte attributes whose scale or offset is not flagged as set in the Extra Bytes VLR (e.g. files written by LAStools, which store a scale of 0) were read as 0 (integers) or NaN (floating point). The scale and offset are now only applied when the options bits declare them.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.21.2" id="lasr-0212">lasR 0.21.2<a class="anchor" aria-label="anchor" href="#lasr-0212"></a></h2>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/338" class="external-link">#338</a> callback returning R object with multiple files</li>
