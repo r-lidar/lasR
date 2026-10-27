@@ -4,6 +4,10 @@
 - New: `local_maximum()` supports variable windows size.
 - Fix: heap-corrupting data race in thread_safe_print #328
 
+# lasR 0.21.3
+
+- Fix: extra-byte attributes whose scale or offset is not flagged as set in the Extra Bytes VLR (e.g. files written by LAStools, which store a scale of 0) were read as 0 (integers) or NaN (floating point). The scale and offset are now only applied when the options bits declare them.
+
 # lasR 0.21.2
 
 - Fix: #338 callback returning R object with multiple files
