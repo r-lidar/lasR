@@ -27,10 +27,12 @@ This stage does not modify the point cloud. It produces a summary as a \code{lis
 \details{
 The returned list includes \code{npoints}, \code{npoints_per_return}, \code{npoints_per_class},
 the Z and Intensity histograms, the \code{crs}/\code{epsg}, and the coverage \code{area} (the
-sum of the processed bounding boxes, buffer excluded) together with \code{density}
-(point density = \code{npoints / area}) and \code{pulse_density} (pulse density =
-first returns / \code{area}). Following the convention used by \code{lidR}, the number
-of pulses is the number of first returns (\code{ReturnNumber == 1}); it is not
+sum of the processed bounding boxes, buffer excluded; circular queries such as
+\code{reader_circles()} use the area of the disc that lies within the processed extent,
+i.e. \code{pi * r^2} for a disc within the coverage, instead of the bounding square)
+together with \code{density} (point density = \code{npoints / area}) and \code{pulse_density}
+(pulse density = first returns / \code{area}). Following the convention used by \code{lidR},
+the number of pulses is the number of first returns (\code{ReturnNumber == 1}); it is not
 derived from \code{gpstime}-based pulse identification.
 }
 \examples{
