@@ -23,6 +23,11 @@ Useful links:
 \author{
 \strong{Maintainer}: Jean-Romain Roussel \email{info@r-lidar.com} [copyright holder]
 
+Authors:
+\itemize{
+  \item Jean-Romain Roussel \email{info@r-lidar.com} [copyright holder]
+}
+
 Other contributors:
 \itemize{
   \item Alexey Grigoryev \email{agrigoriev@gmail.com} [contributor]

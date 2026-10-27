@@ -261,8 +261,8 @@ void LASio::populate_header(Header* header, bool read_first_point)
     int data_type = lasreader->header.attributes[i].data_type;
     if (data_type > 10) continue; // Don't read deprecated types
     AttributeType type = static_cast<AttributeType>(data_type);
-    double scale = lasreader->header.attributes[i].scale[0];
-    double offset = lasreader->header.attributes[i].offset[0];
+    double scale = lasreader->header.attributes[i].has_scale() ? lasreader->header.attributes[i].scale[0] : 1.0;
+    double offset = lasreader->header.attributes[i].has_offset() ? lasreader->header.attributes[i].offset[0] : 0.0;
     header->schema.add_attribute(name, type, scale, offset, description);
     extrabytes.push_back(AttributeAccessor(name));
   }
