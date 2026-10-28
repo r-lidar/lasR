@@ -806,6 +806,70 @@ bool PointCloud::remove_attributes(const std::vector<std::string>& names_to_remo
 }
 
 
+// Change the storage of the FLOAT attribute at 'index' of the schema into DOUBLE, keeping its
+// value. Every point is re-laid out: the attribute grows from 4 to 8 bytes and the attributes
+// stored after it are shifted. The attribute keeps its index, so this works for the core X/Y/Z.
+bool PointCloud::promote_float_to_double(int index)
+{
+  if (index < 0 || index >= header->schema.num_attributes())
+  {
+    last_error = "Internal error: invalid attribute index"; // # nocov
+    return false; // # nocov
+  }
+
+  Attribute& attribute = header->schema.attributes[index];
+  if (attribute.type == AttributeType::DOUBLE) return true;
+  if (attribute.type != AttributeType::FLOAT)
+  {
+    last_error = "Internal error: only a float attribute can be promoted to double"; // # nocov
+    return false; // # nocov
+  }
+
+  const size_t offset = attribute.offset;
+  const size_t growth = sizeof(double) - sizeof(float);
+  const size_t previous_size = header->schema.total_point_size;
+  const size_t new_size = previous_size + growth;
+  const size_t tail_size = previous_size - offset - sizeof(float);
+
+  size_t new_capacity = npoints * new_size;
+  if (new_capacity > capacity)
+  {
+    capacity = new_capacity;
+    if (!realloc_buffer()) return false;
+  }
+
+  // Start from the last point: the new location of a point never overlaps the previous location
+  // of the points that precede it.
+  for (size_t i = npoints ; i-- > 0 ; )
+  {
+    unsigned char* src = buffer + i * previous_size;
+    unsigned char* dst = buffer + i * new_size;
+
+    float value;
+    memcpy(&value, src + offset, sizeof(float));
+    memmove(dst + offset + sizeof(double), src + offset + sizeof(float), tail_size);
+    double promoted = value;
+    memcpy(dst + offset, &promoted, sizeof(double));
+    memmove(dst, src, offset);
+  }
+
+  for (auto& attr : header->schema.attributes)
+  {
+    if (attr.offset > offset) attr.offset += growth;
+  }
+
+  attribute.type = AttributeType::DOUBLE;
+  attribute.size = sizeof(double);
+  header->schema.total_point_size = new_size;
+
+  // The memory layout changed: the spatial indexes are invalidated
+  clean_spatialindex();
+  adaptor.data = buffer;
+  adaptor.schema = &header->schema;
+
+  return true;
+}
+
 bool PointCloud::add_attributes(const std::vector<Attribute>& attributes)
 {
   size_t previous_size = header->schema.total_point_size;

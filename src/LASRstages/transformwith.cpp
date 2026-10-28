@@ -103,6 +103,13 @@ bool LASRtransformwith::set_chunk(Chunk& chunk)
     chunk.ymin = this->ymin;
     chunk.xmax = this->xmax;
     chunk.ymax = this->ymax;
+
+    // Keep the exact footprint set upstream (e.g. by transform_crs) in the new coordinates
+    for (size_t k = 0 ; k < chunk.footprint.x.size() ; ++k)
+    {
+      double z = 0;
+      mat->transform(chunk.footprint.x[k], chunk.footprint.y[k], z);
+    }
   }
 
   return true;

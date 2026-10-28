@@ -36,6 +36,7 @@
 #include "svd.h"
 #include "triangulate.h"
 #include "transformwith.h"
+#include "transformcrs.h"
 #include "writelas.h"
 #include "writelax.h"
 #include "writevpc.h"
@@ -85,6 +86,11 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
   bool reader = false;
   bool indexer = false;
 
+  // Tracks the CRS as it flows through the stages while parsing. It is needed so that
+  // stages whose get_extent() depends on the CRS (e.g. transform_crs, which reprojects
+  // the coverage extent) can be resolved before the extent is propagated downstream.
+  CRS parse_crs;
+
   parsed = false;
   pipeline.clear();
 
@@ -124,6 +130,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"summarise",            create_instance<LASRsummary>},
     {"svd",                  create_instance<LASRsvd>},
     {"transform_with",       create_instance<LASRtransformwith>},
+    {"transform_crs",        create_instance<LASRtransformcrs>},
     {"triangulate",          create_instance<LASRtriangulate>},
     {"write_las",            create_instance<LASRlaswriter>},
     {"write_vpc",            create_instance<LASRvpcwriter>},
@@ -249,6 +256,9 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
           last_error = "Internal error: bad build_catalog stage";
           return false;
         }
+
+        // The catalog now carries the source CRS of the whole pipeline.
+        if (catalog != nullptr) parse_crs = catalog->get_crs();
       }
       else if (name == "reader")
       {
@@ -455,6 +465,12 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
           last_error = "Invalid parameters in stage " + it->get_name() + ": " + last_error;
           return false;
         }
+
+        // Propagate the CRS so stages that reproject (transform_crs) know their source
+        // CRS before their extent is computed and pushed to the next stages. The final
+        // CRS assignment (used for outputs) is redone in the second pass below.
+        it->set_crs(parse_crs);
+        parse_crs = it->get_crs();
 
         it->get_extent(xmin, ymin, xmax, ymax);
 

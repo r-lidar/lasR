@@ -552,11 +552,12 @@ void PCDio::create(const std::string& file)
   }
   ostream <<  std::endl;
 
+  // Same rule as write_binary_point(): a float coordinate is written as a float and any other
+  // (int from LAS, double) as a double. The axes can differ, e.g. transform_crs() promotes float
+  // X/Y to double but leaves Z unchanged.
   ostream << "SIZE";
-  if (schema.attributes[1].type == AttributeType::INT32) // LAS format
-    ostream << " 8 8 8";
-  else
-    ostream << " 4 4 4";
+  for (int i = AttributeCore::X; i <= AttributeCore::Z; ++i)
+    ostream << ((schema.attributes[i].type == AttributeType::FLOAT) ? " 4" : " 8");
   for (int i = 4; i < schema.num_attributes(); ++i)
   {
     if (schema.attributes[i].type == AttributeType::BIT) continue;
