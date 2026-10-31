@@ -209,6 +209,9 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRcore/Vector.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/parser.cpp
   ${LASR_SOURCE_DIR}/src/LASRcore/Engine.cpp
+  ${LASR_SOURCE_DIR}/src/LASRcore/COPChierarchy.cpp
+  ${LASR_SOURCE_DIR}/src/LASRcore/COPCspill.cpp
+  ${LASR_SOURCE_DIR}/src/LASRcore/COPCwriter.cpp
 
   # I/O implementation
   ${LASR_SOURCE_DIR}/src/LASRreaders/Header.cpp

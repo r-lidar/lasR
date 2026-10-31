@@ -101,7 +101,18 @@ bool Engine::run()
   else
     success = run_loaded();
 
-  clear();
+  // clear() can now throw — writelas's clear rethrows close() failures so
+  // a swallowed COPC finalize is no longer reported as a successful run.
+  // Treat any exception as a stage failure and surface it via last_error.
+  try
+  {
+    clear();
+  }
+  catch (const std::exception& e)
+  {
+    last_error = std::string("error during pipeline cleanup: ") + e.what();
+    success = false;
+  }
   clean();
 
   return success;
