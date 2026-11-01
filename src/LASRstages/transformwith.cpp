@@ -1,3 +1,4 @@
+#include <cmath>
 #include "transformwith.h"
 #include "triangulate.h"
 #include "NA.h"
@@ -192,7 +193,7 @@ bool LASRtransformwith::process(PointCloud*& las)
     {
       double z = hag[las->current_point];
 
-      if (z == NA_F64)
+      if (z == NA_F64 || !std::isfinite(z))
       {
         // SET assigns a label/value into a named attribute; on nodata
         // we leave the existing attribute value untouched rather than
