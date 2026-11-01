@@ -73,3 +73,34 @@ test_that("interpolation fails with 0 points",
 #  pipeline <- reader_las() + dtm()
 #  expect_error(suppressWarnings(exec(pipeline, on = f)), "impossible to construct a Delaunay triangulation with 0 points")
 #})
+
+test_that("interpolation ignores degenerated triangles on collinear hull edges (#355)",
+{
+  # Flat 4x4 grid: collinear points on the hull produce zero-area triangles
+  # that used to interpolate to NaN. Every height must be exactly 0.
+  xy = expand.grid(X = c(1, 19, 21, 39), Y = c(1, 19, 21, 39))
+  data = data.frame(xy, Z = 10, Classification = 2L)
+
+  pipeline = normalize() + callback(function(x) x, expose = "xyz", no_las_update = TRUE)
+
+  # The triangulation includes random noise: repeat to catch the bug
+  for (i in 1:20)
+  {
+    res = exec(pipeline, on = data, with = list(progress = FALSE))
+    expect_equal(nrow(res), 16L)
+    expect_true(all(is.finite(res$Z)))
+    expect_true(all(res$Z == 0))
+  }
+
+  # Same with the raster branch
+  tri = triangulate()
+  pipeline = tri + rasterize(1, tri)
+  for (i in 1:20)
+  {
+    r = exec(pipeline, on = data, with = list(progress = FALSE))
+    v = terra::values(r)
+    v = v[!is.na(v)]
+    expect_true(length(v) > 0)
+    expect_true(all(v == 10))
+  }
+})

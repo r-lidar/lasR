@@ -1,3 +1,7 @@
+# lasR 0.21.4
+
+- Fix: #355 `normalize()` / `transform_with()` produced NaN heights (written as large negative Z such as -2147483) for points lying on collinear convex hull edges. Zero-area triangles are now skipped during TIN interpolation and non-finite values are treated as no-data.
+
 # lasR 0.21.3
 
 - Fix: extra-byte attributes whose scale or offset is not flagged as set in the Extra Bytes VLR (e.g. files written by LAStools, which store a scale of 0) were read as 0 (integers) or NaN (floating point). The scale and offset are now only applied when the options bits declare them.

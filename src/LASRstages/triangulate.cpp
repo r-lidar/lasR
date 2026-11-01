@@ -1,3 +1,4 @@
+#include <cmath>
 #include <random>
 
 #include "triangulate.h"
@@ -129,6 +130,12 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
 
     TriangleXYZ triangle(a, b, c);
 
+    // Delaunator may return zero-area triangles along collinear hull edges (#355). They
+    // still "contain" points on their edge and interpolate to NaN, overwriting the
+    // valid value computed in the adjacent non-degenerate triangle.
+    double cross = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    if (cross == 0 || !std::isfinite(cross)) continue;
+
     // Interpolate in this triangle if the longest edge fulfill requirements
     bool keep_triangle = (keep_large) ? triangle.square_max_edge_size() > trim : triangle.square_max_edge_size() < trim;
     if (trim == 0 || keep_triangle)
@@ -152,6 +159,7 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
             PointXYZ p(x,y);
             triangle.linear_interpolation(p);
 
+            if (!std::isfinite(p.z)) continue;
             int cell = raster->cell_from_xy(x,y);
             if (cell != -1) res[cell] = p.z;
           }
@@ -166,7 +174,7 @@ bool LASRtriangulate::interpolate(std::vector<double>& res, const Raster* raster
         {
           PointXYZ p(pt.x, pt.y);
           triangle.linear_interpolation(p);
-          res[pt.i] = p.z;
+          if (std::isfinite(p.z)) res[pt.i] = p.z;
         }
       }
     }
