@@ -1,5 +1,15 @@
 # Changelog
 
+## lasR 0.21.4
+
+- Fix: [\#355](https://github.com/r-lidar/lasR/issues/355)
+  [`normalize()`](https://r-lidar.github.io/lasR/reference/hag.md) /
+  [`transform_with()`](https://r-lidar.github.io/lasR/reference/transform_with.md)
+  produced NaN heights (written as large negative Z such as -2147483)
+  for points lying on collinear convex hull edges. Zero-area triangles
+  are now skipped during TIN interpolation and non-finite values are
+  treated as no-data.
+
 ## lasR 0.21.3
 
 - Fix: extra-byte attributes whose scale or offset is not flagged as set
