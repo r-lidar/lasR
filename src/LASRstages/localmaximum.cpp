@@ -1,6 +1,8 @@
 #include "localmaximum.h"
 #include "openmp.h"
 
+#include <cstring>
+
 #include <chrono>
 #include <cmath>
 #include <algorithm>
@@ -8,6 +10,8 @@
 LASRlocalmaximum::LASRlocalmaximum()
 {
   this->use_raster = false;
+  this->from_raster = false;
+  this->cell_radius = 0;
   this->counter = std::make_shared<unsigned int>(0);
   this->unicity_table = std::make_shared<std::unordered_map<uint64_t, unsigned int>>();
   this->attribute = "";
@@ -97,6 +101,35 @@ bool LASRlocalmaximum::set_parameters(const nlohmann::json& stage)
   return true;
 }
 
+// A 64-bit key that identifies a point by its location, the same in every chunk the point is read
+// in. The stored X and Y integers are used when X and Y are stored as integers. They are cast to
+// unsigned 32-bit before being combined: a negative Y must not fill the 32 high bits. Otherwise
+// (float or double X and Y), the stored values are exact copies of the coordinates and the key
+// mixes all their bits.
+static uint64_t fid_key(const Point& p)
+{
+  const AttributeSchema* schema = p.schema;
+  if (schema->attributes[AttributeCore::X].type == AttributeType::INT32 &&
+      schema->attributes[AttributeCore::Y].type == AttributeType::INT32)
+  {
+    return ((uint64_t)(uint32_t)p.get_X() << 32) | (uint64_t)(uint32_t)p.get_Y();
+  }
+
+  double x = p.get_x();
+  double y = p.get_y();
+  uint64_t bx, by;
+  std::memcpy(&bx, &x, sizeof(bx));
+  std::memcpy(&by, &y, sizeof(by));
+  auto mix = [](uint64_t z)
+  {
+    z += 0x9e3779b97f4a7c15ULL;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    return z ^ (z >> 31);
+  };
+  return mix(bx ^ mix(by));
+}
+
 bool LASRlocalmaximum::process()
 {
   // Not working on a raster
@@ -112,7 +145,10 @@ bool LASRlocalmaximum::process()
 
   // Process the LAS
   use_raster = false; // deactivate to process a LAS
+  from_raster = true;
+  cell_radius = std::hypot(raster.get_xres(), raster.get_yres()) / 2;
   bool success = process(ptr);
+  from_raster = false;
   use_raster = true;
 
   return success;
@@ -228,6 +264,24 @@ bool LASRlocalmaximum::process(PointCloud*& las)
 
     if (status[i] == UKN) status[i] = LMX; // If the status is still unknown it is a local max
 
+    // When the chunk box is not exact (after transform_crs(), see Chunk.h), it also covers parts
+    // of the neighbouring chunks, where the tree tops are found from an incomplete neighbourhood
+    // and are also found by the chunk that owns them. Only the tree tops of this chunk are written
+    // (see write()): the points that the reader did not flag as buffer points, or the cells whose
+    // centre is inside the footprint. The cells whose centre is less than half a cell outside are
+    // written too: the chunks of a file collection are the bounding boxes of the files, with
+    // narrow gaps between them where a cell centre may fall. The tree tops written by two chunks
+    // have the same FID and are written once. All the tree tops, buffer included, are kept in lm
+    // for the downstream stages (region_growing, ...), as without transform_crs().
+    bool owned = true;
+    if (!footprint.empty() && status[i] == LMX)
+    {
+      if (from_raster)
+        owned = footprint.contains(pp.get_x(), pp.get_y()) || footprint.distance(pp.get_x(), pp.get_y()) <= cell_radius;
+      else
+        owned = !pp.get_buffered();
+    }
+
     if (status[i] == LMX)
     {
       #pragma omp critical(assign_lm_ids)
@@ -235,7 +289,7 @@ bool LASRlocalmaximum::process(PointCloud*& las)
         // If the point is in the buffer we must guarantee it will be assigned the same ID the next
         // time we meet it. FID is a 64 bit geographic ID that is guaranteed to be unique. But we need
         // a 32 bit ID so we have a correspondence table.
-        uint64_t FID = ((uint64_t)pp.get_X() << 32) | (uint64_t)(pp.get_Y());
+        uint64_t FID = fid_key(pp);
         auto it = unicity_table->find(FID);
 
         PointLAS plas;
@@ -275,6 +329,8 @@ bool LASRlocalmaximum::process(PointCloud*& las)
           lm.push_back(plas);
           lm.back().FID = it->second;
         }
+
+        lm_owned.push_back(owned);
       }
     }
   }
@@ -306,6 +362,26 @@ bool LASRlocalmaximum::process(PointCloud*& las)
   return true;
 }
 
+bool LASRlocalmaximum::set_chunk(Chunk& chunk)
+{
+  if (!StageVector::set_chunk(chunk)) return false;
+  footprint = chunk.footprint;
+
+  // With a footprint, process() decides which tree tops belong to this chunk. The box of the chunk
+  // must not remove the tree tops kept just outside the footprint (see process()).
+  if (!footprint.empty())
+  {
+    Chunk box = chunk;
+    box.xmin -= chunk.buffer;
+    box.ymin -= chunk.buffer;
+    box.xmax += chunk.buffer;
+    box.ymax += chunk.buffer;
+    vector.set_chunk(box);
+  }
+
+  return true;
+}
+
 bool LASRlocalmaximum::write()
 {
   if (ofile.empty()) return true;
@@ -314,10 +390,21 @@ bool LASRlocalmaximum::write()
 
   if (lm.size() == 0) return true;
 
+  // With a footprint, only write the tree tops that belong to this chunk (see process())
+  std::vector<PointLAS> owned_lm;
+  if (!footprint.empty())
+  {
+    for (size_t k = 0 ; k < lm.size() ; ++k)
+    {
+      if (lm_owned[k]) owned_lm.push_back(lm[k]);
+    }
+  }
+  const std::vector<PointLAS>& out = footprint.empty() ? lm : owned_lm;
+
   bool success;
   #pragma omp critical (write_localmax)
   {
-    success = vector.write(lm, record_attributes);
+    success = vector.write(out, record_attributes);
   }
 
   if (!success)
@@ -342,6 +429,7 @@ bool LASRlocalmaximum::write()
 void LASRlocalmaximum::clear(bool last)
 {
   lm.clear();
+  lm_owned.clear();
 }
 
 bool LASRlocalmaximum::connect(const std::list<std::unique_ptr<Stage>>& pipeline, const std::string& uid)

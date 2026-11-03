@@ -450,12 +450,22 @@ void LASio::init(const Header* header)
   lasheader->file_creation_day    = header->file_creation_day;
   lasheader->point_data_format    = pdf;
   lasheader->point_data_record_length = get_point_data_record_length(lasheader->point_data_format);
-  lasheader->x_scale_factor       = header->schema.attributes[AttributeCore::X].scale_factor;
-  lasheader->y_scale_factor       = header->schema.attributes[AttributeCore::Y].scale_factor;
-  lasheader->z_scale_factor       = header->schema.attributes[AttributeCore::Z].scale_factor;
-  lasheader->x_offset             = header->schema.attributes[AttributeCore::X].value_offset;
-  lasheader->y_offset             = header->schema.attributes[AttributeCore::Y].value_offset;
-  lasheader->z_offset             = header->schema.attributes[AttributeCore::Z].value_offset;
+  // LAS always stores coordinates as scaled 32-bit integers, so the writer needs a real
+  // scale/offset. For INT32 source storage the schema carries it (and may have been adjusted
+  // in place, e.g. by transform_with), so use the schema. For float/double source storage
+  // (e.g. PCD) the schema scale/offset are identity placeholders every in-memory accessor
+  // relies on; the meaningful LAS quantization scale/offset are recorded on the header (set
+  // by transform_crs), so use the header for those axes.
+  const AttributeSchema& sch = header->schema;
+  const bool x_is_int = sch.attributes[AttributeCore::X].type == AttributeType::INT32;
+  const bool y_is_int = sch.attributes[AttributeCore::Y].type == AttributeType::INT32;
+  const bool z_is_int = sch.attributes[AttributeCore::Z].type == AttributeType::INT32;
+  lasheader->x_scale_factor       = x_is_int ? sch.attributes[AttributeCore::X].scale_factor : header->x_scale_factor;
+  lasheader->y_scale_factor       = y_is_int ? sch.attributes[AttributeCore::Y].scale_factor : header->y_scale_factor;
+  lasheader->z_scale_factor       = z_is_int ? sch.attributes[AttributeCore::Z].scale_factor : header->z_scale_factor;
+  lasheader->x_offset             = x_is_int ? sch.attributes[AttributeCore::X].value_offset : header->x_offset;
+  lasheader->y_offset             = y_is_int ? sch.attributes[AttributeCore::Y].value_offset : header->y_offset;
+  lasheader->z_offset             = z_is_int ? sch.attributes[AttributeCore::Z].value_offset : header->z_offset;
   lasheader->number_of_point_records = 0;
   /*lasheader->min_x                = xmin;
   lasheader->min_y                = ymin;

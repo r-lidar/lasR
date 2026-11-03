@@ -9,6 +9,7 @@ public:
   LASRspikefree();
   bool process(PointCloud*& las) override;
   double need_buffer() const override { return 2.0; }
+  bool is_buffer_in_data_units() const override { return false; }
   bool set_parameters(const nlohmann::json&) override;
   bool is_parallelized() const override { return true; }
   std::string get_name() const override { return "spikefree"; }

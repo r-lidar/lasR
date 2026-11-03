@@ -38,8 +38,12 @@ public:
   }
 
 private:
+  bool keep_written_values(int band, int xoffset, int yoffset, int ncols, int nrows, const std::vector<char>& outside, std::vector<float>& out);
+
+private:
   int buffer;
   bool circular;
+  Footprint footprint; // Exact core of the chunk if the chunk box is not exact (see Chunk.h)
   double extent[4]; // The actual full bbox of the underlying raster which is constant contrary to the grid bbox that correspond to the current chunk
   std::vector<float> data;
 };
