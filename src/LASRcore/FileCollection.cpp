@@ -199,6 +199,14 @@ bool FileCollection::read_vpc(const std::string& filename)
       return false; // # nocov
     }
 
+    // Track whether every feature provides a 3D bbox. If some do and
+    // some don't, the catalog's accumulated z-bounds would only cover
+    // a subset of files while point counts cover all of them — this
+    // produces a wrong octree size on merged COPC writes. Reject the
+    // mix loudly instead of silently producing skewed output.
+    int n_features_with_z = 0;
+    int n_features_total = 0;
+
     // Loop over the features to read the file paths and bounding boxes
     for (const auto& feature : vpc["features"])
     {
@@ -234,7 +242,11 @@ bool FileCollection::read_vpc(const std::string& filename)
         file_path = std::filesystem::weakly_canonical(parent_folder / file_path).string();
       }
 
-      int pccount = feature["properties"]["pc:count"].get<int>();
+      // pc:count via 64-bit. STAC's pointcloud extension says the field is
+      // an integer with no upper bound; reading as int silently truncates
+      // catalogs over ~2.1B points, which would mis-size the merged COPC
+      // octree's auto max_depth.
+      uint64_t pccount = feature["properties"]["pc:count"].get<uint64_t>();
 
       // Get the CRS either in WKT or EPSG
       std::string wkt = feature["properties"].value("proj:wkt2", "");
@@ -253,15 +265,23 @@ bool FileCollection::read_vpc(const std::string& filename)
         // # nocov end
       }
 
-      // We are sure there is a bbox
+      // We are sure there is a bbox. STAC proj:bbox is [minx,miny,minz,maxx,maxy,maxz]
+      // for 3D and [minx,miny,maxx,maxy] for 2D. Read z when available so the
+      // FileCollection's union z-bounds are tight; merged COPC outputs need all
+      // three axes to size the octree correctly.
       auto bbox = feature["properties"]["proj:bbox"];
       double min_x, min_y, max_x, max_y;
+      double min_z = 0.0, max_z = 0.0;
+      bool have_z = false;
       if (bbox.size() == 6)
       {
         min_x = bbox[0].get<double>();
         min_y = bbox[1].get<double>();
+        min_z = bbox[2].get<double>();
         max_x = bbox[3].get<double>();
         max_y = bbox[4].get<double>();
+        max_z = bbox[5].get<double>();
+        have_z = true;
       }
       else if (bbox.size() == 4)
       {
@@ -283,6 +303,11 @@ bool FileCollection::read_vpc(const std::string& filename)
       h.min_y = min_y;
       h.max_x = max_x;
       h.max_y = max_y;
+      if (have_z)
+      {
+        h.min_z = min_z;
+        h.max_z = max_z;
+      }
       h.number_of_point_records = pccount;
       h.spatial_index = spatial_index;
       h.signature = "LASF";
@@ -298,6 +323,25 @@ bool FileCollection::read_vpc(const std::string& filename)
       if (ymin > h.min_y) ymin = h.min_y;
       if (xmax < h.max_x) xmax = h.max_x;
       if (ymax < h.max_y) ymax = h.max_y;
+      if (have_z)
+      {
+        if (zmin > h.min_z) zmin = h.min_z;
+        if (zmax < h.max_z) zmax = h.max_z;
+        n_features_with_z++;
+      }
+      n_features_total++;
+    }
+
+    if (n_features_with_z != 0 && n_features_with_z != n_features_total)
+    {
+      last_error = "Malformed virtual point cloud file: " +
+        std::to_string(n_features_with_z) + " of " +
+        std::to_string(n_features_total) + " features carry a 3D proj:bbox; "
+        "the rest are 2D. Mixed 4D/6D bboxes produce a partial z range over "
+        "only some inputs while point counts cover all of them, which sizes "
+        "the merged COPC octree incorrectly. Make every feature's "
+        "properties.proj:bbox 6-element [minx, miny, minz, maxx, maxy, maxz].";
+      return false;
     }
   }
   catch (const std::ifstream::failure& e)
@@ -448,11 +492,19 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     oTargetSRS.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
     oSourceSRS = crs.get_crs();
     OGRCoordinateTransformation *poTransform = OGRCreateCoordinateTransformation(&oSourceSRS, &oTargetSRS);
-    double z = 0;
-    if (!poTransform->Transform(1, &A.x, &A.y, &zmin) ||
-        !poTransform->Transform(1, &B.x, &B.y, &z) ||
-        !poTransform->Transform(1, &C.x, &C.y, &zmax) ||
-        !poTransform->Transform(1, &D.x, &D.y, &z))
+    // STAC's top-level "bbox" lives in WGS 84 (EPSG:4979). Transform a
+    // mutable copy of the source z so the source-CRS z values stay
+    // available for properties.proj:bbox below — feeding the transformed
+    // values into proj:bbox while x/y are kept in source coords would
+    // make proj:bbox internally inconsistent if the vertical transform
+    // shifts z.
+    double top_zmin = zmin;
+    double top_zmax = zmax;
+    double z_throwaway = 0;
+    if (!poTransform->Transform(1, &A.x, &A.y, &top_zmin) ||
+        !poTransform->Transform(1, &B.x, &B.y, &z_throwaway) ||
+        !poTransform->Transform(1, &C.x, &C.y, &top_zmax) ||
+        !poTransform->Transform(1, &D.x, &D.y, &z_throwaway))
     {
       last_error = "Transformation of the bounding in WGS 84 failed!";
       return false;
@@ -461,7 +513,7 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "[ [%.9lf,%.9lf], [%.9lf,%.9lf], [%.9lf,%.9lf], [%.9lf,%.9lf], [%.9lf,%.9lf] ]", A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y, A.x, A.y);
     std::string geometry(buffer);
-    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), zmin, MAX(B.x, C.x), MAX(C.y, D.y), zmax);
+    snprintf(buffer, sizeof(buffer), "[%.9lf, %.9lf, %.3lf, %.9lf, %.9lf, %.3lf]", MIN(A.x, D.x), MIN(A.y, B.y), top_zmin, MAX(B.x, C.x), MAX(C.y, D.y), top_zmax);
     std::string sbbox(buffer);
 
     std::string id = file.stem().string();
@@ -489,7 +541,19 @@ bool FileCollection::write_vpc(const std::string& vpcfile, const CRS& crs, bool 
     output << "      \"pc:count\": " << n << "," << std::endl;;
     output << "      \"pc:type\": " << "\"lidar\"" << ","<< std::endl;
     if (index) output << "      \"index:indexed\": " << "true," << std::endl;
-    output << "      \"proj:bbox\": [" << std::fixed << std::setprecision(3) << bbox.minx << ", " << bbox.miny << ", " << bbox.maxx << ", " << bbox.maxy << "],"<< std::endl;
+    // 6-element STAC proj:bbox = [minx, miny, minz, maxx, maxy, maxz]. The
+    // older 4-element form is allowed by the spec but loses z, and lasR's
+    // own VPC reader (read_vpc) only inspects properties.proj:bbox — not
+    // the top-level "bbox" field — when populating the FileCollection's
+    // 3D bounds. A 4D properties.proj:bbox round-tripped into a merged
+    // COPC write produces no z bounds, which then disables the union
+    // bbox/count override on the writer side and falls back to file-1's
+    // bbox alone.
+    output << "      \"proj:bbox\": ["
+           << std::fixed << std::setprecision(3)
+           << bbox.minx << ", " << bbox.miny << ", " << zmin << ", "
+           << bbox.maxx << ", " << bbox.maxy << ", " << zmax
+           << "]," << std::endl;
     if (!wkt.empty()) output << "      \"proj:wkt2\": " << wkt;
     if (epsg != 0) output << "," << std::endl << "      \"proj:epsg\": " << epsg << std::endl;
     output << "    }," << std::endl;
@@ -656,6 +720,8 @@ bool FileCollection::add_header(const Header& header, bool noprocess)
   if (ymin > header.min_y) ymin = header.min_y;
   if (xmax < header.max_x) xmax = header.max_x;
   if (ymax < header.max_y) ymax = header.max_y;
+  if (zmin > header.min_z) zmin = header.min_z;
+  if (zmax < header.max_z) zmax = header.max_z;
 
   this->noprocess.push_back(noprocess);
   this->file_index.add(header.min_x, header.min_y, header.max_x, header.max_y);
@@ -938,8 +1004,10 @@ void FileCollection::clear()
 {
   xmin = std::numeric_limits<double>::max();
   ymin = std::numeric_limits<double>::max();
+  zmin = std::numeric_limits<double>::max();
   xmax = -std::numeric_limits<double>::max();
   ymax = -std::numeric_limits<double>::max();
+  zmax = -std::numeric_limits<double>::max();
   last_error.clear();
 
   use_dataframe = true;
@@ -1018,6 +1086,13 @@ PathType FileCollection::parse_path(const std::string& path)
   }
 }
 
+
+uint64_t FileCollection::get_total_points() const
+{
+  uint64_t total = 0;
+  for (const Header& h : headers) total += h.number_of_point_records;
+  return total;
+}
 
 FileCollection::FileCollection()
 {

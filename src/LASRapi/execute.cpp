@@ -315,6 +315,17 @@ ReturnType execute(const std::string& config_file)
         log(flog, verbose, "ERROR: %s\n", last_error.c_str());
         failure = true;
       }
+      catch (const std::exception& e)
+      {
+        // private_pipeline.clear(true) above can rethrow on COPC
+        // finalize failure (writelas::clear lets close() exceptions
+        // propagate so a corrupt-then-deleted .copc.laz isn't reported
+        // as a successful write). Without this catch the exception
+        // tears down the worker thread without setting failure.
+        last_error = e.what();
+        log(flog, verbose, "ERROR: %s\n", last_error.c_str());
+        failure = true;
+      }
     }
 
     // We are no longer in the parallel region we can return to R by allocating safely

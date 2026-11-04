@@ -9,11 +9,12 @@ class LASRlaswriter: public StageWriter
 {
 public:
   LASRlaswriter();
-  ~LASRlaswriter();
+  ~LASRlaswriter() noexcept;
   bool set_chunk(Chunk& chunk) override;
   bool set_header(Header*& header) override;
   bool set_input_file_name(const std::string& file) override;
   bool set_output_file(const std::string& file) override;
+  bool process(FileCollection*& ctg) override;
   bool process(Point*& p) override;
   bool process(PointCloud*& las) override;
   bool is_streamable() const override { return true; };
@@ -29,11 +30,41 @@ private:
   void clean_copc_ext(std::string& path);
 
   bool keep_buffer;
+  bool experimental_writer;
   short copc_density;
   short copc_depth;
+  // Auto-mode-only cap on adaptive depth bumping past the heuristic.
+  // -1 = no extra cap (writer's HARD_DEPTH_LIMIT). 0 = "compact mode":
+  // never bump past the heuristic depth.
+  short copc_max_extra_depth;
+  // -1 = use the writer's default (100k). >0 = user-supplied cap.
+  // Surfaced as max_points_per_chunk in the R API; wired through to
+  // COPCwriter::set_max_points_per_octant.
+  int copc_max_points_per_chunk;
+  // Optional caller-provided bbox passed to LASio at COPC create() time.
+  // copc_bbox_set + 6 doubles. Only honoured when experimental_writer = TRUE
+  // and the output is .copc.laz. Use when the source header is stale
+  // (declared bbox much larger than the actual data).
+  bool copc_bbox_set;
+  double copc_bbox_xmin, copc_bbox_ymin, copc_bbox_zmin;
+  double copc_bbox_xmax, copc_bbox_ymax, copc_bbox_zmax;
   unsigned char version_minor;
   unsigned char point_format;
   std::vector<AttributeAccessor> core_accessors;
+
+  // Union bbox + total point count over the input FileCollection, captured
+  // in process(ctg) before any per-tile processing. Used to size the COPC
+  // octree (bbox) and pick a non-trivial auto max_depth (point count) when
+  // merging many input files into a single .copc.laz output.
+  // catalog_bbox_valid is false if no FileCollection was seen.
+  double catalog_xmin;
+  double catalog_ymin;
+  double catalog_zmin;
+  double catalog_xmax;
+  double catalog_ymax;
+  double catalog_zmax;
+  uint64_t catalog_total_points;
+  bool catalog_bbox_valid;
 
   LASio* lasio;
 };
