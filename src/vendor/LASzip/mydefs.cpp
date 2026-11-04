@@ -72,7 +72,13 @@ bool is_remote_path(const char* path)
       strncmp(sub, "az/", 3) == 0    ||
       strncmp(sub, "adls/", 5) == 0  ||
       strncmp(sub, "oss/", 4) == 0   ||
-      strncmp(sub, "swift/", 6) == 0;
+      strncmp(sub, "swift/", 6) == 0 ||
+      // /vsimem/ is GDAL's in-memory filesystem. Not literally "remote",
+      // but it must be opened via VSIFOpenL (not regular fopen), so route
+      // it through the same branch as the cloud schemes. lasR's EPT reader
+      // uses /vsimem/ to stage prefetched tile bytes so the consumer reads
+      // from RAM (see LASRreaders/EPTio.cpp::open_tile_sync).
+      strncmp(sub, "mem/", 4) == 0;
   }
 
   return false;

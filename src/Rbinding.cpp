@@ -31,6 +31,22 @@ namespace Rcpp
 
 #include <Rcpp.h>
 
+#include "Chunk.h"
+#include "FileCollection.h"
+#include "EPTio.h"
+#include "ept_partition_gate.h"
+#include "readept.h"
+#include "Engine.h"
+#include "Progress.h"
+
+#include <fstream>
+
+#ifdef USING_GDAL
+#include <cpl_conv.h>
+#include <cpl_vsi.h>
+#include <gdal_version.h>
+#endif
+
 using namespace Rcpp;
 
 // Generic tools that could be used by any API
@@ -482,10 +498,291 @@ SEXP cpp_test2(std::vector<std::string> on)
   return execute(file);
 }
 
+SEXP cpp_ept_partition_inspect(std::string endpoint, int target_partitions,
+                               Rcpp::List rects = Rcpp::List(),
+                               Rcpp::List circles = Rcpp::List())
+{
+  FileCollection fc;
+  if (!fc.read({endpoint})) Rcpp::stop(last_error);
+
+  for (int i = 0; i < rects.size(); ++i) {
+    Rcpp::NumericVector r = rects[i];
+    if (r.size() != 4) Rcpp::stop("Each rect must be c(xmin, ymin, xmax, ymax)");
+    fc.add_query(r[0], r[1], r[2], r[3]);
+  }
+  for (int i = 0; i < circles.size(); ++i) {
+    Rcpp::NumericVector c = circles[i];
+    if (c.size() != 3) Rcpp::stop("Each circle must be c(xcenter, ycenter, radius)");
+    fc.add_query(c[0], c[1], c[2]);
+  }
+
+  if (!fc.partition_ept(target_partitions)) Rcpp::stop(last_error);
+
+  int n = fc.get_number_chunks();
+  Rcpp::NumericMatrix bb(n, 4);
+  Rcpp::LogicalVector strict(n);
+  Rcpp::CharacterVector shape_type(n);
+  Rcpp::NumericVector owner_xmax(n), owner_ymax(n);
+  for (int i = 0; i < n; ++i) {
+    Chunk c;
+    fc.get_chunk(i, c);
+    bb(i, 0) = c.xmin; bb(i, 1) = c.ymin;
+    bb(i, 2) = c.xmax; bb(i, 3) = c.ymax;
+    strict[i] = c.strict_clip;
+    switch (fc.get_query_type(i)) {
+      case ShapeType::CIRCLE:    shape_type[i] = "circle";  break;
+      case ShapeType::RECTANGLE: shape_type[i] = "rect";    break;
+      default:                   shape_type[i] = "unknown"; break;
+    }
+    owner_xmax[i] = c.catalog_xmax;
+    owner_ymax[i] = c.catalog_ymax;
+  }
+  auto idx = fc.get_ept_index();
+  Rcpp::NumericVector cb(4);
+  cb[0] = idx->conf_bounds[0]; cb[1] = idx->conf_bounds[1];
+  cb[2] = idx->conf_bounds[3]; cb[3] = idx->conf_bounds[4];
+  return Rcpp::List::create(
+    Rcpp::_["nchunks"]     = n,
+    Rcpp::_["bbox"]        = bb,
+    Rcpp::_["strict_clip"] = strict,
+    Rcpp::_["shape_type"]  = shape_type,
+    Rcpp::_["owner_xmax"]  = owner_xmax,
+    Rcpp::_["owner_ymax"]  = owner_ymax,
+    Rcpp::_["conf_bounds"] = cb,
+    Rcpp::_["tiles_built"] = idx->tiles_built);
+}
+
+bool cpp_ept_should_auto_partition(std::string format_signature,
+                                   bool is_parallelizable,
+                                   bool use_rcapi,
+                                   int ncpu_outer_loop,
+                                   bool writes_per_chunk_files)
+{
+  PathType format = UNKNOWNFILE;
+  if (format_signature == "EPTF") format = EPTFILE;
+  else if (format_signature == "LASF") format = LASFILE;
+  else if (format_signature == "PCDF") format = PCDFILE;
+  return api_internal::should_auto_partition_ept(
+      format, is_parallelizable, use_rcapi, ncpu_outer_loop, writes_per_chunk_files);
+}
+
+// Returns 0=DROP, 1=CORE, 2=BUFFERED.
+int cpp_strict_clip_decide(double px, double py,
+                           double xmin, double xmax,
+                           double ymin, double ymax,
+                           double buffer,
+                           double catalog_xmax, double catalog_ymax)
+{
+  auto d = LASReptreader::strict_clip_decide(
+      px, py, xmin, xmax, ymin, ymax, buffer, catalog_xmax, catalog_ymax);
+  switch (d) {
+    case LASReptreader::DROP:     return 0;
+    case LASReptreader::CORE:     return 1;
+    case LASReptreader::BUFFERED: return 2;
+  }
+  return -1;
+}
+
+// Replays summary.cpp's filter decision against a synthetic Point.
+// Returns true if the point would be DROPPED from the summary
+// (i.e., classified as buffer).
+bool cpp_summary_buffer_decide(bool buffered,
+                               double px, double py,
+                               double xmin, double ymin,
+                               double xmax, double ymax,
+                               bool circular)
+{
+  AttributeSchema schema;
+  schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved for lasR core engine");
+  schema.add_attribute("X", AttributeType::INT32, 1.0, 0.0, "X coordinate");
+  schema.add_attribute("Y", AttributeType::INT32, 1.0, 0.0, "Y coordinate");
+  Point p(&schema);
+  p.set_x(px);
+  p.set_y(py);
+  p.set_buffered(buffered);
+  // Production check from summary.cpp:36 after the contract fix:
+  return p.get_buffered() || p.inside_buffer(xmin, ymin, xmax, ymax, circular);
+}
+
+// Replays writelas.cpp's keep/drop decision (with keep_buffer=false).
+// Returns true if the point would be WRITTEN (kept), false if dropped.
+bool cpp_writelas_buffer_decide(bool buffered,
+                                double px, double py,
+                                double xmin, double ymin,
+                                double xmax, double ymax,
+                                bool circular)
+{
+  AttributeSchema schema;
+  schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved for lasR core engine");
+  schema.add_attribute("X", AttributeType::INT32, 1.0, 0.0, "X coordinate");
+  schema.add_attribute("Y", AttributeType::INT32, 1.0, 0.0, "Y coordinate");
+  Point p(&schema);
+  p.set_x(px);
+  p.set_y(py);
+  p.set_buffered(buffered);
+  // Production check from writelas.cpp:97 after the contract fix:
+  return !p.get_buffered() && !p.inside_buffer(xmin, ymin, xmax, ymax, circular);
+}
+
+// Directly exercises FileCollection::ept_pick_depth_for_aois so the
+// depth-selection logic can be tested without standing up an EPT
+// endpoint (the local fixture has max_tile_depth=1, which masks the
+// behavior under test). Returns the picked depth.
+int cpp_ept_pick_depth(double cube_xmin, double cube_ymin, double cube_size,
+                       int max_tile_depth, int target_partitions,
+                       Rcpp::List rects)
+{
+  std::vector<std::array<double, 4>> aois;
+  aois.reserve(rects.size());
+  for (int i = 0; i < rects.size(); ++i) {
+    Rcpp::NumericVector r = rects[i];
+    if (r.size() != 4) Rcpp::stop("Each rect must be c(xmin, ymin, xmax, ymax)");
+    aois.push_back({r[0], r[1], r[2], r[3]});
+  }
+  return FileCollection::ept_pick_depth_for_aois(
+      cube_xmin, cube_ymin, cube_size,
+      max_tile_depth, target_partitions, aois);
+}
+
+// Replays the buffer classification inside callback.cpp's drop_buffer
+// decision (around line 350). Returns true if the point is classified
+// as buffer (i.e., would be skipped when drop_buffer=true).
+bool cpp_callback_buffer_decide(bool buffered,
+                                double px, double py,
+                                double xmin, double ymin,
+                                double xmax, double ymax,
+                                bool circular)
+{
+  AttributeSchema schema;
+  schema.add_attribute("flags", AttributeType::UINT8, 1, 0, "Internal 8-bit mask reserved for lasR core engine");
+  schema.add_attribute("X", AttributeType::INT32, 1.0, 0.0, "X coordinate");
+  schema.add_attribute("Y", AttributeType::INT32, 1.0, 0.0, "Y coordinate");
+  Point p(&schema);
+  p.set_x(px);
+  p.set_y(py);
+  p.set_buffered(buffered);
+  // Mirrors callback.cpp after the ownership contract fix.
+  return p.get_buffered() || p.inside_buffer(xmin, ymin, xmax, ymax, circular);
+}
+
+// Value of each GDAL configuration option in `keys` as GDAL resolves it when
+// opening `path`: a path-specific option (GDAL >= 3.6), then the global
+// configuration option, then the environment. NA when unset. An empty `path`
+// gives the plain CPLGetConfigOption() lookup.
+static Rcpp::CharacterVector gdal_option_values(const std::vector<std::string>& keys,
+                                                const std::string& path)
+{
+  Rcpp::CharacterVector out(keys.size());
+  out.names() = Rcpp::wrap(keys);
+  for (size_t i = 0; i < keys.size(); ++i) {
+    const char* v = nullptr;
+#if defined(USING_GDAL) && GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0)
+    v = path.empty() ? CPLGetConfigOption(keys[i].c_str(), nullptr)
+                     : VSIGetPathSpecificOption(path.c_str(), keys[i].c_str(), nullptr);
+#elif defined(USING_GDAL)
+    v = CPLGetConfigOption(keys[i].c_str(), nullptr);
+#endif
+    if (v == nullptr) out[i] = NA_STRING;
+    else out[i] = v;
+  }
+  return out;
+}
+
+Rcpp::CharacterVector cpp_gdal_options(std::vector<std::string> keys, std::string path)
+{
+  return gdal_option_values(keys, path);
+}
+
+// The same lookup for each of `paths` while a FileCollection holds `endpoint`,
+// that is while exec() is reading it. Returns a keys x paths matrix. The
+// collection is destroyed before returning.
+Rcpp::CharacterMatrix cpp_ept_gdal_options_while_open(std::string endpoint,
+                                                      std::vector<std::string> keys,
+                                                      std::vector<std::string> paths)
+{
+  Rcpp::CharacterMatrix out(keys.size(), paths.size());
+  {
+    FileCollection fc;
+    if (!fc.read({endpoint})) Rcpp::stop(last_error);
+    for (size_t j = 0; j < paths.size(); ++j) {
+      Rcpp::CharacterVector v = gdal_option_values(keys, paths[j]);
+      for (size_t i = 0; i < keys.size(); ++i) out(i, j) = v[i];
+    }
+  }
+  Rcpp::rownames(out) = Rcpp::wrap(keys);
+  return out;
+}
+
+// Runs the pipeline that generate_json() wrote in `config_file` sequentially
+// with the real Engine, after partition_ept(target_partitions) has split its
+// EPT catalog into strict-clip chunks. execute.cpp partitions only when its
+// gate allows it, and the gate keeps write_las away from partitioned chunks;
+// this lets tests exercise a stage on such chunks anyway. Returns the number
+// of chunks.
+int cpp_ept_exec_partitioned(std::string config_file, int target_partitions)
+{
+  std::ifstream fjson(config_file);
+  if (!fjson.is_open()) Rcpp::stop("Could not open " + config_file);
+  nlohmann::json json;
+  fjson >> json;
+
+  Engine pipeline;
+  if (!pipeline.parse(json["pipeline"], false)) Rcpp::stop(last_error);
+
+  FileCollection* catalog = pipeline.get_catalog();
+  if (catalog->get_format() != EPTFILE) Rcpp::stop("The pipeline does not read an EPT endpoint");
+  if (!catalog->partition_ept(target_partitions)) Rcpp::stop(last_error);
+
+  Progress progress;
+  progress.set_display(false);
+  pipeline.set_progress(&progress);
+  pipeline.set_ncpu(1);
+  pipeline.set_ncpu_concurrent_files(1);
+  if (!pipeline.pre_run()) Rcpp::stop(last_error);
+
+  int n = catalog->get_number_chunks();
+  for (int i = 0; i < n; ++i)
+  {
+    Chunk chunk;
+    if (!catalog->get_chunk(i, chunk)) Rcpp::stop(last_error);
+    if (chunk.is_empty() || !chunk.process) continue;
+    if (!pipeline.set_chunk(chunk)) Rcpp::stop(last_error);
+    if (!pipeline.run()) Rcpp::stop(last_error);
+  }
+  pipeline.clear(true);
+  return n;
+}
+
+// TRUE when this GDAL can scope an option to a path prefix (GDAL >= 3.6).
+bool cpp_gdal_path_specific_options()
+{
+#if defined(USING_GDAL) && GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0)
+  return true;
+#else
+  return false;
+#endif
+}
+
 RCPP_MODULE(tests)
 {
   function("cpp_test1", &cpp_test1, "Test 1");
   function("cpp_test2", &cpp_test2, "Test 2");
+  function("cpp_ept_partition_inspect", &cpp_ept_partition_inspect,
+           Rcpp::List::create(Rcpp::_["endpoint"],
+                              Rcpp::_["target_partitions"],
+                              Rcpp::_["rects"]   = Rcpp::List(),
+                              Rcpp::_["circles"] = Rcpp::List()),
+           "Inspect EPT partition");
+  function("cpp_ept_should_auto_partition", &cpp_ept_should_auto_partition, "EPT auto-partition gate");
+  function("cpp_strict_clip_decide", &cpp_strict_clip_decide, "Strict-clip decision predicate");
+  function("cpp_summary_buffer_decide", &cpp_summary_buffer_decide, "Summary buffer decision");
+  function("cpp_writelas_buffer_decide", &cpp_writelas_buffer_decide, "Writelas buffer decision");
+  function("cpp_callback_buffer_decide", &cpp_callback_buffer_decide, "Callback buffer decision");
+  function("cpp_ept_pick_depth", &cpp_ept_pick_depth, "EPT partition depth selection");
+  function("cpp_gdal_options", &cpp_gdal_options, "Current GDAL configuration options");
+  function("cpp_ept_gdal_options_while_open", &cpp_ept_gdal_options_while_open, "GDAL configuration options while an EPT endpoint is open");
+  function("cpp_gdal_path_specific_options", &cpp_gdal_path_specific_options, "GDAL supports path-specific options");
+  function("cpp_ept_exec_partitioned", &cpp_ept_exec_partitioned, "Run a pipeline on a partitioned EPT endpoint");
 }
 
 
