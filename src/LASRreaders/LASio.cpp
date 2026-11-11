@@ -490,8 +490,8 @@ void LASio::init(const Header* header)
     if (lascoreattributes.count(attribute.name) == 0)
     {
       LASattribute attr(attribute.type-1, attribute.name.c_str(), attribute.description.c_str());
-      attr.set_scale(attribute.scale_factor);
-      attr.set_offset(attribute.value_offset);
+      if (attribute.scale_factor != 1.0) attr.set_scale(attribute.scale_factor);
+      if (attribute.value_offset != 0.0) attr.set_offset(attribute.value_offset);
       lasheader->add_attribute(attr);
       extrabytes_offsets.push_back(attribute.offset);
     }

@@ -1,3 +1,8 @@
+# lasR 0.21.5
+
+- Fix: `write_las()` no longer flags a scale and an offset in the Extra Bytes VLR for attributes whose scale is 1 and offset is 0. Such integer attributes were read as doubles by other software, such as `rlas`.
+
+
 # lasR 0.21.4
 
 - Fix: #355 `normalize()` / `transform_with()` produced NaN heights (written as large negative Z such as -2147483) for points lying on collinear convex hull edges. Zero-area triangles are now skipped during TIN interpolation and non-finite values are treated as no-data.
