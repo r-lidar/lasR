@@ -215,3 +215,32 @@ test_that("rasterize splits the raster on demand",
   expect_equal(mean(r2[], na.rm = T), 337.441, tolerance = 0.00001)
 })
 
+
+test_that("rasterize gives the same raster tiled or not when the resolution does not divide the tiles",
+{
+  # With a resolution that has no exact binary value, the offset of a chunk in the raster and the
+  # cell of a point on a cell edge could land one cell off, differently in each chunk.
+  skip_if_not_installed("terra")
+  f <- system.file("extdata", "Megaplot.las", package = "lasR")
+
+  td <- tempfile("rasterize_res_")
+  dir.create(td)
+  on.exit(unlink(td, recursive = TRUE), add = TRUE)
+
+  exec(reader_las() + write_las(file.path(td, "tile_*.las")), on = f, chunk = 60)
+  tiles <- list.files(td, pattern = "^tile_.*\\.las$", full.names = TRUE)
+  exec(write_lax(), on = tiles)
+  expect_gt(length(tiles), 1)
+
+  for (res in c(1.2, 1.4))
+  {
+    a <- exec(reader_las() + rasterize(res, "max", ofile = file.path(td, "single.tif")), on = f)
+    b <- exec(reader_las() + rasterize(res, "max", ofile = file.path(td, "tiled.tif")), on = tiles, buffer = 30)
+    expect_equal(as.vector(terra::ext(b)), as.vector(terra::ext(a)))
+    a <- terra::values(a)[, 1]
+    b <- terra::values(b)[, 1]
+    expect_gt(sum(!is.na(a)), 20000)
+    expect_identical(is.na(b), is.na(a))
+    expect_identical(b, a)
+  }
+})
