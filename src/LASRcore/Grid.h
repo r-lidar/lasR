@@ -33,6 +33,17 @@ struct VoxelHash
   std::size_t operator()(const Voxel& voxel) const { return voxel.hash() ;}
 };
 
+// floor(q) for a position q expressed in cells from the origin of a grid, except that q is taken
+// as an integer when it is one up to floating-point error. Grid origins are multiples of the
+// resolution, so a chunk origin or a point on a cell edge gives an integer q; with a resolution
+// that has no exact binary value (0.1, 1.2, 1.4...) it can come out just below that integer and a
+// plain floor would land one cell off.
+inline int floor_snapped(double q)
+{
+  const double r = std::round(q);
+  return (std::fabs(q - r) < 1e-6) ? (int)r : (int)std::floor(q);
+}
+
 class Grid
 {
 public:
