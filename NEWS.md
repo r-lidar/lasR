@@ -2,6 +2,7 @@
 
 - New: `summarise()` reports area, point density and pulse density
 - New: `local_maximum()` supports variable windows size.
+- New: `transform_crs()` reprojects the X and Y coordinates of the point cloud to a target CRS (EPSG code or WKT), where `set_crs()` only assigns a CRS. See the limitations in the documentation.
 - Fix: `summarise()` area, density and pulse density for circular queries used the bounding square instead of the disc
 - Fix: heap-corrupting data race in thread_safe_print #328
 

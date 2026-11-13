@@ -36,6 +36,7 @@
 #include "svd.h"
 #include "triangulate.h"
 #include "transformwith.h"
+#include "transformcrs.h"
 #include "writelas.h"
 #include "writelax.h"
 #include "writevpc.h"
@@ -85,6 +86,9 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
   bool reader = false;
   bool indexer = false;
 
+  // The CRS received by the stage being parsed: transform_crs needs it in get_extent()
+  CRS parse_crs;
+
   parsed = false;
   pipeline.clear();
 
@@ -124,6 +128,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"summarise",            create_instance<LASRsummary>},
     {"svd",                  create_instance<LASRsvd>},
     {"transform_with",       create_instance<LASRtransformwith>},
+    {"transform_crs",        create_instance<LASRtransformcrs>},
     {"triangulate",          create_instance<LASRtriangulate>},
     {"write_las",            create_instance<LASRlaswriter>},
     {"write_vpc",            create_instance<LASRvpcwriter>},
@@ -249,6 +254,8 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
           last_error = "Internal error: bad build_catalog stage";
           return false;
         }
+
+        if (catalog != nullptr) parse_crs = catalog->get_crs();
       }
       else if (name == "reader")
       {
@@ -455,6 +462,11 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
           last_error = "Invalid parameters in stage " + it->get_name() + ": " + last_error;
           return false;
         }
+
+        // transform_crs needs its source CRS to reproject the extent given to the next stages.
+        // The CRS are assigned again below, once the output files are known.
+        it->set_crs(parse_crs);
+        parse_crs = it->get_crs();
 
         it->get_extent(xmin, ymin, xmax, ymax);
 
