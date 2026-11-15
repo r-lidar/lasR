@@ -234,8 +234,9 @@ bool LASRlocalmaximum::process(PointCloud*& las)
       {
         // If the point is in the buffer we must guarantee it will be assigned the same ID the next
         // time we meet it. FID is a 64 bit geographic ID that is guaranteed to be unique. But we need
-        // a 32 bit ID so we have a correspondence table.
-        uint64_t FID = ((uint64_t)pp.get_X() << 32) | (uint64_t)(pp.get_Y());
+        // a 32 bit ID so we have a correspondence table. X and Y are cast to unsigned 32 bit
+        // first: a negative Y would otherwise be sign-extended and overwrite the X half.
+        uint64_t FID = ((uint64_t)(uint32_t)pp.get_X() << 32) | (uint64_t)(uint32_t)pp.get_Y();
         auto it = unicity_table->find(FID);
 
         PointLAS plas;
