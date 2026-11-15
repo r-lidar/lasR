@@ -4,6 +4,7 @@
 - New: `local_maximum()` supports variable windows size.
 - Fix: `summarise()` area, density and pulse density for circular queries used the bounding square instead of the disc
 - Fix: heap-corrupting data race in thread_safe_print #328
+- Fix: `local_maximum()` dropped some tree tops as "duplicated FID" when the stored Y integers are negative (Y offset of the file above the data).
 
 # lasR 0.21.4
 
