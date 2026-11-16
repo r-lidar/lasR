@@ -40,6 +40,7 @@ public:
   bool is_parallelized() const;
   bool is_streamable() const;
   bool use_rcapi() const;
+  bool writes_per_chunk_files() const;
   double need_buffer();
   bool need_points() const;
   bool set_chunk(Chunk& chunk);

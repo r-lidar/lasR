@@ -33,6 +33,7 @@ private:
   short copc_depth;
   unsigned char version_minor;
   unsigned char point_format;
+  bool keep_all; // current chunk: write every point, see set_chunk()
   std::vector<AttributeAccessor> core_accessors;
 
   LASio* lasio;

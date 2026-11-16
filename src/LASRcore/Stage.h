@@ -91,6 +91,7 @@ public:
   virtual bool is_parallelizable() const { return true; }; // concurrent-files
   virtual bool is_parallelized() const { return false; };  // concurrent-points
   virtual bool use_rcapi() const { return false; };
+  virtual bool writes_per_chunk_files() const { return false; }; // output path is a template with '*'
   virtual double need_buffer() const { return 0; };
   virtual bool need_points() const { return true; };
   virtual void get_extent(double& xmin, double& ymin, double& xmax, double& ymax) { return; };
@@ -180,6 +181,9 @@ public:
   #endif
 
   nlohmann::json to_json() const override;
+
+  // One output file per chunk, named from the chunk: the output path is a template with '*'
+  bool writes_per_chunk_files() const override { return !merged && template_filename.find('*') != std::string::npos; };
 
 protected:
   bool merged;

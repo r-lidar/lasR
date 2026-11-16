@@ -73,8 +73,16 @@ BOOL LASreaderLAS::open(const char* file_name, I32 io_buffer_size, BOOL peek_onl
       vsi_path = file_name;
     }
 
-    // Size warning for non-COPC files
-    if (strstr(file_name, ".copc.") == NULL)
+    // Size warning for non-COPC files. The VSIStatL is a HEAD request,
+    // which is expensive when tens or hundreds of small remote files
+    // are opened in sequence (e.g. EPT tile fetches under `ept-data/`).
+    // EPT tiles are bounded by the span (typically <10 MB), so the
+    // >500 MB warning would never fire anyway — skip the HEAD entirely
+    // for any path matching the EPT tile layout. This scoping avoids
+    // a process-wide env-var that would also silence the warning for
+    // unrelated big remote LAS reads in the same R session.
+    if (strstr(file_name, ".copc.") == NULL &&
+        strstr(file_name, "/ept-data/") == NULL)
     {
       VSIStatBufL stat_buf;
       if (VSIStatL(vsi_path.c_str(), &stat_buf) == 0)
