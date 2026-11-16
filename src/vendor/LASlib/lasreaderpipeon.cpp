@@ -30,6 +30,7 @@
 */
 #include "lasreaderpipeon.hpp"
 
+#include "lasmessage.hpp"
 #include "lasindex.hpp"
 #include "lascopc.hpp"
 #include "lasfilter.hpp"
@@ -44,31 +45,26 @@ BOOL LASreaderPipeOn::open(LASreader* lasreader)
 {
   if (lasreader == 0)
   {
-    eprint("ERROR: no lasreader\n");
+    laserror("no lasreader");
     return FALSE;
   }
 
   // store a reference to the actual lasreader
-
   this->lasreader = lasreader;
 
   // populate our header from the actual header
   header = lasreader->header;
 
   // zero the pointers of the other header so they don't get deallocated twice
-  lasreader->header.user_data_in_header = 0;
-  lasreader->header.vlrs = 0;
-  lasreader->header.laszip = 0;
-  lasreader->header.vlr_lastiling = 0;
-  lasreader->header.vlr_lasoriginal = 0;
-  lasreader->header.user_data_after_header = 0;
+  lasreader->header.unlink();
 
+  // not needed: header = lasreader->header already copies the pointer, dont copy again
   // special check for attributes in extra bytes
-  if (header.number_attributes)
-  {
-    header.number_attributes = 0;
-    header.init_attributes(lasreader->header.number_attributes, lasreader->header.attributes);
-  }
+  //if (header.number_attributes)
+  //{
+  //  header.number_attributes = 0;
+  //  header.init_attributes(lasreader->header.number_attributes, lasreader->header.attributes);
+  //}
 
   // initialize the point with the header info
 
@@ -90,21 +86,22 @@ BOOL LASreaderPipeOn::open(LASreader* lasreader)
 
   if (laswriterlas == 0)
   {
-    eprint("ERROR: allocating laswriterlas\n");
+    laserror("allocating laswriterlas");
     return FALSE;
   }
 
-  /*if (!laswriterlas->open(stdout, &header))
+  // rlas: R packages must not write to stdout
   {
     delete laswriterlas;
-    eprint("ERROR: opening laswriterlas to stdout\n");
+    laserror("piping to stdout is not supported");
     return FALSE;
-  }*/
+  }
 
   laswriter = laswriterlas;
 
   npoints = (header.number_of_point_records ? header.number_of_point_records : header.extended_number_of_point_records);
-  p_count = 0;
+  p_idx = 0;
+  p_cnt = 0;
 
   return TRUE;
 }
@@ -175,7 +172,8 @@ BOOL LASreaderPipeOn::read_point_default()
       {
         laswriter->write_point(&point);
       }
-      p_count++;
+      p_idx++;
+      p_cnt++;
       return TRUE;
     }
     if (laswriter)
@@ -197,7 +195,7 @@ void LASreaderPipeOn::close(BOOL close_stream)
   }
 }
 
-LASreaderPipeOn::LASreaderPipeOn()
+LASreaderPipeOn::LASreaderPipeOn(LASreadOpener* opener) :LASreader(opener)
 {
   lasreader = 0;
   laswriter = 0;

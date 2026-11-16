@@ -12,11 +12,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2017, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -39,7 +39,7 @@
 #include "bytestreamin_array.hpp"
 #include "bytestreamout_array.hpp"
 
-class LASreaderStored : public LASreader
+class LASLIB_DLL LASreaderStored : public LASreader
 {
 public:
 
@@ -63,7 +63,7 @@ public:
   ByteStreamIn* get_stream() const { return 0; };
   void close(BOOL close_stream=TRUE);
 
-  LASreaderStored();
+  LASreaderStored(LASreadOpener* opener);
   ~LASreaderStored();
 
 protected:

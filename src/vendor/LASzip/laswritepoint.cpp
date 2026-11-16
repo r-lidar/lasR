@@ -9,14 +9,14 @@
   
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2019, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -41,6 +41,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits>
 
 LASwritePoint::LASwritePoint()
 {
@@ -100,27 +101,27 @@ BOOL LASwritePoint::setup(const U32 num_items, const LASitem* items, const LASzi
   chunk_size = U32_MAX;
 
   // always create the raw writers
-  writers_raw = new LASwriteItem*[num_writers];
+  writers_raw = new LASwriteItem*[num_writers]();
   memset(writers_raw, 0, num_writers*sizeof(LASwriteItem*));
   for (i = 0; i < num_writers; i++)
   {
     switch (items[i].type)
     {
     case LASitem::POINT10:
-      if (IS_LITTLE_ENDIAN())
+      if (Endian::IS_LITTLE_ENDIAN)
         writers_raw[i] = new LASwriteItemRaw_POINT10_LE();
       else
         writers_raw[i] = new LASwriteItemRaw_POINT10_BE();
       break;
     case LASitem::GPSTIME11:
-      if (IS_LITTLE_ENDIAN())
+      if (Endian::IS_LITTLE_ENDIAN)
         writers_raw[i] = new LASwriteItemRaw_GPSTIME11_LE();
       else
         writers_raw[i] = new LASwriteItemRaw_GPSTIME11_BE();
       break;
     case LASitem::RGB12:
     case LASitem::RGB14:
-      if (IS_LITTLE_ENDIAN())
+      if (Endian::IS_LITTLE_ENDIAN)
         writers_raw[i] = new LASwriteItemRaw_RGB12_LE();
       else
         writers_raw[i] = new LASwriteItemRaw_RGB12_BE();
@@ -130,20 +131,20 @@ BOOL LASwritePoint::setup(const U32 num_items, const LASitem* items, const LASzi
       writers_raw[i] = new LASwriteItemRaw_BYTE(items[i].size);
       break;
     case LASitem::POINT14:
-      if (IS_LITTLE_ENDIAN())
+      if (Endian::IS_LITTLE_ENDIAN)
         writers_raw[i] = new LASwriteItemRaw_POINT14_LE();
       else
         writers_raw[i] = new LASwriteItemRaw_POINT14_BE();
       break;
     case LASitem::RGBNIR14:
-      if (IS_LITTLE_ENDIAN())
+      if (Endian::IS_LITTLE_ENDIAN)
         writers_raw[i] = new LASwriteItemRaw_RGBNIR14_LE();
       else
         writers_raw[i] = new LASwriteItemRaw_RGBNIR14_BE();
       break;
     case LASitem::WAVEPACKET13:
     case LASitem::WAVEPACKET14:
-      if (IS_LITTLE_ENDIAN())
+      if (Endian::IS_LITTLE_ENDIAN)
         writers_raw[i] = new LASwriteItemRaw_WAVEPACKET13_LE();
       else
         writers_raw[i] = new LASwriteItemRaw_WAVEPACKET13_BE();
@@ -156,7 +157,7 @@ BOOL LASwritePoint::setup(const U32 num_items, const LASitem* items, const LASzi
   // if needed create the compressed writers and set versions
   if (enc)
   {
-    writers_compressed = new LASwriteItem*[num_writers];
+    writers_compressed = new LASwriteItem*[num_writers]();
     memset(writers_compressed, 0, num_writers*sizeof(LASwriteItem*));
     for (i = 0; i < num_writers; i++)
     {
@@ -320,7 +321,10 @@ BOOL LASwritePoint::write(const U8 * const * point)
       {
         enc->done();
       }
-      add_chunk_to_table();
+      if (!add_chunk_to_table())
+      {
+        return FALSE;
+      }
       init(outstream);
     }
     else
@@ -336,14 +340,20 @@ BOOL LASwritePoint::write(const U8 * const * point)
   {
     for (i = 0; i < num_writers; i++)
     {
-      writers[i]->write(point[i], context);
+      if (!writers[i]->write(point[i], context))
+      {
+        return FALSE;
+      }
     }
   }
   else
   {
     for (i = 0; i < num_writers; i++)
     {
-      writers_raw[i]->write(point[i], context);
+      if (!writers_raw[i]->write(point[i], context))
+      {
+        return FALSE;
+      }
       ((LASwriteItemCompressed*)(writers_compressed[i]))->init(point[i], context);
     }
     writers = writers_compressed;
@@ -377,7 +387,10 @@ BOOL LASwritePoint::chunk()
   {
     enc->done();
   }
-  add_chunk_to_table();
+  if (!add_chunk_to_table())
+  {
+    return FALSE;
+  }
   init(outstream);
   chunk_count = 0;
   return TRUE;
@@ -408,7 +421,10 @@ BOOL LASwritePoint::done()
     }
     if (chunk_start_position)
     {
-      if (chunk_count) add_chunk_to_table();
+      if (chunk_count && !add_chunk_to_table())
+      {
+        return FALSE;
+      }
       return write_chunk_table();
     }
   }
@@ -429,18 +445,44 @@ BOOL LASwritePoint::add_chunk_to_table()
   {
     if (chunk_bytes == 0)
     {
-      alloced_chunks = 1024;
-      if (chunk_size == U32_MAX) chunk_sizes = (U32*)malloc(sizeof(U32)*alloced_chunks); 
-      chunk_bytes = (U32*)malloc(sizeof(U32)*alloced_chunks); 
+      U32 new_alloced_chunks = 1024;
+      if (chunk_size == U32_MAX)
+      {
+        chunk_sizes = (U32*)malloc_las(sizeof(U32) * new_alloced_chunks);
+        if (chunk_sizes == 0)
+        {
+          return FALSE;
+        }
+      }
+      chunk_bytes = (U32*)malloc_las(sizeof(U32) * new_alloced_chunks);
+      if (chunk_bytes == 0)
+      {
+        return FALSE;
+      }
+      alloced_chunks = new_alloced_chunks;
     }
     else
     {
-      alloced_chunks *= 2;
-      if (chunk_size == U32_MAX) chunk_sizes = (U32*)realloc(chunk_sizes, sizeof(U32)*alloced_chunks); 
-      chunk_bytes = (U32*)realloc(chunk_bytes, sizeof(U32)*alloced_chunks); 
+      U64 new_alloced_chunks_64 = (U64)alloced_chunks * 2;
+      if (new_alloced_chunks_64 > U32_MAX)
+      {
+        new_alloced_chunks_64 = U32_MAX;
+      }
+      U32 new_alloced_chunks = (U32)new_alloced_chunks_64;
+
+      if ((new_alloced_chunks == alloced_chunks) ||
+          ((U64)new_alloced_chunks > (U64)(std::numeric_limits<size_t>::max() / sizeof(U32))))
+      {
+        return FALSE;
+      }
+
+      if (((chunk_size == U32_MAX) && !try_realloc_las(chunk_sizes, sizeof(U32)*(U64)new_alloced_chunks)) ||
+          !try_realloc_las(chunk_bytes, sizeof(U32)*(U64)new_alloced_chunks))
+      {
+        return FALSE;
+      }
+      alloced_chunks = new_alloced_chunks;
     }
-    if (chunk_size == U32_MAX && chunk_sizes == 0) return FALSE;
-    if (chunk_bytes == 0) return FALSE;
   }
   I64 position = outstream->tell();
   if (chunk_size == U32_MAX) chunk_sizes[number_chunks] = chunk_count;

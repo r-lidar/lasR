@@ -8,6 +8,28 @@
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
 
+// Splits a LAStools command line on spaces and parses it with LASreadOpener::parse(), as the
+// former LASreadOpener::parse_str() did. LASlib reports an invalid option by throwing (see byebye()).
+static void parse_lastools_options(LASreadOpener* lasreadopener, std::string& str)
+{
+  std::vector<char*> argv(1, nullptr); // argv[0] is the program name, never read
+  size_t len = str.size();
+  size_t p = 0;
+  while (p < len)
+  {
+    while (p < len && str[p] == ' ') p++;
+    if (p < len)
+    {
+      argv.push_back(&str[p]);
+      while (p < len && str[p] != ' ') p++;
+      if (p < len) str[p] = '\0';
+      p++;
+    }
+  }
+
+  lasreadopener->parse((int)argv.size(), argv.data());
+}
+
 #define EPSILON 1e-9
 
 LASio::LASio()
@@ -75,20 +97,14 @@ bool LASio::query(const std::vector<std::string>& main_files, const std::vector<
 
   //print("LASlib filters = '%s'\n", sfilter.c_str());
 
-  const char* tmp = sfilter.c_str();
-  int n = strlen(tmp)+1;
-  char* filtercpy = (char*)malloc(n); memcpy(filtercpy, tmp, n);
-
   // The openner must survive to the reader otherwise there are some pointer invalidation.
   lasreadopener = new LASreadOpener;
   lasreadopener->set_merged(true);
   lasreadopener->set_stored(false);
   //lasreadopener->set_populate_header(true);
   //lasreadopener->set_buffer_size(buffer);
-  lasreadopener->parse_str(filtercpy);
+  parse_lastools_options(lasreadopener, sfilter);
   lasreadopener->set_copc_stream_ordered_by_chunk();
-
-  free(filtercpy);
 
   for (auto& file : main_files) lasreadopener->add_file_name(file.c_str(), TRUE);
   for (auto& file : neighbour_files) lasreadopener->add_file_name(file.c_str(), TRUE);
@@ -582,7 +598,6 @@ bool LASio::write_point(Point* p)
   point->set_extended_scanner_channel(scannerchannel(p));
   point->set_extended_return_number(returnnumber(p));
   point->set_extended_number_of_returns(numberofreturns(p));
-  point->set_extended_classification(classification(p));
 
   for (size_t i = 0 ; i < extrabytes_offsets.size() ; i++)
     point->set_attribute(i, p->data + extrabytes_offsets[i]);
@@ -653,7 +668,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
 
   while (lasreader->read_point())
   {
-    lasindex.add(lasreader->point.get_x(), lasreader->point.get_y(), (U32)(lasreader->p_count-1));
+    lasindex.add(lasreader->point.get_x(), lasreader->point.get_y(), (U32)(lasreader->p_cnt-1));
 
     if (progress)
     {
@@ -667,7 +682,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
 
   int minimum_points = 100000;
   int maximum_intervals = -20;
-  lasindex.complete(minimum_points, maximum_intervals, false);
+  lasindex.complete(minimum_points, maximum_intervals);
 
   if (embedded)
   {
@@ -695,7 +710,7 @@ bool LASio::seek(int64_t index)
 
   // A COPC reader walks its spatial index and only honours a seek once it has started: its first read jumps to the
   // first node. So a reader that has not read yet reads one point before seeking.
-  if (lasreader->p_count == 0) lasreader->read_point();
+  if (lasreader->p_cnt == 0) lasreader->read_point();
 
   return lasreader->seek(index);
 }
@@ -746,7 +761,7 @@ std::vector<uint64_t> LASio::chunk_starts()
 
 int64_t LASio::p_count()
 {
-  return lasreader->p_count;
+  return lasreader->p_cnt;
 }
 
 void LASio::close()

@@ -145,9 +145,9 @@ add_library(laszip STATIC
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/arithmeticencoder.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/arithmeticmodel.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/integercompressor.cpp
-  ${LASR_SOURCE_DIR}/src/vendor/LASzip/lascopc.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/lasindex.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/lasinterval.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/LASzip/lasmessage.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/lasquadtree.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/lasreaditemcompressed_v1.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASzip/lasreaditemcompressed_v2.cpp
@@ -272,6 +272,8 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/vendor/spikefree/Spikefree.cpp
 
   # LASlib vendor files
+  ${LASR_SOURCE_DIR}/src/vendor/LASlib/lascopc.cpp
+  ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasformula_api_stub.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasreader.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasreader_las.cpp
   ${LASR_SOURCE_DIR}/src/vendor/LASlib/lasreader_txt.cpp

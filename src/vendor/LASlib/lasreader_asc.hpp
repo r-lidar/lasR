@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2019, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2019, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -38,7 +38,7 @@
 
 #include <stdio.h>
 
-class LASreaderASC : public LASreader
+class LASLIB_DLL LASreaderASC : public LASreader
 {
 public:
 
@@ -54,7 +54,7 @@ public:
   void close(BOOL close_stream=TRUE);
   BOOL reopen(const CHAR* file_name);
 
-  LASreaderASC();
+  LASreaderASC(LASreadOpener* opener);
   virtual ~LASreaderASC();
 
 protected:
@@ -77,36 +77,38 @@ private:
   I64 overflow_I32_x;
   I64 overflow_I32_y;
   I64 overflow_I32_z;
+  F64 orig_x_offset, orig_y_offset, orig_z_offset;
+  F64 orig_x_scale_factor, orig_y_scale_factor, orig_z_scale_factor;
 
   void clean();
   void populate_scale_and_offset();
   void populate_bounding_box();
 };
 
-class LASreaderASCrescale : public virtual LASreaderASC
+class LASLIB_DLL LASreaderASCrescale : public virtual LASreaderASC
 {
 public:
   virtual BOOL open(const CHAR* file_name, BOOL comma_not_point=FALSE);
-  LASreaderASCrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
+  LASreaderASCrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
 
 protected:
   F64 scale_factor[3];
 };
 
-class LASreaderASCreoffset : public virtual LASreaderASC
+class LASLIB_DLL LASreaderASCreoffset : public virtual LASreaderASC
 {
 public:
   virtual BOOL open(const CHAR* file_name, BOOL comma_not_point=FALSE);
-  LASreaderASCreoffset(F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderASCreoffset(LASreadOpener* opener, F64 x_offset, F64 y_offset, F64 z_offset);
 protected:
   F64 offset[3];
 };
 
-class LASreaderASCrescalereoffset : public LASreaderASCrescale, LASreaderASCreoffset
+class LASLIB_DLL LASreaderASCrescalereoffset : public LASreaderASCrescale, LASreaderASCreoffset
 {
 public:
   BOOL open(const CHAR* file_name, BOOL comma_not_point=FALSE);
-  LASreaderASCrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderASCrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
 };
 
 #endif

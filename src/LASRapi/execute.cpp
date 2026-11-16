@@ -315,6 +315,16 @@ ReturnType execute(const std::string& config_file)
         log(flog, verbose, "ERROR: %s\n", last_error.c_str());
         failure = true;
       }
+      catch (const std::exception& e)
+      {
+        // LASlib throws std::runtime_error on errors. An exception must not escape the parallel region.
+        #pragma omp critical (lasr_last_error)
+        {
+          last_error = e.what();
+        }
+        log(flog, verbose, "ERROR: %s\n", e.what());
+        failure = true;
+      }
     }
 
     // We are no longer in the parallel region we can return to R by allocating safely

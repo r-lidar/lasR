@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2012, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -30,6 +30,7 @@
 */
 #include "laswaveform13reader.hpp"
 
+#include "lasmessage.hpp"
 #include "bytestreamin_file.hpp"
 #include "arithmeticdecoder.hpp"
 #include "integercompressor.hpp"
@@ -81,7 +82,7 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
 {
   if (file_name == 0)
   {
-    eprint("ERROR: file name pointer is zero\n");
+    laserror("file name pointer is zero");
     return FALSE;
   }
 
@@ -89,7 +90,7 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
 
   if (wave_packet_descr == 0)
   {
-    eprint("ERROR: wave packet descriptor pointer is zero\n");
+    laserror("wave packet descriptor pointer is zero");
     return FALSE;
   }
 
@@ -97,7 +98,7 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
 
   if (wave_packet_descr[0] != 0)
   {
-    eprint("ERROR: wave_packet_descr[0] with index 0 must be zero\n");
+    laserror("wave_packet_descr[0] with index 0 must be zero");
     return FALSE;
   }
 
@@ -120,16 +121,22 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
   {
     if (!compressed && (strstr(".wdp", file_name) || strstr(".WDP", file_name)))
     {
-      file = fopen(file_name, "rb");
+      file = LASfopen(file_name, "rb");
     }
     else if (compressed && (strstr(".wdz", file_name) || strstr(".WDZ", file_name)))
     {
-      file = fopen(file_name, "rb");
+      file = LASfopen(file_name, "rb");
     }
     else
     {
       char* file_name_temp = LASCopyString(file_name);
       I32 len = (I32)strlen(file_name_temp);
+      if (len < 3)
+      {
+        laserror("file name '%s' is too short to derive a waveform file name", file_name);
+        free(file_name_temp);
+        return FALSE;
+      }
       if ((file_name_temp[len-3] == 'L') || (file_name_temp[len-3] == 'W'))
       {
         file_name_temp[len-3] = 'W';
@@ -142,22 +149,22 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
         file_name_temp[len-2] = 'd';
         file_name_temp[len-1] = (compressed ? 'z' : 'p');
       }
-      file = fopen(file_name_temp, "rb");
+      file = LASfopen(file_name_temp, "rb");
       free(file_name_temp);
     }
   }
   else
   {
-    file = fopen(file_name, "rb");
+    file = LASfopen(file_name, "rb");
   }
 
   if (file == 0)
   {
-    eprint( "ERROR: cannot open waveform file '%s'\n", file_name);
+    laserror("cannot open waveform file '%s'", file_name);
     return FALSE;
   }
 
-  if (IS_LITTLE_ENDIAN())
+  if (Endian::IS_LITTLE_ENDIAN)
   {
     stream = new ByteStreamInFileLE(file);
   }
@@ -177,7 +184,7 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
   char magic[25];
   try { stream->getBytes((U8*)magic, 24); } catch(...)
   {
-    eprint("ERROR: reading waveform descriptor cross-check\n");
+    laserror("reading waveform descriptor cross-check");
     return FALSE;
   }
 
@@ -188,7 +195,7 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
     U16 i, number;
     try { stream->get16bitsLE((U8*)&number); } catch(...)
     {
-      eprint("ERROR: reading number of waveform descriptors\n");
+      laserror("reading number of waveform descriptors");
       return FALSE;
     }
     for (i = 0; i < number; i++)
@@ -196,21 +203,21 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
       U16 index;
       try { stream->get16bitsLE((U8*)&index); } catch(...)
       {
-        eprint("ERROR: reading index of waveform descriptor %d\n", i);
+        laserror("reading index of waveform descriptor %d", i);
         return FALSE;
       }
       if ((index == 0) || (index > 255))
       {
-        eprint("ERROR: cross-check - index %d of waveform descriptor %d out-of-range\n", index, i);
+        laserror("cross-check - index %d of waveform descriptor %d out-of-range", index, i);
         return FALSE;
       }
       if (wave_packet_descr[index] == 0)
       {
-        eprint("WARNING: cross-check - waveform descriptor %d with index %d unknown\n", i, index);
+        LASMessage(LAS_WARNING, "cross-check - waveform descriptor %d with index %d unknown", i, index);
         I32 dummy;
         try { stream->get32bitsLE((U8*)&dummy); } catch(...)
         {
-          eprint("ERROR: cross-check - reading rest of waveform descriptor %d\n", i);
+          laserror("cross-check - reading rest of waveform descriptor %d", i);
           return FALSE;
         }
         continue;
@@ -218,34 +225,34 @@ BOOL LASwaveform13reader::open(const char* file_name, I64 start_of_waveform_data
       U8 compression;
       try { stream->getBytes(&compression, 1); } catch(...)
       {
-        eprint("ERROR: reading compression of waveform descriptor %d\n", i);
+        laserror("reading compression of waveform descriptor %d", i);
         return FALSE;
       }
       if (compression != wave_packet_descr[index]->getCompressionType())
       {
-        eprint("ERROR: cross-check - compression %d %d of waveform descriptor %d with index %d is different\n", compression, wave_packet_descr[index]->getCompressionType(), i, index);
+        laserror("cross-check - compression %d %d of waveform descriptor %d with index %d is different", compression, wave_packet_descr[index]->getCompressionType(), i, index);
         return FALSE;
       }
       U8 nbits;
       try { stream->getBytes(&nbits, 1); } catch(...)
       {
-        eprint("ERROR: reading nbits of waveform descriptor %d\n", i);
+        laserror("reading nbits of waveform descriptor %d", i);
         return FALSE;
       }
       if (nbits != wave_packet_descr[index]->getBitsPerSample())
       {
-        eprint("ERROR: cross-check - nbits %d %d of waveform descriptor %d with index %d is different\n", nbits, wave_packet_descr[index]->getBitsPerSample(), i, index);
+        laserror("cross-check - nbits %d %d of waveform descriptor %d with index %d is different", nbits, wave_packet_descr[index]->getBitsPerSample(), i, index);
         return FALSE;
       }
       U16 nsamples;
       try { stream->get16bitsLE((U8*)&nsamples); } catch(...)
       {
-        eprint("ERROR: reading nsamples of waveform descriptor %d\n", i);
+        laserror("reading nsamples of waveform descriptor %d", i);
         return FALSE;
       }
       if (nsamples != wave_packet_descr[index]->getNumberOfSamples())
       {
-        eprint("ERROR: cross-check - nsamples %d %d of waveform descriptor %d with index %d is different\n", nsamples, wave_packet_descr[index]->getNumberOfSamples(), i, index);
+        laserror("cross-check - nsamples %d %d of waveform descriptor %d with index %d is different", nsamples, wave_packet_descr[index]->getNumberOfSamples(), i, index);
         return FALSE;
       }
     }
@@ -274,14 +281,14 @@ BOOL LASwaveform13reader::read_waveform(const LASpoint* point)
 
   if (wave_packet_descr[index] == 0)
   {
-    eprint( "ERROR: wavepacket is indexing non-existant descriptor %u\n", index);
+    laserror("wavepacket is indexing non-existant descriptor %u", index);
     return FALSE;
   }
 
   nbits = wave_packet_descr[index]->getBitsPerSample();
   if ((nbits != 8) && (nbits != 16))
   {
-    eprint( "ERROR: waveform with %d bits per samples not supported yet\n", nbits);
+    laserror("waveform with %d bits per samples not supported yet", nbits);
     return FALSE;
   }
 
@@ -293,7 +300,7 @@ BOOL LASwaveform13reader::read_waveform(const LASpoint* point)
 
   if (nsamples == 0)
   {
-    eprint( "ERROR: waveform has no samples\n");
+    laserror("waveform has no samples");
     return FALSE;
   }
 
@@ -310,13 +317,20 @@ BOOL LASwaveform13reader::read_waveform(const LASpoint* point)
 
   // alloc data
 
-  if (size < ((nbits/8) * nsamples))
+  U64 needed_size = (U64)(nbits/8) * (U64)nsamples;
+  if (needed_size > U32_MAX)
   {
-    if (samples) delete [] samples;
-    samples = new U8[((nbits/8) * nsamples)];
+    laserror("waveform with %u samples of %u bits requires too much memory", nsamples, nbits);
+    return FALSE;
   }
 
-  size = ((nbits/8) * nsamples);
+  if (size < (U32)needed_size)
+  {
+    if (samples) delete [] samples;
+    samples = new U8[(U32)needed_size];
+  }
+
+  size = (U32)needed_size;
 
   // read waveform
 
@@ -327,7 +341,7 @@ BOOL LASwaveform13reader::read_waveform(const LASpoint* point)
   {
     try { stream->getBytes(samples, size); } catch(...)
     {
-      eprint( "ERROR: cannot read %u bytes for waveform with %u samples of %u bits\n", size, nsamples, nbits);
+      laserror("cannot read %u bytes for waveform with %u samples of %u bits", size, nsamples, nbits);
       return FALSE;
     }
   }
@@ -435,9 +449,9 @@ BOOL LASwaveform13reader::has_samples_xyz()
   if (s_count < nsamples)
   {
     F32 dist = location - s_count*temporal;
-    XYZsample[0] = XYZreturn[0] + dist*XYZt[0];
-    XYZsample[1] = XYZreturn[1] + dist*XYZt[1];
-    XYZsample[2] = XYZreturn[2] + dist*XYZt[2];
+    XYZsample[0] = XYZreturn[0] + static_cast<F64>(dist)*XYZt[0];
+    XYZsample[1] = XYZreturn[1] + static_cast<F64>(dist)*XYZt[1];
+    XYZsample[2] = XYZreturn[2] + static_cast<F64>(dist)*XYZt[2];
     if (nbits == 8)
     {
       sample = samples[s_count];

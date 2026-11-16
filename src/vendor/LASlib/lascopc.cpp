@@ -35,12 +35,12 @@
 #else
 #include "lasreader.hpp"
 #endif
+#include "lasmessage.hpp"
 
 #include <deque>
 #include <cmath>
 #include <algorithm>
-
-#define MAX(a, b, c) ((a) <= (b)? (b) <= (c)? (c) : (b) : (a) <= (c)? (c) : (a)) // MSVC does not like std::max({a, b, c})
+#include <cstdint>
 
 EPTkey::EPTkey(I32 d, I32 x, I32 y, I32 z) : d(d), x(x), y(y), z(z) {}
 EPTkey::EPTkey() : EPTkey(-1, -1, -1, -1) {}
@@ -104,7 +104,7 @@ EPToctant::EPToctant(const LASvlr_copc_entry entry, const F64 xmin, const F64 ym
   position.end = end;
 
   // Step size accounts for depth level
-  F64 size = MAX(xmax - xmin, ymax - ymin, zmax - zmin);
+  F64 size = MAX3(xmax - xmin, ymax - ymin, zmax - zmin);
   F64 res  = size / std::pow(2, d);
 
   // Bounding box
@@ -128,13 +128,14 @@ EPToctree::EPToctree(const LASheader& header)
     zmax = header.vlr_copc_info->center_z + header.vlr_copc_info->halfsize;
     point_spacing = header.vlr_copc_info->spacing;
     max_depth = 0;
+    grid_size = 0;
   }
   else
   {
     F64 center_x = (header.min_x + header.max_x)/2;
     F64 center_y = (header.min_y + header.max_y)/2;
     F64 center_z = (header.min_z + header.max_z)/2;
-    F64 halfsize = MAX(header.max_x - header.min_x, header.max_y - header.min_y, header.max_z - header.min_z)/2;
+    F64 halfsize = MAX3(header.max_x - header.min_x, header.max_y - header.min_y, header.max_z - header.min_z)/2;
 
     xmin = center_x - halfsize;
     ymin = center_y - halfsize;
@@ -144,6 +145,7 @@ EPToctree::EPToctree(const LASheader& header)
     zmax = center_z + halfsize;
     point_spacing = 0;
     max_depth = 0;
+    grid_size = 0;
   }
 
   if (header.vlr_copc_info && header.vlr_copc_entries)
@@ -181,16 +183,61 @@ BOOL EPToctree::set_vlr_entries(const U8* data, const U64 offset_to_first_copc_e
 {
   if (!data) return FALSE;
 
+  BOOL evlr_found = FALSE;
+  I64 payload_length = 0;
+  if (header.evlrs)
+  {
+    for (U32 k = 0; k < header.number_of_extended_variable_length_records; k++)
+    {
+      if (header.evlrs[k].data == data)
+      {
+        evlr_found = TRUE;
+        payload_length = header.evlrs[k].record_length_after_header;
+        break;
+      }
+    }
+  }
+  if (!evlr_found)
+  {
+    LASMessage(LAS_WARNING, "COPC EPT hierarchy payload does not belong to this header, its size cannot be determined.");
+    return FALSE;
+  }
+  if (payload_length <= 0)
+  {
+    LASMessage(LAS_WARNING, "COPC EPT hierarchy EVLR payload length is %lld (not specification-conform).", payload_length);
+    return FALSE;
+  }
+  const U64 data_size = (U64)payload_length;
+
   std::vector<LASvlr_copc_entry> page;
   std::vector<LASvlr_copc_entry> entries;
   std::deque<LASvlr_copc_entry> child_entries;
-  LASvlr_copc_entry* payload = (LASvlr_copc_entry*)data;
+  const LASvlr_copc_entry* payload = (const LASvlr_copc_entry*)data;
+  const U64 entry_size = sizeof(LASvlr_copc_entry);
+  const U64 max_entries = data_size/entry_size;
+
+  auto read_page = [&](U64 abs_offset, U64 n_entry, std::vector<LASvlr_copc_entry>& out) -> bool
+  {
+    if (abs_offset < offset_to_first_copc_entry)
+    {
+      return false;
+    }
+    U64 n_entries_before = (abs_offset - offset_to_first_copc_entry)/entry_size;
+    if ((n_entries_before > max_entries) || (n_entry > (max_entries - n_entries_before)))
+    {
+      return false;
+    }
+    out = std::vector<LASvlr_copc_entry>(payload + n_entries_before, payload + n_entries_before + n_entry);
+    return true;
+  };
 
   // Read the root page
-  U64 n_root_entries = header.vlr_copc_info->root_hier_size/sizeof(LASvlr_copc_entry);
-  U64 root_offset = header.vlr_copc_info->root_hier_offset - offset_to_first_copc_entry;
-  U64 n_entries_before_root = root_offset/sizeof(LASvlr_copc_entry);
-  page = std::vector<LASvlr_copc_entry>(payload + n_entries_before_root, payload + n_entries_before_root + n_root_entries);
+  U64 n_root_entries = header.vlr_copc_info->root_hier_size/entry_size;
+  if (!read_page(header.vlr_copc_info->root_hier_offset, n_root_entries, page))
+  {
+    LASMessage(LAS_WARNING, "COPC EPT hierarchy root page is out of bounds of the EVLR payload (not specification-conform).");
+    return FALSE;
+  }
 
   for (size_t j = 0; j < page.size(); j++)
   {
@@ -198,17 +245,27 @@ BOOL EPToctree::set_vlr_entries(const U8* data, const U64 offset_to_first_copc_e
     else if (page[j].point_count == -1) child_entries.push_back(page[j]);
   }
 
+  U64 total_entries_read = page.size();
+
   // Recurse the tree of entries
   while (child_entries.size())
   {
     LASvlr_copc_entry e = child_entries.front();
     child_entries.pop_front();
 
-    U64 page_size = e.byte_size;
-    U64 n_entry = page_size/sizeof(LASvlr_copc_entry);
-    U64 page_offset = e.offset - offset_to_first_copc_entry;
-    U64 n_entries_before_page = page_offset/sizeof(LASvlr_copc_entry);
-    page = std::vector<LASvlr_copc_entry>(payload + n_entries_before_page, payload + n_entries_before_page + n_entry);
+    U64 n_entry = e.byte_size/entry_size;
+    if (!read_page(e.offset, n_entry, page))
+    {
+      LASMessage(LAS_WARNING, "COPC EPT hierarchy child page is out of bounds of the EVLR payload (not specification-conform).");
+      return FALSE;
+    }
+
+    total_entries_read += page.size();
+    if (total_entries_read > max_entries)
+    {
+      LASMessage(LAS_WARNING, "COPC EPT hierarchy has more entries than fit into the EVLR payload (not specification-conform).");
+      return FALSE;
+    }
 
     for (size_t j = 0; j < page.size(); j++)
     {
@@ -225,7 +282,7 @@ BOOL EPToctree::set_vlr_entries(const U8* data, const U64 offset_to_first_copc_e
 
   if (sum != header.extended_number_of_point_records)
   {
-    eprint("WARNING: COPC EPT hierarchy EVLR number of point does not match with the header.\n");
+    LASMessage(LAS_WARNING, "COPC EPT hierarchy EVLR number of point does not match with the header.");
     return FALSE;
   }
 
@@ -243,8 +300,8 @@ I32 EPToctree::compute_max_depth(const LASheader& header, U64 max_points_per_oct
   F64 xsize = header.max_x - header.min_x;
   F64 ysize = header.max_y - header.min_y;
   F64 zsize = header.max_z - header.min_z;
-  F64 size  = MAX(xsize, ysize, zsize);
-  U64 npts  = MAX((U64)header.number_of_point_records, header.extended_number_of_point_records, 0);
+  F64 size  = MAX3(xsize, ysize, zsize);
+  U64 npts  = MAX3((U64)header.number_of_point_records, header.extended_number_of_point_records, 0);
   I32 max_depth = 0;
 
   while (npts > max_points_per_octant)
@@ -281,7 +338,7 @@ EPTkey EPToctree::get_key(const LASpoint* p, const I32 depth) const
 I32 EPToctree::get_cell(const LASpoint*p, const EPTkey& key) const
 {
   F64 size = get_halfsize()*2;
-  F64 res  = size / (1 << key.d);
+  F64 res  = size / (static_cast<uint64_t>(1) << key.d);
 
   // Bounding box of the octant
   F64 minx = res * key.x + (get_center_x() - get_halfsize());
@@ -503,7 +560,7 @@ BOOL COPCindex::seek_next(LASreadPoint* reader, I64 &p_count)
   if (!have_interval)
   {
     if (!has_intervals()) return FALSE;
-    reader->seek((U32)p_count, start);
+    reader->seek(p_count, start);
     p_count = start;
   }
   if (p_count == (I64)end)
@@ -520,7 +577,7 @@ BOOL COPCindex::seek_next(LASreader* reader)
     if (!has_intervals()) return FALSE;
     reader->seek(start);
   }
-  if (reader->p_count == (I64)end)
+  if (reader->p_idx == (I64)end)
   {
     have_interval = FALSE;
   }

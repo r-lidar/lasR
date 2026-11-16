@@ -36,7 +36,7 @@
 #include "lasreader.hpp"
 #include "laswriter.hpp"
 
-class LASreaderPipeOn : public LASreader
+class LASLIB_DLL LASreaderPipeOn : public LASreader
 {
 public:
 
@@ -62,7 +62,7 @@ public:
   ByteStreamIn* get_stream() const { return 0; };
   void close(BOOL close_stream=TRUE);
 
-  LASreaderPipeOn();
+  LASreaderPipeOn(LASreadOpener* opener);
   ~LASreaderPipeOn();
 
 protected:

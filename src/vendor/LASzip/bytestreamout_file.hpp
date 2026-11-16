@@ -2,32 +2,32 @@
 ===============================================================================
 
   FILE:  bytestreamout_file.hpp
-
+  
   CONTENTS:
-
+      
     Class for FILE*-based output streams with endian handling.
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2013, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
+  
   CHANGE HISTORY:
-
+  
      1 October 2011 -- added 64 bit file support in MSVC 6.0 at McCafe at Hbf Linz
     10 January 2011 -- licensing change for LGPL release and liblas integration
     12 December 2010 -- created from ByteStreamOutFile after Howard got pushy (-;
-
+  
 ===============================================================================
 */
 #ifndef BYTE_STREAM_OUT_FILE_H
@@ -36,11 +36,6 @@
 #include "bytestreamout.hpp"
 
 #include <stdio.h>
-
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-extern "C" int _cdecl _fseeki64(FILE*, __int64, int);
-extern "C" __int64 _cdecl _ftelli64(FILE*);
-#endif
 
 class ByteStreamOutFile : public ByteStreamOut
 {
@@ -83,7 +78,7 @@ public:
 /* write 64 bit big-endian field                             */
   BOOL put64bitsBE(const U8* bytes);
 private:
-  U8 swapped[8];
+  U8 swapped[8] = {0};
 };
 
 class ByteStreamOutFileBE : public ByteStreamOutFile
@@ -103,7 +98,7 @@ public:
 /* write 64 bit big-endian field                             */
   BOOL put64bitsBE(const U8* bytes);
 private:
-  U8 swapped[8];
+  U8 swapped[8] = {0};
 };
 
 inline ByteStreamOutFile::ByteStreamOutFile(FILE* file)
@@ -130,40 +125,22 @@ inline BOOL ByteStreamOutFile::putBytes(const U8* bytes, U32 num_bytes)
 
 inline BOOL ByteStreamOutFile::isSeekable() const
 {
-  return (true);
+  return TRUE; // rlas: never writes to stdout
 }
 
 inline I64 ByteStreamOutFile::tell() const
 {
-#if defined _WIN32 && ! defined (__MINGW32__)
-  return _ftelli64(file);
-#elif defined (__MINGW32__)
-  return (I64)ftello64(file);
-#else
-  return (I64)ftello(file);
-#endif
+  return ftell_las(file);
 }
 
 inline BOOL ByteStreamOutFile::seek(I64 position)
 {
-#if defined _WIN32 && ! defined (__MINGW32__)
-  return !(_fseeki64(file, position, SEEK_SET));
-#elif defined (__MINGW32__)
-  return !(fseeko64(file, (off64_t)position, SEEK_SET));
-#else
-  return !(fseeko(file, (off_t)position, SEEK_SET));
-#endif
+  return !(fseek_las(file, position, SEEK_SET));
 }
 
 inline BOOL ByteStreamOutFile::seekEnd()
 {
-#if defined _WIN32 && ! defined (__MINGW32__)
-  return !(_fseeki64(file, 0, SEEK_END));
-#elif defined (__MINGW32__)
-  return !(fseeko64(file, (off64_t)0, SEEK_END));
-#else
-  return !(fseeko(file, (off_t)0, SEEK_END));
-#endif
+  return !(fseek_las(file, 0, SEEK_END));
 }
 
 inline ByteStreamOutFileLE::ByteStreamOutFileLE(FILE* file) : ByteStreamOutFile(file)
