@@ -4,6 +4,7 @@
 - New: `local_maximum()` supports variable windows size.
 - Fix: `summarise()` area, density and pulse density for circular queries used the bounding square instead of the disc
 - Fix: heap-corrupting data race in thread_safe_print #328
+- Fix: `write_las()` no longer flags a scale and an offset in the Extra Bytes VLR for attributes whose scale is 1 and offset is 0. Such integer attributes were read as doubles by other software, such as `rlas`.
 
 # lasR 0.21.4
 

@@ -35,6 +35,8 @@ public:
   void set_copc_max_depth(int depth);
   void set_copc_density(int density);
   int64_t p_count() override;
+  bool seek(int64_t index);
+  std::vector<uint64_t> chunk_starts();
 
   // Tools
   static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);

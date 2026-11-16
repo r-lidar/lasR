@@ -1,6 +1,8 @@
 #include "LASio.h"
 
+#include <algorithm>
 #include "lasreader.hpp"
+#include "lasreader_las.hpp"
 #include "laswriter.hpp"
 #include "laszip_decompress_selective_v3.hpp"
 #include "lasindex.hpp"
@@ -143,6 +145,7 @@ void LASio::open(const std::string& file)
 
   lasreadopener = new LASreadOpener;
   lasreadopener->add_file_name(file.c_str());
+  lasreadopener->set_copc_stream_ordered_by_chunk();
   lasreader = lasreadopener->open();
 
   if (!lasreader)
@@ -487,8 +490,8 @@ void LASio::init(const Header* header)
     if (lascoreattributes.count(attribute.name) == 0)
     {
       LASattribute attr(attribute.type-1, attribute.name.c_str(), attribute.description.c_str());
-      attr.set_scale(attribute.scale_factor);
-      attr.set_offset(attribute.value_offset);
+      if (attribute.scale_factor != 1.0) attr.set_scale(attribute.scale_factor);
+      if (attribute.value_offset != 0.0) attr.set_offset(attribute.value_offset);
       lasheader->add_attribute(attr);
       extrabytes_offsets.push_back(attribute.offset);
     }
@@ -684,6 +687,61 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
 bool LASio::is_opened()
 {
   return (lasreader != nullptr || laswriter != nullptr);
+}
+
+bool LASio::seek(int64_t index)
+{
+  if (lasreader == nullptr || index < 0) return false;
+
+  // A COPC reader walks its spatial index and only honours a seek once it has started: its first read jumps to the
+  // first node. So a reader that has not read yet reads one point before seeking.
+  if (lasreader->p_count == 0) lasreader->read_point();
+
+  return lasreader->seek(index);
+}
+
+std::vector<uint64_t> LASio::chunk_starts()
+{
+  std::vector<uint64_t> starts;
+  if (lasreader == nullptr) return starts;
+
+  const LASzip* laszip = lasreader->header.laszip;
+  if (laszip == nullptr || laszip->compressor < LASZIP_COMPRESSOR_POINTWISE_CHUNKED) return starts;
+
+  const uint64_t total = lasreader->npoints;
+
+  // Fixed size: the chunks are implied by the size.
+  if (laszip->chunk_size != U32_MAX)
+  {
+    if (laszip->chunk_size == 0) return starts;
+    for (uint64_t p = 0 ; p < total ; p += laszip->chunk_size) starts.push_back(p);
+    starts.push_back(total);
+    return starts;
+  }
+
+  // Variable size (adaptive chunking): laslib keeps the chunk table private. The only variable chunking in practice
+  // is COPC, where each node of the hierarchy is exactly one chunk and the hierarchy gives its number of points.
+  // Chunks follow each other in the file, so sorting the nodes by offset gives the chunks in order.
+  if (lasreader->header.vlr_copc_entries == nullptr) return starts;
+
+  std::vector<const LASvlr_copc_entry*> nodes;
+  for (U32 i = 0 ; i < lasreader->header.number_of_copc_entries ; i++)
+  {
+    const LASvlr_copc_entry* entry = &lasreader->header.vlr_copc_entries[i];
+    if (entry->point_count > 0) nodes.push_back(entry); // < 0: pointer to another page of the hierarchy
+  }
+  std::sort(nodes.begin(), nodes.end(), [](const LASvlr_copc_entry* a, const LASvlr_copc_entry* b) { return a->offset < b->offset; });
+
+  uint64_t sum = 0;
+  for (const LASvlr_copc_entry* node : nodes)
+  {
+    starts.push_back(sum);
+    sum += node->point_count;
+  }
+  starts.push_back(sum);
+
+  if (sum != total) starts.clear(); // not the chunks of this file: no parallel reading
+  return starts;
 }
 
 int64_t LASio::p_count()
