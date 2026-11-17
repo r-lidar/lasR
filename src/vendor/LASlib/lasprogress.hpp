@@ -111,7 +111,7 @@ public:
         percentage = 1.0f;
         previous_percentage = F32_MIN;
         print();
-        if (display) LASMessage(LAS_INFO, "\n"); // lasR: LASMessage() instead of REprintf()
+        if (display) LASMessage(LAS_INFO, "\n"); 
         reset();
     };
 
