@@ -268,19 +268,44 @@ ReturnType execute(const std::string& config_file)
 
           log(flog, verbose, "Processing chunk %d/%d in thread %d: %s\n", i+1, n, omp_get_thread_num(), chunk.name.c_str()); // # nocov
 
-          // set_chunk() initialize the region we are working with which is a sub-part of the
-          // overall processed region
-          if (!private_pipeline.set_chunk(chunk))
+          // An exception must not leave an iteration of an 'omp for' loop (std::terminate()): LASlib
+          // throws its errors (std::runtime_error), lasR may throw std::string.
+          try
           {
+            // set_chunk() initialize the region we are working with which is a sub-part of the
+            // overall processed region
+            if (!private_pipeline.set_chunk(chunk))
+            {
+              failure = true;
+              continue;
+            }
+
+            // run() does execute the pipeline. This is encapsulated but at the end each stage
+            // is supposed to contains the data for the current chunk and optionally write the
+            // result into a file
+            if (!private_pipeline.run())
+            {
+              failure = true;
+              continue;
+            }
+          }
+          catch (const std::exception& e)
+          {
+            #pragma omp critical (lasr_last_error)
+            {
+              last_error = e.what();
+            }
+            log(flog, verbose, "ERROR: %s\n", e.what());
             failure = true;
             continue;
           }
-
-          // run() does execute the pipeline. This is encapsulated but at the end each stage
-          // is supposed to contains the data for the current chunk and optionally write the
-          // result into a file
-          if (!private_pipeline.run())
+          catch (const std::string& e)
           {
+            #pragma omp critical (lasr_last_error)
+            {
+              last_error = e;
+            }
+            log(flog, verbose, "ERROR: %s\n", e.c_str());
             failure = true;
             continue;
           }

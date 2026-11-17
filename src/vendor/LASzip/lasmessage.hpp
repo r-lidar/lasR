@@ -45,6 +45,9 @@ void LASLIB_DLL LASMessage(LAS_MESSAGE_TYPE type, LAS_FORMAT_STRING(const char*)
 LASLIB_DLL void LASMessageExt(LAS_MESSAGE_TYPE type, unsigned int rep_times, LAS_FORMAT_STRING(const char*) fmt, ...);
 void flush_repeated_logs();
 
+// r-lidar: drops the messages of the calling thread (e.g. a thread that must not print)
+void LASLIB_DLL las_mute_thread(bool mute);
+
 // special debug message function that will be removed in release mode
 #if defined(_DEBUG)|| !defined(NDEBUG)
 #define LASDebug(...) LASMessage(LAS_DEBUG, __VA_ARGS__)

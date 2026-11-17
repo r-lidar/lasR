@@ -71,6 +71,12 @@ public:
   inline const CHAR* error() const { return last_error; };
   inline const CHAR* warning() const { return last_warning; };
 
+  // r-lidar: read-only access to the chunk table, loaded by the first read or seek.
+  inline U32 get_number_chunks()       const { return number_chunks; };
+  inline U32 get_tabled_chunks()       const { return tabled_chunks; };
+  inline U32 get_chunk_size()          const { return chunk_size; };
+  inline const U64* get_chunk_totals() const { return chunk_totals; };
+
 private:
   ByteStreamIn* instream;
   U32 num_readers;

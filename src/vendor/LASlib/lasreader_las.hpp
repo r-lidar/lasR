@@ -75,6 +75,9 @@ public:
   ByteStreamIn* get_stream() const;
   void close(BOOL close_stream=TRUE);
 
+  // r-lidar: the point decoder, e.g. to read its chunk table (see LASreadPoint::get_chunk_totals())
+  inline const LASreadPoint* get_read_point() const { return reader; };
+
   LASreaderLAS(LASreadOpener* opener);
   virtual ~LASreaderLAS();
 

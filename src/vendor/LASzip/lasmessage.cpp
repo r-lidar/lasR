@@ -67,6 +67,10 @@ static std::recursive_mutex las_message_mutex;
 static thread_local std::string las_last_error_message; // lasR: one per thread
 const char* las_last_error() { return las_last_error_message.c_str(); }
 
+// r-lidar: the messages of a muted thread are dropped. Its errors are still thrown by byebye().
+static thread_local bool las_thread_muted = false;
+void las_mute_thread(bool mute) { las_thread_muted = mute; }
+
 std::string las_message_type_string(LAS_MESSAGE_TYPE in) {
   switch (in) {
     case LAS_DEBUG:
@@ -120,6 +124,7 @@ void LASMessage(LAS_MESSAGE_TYPE type, LAS_FORMAT_STRING(const char*) fmt, ...) 
   buildMessage(buffer, type, fmt, args);
   va_end(args);
   if (type >= LAS_ERROR) las_last_error_message = buffer;
+  if (las_thread_muted) return;
 
   std::lock_guard<std::recursive_mutex> lock(las_message_mutex); // lasR
   if (current_msg != fmt) {
@@ -153,7 +158,7 @@ void LASMessageExt(LAS_MESSAGE_TYPE type, unsigned int rep_times, LAS_FORMAT_STR
   std::lock_guard<std::recursive_mutex> lock(las_message_mutex); // lasR
 
   // Check whether summarisation is still required for normal logging.
-  if (current_msg != fmt) {
+  if (!las_thread_muted && current_msg != fmt) { // r-lidar: a muted thread does not print
     if (rep_log_msg > max_rep_log_msg) {
       std::string rep_msg = "(log message repeated " + std::to_string(rep_log_msg) + " times)";
       (*message_handler)(LAS_INFO, rep_msg.c_str(), message_user_data);
@@ -167,6 +172,7 @@ void LASMessageExt(LAS_MESSAGE_TYPE type, unsigned int rep_times, LAS_FORMAT_STR
   buildMessage(buffer, type, fmt, args);
   va_end(args);
   if (type >= LAS_ERROR) las_last_error_message = buffer;
+  if (las_thread_muted) return;
 
   // formatted message only fetch if fmt == buffer
   LogData& data = ext_log_entrys[buffer];
@@ -204,6 +210,7 @@ void LASMessageExt(LAS_MESSAGE_TYPE type, unsigned int rep_times, LAS_FORMAT_STR
 /// Writes the summarised repeated messages at the end of the log. 
 /// Replaces the placeholders in unformatted messages '%...' with # using a regex.
 void flush_repeated_logs() {
+  if (las_thread_muted) return; // r-lidar
   std::lock_guard<std::recursive_mutex> lock(las_message_mutex); // lasR
   bool printedHeader = false;
 

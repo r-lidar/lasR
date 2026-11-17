@@ -107,6 +107,10 @@ class LASLIB_DLL LASreader {
   inline U32 get_inside() const {
     return inside;
   };
+  // r-lidar: the spatial query does not intersect the file, no point will be read.
+  inline BOOL is_outside_query() const {
+    return read_simple == &LASreader::read_point_none || read_complex == &LASreader::read_point_none;
+  };
   virtual BOOL inside_none();
   virtual BOOL inside_tile(const F32 ll_x, const F32 ll_y, const F32 size);
   inline F32 get_t_ll_x() const {

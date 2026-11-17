@@ -73,6 +73,7 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   }
 
   lasio = new LASio();
+  lasio->set_threads((ncpu_concurrent_files > 1) ? 1 : ncpu);
 
   try
   {
@@ -161,6 +162,7 @@ bool LASRlasreader::process(PointCloud*& las)
   }
 
   progress->done();
+  if (verbose && !lasio->get_decoding().empty()) print(" Decoding %s\n", lasio->get_decoding().c_str());
   if (verbose) print(" Number of point read %d\n", las->npoints);
 
   if (verbose) print("Building a spatial index\n");
