@@ -176,6 +176,12 @@ class LASLIB_DLL LASpoint {
   // copy functions
 
   LASpoint(const LASpoint& other) {
+    // r-lidar: initialize the owned pointers as the default constructor does. operator= does not copy
+    // them, so they were left uninitialized and clean() deleted garbage pointers.
+    extra_bytes = 0;
+    point = 0;
+    items = 0;
+    clean();
     *this = other;
   }
 
@@ -494,7 +500,9 @@ class LASLIB_DLL LASpoint {
   void clean() {
     zero();
 
-    if (extra_bytes && extra_bytes[0]!=0) {
+    // r-lidar: was 'extra_bytes && extra_bytes[0]!=0', which leaked the buffer. The copy constructor
+    // now initializes extra_bytes, which was the reason for that test.
+    if (extra_bytes) {
       delete[] extra_bytes;
       extra_bytes = 0;
     };

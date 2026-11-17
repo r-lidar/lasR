@@ -41,6 +41,10 @@
 #include <windows.h>
 #endif
 
+// r-lidar: internal linkage. lasreader_bin.cpp and laswriter_bin.cpp define different TSheader
+// structs (One Definition Rule violation reported by LTO, -Wodr)
+namespace {
+
 struct TSrow
 {
   U8 code;
@@ -78,6 +82,8 @@ struct TSheader
   I32 time;
   I32 rgb;
 };
+
+} // namespace
 
 BOOL LASreaderBIN::open(const char* file_name)
 {
