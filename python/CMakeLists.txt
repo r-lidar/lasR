@@ -214,6 +214,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRreaders/Header.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/PointSchema.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/LASio.cpp
+  ${LASR_SOURCE_DIR}/src/LASRreaders/LAZblocks.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/PCDio.cpp
   ${LASR_SOURCE_DIR}/src/LASRreaders/EPTio.cpp
 
