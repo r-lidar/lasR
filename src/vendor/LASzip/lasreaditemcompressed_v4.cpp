@@ -1276,9 +1276,10 @@ BOOL LASreadItemCompressed_RGB14_v4::init(const U8* item, U32& context)
     num_bytes_allocated = 0;
 
     // check if required memory would be larger than allowed memory allocation (e.g. > 4GB for 32 bit version)
-    if (num_bytes_RGB > std::numeric_limits<size_t>::max()) {
-        return false;
-    }
+    // r-lidar: disabled, U32 always fits in size_t (-Wtautological-constant-out-of-range-compare)
+    // if (num_bytes_RGB > std::numeric_limits<size_t>::max()) {
+        // return false;
+    // }
     bytes = new U8[static_cast<size_t>(num_bytes_RGB)];
     if (bytes == 0) return FALSE;
     num_bytes_allocated = num_bytes_RGB;
@@ -2020,9 +2021,10 @@ BOOL LASreadItemCompressed_WAVEPACKET14_v4::init(const U8* item, U32& context)
     bytes = 0;
     num_bytes_allocated = 0;
     // check if required memory would be larger than allowed memory allocation (e.g. > 4GB for 32 bit version)
-    if (num_bytes_wavepacket > std::numeric_limits<size_t>::max()) {
-        return false;
-    }
+    // lasR: disabled, U32 always fits in size_t (-Wtautological-constant-out-of-range-compare)
+    // if (num_bytes_wavepacket > std::numeric_limits<size_t>::max()) {
+        // return false;
+    // }
     bytes = new U8[static_cast<size_t>(num_bytes_wavepacket)];
     if (bytes == 0) return FALSE;
     num_bytes_allocated = num_bytes_wavepacket;
