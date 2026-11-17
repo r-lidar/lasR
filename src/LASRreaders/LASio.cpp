@@ -269,8 +269,8 @@ void LASio::populate_header(Header* header, bool read_first_point)
   if (lasreader->header.number_attributes > 0 &&
       lasreader->point.extra_bytes_number < lasreader->header.get_attributes_size())
   {
-    warning("Malformed file: the Extra Bytes VLR declares %d byte(s) of extra attributes but each point record only reserves %d. Unbacked extra attributes are read as 0.\n",
-            (int)lasreader->header.get_attributes_size(), (int)lasreader->point.extra_bytes_number);
+    LASMessage(LAS_WARNING, "Malformed file: the Extra Bytes VLR declares %d byte(s) of extra attributes but each point record only reserves %d. Unbacked extra attributes are read as 0.",
+               (int)lasreader->header.get_attributes_size(), (int)lasreader->point.extra_bytes_number);
   }
 
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)

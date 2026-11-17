@@ -40,7 +40,6 @@
 
 #include <mutex>
 
-// lasR: messages go through lasR thread safe print(), warning() and eprint() (see mydefs.hpp)
 
 long lasmessage_cnt[LAS_QUIET];
 
@@ -96,7 +95,9 @@ std::string las_message_type_string(LAS_MESSAGE_TYPE in) {
 void buildMessage(char *buffer, LAS_MESSAGE_TYPE type, LAS_FORMAT_STRING(const char*) fmt, va_list args) {
   int len = vsnprintf(buffer, LAS_MAX_MESSAGE_LENGTH, fmt, args);
   if (len > LAS_MAX_MESSAGE_LENGTH) {  // avoid buffer overflow. messages longer than LAS_MAX_MESSAGE_LENGTH should not occur!
-    eprint("INTERNAL: message cropped from %d to %d chars\n", len, LAS_MAX_MESSAGE_LENGTH);
+    char info[128];
+    snprintf(info, sizeof(info), "INTERNAL: message cropped from %d to %d chars", len, LAS_MAX_MESSAGE_LENGTH);
+    (*message_handler)(LAS_WARNING, info, message_user_data);
     len = LAS_MAX_MESSAGE_LENGTH;
   }
   // remove trailing line feed
@@ -274,37 +275,45 @@ void format_message(std::string& messsage, unsigned multiline_ident, bool append
 }
 
 void las_default_message_handler(LAS_MESSAGE_TYPE type, const char* msg, void* user_data) {
-  // lasR: print() / warning() / eprint() are thread safe and use Rprintf/REprintf if compiled with R.
-  // warning() and eprint() add their own 'WARNING: ' and 'ERROR: ' prefixes.
+  std::string prefix;
   std::string message(msg);
   switch (type) {
     case LAS_DEBUG:
+      // prefix = "";	//add possible prefix
+      break;
     case LAS_VERY_VERBOSE:
+      // prefix = "";	//add possible prefix
+      break;
     case LAS_VERBOSE:
+      // prefix = "";	//add possible prefix
+      break;
     case LAS_INFO:
-      print("%s\n", message.c_str());
+      // prefix = "";	//add possible prefix
       break;
     case LAS_WARNING:
-      format_message(message, 9);  // strlen("WARNING: ")
-      warning("%s", message.c_str());
+      prefix = "WARNING: ";
       break;
     case LAS_SERIOUS_WARNING:
-      message = "SERIOUS: " + message;
-      format_message(message, 9);
-      warning("%s", message.c_str());
+      prefix = "SERIOUS WARNING: ";
       break;
     case LAS_ERROR:
-      format_message(message, 7);  // strlen("ERROR: ")
-      eprint("%s", message.c_str());
+      prefix = "ERROR: ";
       break;
     case LAS_FATAL_ERROR:
-      message = "FATAL: " + message;
-      format_message(message, 7);
-      eprint("%s", message.c_str());
+      prefix = "FATAL ERROR: ";
       break;
     case LAS_QUIET:
       break;
   }
+
+  // r-lidar: hide fprintf for CRAN policies. A handler is registered
+  /*if (!prefix.empty()) {
+    format_message(message, (unsigned)prefix.size());
+    fprintf(stderr, "%s", prefix.c_str());
+    fprintf(stderr, "%s", message.c_str());
+  } else {
+    fprintf(stderr, "%s\n", message.c_str());
+  }*/
 }
 
 LASMessageStream& LASMessageStream::operator<<(std::ostream& (*func)(std::ostream&)) {

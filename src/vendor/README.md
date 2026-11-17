@@ -27,7 +27,6 @@ Please refer to the individual LICENSE files in each subdirectory for terms and 
 ### Modifications:
 - Removed every call to `exit()` and `rand()` to comply with CRAN policies.
 - Replaced all instances of `sprintf()` with `snprintf()` to comply with CRAN policies.
-- Replaced all instances of `printf()`. Used `print()` to conditionally call `printf()` or `Rprintf()` to comply with CRAN policies (see L39 in `mydef.hpp`).
 - Replaced some occurrences of `strncpy` with `memcpy` to bypass false-positive warnings from the CRAN compiler regarding non-null-terminated strings.
 - Fixed various memory leaks (specific locations not remembered).
 - Changed `stdout` usage to `return true` in `bytestreamount_file.hpp` (see L134) to comply with CRAN policies.

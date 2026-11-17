@@ -63,15 +63,6 @@
 #include <set>
 #include <cstring>
 
-// lasR: thread safe print(), eprint() and warning() that use Rprintf/REprintf if compiled with R
-#ifdef USING_R
-#include "print.h"
-#else
-void print(const char *format, ...);
-void eprint(const char *format, ...);
-void warning(const char *format, ...);
-#endif
-
 typedef char CHAR;
 
 typedef int I32;
