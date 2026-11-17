@@ -377,8 +377,8 @@ bool Raster::get_chunk(const Chunk& chunk, int band_index)
 
   // We usually work only with a chunk. We need to compute the xy offsets considering that
   // we only have partial data in memory
-  int xoffset = std::floor((minx - geo_transform[0]) / geo_transform[1]);
-  int yoffset = std::floor((maxy - geo_transform[3]) / geo_transform[5]);
+  int xoffset = floor_snapped((minx - geo_transform[0]) / geo_transform[1]);
+  int yoffset = floor_snapped((maxy - geo_transform[3]) / geo_transform[5]);
 
   // Read raster data
   void* gdal_buffer = CPLMalloc(ncells*sizeof(float));
@@ -426,8 +426,8 @@ bool Raster::write()
 
   // We usually work only with a chunk. We need to compute the xy offsets considering that
   // we only have partial data in memory
-  int xoffset = std::floor((xmin + buffer*xres - geo_transform[0]) / geo_transform[1]);
-  int yoffset = std::floor((ymax - buffer*yres - geo_transform[3]) / geo_transform[5]);
+  int xoffset = floor_snapped((xmin + buffer*xres - geo_transform[0]) / geo_transform[1]);
+  int yoffset = floor_snapped((ymax - buffer*yres - geo_transform[3]) / geo_transform[5]);
 
   // Write the data to the raster band. If the raster is buffered we only write the main data
   // without the buffer
