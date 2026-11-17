@@ -2,18 +2,84 @@
 
 #include "LASio.h"
 
+#include <algorithm>  // std::equal
+#include <cctype>
+#include <cmath>      // std::isfinite
+#include <exception>  // std::exception_ptr, std::current_exception
+
+namespace
+{
+  bool path_has_copc_suffix(const std::string& path)
+  {
+    static const std::string suffix = ".copc.laz";
+    if (path.size() < suffix.size()) return false;
+    return std::equal(suffix.rbegin(), suffix.rend(), path.rbegin(),
+                      [](char a, char b) {
+                        return std::tolower((unsigned char)a) ==
+                               std::tolower((unsigned char)b);
+                      });
+  }
+}
+
 LASRlaswriter::LASRlaswriter()
 {
   lasio = nullptr;
+  copc_bbox_set = false;
+  copc_bbox_xmin = copc_bbox_ymin = copc_bbox_zmin = 0.0;
+  copc_bbox_xmax = copc_bbox_ymax = copc_bbox_zmax = 0.0;
+  catalog_xmin = catalog_ymin = catalog_zmin = 0.0;
+  catalog_xmax = catalog_ymax = catalog_zmax = 0.0;
+  catalog_total_points = 0;
+  catalog_bbox_valid = false;
 }
 
-LASRlaswriter::~LASRlaswriter()
+bool LASRlaswriter::process(FileCollection*& ctg)
 {
+  // Capture the union bbox and total point count over all input files.
+  // Used by set_header() to (a) size the COPC output's octree to the
+  // union bbox, and (b) pick a non-trivial auto max_depth — the per-tile
+  // header count alone is file-1's only and too small for multi-file
+  // merges (compute_max_depth divides by max_points_per_octant and would
+  // otherwise pick a too-shallow depth).
+  if (ctg)
+  {
+    catalog_xmin = ctg->get_xmin();
+    catalog_ymin = ctg->get_ymin();
+    catalog_zmin = ctg->get_zmin();
+    catalog_xmax = ctg->get_xmax();
+    catalog_ymax = ctg->get_ymax();
+    catalog_zmax = ctg->get_zmax();
+    catalog_total_points = ctg->get_total_points();
+    catalog_bbox_valid = (catalog_xmin <= catalog_xmax) &&
+                         (catalog_ymin <= catalog_ymax) &&
+                         (catalog_zmin <= catalog_zmax);
+  }
+  return true;
+}
+
+LASRlaswriter::~LASRlaswriter() noexcept
+{
+  // Destructors must not throw. lasio->close() can now throw a runtime_error
+  // when the COPC writer's finalize fails; if we let that escape during
+  // stack unwinding from another exception, std::terminate gets called.
+  // Swallow with a warning — the close path also unlinks the partial output
+  // file on its end so the user doesn't end up with a corrupt file on disk.
   if (lasio)
   {
     // # nocov start
     warning("internal error: please report, a LASwriter is still opened when destructing LASRlaswriter. The LAS or LAZ file written may be corrupted\n");
-    lasio->close();
+    try
+    {
+      lasio->close();
+    }
+    catch (const std::exception& e)
+    {
+      warning("error during writer close in destructor (suppressed): %s\n", e.what());
+    }
+    catch (...)
+    {
+      warning("unknown error during writer close in destructor (suppressed)\n");
+    }
     delete lasio;
     lasio = nullptr;
     // # nocov end
@@ -23,8 +89,52 @@ LASRlaswriter::~LASRlaswriter()
 bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
 {
   keep_buffer = stage.value("keep_buffer", false);
-  copc_density = stage.value("density", 256);
+  experimental_writer = stage.value("experimental_writer", false);
+  // JSON-default fallback matches the surface defaults (R/Python/api.h),
+  // which depend on the writer: 128 = "normal" for the experimental writer,
+  // 256 = "dense" for the legacy LASlib writer (per the api::write_copc
+  // translation table). experimental_writer must be read first. Hand-written
+  // JSON configs without this key, and write_las(), which never sets it, get
+  // the same default that the language wrappers do.
+  copc_density = stage.value("density", experimental_writer ? 128 : 256);
   copc_depth = stage.value("max_depth", -1);
+  // JSON-default fallback if the key is missing matches the surface defaults
+  // (R/Python/api.h). Hand-written JSON configs without this key get the
+  // same single-level adaptive bumping that the language wrappers do.
+  copc_max_extra_depth = stage.value("max_extra_depth", 1);
+  copc_max_points_per_chunk = stage.value("max_points_per_chunk", -1);
+  // Optional caller-provided bbox override for the COPC writer. JSON
+  // shape: bbox = [xmin, ymin, zmin, xmax, ymax, zmax]. Only honoured
+  // when experimental_writer = TRUE and the output is .copc.laz.
+  // Validates that all 6 values are present and the box is non-degenerate.
+  if (stage.contains("bbox") && stage["bbox"].is_array() && stage["bbox"].size() == 6)
+  {
+    const auto& b = stage["bbox"];
+    copc_bbox_xmin = b[0].get<double>();
+    copc_bbox_ymin = b[1].get<double>();
+    copc_bbox_zmin = b[2].get<double>();
+    copc_bbox_xmax = b[3].get<double>();
+    copc_bbox_ymax = b[4].get<double>();
+    copc_bbox_zmax = b[5].get<double>();
+    // Reject non-finite values (NaN/Inf): the std::isless / > comparisons
+    // below would not reliably reject them, and they'd propagate into
+    // the octree geometry as garbage.
+    if (!std::isfinite(copc_bbox_xmin) || !std::isfinite(copc_bbox_xmax) ||
+        !std::isfinite(copc_bbox_ymin) || !std::isfinite(copc_bbox_ymax) ||
+        !std::isfinite(copc_bbox_zmin) || !std::isfinite(copc_bbox_zmax))
+    {
+      last_error = "write_copc bbox: all 6 values must be finite (no NaN/Inf)";
+      return false;
+    }
+    if (copc_bbox_xmin > copc_bbox_xmax ||
+        copc_bbox_ymin > copc_bbox_ymax ||
+        copc_bbox_zmin > copc_bbox_zmax)
+    {
+      last_error = "write_copc bbox: each min must be <= the corresponding max";
+      return false;
+    }
+    copc_bbox_set = true;
+  }
   version_minor = stage.value("version", 0xFF); // 0xFF auto-detect
   point_format = stage.value("pdrf", 0xFF);
 
@@ -120,7 +230,21 @@ bool LASRlaswriter::process(Point*& p)
        }
        }*/
 
-      lasio->write_point(p);
+      // lasio->write_point can throw — the COPC writer reports per-point
+      // I/O failures as runtime_error. Catch and report via last_error so
+      // the engine sees a normal stage failure instead of an uncaught
+      // exception (the parallel executor's catch in execute.cpp only
+      // handles std::string, so an exception here would terminate the
+      // worker thread).
+      try
+      {
+        lasio->write_point(p);
+      }
+      catch (const std::exception& e)
+      {
+        last_error = std::string("error writing point: ") + e.what();
+        return false;
+      }
     }
   }
 
@@ -167,12 +291,63 @@ bool LASRlaswriter::set_header(Header*& header)
   h.point_data_format = point_format;
   h.version_minor = version_minor;
 
+  // For multi-file merge into a single COPC output, override the per-tile
+  // bbox AND the per-tile point count with the FileCollection's union and
+  // total. The COPC writer uses these at open(): bbox sizes the octree,
+  // total point count drives the auto-max_depth heuristic. Without the
+  // count override, depth comes out from file 1's count alone and is
+  // far too shallow for the merged data set (single-chunk pseudo-COPC).
+  //
+  // Gate on (merged && copc-suffix output): per-file mode (`*` placeholder)
+  // creates one output per input tile, and each tile's output should use
+  // its own bbox/count — applying the catalog values there would inflate
+  // every per-tile output to cover the whole input set. Non-COPC writes
+  // ignore both fields at open anyway, but skip the override for clarity.
+  const bool merged_copc = merged && path_has_copc_suffix(template_filename);
+  if (merged_copc && experimental_writer && !catalog_bbox_valid)
+  {
+    // Catalog bbox is invalid (typically: legacy 4D-only VPC where the
+    // reader couldn't recover z bounds; or no FileCollection seen). With
+    // a missing catalog bbox, set_header would silently fall back to
+    // file-1's per-tile bbox/count — sizing the merged COPC's octree
+    // and auto-depth from a single tile, which produces a structurally
+    // bad output (clamping at close, too-shallow depth). Refuse loudly
+    // so the user fixes the input rather than getting a quietly skewed
+    // file. Only the new writer needs this guard: LASlib's
+    // LASwriterCOPC inventories at close and doesn't depend on accurate
+    // open-time bbox/count.
+    last_error = "Cannot write merged COPC: input catalog has no valid 3D "
+      "bounding box. This typically means the input is a legacy VPC whose "
+      "proj:bbox is 4-element (no z). Either regenerate the VPC with a "
+      "6-element properties.proj:bbox, or write per-tile COPC by using a "
+      "'*' placeholder in the output filename.";
+    return false;
+  }
+  if (catalog_bbox_valid && merged_copc)
+  {
+    h.min_x = catalog_xmin;
+    h.min_y = catalog_ymin;
+    h.min_z = catalog_zmin;
+    h.max_x = catalog_xmax;
+    h.max_y = catalog_ymax;
+    h.max_z = catalog_zmax;
+    h.number_of_point_records = catalog_total_points;
+  }
+
   try
   {
     lasio = new LASio();
     lasio->init(&h);
     lasio->set_copc_max_depth(copc_depth);
     lasio->set_copc_density(copc_density);
+    lasio->set_use_new_copc_writer(experimental_writer);
+    lasio->set_copc_max_extra_depth(copc_max_extra_depth);
+    lasio->set_copc_max_points_per_chunk(copc_max_points_per_chunk);
+    if (copc_bbox_set)
+    {
+      lasio->set_bbox_override(copc_bbox_xmin, copc_bbox_ymin, copc_bbox_zmin,
+                               copc_bbox_xmax, copc_bbox_ymax, copc_bbox_zmax);
+    }
   }
   catch (const std::exception& e)
   {
@@ -201,9 +376,28 @@ void LASRlaswriter::clear(bool last)
   {
     if (lasio)
     {
-      lasio->close();
+      // lasio->close can throw on COPC finalize failure. We must:
+      //   (a) record the error,
+      //   (b) clean up the lasio pointer regardless,
+      //   (c) rethrow so the engine sees the failure.
+      // Without (c) the failure is swallowed: Engine::run discards
+      // clear()'s outcome and the parallel executor doesn't check
+      // the cleanup either, so a corrupt-then-deleted .copc.laz would
+      // be reported to the user as a successful write. We also keep
+      // (a) and (b) to avoid leaking the writer if close throws.
+      std::exception_ptr ex_ptr;
+      try
+      {
+        lasio->close();
+      }
+      catch (const std::exception& e)
+      {
+        last_error = std::string("error closing writer: ") + e.what();
+        ex_ptr = std::current_exception();
+      }
       delete lasio;
       lasio = nullptr;
+      if (ex_ptr) std::rethrow_exception(ex_ptr);
     }
   }
 }

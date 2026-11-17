@@ -22,3 +22,5 @@ python/build
 *.a
 *.pyc
 CLAUDE.md
+*settings.json
+*DS_Store*
