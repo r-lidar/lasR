@@ -73,7 +73,7 @@ bool LASRlasreader::set_chunk(Chunk& chunk)
   }
 
   lasio = new LASio();
-  lasio->set_threads((ncpu_concurrent_files > 1) ? 1 : ncpu);
+  lasio->set_threads(ncpu);
 
   try
   {

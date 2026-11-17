@@ -134,6 +134,15 @@ ReturnType execute(const std::string& config_file)
     ncpu_outer_loop = ncpu[0];
     ncpu_inner_loops = ncpu[1];
   }
+#ifndef _OPENMP
+  // Without OpenMP files cannot be processed concurrently but the reader can still decode LAZ
+  // with std::thread: fold the outer loop into the inner one.
+  if (ncpu_outer_loop > 1)
+  {
+    if (ncpu_outer_loop > ncpu_inner_loops) ncpu_inner_loops = ncpu_outer_loop;
+    ncpu_outer_loop = 1;
+  }
+#endif
   if (ncpu_outer_loop > 1 && ncpu_inner_loops > 1) omp_set_max_active_levels(2); // nested
 
   //#ifdef USING_R
