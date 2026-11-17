@@ -241,3 +241,23 @@ test_that("variable window works on a raster",
   expect_equal(coords_sorted(ans[[2]]), coords_sorted(ans[[3]]))
 })
 
+test_that("local maximum does not confuse points with negative stored Y",
+{
+  # Rewrite the file with the Y offset above the data: same coordinates, negative stored integers
+  f <- system.file("extdata", "MixedConifer.las", package="lasR")
+  b <- readBin(f, "raw", file.size(f))
+  int <- function(pos, n) sum(as.integer(b[pos + seq_len(n)]) * 256^(seq_len(n) - 1))
+  start <- int(96, 4); len <- int(105, 2); n <- int(107, 4); k <- 2^30
+  y_scale <- readBin(b[139 + 1:8], "double")
+  y_offset <- readBin(b[163 + 1:8], "double")
+  b[163 + 1:8] <- writeBin(y_offset + k * y_scale, raw())
+  idx <- start + rep((seq_len(n) - 1) * len, each = 4) + 4 + 1:4
+  Y <- readBin(b[idx], "integer", n = n, size = 4)
+  b[idx] <- writeBin(as.integer(Y - k), raw(), size = 4)
+  g <- tempfile(fileext = ".las")
+  writeBin(b, g)
+
+  ans = exec(local_maximum(3), on = g)
+
+  expect_equal(dim(ans), c(297, 1))
+})

@@ -170,10 +170,10 @@ int Grid::cell_from_xy(double x, double y) const
   if (x < xmin || x > xmax || y < ymin || y > ymax)
     return -1;
 
-  int col = std::floor((x - xmin) / xres);
-  int row = std::floor((ymax - y) / yres);
-  if (y == ymin) row = nrows-1;
-  if (x == xmax) col = ncols-1;
+  int col = floor_snapped((x - xmin) / xres);
+  int row = floor_snapped((ymax - y) / yres);
+  if (y == ymin || row >= nrows) row = nrows-1;
+  if (x == xmax || col >= ncols) col = ncols-1;
   return cell_from_row_col(row, col);
 }
 
