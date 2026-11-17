@@ -30,10 +30,10 @@
 */
 #include "lasreaderbuffered.hpp"
 
+#include "lasmessage.hpp"
 #include "lasindex.hpp"
 #include "lasfilter.hpp"
 #include "lastransform.hpp"
-#include "lascopc.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -92,41 +92,19 @@ void LASreaderBuffered::set_populate_header(BOOL populate_header)
   lasreadopener_neighbors.set_populate_header(populate_header);
 }
 
-void LASreaderBuffered::set_copc_stream_order(U8 stream_order)
-{
-  copc_stream_order = stream_order;
-  if (copc_stream_order == 0)
-  {
-    lasreadopener.set_copc_stream_ordered_by_chunk();
-    lasreadopener_neighbors.set_copc_stream_ordered_by_chunk();
-  }
-  else if (copc_stream_order == 1)
-  {
-    lasreadopener.set_copc_stream_ordered_spatially();
-    lasreadopener_neighbors.set_copc_stream_ordered_spatially();
-  }
-  else if (copc_stream_order == 2)
-  {
-    lasreadopener.set_copc_stream_ordered_by_level();
-    lasreadopener_neighbors.set_copc_stream_ordered_by_level();;
-  }
-
-}
-
-
 BOOL LASreaderBuffered::set_file_name(const char* file_name)
 {
   // do we have a file name
   if (file_name == 0)
   {
-    eprint( "ERROR: file name pointer is NULL\n");
+    laserror("file name pointer is NULL");
     return FALSE;
   }
   // does the file exist
-  FILE* file = fopen(file_name, "r");
+  FILE* file = LASfopen(file_name, "r");
   if (file == 0)
   {
-    eprint( "ERROR: file '%s' cannot be opened\n", file_name);
+    laserror("file '%s' cannot be opened", file_name);
     return FALSE;
   }
   fclose(file);
@@ -140,14 +118,14 @@ BOOL LASreaderBuffered::add_neighbor_file_name(const char* file_name)
   // do we have a file name
   if (file_name == 0)
   {
-    eprint( "ERROR: file name pointer is NULL\n");
+    laserror("file name pointer is NULL");
     return FALSE;
   }
   // does the file exist
-  FILE* file = fopen(file_name, "r");
+  FILE* file = LASfopen(file_name, "r");
   if (file == 0)
   {
-    eprint( "ERROR: file '%s' cannot be opened\n", file_name);
+    laserror("file '%s' cannot be opened", file_name);
     return FALSE;
   }
   fclose(file);
@@ -165,7 +143,7 @@ BOOL LASreaderBuffered::open()
 {
   if (!lasreadopener.active())
   {
-    eprint( "ERROR: no input name\n");
+    laserror("no input name");
     return FALSE;
   }
 
@@ -174,7 +152,7 @@ BOOL LASreaderBuffered::open()
   lasreader = lasreadopener.open();
   if (lasreader == 0)
   {
-    eprint( "ERROR: opening '%s'\n", lasreadopener.get_file_name());
+    laserror("opening '%s'", lasreadopener.get_file_name());
     return FALSE;
   }
 
@@ -184,12 +162,13 @@ BOOL LASreaderBuffered::open()
   // unlink pointers in other header so their data does not get deallocated twice
   lasreader->header.unlink();
 
+  // not needed: header = lasreader->header already copies the pointer, dont copy again
   // special check for attributes in extra bytes
-  if (header.number_attributes)
-  {
-    header.number_attributes = 0;
-    header.init_attributes(lasreader->header.number_attributes, lasreader->header.attributes);
-  }
+  // if (header.number_attributes)
+  // {
+  //   header.number_attributes = 0;
+  //   header.init_attributes(lasreader->header.number_attributes, lasreader->header.attributes);
+  // }
 
   // initialize the point with the header info
 
@@ -227,20 +206,20 @@ BOOL LASreaderBuffered::open()
     LASreader* lasreader_neighbor = lasreadopener_neighbors.open();
     if (lasreader_neighbor == 0)
     {
-      eprint( "ERROR: opening neighbor '%s'\n", lasreadopener_neighbors.get_file_name());
+      laserror("opening neighbor '%s'", lasreadopener_neighbors.get_file_name());
       return FALSE;
     }
 
     // a point type change could be problematic
     if (header.point_data_format != lasreader_neighbor->header.point_data_format)
     {
-      if (!point_type_change) eprint( "WARNING: files have different point types: %d vs %d\n", header.point_data_format, lasreader_neighbor->header.point_data_format);
+      if (!point_type_change) LASMessage(LAS_WARNING, "files have different point types: %d vs %d", header.point_data_format, lasreader_neighbor->header.point_data_format);
       point_type_change = TRUE;
     }
     // a point size change could be problematic
     if (header.point_data_record_length != lasreader_neighbor->header.point_data_record_length)
     {
-      if (!point_size_change) eprint( "WARNING: files have different point sizes: %d vs %d\n", header.point_data_record_length, lasreader_neighbor->header.point_data_record_length);
+      if (!point_size_change) LASMessage(LAS_WARNING, "files have different point sizes: %d vs %d", header.point_data_record_length, lasreader_neighbor->header.point_data_record_length);
       point_size_change = TRUE;
     }
 
@@ -249,7 +228,10 @@ BOOL LASreaderBuffered::open()
       // copy
       point = lasreader_neighbor->point;
       // copy_point_to_buffer
-      copy_point_to_buffer();
+      if (!copy_point_to_buffer())
+      {
+        return FALSE;
+      }
       // increment number of points by return
       if (point.return_number == 1)
       {
@@ -294,7 +276,7 @@ BOOL LASreaderBuffered::open()
       header.extended_number_of_point_records += buffered_points;
     }
 
-    //eprint( "LASreaderBuffered: adding %u buffer points.\n", buffered_points);
+    LASMessage(LAS_INFO, "LASreaderBuffered: adding %u buffer points.", buffered_points);
   }
 
   // check if the header can support the enlarged bounding box
@@ -312,14 +294,14 @@ BOOL LASreaderBuffered::open()
     }
     if (header.x_scale_factor != x_scale_factor)
     {
-      eprint( "WARNING: i changed x_scale_factor from %g to %g to accommodate enlarged bounding box\n", header.x_scale_factor, x_scale_factor);
+      LASMessage(LAS_WARNING, "i changed x_scale_factor from %g to %g to accommodate enlarged bounding box", header.x_scale_factor, x_scale_factor);
       header.x_scale_factor = x_scale_factor;
       rescale = TRUE;
     }
     // maybe we changed the resolution ... so do we really need to adjuste the offset
     if ((((header.max_x - header.x_offset) / x_scale_factor) > I32_MAX) || (((header.min_x - header.x_offset) / x_scale_factor) < I32_MIN))
     {
-      eprint( "WARNING: i changed x_offset from %g to %g to accommodate enlarged bounding box\n", header.x_offset, x_offset);
+      LASMessage(LAS_WARNING, "i changed x_offset from %g to %g to accommodate enlarged bounding box", header.x_offset, x_offset);
       header.x_offset = x_offset;
       reoffset = TRUE;
     }
@@ -338,14 +320,14 @@ BOOL LASreaderBuffered::open()
     }
     if (header.y_scale_factor != y_scale_factor)
     {
-      eprint( "WARNING: i changed y_scale_factor from %g to %g to accommodate enlarged bounding box\n", header.y_scale_factor, y_scale_factor);
+      LASMessage(LAS_WARNING, "i changed y_scale_factor from %g to %g to accommodate enlarged bounding box", header.y_scale_factor, y_scale_factor);
       header.y_scale_factor = y_scale_factor;
       rescale = TRUE;
     }
     // maybe we changed the resolution ... so do we really need to adjuste the offset
     if ((((header.max_y - header.y_offset) / y_scale_factor) > I32_MAX) || (((header.min_y - header.y_offset) / y_scale_factor) < I32_MIN))
     {
-      eprint( "WARNING: i changed y_offset from %g to %g to accommodate enlarged bounding box\n", header.y_offset, y_offset);
+      LASMessage(LAS_WARNING, "i changed y_offset from %g to %g to accommodate enlarged bounding box", header.y_offset, y_offset);
       header.y_offset = y_offset;
       reoffset = TRUE;
     }
@@ -364,28 +346,30 @@ BOOL LASreaderBuffered::open()
     }
     if (header.z_scale_factor != z_scale_factor)
     {
-      eprint( "WARNING: i changed  z_scale_factor from %g to %g to accommodate enlarged bounding box\n", header.z_scale_factor, z_scale_factor);
+      LASMessage(LAS_WARNING, "i changed  z_scale_factor from %g to %g to accommodate enlarged bounding box", header.z_scale_factor, z_scale_factor);
       header.z_scale_factor = z_scale_factor;
       rescale = TRUE;
     }
     // maybe we changed the resolution ... so do we really need to adjuste the offset
     if ((((header.max_z - header.z_offset) / z_scale_factor) > I32_MAX) || (((header.min_z - header.z_offset) / z_scale_factor) < I32_MIN))
     {
-      eprint( "WARNING: i changed z_offset from %g to %g to accommodate enlarged bounding box\n", header.z_offset, z_offset);
+      LASMessage(LAS_WARNING, "i changed z_offset from %g to %g to accommodate enlarged bounding box", header.z_offset, z_offset);
       header.z_offset = z_offset;
       reoffset = TRUE;
     }
   }
 
   npoints = (header.number_of_point_records ? header.number_of_point_records : header.extended_number_of_point_records);
-  p_count = 0;
+  p_idx = 0;
+  p_cnt = 0;
 
   return TRUE;
 }
 
 BOOL LASreaderBuffered::reopen()
 {
-  p_count = 0;
+  p_idx = 0;
+  p_cnt = 0;
   point_count = 0;
   if (lasreader)
   {
@@ -433,8 +417,8 @@ BOOL LASreaderBuffered::inside_tile(const F32 ll_x, const F32 ll_y, const F32 si
   t_ur_y = ll_y + size;
   header.min_x = ll_x;
   header.min_y = ll_y;
-  header.max_x = ll_x + size - 0.001f * header.x_scale_factor;
-  header.max_y = ll_y + size - 0.001f * header.y_scale_factor;
+  header.max_x = static_cast<F64>(ll_x) + static_cast<F64>(size) - 0.001f * header.x_scale_factor;
+  header.max_y = static_cast<F64>(ll_y) + static_cast<F64>(size) - 0.001f * header.y_scale_factor;
   return TRUE;
 }
 
@@ -468,21 +452,12 @@ BOOL LASreaderBuffered::inside_rectangle(const F64 min_x, const F64 min_y, const
 
 BOOL LASreaderBuffered::inside_copc_depth(const U8 mode, const I32 depth, const F32 resolution)
 {
+  if (!header.vlr_copc_info)
+    return FALSE;
+
   inside_depth = mode;
   copc_depth = depth;
   copc_resolution = resolution;
-
-  if (mode == 1)
-  {
-    lasreadopener.set_max_depth(depth);
-    lasreadopener_neighbors.set_max_depth(depth);
-  }
-  else if (mode == 2)
-  {
-    lasreadopener.set_resolution(resolution);
-    lasreadopener_neighbors.set_resolution(resolution);
-  }
-
   return TRUE;
 }
 
@@ -498,13 +473,19 @@ BOOL LASreaderBuffered::read_point_default()
     if (lasreader->read_point())
     {
       point = lasreader->point;
-      p_count = lasreader->p_count;
+      p_idx++;
+      p_cnt++;
       return TRUE;
     }
     else if (point_count < buffered_points)
     {
-      copy_point_from_buffer();
-      p_count++;
+      if (!copy_point_from_buffer())
+      {
+        point.zero();
+        return FALSE;
+      }
+      p_idx++;
+      p_cnt++;
       return TRUE;
     }
     lasreader->close();
@@ -561,20 +542,38 @@ BOOL LASreaderBuffered::copy_point_to_buffer()
   {
     if (buffers == 0)
     {
-      size_of_buffers_array = 1024;
-      buffers = (U8**)malloc(sizeof(U8*)*size_of_buffers_array);
+      U32 new_size_of_buffers_array = 1024;
+      buffers = (U8**)malloc_las(sizeof(U8*) * new_size_of_buffers_array);
+      if (buffers == 0)
+      {
+        laserror("cannot allocate the buffer pointer array with %u entries", new_size_of_buffers_array);
+        return FALSE;
+      }
+      size_of_buffers_array = new_size_of_buffers_array;
       number_of_buffers = 0;
     }
     else if (number_of_buffers == size_of_buffers_array)
     {
-      size_of_buffers_array *= 2;
-      buffers = (U8**)realloc(buffers, sizeof(U8*)*size_of_buffers_array);
+      U64 new_size_of_buffers_array = (U64)size_of_buffers_array * 2;
+      U64 new_bytes = new_size_of_buffers_array * sizeof(U8*);
+      if ((new_size_of_buffers_array > U32_MAX) || ((U64)(size_t)new_bytes != new_bytes) ||
+          !try_realloc_las(buffers, (size_t)new_bytes))
+      {
+        laserror("cannot grow the buffer pointer array to %llu entries", new_size_of_buffers_array);
+        return FALSE;
+      }
+      size_of_buffers_array = (U32)new_size_of_buffers_array;
     }
-    buffers[number_of_buffers] = (U8*)malloc(point.total_point_size * points_per_buffer);
+    buffers[number_of_buffers] = (U8*)malloc_las((size_t)point.total_point_size * (size_t)points_per_buffer);
     current_buffer = buffers[number_of_buffers];
+    if (current_buffer == 0)
+    {
+      laserror("cannot allocate buffer %u for %u points of %u bytes", number_of_buffers, points_per_buffer, point.total_point_size);
+      return FALSE;
+    }
     number_of_buffers++;
   }
-  point.copy_to(&(current_buffer[point_count_in_buffer*point.total_point_size]));
+  if (current_buffer != nullptr) point.copy_to(&(current_buffer[point_count_in_buffer * point.total_point_size]));
   buffered_points++;
   return TRUE;
 }
@@ -589,14 +588,24 @@ BOOL LASreaderBuffered::copy_point_from_buffer()
   if (point_count_in_buffer == 0)
   {
     U32 buffer_count = (point_count / points_per_buffer);
+    if ((buffers == 0) || (buffer_count >= number_of_buffers))
+    {
+      laserror("buffer %u of %u for buffered point %u is not available", buffer_count, number_of_buffers, point_count);
+      return FALSE;
+    }
     current_buffer = buffers[buffer_count];
+  }
+  if (current_buffer == 0)
+  {
+    laserror("buffered point %u was never stored (out of memory?)", point_count);
+    return FALSE;
   }
   point.copy_from(&(current_buffer[point_count_in_buffer*point.total_point_size]));
   point_count++;
   return TRUE;
 }
 
-LASreaderBuffered::LASreaderBuffered() : points_per_buffer(10000)
+LASreaderBuffered::LASreaderBuffered(LASreadOpener* opener): LASreader(opener), points_per_buffer(10000)
 {
   lasreader = 0;
   lasreadopener_neighbors.set_merged(TRUE);

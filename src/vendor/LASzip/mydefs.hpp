@@ -9,14 +9,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2005-2015, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -33,21 +33,6 @@
 #ifndef MYDEFS_HPP
 #define MYDEFS_HPP
 
-#define STRICT_R_HEADERS
-#define __STDC_FORMAT_MACROS 1
-
-#ifdef USING_R
-#include "print.h"
-#else
-void print(const char *format, ...);
-void eprint(const char *format, ...);
-void warning(const char *format, ...);
-#endif
-
-#include <string.h>
-#include <stdlib.h>
-#include <inttypes.h>
-
 #ifndef _WIN32
 #define LASLIB_DLL
 #else  // _WIN32
@@ -58,109 +43,164 @@ void warning(const char *format, ...);
 #else
 #define LASLIB_DLL
 #endif
-#endif // _WIN32
+#endif  // _WIN32
 
-typedef char               CHAR;
+#include "lasmessage.hpp"
+#include "laszip_common.h"
 
-typedef int                I32;
-typedef short              I16;
-typedef signed char        I8;
+#include <cstdio>
+#include <exception>
+#include <stdexcept>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstdint>
+#include <cstdarg>
+#include <vector>
+#include <sys/stat.h>
+#include <cmath>
+#include <filesystem>
+#include <type_traits>
+#include <set>
+#include <cstring>
 
-typedef unsigned int       U32;
-typedef unsigned short     U16;
-typedef unsigned char      U8;
+typedef char CHAR;
 
-/*#if defined(_WIN32) && ! defined (__MINGW32__) // 64 byte integer under Windows
-typedef unsigned __int64   U64;
-typedef __int64            I64;
-#else                                          // 64 byte integer elsewhere ...
+typedef int I32;
+typedef short I16;
+typedef signed char I8; // rlas: char is unsigned on arm64
+
+typedef unsigned int U32;
+typedef unsigned short U16;
+typedef unsigned char U8;
+
+extern void LASLIB_DLL LASMessage(LAS_MESSAGE_TYPE type, LAS_FORMAT_STRING(const char*), ...);
+extern LASLIB_DLL void LASMessageExt(LAS_MESSAGE_TYPE type, unsigned int rep_times, LAS_FORMAT_STRING(const char*), ...);
+
+#if defined(_WIN32) && !defined(__MINGW32__)  // 64 byte integer under Windows
+typedef unsigned __int64 U64;
+typedef __int64 I64;
+#else  // 64 byte integer elsewhere ...
 typedef unsigned long long U64;
-typedef long long          I64;
-#endif*/
+typedef long long I64;
+#endif
 
-typedef uint64_t           U64;
-typedef int64_t            I64;
+typedef float F32;
+typedef double F64;
 
-typedef float              F32;
-typedef double             F64;
-
-#if defined(_MSC_VER) || defined (__MINGW32__)
-typedef int                BOOL;
+#if defined(_MSC_VER) || defined(__MINGW32__)
+typedef int BOOL;
 #else
-typedef bool               BOOL;
+typedef bool BOOL;
 #endif
 
-typedef union U32I32F32 { U32 u32; I32 i32; F32 f32; } U32I32F32;
-typedef union U64I64F64 { U64 u64; I64 i64; F64 f64; } U64I64F64;
-typedef union I64U32I32F32 { I64 i64; U32 u32[2]; I32 i32[2]; F32 f32[2]; } I64U32I32F32;
-
-#define F32_MAX            +2.0e+37f
-#define F32_MIN            -2.0e+37f
-
-#define F64_MAX            +2.0e+307
-#define F64_MIN            -2.0e+307
-
-#define U8_MIN             ((U8)0x0)  // 0
-#define U8_MAX             ((U8)0xFF) // 255
-#define U8_MAX_MINUS_ONE   ((U8)0xFE) // 254
-#define U8_MAX_PLUS_ONE    0x0100     // 256
-
-#define U16_MIN            ((U16)0x0)    // 0
-#define U16_MAX            ((U16)0xFFFF) // 65535
-#define U16_MAX_MINUS_ONE  ((U16)0xFFFE) // 65534
-#define U16_MAX_PLUS_ONE   0x00010000    // 65536
-
-#define U32_MIN            ((U32)0x0)            // 0
-#define U32_MAX            ((U32)0xFFFFFFFF)     // 4294967295
-#define U32_MAX_MINUS_ONE  ((U32)0xFFFFFFFE)     // 4294967294
-#if defined(WIN32)            // 64 byte unsigned int constant under Windows
-#define U32_MAX_PLUS_ONE   0x0000000100000000    // 4294967296
-#else                         // 64 byte unsigned int constant elsewhere ...
-#define U32_MAX_PLUS_ONE   0x0000000100000000ull // 4294967296
+#ifdef _WIN32
+typedef struct _stat64 las_stat_t;
+#else
+typedef struct stat las_stat_t;
 #endif
 
-#define I8_MIN             ((I8)0x80) // -128
-#define I8_MAX             ((I8)0x7F) // 127
+typedef union U32I32F32 {
+  U32 u32;
+  I32 i32;
+  F32 f32;
+} U32I32F32;
+typedef union U64I64F64 {
+  U64 u64;
+  I64 i64;
+  F64 f64;
+} U64I64F64;
+typedef union I64U32I32F32 {
+  I64 i64;
+  U32 u32[2];
+  I32 i32[2];
+  F32 f32[2];
+} I64U32I32F32;
 
-#define I16_MIN            ((I16)0x8000) // -32768
-#define I16_MAX            ((I16)0x7FFF) // 32767
+#define F32_MAX +2.0e+37f
+#define F32_MIN -2.0e+37f
 
-#define I32_MIN            ((I32)0x80000000) // -2147483648
-#define I32_MAX            ((I32)0x7FFFFFFF) //  2147483647
+#define F64_MAX +2.0e+307
+#define F64_MIN -2.0e+307
 
-#define I64_MIN            ((I64)0x8000000000000000)
-#define I64_MAX            ((I64)0x7FFFFFFFFFFFFFFF)
+#define U8_MIN ((U8)0x0)             // 0
+#define U8_MAX ((U8)0xFF)            // 255
+#define U8_MAX_MINUS_ONE ((U8)0xFE)  // 254
+#define U8_MAX_PLUS_ONE 0x0100       // 256
 
-#define U8_FOLD(n)      (((n) < U8_MIN) ? (n+U8_MAX_PLUS_ONE) : (((n) > U8_MAX) ? (n-U8_MAX_PLUS_ONE) : (n)))
+#define U16_MIN ((U16)0x0)               // 0
+#define U16_MAX ((U16)0xFFFF)            // 65535
+#define U16_MAX_MINUS_ONE ((U16)0xFFFE)  // 65534
+#define U16_MAX_PLUS_ONE 0x00010000      // 65536
 
-#define I8_CLAMP(n)     (((n) <= I8_MIN) ? I8_MIN : (((n) >= I8_MAX) ? I8_MAX : ((I8)(n))))
-#define U8_CLAMP(n)     (((n) <= U8_MIN) ? U8_MIN : (((n) >= U8_MAX) ? U8_MAX : ((U8)(n))))
+#define U32_MIN ((U32)0x0)                      // 0
+#define U32_MAX ((U32)0xFFFFFFFF)               // 4294967295
+#define U32_MAX_MINUS_ONE ((U32)0xFFFFFFFE)     // 4294967294
+#if defined(WIN32)                              // 64 byte unsigned int constant under Windows
+#define U32_MAX_PLUS_ONE 0x0000000100000000     // 4294967296
+#else                                           // 64 byte unsigned int constant elsewhere ...
+#define U32_MAX_PLUS_ONE 0x0000000100000000ull  // 4294967296
+#endif
 
-#define I16_CLAMP(n)    (((n) <= I16_MIN) ? I16_MIN : (((n) >= I16_MAX) ? I16_MAX : ((I16)(n))))
-#define U16_CLAMP(n)    (((n) <= U16_MIN) ? U16_MIN : (((n) >= U16_MAX) ? U16_MAX : ((U16)(n))))
+#define I8_MIN ((I8)0x80)  // -128
+#define I8_MAX ((I8)0x7F)  // 127
 
-#define I32_CLAMP(n)    (((n) <= I32_MIN) ? I32_MIN : (((n) >= I32_MAX) ? I32_MAX : ((I32)(n))))
-#define U32_CLAMP(n)    (((n) <= U32_MIN) ? U32_MIN : (((n) >= U32_MAX) ? U32_MAX : ((U32)(n))))
+#define I16_MIN ((I16)0x8000)  // -32768
+#define I16_MAX ((I16)0x7FFF)  // 32767
 
-#define I8_QUANTIZE(n) (((n) >= 0) ? (I8)((n)+0.5) : (I8)((n)-0.5))
-#define U8_QUANTIZE(n) (((n) >= 0) ? (U8)((n)+0.5) : (U8)(0))
+#define I32_MIN ((I32)0x80000000)  // -2147483648
+#define I32_MAX ((I32)0x7FFFFFFF)  //  2147483647
 
-#define I16_QUANTIZE(n) (((n) >= 0) ? (I16)((n)+0.5) : (I16)((n)-0.5))
-#define U16_QUANTIZE(n) (((n) >= 0) ? (U16)((n)+0.5) : (U16)(0))
+#define I64_MIN ((I64)0x8000000000000000)
+#define I64_MAX ((I64)0x7FFFFFFFFFFFFFFF)
 
-#define I32_QUANTIZE(n) (((n) >= 0) ? (I32)((n)+0.5) : (I32)((n)-0.5))
-#define U32_QUANTIZE(n) (((n) >= 0) ? (U32)((n)+0.5) : (U32)(0))
+typedef union U32F32 {
+  U32 u32;
+  F32 f32;
+} U32F32;
+typedef union U64F64 {
+  U64 u64;
+  F64 f64;
+} U64F64;
 
-#define I64_QUANTIZE(n) (((n) >= 0) ? (I64)((n)+0.5) : (I64)((n)-0.5))
-#define U64_QUANTIZE(n) (((n) >= 0) ? (U64)((n)+0.5) : (U64)(0))
+#define U8_FOLD(n) (((n) < U8_MIN) ? (n + U8_MAX_PLUS_ONE) : (((n) > U8_MAX) ? (n - U8_MAX_PLUS_ONE) : (n)))
 
-#define I16_FLOOR(n) ((((I16)(n)) > (n)) ? (((I16)(n))-1) : ((I16)(n)))
-#define I32_FLOOR(n) ((((I32)(n)) > (n)) ? (((I32)(n))-1) : ((I32)(n)))
-#define I64_FLOOR(n) ((((I64)(n)) > (n)) ? (((I64)(n))-1) : ((I64)(n)))
+#define I8_CLAMP(n) (((n) <= I8_MIN) ? I8_MIN : (((n) >= I8_MAX) ? I8_MAX : ((I8)(n))))
+#define U8_CLAMP(n) (((n) <= U8_MIN) ? U8_MIN : (((n) >= U8_MAX) ? U8_MAX : ((U8)(n))))
 
-#define I16_CEIL(n) ((((I16)(n)) < (n)) ? (((I16)(n))+1) : ((I16)(n)))
-#define I32_CEIL(n) ((((I32)(n)) < (n)) ? (((I32)(n))+1) : ((I32)(n)))
-#define I64_CEIL(n) ((((I64)(n)) < (n)) ? (((I64)(n))+1) : ((I64)(n)))
+#define I16_CLAMP(n) (((n) <= I16_MIN) ? I16_MIN : (((n) >= I16_MAX) ? I16_MAX : ((I16)(n))))
+#define U16_CLAMP(n) (((n) <= U16_MIN) ? U16_MIN : (((n) >= U16_MAX) ? U16_MAX : ((U16)(n))))
+
+#define I32_CLAMP(n) (((n) <= I32_MIN) ? I32_MIN : (((n) >= I32_MAX) ? I32_MAX : ((I32)(n))))
+#define U32_CLAMP(n) (((n) <= U32_MIN) ? U32_MIN : (((n) >= U32_MAX) ? U32_MAX : ((U32)(n))))
+
+#define I8_QUANTIZE(n) (((n) >= 0) ? (I8)((n) + 0.5) : (I8)((n)-0.5))
+#define U8_QUANTIZE(n) (((n) >= 0) ? (U8)((n) + 0.5) : (U8)(0))
+
+#define I16_QUANTIZE(n) (((n) >= 0) ? (I16)((n) + 0.5) : (I16)((n)-0.5))
+#define U16_QUANTIZE(n) (((n) >= 0) ? (U16)((n) + 0.5) : (U16)(0))
+
+#define I32_QUANTIZE(n) (((n) >= 0) ? (I32)((n) + 0.5) : (I32)((n)-0.5))
+#define U32_QUANTIZE(n) (((n) >= 0) ? (U32)((n) + 0.5) : (U32)(0))
+
+#define I64_QUANTIZE(n) (((n) >= 0) ? (I64)((n) + 0.5) : (I64)((n)-0.5))
+#define U64_QUANTIZE(n) (((n) >= 0) ? (U64)((n) + 0.5) : (U64)(0))
+
+#define I8_CLAMP_QUANTIZE(n) (((n) <= I8_MIN) ? I8_MIN : (((n) >= I8_MAX) ? I8_MAX : (I8_QUANTIZE(n))))
+#define U8_CLAMP_QUANTIZE(n) (((n) <= U8_MIN) ? U8_MIN : (((n) >= U8_MAX) ? U8_MAX : (U8_QUANTIZE(n))))
+
+#define I16_CLAMP_QUANTIZE(n) (((n) <= I16_MIN) ? I16_MIN : (((n) >= I16_MAX) ? I16_MAX : (I16_QUANTIZE(n))))
+#define U16_CLAMP_QUANTIZE(n) (((n) <= U16_MIN) ? U16_MIN : (((n) >= U16_MAX) ? U16_MAX : (U16_QUANTIZE(n))))
+
+#define I32_CLAMP_QUANTIZE(n) (((n) <= I32_MIN) ? I32_MIN : (((n) >= I32_MAX) ? I32_MAX : (I32_QUANTIZE(n))))
+#define U32_CLAMP_QUANTIZE(n) (((n) <= U32_MIN) ? U32_MIN : (((n) >= U32_MAX) ? U32_MAX : (U32_QUANTIZE(n))))
+
+#define I16_FLOOR(n) ((((I16)(n)) > (n)) ? (((I16)(n)) - 1) : ((I16)(n)))
+#define I32_FLOOR(n) ((((I32)(n)) > (n)) ? (((I32)(n)) - 1) : ((I32)(n)))
+#define I64_FLOOR(n) ((((I64)(n)) > (n)) ? (((I64)(n)) - 1) : ((I64)(n)))
+
+#define I16_CEIL(n) ((((I16)(n)) < (n)) ? (((I16)(n)) + 1) : ((I16)(n)))
+#define I32_CEIL(n) ((((I32)(n)) < (n)) ? (((I32)(n)) + 1) : ((I32)(n)))
+#define I64_CEIL(n) ((((I64)(n)) < (n)) ? (((I64)(n)) + 1) : ((I64)(n)))
 
 #define I8_FITS_IN_RANGE(n) (((n) >= I8_MIN) && ((n) <= I8_MAX) ? TRUE : FALSE)
 #define U8_FITS_IN_RANGE(n) (((n) >= U8_MIN) && ((n) <= U8_MAX) ? TRUE : FALSE)
@@ -172,46 +212,99 @@ typedef union I64U32I32F32 { I64 i64; U32 u32[2]; I32 i32[2]; F32 f32[2]; } I64U
 #define F32_IS_FINITE(n) ((F32_MIN < (n)) && ((n) < F32_MAX))
 #define F64_IS_FINITE(n) ((F64_MIN < (n)) && ((n) < F64_MAX))
 
-#define U32_ZERO_BIT_0(n) (((n)&(U32)0xFFFFFFFE))
-#define U32_ZERO_BIT_0_1(n) (((n)&(U32)0xFFFFFFFC))
+#define U32_ZERO_BIT_0(n) (((n) & (U32)0xFFFFFFFE))
+#define U32_ZERO_BIT_0_1(n) (((n) & (U32)0xFFFFFFFC))
+
+// MSVC does not like std::max({a, b, c}) nor std::max() and wants max(). g++ want std::max not max().
+#define MIN2(a, b) ((a) < (b) ? (a) : (b))
+#define MAX2(a, b) ((a) > (b) ? (a) : (b))
+#ifndef MIN3 // lasR: also defined in LASRcore/macros.h
+#define MIN3(a, b, c) MIN2(MIN2(a, b), (c))
+#endif
+#ifndef MAX3
+#define MAX3(a, b, c) MAX2(MAX2(a, b), (c))
+#endif
+
+#define FLOATEQUAL(a,b) (abs(a - b) < 1e-8) // universal float equal compare
 
 #ifndef FALSE
-#define FALSE   0
+#define FALSE 0
 #endif
 
 #ifndef TRUE
-#define TRUE    1
+#define TRUE 1
 #endif
 
 #ifndef NULL
-#define NULL    0
+#define NULL 0
 #endif
 
-inline BOOL IS_LITTLE_ENDIAN()
-{
-  const U32 i = 1;
-  return (*((const U8*)&i) == 1);
+#ifdef _MSC_VER  // Microsoft Visual C++ Compiler only
+#define strdup _strdup
+#endif
+
+#ifdef _MSC_VER
+#define strcpy_las(dest, destsz, src) strcpy_s((dest), (destsz), (src))
+#else
+#define strcpy_las(dest, destsz, src) strcpy((dest), (src))
+#endif
+
+//#ifdef _MSC_VER -> has been replaced by the wrapper of the same name
+//#define sscanf_las(buf, format, ...) sscanf_s((buf), (format), __VA_ARGS__)
+//#else
+//#define sscanf_las(buf, format, ...) sscanf((buf), (format), __VA_ARGS__)
+//#endif
+
+#ifdef _MSC_VER
+#define strcat_las(dest, destsz, src) strcat_s((dest), (destsz), (src))
+#else
+#define strcat_las(dest, destsz, src) strcat((dest), (src))
+#endif
+
+#ifdef _MSC_VER
+#define strdup_las(string) _strdup(string);
+#else
+#define strdup_las(string) strdup(string);
+#endif
+
+
+
+#define ENDIANSWAP16(n) (((((U16)n) << 8) & 0xFF00) | ((((U16)n) >> 8) & 0x00FF))
+
+#define ENDIANSWAP32(n)                                                                                                                              \
+  (((((U32)n) << 24) & 0xFF000000) | ((((U32)n) << 8) & 0x00FF0000) | ((((U32)n) >> 8) & 0x0000FF00) | ((((U32)n) >> 24) & 0x000000FF))
+
+#if defined(_MSC_VER)
+#include <intrin.h>
+#pragma intrinsic(__popcnt)
+inline int popcount(uint32_t x) {
+  return __popcnt(x);
 }
 
-#define ENDIANSWAP16(n) \
-	( ((((U16) n) << 8) & 0xFF00) | \
-	  ((((U16) n) >> 8) & 0x00FF) )
+#elif defined(__GNUC__) || defined(__clang__)
+inline int popcount(uint32_t x) {
+  return __builtin_popcount(x);
+}
 
-#define ENDIANSWAP32(n) \
-	( ((((U32) n) << 24) & 0xFF000000) |	\
-	  ((((U32) n) <<  8) & 0x00FF0000) |	\
-	  ((((U32) n) >>  8) & 0x0000FF00) |	\
-	  ((((U32) n) >> 24) & 0x000000FF) )
+#else
+Fallback for other compilers: classic loop
+inline int popcount(uint32_t x) {
+  int count = 0;
+  while (x) {
+    x &= (x - 1);
+    count++;
+  }
+  return count;
+}
+#endif
 
-inline void ENDIAN_SWAP_16(U8* field)
-{
+inline void ENDIAN_SWAP_16_(U8* field) {
   U8 help = field[0];
   field[0] = field[1];
   field[1] = help;
 }
 
-inline void ENDIAN_SWAP_32(U8* field)
-{
+inline void ENDIAN_SWAP_32_(U8* field) {
   U8 help;
   help = field[0];
   field[0] = field[3];
@@ -221,8 +314,7 @@ inline void ENDIAN_SWAP_32(U8* field)
   field[2] = help;
 }
 
-inline void ENDIAN_SWAP_64(U8* field)
-{
+inline void ENDIAN_SWAP_64_(U8* field) {
   U8 help;
   help = field[0];
   field[0] = field[7];
@@ -238,22 +330,19 @@ inline void ENDIAN_SWAP_64(U8* field)
   field[4] = help;
 }
 
-inline void ENDIAN_SWAP_16(const U8* from, U8* to)
-{
+inline void ENDIAN_SWAP_16(const U8* from, U8* to) {
   to[0] = from[1];
   to[1] = from[0];
 }
 
-inline void ENDIAN_SWAP_32(const U8* from, U8* to)
-{
+inline void ENDIAN_SWAP_32(const U8* from, U8* to) {
   to[0] = from[3];
   to[1] = from[2];
   to[2] = from[1];
   to[3] = from[0];
 }
 
-inline void ENDIAN_SWAP_64(const U8* from, U8* to)
-{
+inline void ENDIAN_SWAP_64(const U8* from, U8* to) {
   to[0] = from[7];
   to[1] = from[6];
   to[2] = from[5];
@@ -264,12 +353,371 @@ inline void ENDIAN_SWAP_64(const U8* from, U8* to)
   to[7] = from[0];
 }
 
-#if defined(_MSC_VER)
-#include <windows.h>
+inline int swap_endian_int(int input) {
+  int output;
+  ((char*)&output)[0] = ((char*)&input)[3];
+  ((char*)&output)[1] = ((char*)&input)[2];
+  ((char*)&output)[2] = ((char*)&input)[1];
+  ((char*)&output)[3] = ((char*)&input)[0];
+  return output;
+}
+
+inline I64 swap_endian_I64(I64 input) {
+  I64 output;
+  ((char*)&output)[0] = ((char*)&input)[7];
+  ((char*)&output)[1] = ((char*)&input)[6];
+  ((char*)&output)[2] = ((char*)&input)[5];
+  ((char*)&output)[3] = ((char*)&input)[4];
+  ((char*)&output)[4] = ((char*)&input)[3];
+  ((char*)&output)[5] = ((char*)&input)[2];
+  ((char*)&output)[6] = ((char*)&input)[1];
+  ((char*)&output)[7] = ((char*)&input)[0];
+  return output;
+}
+
+inline unsigned int swap_endian_uint(unsigned int input) {
+  unsigned int output;
+  ((char*)&output)[0] = ((char*)&input)[3];
+  ((char*)&output)[1] = ((char*)&input)[2];
+  ((char*)&output)[2] = ((char*)&input)[1];
+  ((char*)&output)[3] = ((char*)&input)[0];
+  return output;
+}
+
+// Checks whether the point (x, y) within a rectangle (x1,y1,x2,y2)
+inline BOOL is_inside_rectangle(F64 x, F64 y, const F64 rect[4]) {
+  return (x >= rect[0] && x <= rect[2] && y >= rect[1] && y <= rect[3]);
+}
+
+// Checks whether the point (x, y) within a circle with a given center and radius (center_x, center_y, radius)
+inline BOOL is_inside_circle(F64 x, F64 y, const F64 circle[3]) {
+  const double dx = x - circle[0];
+  const double dy = y - circle[1];
+
+  return (dx*dx + dy*dy) <= (circle[2] * circle[2]);
+}
+
+#if defined(_WIN32)
 wchar_t* UTF8toUTF16(const char* utf8);
+wchar_t* ANSItoUTF16(const char* ansi);
 #endif
 
-bool is_remote_path(const char* path);
+/// <summary>
+/// exception within a file loop to proceed next file
+/// </summary>
+class exception_file_loop : public std::runtime_error {
+ public:
+  explicit exception_file_loop(char const* const _Message) : std::runtime_error(_Message){};
+};
 
+/// <summary>
+/// file loop exception on too less points to proceed
+/// </summary>
+class pnt_cnt_error : public exception_file_loop {
+ public:
+  explicit pnt_cnt_error() noexcept : exception_file_loop("too less points"){};
+};
+
+/// Manages the error handling context for the currently processed input file and restores the previous context on scope exit
+class LASLIB_DLL FileErrorContext {
+ public:
+  FileErrorContext(const char* file_name, bool skip_file_on_error);
+  ~FileErrorContext();
+
+  static bool should_skip_file_on_error();
+  static const char* get_file_name();
+
+ private:
+  std::string file_name;
+  bool skip_file_on_error;
+
+  FileErrorContext* previous_context;
+
+  static FileErrorContext*& current_context();
+};
+
+extern void LASLIB_DLL wait_on_exit(bool woe = true);
+extern void LASLIB_DLL print_log_stats(bool pls = true);
+extern void LASLIB_DLL halt_on_error(bool hoe);
+extern bool LASLIB_DLL do_halt_on_error();
+
+enum LAS_EXIT_CODE { LAS_EXIT_OK = 0, LAS_EXIT_ERROR, LAS_EXIT_WARNING };
+
+LAS_EXIT_CODE las_exit_code(bool error);
+
+// void byebye(LAS_EXIT_CODE code = LAS_EXIT_OK);
+extern void LASLIB_DLL byebye();
+
+#if 0
+  // Non Windows - specific conversion ANSI to UTF-8
+  char* ANSItoUTF8(const char* ansi);
+#endif
+// Validates whether a given string is UTF-8 encoded.
+bool validate_utf8(const char* utf8, bool restrict_to_two_bytes = false) noexcept;
+// Opens a file with the specified filename and mode, converting filename and mode to UTF-16 on Windows.
+FILE* LASfopen(const char* const filename, const char* const mode);
+void FileDelete(std::filesystem::path file, LAS_MESSAGE_TYPE onFailMsg = LAS_WARNING);
+const char* indent_text(const char* text, const char* indent);
+
+// las error message function which leads to an immediate program stop by default
+template <typename... Args>
+void laserror(LAS_FORMAT_STRING(const char*) fmt, Args... args) {
+  LASMessage(LAS_ERROR, fmt, args...);
+  if (do_halt_on_error() && !FileErrorContext::should_skip_file_on_error()) {
+    byebye();
+  }
+  return;
+};
+
+// extended message with additional user info in console mode
+template <typename... Args>
+void laserrorm(LAS_FORMAT_STRING(const char*) fmt, Args... args) {
+  LASMessage(LAS_ERROR, fmt, args...);
+  LASMessage(LAS_INFO, "\tcontact info@rapidlasso.de for support\n");
+  if (do_halt_on_error() && !FileErrorContext::should_skip_file_on_error()) {
+    byebye();
+  }
+  return;
+};
+
+// type-specific (float or double) equal compare
+template <typename T>
+inline bool fp_equal(T a, T b) {
+  static_assert(std::is_same<T, float>::value || std::is_same<T, double>::value, "fp_equal<T> only supports float or double types.");
+
+  constexpr T eps = std::is_same<T, float>::value ? static_cast<T>(1e-6f) : static_cast<T>(1e-12);
+  return std::fabs(a - b) < eps;
+}
+
+/// Moves the file pointer to offset, 64-bit capable, cross-platform
+inline int fseek_las(FILE* file, I64 offset, int origin) {
+#if defined(_WIN32) && !defined(__MINGW32__)
+  return _fseeki64(file, offset, origin);
+#elif defined(__MINGW32__)
+  return fseeko64(file, (off64_t)offset, origin);
+#else
+  return fseeko(file, (off_t)offset, origin);
+#endif
+}
+
+/// Returns the current file position as a 64-bit value, cross-platform
+inline I64 ftell_las(FILE* file) {
+#if defined _WIN32 && !defined(__MINGW32__)
+  return _ftelli64(file);
+#elif defined(__MINGW32__)
+  return (I64)ftello64(file);
+#else
+  return (I64)ftello(file);
+#endif
+}
+
+
+
+/// Reads file information (size, time, permissions) across platforms as a 64-bit compatible function
+inline int stat_las(const char* path, las_stat_t* buf) {
+#if defined(_WIN32) && !defined(__MINGW32__)
+  return _stati64(path, buf);
+#elif defined(__MINGW32__)
+  return _stat64(path, buf);
+#else
+  return stat(path, buf);
+#endif
+}
+
+// 32bit/64bit detection
+#ifdef _WIN64
+#define IS64 true
+#elif _WIN32
+#define IS64 false
+#else
+#define IS64 true
+#endif
+
+#ifdef _WIN32
+#define DIRECTORY_SLASH '\\'
+#else
+#define DIRECTORY_SLASH '/'
+#endif
+
+#ifndef MAX_PATH_LAS  // linux
+#define MAX_PATH_LAS FILENAME_MAX
+#endif
+
+// char helpers
+void ExeNameToPathWithoutTrailingDelimiter(int& path_len, char* path);
+
+// string helpers
+std::string exe_path();
+
+std::string dir_current();
+
+std::string temp_path(std::string temp_user = "");
+
+/// replace all occurrences of search in subject with replace and return new string
+std::string ReplaceString(const std::string& subject, const std::string& search, const std::string& replace);
+
+/// replace all occurrences of search in subject with replace
+void ReplaceStringInPlace(std::string& subject, const std::string& search, const std::string& replace);
+
+bool StringEndsWith(const std::string& fullString, const std::string& ending);
+
+bool HasFileExt(std::string fn, std::string ext);
+
+bool HasFileExtWildcard(const std::string& ext);
+
+bool wildcardMatch(const char* pattern, const char* str);
+
+/// Use this to compare extensions, where the extension pattern may contain '*' or '?'
+bool matchExtension(const std::string& filename, std::string ext);
+
+std::string FileExtSet(std::string fn_in, std::string ext_new);
+
+std::string getFileExtension(const char* filepath);
+
+bool IsLasLazFile(std::string fn);
+
+/// returns TRUE if 'val' is found in 'vec'
+bool StringInVector(const std::string& value, const std::vector<std::string>& array, bool casesense);
+
+/// Reallocates *ptr to size bytes, returns true on success and the new pointer is written
+/// to *ptr. Returns false on failure, and *ptr is left unchanged (so the caller still owns 
+/// the original block and may keep using it/free it). Prefer the try_realloc_las() wrapper.
+LASLIB_DLL BOOL try_realloc_las_raw(void** ptr, size_t size);
+
+/// Type safe wrapper around try_realloc_las_raw() 
+template <typename T>
+inline BOOL try_realloc_las(T*& ptr, size_t size)
+{
+  void* p = ptr;
+  if (!try_realloc_las_raw(&p, size)) {
+    return FALSE;
+  }
+  ptr = (T*)p;
+  return TRUE;
+}
+
+// [[deprecated("use try_realloc_las(): realloc_las() cannot report a failed reallocation")]]
+LASLIB_DLL void* realloc_las(void* ptr, size_t size);
+LASLIB_DLL void* malloc_las(size_t size);
+void bytes_to_readable(size_t bytes, double* value_out, const char** unit_out);
+
+size_t get_available_RAM();
+bool check_available_RAM(size_t size);
+
+/// Wrapper for `sscanf` on other platforms than _MSC_VER and `sscanf_s` on Windows and ensures that the size is passed correctly for strings.
+LASLIB_DLL int sscanf_las(const char* buffer, const char* format, ...);
+/// Wrapper for `strncpy` on other platforms than _MSC_VER and `strncpy_s` on Windows.
+LASLIB_DLL void strncpy_las(char* dest, size_t destsz, const char* src, size_t count = 0);
+
+#ifdef BOOST_USE
+#define BOOST_PRE boost::algorithm::
+#else
+#define BOOST_PRE
+void to_lower(std::string& in);
+void to_upper(std::string& in);
+std::string to_lower_copy(const std::string& in);
+std::string to_upper_copy(const std::string& in);
+std::string trim(const std::string& in);
+#endif
+
+/// Get next token till end of input. Shortens <in>, result in <out>. return TRUE if out contains another token.
+bool GetTokenNext(std::string& in, std::string delim, std::string& out);
+
+/// returns next token, "" if done or first empty token
+std::string TokenNext(std::string& in, std::string delim);
+
+/// output all vector values as single string, separated by delimiter
+std::string VectorDelimited(const std::vector<std::string>& items, const std::string& delimiter);
+
+/// string to integer with default value (no exception)
+int stoidefault(const std::string& val, int def = 0);
+
+/// string to double with default value (no exception)
+double stoddefault(const std::string& val, double def = 0);
+
+/// Function for rounding double to a specific number of decimal places
+double DoubleRound(double value, int decimals);
+
+/// return double as string rounded to a maximum number of decimal places. optional trim trailing 0s
+std::string DoubleToString(double dd, short decimals, bool trim_right_zeros = false);
+
+/// CamelCase to non_camel_case converter
+std::string CcToUnderline(const std::string& in);
+
+/// returns the occurency count of 'toCount' in 'in'
+size_t StringCountChar(const std::string& in, const char toCount);
+
+/// Function for determining the standard programme paths
+const char** getDefaultProgramPaths(size_t& numPaths);
+
+/// Function to get the home directory of the current user
+const char* getHomeDirectory();
+
+/// Does the file exist
+BOOL file_exists(const std::string& path);
+
+/// Get the digits 
+I32 get_digits(F64 scale_factor); 
+
+/// Normalises line endings to LF
+std::string normalizeLineEndings(const char* data, int length);
+
+std::string flatten_text_data(const U8* data, size_t size);
+
+/// Correctly encapsulates CSV special characters and doubles quotation marks for valid CSV
+std::string escape_csv_value(const std::string& value);
+/// Converts all XML reserved characters in the string to their safe entity codes for valid XML
+std::string escape_xml_value(const std::string& value);
+
+// Groups consecutive indices from a sorted set into compact ranges.
+std::string compress_indices(const std::set<I32>& indices);
+
+/// Inline template function for resetting and filling an ostringstream
+template <typename... Args>
+inline void set_oss_content(std::ostringstream& oss, Args&&... args) {
+  // delete content and reset status flags
+  oss.str("");
+  oss.clear();
+
+  // merge content
+  (oss << ... << std::forward<Args>(args));
+}
+
+/// Checks at runtime whether the system stores its multi-byte numbers in little-endian format in memory
+namespace Endian {
+extern const bool IS_LITTLE_ENDIAN;
+
+void to_big_endian(int* value);
+void to_little_endian(int* value);
+void to_big_endian(double* value);
+void to_little_endian(double* value);
+}
+
+// rlas: http(s) and GDAL /vsi* paths are read through GDAL's virtual file system (bytestreamin_gdal.hpp)
+inline bool is_remote_path(const char* path)
+{
+  if (!path) return false;
+
+  if (path[0] == 'h')
+  {
+    return strncmp(path, "http://", 7) == 0 || strncmp(path, "https://", 8) == 0;
+  }
+
+  if (path[0] == '/' && strncmp(path, "/vsi", 4) == 0)
+  {
+    const char* sub = path + 4;
+    return
+      strncmp(sub, "curl/", 5) == 0  ||
+      strncmp(sub, "s3/", 3) == 0    ||
+      strncmp(sub, "gs/", 3) == 0    ||
+      strncmp(sub, "az/", 3) == 0    ||
+      strncmp(sub, "adls/", 5) == 0  ||
+      strncmp(sub, "oss/", 4) == 0   ||
+      strncmp(sub, "swift/", 6) == 0;
+  }
+
+  return false;
+}
 
 #endif
+

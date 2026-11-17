@@ -11,11 +11,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2012, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -37,7 +37,7 @@
 
 #include <stdio.h>
 
-class LASreaderBIN : public LASreader
+class LASLIB_DLL LASreaderBIN : public LASreader
 {
 public:
 
@@ -51,7 +51,7 @@ public:
   void close(BOOL close_stream=TRUE);
   BOOL reopen(const char* file_name);
 
-  LASreaderBIN();
+  LASreaderBIN(LASreadOpener* opener);
   virtual ~LASreaderBIN();
 
 protected:
@@ -64,30 +64,30 @@ private:
   I32 version;
 };
 
-class LASreaderBINrescale : public virtual LASreaderBIN
+class LASLIB_DLL LASreaderBINrescale : public virtual LASreaderBIN
 {
 public:
   virtual BOOL open(ByteStreamIn* stream);
-  LASreaderBINrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
+  LASreaderBINrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
 
 protected:
   F64 scale_factor[3];
 };
 
-class LASreaderBINreoffset : public virtual LASreaderBIN
+class LASLIB_DLL LASreaderBINreoffset : public virtual LASreaderBIN
 {
 public:
   virtual BOOL open(ByteStreamIn* stream);
-  LASreaderBINreoffset(F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderBINreoffset(LASreadOpener* opener, F64 x_offset, F64 y_offset, F64 z_offset);
 protected:
   F64 offset[3];
 };
 
-class LASreaderBINrescalereoffset : public LASreaderBINrescale, LASreaderBINreoffset
+class LASLIB_DLL LASreaderBINrescalereoffset : public LASreaderBINrescale, LASreaderBINreoffset
 {
 public:
   BOOL open(ByteStreamIn* stream);
-  LASreaderBINrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderBINrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
 };
 
 #endif

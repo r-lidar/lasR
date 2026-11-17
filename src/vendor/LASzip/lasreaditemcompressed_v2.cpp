@@ -9,14 +9,14 @@
   
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -31,7 +31,7 @@
 
 #include "lasreaditemcompressed_v2.hpp"
 
-#include <assert.h>
+#include <cassert>
 #include <string.h>
 
 struct LASpoint10
@@ -259,6 +259,7 @@ LASreadItemCompressed_GPSTIME11_v2::LASreadItemCompressed_GPSTIME11_v2(Arithmeti
   m_gpstime_multi = dec->createSymbolModel(LASZIP_GPSTIME_MULTI_TOTAL);
   m_gpstime_0diff = dec->createSymbolModel(6);
   ic_gpstime = new IntegerCompressor(dec, 32, 9); // 32 bits, 9 contexts
+  last = 0;
 }
 
 LASreadItemCompressed_GPSTIME11_v2::~LASreadItemCompressed_GPSTIME11_v2()
@@ -287,7 +288,7 @@ BOOL LASreadItemCompressed_GPSTIME11_v2::init(const U8* item, U32& context)
   ic_gpstime->initDecompressor();
 
   /* init last item */
-  last_gpstime[0].u64 = *((U64*)item);
+  last_gpstime[0].u64 = *((const U64*)item);
   last_gpstime[1].u64 = 0;
   last_gpstime[2].u64 = 0;
   last_gpstime[3].u64 = 0;
@@ -297,6 +298,8 @@ BOOL LASreadItemCompressed_GPSTIME11_v2::init(const U8* item, U32& context)
 inline void LASreadItemCompressed_GPSTIME11_v2::read(U8* item, U32& context)
 {
   I32 multi;
+  for (;;)
+  {
   if (last_gpstime_diff[last] == 0) // if the last integer difference was zero
   {
     multi = dec->decodeSymbol(m_gpstime_0diff);
@@ -304,7 +307,7 @@ inline void LASreadItemCompressed_GPSTIME11_v2::read(U8* item, U32& context)
     {
       last_gpstime_diff[last] = ic_gpstime->decompress(0, 0);
       last_gpstime[last].i64 += last_gpstime_diff[last];
-      multi_extreme_counter[last] = 0; 
+      multi_extreme_counter[last] = 0;
     }
     else if (multi == 2) // the difference is huge
     {
@@ -314,12 +317,12 @@ inline void LASreadItemCompressed_GPSTIME11_v2::read(U8* item, U32& context)
       last_gpstime[next].u64 |= dec->readInt();
       last = next;
       last_gpstime_diff[last] = 0;
-      multi_extreme_counter[last] = 0; 
+      multi_extreme_counter[last] = 0;
     }
     else if (multi > 2) // we switch to another sequence
     {
       last = (last+multi-2)&3;
-      read(item, context);
+      continue;
     }
   }
   else
@@ -393,8 +396,10 @@ inline void LASreadItemCompressed_GPSTIME11_v2::read(U8* item, U32& context)
     else if (multi >=  LASZIP_GPSTIME_MULTI_CODE_FULL)
     {
       last = (last+multi-LASZIP_GPSTIME_MULTI_CODE_FULL)&3;
-      read(item, context);
+      continue;
     }
+  }
+  break;
   }
   *((I64*)item) = last_gpstime[last].i64;
 }
@@ -539,6 +544,8 @@ LASreadItemCompressed_BYTE_v2::LASreadItemCompressed_BYTE_v2(ArithmeticDecoder* 
   this->dec = dec;
   assert(number);
   this->number = number;
+
+  last_item = nullptr;
 
   /* create models and integer compressors */
   m_byte = new ArithmeticModel*[number];

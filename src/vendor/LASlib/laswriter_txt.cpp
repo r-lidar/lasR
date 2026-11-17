@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2012, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -29,6 +29,8 @@
 ===============================================================================
 */
 #include "laswriter_txt.hpp"
+
+#include "lasmessage.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -58,15 +60,15 @@ BOOL LASwriterTXT::open(const CHAR* file_name, const LASheader* header, const CH
 {
   if (file_name == 0)
   {
-    eprint("ERROR: file name pointer is zero\n");
+    laserror("file name pointer is zero");
     return FALSE;
   }
 
-  file = fopen(file_name, "w");
+  file = LASfopen(file_name, "w");
 
   if (file == 0)
   {
-    eprint( "ERROR: cannot open file '%s'\n", file_name);
+    laserror("cannot open file '%s'", file_name);
     return FALSE;
   }
 
@@ -79,7 +81,7 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
 {
   if (file == 0)
   {
-    eprint("ERROR: file pointer is zero\n");
+    laserror("file pointer is zero");
     return FALSE;
   }
 
@@ -128,7 +130,7 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
     }
     else
     {
-      eprint( "ERROR: unknown seperator '%s'\n", separator);
+      laserror("unknown separator '%s'", separator);
       return FALSE;
     }
   }
@@ -143,36 +145,36 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
       if ((this->parse_string == 0) || (strcmp(this->parse_string, "original") == 0))
       {
         if (this->parse_string) free(this->parse_string);
+        CHAR parse_field[17];
         if (ptsVLR && (ptsVLR->record_length_after_header >= 32))
         {
-          this->parse_string = LASCopyString((CHAR*)(ptsVLR->data + 16));
+          memcpy(parse_field, ptsVLR->data + 16, 16);
+          parse_field[16] = '\0';
+          this->parse_string = LASCopyString(parse_field);
         }
         else if (ptxVLR && (ptxVLR->record_length_after_header >= 32))
         {
-          this->parse_string = LASCopyString((CHAR*)(ptxVLR->data + 16));
+          memcpy(parse_field, ptxVLR->data + 16, 16);
+          parse_field[16] = '\0';
+          this->parse_string = LASCopyString(parse_field);
         }
         else if (ptsVLR)
         {
-          eprint( "WARNING: found VLR for PTS with wrong payload size of %d.\n", ptsVLR->record_length_after_header);
+          LASMessage(LAS_WARNING, "found VLR for PTS with wrong payload size of %d.", ptsVLR->record_length_after_header);
         }
         else if (ptxVLR)
         {
-          eprint( "WARNING: found VLR for PTX with wrong payload size of %d.\n", ptxVLR->record_length_after_header);
+          LASMessage(LAS_WARNING, "found VLR for PTX with wrong payload size of %d.", ptxVLR->record_length_after_header);
         }
       }
     }
     else
     {
-      eprint( "WARNING: found no VLR with PTS or PTX info.\n");
+      LASMessage(LAS_WARNING, "found no VLR with PTS or PTX info.");
     }
     if (header->version_minor >= 4)
     {
-// temporarily comment this portion that is not useful in rlas. See #62
-/*#ifdef _WIN32
-      fprintf(file, "%" PRId64 "       \012", header->extended_number_of_point_records);
-#else
-      fprintf(file, "%" PRId64 "       \012", header->extended_number_of_point_records);
-#endif*/
+      fprintf(file, "%lld       \012", header->extended_number_of_point_records);
     }
     else
     {
@@ -180,11 +182,11 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
     }
     if (this->parse_string && strcmp(this->parse_string, "xyz") && strcmp(this->parse_string, "xyzi") && strcmp(this->parse_string, "xyziRGB") && strcmp(this->parse_string, "xyzRGB"))
     {
-      eprint( "WARNING: the parse string for PTS should be 'xyz', 'xyzi', 'xyziRGB', or 'xyzRGB'\n");
+      LASMessage(LAS_WARNING, "the parse string for PTS should be 'xyz', 'xyzi', 'xyziRGB', or 'xyzRGB'");
     }
     if (separator_sign != ' ')
     {
-      eprint( "WARNING: the separator for PTS should be 'space' not '%s'\n", separator);
+      LASMessage(LAS_WARNING, "the separator for PTS should be 'space' not '%s'", separator);
     }
   }
   else if (optx)
@@ -197,38 +199,35 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
       if ((this->parse_string == 0) || (strcmp(this->parse_string, "original") == 0))
       {
         if (this->parse_string) free(this->parse_string);
-        this->parse_string = LASCopyString((CHAR*)(payload + 16));
+        CHAR parse_field[17];
+        memcpy(parse_field, payload + 16, 16);
+        parse_field[16] = '\0';
+        this->parse_string = LASCopyString(parse_field);
       }
       fprintf(file, "%u     \012", (U32)((I64*)payload)[4]); // ncols
       fprintf(file, "%u     \012", (U32)((I64*)payload)[5]); // nrows
-      fprintf(file, "%g %g %g\012", ((F64*)payload)[6], ((F64*)payload)[7], ((F64*)payload)[8]); // translation
-      fprintf(file, "%g %g %g\012", ((F64*)payload)[9], ((F64*)payload)[10], ((F64*)payload)[11]); // rotation_row_0
-      fprintf(file, "%g %g %g\012", ((F64*)payload)[12], ((F64*)payload)[13], ((F64*)payload)[14]); // rotation_row_1
-      fprintf(file, "%g %g %g\012", ((F64*)payload)[15], ((F64*)payload)[16], ((F64*)payload)[17]); // rotation_row_2
-      fprintf(file, "%g %g %g %g\012", ((F64*)payload)[18], ((F64*)payload)[19], ((F64*)payload)[20], ((F64*)payload)[21]); // transformation_row_0
-      fprintf(file, "%g %g %g %g\012", ((F64*)payload)[22], ((F64*)payload)[23], ((F64*)payload)[24], ((F64*)payload)[25]); // transformation_row_0
-      fprintf(file, "%g %g %g %g\012", ((F64*)payload)[26], ((F64*)payload)[27], ((F64*)payload)[28], ((F64*)payload)[29]); // transformation_row_0
-      fprintf(file, "%g %g %g %g\012", ((F64*)payload)[30], ((F64*)payload)[31], ((F64*)payload)[32], ((F64*)payload)[33]); // transformation_row_0
+      fprintf(file, "%g %g %g\012", ((F64*)payload)[6], ((F64*)payload)[7], ((F64*)payload)[8]); // scanner registered position
+	    fprintf(file, "%g %g %g\012", ((F64*)payload)[9], ((F64*)payload)[10], ((F64*)payload)[11]); // scanner registered axis 'X'
+      fprintf(file, "%g %g %g\012", ((F64*)payload)[12], ((F64*)payload)[13], ((F64*)payload)[14]); // scanner registered axis 'Y'
+      fprintf(file, "%g %g %g\012", ((F64*)payload)[15], ((F64*)payload)[16], ((F64*)payload)[17]); // scanner registered axis 'Z'
+      fprintf(file, "%g %g %g %g\012", ((F64*)payload)[18], ((F64*)payload)[19], ((F64*)payload)[20], ((F64*)payload)[21]); // r11 r12 r13 - rotation matrix
+      fprintf(file, "%g %g %g %g\012", ((F64*)payload)[22], ((F64*)payload)[23], ((F64*)payload)[24], ((F64*)payload)[25]); // r21 r22 r23
+      fprintf(file, "%g %g %g %g\012", ((F64*)payload)[26], ((F64*)payload)[27], ((F64*)payload)[28], ((F64*)payload)[29]); // r31 r32 r33
+      fprintf(file, "%g %g %g %g\012", ((F64*)payload)[30], ((F64*)payload)[31], ((F64*)payload)[32], ((F64*)payload)[33]); // tr1 tr2 tr3 - transformation 
     }
     else
     {
       if (ptxVLR)
       {
-        eprint( "WARNING: found VLR for PTX with wrong payload size of %d.\n", ptxVLR->record_length_after_header);
+        LASMessage(LAS_WARNING, "found VLR for PTX with wrong payload size of %d. outputting PTS instead ...", ptxVLR->record_length_after_header);
       }
       else
       {
-        eprint( "WARNING: found no VLR with PTX info.\n");
+        LASMessage(LAS_WARNING, "found no VLR with PTX info. outputting PTS instead ...");
       }
-      eprint( "         outputting PTS instead ...\n");
       if (header->version_minor >= 4)
       {
-// temporarily comment this portion that is not useful in rlas. See #62
-/*#ifdef _WIN32
-        fprintf(file, "%" PRId64 "       \012", header->extended_number_of_point_records);
-#else
-        fprintf(file, "%" PRId64 "       \012", header->extended_number_of_point_records);
-#endif*/
+        fprintf(file, "%lld       \012", header->extended_number_of_point_records);
       }
       else
       {
@@ -237,11 +236,11 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
     }
     if (this->parse_string && strcmp(this->parse_string, "xyz") && strcmp(this->parse_string, "xyzi") && strcmp(this->parse_string, "xyziRGB") && strcmp(this->parse_string, "xyzRGB"))
     {
-      eprint( "WARNING: the parse string for PTX should be 'xyz', 'xyzi', 'xyziRGB', or 'xyzRGB'\n");
+      LASMessage(LAS_WARNING, "the parse string for PTX should be 'xyz', 'xyzi', 'xyziRGB', or 'xyzRGB'");
     }
     if (separator_sign != ' ')
     {
-      eprint( "WARNING: the separator for PTX should be 'space' not '%s'\n", separator);
+      LASMessage(LAS_WARNING, "the separator for PTX should be 'space' not '%s'", separator);
     }
   }
 
@@ -268,37 +267,42 @@ BOOL LASwriterTXT::open(FILE* file, const LASheader* header, const CHAR* parse_s
   return check_parse_string(this->parse_string);
 }
 
-static void lidardouble2string(CHAR* string, double value)
+static void lidardouble2string(CHAR* string, size_t stringsz, double value)
 {
-  int len;
-  len = snprintf(string, 512, "%.15f", value) - 1;
-  while (string[len] == '0') len--;
+  int n = snprintf(string, stringsz, "%.15f", value);
+  if (n <= 0 || (size_t)n >= stringsz)
+  {
+    string[stringsz - 1] = '\0';
+    return;
+  }
+  int len = n - 1;
+  while (len > 0 && string[len] == '0') len--;
   if (string[len] != '.') len++;
   string[len] = '\0';
 }
 
-static void lidardouble2string(CHAR* string, double value, double precision)
+static void lidardouble2string(CHAR* string, size_t stringsz, double value, double precision)
 {
   if (precision == 0.1)
-    snprintf(string, 512, "%.1f", value);
+    snprintf(string, stringsz, "%.1f", value);
   else if (precision == 0.01)
-    snprintf(string, 512, "%.2f", value);
+    snprintf(string, stringsz, "%.2f", value);
   else if (precision == 0.001)
-    snprintf(string, 512, "%.3f", value);
+    snprintf(string, stringsz, "%.3f", value);
   else if (precision == 0.0001)
-    snprintf(string, 512, "%.4f", value);
+    snprintf(string, stringsz, "%.4f", value);
   else if (precision == 0.00001)
-    snprintf(string, 512, "%.5f", value);
+    snprintf(string, stringsz, "%.5f", value);
   else if (precision == 0.000001)
-    snprintf(string, 512, "%.6f", value);
+    snprintf(string, stringsz, "%.6f", value);
   else if (precision == 0.0000001)
-    snprintf(string, 512, "%.7f", value);
+    snprintf(string, stringsz, "%.7f", value);
   else if (precision == 0.00000001)
-    snprintf(string, 512, "%.8f", value);
+    snprintf(string, stringsz, "%.8f", value);
   else if (precision == 0.000000001)
-    snprintf(string, 512, "%.9f", value);
+    snprintf(string, stringsz, "%.9f", value);
   else
-    lidardouble2string(string, value);
+    lidardouble2string(string, stringsz, value);
 }
 
 BOOL LASwriterTXT::unparse_attribute(const LASpoint* point, I32 index)
@@ -421,7 +425,7 @@ BOOL LASwriterTXT::unparse_attribute(const LASpoint* point, I32 index)
   }
   else
   {
-    eprint( "WARNING: attribute %d not (yet) implemented.\n", index);
+    LASMessage(LAS_WARNING, "attribute %d not (yet) implemented.", index);
     return FALSE;
   }
   return TRUE;
@@ -436,13 +440,13 @@ BOOL LASwriterTXT::write_point(const LASpoint* point)
     switch (parse_string[i])
     {
     case 'x': // the x coordinate
-      lidardouble2string(printstring, header->get_x(point->get_X()), header->x_scale_factor); fprintf(file, "%s", printstring);
+      lidardouble2string(printstring, sizeof(printstring), header->get_x(point->get_X()), header->x_scale_factor); fprintf(file, "%s", printstring);
       break;
     case 'y': // the y coordinate
-      lidardouble2string(printstring, header->get_y(point->get_Y()), header->y_scale_factor); fprintf(file, "%s", printstring);
+      lidardouble2string(printstring, sizeof(printstring), header->get_y(point->get_Y()), header->y_scale_factor); fprintf(file, "%s", printstring);
       break;
     case 'z': // the z coordinate
-      lidardouble2string(printstring, header->get_z(point->get_Z()), header->z_scale_factor); fprintf(file, "%s", printstring);
+      lidardouble2string(printstring, sizeof(printstring), header->get_z(point->get_Z()), header->z_scale_factor); fprintf(file, "%s", printstring);
       break;
     case 't': // the gps-time
       fprintf(file, "%.6f", point->get_gps_time());
@@ -452,8 +456,7 @@ BOOL LASwriterTXT::write_point(const LASpoint* point)
         fprintf(file, "%d", -2048 + point->get_intensity());
       else if (optx)
       {
-        int len;
-        len = snprintf(printstring, 512, "%.3f", 1.0f/4095.0f * point->get_intensity()) - 1;
+        int len = snprintf(printstring, sizeof(printstring), "%.3f", 1.0f/4095.0f * point->get_intensity()) - 1;
         while (printstring[len] == '0') len--;
         if (printstring[len] != '.') len++;
         printstring[len] = '\0';
@@ -463,13 +466,13 @@ BOOL LASwriterTXT::write_point(const LASpoint* point)
         fprintf(file, "%d", point->get_intensity());
       break;
     case 'a': // the scan angle
-      fprintf(file, "%d", point->get_scan_angle_rank());
+      fprintf(file, "%s", point->get_scan_angle_string().c_str());
       break;
     case 'r': // the number of the return
       fprintf(file, "%d", point->get_return_number());
       break;
     case 'c': // the classification
-      fprintf(file, "%d", point->get_classification());
+  		fprintf(file, "%d", point->get_classification());
       break;
     case 'u': // the user data
       fprintf(file, "%d", point->get_user_data());
@@ -520,20 +523,10 @@ BOOL LASwriterTXT::write_point(const LASpoint* point)
         fprintf(file, "%d", point->get_B());
       break;
     case 'm': // the index of the point (count starts at 0)
-// temporarily comment this portion that is not useful in rlas. See #62
-/*#ifdef _WIN32
-      fprintf(file, "%" PRId64 "", p_count-1);
-#else
-      fprintf(file, "%" PRId64 "", p_count-1);
-#endif*/
+      fprintf(file, "%lld", p_count-1);
       break;
     case 'M': // the index of the point (count starts at 1)
-// temporarily comment this portion that is not useful in rlas. See #62
-/*#ifdef _WIN32
-      fprintf(file, "%" PRId64 "", p_count);
-#else
-      fprintf(file, "%" PRId64 "", p_count);
-#endif*/
+      fprintf(file, "%lld", p_count);
       break;
     case 'w': // the wavepacket descriptor index
       fprintf(file, "%d", point->wavepacket.getIndex());
@@ -574,7 +567,7 @@ BOOL LASwriterTXT::update_header(const LASheader* header, BOOL use_inventory, BO
 
 I64 LASwriterTXT::close(BOOL update_header)
 {
-  U32 bytes = (U32)ftell(file);
+  I64 bytes = ftell_las(file);
 
   if (file)
   {
@@ -653,42 +646,42 @@ BOOL LASwriterTXT::check_parse_string(const CHAR* parse_string)
         I32 index = (I32)(p[0] - '0');
         if (index >= header->number_attributes)
         {
-          eprint( "ERROR: extra bytes attribute '%d' does not exist.\n", index);
+          laserror("extra bytes attribute '%d' does not exist.", index);
           return FALSE;
         }
         attribute_starts[index] = header->get_attribute_start(index);
       }
       else
       {
-        eprint( "ERROR: unknown symbol '%c' in parse string. valid are\n", p[0]);
-        eprint( "       'x' : the x coordinate\n");
-        eprint( "       'y' : the y coordinate\n");
-        eprint( "       'z' : the z coordinate\n");
-        eprint( "       't' : the gps time\n");
-        eprint( "       'R' : the red channel of the RGB field\n");
-        eprint( "       'G' : the green channel of the RGB field\n");
-        eprint( "       'B' : the blue channel of the RGB field\n");
-        eprint( "       's' : a string or a number that we don't care about\n");
-        eprint( "       'i' : the intensity\n");
-        eprint( "       'a' : the scan angle\n");
-        eprint( "       'n' : the number of returns of that given pulse\n");
-        eprint( "       'r' : the number of the return\n");
-        eprint( "       'c' : the classification\n");
-        eprint( "       'u' : the user data\n");
-        eprint( "       'p' : the point source ID\n");
-        eprint( "       'e' : the edge of flight line flag\n");
-        eprint( "       'd' : the direction of scan flag\n");
-        eprint( "       'h' : the withheld flag\n");
-        eprint( "       'k' : the keypoint flag\n");
-        eprint( "       'g' : the synthetic flag\n");
-        eprint( "       'o' : the overlap flag\n");
-        eprint( "       'l' : the scanner channel\n");
-        eprint( "       'M' : the index of the point\n");
-        eprint( "       'w' : the wavepacket descriptor index\n");
-        eprint( "       'W' : all wavepacket attributes\n");
-        eprint( "       'X' : the unscaled and unoffset integer x coordinate\n");
-        eprint( "       'Y' : the unscaled and unoffset integer y coordinate\n");
-        eprint( "       'Z' : the unscaled and unoffset integer z coordinate\n");
+        laserror("unknown symbol '%c' in parse string. valid are\n" \
+                              "\t'x' : the x coordinate\n" \
+                              "\t'y' : the y coordinate\n" \
+                              "\t'z' : the z coordinate\n" \
+                              "\t't' : the gps time\n" \
+                              "\t'R' : the red channel of the RGB field\n" \
+                              "\t'G' : the green channel of the RGB field\n" \
+                              "\t'B' : the blue channel of the RGB field\n" \
+                              "\t's' : a string or a number that we don't care about\n" \
+                              "\t'i' : the intensity\n" \
+                              "\t'a' : the scan angle\n" \
+                              "\t'n' : the number of returns of that given pulse\n" \
+                              "\t'r' : the number of the return\n" \
+                              "\t'c' : the classification\n" \
+                              "\t'u' : the user data\n" \
+                              "\t'p' : the point source ID\n" \
+                              "\t'e' : the edge of flight line flag\n" \
+                              "\t'd' : the direction of scan flag\n" \
+                              "\t'h' : the withheld flag\n" \
+                              "\t'k' : the keypoint flag\n" \
+                              "\t'g' : the synthetic flag\n" \
+                              "\t'o' : the overlap flag\n" \
+                              "\t'l' : the scanner channel\n" \
+                              "\t'M' : the index of the point\n" \
+                              "\t'w' : the wavepacket descriptor index\n" \
+                              "\t'W' : all wavepacket attributes\n" \
+                              "\t'X' : the unscaled and unoffset integer x coordinate\n" \
+                              "\t'Y' : the unscaled and unoffset integer y coordinate\n" \
+                              "\t'Z' : the unscaled and unoffset integer z coordinate\n", p[0]);
         return FALSE;
       }
     }

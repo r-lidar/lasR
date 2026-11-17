@@ -155,6 +155,11 @@ bool LASRrasterize::process(PointCloud*& las)
   // Next calls, all touch a different cell and are thus thread safe
   raster.set_value(0, NA_F32_RASTER, 1);
 
+  // Fresh copy at each call: the AttributeAccessors cache a pointer to the schema of the point
+  // cloud they first read. Without OpenMP firstprivate() is ignored and the member would keep a
+  // dangling pointer to the schema of the previous chunk.
+  MetricManager metric_engine = this->metric_engine;
+  
   #pragma omp parallel for num_threads(ncpu) firstprivate(metric_engine)
   for (size_t i = 0; i < n; ++i)
   {

@@ -9,14 +9,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2020, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -53,7 +53,7 @@
 class LASreadItem;
 class ArithmeticDecoder;
 
-class LASreadPoint
+class LASLIB_DLL LASreadPoint
 {
 public:
   LASreadPoint(U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL);
@@ -63,13 +63,19 @@ public:
   BOOL setup(const U32 num_items, const LASitem* items, const LASzip* laszip=0);
 
   BOOL init(ByteStreamIn* instream);
-  BOOL seek(const U32 current, const U32 target);
+  BOOL seek(const U64 current, const U64 target);
   BOOL read(U8* const * point);
   BOOL check_end();
   BOOL done();
 
   inline const CHAR* error() const { return last_error; };
   inline const CHAR* warning() const { return last_warning; };
+
+  // r-lidar: read-only access to the chunk table, loaded by the first read or seek.
+  inline U32 get_number_chunks()       const { return number_chunks; };
+  inline U32 get_tabled_chunks()       const { return tabled_chunks; };
+  inline U32 get_chunk_size()          const { return chunk_size; };
+  inline const U64* get_chunk_totals() const { return chunk_totals; };
 
 private:
   ByteStreamIn* instream;
@@ -81,15 +87,15 @@ private:
   BOOL layered_las14_compression;
   // used for chunking
   U32 chunk_size;
-  U32 chunk_count;
+  U64 chunk_count;
   U32 current_chunk;
   U32 number_chunks;
   U32 tabled_chunks;
   I64* chunk_starts;
-  U32* chunk_totals;
+  U64* chunk_totals;
   BOOL init_dec();
   BOOL read_chunk_table();
-  U32 search_chunk_table(const U32 index, const U32 lower, const U32 upper);
+  U32 search_chunk_table(const U64 index, const U32 lower, const U32 upper);
   // used for selective decompression (new LAS 1.4 point types only)
   U32 decompress_selective;
   // used for seeking

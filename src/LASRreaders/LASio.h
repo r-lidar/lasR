@@ -9,6 +9,7 @@
 #include <vector>
 #include <numeric>
 #include <stdexcept>
+#include <memory>
 
 class LASreadOpener;
 class LASwriteOpener;
@@ -16,8 +17,37 @@ class LASreader;
 class LASwriter;
 class LASheader;
 class LASpoint;
+class LazBlocks;
 
-class LASio : public Fileio
+// The accessors that convert a LASpoint into a lasR Point. An accessor binds itself to the schema at
+// its first use: each thread of the parallel decoder converts with its own copy.
+struct LASaccessors
+{
+  AttributeAccessor intensity;
+  AttributeAccessor returnnumber;
+  AttributeAccessor numberofreturns;
+  AttributeAccessor userdata;
+  AttributeAccessor psid;
+  AttributeAccessor classification;
+  AttributeAccessor scanangle;
+  AttributeAccessor gpstime;
+  AttributeAccessor scannerchannel;
+  AttributeAccessor red;
+  AttributeAccessor green;
+  AttributeAccessor blue;
+  AttributeAccessor nir;
+  AttributeAccessor eof_bit;
+  AttributeAccessor scandirection_bit;
+  AttributeAccessor withheld_bit;
+  AttributeAccessor synthetic_bit;
+  AttributeAccessor keypoint_bit;
+  AttributeAccessor overlap_bit;
+  std::vector<AttributeAccessor> extrabytes;
+
+  void to_point(const LASpoint& lp, const LASheader& h, Point* p);
+};
+
+class LASio : public Fileio, private LASaccessors
 {
 public:
   LASio();
@@ -35,6 +65,12 @@ public:
   void set_copc_max_depth(int depth);
   void set_copc_density(int density);
   int64_t p_count() override;
+  bool seek(int64_t index);
+  std::vector<uint64_t> chunk_starts();
+
+  // Parallel decoding of the points (see LAZblocks.h)
+  void set_threads(int n) override { nthreads = n; }
+  const std::string& get_decoding() const { return decoding; } // "with n threads" or "sequentially: why", once a point is read
 
   // Tools
   static int get_point_data_record_length(int point_data_format, int num_extrabytes = 0);
@@ -61,30 +97,17 @@ private:
   LASheader* lasheader;
   LASpoint* point;
 
-  AttributeAccessor intensity;
-  AttributeAccessor returnnumber;
-  AttributeAccessor numberofreturns;
-  AttributeAccessor userdata;
-  AttributeAccessor psid;
-  AttributeAccessor classification;
-  AttributeAccessor scanangle;
-  AttributeAccessor gpstime;
-  AttributeAccessor scannerchannel;
-  AttributeAccessor red;
-  AttributeAccessor green;
-  AttributeAccessor blue;
-  AttributeAccessor nir;
-  AttributeAccessor eof_bit;
-  AttributeAccessor scandirection_bit;
-  AttributeAccessor withheld_bit;
-  AttributeAccessor synthetic_bit;
-  AttributeAccessor keypoint_bit;
-  AttributeAccessor overlap_bit;
-  std::vector<AttributeAccessor> extrabytes;
   std::vector<size_t> extrabytes_offsets;
 
   int copc_depth;
   int copc_density;
+
+  // Parallel decoding: started by the first read_point(), which gives the schema of the points
+  void start_parallel(const AttributeSchema* schema);
+  int nthreads;
+  bool parallel_started;
+  std::string decoding;
+  std::unique_ptr<LazBlocks> blocks;
 };
 
 

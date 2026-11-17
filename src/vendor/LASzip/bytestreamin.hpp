@@ -9,14 +9,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -57,7 +57,7 @@ public:
 /* read a single byte                                        */
   virtual U32 getByte() = 0;
 /* read an array of bytes                                    */
-  virtual void getBytes(U8* bytes, const U32 num_bytes) = 0;
+  virtual void getBytes(U8* bytes, const I64 num_bytes) = 0;
 /* read 16 bit low-endian field                              */
   virtual void get16bitsLE(U8* bytes) = 0;
 /* read 32 bit low-endian field                              */

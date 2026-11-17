@@ -10,14 +10,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2005-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -96,13 +96,15 @@
 #include "arithmeticdecoder.hpp"
 
 #include <string.h>
-#include <assert.h>
+#include <cassert>
 
 #include "arithmeticmodel.hpp"
 
 ArithmeticDecoder::ArithmeticDecoder()
 {
   instream = 0;
+  length = 0;
+  value = 0;
 }
 
 BOOL ArithmeticDecoder::init(ByteStreamIn* instream, BOOL really_init)
@@ -187,6 +189,11 @@ U32 ArithmeticDecoder::decodeSymbol(ArithmeticModel* m)
 
     unsigned dv = value / (length >>= DM__LengthShift);
     unsigned t = dv >> m->table_shift;
+
+    if (t > m->table_size)
+    {
+      throw 4711;
+    }
 
     sym = m->decoder_table[t];      // initial decision based on table look-up
     n = m->decoder_table[t+1] + 1;

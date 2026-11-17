@@ -9,11 +9,11 @@
   
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2015, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2015, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -30,12 +30,14 @@
 */
 #include "laswritercompatible.hpp"
 
+#include "lasmessage.hpp"
 #include "bytestreamout_array.hpp"
 #include "bytestreamin_array.hpp"
 
 BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteopener, BOOL moveCRSfromEVLRtoVLR, BOOL moveEVLRtoVLR)
 {
   U32 i;
+  U8 version_minor_orig = header->version_minor;
 
   if (header == 0)
   {
@@ -66,17 +68,31 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   // downgrade it to LAS 1.2 or LAS 1.3
   if (header->point_data_format <= 8)
   {
-    header->version_minor = 2;
-    // LAS 1.2 header is 148 bytes less than LAS 1.4+ header
-    header->header_size -= 148;
-    header->offset_to_point_data -= 148;
+      if (header->version_minor >= 4) {
+          // LAS 1.2 header is 148 bytes less than LAS 1.4 header
+          header->header_size -= 148;
+          header->offset_to_point_data -= 148;
+      }
+      if (header->version_minor >= 5) {
+          // LAS 1.4 header is 18 bytes less than LAS 1.5 header
+          header->header_size -= 18;
+          header->offset_to_point_data -= 18;
+      }
+      header->version_minor = 2;
   }
   else
   {
-    header->version_minor = 3;
-    // LAS 1.3 header is 140 bytes less than LAS 1.4+ header
-    header->header_size -= 140;
-    header->offset_to_point_data -= 140;
+      if (header->version_minor >= 4) {
+          // LAS 1.3 header is 140 bytes less than LAS 1.4 header
+          header->header_size -= 140;
+          header->offset_to_point_data -= 140;
+      }
+      if (header->version_minor >= 5) {
+          // LAS 1.4 header is 18 bytes less than LAS 1.5 header
+          header->header_size -= 18;
+          header->offset_to_point_data -= 18;
+      }
+      header->version_minor = 3;
   }
 
   // turn off the bit indicating the presence of the OGC WKT
@@ -87,9 +103,9 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   // but we add 5 bytes of attributes
   header->point_data_record_length += 5;
 
-  // create 2+2+4+148 bytes payload for compatibility VLR
+  // create 2+2+4+148 bytes payload for compatibility VLR, +18 for LAS 1.5
   ByteStreamOutArray* out;
-  if (IS_LITTLE_ENDIAN())
+  if (Endian::IS_LITTLE_ENDIAN)
     out = new ByteStreamOutArrayLE();
   else
     out = new ByteStreamOutArrayBE();
@@ -97,6 +113,9 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   U16 laszip_version = (U16)LASZIP_VERSION_BUILD_DATE;
   out->put16bitsLE((U8*)&laszip_version);
   U16 compatible_version = 3;
+  if (version_minor_orig == 5) {
+      compatible_version = 4;
+  }
   out->put16bitsLE((U8*)&compatible_version);
   U32 unused = 0;
   out->put32bitsLE((U8*)&unused);
@@ -104,29 +123,21 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   U64 start_of_waveform_data_packet_record = header->start_of_waveform_data_packet_record;
   if (start_of_waveform_data_packet_record != 0)
   {
-#ifdef _WIN32
-    eprint("WARNING: header->start_of_waveform_data_packet_record is %" PRId64 ". writing 0 instead.\n", start_of_waveform_data_packet_record);
-#else
-    eprint("WARNING: header->start_of_waveform_data_packet_record is %" PRId64 ". writing 0 instead.\n", start_of_waveform_data_packet_record);
-#endif
+    LASMessage(LAS_WARNING, "header->start_of_waveform_data_packet_record is %lld. writing 0 instead.", start_of_waveform_data_packet_record);
     start_of_waveform_data_packet_record = 0;
   }
   out->put64bitsLE((U8*)&start_of_waveform_data_packet_record);
   U64 start_of_first_extended_variable_length_record = header->start_of_first_extended_variable_length_record;
   if (start_of_first_extended_variable_length_record != 0)
   {
-#ifdef _WIN32
-    eprint("WARNING: EVLRs not supported. header->start_of_first_extended_variable_length_record is %" PRId64 ". writing 0 instead.\n", start_of_first_extended_variable_length_record);
-#else
-    eprint("WARNING: EVLRs not supported. header->start_of_first_extended_variable_length_record is %" PRId64 ". writing 0 instead.\n", start_of_first_extended_variable_length_record);
-#endif
+    LASMessage(LAS_WARNING, "EVLRs not supported. header->start_of_first_extended_variable_length_record is %lld. writing 0 instead.", start_of_first_extended_variable_length_record);
     start_of_first_extended_variable_length_record = 0;
   }
   out->put64bitsLE((U8*)&start_of_first_extended_variable_length_record);
   U32 number_of_extended_variable_length_records = header->number_of_extended_variable_length_records;
   if (number_of_extended_variable_length_records != 0)
   {
-    eprint("WARNING: EVLRs not supported. header->number_of_extended_variable_length_records is %u. writing 0 instead.\n", number_of_extended_variable_length_records);
+    LASMessage(LAS_WARNING, "EVLRs not supported. header->number_of_extended_variable_length_records is %u. writing 0 instead.", number_of_extended_variable_length_records);
     number_of_extended_variable_length_records = 0;
   }
   out->put32bitsLE((U8*)&number_of_extended_variable_length_records);
@@ -134,7 +145,7 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
   if (header->number_of_point_records)
   {
     extended_number_of_point_records = header->number_of_point_records;
-    eprint("WARNING: legacy number_of_point_records in header of LAS 1.4 file should be zero.\n");
+    LASMessage(LAS_WARNING, "legacy number_of_point_records in header of LAS 1.4 file should be zero.");
   }
   else
   {
@@ -150,7 +161,7 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
       if (header->number_of_points_by_return[i])
       {
         extended_number_of_points_by_return = header->number_of_points_by_return[i];
-        eprint("WARNING: legacy number_of_points_by_return[%d] in header of LAS 1.4 file should be zero.\n", i);
+        LASMessage(LAS_WARNING, "legacy number_of_points_by_return[%d] in header of LAS 1.4 file should be zero.", i);
       }
       else
       {
@@ -164,8 +175,23 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
     }
     out->put64bitsLE((U8*)&extended_number_of_points_by_return);
   }
+  
+  U16 vlr_size = 2 + 2 + 4 + 148;
+
+  // add 18 bytes for the las 1.5 header
+  if (version_minor_orig >= 5) {
+      F64 max_gps_time = header->max_gps_time;
+      out->put64bitsLE((U8*)&max_gps_time);
+      F64 min_gps_time = header->min_gps_time;
+      out->put64bitsLE((U8*)&min_gps_time);
+      U16 time_offset = header->time_offset;
+      out->put16bitsLE((U8*)&time_offset);
+
+      vlr_size += 18;
+  }
+  
   // add the compatibility VLR
-  header->add_vlr("lascompatible\0\0", 22204, 2+2+4+148, out->takeData());
+  header->add_vlr("lascompatible\0\0", 22204, vlr_size, out->takeData());
   delete out;
 
   // scan_angle (difference or remainder) is stored as a I16
@@ -228,11 +254,7 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
           }
           else
           {
-#ifdef _WIN32
-            eprint("large EVLR with user ID '%s' and record ID %d with payload size %" PRId64 " not moved to VLRs.\n", header->evlrs[i].user_id, header->evlrs[i].record_id, header->evlrs[i].record_length_after_header);
-#else
-            eprint("large EVLR with user ID '%s' and record ID %d with payload size %" PRId64 " not moved to VLRs.\n", header->evlrs[i].user_id, header->evlrs[i].record_id, header->evlrs[i].record_length_after_header);
-#endif
+            LASMessage(LAS_INFO, "large EVLR with user ID '%s' and record ID %d with payload size %lld not moved to VLRs.", header->evlrs[i].user_id, header->evlrs[i].record_id, header->evlrs[i].record_length_after_header);
           }
         }
         else if (strcmp(header->evlrs[i].user_id, "LASF_Projection") == 0)
@@ -269,7 +291,7 @@ BOOL LASwriterCompatibleDown::open(LASheader* header, LASwriteOpener* laswriteop
           }
           else
           {
-            eprint("unknown LASF_Projection EVLR with record ID %d not moved to VLRs.\n", header->evlrs[i].record_id);
+            LASMessage(LAS_INFO, "unknown LASF_Projection EVLR with record ID %d not moved to VLRs.", header->evlrs[i].record_id);
           }
         }
       }
@@ -349,23 +371,18 @@ BOOL LASwriterCompatibleDown::write_point(const LASpoint* point)
   assert(return_number_increment >= 0);
   number_of_returns_increment = pointCompatibleDown.extended_number_of_returns - pointCompatibleDown.number_of_returns;
   assert(number_of_returns_increment >= 0);
-  if (pointCompatibleDown.extended_classification > 31)
-  {
-    pointCompatibleDown.set_classification(0);
-  }
-  else
-  {
-    pointCompatibleDown.extended_classification = 0;
-  }
   scanner_channel = pointCompatibleDown.extended_scanner_channel;
   overlap_bit = (pointCompatibleDown.extended_classification_flags >> 3);
 
   // write distilled extended attributes into extra bytes 
 
-  pointCompatibleDown.set_attribute(start_scan_angle, ((I16)scan_angle_remainder));
-  pointCompatibleDown.set_attribute(start_extended_returns, (U8)((return_number_increment << 4) | number_of_returns_increment));
-  pointCompatibleDown.set_attribute(start_classification, (U8)(pointCompatibleDown.extended_classification));
-  pointCompatibleDown.set_attribute(start_flags_and_channel, (U8)((scanner_channel << 1) | overlap_bit));
+  if ((start_scan_angle != -1) && (start_extended_returns != -1) && (start_classification != -1) && (start_flags_and_channel != -1))
+  {
+    pointCompatibleDown.set_attribute(start_scan_angle, ((I16)scan_angle_remainder));
+    pointCompatibleDown.set_attribute(start_extended_returns, (U8)((return_number_increment << 4) | number_of_returns_increment));
+    pointCompatibleDown.set_attribute(start_classification, (U8)(pointCompatibleDown.extended_classification));
+    pointCompatibleDown.set_attribute(start_flags_and_channel, (U8)((scanner_channel << 1) | overlap_bit));
+  }
   if (start_NIR_band != -1)
   {
     pointCompatibleDown.set_attribute(start_NIR_band, pointCompatibleDown.rgb[3]);
@@ -438,46 +455,48 @@ BOOL LASwriterCompatibleUp::open(LASheader* header, LASwriteOpener* laswriteopen
   const LASvlr* compatibility_vlr = header->get_vlr("lascompatible", 22204);
   if (compatibility_vlr == 0)
   {
-    eprint( "ERROR: no compatibility VLR in header\n"); 
+    laserror("no compatibility VLR in header"); 
     return FALSE;
   }
   // the compatibility VLR must have the right length
-  if (compatibility_vlr->record_length_after_header != (2+2+4+148))
+  if (compatibility_vlr->record_length_after_header != (2+2+4+148) && compatibility_vlr->record_length_after_header != (2 + 2 + 4 + 148 + 18))
   {
-    eprint( "ERROR: compatibility VLR has %u instead of %u bytes in payload\n", compatibility_vlr->record_length_after_header, 2+2+4+148);
+    laserror("compatibility VLR has %u instead of %u or %u bytes in payload", compatibility_vlr->record_length_after_header, 2+2+4+148, 2+2+4+148+18);
     return FALSE;
   }
   I32 index_scan_angle = header->get_attribute_index("LAS 1.4 scan angle");
   if (index_scan_angle == -1)
   {
-    eprint( "ERROR: attribute \"LAS 1.4 scan angle\" is not in EXTRA_BYTES\n");
+    laserror("attribute \"LAS 1.4 scan angle\" is not in EXTRA_BYTES");
     return FALSE;
   }
   start_scan_angle = header->get_attribute_start(index_scan_angle);
   I32 index_extended_returns = header->get_attribute_index("LAS 1.4 extended returns");
   if (index_extended_returns == -1)
   {
-    eprint( "ERROR: attribute \"LAS 1.4 extended returns\" is not in EXTRA_BYTES\n");
+    laserror("attribute \"LAS 1.4 extended returns\" is not in EXTRA_BYTES");
     return FALSE;
   }
   start_extended_returns = header->get_attribute_start(index_extended_returns);
   I32 index_classification = header->get_attribute_index("LAS 1.4 classification");
   if (index_classification == -1)
   {
-    eprint( "ERROR: attribute \"LAS 1.4 classification\" is not in EXTRA_BYTES\n");
+    laserror("attribute \"LAS 1.4 classification\" is not in EXTRA_BYTES");
     return FALSE;
   }
   start_classification = header->get_attribute_start(index_classification);
   I32 index_flags_and_channel = header->get_attribute_index("LAS 1.4 flags and channel");
-  if (index_scan_angle == -1)
+  if (index_flags_and_channel == -1)
   {
-    eprint( "ERROR: attribute \"LAS 1.4 flags and channel\" is not in EXTRA_BYTES\n");
+    laserror("attribute \"LAS 1.4 flags and channel\" is not in EXTRA_BYTES");
     return FALSE;
   }
-  start_flags_and_channel = header->get_attribute_start(index_flags_and_channel); 
+  start_flags_and_channel = header->get_attribute_start(index_flags_and_channel);
 
   this->header = header;
 
+  bool compatibility_for_1_5 = (compatibility_vlr->record_length_after_header == (2 + 2 + 4 + 148 + 18));
+  
   // upgrade it to LAS 1.4
 
   if (header->version_minor < 3)
@@ -492,7 +511,15 @@ BOOL LASwriterCompatibleUp::open(LASheader* header, LASwriteOpener* laswriteopen
     header->header_size += 140;
     header->offset_to_point_data += 140;
   }
-  header->version_minor = 4;
+  // add the LAS 1.5 header
+  if (compatibility_for_1_5 == true) {
+      header->header_size += 18;
+      header->offset_to_point_data += 18;
+      header->version_minor = 5;
+  }
+  else {
+      header->version_minor = 4;
+  }
 
   // maybe turn on the bit indicating the presence of the OGC WKT
   for (i = 0; i < header->number_of_variable_length_records; i++)
@@ -504,27 +531,27 @@ BOOL LASwriterCompatibleUp::open(LASheader* header, LASwriteOpener* laswriteopen
     }
   }
 
-  // read the 2+2+4+148 bytes payload from the compatibility VLR
+  // read the 2+2+4+148(+18) bytes payload from the compatibility VLR
   ByteStreamInArray* in;
-  if (IS_LITTLE_ENDIAN())
+  if (Endian::IS_LITTLE_ENDIAN)
     in = new ByteStreamInArrayLE(compatibility_vlr->data, compatibility_vlr->record_length_after_header);
   else
     in = new ByteStreamInArrayBE(compatibility_vlr->data, compatibility_vlr->record_length_after_header);
-  // read the 2+2+4+148 bytes of the extended LAS 1.4 header
+  // read the 2+2+4+148(+18) bytes of the extended LAS 1.4/1.5 header
   U16 lastools_version;
   in->get16bitsLE((U8*)&lastools_version);
   U16 compatible_version;
   in->get16bitsLE((U8*)&compatible_version);
-  if (compatible_version != 3)
+  if ((compatible_version != 3) && (compatible_version != 4))
   {
-    eprint( "ERROR: compatibility mode version %u not implemented\n", compatible_version);
+    laserror("compatibility mode version %u not implemented", compatible_version);
     return FALSE;
   }
   U32 unused;
   in->get32bitsLE((U8*)&unused);
   if (unused != 0)
   {
-    eprint( "WARNING: unused is %u instead of 0\n", unused);
+    LASMessage(LAS_WARNING, "unused is %u instead of 0", unused);
   }
   in->get64bitsLE((U8*)&(header->start_of_waveform_data_packet_record));
   in->get64bitsLE((U8*)&(header->start_of_first_extended_variable_length_record));
@@ -533,6 +560,12 @@ BOOL LASwriterCompatibleUp::open(LASheader* header, LASwriteOpener* laswriteopen
   for (i = 0; i < 15; i++)
   {
     in->get64bitsLE((U8*)&(header->extended_number_of_points_by_return[i]));
+  }
+  // las 1.5
+  if (compatibility_for_1_5) {
+      in->get64bitsLE((U8*)&(header->max_gps_time));
+      in->get64bitsLE((U8*)&(header->min_gps_time));
+      in->get16bitsLE((U8*)&(header->time_offset));
   }
   // delete the compatibility VLR
   header->remove_vlr("lascompatible", 22204);
@@ -612,6 +645,11 @@ BOOL LASwriterCompatibleUp::write_point(const LASpoint* point)
   // copy point
   pointCompatibleUp = *point;
   // get extra_attributes
+  if ((start_scan_angle == -1) || (start_extended_returns == -1) || (start_classification == -1) || (start_flags_and_channel == -1))
+  {
+    laserror("compatibility attribute offsets are invalid");
+    return FALSE;
+  }
   point->get_attribute(start_scan_angle, scan_angle);
   point->get_attribute(start_extended_returns, extended_returns);
   point->get_attribute(start_classification, classification);

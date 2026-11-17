@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2019, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2019, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 
-class LASreaderBIL : public LASreader
+class LASLIB_DLL LASreaderBIL : public LASreader
 {
 public:
 
@@ -55,7 +55,7 @@ public:
   void close(BOOL close_stream=TRUE);
   BOOL reopen(const CHAR* file_name);
 
-  LASreaderBIL();
+  LASreaderBIL(LASreadOpener* opener);
   virtual ~LASreaderBIL();
 
 protected:
@@ -74,6 +74,8 @@ private:
   I64 overflow_I32_x;
   I64 overflow_I32_y;
   I64 overflow_I32_z;
+  F64 orig_x_offset, orig_y_offset, orig_z_offset;
+  F64 orig_x_scale_factor, orig_y_scale_factor, orig_z_scale_factor;
 
   void clean();
   BOOL read_hdr_file(const CHAR* file_name);
@@ -82,30 +84,30 @@ private:
   void populate_bounding_box();
 };
 
-class LASreaderBILrescale : public virtual LASreaderBIL
+class LASLIB_DLL LASreaderBILrescale : public virtual LASreaderBIL
 {
 public:
   virtual BOOL open(const CHAR* file_name);
-  LASreaderBILrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
+  LASreaderBILrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
 
 protected:
   F64 scale_factor[3];
 };
 
-class LASreaderBILreoffset : public virtual LASreaderBIL
+class LASLIB_DLL LASreaderBILreoffset : public virtual LASreaderBIL
 {
 public:
   virtual BOOL open(const CHAR* file_name);
-  LASreaderBILreoffset(F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderBILreoffset(LASreadOpener* opener, F64 x_offset, F64 y_offset, F64 z_offset);
 protected:
   F64 offset[3];
 };
 
-class LASreaderBILrescalereoffset : public LASreaderBILrescale, LASreaderBILreoffset
+class LASLIB_DLL LASreaderBILrescalereoffset : public LASreaderBILrescale, LASreaderBILreoffset
 {
 public:
   BOOL open(const CHAR* file_name);
-  LASreaderBILrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderBILrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
 };
 
 #endif

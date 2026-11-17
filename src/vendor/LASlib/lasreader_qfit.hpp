@@ -11,11 +11,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2012, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -38,7 +38,7 @@
 
 #include <stdio.h>
 
-class LASreaderQFIT : public LASreader
+class LASLIB_DLL LASreaderQFIT : public LASreader
 {
 public:
 
@@ -52,7 +52,7 @@ public:
   void close(BOOL close_stream=TRUE);
   BOOL reopen(const char* file_name);
 
-  LASreaderQFIT();
+  LASreaderQFIT(LASreadOpener* opener);
   virtual ~LASreaderQFIT();
 
 protected:
@@ -66,38 +66,40 @@ private:
   BOOL little_endian;
   BOOL endian_swap;
   I32 offset;
-  I32 buffer[14];
+  I32 buffer[14] = {0};
   BOOL populated_header;
   I32 scan_azimuth_start;
   I32 pitch_start;
   I32 roll_start;
   I32 pulse_width_start;
+  F64 orig_x_offset, orig_y_offset, orig_z_offset;
+  F64 orig_x_scale_factor, orig_y_scale_factor, orig_z_scale_factor;
 };
 
-class LASreaderQFITrescale : public virtual LASreaderQFIT
+class LASLIB_DLL LASreaderQFITrescale : public virtual LASreaderQFIT
 {
 public:
   virtual BOOL open(ByteStreamIn* stream);
-  LASreaderQFITrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
+  LASreaderQFITrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
 
 protected:
   F64 scale_factor[3];
 };
 
-class LASreaderQFITreoffset : public virtual LASreaderQFIT
+class LASLIB_DLL LASreaderQFITreoffset : public virtual LASreaderQFIT
 {
 public:
   virtual BOOL open(ByteStreamIn* stream);
-  LASreaderQFITreoffset(F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderQFITreoffset(LASreadOpener* opener, F64 x_offset, F64 y_offset, F64 z_offset);
 protected:
   F64 offset[3];
 };
 
-class LASreaderQFITrescalereoffset : public LASreaderQFITrescale, LASreaderQFITreoffset
+class LASLIB_DLL LASreaderQFITrescalereoffset : public LASreaderQFITrescale, LASreaderQFITreoffset
 {
 public:
   BOOL open(ByteStreamIn* stream);
-  LASreaderQFITrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderQFITrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
 };
 
 #endif
