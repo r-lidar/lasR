@@ -17,6 +17,7 @@ LASRtransformcrs::LASRtransformcrs(const LASRtransformcrs& other) : Stage(other)
 
   source_crs = other.source_crs;
   target_crs = other.target_crs;
+  transform_z = other.transform_z;
   xoffset = other.xoffset;
   yoffset = other.yoffset;
   if (other.transform) transform.reset(other.transform->Clone());
@@ -44,15 +45,34 @@ bool LASRtransformcrs::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
-  // Z is not modified. A target that describes the heights (EPSG:4979, a compound CRS) would
-  // label heights that were not transformed.
-  if (target_crs.get_crs().GetAxesCount() != 2)
+  // Z is transformed only if the target CRS describes the heights: a 3D CRS (EPSG:4979, ellipsoidal
+  // heights) or a compound CRS (EPSG:9707, WGS 84 + EGM96 height)
+  int axes = target_crs.get_crs().GetAxesCount();
+  if (axes != 2 && axes != 3)
   {
-    last_error = "transform_crs: the target CRS must be a 2D CRS because Z is not transformed. The vertical CRS of the point cloud, if any, is kept.";
+    last_error = "transform_crs: the target CRS must be a 2D or 3D CRS";
     return false;
   }
 
+  transform_z = axes == 3;
+
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3,3,0)
+  // A ballpark transformation cannot be refused (see set_crs()): Z could be left unchanged
+  if (transform_z)
+  {
+    last_error = "transform_crs: transforming Z requires GDAL >= 3.3. Use a 2D target CRS to keep Z unchanged.";
+    return false;
+  }
+#endif
+
   return true;
+}
+
+static const char* no_vertical_transformation = "transform_crs: no transformation of the heights from the CRS of the point cloud to the target CRS. PROJ may need a geoid grid that is not installed, see https://cdn.proj.org";
+
+static bool describes_heights(const CRS& crs)
+{
+  return crs.is_valid() && crs.get_crs().GetAxesCount() == 3;
 }
 
 // The same CRS can be written with several WKT
@@ -102,7 +122,7 @@ static CRS keep_vertical(const CRS& target, const CRS& source)
 // The CRS received is the source CRS. The next stages receive the target CRS.
 void LASRtransformcrs::set_crs(const CRS& crs)
 {
-  this->crs = keep_vertical(target_crs, crs);
+  this->crs = transform_z ? target_crs : keep_vertical(target_crs, crs);
 
   if (transform && crs == source_crs) return;
 
@@ -110,12 +130,23 @@ void LASRtransformcrs::set_crs(const CRS& crs)
   transform.reset();
   if (!source_crs.is_valid()) return;
 
+  // Z cannot be transformed if nothing says what it is (see process())
+  if (transform_z && !describes_heights(source_crs)) return;
+
   // x is the longitude or the easting, whatever the axis order of the CRS
   OGRSpatialReference source = source_crs.get_crs();
   OGRSpatialReference target = target_crs.get_crs();
   source.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
   target.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
-  transform.reset(OGRCreateCoordinateTransformation(&source, &target));
+
+  // When the geoid grid is not available, PROJ falls back on a ballpark transformation that leaves
+  // Z unchanged (and may move X and Y by a metre). Without it the transformation cannot be built,
+  // or fails for every point (see process()).
+  OGRCoordinateTransformationOptions options;
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,3,0)
+  if (transform_z) options.SetBallparkAllowed(false);
+#endif
+  transform.reset(OGRCreateCoordinateTransformation(&source, &target, options));
 }
 
 // Bounding box of the reprojected box. The edges of a reprojected box are curved so they are
@@ -197,6 +228,18 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
 
 bool LASRtransformcrs::process(PointCloud*& las)
 {
+  if (transform_z && source_crs.is_valid() && !describes_heights(source_crs))
+  {
+    last_error = "transform_crs: the target CRS describes the heights but the CRS of the point cloud does not. Assign a CRS that describes them with set_crs(), e.g. a compound CRS such as EPSG:2949+5773.";
+    return false;
+  }
+
+  if (!transform && transform_z && source_crs.is_valid())
+  {
+    last_error = no_vertical_transformation;
+    return false;
+  }
+
   if (!transform)
   {
     last_error = "transform_crs: cannot transform the CRS of the point cloud to the target CRS. Does the point cloud have a CRS?";
@@ -214,10 +257,11 @@ bool LASRtransformcrs::process(PointCloud*& las)
 
   Attribute& attrx = las->header->schema.attributes[AttributeCore::X];
   Attribute& attry = las->header->schema.attributes[AttributeCore::Y];
+  Attribute& attrz = las->header->schema.attributes[AttributeCore::Z];
 
-  if (attrx.type != AttributeType::INT32 || attry.type != AttributeType::INT32)
+  if (attrx.type != AttributeType::INT32 || attry.type != AttributeType::INT32 || (transform_z && attrz.type != AttributeType::INT32))
   {
-    last_error = "transform_crs: only X and Y stored as scaled integers (LAS, LAZ) are supported";
+    last_error = "transform_crs: only coordinates stored as scaled integers (LAS, LAZ) are supported";
     return false;
   }
 
@@ -230,11 +274,12 @@ bool LASRtransformcrs::process(PointCloud*& las)
 
   // The points are transformed by batches: transforming them one by one is much slower.
   const size_t batch = 65536;
-  std::vector<double> x(batch), y(batch);
+  std::vector<double> x(batch), y(batch), z(transform_z ? batch : 0);
   std::vector<unsigned char*> data(batch);
   std::vector<int> ok(batch);
   size_t n = 0;
   size_t dropped = 0;
+  size_t transformed = 0;
 
   Point p;
   p.set_schema(&las->header->schema);
@@ -243,10 +288,12 @@ bool LASRtransformcrs::process(PointCloud*& las)
   {
     if (n == 0) return;
 
-    transform->Transform((int)n, x.data(), y.data(), nullptr, ok.data());
+    transform->Transform((int)n, x.data(), y.data(), transform_z ? z.data() : nullptr, ok.data());
 
     for (size_t i = 0 ; i < n ; i++)
     {
+      if (ok[i]) transformed++;
+
       // Only if the extent of the coverage could not be reprojected in get_extent()
       if (ok[i] && std::isnan(xoffset))
       {
@@ -256,11 +303,12 @@ bool LASRtransformcrs::process(PointCloud*& las)
 
       double X = std::round((x[i] - xoffset) / xscale);
       double Y = std::round((y[i] - yoffset) / yscale);
+      double Z = transform_z ? std::round((z[i] - attrz.value_offset) / attrz.scale_factor) : 0;
 
       // Outside the domain of the transformation or not storable on 32 bits
       const double max = std::numeric_limits<int>::max();
       p.data = data[i];
-      if (!ok[i] || !(std::fabs(X) <= max) || !(std::fabs(Y) <= max))
+      if (!ok[i] || !(std::fabs(X) <= max) || !(std::fabs(Y) <= max) || !(std::fabs(Z) <= max))
       {
         p.set_deleted();
         dropped++;
@@ -269,6 +317,7 @@ bool LASRtransformcrs::process(PointCloud*& las)
 
       p.set_X((int)X);
       p.set_Y((int)Y);
+      if (transform_z) p.set_Z((int)Z);
     }
 
     n = 0;
@@ -278,11 +327,19 @@ bool LASRtransformcrs::process(PointCloud*& las)
   {
     x[n] = las->point.get_x();
     y[n] = las->point.get_y();
+    if (transform_z) z[n] = las->point.get_z();
     data[n] = las->point.data;
     n++;
     if (n == batch) transform_batch();
   }
   transform_batch();
+
+  // Not a single point is in the domain of the transformation: the geoid grid is not available
+  if (transform_z && transformed == 0 && las->npoints > 0)
+  {
+    last_error = no_vertical_transformation;
+    return false;
+  }
 
   attrx.scale_factor = xscale;
   attry.scale_factor = yscale;

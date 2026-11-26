@@ -142,12 +142,49 @@ test_that("transform_crs fails with an invalid target CRS",
   expect_error(exec(reader_las() + transform_crs(12) + write_las(), on = f, noread = TRUE))
 })
 
-test_that("transform_crs refuses a target CRS that describes the heights",
+test_that("transform_crs needs a source CRS that describes the heights to transform Z",
 {
-  # Z is not transformed: a 3D or compound target would label heights that were not transformed
+  # Topography.las is in a 2D CRS: nothing says what its heights are
   f <- system.file("extdata", "Topography.las", package = "lasR")
-  expect_error(exec(reader_las() + transform_crs(4979) + summarise(), on = f), "2D CRS")
-  expect_error(exec(reader_las() + transform_crs(mtm7_egm96) + summarise(), on = f), "2D CRS")
+  expect_error(exec(reader_las() + transform_crs(4979) + summarise(), on = f), "does not")
+  expect_error(exec(reader_las() + transform_crs(mtm7_egm96) + summarise(), on = f), "does not")
+})
+
+test_that("transform_crs transforms EGM96 heights to ellipsoidal heights",
+{
+  # printf "273357.14825 5274359.9785 806.534" | cs2cs -f %.9f EPSG:2949+5773 EPSG:4979
+  # 47.607651808 -70.918224658 780.281923426
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  first <- function(p) exec(p + callback(function(d) d[1,], expose = "xyz", no_las_update = TRUE), on = f)
+
+  ans <- tryCatch(first(reader_las() + set_crs(mtm7_egm96) + transform_crs(4979)), error = function(e) e)
+  if (inherits(ans, "error") && grepl("geoid grid", conditionMessage(ans))) skip("PROJ has no EGM96 geoid grid")
+  expect_lt(max(abs(c(ans$X, ans$Y) - c(-70.918224658, 47.607651808))), 1e-7)
+  expect_lt(abs(ans$Z - 780.281923426), 0.001)
+
+  out <- tempfile(fileext = ".las")
+  exec(reader_las() + set_crs(mtm7_egm96) + transform_crs(4979) + write_las(out), on = f, noread = TRUE)
+  expect_equal(read_epsg(out), 4979L)
+  r <- read_range(out)
+  src <- read_range(f)
+  expect_lt(abs(unname(r["zmin"] - src["zmin"]) + 26.25), 0.05)
+})
+
+test_that("transform_crs does not modify Z between the same vertical CRS",
+{
+  # EPSG:9707 is WGS 84 + EGM96 height: the heights stay EGM96 heights
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  src <- read_range(f)
+
+  out <- tempfile(fileext = ".las")
+  exec(reader_las() + set_crs(mtm7_egm96) + transform_crs(9707) + write_las(out), on = f, noread = TRUE)
+  expect_match(read_crs(out), "EGM96 height")
+
+  ref <- tempfile(fileext = ".las")
+  exec(reader_las() + transform_crs(4326) + write_las(ref), on = f, noread = TRUE)
+  r <- read_range(out)
+  expect_equal(r, read_range(ref))
+  expect_equal(unname(r[c("zmin", "zmax")]), unname(src[c("zmin", "zmax")]))
 })
 
 test_that("transform_crs keeps the vertical CRS of a compound source CRS",

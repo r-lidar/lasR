@@ -232,6 +232,10 @@ class TestIntegrationWorkflows(unittest.TestCase):
             self.fail(f"Pipeline execution raised an exception: {e}")
 
 
+# EPSG:2949+5773, NAD83(CSRS) / MTM zone 7 + EGM96 height (projinfo -o WKT1_GDAL)
+MTM7_EGM96 = 'COMPD_CS["NAD83(CSRS) / MTM zone 7 + EGM96 height",PROJCS["NAD83(CSRS) / MTM zone 7",GEOGCS["NAD83(CSRS)",DATUM["NAD83_Canadian_Spatial_Reference_System",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],AUTHORITY["EPSG","6140"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4617"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-70.5],PARAMETER["scale_factor",0.9999],PARAMETER["false_easting",304800],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","2949"]],VERT_CS["EGM96 height",VERT_DATUM["EGM96 geoid",2005,AUTHORITY["EPSG","5171"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Gravity-related height",UP],AUTHORITY["EPSG","5773"]]]'
+
+
 class TestTransformCRS(unittest.TestCase):
     """transform_crs() reprojects the point cloud. Expected values from gdaltransform"""
 
@@ -282,10 +286,23 @@ class TestTransformCRS(unittest.TestCase):
         self.assertEqual(summary["crs"]["epsg"], 32619)
         self.assertEqual(summary["npoints"], 73403)
 
-    def test_transform_crs_refuses_a_3d_target(self):
-        # Z is not transformed: EPSG:4979 would label the heights as ellipsoidal heights
-        with self.assertRaisesRegex(ValueError, "2D CRS"):
+    def test_transform_crs_3d_target_needs_heights(self):
+        # Topography.las is in a 2D CRS: nothing says what its heights are
+        with self.assertRaisesRegex(ValueError, "does not"):
             self.execute(pylasr.transform_crs(4979), pylasr.summarise())
+
+    def test_transform_crs_ellipsoidal_heights(self):
+        # printf "273357.14825 5274359.9785 806.534" | cs2cs -f %.9f EPSG:2949+5773 EPSG:4979
+        # 47.607651808 -70.918224658 780.281923426
+        try:
+            x, y, z = self.first_point(pylasr.set_crs(MTM7_EGM96) + pylasr.transform_crs(4979))
+        except ValueError as e:
+            if "geoid grid" in str(e):
+                self.skipTest("PROJ has no EGM96 geoid grid")
+            raise
+        self.assertAlmostEqual(x, -70.918224658, delta=1e-7)
+        self.assertAlmostEqual(y, 47.607651808, delta=1e-7)
+        self.assertAlmostEqual(z, 780.281923426, delta=0.001)
 
 
 class TestErrorHandling(unittest.TestCase):

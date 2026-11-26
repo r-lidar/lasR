@@ -865,4 +865,4 @@ result = pcd_pipeline.execute("input_file.pcd")
 
 ### Coordinate reference systems
 - `set_crs()` - Set coordinate reference system using EPSG codes or WKT
-- `transform_crs()` - Reproject X and Y to a target coordinate reference system (EPSG code or WKT). Z is not modified
+- `transform_crs()` - Reproject to a target coordinate reference system (EPSG code or WKT). Z is transformed only if the target CRS describes the heights (3D or compound CRS)

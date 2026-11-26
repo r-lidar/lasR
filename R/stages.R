@@ -1206,16 +1206,21 @@ set_crs = function(x)
 #' The source CRS is the CRS of the files or the one assigned with \link{set_crs} earlier in the
 #' pipeline. A point that falls outside the domain of the transformation is discarded.
 #'
-#' Z is not modified, like `gdaltransform`, `sf` and `terra` do for 2D CRS. If the source CRS is a
-#' compound CRS (e.g. EPSG:2949+5773), its vertical CRS still describes Z and the output CRS is the
-#' target CRS combined with this vertical CRS.
+#' Z is transformed only if the target CRS describes the heights: a 3D CRS such as EPSG:4979
+#' (WGS 84 with ellipsoidal heights) or a compound CRS such as EPSG:9707 (WGS 84 + EGM96 height).
+#' The CRS of the point cloud must then describe the heights too: if it does not, assign it a
+#' compound CRS with \link{set_crs}. Between ellipsoidal and gravity-related heights PROJ needs a
+#' geoid grid (see \url{https://cdn.proj.org}). If the grid is not installed the stage fails
+#' rather than leaving Z unchanged.
+#'
+#' If the target CRS is a 2D CRS, Z is not modified, like `gdaltransform`, `sf` and `terra` do. If
+#' the source CRS is a compound CRS (e.g. EPSG:2949+5773), its vertical CRS still describes Z and
+#' the output CRS is the target CRS combined with this vertical CRS.
 #'
 #' @section Limitations:
-#' - Vertical datum transformations are not supported: the target CRS must be a 2D CRS, not a 3D
-#'   (e.g. EPSG:4979) or compound CRS.
 #' - All the files must be in the same CRS. Files in different CRS must be reprojected separately.
-#' - Only X and Y stored as scaled integers (LAS and LAZ files) are supported, not floating point
-#'   coordinates (PCD files).
+#' - Only X and Y (and Z when it is transformed) stored as scaled integers (LAS and LAZ files) are
+#'   supported, not floating point coordinates (PCD files).
 #' - Like \link{transform_with} with a rotation matrix, a reprojected chunk is no longer an
 #'   axis-aligned rectangle. When processing several chunks with a buffer, the stages placed after
 #'   `transform_crs()` receive the bounding box of the reprojected chunk, which overlaps its
@@ -1224,6 +1229,7 @@ set_crs = function(x)
 #'   When this matters, reproject the files first and process the reprojected files.
 #'
 #' @param crs integer or string. EPSG code or WKT string of the **target** CRS, understood by GDAL.
+#' A compound CRS without EPSG code can be given as WKT, e.g. `sf::st_crs("EPSG:32619+5773")$wkt`.
 #' @export
 #' @md
 #' @examples
@@ -1236,6 +1242,14 @@ set_crs = function(x)
 #' # Reproject then rasterize: the output raster is in the target CRS
 #' pipeline = reader_las() + transform_crs(32619) + rasterize(10, "max")
 #' exec(pipeline, on = f)
+#'
+#' \dontrun{
+#' # The heights of this file are EGM96 heights. Transform them to ellipsoidal heights
+#' # (requires the EGM96 geoid grid)
+#' egm96 = sf::st_crs("EPSG:2949+5773")$wkt
+#' pipeline = reader_las() + set_crs(egm96) + transform_crs(4979) + write_las()
+#' exec(pipeline, on = f)
+#' }
 transform_crs = function(crs)
 {
   if (is.numeric(crs)) { return(.APISTAGES$transform_crs_epsg(crs)) }

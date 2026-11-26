@@ -163,7 +163,7 @@ pipeline.set_nested_strategy(ncores1=2, ncores2=4)
 
 ### Coordinate Systems
 - `set_crs()` - Set coordinate reference system
-- `transform_crs()` - Reproject X and Y to a target coordinate reference system
+- `transform_crs()` - Reproject to a target coordinate reference system
 
 ### Information & Analysis  
 - `info()` - Get point cloud information and statistics

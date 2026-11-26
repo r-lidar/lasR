@@ -7,7 +7,8 @@
 #include <cmath>
 #include <memory>
 
-// Reprojects X and Y from the CRS of the point cloud to a target CRS. Z is not modified.
+// Reprojects X and Y from the CRS of the point cloud to a target CRS. Z is transformed only if
+// the target CRS describes the heights (3D or compound CRS).
 // Like transform_with() with a matrix, this stage moves the points, so it also updates the
 // extent and the chunk handed to the next stages.
 class LASRtransformcrs : public Stage
@@ -34,6 +35,7 @@ private:
   CRS source_crs;
   CRS target_crs;
   std::unique_ptr<OGRCoordinateTransformation, Deleter> transform; // null if it cannot be built
+  bool transform_z = false; // the target CRS describes the heights
   double xoffset = NAN; // offsets of the reprojected coordinates: the centre of the coverage
   double yoffset = NAN;
 };
