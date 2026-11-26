@@ -556,7 +556,7 @@ PYBIND11_MODULE(pylasr, m) {
             throw std::invalid_argument("crs must be either EPSG code (int) or WKT string");
       }
       return api::Pipeline(s);
-      }, "Reproject the point cloud to the target CRS (EPSG code or WKT string)", py::arg("crs"));
+      }, "Reproject X and Y to the target 2D CRS (EPSG code or WKT string). Z is not modified", py::arg("crs"));
 
     // Stop conditions
     m.def("stop_if_outside", &api::stop_if_outside,

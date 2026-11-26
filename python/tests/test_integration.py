@@ -232,6 +232,62 @@ class TestIntegrationWorkflows(unittest.TestCase):
             self.fail(f"Pipeline execution raised an exception: {e}")
 
 
+class TestTransformCRS(unittest.TestCase):
+    """transform_crs() reprojects the point cloud. Expected values from gdaltransform"""
+
+    def setUp(self):
+        if not PYLASR_AVAILABLE:
+            self.skipTest("pylasr not available")
+
+        # NAD83(CSRS) / MTM zone 7 (EPSG:2949)
+        self.topography = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "inst", "extdata", "Topography.las")
+        if not os.path.exists(self.topography):
+            self.skipTest("Topography.las not found")
+
+    def execute(self, *stages):
+        pipeline = pylasr.Pipeline()
+        for stage in stages:
+            pipeline += stage
+        pipeline.set_sequential_strategy()
+        pipeline.set_verbose(False)
+        result = pipeline.execute([self.topography])
+        self.assertTrue(result["success"])
+        return result
+
+    def first_point(self, stage):
+        points = []
+
+        def first(data):
+            points.append((float(data["X"][0]), float(data["Y"][0]), float(data["Z"][0])))
+
+        self.execute(stage, pylasr.callback(first, expose="xyz", no_las_update=True))
+        return points[0]
+
+    def test_transform_crs_projected(self):
+        # printf "273357.14825 5274359.97850" | gdaltransform -s_srs EPSG:2949 -t_srs EPSG:32619
+        x, y, z = self.first_point(pylasr.transform_crs(32619))
+        self.assertAlmostEqual(x, 355829.908125, delta=0.001)
+        self.assertAlmostEqual(y, 5274476.545107, delta=0.001)
+        self.assertAlmostEqual(z, 806.534, delta=1e-6)  # Z is not modified
+
+    def test_transform_crs_geographic(self):
+        # printf "273357.14825 5274359.97850" | gdaltransform -s_srs EPSG:2949 -t_srs EPSG:4326
+        x, y, _ = self.first_point(pylasr.transform_crs(4326))
+        self.assertAlmostEqual(x, -70.91822466, delta=1e-7)
+        self.assertAlmostEqual(y, 47.60765181, delta=1e-7)
+
+    def test_transform_crs_assigns_the_target_crs(self):
+        result = self.execute(pylasr.transform_crs(32619), pylasr.summarise())
+        summary = [d for d in result["data"] if "summary" in d][0]["summary"]
+        self.assertEqual(summary["crs"]["epsg"], 32619)
+        self.assertEqual(summary["npoints"], 73403)
+
+    def test_transform_crs_refuses_a_3d_target(self):
+        # Z is not transformed: EPSG:4979 would label the heights as ellipsoidal heights
+        with self.assertRaisesRegex(ValueError, "2D CRS"):
+            self.execute(pylasr.transform_crs(4979), pylasr.summarise())
+
+
 class TestErrorHandling(unittest.TestCase):
     """Test error handling and edge cases"""
 
