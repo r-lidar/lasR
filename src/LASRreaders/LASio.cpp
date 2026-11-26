@@ -599,6 +599,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
   const char* filechar = const_cast<char*>(file.c_str());
   LASreadOpener lasreadopener;
   lasreadopener.set_file_name(filechar);
+  lasreadopener.set_decompress_selective(LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY);
   LASreader* lasreader = lasreadopener.open();
 
   if (!lasreader)
@@ -617,8 +618,6 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
     delete lasreader;
     return;
   }
-
-  lasreadopener.set_decompress_selective(LASZIP_DECOMPRESS_SELECTIVE_CHANNEL_RETURNS_XY);
 
   // setup the quadtree
   LASquadtree* lasquadtree = new LASquadtree;
