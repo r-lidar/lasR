@@ -79,6 +79,15 @@ exec(pipeline, on = f)
 #> $summary$epsg
 #> [1] 26917
 #> 
+#> $summary$area
+#> [1] 53133.17
+#> 
+#> $summary$density
+#> [1] 1.535576
+#> 
+#> $summary$pulse_density
+#> [1] 1.049363
+#> 
 #> 
 #> $summary.1
 #> $summary.1$npoints
@@ -116,6 +125,15 @@ exec(pipeline, on = f)
 #> 
 #> $summary.1$epsg
 #> [1] 26917
+#> 
+#> $summary.1$area
+#> [1] 53133.17
+#> 
+#> $summary.1$density
+#> [1] 1.285976
+#> 
+#> $summary.1$pulse_density
+#> [1] 0.901866
 #> 
 #> 
 ```

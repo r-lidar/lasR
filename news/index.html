@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lasR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.21.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.22.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,19 @@
       <small>Source: <a href="https://github.com/r-lidar/lasR/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.22" id="lasr-022">lasR 0.22<a class="anchor" aria-label="anchor" href="#lasr-022"></a></h2>
+<ul><li>New: <code><a href="../reference/summarise.html">summarise()</a></code> reports area, point density and pulse density.</li>
+<li>New: <code><a href="../reference/local_maximum.html">local_maximum()</a></code> supports variable window sizes.</li>
+<li>New: parallel decoding of LAZ files with <code><a href="../reference/multithreading.html">concurrent_points()</a></code> strategy (parallel read of one file). <code><a href="../reference/multithreading.html">concurrent_files()</a></code> strategy already reads (and decodes) several files in parallel.</li>
+<li>Fix: <code><a href="../reference/summarise.html">summarise()</a></code> area, density and pulse density for circular queries used the bounding square instead of the disc.</li>
+<li>Fix: heap-corrupting data race in <code>thread_safe_print</code> <a href="https://github.com/r-lidar/lasR/issues/328" class="external-link">#328</a>.</li>
+<li>Fix: <code><a href="../reference/write_lax.html">write_lax()</a></code> now enables selective decompression before opening the reader, so only X and Y are decompressed when indexing LAZ 1.4 files (PDRF 6-10). Indexing is about twice as fast for such files. <a href="https://github.com/r-lidar/lasR/issues/369" class="external-link">#369</a></li>
+<li>Fix: <code><a href="../reference/write.html">write_las()</a></code> no longer flags a scale and an offset in the Extra Bytes VLR for attributes whose scale is 1 and offset is 0. Such integer attributes were read as doubles by other software, such as <code>rlas</code>.</li>
+<li>Fix: an invalid CRS (e.g. <code>set_crs(12)</code> or a file with an unreadable CRS) silenced the GDAL error messages reported afterwards, such as the warnings of <code>terra</code> and <code>sf</code>.</li>
+<li>Fix: <code><a href="../reference/rasterize.html">rasterize()</a></code> over tiles could shift a chunk by one cell, or put a point lying on a cell edge in a different cell than in a single-file run, when the resolution has no exact binary value (e.g. 1.2, 1.4) and the tile origins are not on the raster grid.</li>
+<li>Fix: <code><a href="../reference/local_maximum.html">local_maximum()</a></code> dropped some tree tops as “duplicated FID” when the stored Y integers are negative (Y offset of the file above the data).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.21.4" id="lasr-0214">lasR 0.21.4<a class="anchor" aria-label="anchor" href="#lasr-0214"></a></h2>
 <ul><li>Fix: <a href="https://github.com/r-lidar/lasR/issues/355" class="external-link">#355</a> <code><a href="../reference/hag.html">normalize()</a></code> / <code><a href="../reference/transform_with.html">transform_with()</a></code> produced NaN heights (written as large negative Z such as -2147483) for points lying on collinear convex hull edges. Zero-area triangles are now skipped during TIN interpolation and non-finite values are treated as no-data.</li>

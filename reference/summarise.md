@@ -39,6 +39,21 @@ summarise(zwbin = 2, iwbin = 50, metrics = NULL, filter = "")
   For more details see
   [filters](https://r-lidar.github.io/lasR/reference/filters.md).
 
+## Details
+
+The returned list includes `npoints`, `npoints_per_return`,
+`npoints_per_class`, the Z and Intensity histograms, the `crs`/`epsg`,
+and the coverage `area` (the sum of the processed bounding boxes, buffer
+excluded; circular queries such as
+[`reader_circles()`](https://r-lidar.github.io/lasR/reference/reader.md)
+use the area of the disc that lies within the processed extent, i.e.
+`pi * r^2` for a disc within the coverage, instead of the bounding
+square) together with `density` (point density = `npoints / area`) and
+`pulse_density` (pulse density = first returns / `area`). Following the
+convention used by `lidR`, the number of pulses is the number of first
+returns (`ReturnNumber == 1`); it is not derived from `gpstime`-based
+pulse identification.
+
 ## Examples
 
 ``` r
@@ -98,6 +113,15 @@ ans
 #> 
 #> $epsg
 #> [1] 2949
+#> 
+#> $area
+#> [1] 81628.99
+#> 
+#> $density
+#> [1] 0.8992271
+#> 
+#> $pulse_density
+#> [1] 0.6558699
 #> 
 
 # Compute metrics for each plot

@@ -1,8 +1,8 @@
 # Local Maximum
 
 The Local Maximum stage identifies points that are locally maximum. The
-window size is fixed and circular. This stage does not modify the point
-cloud. It produces a derived product in vector format. The function
+window is circular. This stage does not modify the point cloud. It
+produces a derived product in vector format. The function
 `local_maximum_raster` applies on a raster instead of the point cloud
 
 ## Usage
@@ -31,8 +31,13 @@ local_maximum_raster(
 
 - ws:
 
-  numeric. Diameter of the moving window used to detect the local maxima
-  in the units of the input data (usually meters).
+  numeric or function. The diameter of the moving window used to detect
+  the local maxima. A single number gives a fixed circular window. A
+  function of one argument gives a variable window: it receives the
+  `use_attribute` value (height by default) and must return a positive
+  window diameter for each point, e.g. `function(x) 0.1 * x + 3`. The
+  function is sampled once over a 0-200 m grid at 0.5 m steps; heights
+  outside that range are clamped.
 
 - min_height:
 
@@ -114,10 +119,13 @@ ans
 #> 4  POINT Z (481281.9 3813003 2...
 #> 5  POINT Z (481278.4 3813002 2...
 #> 6  POINT Z (481302.9 3812929 2...
-#> 7  POINT Z (481265.3 3812996 1...
-#> 8  POINT Z (481302.9 3812969 2...
+#> 7  POINT Z (481302.9 3812969 2...
+#> 8  POINT Z (481265.3 3812996 1...
 #> 9  POINT Z (481302 3812947 18.58)
 #> 10 POINT Z (481261.8 3812999 1...
+
+# Variable window: larger search window for taller trees
+lmf <- local_maximum(function(x) 0.1 * x + 3)
 
 chm <- rasterize(1, "max")
 lmf <- local_maximum_raster(chm, 5)
@@ -150,7 +158,7 @@ ans
 #> 10 POINT Z (481261.8 3812999 1...
 #> 
 #> $write_las
-#> [1] "/tmp/Rtmpozo1Os/MixedConifer.las"
+#> [1] "/tmp/RtmpxVjz5y/MixedConifer.las"
 #> 
 
 # Storing in an new attribute without geospatial output
@@ -158,5 +166,5 @@ attr <- add_extrabytes("uchar", "lm", "local maximum flag")
 lmf <- local_maximum(5, ofile = "", store_in_attribute = "lm")
 ans <- exec(attr + lmf + write_las(), on = f)
 ans
-#> [1] "/tmp/Rtmpozo1Os/MixedConifer.las"
+#> [1] "/tmp/RtmpxVjz5y/MixedConifer.las"
 ```

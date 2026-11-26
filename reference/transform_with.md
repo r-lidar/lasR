@@ -94,7 +94,7 @@ exec(pipeline, on = f)
 #> [4,] 0.0000000  0.0000000    0    1
 #> 
 #> $write_las
-#> [1] "/tmp/Rtmpozo1Os/Topography.las"
+#> [1] "/tmp/RtmpxVjz5y/Topography.las"
 #> 
 
 # store a raster value as-is into an extra byte attribute (operator = "=").
