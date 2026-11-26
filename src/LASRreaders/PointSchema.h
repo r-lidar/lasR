@@ -89,6 +89,7 @@ enum AttributeCore {
   Z = 3,
 };
 
+namespace lasr {
 struct Attribute
 {
   Attribute(const std::string& name, AttributeType type, double scale_factor = 1.0, double value_offset = 0.0, const std::string& description = "");
@@ -130,6 +131,10 @@ struct Attribute
     return !(*this == other);
   }
 };
+} // namespace lasr
+
+// Avoid a global symbol Attribute::~Attribute() clashing with libpoppler (via GDAL)
+using lasr::Attribute;
 
 struct AttributeSchema
 {

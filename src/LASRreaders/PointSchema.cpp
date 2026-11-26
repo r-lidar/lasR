@@ -5,7 +5,7 @@
 #include <cmath> // std::round
 #include <limits> // std::numeric_limits
 
-Attribute::Attribute(const std::string& name, AttributeType type, double scale_factor, double value_offset, const std::string& description)
+lasr::Attribute::Attribute(const std::string& name, AttributeType type, double scale_factor, double value_offset, const std::string& description)
 {
   this->name = name;
   this->type = type;
