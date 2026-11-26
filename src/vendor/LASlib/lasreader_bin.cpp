@@ -2,18 +2,18 @@
 ===============================================================================
 
   FILE:  lasreader_bin.cpp
-
+  
   CONTENTS:
-
+  
     see corresponding header file
-
+  
   PROGRAMMERS:
-
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+  
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2012, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -21,15 +21,16 @@
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
+  
   CHANGE HISTORY:
-
+  
     see corresponding header file
-
+  
 ===============================================================================
 */
 #include "lasreader_bin.hpp"
 
+#include "lasmessage.hpp"
 #include "bytestreamin.hpp"
 #include "bytestreamin_file.hpp"
 
@@ -39,6 +40,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+// r-lidar: internal linkage. lasreader_bin.cpp and laswriter_bin.cpp define different TSheader
+// structs (One Definition Rule violation reported by LTO, -Wodr)
+namespace {
 
 struct TSrow
 {
@@ -68,7 +73,7 @@ struct TSheader
   I32 size;
   I32 version;
   I32 recog_val;
-  CHAR recog_str[4];
+  CHAR recog_str[4]; // rlas: I8 is signed char
   I32 npoints;
   I32 units;
   F64 origin_x;
@@ -78,32 +83,33 @@ struct TSheader
   I32 rgb;
 };
 
+} // namespace
+
 BOOL LASreaderBIN::open(const char* file_name)
 {
   if (file_name == 0)
   {
-    eprint("ERROR: file name pointer is zero\n");
+    laserror("file name pointer is zero");
     return FALSE;
   }
 
   // open file
-
-  file = fopen(file_name, "rb");
+  file = LASfopen(file_name, "rb");
   if (file == 0)
   {
-    eprint( "ERROR: cannot open file '%s'\n", file_name);
+    laserror("cannot open file '%s'", file_name);
     return FALSE;
   }
 
   if (setvbuf(file, NULL, _IOFBF, 2*LAS_TOOLS_IO_IBUFFER_SIZE) != 0)
   {
-    eprint( "WARNING: setvbuf() failed with buffer size %d\n", 2*LAS_TOOLS_IO_IBUFFER_SIZE);
+    LASMessage(LAS_WARNING, "setvbuf() failed with buffer size %d", 2*LAS_TOOLS_IO_IBUFFER_SIZE);
   }
 
   // create input stream
 
   ByteStreamIn* in;
-  if (IS_LITTLE_ENDIAN())
+  if (Endian::IS_LITTLE_ENDIAN)
     in = new ByteStreamInFileLE(file);
   else
     in = new ByteStreamInFileBE(file);
@@ -138,7 +144,7 @@ BOOL LASreaderBIN::open(ByteStreamIn* stream)
 
   if (stream == 0)
   {
-    eprint("ERROR: ByteStreamIn* pointer is zero\n");
+    laserror("ByteStreamIn* pointer is zero");
     return FALSE;
   }
 
@@ -149,7 +155,7 @@ BOOL LASreaderBIN::open(ByteStreamIn* stream)
   TSheader tsheader;
   try { stream->getBytes((U8*)&tsheader, sizeof(TSheader)); } catch(...)
   {
-    eprint("ERROR: reading terrasolid header\n");
+    laserror("reading terrasolid header");
     return FALSE;
   }
 
@@ -157,19 +163,19 @@ BOOL LASreaderBIN::open(ByteStreamIn* stream)
 
   if (tsheader.size != sizeof(TSheader))
   {
-    eprint("ERROR: corrupt terrasolid header. size != 56.\n");
+    laserror("corrupt terrasolid header. size != 56.");
     return FALSE;
   }
 
   if (tsheader.recog_val != 970401)
   {
-    eprint("ERROR: corrupt terrasolid header. recog_val != 979401.\n");
+    laserror("corrupt terrasolid header. recog_val != 979401.");
     return FALSE;
   }
 
   if (strncmp(tsheader.recog_str, "CXYZ", 4) != 0)
   {
-    eprint("ERROR: corrupt terrasolid header. recog_str != CXYZ.\n");
+    laserror("corrupt terrasolid header. recog_str != CXYZ.");
     return FALSE;
   }
 
@@ -177,8 +183,8 @@ BOOL LASreaderBIN::open(ByteStreamIn* stream)
 
   // populate the header as much as possible
 
-  snprintf(header.system_identifier, 32, "LAStools (c) by rapidlasso GmbH");
-  snprintf(header.generating_software, 32, "via LASreaderBIN (%d)", LAS_TOOLS_VERSION);
+  snprintf(header.system_identifier, LAS_HEADER_CHAR_LEN, LAS_TOOLS_COPYRIGHT);
+  snprintf(header.generating_software, LAS_HEADER_CHAR_LEN, "via LASreaderBIN (%d)", LAS_TOOLS_VERSION);
 
   if (tsheader.time)
   {
@@ -207,6 +213,18 @@ BOOL LASreaderBIN::open(ByteStreamIn* stream)
     }
   }
 
+  if (tsheader.npoints < 0)
+  {
+    laserror("corrupt terrasolid header. npoints %d is negative.", tsheader.npoints);
+    return FALSE;
+  }
+
+  if (tsheader.units <= 0)
+  {
+    laserror("corrupt terrasolid header. units %d must be positive.", tsheader.units);
+    return FALSE;
+  }
+
   header.number_of_point_records = tsheader.npoints;
   npoints = tsheader.npoints;
 
@@ -221,10 +239,11 @@ BOOL LASreaderBIN::open(ByteStreamIn* stream)
   // initialize point
 
   point.init(&header, header.point_data_format, header.point_data_record_length);
-
+  
   // set point count to zero
 
-  p_count = 0;
+  p_idx = 0;
+  p_cnt = 0;
 
   // approximate bounding box init
 
@@ -263,7 +282,7 @@ BOOL LASreaderBIN::seek(const I64 p_index)
       pos += (sizeof(U32)*(U32)p_index);
     if (point.have_rgb)
       pos += (sizeof(U32)*(U32)p_index);
-    p_count = p_index;
+    p_idx = p_index;
     return stream->seek(pos);
   }
   return FALSE;
@@ -271,7 +290,7 @@ BOOL LASreaderBIN::seek(const I64 p_index)
 
 BOOL LASreaderBIN::read_point_default()
 {
-  if (p_count < npoints)
+  if (p_idx < npoints)
   {
     int echo;
     if (version == 20020715)
@@ -279,7 +298,7 @@ BOOL LASreaderBIN::read_point_default()
       TSpoint tspoint;
       try { stream->getBytes((U8*)&tspoint, sizeof(TSpoint)); } catch(...)
       {
-        eprint("ERROR: reading terrasolid point after %u of %u\n", (U32)p_count, (U32)npoints);
+        laserror("reading terrasolid point after %u of %u", (U32)p_cnt, (U32)npoints);
         return FALSE;
       }
       point.set_X(tspoint.x);
@@ -295,7 +314,7 @@ BOOL LASreaderBIN::read_point_default()
       TSrow tsrow;
       try { stream->getBytes((U8*)&tsrow, sizeof(TSrow)); } catch(...)
       {
-        eprint("ERROR: reading terrasolid row after %u of %u\n", (U32)p_count, (U32)npoints);
+        laserror("reading terrasolid row after %u of %u", (U32)p_cnt, (U32)npoints);
         return FALSE;
       }
       point.set_X(tsrow.x);
@@ -307,12 +326,21 @@ BOOL LASreaderBIN::read_point_default()
       echo = tsrow.echo_intensity >> 14;
     }
 
-    if (header.min_x > point.get_x()) header.min_x = point.get_x();
-    else if (header.max_x < point.get_x()) header.max_x = point.get_x();
-    if (header.min_y > point.get_y()) header.min_y = point.get_y();
-    else if (header.max_y < point.get_y()) header.max_y = point.get_y();
-    if (header.min_z > point.get_z()) header.min_z = point.get_z();
-    else if (header.max_z < point.get_z()) header.max_z = point.get_z();
+    if (opener->is_offset_adjust() == FALSE) 
+    {
+      if (header.min_x > point.get_x())
+        header.min_x = point.get_x();
+      else if (header.max_x < point.get_x())
+        header.max_x = point.get_x();
+      if (header.min_y > point.get_y())
+        header.min_y = point.get_y();
+      else if (header.max_y < point.get_y())
+        header.max_y = point.get_y();
+      if (header.min_z > point.get_z())
+        header.min_z = point.get_z();
+      else if (header.max_z < point.get_z())
+        header.max_z = point.get_z();
+    }
 
     if (echo == 0) // only echo
     {
@@ -344,9 +372,10 @@ BOOL LASreaderBIN::read_point_default()
       U32 time;
       try { stream->getBytes((U8*)&time, sizeof(U32)); } catch(...)
       {
-        eprint("ERROR: reading terrasolid time\n");
+        laserror("reading terrasolid time");
         return FALSE;
       }
+      // this is gps week
       point.gps_time = 0.0002*time;
     }
 
@@ -355,14 +384,15 @@ BOOL LASreaderBIN::read_point_default()
       U8 rgba[4];
       try { stream->getBytes((U8*)rgba, sizeof(U8)*4); } catch(...)
       {
-        eprint("ERROR: reading terrasolid color\n");
+        laserror("reading terrasolid color");
         return FALSE;
       }
       point.rgb[0] = 256*rgba[0];
       point.rgb[1] = 256*rgba[1];
       point.rgb[2] = 256*rgba[2];
     }
-    p_count++;
+    p_idx++;
+    p_cnt++;
     return TRUE;
   }
   return FALSE;
@@ -390,10 +420,11 @@ void LASreaderBIN::close(BOOL close_stream)
   }
 }
 
-LASreaderBIN::LASreaderBIN()
+LASreaderBIN::LASreaderBIN(LASreadOpener* opener):LASreader(opener)
 {
   file = 0;
   stream = 0;
+  version = 0;
 }
 
 LASreaderBIN::~LASreaderBIN()
@@ -401,7 +432,7 @@ LASreaderBIN::~LASreaderBIN()
   if (stream) close();
 }
 
-LASreaderBINrescale::LASreaderBINrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor) : LASreaderBIN()
+LASreaderBINrescale::LASreaderBINrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor) : LASreaderBIN(opener)
 {
   scale_factor[0] = x_scale_factor;
   scale_factor[1] = y_scale_factor;
@@ -427,7 +458,7 @@ BOOL LASreaderBINrescale::open(ByteStreamIn* stream)
   return TRUE;
 }
 
-LASreaderBINreoffset::LASreaderBINreoffset(F64 x_offset, F64 y_offset, F64 z_offset) : LASreaderBIN()
+LASreaderBINreoffset::LASreaderBINreoffset(LASreadOpener* opener,  F64 x_offset, F64 y_offset, F64 z_offset) : LASreaderBIN(opener)
 {
   this->offset[0] = x_offset;
   this->offset[1] = y_offset;
@@ -453,7 +484,10 @@ BOOL LASreaderBINreoffset::open(ByteStreamIn* stream)
   return TRUE;
 }
 
-LASreaderBINrescalereoffset::LASreaderBINrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset) : LASreaderBINrescale(x_scale_factor, y_scale_factor, z_scale_factor), LASreaderBINreoffset(x_offset, y_offset, z_offset)
+LASreaderBINrescalereoffset::LASreaderBINrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset) : 
+  LASreaderBIN(opener),
+  LASreaderBINrescale(opener, x_scale_factor, y_scale_factor, z_scale_factor),
+  LASreaderBINreoffset(opener, x_offset, y_offset, z_offset)
 {
 }
 

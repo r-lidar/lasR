@@ -45,7 +45,7 @@ public:
 #ifdef USING_GDAL
   CRS crs;
 #else
-  int epsg;
+  int epsg = 0;
   std::string wkt;
 #endif
 

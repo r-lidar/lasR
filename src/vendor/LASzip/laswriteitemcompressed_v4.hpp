@@ -9,14 +9,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -41,7 +41,7 @@
 
 #include "laszip_common_v3.hpp"
 
-class LASwriteItemCompressed_POINT14_v4 : public LASwriteItemCompressed
+class LASLIB_DLL LASwriteItemCompressed_POINT14_v4 : public LASwriteItemCompressed
 {
 public:
 
@@ -105,7 +105,7 @@ private:
   void write_gps_time(const U64I64F64 gps_time);
 };
 
-class LASwriteItemCompressed_RGB14_v4 : public LASwriteItemCompressed
+class LASLIB_DLL LASwriteItemCompressed_RGB14_v4 : public LASwriteItemCompressed
 {
 public:
 
@@ -138,7 +138,7 @@ private:
   BOOL createAndInitModelsAndCompressors(U32 context, const U8* item);
 };
 
-class LASwriteItemCompressed_RGBNIR14_v4 : public LASwriteItemCompressed
+class LASLIB_DLL LASwriteItemCompressed_RGBNIR14_v4 : public LASwriteItemCompressed
 {
 public:
 
@@ -175,7 +175,7 @@ private:
   BOOL createAndInitModelsAndCompressors(U32 context, const U8* item);
 };
 
-class LASwriteItemCompressed_WAVEPACKET14_v4 : public LASwriteItemCompressed
+class LASLIB_DLL LASwriteItemCompressed_WAVEPACKET14_v4 : public LASwriteItemCompressed
 {
 public:
 
@@ -208,7 +208,7 @@ private:
   BOOL createAndInitModelsAndCompressors(U32 context, const U8* item);
 };
 
-class LASwriteItemCompressed_BYTE14_v4 : public LASwriteItemCompressed
+class LASLIB_DLL LASwriteItemCompressed_BYTE14_v4 : public LASwriteItemCompressed
 {
 public:
 

@@ -26,6 +26,7 @@
 
   CHANGE HISTORY:
 
+    11 November 2026 -- getBytes() takes an I64 like ByteStreamIn of LAStools 2.0
      2 April 2026 -- created from ByteStreamInFile, replacing FILE* with VSILFILE*
 
 ===============================================================================
@@ -46,7 +47,7 @@ public:
   /* read a single byte                                        */
   U32 getByte();
   /* read an array of bytes                                    */
-  void getBytes(U8 *bytes, const U32 num_bytes);
+  void getBytes(U8 *bytes, const I64 num_bytes);
   /* is the stream seekable (e.g. stdin is not)                */
   BOOL isSeekable() const;
   /* get current position of stream                            */
@@ -115,7 +116,7 @@ inline ByteStreamInGDAL::~ByteStreamInGDAL()
   {
     if (VSIFCloseL(file) != 0)
     {
-      eprint("WARNING: VSIFCloseL failed\n");
+      LASMessage(LAS_WARNING, "VSIFCloseL failed"); // lasR: LASMessage() instead of REprintf()
     }
     file = NULL;
   }
@@ -131,9 +132,9 @@ inline U32 ByteStreamInGDAL::getByte()
   return (U32)byte;
 }
 
-inline void ByteStreamInGDAL::getBytes(U8 *bytes, const U32 num_bytes)
+inline void ByteStreamInGDAL::getBytes(U8 *bytes, const I64 num_bytes)
 {
-  if (VSIFReadL(bytes, 1, num_bytes, file) != num_bytes)
+  if (VSIFReadL(bytes, 1, (size_t)num_bytes, file) != (size_t)num_bytes)
   {
     throw EOF;
   }

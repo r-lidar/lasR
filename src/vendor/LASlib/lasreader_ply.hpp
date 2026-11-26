@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2018, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2018, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -36,7 +36,7 @@
 
 #include <stdio.h>
 
-class LASreaderPLY : public LASreader
+class LASLIB_DLL LASreaderPLY : public LASreader
 {
 public:
 
@@ -56,7 +56,7 @@ public:
   void close(BOOL close_stream=TRUE);
   BOOL reopen(const CHAR* file_name);
 
-  LASreaderPLY();
+  LASreaderPLY(LASreadOpener* opener);
   virtual ~LASreaderPLY();
 
 protected:
@@ -84,7 +84,9 @@ private:
   F64 attribute_pre_scales[32];
   F64 attribute_pre_offsets[32];
   F64 attribute_no_datas[32];
-  BOOL parse_header(BOOL quiet);
+  F64 orig_x_offset, orig_y_offset, orig_z_offset;
+  F64 orig_x_scale_factor, orig_y_scale_factor, orig_z_scale_factor;
+  BOOL parse_header();
   BOOL set_attribute(I32 index, F64 value);
   BOOL parse_attribute(const CHAR* l, I32 index);
   BOOL parse(const CHAR* parse_string);
@@ -95,30 +97,30 @@ private:
   void clean();
 };
 
-class LASreaderPLYrescale : public virtual LASreaderPLY
+class LASLIB_DLL LASreaderPLYrescale : public virtual LASreaderPLY
 {
 public:
   virtual BOOL open(const CHAR* file_name, U8 point_type=0, BOOL populate_header=FALSE);
-  LASreaderPLYrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
+  LASreaderPLYrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
 
 protected:
   F64 scale_factor[3];
 };
 
-class LASreaderPLYreoffset : public virtual LASreaderPLY
+class LASLIB_DLL LASreaderPLYreoffset : public virtual LASreaderPLY
 {
 public:
   virtual BOOL open(const CHAR* file_name, U8 point_type=0, BOOL populate_header=FALSE);
-  LASreaderPLYreoffset(F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderPLYreoffset(LASreadOpener* opener, F64 x_offset, F64 y_offset, F64 z_offset);
 protected:
   F64 offset[3];
 };
 
-class LASreaderPLYrescalereoffset : public LASreaderPLYrescale, LASreaderPLYreoffset
+class LASLIB_DLL LASreaderPLYrescalereoffset : public LASreaderPLYrescale, LASreaderPLYreoffset
 {
 public:
   BOOL open(const CHAR* file_name, U8 point_type=0, BOOL populate_header=FALSE);
-  LASreaderPLYrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderPLYrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
 };
 
 #endif

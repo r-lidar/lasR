@@ -9,14 +9,14 @@
   
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -32,7 +32,7 @@
 #include "lasreaditemcompressed_v1.hpp"
 #include "laszip_common_v1.hpp"
 
-#include <assert.h>
+#include <cassert>
 #include <string.h>
 
 /*
@@ -64,6 +64,8 @@ LASreadItemCompressed_POINT10_v1::LASreadItemCompressed_POINT10_v1(ArithmeticDec
   /* set decoder */
   assert(dec);
   this->dec = dec;
+
+  last_incr = 0;
 
   /* create models and integer compressors */
   ic_dx = new IntegerCompressor(dec, 32);  // 32 bits, 1 context
@@ -263,6 +265,12 @@ LASreadItemCompressed_GPSTIME11_v1::LASreadItemCompressed_GPSTIME11_v1(Arithmeti
   /* set decoder */
   assert(dec);
   this->dec = dec;
+  last_gpstime_diff = 0;
+  last_gpstime.u64 = 0;
+  last_gpstime.i64 = 0;
+  last_gpstime.f64 = 0.0;
+  multi_extreme_counter = 0;
+
   /* create entropy models and integer compressors */
   m_gpstime_multi = dec->createSymbolModel(LASZIP_GPSTIME_MULTIMAX);
   m_gpstime_0diff = dec->createSymbolModel(3);
@@ -288,7 +296,7 @@ BOOL LASreadItemCompressed_GPSTIME11_v1::init(const U8* item, U32& context)
   ic_gpstime->initDecompressor();
 
   /* init last item */
-  last_gpstime.u64 = *((U64*)item);
+  last_gpstime.u64 = *((const U64*)item);
   return TRUE;
 }
 
@@ -431,6 +439,9 @@ LASreadItemCompressed_WAVEPACKET13_v1::LASreadItemCompressed_WAVEPACKET13_v1(Ari
   /* set decoder */
   assert(dec);
   this->dec = dec;
+
+  last_diff_32 = 0;
+  sym_last_offset_diff = 0;
 
   /* create models and integer compressors */
   m_packet_index = dec->createSymbolModel(256);

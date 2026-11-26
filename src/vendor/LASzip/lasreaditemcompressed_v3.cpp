@@ -9,14 +9,14 @@
   
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -30,8 +30,10 @@
 */
 
 #include "lasreaditemcompressed_v3.hpp"
+#include "lasmessage.hpp"
 
-#include <assert.h>
+#include <limits>
+#include <cassert>
 #include <string.h>
 
 typedef struct LASpoint14
@@ -207,6 +209,7 @@ LASreadItemCompressed_POINT14_v3::~LASreadItemCompressed_POINT14_v3()
     delete dec_intensity;
     delete dec_scan_angle;
     delete dec_user_data;
+    delete dec_point_source;
     delete dec_gps_time;
 
     delete instream_channel_returns_XY;
@@ -216,6 +219,7 @@ LASreadItemCompressed_POINT14_v3::~LASreadItemCompressed_POINT14_v3()
     delete instream_intensity;
     delete instream_scan_angle;
     delete instream_user_data;
+    delete instream_point_source;
     delete instream_gps_time;
   }
 
@@ -321,7 +325,7 @@ inline BOOL LASreadItemCompressed_POINT14_v3::createAndInitModelsAndDecompressor
   contexts[context].ic_Z->initDecompressor();
   for (i = 0; i < 8; i++)
   {
-    contexts[context].last_Z[i] = ((LASpoint14*)item)->Z;
+    contexts[context].last_Z[i] = ((const LASpoint14*)item)->Z;
   }
 
   /* for the classification layer */
@@ -340,7 +344,7 @@ inline BOOL LASreadItemCompressed_POINT14_v3::createAndInitModelsAndDecompressor
   contexts[context].ic_intensity->initDecompressor();
   for (i = 0; i < 8; i++)
   {
-    contexts[context].last_intensity[i] = ((LASpoint14*)item)->intensity;
+    contexts[context].last_intensity[i] = ((const LASpoint14*)item)->intensity;
   }
 
   /* for the scan_angle layer */
@@ -365,7 +369,7 @@ inline BOOL LASreadItemCompressed_POINT14_v3::createAndInitModelsAndDecompressor
   contexts[context].multi_extreme_counter[1] = 0;
   contexts[context].multi_extreme_counter[2] = 0;
   contexts[context].multi_extreme_counter[3] = 0;
-  contexts[context].last_gpstime[0].f64 = ((LASpoint14*)item)->gps_time;
+  contexts[context].last_gpstime[0].f64 = ((const LASpoint14*)item)->gps_time;
   contexts[context].last_gpstime[1].u64 = 0;
   contexts[context].last_gpstime[2].u64 = 0;
   contexts[context].last_gpstime[3].u64 = 0;
@@ -375,7 +379,7 @@ inline BOOL LASreadItemCompressed_POINT14_v3::createAndInitModelsAndDecompressor
   memcpy(contexts[context].last_item, item, sizeof(LASpoint14));
   ((LASpoint14*)contexts[context].last_item)->gps_time_change = FALSE;
 
-//  eprint( "INIT: current_context %d last item %.14g %d %d %d %d %d %d\n", current_context, ((LASpoint14*)item)->gps_time, ((LASpoint14*)item)->X, ((LASpoint14*)item)->Y, ((LASpoint14*)item)->Z, ((LASpoint14*)item)->intensity, ((LASpoint14*)item)->return_number, ((LASpoint14*)item)->number_of_returns);
+//  LASMessage(LAS_VERBOSE, "INIT: current_context %d last item %.14g %d %d %d %d %d %d", current_context, ((LASpoint14*)item)->gps_time, ((LASpoint14*)item)->X, ((LASpoint14*)item)->Y, ((LASpoint14*)item)->Z, ((LASpoint14*)item)->intensity, ((LASpoint14*)item)->return_number, ((LASpoint14*)item)->number_of_returns);
 
   contexts[context].unused = FALSE;
 
@@ -415,7 +419,7 @@ BOOL LASreadItemCompressed_POINT14_v3::init(const U8* item, U32& context)
   {
     /* create instreams */
 
-    if (IS_LITTLE_ENDIAN())
+    if (Endian::IS_LITTLE_ENDIAN)
     {
       instream_channel_returns_XY = new ByteStreamInArrayLE();
       instream_Z = new ByteStreamInArrayLE();
@@ -455,7 +459,7 @@ BOOL LASreadItemCompressed_POINT14_v3::init(const U8* item, U32& context)
 
   /* how many bytes do we need to read */
   
-  U32 num_bytes = num_bytes_channel_returns_XY;
+  U64 num_bytes = num_bytes_channel_returns_XY;
   if (requested_Z) num_bytes += num_bytes_Z; 
   if (requested_classification) num_bytes += num_bytes_classification; 
   if (requested_flags) num_bytes += num_bytes_flags; 
@@ -470,7 +474,14 @@ BOOL LASreadItemCompressed_POINT14_v3::init(const U8* item, U32& context)
   if (num_bytes > num_bytes_allocated)
   {
     if (bytes) delete [] bytes;
-    bytes = new U8[num_bytes];
+    bytes = 0;
+    num_bytes_allocated = 0;
+
+    // check if required memory would be larger than allowed memory allocation (e.g. > 4GB for 32 bit version)
+    if (num_bytes > std::numeric_limits<size_t>::max()) {
+        return false;
+    }
+    bytes = new U8[static_cast<size_t>(num_bytes)];
     if (bytes == 0) return FALSE;
     num_bytes_allocated = num_bytes;
   }
@@ -693,7 +704,7 @@ BOOL LASreadItemCompressed_POINT14_v3::init(const U8* item, U32& context)
 
   /* set scanner channel as current context */
 
-  current_context = ((LASpoint14*)item)->scanner_channel;
+  current_context = ((const LASpoint14*)item)->scanner_channel;
   context = current_context; // the POINT14 reader sets context for all other items
 
   /* create and init models and decompressors */
@@ -988,8 +999,12 @@ inline void LASreadItemCompressed_POINT14_v3::read(U8* item, U32& context)
     }
   }
 
+  // save deleted_flag because seek can overwrite internal fields during memcpy
+  U8 old_deleted_flag = ((LASpoint14*)item)->deleted_flag;
   // copy the last item
   memcpy(item, last_item, sizeof(LASpoint14));
+  // deleted_flag restore
+  ((LASpoint14*)item)->deleted_flag = old_deleted_flag;
   // remember if the last point had a gps_time_change
   ((LASpoint14*)last_item)->gps_time_change = gps_time_change;
 }
@@ -997,6 +1012,8 @@ inline void LASreadItemCompressed_POINT14_v3::read(U8* item, U32& context)
 void LASreadItemCompressed_POINT14_v3::read_gps_time()
 {
   I32 multi;
+  for (;;)
+  {
   if (contexts[current_context].last_gpstime_diff[contexts[current_context].last] == 0) // if the last integer difference was zero
   {
     multi = dec_gps_time->decodeSymbol(contexts[current_context].m_gpstime_0diff);
@@ -1019,7 +1036,7 @@ void LASreadItemCompressed_POINT14_v3::read_gps_time()
     else // we switch to another sequence
     {
       contexts[current_context].last = (contexts[current_context].last+multi-1)&3;
-      read_gps_time();
+      continue;
     }
   }
   else
@@ -1093,8 +1110,10 @@ void LASreadItemCompressed_POINT14_v3::read_gps_time()
     else if (multi >=  LASZIP_GPSTIME_MULTI_CODE_FULL)
     {
       contexts[current_context].last = (contexts[current_context].last+multi-LASZIP_GPSTIME_MULTI_CODE_FULL)&3;
-      read_gps_time();
+      continue;
     }
+  }
+  break;
   }
 }
 
@@ -1234,7 +1253,7 @@ BOOL LASreadItemCompressed_RGB14_v3::init(const U8* item, U32& context)
   {
     /* create instreams */
 
-    if (IS_LITTLE_ENDIAN())
+    if (Endian::IS_LITTLE_ENDIAN)
     {
       instream_RGB = new ByteStreamInArrayLE();
     }
@@ -1253,7 +1272,15 @@ BOOL LASreadItemCompressed_RGB14_v3::init(const U8* item, U32& context)
   if (num_bytes_RGB > num_bytes_allocated)
   {
     if (bytes) delete [] bytes;
-    bytes = new U8[num_bytes_RGB];
+    bytes = 0;
+    num_bytes_allocated = 0;
+  
+    // check if required memory would be larger than allowed memory allocation (e.g. > 4GB for 32 bit version)
+    // r-lidar: disabled, U32 always fits in size_t (-Wtautological-constant-out-of-range-compare)
+    // if (num_bytes_RGB > std::numeric_limits<size_t>::max()) {
+        // return false;
+    // }
+    bytes = new U8[static_cast<size_t>(num_bytes_RGB)];
     if (bytes == 0) return FALSE;
     num_bytes_allocated = num_bytes_RGB;
   }
@@ -1578,7 +1605,7 @@ BOOL LASreadItemCompressed_RGBNIR14_v3::init(const U8* item, U32& context)
   {
     /* create instreams */
 
-    if (IS_LITTLE_ENDIAN())
+    if (Endian::IS_LITTLE_ENDIAN)
     {
       instream_RGB = new ByteStreamInArrayLE();
       instream_NIR = new ByteStreamInArrayLE();
@@ -1597,7 +1624,7 @@ BOOL LASreadItemCompressed_RGBNIR14_v3::init(const U8* item, U32& context)
   
   /* how many bytes do we need to read */
 
-  U32 num_bytes = 0;
+  U64 num_bytes = 0;
   if (requested_RGB) num_bytes += num_bytes_RGB;
   if (requested_NIR) num_bytes += num_bytes_NIR;
 
@@ -1606,7 +1633,14 @@ BOOL LASreadItemCompressed_RGBNIR14_v3::init(const U8* item, U32& context)
   if (num_bytes > num_bytes_allocated)
   {
     if (bytes) delete [] bytes;
-    bytes = new U8[num_bytes];
+    bytes = 0;
+    num_bytes_allocated = 0;
+
+    // check if required memory would be larger than allowed memory allocation (e.g. > 4GB for 32 bit version)
+    if (num_bytes > std::numeric_limits<size_t>::max()) {
+        return false;
+    }
+    bytes = new U8[static_cast<size_t>(num_bytes)];
     if (bytes == 0) return FALSE;
     num_bytes_allocated = num_bytes;
   }
@@ -1966,7 +2000,7 @@ BOOL LASreadItemCompressed_WAVEPACKET14_v3::init(const U8* item, U32& context)
   {
     /* create instreams */
 
-    if (IS_LITTLE_ENDIAN())
+    if (Endian::IS_LITTLE_ENDIAN)
     {
       instream_wavepacket = new ByteStreamInArrayLE();
     }
@@ -1985,7 +2019,15 @@ BOOL LASreadItemCompressed_WAVEPACKET14_v3::init(const U8* item, U32& context)
   if (num_bytes_wavepacket > num_bytes_allocated)
   {
     if (bytes) delete [] bytes;
-    bytes = new U8[num_bytes_wavepacket];
+    bytes = 0;
+    num_bytes_allocated = 0;
+
+    // check if required memory would be larger than allowed memory allocation (e.g. > 4GB for 32 bit version)
+    // lasR: disabled, U32 always fits in size_t (-Wtautological-constant-out-of-range-compare)
+    // if (num_bytes_wavepacket > std::numeric_limits<size_t>::max()) {
+        // return false;
+    // }
+    bytes = new U8[static_cast<size_t>(num_bytes_wavepacket)];
     if (bytes == 0) return FALSE;
     num_bytes_allocated = num_bytes_wavepacket;
   }
@@ -2279,7 +2321,7 @@ BOOL LASreadItemCompressed_BYTE14_v3::init(const U8* item, U32& context)
 
     /* create instreams */
 
-    if (IS_LITTLE_ENDIAN())
+    if (Endian::IS_LITTLE_ENDIAN)
     {
       for (i = 0; i < number; i++)
       {
@@ -2308,7 +2350,7 @@ BOOL LASreadItemCompressed_BYTE14_v3::init(const U8* item, U32& context)
 
   /* how many bytes do we need to read */
 
-  U32 num_bytes = 0;
+  U64 num_bytes = 0;
 
   for (i = 0; i < number; i++)
   {
@@ -2320,7 +2362,14 @@ BOOL LASreadItemCompressed_BYTE14_v3::init(const U8* item, U32& context)
   if (num_bytes > num_bytes_allocated)
   {
     if (bytes) delete [] bytes;
-    bytes = new U8[num_bytes];
+    bytes = 0;
+    num_bytes_allocated = 0;
+
+    // check if required memory would be larger than allowed memory allocation (e.g. > 4GB for 32 bit version)
+    if (num_bytes > std::numeric_limits<size_t>::max()) {
+        return false;
+    }
+    bytes = new U8[static_cast<size_t>(num_bytes)];
     if (bytes == 0) return FALSE;
     num_bytes_allocated = num_bytes;
   }

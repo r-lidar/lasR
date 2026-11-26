@@ -1,4 +1,5 @@
 #include "LASio.h"
+#include "LAZblocks.h"
 
 #include <algorithm>
 #include "lasreader.hpp"
@@ -7,6 +8,31 @@
 #include "laszip_decompress_selective_v3.hpp"
 #include "lasindex.hpp"
 #include "lasquadtree.hpp"
+
+#include <cstring>
+#include <string>
+
+// Splits a LAStools command line on spaces and parses it with LASreadOpener::parse(), as the
+// former LASreadOpener::parse_str() did. LASlib reports an invalid option by throwing (see byebye()).
+static void parse_lastools_options(LASreadOpener* lasreadopener, std::string& str)
+{
+  std::vector<char*> argv(1, nullptr); // argv[0] is the program name, never read
+  size_t len = str.size();
+  size_t p = 0;
+  while (p < len)
+  {
+    while (p < len && str[p] == ' ') p++;
+    if (p < len)
+    {
+      argv.push_back(&str[p]);
+      while (p < len && str[p] != ' ') p++;
+      if (p < len) str[p] = '\0';
+      p++;
+    }
+  }
+
+  lasreadopener->parse((int)argv.size(), argv.data());
+}
 
 #define EPSILON 1e-9
 
@@ -18,6 +44,9 @@ LASio::LASio()
   lasheader = nullptr;
   laswriter = nullptr;
   point = nullptr;
+
+  nthreads = 1;
+  parallel_started = false;
 
   intensity = AttributeAccessor("Intensity");
   returnnumber = AttributeAccessor("ReturnNumber");
@@ -45,7 +74,7 @@ LASio::LASio()
 
 LASio::~LASio()
 {
-  close();
+  try { close(); } catch (...) {} // A destructor must not throw: LASlib throws its errors (see byebye())
 }
 
 bool LASio::query(const std::vector<std::string>& main_files, const std::vector<std::string>& neighbour_files, double xmin, double ymin, double xmax, double ymax, double buffer, bool circle, std::vector<std::string> filters)
@@ -75,20 +104,14 @@ bool LASio::query(const std::vector<std::string>& main_files, const std::vector<
 
   //print("LASlib filters = '%s'\n", sfilter.c_str());
 
-  const char* tmp = sfilter.c_str();
-  int n = strlen(tmp)+1;
-  char* filtercpy = (char*)malloc(n); memcpy(filtercpy, tmp, n);
-
   // The openner must survive to the reader otherwise there are some pointer invalidation.
   lasreadopener = new LASreadOpener;
   lasreadopener->set_merged(true);
   lasreadopener->set_stored(false);
   //lasreadopener->set_populate_header(true);
   //lasreadopener->set_buffer_size(buffer);
-  lasreadopener->parse_str(filtercpy);
+  parse_lastools_options(lasreadopener, sfilter);
   lasreadopener->set_copc_stream_ordered_by_chunk();
-
-  free(filtercpy);
 
   for (auto& file : main_files) lasreadopener->add_file_name(file.c_str(), TRUE);
   for (auto& file : neighbour_files) lasreadopener->add_file_name(file.c_str(), TRUE);
@@ -253,8 +276,8 @@ void LASio::populate_header(Header* header, bool read_first_point)
   if (lasreader->header.number_attributes > 0 &&
       lasreader->point.extra_bytes_number < lasreader->header.get_attributes_size())
   {
-    warning("Malformed file: the Extra Bytes VLR declares %d byte(s) of extra attributes but each point record only reserves %d. Unbacked extra attributes are read as 0.\n",
-            (int)lasreader->header.get_attributes_size(), (int)lasreader->point.extra_bytes_number);
+    LASMessage(LAS_WARNING, "Malformed file: the Extra Bytes VLR declares %d byte(s) of extra attributes but each point record only reserves %d. Unbacked extra attributes are read as 0.",
+               (int)lasreader->header.get_attributes_size(), (int)lasreader->point.extra_bytes_number);
   }
 
   for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
@@ -515,44 +538,83 @@ void LASio::init(const Header* header)
   reset_accessor();
 }
 
-bool LASio::read_point(Point* p)
+void LASaccessors::to_point(const LASpoint& lp, const LASheader& h, Point* p)
 {
-  if (!lasreader->read_point()) return false;
-
   p->zero();
-  p->set_X(lasreader->point.get_X());
-  p->set_Y(lasreader->point.get_Y());
-  p->set_Z(lasreader->point.get_Z());
-  intensity(p, lasreader->point.get_intensity());
-  returnnumber(p, lasreader->point.get_return_number());
-  numberofreturns(p, lasreader->point.get_number_of_returns());
-  classification(p, lasreader->point.get_classification());
-  userdata(p, lasreader->point.get_user_data());
-  psid(p, lasreader->point.get_point_source_ID());
-  scanangle(p, lasreader->point.get_scan_angle());
-  gpstime(p, lasreader->point.get_gps_time());
-  scannerchannel(p, lasreader->point.get_extended_scanner_channel());
-  red(p, lasreader->point.get_R());
-  green(p, lasreader->point.get_G());
-  blue(p, lasreader->point.get_B());
-  nir(p, lasreader->point.get_NIR());
-  for (int i = 0 ; i < lasreader->header.number_attributes ; i++)
+  p->set_X(lp.get_X());
+  p->set_Y(lp.get_Y());
+  p->set_Z(lp.get_Z());
+  intensity(p, lp.get_intensity());
+  returnnumber(p, lp.get_return_number());
+  numberofreturns(p, lp.get_number_of_returns());
+  classification(p, lp.get_classification());
+  userdata(p, lp.get_user_data());
+  psid(p, lp.get_point_source_ID());
+  scanangle(p, lp.get_scan_angle());
+  gpstime(p, lp.get_gps_time());
+  scannerchannel(p, lp.get_extended_scanner_channel());
+  red(p, lp.get_R());
+  green(p, lp.get_G());
+  blue(p, lp.get_B());
+  nir(p, lp.get_NIR());
+  for (int i = 0 ; i < h.number_attributes ; i++)
   {
-    if (lasreader->header.attributes[i].data_type > 10) continue; // Don't read deprecated types
+    if (h.attributes[i].data_type > 10) continue; // Don't read deprecated types
     // #117: skip extra-byte attributes that the point record does not actually back
     // (malformed Extra Bytes VLR, see populate_header) to avoid a null/OOB dereference.
-    if (lasreader->point.extra_bytes == nullptr ||
-        lasreader->header.attribute_starts[i] + lasreader->header.attribute_sizes[i] > lasreader->point.extra_bytes_number)
+    if (lp.extra_bytes == nullptr ||
+        h.attribute_starts[i] + h.attribute_sizes[i] > lp.extra_bytes_number)
       continue;
-    extrabytes[i](p, lasreader->point.get_attribute_as_float(i));
+    extrabytes[i](p, lp.get_attribute_as_float(i));
   }
-  eof_bit(p, lasreader->point.get_edge_of_flight_line());
-  scandirection_bit(p, lasreader->point.get_scan_direction_flag());
-  withheld_bit(p, lasreader->point.get_withheld_flag());
-  synthetic_bit(p, lasreader->point.get_synthetic_flag());
-  keypoint_bit(p, lasreader->point.get_keypoint_flag());
-  overlap_bit(p, lasreader->point.get_extended_overlap_flag());
+  eof_bit(p, lp.get_edge_of_flight_line());
+  scandirection_bit(p, lp.get_scan_direction_flag());
+  withheld_bit(p, lp.get_withheld_flag());
+  synthetic_bit(p, lp.get_synthetic_flag());
+  keypoint_bit(p, lp.get_keypoint_flag());
+  overlap_bit(p, lp.get_extended_overlap_flag());
+}
+
+bool LASio::read_point(Point* p)
+{
+  if (!parallel_started) start_parallel(p->schema);
+
+  // The points are decoded and converted by the threads
+  if (blocks)
+  {
+    const unsigned char* record = blocks->next();
+    if (record == nullptr) return false;
+    std::memcpy(p->data, record, p->schema->total_point_size);
+    return true;
+  }
+
+  if (!lasreader->read_point()) return false;
+  to_point(lasreader->point, lasreader->header, p);
   return true;
+}
+
+// Starts the parallel decoding when it was requested (set_threads()) and is possible
+void LASio::start_parallel(const AttributeSchema* schema)
+{
+  parallel_started = true;
+  if (nthreads < 2) return;
+
+  LASaccessors accessors = *this;
+  auto convert = [accessors, schema](const LASpoint& lp, const LASheader& h, unsigned char* record) mutable
+  {
+    Point p(record, schema);
+    accessors.to_point(lp, h, &p);
+  };
+
+  try
+  {
+    blocks.reset(new LazBlocks(*lasreadopener, *lasreader, nthreads, schema->total_point_size, convert));
+    decoding = "with " + std::to_string(blocks->threads()) + " threads";
+  }
+  catch (const std::exception& e)
+  {
+    decoding = std::string("sequentially: ") + e.what();
+  }
 }
 
 bool LASio::write_point(Point* p)
@@ -582,7 +644,6 @@ bool LASio::write_point(Point* p)
   point->set_extended_scanner_channel(scannerchannel(p));
   point->set_extended_return_number(returnnumber(p));
   point->set_extended_number_of_returns(numberofreturns(p));
-  point->set_extended_classification(classification(p));
 
   for (size_t i = 0 ; i < extrabytes_offsets.size() ; i++)
     point->set_attribute(i, p->data + extrabytes_offsets[i]);
@@ -652,7 +713,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
 
   while (lasreader->read_point())
   {
-    lasindex.add(lasreader->point.get_x(), lasreader->point.get_y(), (U32)(lasreader->p_count-1));
+    lasindex.add(lasreader->point.get_x(), lasreader->point.get_y(), (U32)(lasreader->p_cnt-1));
 
     if (progress)
     {
@@ -666,7 +727,7 @@ void LASio::write_lax(const std::string& file, bool overwrite, bool embedded, IP
 
   int minimum_points = 100000;
   int maximum_intervals = -20;
-  lasindex.complete(minimum_points, maximum_intervals, false);
+  lasindex.complete(minimum_points, maximum_intervals);
 
   if (embedded)
   {
@@ -692,9 +753,14 @@ bool LASio::seek(int64_t index)
 {
   if (lasreader == nullptr || index < 0) return false;
 
+  // A seek reads sequentially from there: the parallel decoder (if any) is stopped. It never moved
+  // the main reader, which is still at the start.
+  blocks.reset();
+  parallel_started = true;
+
   // A COPC reader walks its spatial index and only honours a seek once it has started: its first read jumps to the
   // first node. So a reader that has not read yet reads one point before seeking.
-  if (lasreader->p_count == 0) lasreader->read_point();
+  if (lasreader->p_cnt == 0) lasreader->read_point();
 
   return lasreader->seek(index);
 }
@@ -745,14 +811,21 @@ std::vector<uint64_t> LASio::chunk_starts()
 
 int64_t LASio::p_count()
 {
-  return lasreader->p_count;
+  return lasreader->p_cnt;
 }
 
 void LASio::close()
 {
+  blocks.reset(); // joins the threads, which use the reader
+
+  // LASlib throws its errors (see byebye()). Everything is released anyway. An error while closing a
+  // reader is dropped: the error that matters was thrown while reading. An error while closing a writer
+  // means the file is not written properly: it is thrown once everything is released.
+  std::string writer_error;
+
   if (lasreader)
   {
-    lasreader->close();
+    try { lasreader->close(); } catch (...) {}
     delete lasreader;
     lasreader = nullptr;
     lasheader = nullptr;
@@ -760,8 +833,15 @@ void LASio::close()
 
   if (laswriter)
   {
-    laswriter->update_header(lasheader, true);
-    laswriter->close();
+    try
+    {
+      laswriter->update_header(lasheader, true);
+      laswriter->close();
+    }
+    catch (const std::exception& e)
+    {
+      writer_error = e.what();
+    }
     delete laswriter;
     laswriter = nullptr;
 
@@ -786,6 +866,9 @@ void LASio::close()
     delete point;
     point = nullptr;
   }
+
+  if (!writer_error.empty())
+    throw std::runtime_error(writer_error);
 }
 
 void LASio::reset_accessor()

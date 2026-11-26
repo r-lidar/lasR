@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2019, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2019, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -37,7 +37,7 @@
 
 #include <stdio.h>
 
-class LASreaderDTM : public LASreader
+class LASLIB_DLL LASreaderDTM : public LASreader
 {
 public:
 
@@ -53,7 +53,7 @@ public:
   void close(BOOL close_stream=TRUE);
   BOOL reopen(const CHAR* file_name);
 
-  LASreaderDTM();
+  LASreaderDTM(LASreadOpener* opener);
   virtual ~LASreaderDTM();
 
 protected:
@@ -71,36 +71,38 @@ private:
   I64 overflow_I32_x;
   I64 overflow_I32_y;
   I64 overflow_I32_z;
+  F64 orig_x_offset, orig_y_offset, orig_z_offset;
+  F64 orig_x_scale_factor, orig_y_scale_factor, orig_z_scale_factor;
 
   void clean();
   void populate_scale_and_offset();
   void populate_bounding_box();
 };
 
-class LASreaderDTMrescale : public virtual LASreaderDTM
+class LASLIB_DLL LASreaderDTMrescale : public virtual LASreaderDTM
 {
 public:
   virtual BOOL open(const CHAR* file_name);
-  LASreaderDTMrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
+  LASreaderDTMrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor);
 
 protected:
   F64 scale_factor[3];
 };
 
-class LASreaderDTMreoffset : public virtual LASreaderDTM
+class LASLIB_DLL LASreaderDTMreoffset : public virtual LASreaderDTM
 {
 public:
   virtual BOOL open(const CHAR* file_name);
-  LASreaderDTMreoffset(F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderDTMreoffset(LASreadOpener* opener, F64 x_offset, F64 y_offset, F64 z_offset);
 protected:
   F64 offset[3];
 };
 
-class LASreaderDTMrescalereoffset : public LASreaderDTMrescale, LASreaderDTMreoffset
+class LASLIB_DLL LASreaderDTMrescalereoffset : public LASreaderDTMrescale, LASreaderDTMreoffset
 {
 public:
   BOOL open(const CHAR* file_name);
-  LASreaderDTMrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderDTMrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
 };
 
 #endif

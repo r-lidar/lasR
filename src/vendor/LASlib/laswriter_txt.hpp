@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2014, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2014, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -36,7 +36,7 @@
 
 #include <stdio.h>
 
-class LASwriterTXT : public LASwriter
+class LASLIB_DLL LASwriterTXT : public LASwriter
 {
 public:
 
@@ -53,7 +53,8 @@ public:
   BOOL chunk() { return FALSE; };
 
   BOOL update_header(const LASheader* header, BOOL use_inventory=FALSE, BOOL update_extra_bytes=FALSE);
-  I64 close(BOOL update_npoints=TRUE);
+
+  I64 close(BOOL update_npoints = TRUE);
 
   LASwriterTXT();
   ~LASwriterTXT();
@@ -67,8 +68,8 @@ private:
   BOOL optx;
   F32 scale_rgb;
   CHAR separator_sign;
-  CHAR printstring[512];
-  I32 attribute_starts[10];
+  CHAR printstring[512] = {0};
+  I32 attribute_starts[10] = {0};
   BOOL check_parse_string(const CHAR* parse_string);
   BOOL unparse_attribute(const LASpoint* point, I32 index);
 };

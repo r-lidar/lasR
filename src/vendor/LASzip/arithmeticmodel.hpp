@@ -10,14 +10,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2019, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -55,7 +55,7 @@ const U32 BM__MaxCount    = 1 << BM__LengthShift;  // for adaptive models
 const U32 DM__LengthShift = 15;     // length bits discarded before mult.
 const U32 DM__MaxCount    = 1 << DM__LengthShift;  // for adaptive models
 
-class ArithmeticModel
+class LASLIB_DLL ArithmeticModel
 {
 public:
   ArithmeticModel(U32 symbols, BOOL compress);
@@ -73,7 +73,7 @@ private:
   friend class ArithmeticDecoder;
 };
 
-class ArithmeticBitModel
+class LASLIB_DLL ArithmeticBitModel
 {
 public:
   ArithmeticBitModel();

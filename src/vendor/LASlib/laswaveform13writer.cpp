@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2012, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -30,6 +30,7 @@
 */
 #include "laswaveform13writer.hpp"
 
+#include "lasmessage.hpp"
 #include "bytestreamout_file.hpp"
 #include "arithmeticencoder.hpp"
 #include "integercompressor.hpp"
@@ -73,7 +74,7 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
 {
   if (file_name == 0)
   {
-    eprint("ERROR: file name pointer is zero\n");
+    laserror("file name pointer is zero");
     return FALSE;
   }
 
@@ -81,7 +82,7 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
 
   if (wave_packet_descr == 0)
   {
-    eprint("ERROR: wave packet descriptor pointer is zero\n");
+    laserror("wave packet descriptor pointer is zero");
     return FALSE;
   }
 
@@ -89,7 +90,7 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
 
   if (wave_packet_descr[0] != 0)
   {
-    eprint("ERROR: wave_packet_descr[0] with index 0 must be zero\n");
+    laserror("wave_packet_descr[0] with index 0 must be zero");
     return FALSE;
   }
 
@@ -133,6 +134,12 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
   char* file_name_temp = LASCopyString(file_name);
 
   I32 len = (I32)strlen(file_name_temp);
+  if (len < 3)
+  {
+    laserror("file name '%s' is too short to derive a waveform file name", file_name);
+    free(file_name_temp);
+    return FALSE;
+  }
   if (file_name_temp[len-3] == 'L' || file_name_temp[len-3] == 'W')
   {
     file_name_temp[len-3] = 'W';
@@ -145,11 +152,11 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
     file_name_temp[len-2] = 'd';
     file_name_temp[len-1] = (compressed ? 'z' : 'p');
   }
-  file = fopen(file_name_temp, "wb");
+  file = LASfopen(file_name_temp, "wb");
 
   if (file == 0)
   {
-    eprint( "ERROR: cannot open waveform file '%s'\n", file_name_temp);
+    laserror("cannot open waveform file '%s'", file_name_temp);
     free(file_name_temp);
     return FALSE;
   }
@@ -157,7 +164,7 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
 
   // create stream
 
-  if (IS_LITTLE_ENDIAN())
+  if (Endian::IS_LITTLE_ENDIAN)
   {
     stream = new ByteStreamOutFileLE(file);
   }
@@ -168,55 +175,55 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
 
   // write extended variable length header variable after variable (to avoid alignment issues)
 
-  U16 reserved = 0xAABB;
+  U16 reserved = 0; // used to be 0xAABB
   if (!stream->put16bitsLE((U8*)&reserved))
   {
-    eprint("ERROR: writing EVLR reserved\n");
+    laserror("writing EVLR reserved");
     return FALSE;
   }
-  CHAR user_id[16];
+  CHAR user_id[16]; // rlas: I8 is signed char
   memset(user_id, 0, 16);
   strcpy(user_id, "LASF_Spec");
   if (!stream->putBytes((U8*)user_id, 16))
   {
-    eprint("ERROR: writing EVLR user_id\n");
+    laserror("writing EVLR user_id");
     return FALSE;
   }
   U16 record_id = 65535;
   if (!stream->put16bitsLE((U8*)&record_id))
   {
-    eprint("ERROR: writing EVLR record_id\n");
+    laserror("writing EVLR record_id");
     return FALSE;
   }
   I64 record_length_after_header = 0;
   if (!stream->put64bitsLE((U8*)&record_length_after_header))
   {
-    eprint("ERROR: writing EVLR record_length_after_header\n");
+    laserror("writing EVLR record_length_after_header");
     return FALSE;
   }
   CHAR description[32];
   memset(description, 0, 32);
-  snprintf(description, 32, "%s by LAStools (%d)", (compressed ? "compressed" : "created"), LAS_TOOLS_VERSION);
+  snprintf(description, sizeof(description), "%s by LAStools (%d)", (compressed ? "compressed" : "created"), LAS_TOOLS_VERSION);
   if (!stream->putBytes((U8*)description, 32))
   {
-    eprint("ERROR: writing EVLR description\n");
+    laserror("writing EVLR description");
     return FALSE;
   }
 
   // write waveform descriptor cross-check
 
   char magic[25];
-  snprintf(magic, 25, "LAStools waveform %d", LAS_TOOLS_VERSION);
+  snprintf(magic, sizeof(magic), "LAStools waveform %d", LAS_TOOLS_VERSION);
 
   if (!stream->putBytes((U8*)magic, 24))
   {
-    eprint("ERROR: writing waveform descriptor cross-check\n");
+    laserror("writing waveform descriptor cross-check");
     return FALSE;
   }
 
   if (!stream->put16bitsLE((U8*)&number))
   {
-    eprint("ERROR: writing number of waveform descriptors\n");
+    laserror("writing number of waveform descriptors");
     return FALSE;
   }
 
@@ -226,22 +233,22 @@ BOOL LASwaveform13writer::open(const char* file_name, const LASvlr_wave_packet_d
     {
       if (!stream->put16bitsLE((U8*)&i))
       {
-        eprint("ERROR: writing index of waveform descriptor %d\n", i);
+        laserror("writing index of waveform descriptor %d", i);
         return FALSE;
       }
       if (!stream->putByte(waveforms[i]->compression))
       {
-        eprint("ERROR: writing compression of waveform descriptor %d\n", i);
+        laserror("writing compression of waveform descriptor %d", i);
         return FALSE;
       }
       if (!stream->putByte(waveforms[i]->nbits))
       {
-        eprint("ERROR: writing nbits of waveform descriptor %d\n", i);
+        laserror("writing nbits of waveform descriptor %d", i);
         return FALSE;
       }
       if (!stream->put16bitsLE((U8*)&(waveforms[i]->nsamples)))
       {
-        eprint("ERROR: writing nsamples of waveform descriptor %d\n", i);
+        laserror("writing nsamples of waveform descriptor %d", i);
         return FALSE;
       }
     }
@@ -267,17 +274,23 @@ BOOL LASwaveform13writer::write_waveform(LASpoint* point, U8* samples)
     return FALSE;
   }
 
+  if (waveforms[index] == 0)
+  {
+    laserror("wavepacket is indexing non-existant descriptor %u", index);
+    return FALSE;
+  }
+
   U32 nbits = waveforms[index]->nbits;
   if ((nbits != 8) && (nbits != 16))
   {
-    eprint( "ERROR: waveform with %d bits per samples not supported yet\n", nbits);
+    laserror("waveform with %d bits per samples not supported yet", nbits);
     return FALSE;
   }
 
   U32 nsamples = waveforms[index]->nsamples;
   if (nsamples == 0)
   {
-    eprint( "ERROR: waveform has no samples\n");
+    laserror("waveform has no samples");
     return FALSE;
   }
 
@@ -293,7 +306,7 @@ BOOL LASwaveform13writer::write_waveform(LASpoint* point, U8* samples)
     U32 size = ((nbits/8) * nsamples);
     if (!stream->putBytes(samples, size))
     {
-      eprint( "ERROR: cannot write %u bytes for waveform with %u samples of %u bits\n", size, nsamples, nbits);
+      laserror("cannot write %u bytes for waveform with %u samples of %u bits", size, nsamples, nbits);
       return FALSE;
     }
     point->wavepacket.setSize(size);
@@ -338,7 +351,7 @@ void LASwaveform13writer::close()
     stream->seek(18);
     if (!stream->put64bitsLE((U8*)&record_length_after_header))
     {
-      eprint("ERROR: updating EVLR record_length_after_header\n");
+      laserror("updating EVLR record_length_after_header");
     }
     stream->seekEnd();
   }

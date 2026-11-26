@@ -9,14 +9,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2005-2014, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -29,6 +29,7 @@
 ===============================================================================
 */
 #include "integercompressor.hpp"
+#include "lasmessage.hpp"
 
 #define COMPRESS_ONLY_K
 #undef COMPRESS_ONLY_K
@@ -37,7 +38,7 @@
 #undef CREATE_HISTOGRAMS
 
 #include <stdlib.h>
-#include <assert.h>
+#include <cassert>
 
 #ifdef CREATE_HISTOGRAMS
 #include <math.h>
@@ -93,10 +94,10 @@ IntegerCompressor::IntegerCompressor(ArithmeticEncoder* enc, U32 bits, U32 conte
   mCorrector = 0;
 
 #ifdef CREATE_HISTOGRAMS
-  corr_histogram = (int**)malloc(sizeof(int*) * (corr_bits+1));
+  corr_histogram = (int**)malloc_las(sizeof(int*) * (corr_bits + 1));
   for (int k = 0; k <= corr_bits; k++)
   {
-    corr_histogram[k] = (int*)malloc(sizeof(int) * ((1<<k)+1));
+    corr_histogram[k] = (int*)malloc_las(sizeof(int) * ((1 << k) + 1));
     for (int c = 0; c <= (1<<k); c++)
     {
       corr_histogram[k][c] = 0;
@@ -205,12 +206,12 @@ IntegerCompressor::~IntegerCompressor()
           entropy -= log(prob)*prob/log(2.0);
         }
       }
-      eprint( "k: %d number: %d different: %d entropy: %lg raw: %1.1f\n",k,number,different,entropy, (float)(k?k:1));
+      LASMessage(LAS_INFO, "k: %d number: %d different: %d entropy: %lg raw: %1.1f",k,number,different,entropy, (float)(k?k:1));
       total_number += number;
       total_entropy += (entropy*number);
       total_raw += ((k?k:1)*number);
     }  
-    eprint( "TOTAL: number: %d entropy: %lg raw: %lg\n",total_number,total_entropy/total_number,total_raw/total_number);
+    LASMessage(LAS_INFO, "TOTAL: number: %d entropy: %lg raw: %lg",total_number,total_entropy/total_number,total_raw/total_number);
   }
 #endif
 }

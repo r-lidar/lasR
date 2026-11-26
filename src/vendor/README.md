@@ -27,11 +27,11 @@ Please refer to the individual LICENSE files in each subdirectory for terms and 
 ### Modifications:
 - Removed every call to `exit()` and `rand()` to comply with CRAN policies.
 - Replaced all instances of `sprintf()` with `snprintf()` to comply with CRAN policies.
-- Replaced all instances of `printf()`. Used `print()` to conditionally call `printf()` or `Rprintf()` to comply with CRAN policies (see L39 in `mydef.hpp`).
 - Replaced some occurrences of `strncpy` with `memcpy` to bypass false-positive warnings from the CRAN compiler regarding non-null-terminated strings.
 - Fixed various memory leaks (specific locations not remembered).
 - Changed `stdout` usage to `return true` in `bytestreamount_file.hpp` (see L134) to comply with CRAN policies.
 - Add two files LASwriterCOPC.h and LASwriterCOPC.cpp as well as other modifications in the code to add a new COPC writer.
+- Update: LASlib and LASzip updated to LAStools v2.0.5-67-g4298a9c (LAS_TOOLS_VERSION 261023, LASzip 3.5.1).
 
 All modifications are provided under the LGPL license.
 
