@@ -61,18 +61,27 @@ test_that("set_crs fails with invalid wkt",
 test_that("an invalid CRS does not silence the GDAL error messages",
 {
   # The CRS constructors push a quiet GDAL error handler. It was not popped when the CRS is
-  # invalid, so the GDAL errors reported afterwards to terra or sf were silently discarded.
-  skip_if_not_installed("terra")
+  # invalid, so the GDAL errors reported afterwards to R (by the handler of terra or sf) were
+  # silently discarded.
+  skip_if_not(requireNamespace("terra", quietly = TRUE) || requireNamespace("sf", quietly = TRUE))
 
   f <- system.file("extdata", "Example.las", package="lasR")
+
+  # A GDAL error raised by lasR: the raster cannot be created in a directory that does not exist
+  gdal_errors <- function()
+  {
+    tif <- file.path(tempdir(), "nonexistent", "x.tif")
+    n <- 0
+    withCallingHandlers(
+      try(exec(rasterize(10, "max", ofile = tif), on = f), silent = TRUE),
+      warning = function(w) { if (grepl("x.tif", conditionMessage(w), fixed = TRUE)) n <<- n + 1; invokeRestart("muffleWarning") })
+    n
+  }
+
+  # terra and sf report the GDAL errors to R once loaded. The tests above already used invalid CRS
+  expect_gt(gdal_errors(), 0)
+
   expect_error(exec(set_crs(12) + summarise(), on = f), "crs not found")
   expect_error(exec(set_crs("BLA") + summarise(), on = f), "WKT string")
-
-  tif <- tempfile(fileext = ".tif")
-  writeLines("not a tif", tif)
-  msg <- character(0)
-  withCallingHandlers(
-    try(terra::rast(tif), silent = TRUE),
-    warning = function(w) { msg <<- c(msg, conditionMessage(w)); invokeRestart("muffleWarning") })
-  expect_match(msg, "not recognized as", all = FALSE)
+  expect_gt(gdal_errors(), 0)
 })
