@@ -1,5 +1,35 @@
 read_crs = function(f) { exec(summarise(), on = f)$crs }
 
+test_that("an invalid CRS does not silence the GDAL error messages",
+{
+  # The CRS constructors push a quiet GDAL error handler. It was not popped when the CRS is
+  # invalid, so the GDAL errors reported afterwards to R (by the handler of terra or sf) were
+  # silently discarded. This test comes first because the tests below use invalid CRS.
+  skip_if_not(requireNamespace("terra", quietly = TRUE) || requireNamespace("sf", quietly = TRUE))
+
+  f <- system.file("extdata", "Example.las", package="lasR")
+
+  # A GDAL error raised by lasR: the raster cannot be created in a directory that does not exist
+  gdal_errors <- function()
+  {
+    tif <- file.path(tempdir(), "nonexistent", "x.tif")
+    n <- 0
+    withCallingHandlers(
+      try(exec(rasterize(10, "max", ofile = tif), on = f), silent = TRUE),
+      warning = function(w) { if (grepl("x.tif", conditionMessage(w), fixed = TRUE)) n <<- n + 1; invokeRestart("muffleWarning") })
+    n
+  }
+
+  # terra and sf report the GDAL errors raised by lasR only if they use the same GDAL library as
+  # lasR, e.g. on Linux. On Windows each package has its own copy of GDAL.
+  n <- gdal_errors()
+  skip_if(n == 0, "the GDAL errors raised by lasR are not reported to R")
+
+  expect_error(exec(set_crs(12) + summarise(), on = f), "crs not found")
+  expect_error(exec(set_crs("BLA") + summarise(), on = f), "WKT string")
+  expect_equal(gdal_errors(), n)
+})
+
 test_that("Object are assigned a CRS",
 {
   f <- system.file("extdata", "Topography.las", package="lasR")
@@ -57,4 +87,3 @@ test_that("set_crs fails with invalid wkt",
   pipeline <- set_crs("BLA") + rasterize(20, "count") + write_las()
   expect_error(exec(pipeline, on = f), "WKT string")
 })
-
