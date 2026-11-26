@@ -164,8 +164,29 @@ bool FileCollection::read(const std::vector<std::string>& files, bool progress)
   // Check if all headers have the same CRS
   const CRS& referenceCRS = headers[0].crs; // Take the CRS of the first header
   bool allSameCRS = std::all_of(headers.begin(), headers.end(), [&referenceCRS](const Header& h) { return h.crs == referenceCRS; });
-  if (!allSameCRS) warning("mix CRS found. First one retained\n");
   crs = referenceCRS;
+
+  // The same CRS can be written with several WKT. Group the files by CRS.
+  if (!allSameCRS)
+  {
+    for (const auto& header : headers)
+    {
+      size_t k = 0;
+      while (k < crs_list.size() && !crs_list[k].is_same(header.crs)) k++;
+      if (k == crs_list.size()) crs_list.push_back(header.crs);
+      crs_index.push_back((int)k);
+    }
+
+    if (crs_list.size() > 1)
+    {
+      warning("mix CRS found. First one retained\n");
+    }
+    else
+    {
+      crs_list.clear();
+      crs_index.clear();
+    }
+  }
 
   return true;
 }
@@ -763,6 +784,7 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
   chunk.ymin = h.min_y;
   chunk.xmax = h.max_x;
   chunk.ymax = h.max_y;
+  chunk.crs = h.crs;
 
   if (!use_dataframe)
   {
@@ -796,6 +818,7 @@ bool FileCollection::get_chunk_regular(int i, Chunk& chunk) const
     if (chunk.main_files[0] != file)
     {
       chunk.neighbour_files.push_back(file);
+      if (get_crs_index(index) != get_crs_index(i)) chunk.mixed_crs = true;
     }
   }
 
@@ -856,6 +879,7 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
   {
     chunk.main_files.push_back(files[0].string());
     chunk.name = files[0].stem().string() + "_" + std::to_string(i);
+    chunk.crs = headers[0].crs;
     return true;
   }
 
@@ -865,14 +889,17 @@ bool FileCollection::get_chunk_with_query(int i, Chunk& chunk) const
     int index = indexes[0];
     chunk.main_files.push_back(files[index].string());
     chunk.name = files[index].stem().string() + "_" + std::to_string(i);
+    chunk.crs = headers[index].crs;
     return true;
   }
 
   // There are multiple files. All the files are part of the main
+  chunk.crs = headers[indexes[0]].crs;
   for (auto index : indexes)
   {
     chunk.main_files.push_back(files[index].string());
     if (chunk.name.empty()) chunk.name = files[index].stem().string() + "_" + std::to_string(i);
+    if (get_crs_index(index) != get_crs_index(indexes[0])) chunk.mixed_crs = true;
   }
 
   // We search the file that contains the centroid of the query to assign a name to the query

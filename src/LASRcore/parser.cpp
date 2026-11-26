@@ -449,6 +449,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
         it->set_ncpu(ncpu);
         it->set_verbose(verbose);
         it->set_extent(xmin, ymin, xmax, ymax);
+        it->set_file_collection(catalog.get());
 
         if (stage.contains("connect"))
         {

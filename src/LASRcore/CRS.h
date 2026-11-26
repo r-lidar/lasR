@@ -20,6 +20,7 @@ public:
   bool is_geographic() const;
   void dump() const;
   bool operator==(const CRS& other) const;
+  bool is_same(const CRS& other) const; // the same CRS, possibly written with another WKT
   std::string get_wkt() const;
 
 private:
