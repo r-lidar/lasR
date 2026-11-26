@@ -49,6 +49,9 @@ the strategy used to process the point clouds. \code{sequential()}, \code{concur
 \code{concurrent_points()}, and \code{nested()} are functions to assign a parallelization strategy (see Details).
 \code{has_omp_support()} tells you if the \code{lasR} package was compiled with the support of OpenMP which
 is unlikely to be the case on MacOS.
+Without OpenMP, the only parallelized part is the decoding of LAZ files (which does not rely on
+OpenMP): \code{concurrent_points()} is supported, while \code{concurrent_files()} and \code{nested()} fall back
+on \code{concurrent_points()}.
 }
 \details{
 There are 4 strategies of parallel processing:
