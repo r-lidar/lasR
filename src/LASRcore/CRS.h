@@ -17,6 +17,7 @@ public:
   double get_linear_units() const;
   bool is_meters() const;
   bool is_feets() const;
+  bool is_geographic() const;
   void dump() const;
   bool operator==(const CRS& other) const;
   std::string get_wkt() const;
