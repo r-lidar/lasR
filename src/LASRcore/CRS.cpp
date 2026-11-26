@@ -21,6 +21,7 @@ CRS::CRS(int code, bool err)
   {
     char buffer[512];
     snprintf(buffer, sizeof(buffer), "EPSG:%d %s\n", epsg, CPLGetLastErrorMsg());
+    CPLPopErrorHandler();
     if (err) throw std::runtime_error(buffer);
     return;
   }
@@ -53,6 +54,7 @@ CRS::CRS(const std::string& str, bool err)
   {
     char buffer[2048];
     snprintf(buffer, sizeof(buffer), "WKT string: %s", CPLGetLastErrorMsg());
+    CPLPopErrorHandler();
     if (err) throw std::runtime_error(buffer);
     return;
   }
