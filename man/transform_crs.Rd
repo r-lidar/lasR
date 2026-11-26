@@ -19,12 +19,17 @@ assigned to the point cloud and to the subsequent stages of the pipeline.
 \details{
 The source CRS is the CRS of the files or the one assigned with \link{set_crs} earlier in the
 pipeline. A point that falls outside the domain of the transformation is discarded.
+
+Z is not modified, like \code{gdaltransform}, \code{sf} and \code{terra} do for 2D CRS. If the source CRS is a
+compound CRS (e.g. EPSG:2949+5773), its vertical CRS still describes Z and the output CRS is the
+target CRS combined with this vertical CRS.
 }
 \section{Limitations}{
 
 \itemize{
-\item Z is preserved unchanged, like \code{gdaltransform}, \code{sf} and \code{terra} do for 2D CRS. Vertical
-datum transformations are not supported.
+\item Vertical datum transformations are not supported: the target CRS must be a 2D CRS, not a 3D
+(e.g. EPSG:4979) or compound CRS.
+\item All the files must be in the same CRS. Files in different CRS must be reprojected separately.
 \item Only X and Y stored as scaled integers (LAS and LAZ files) are supported, not floating point
 coordinates (PCD files).
 \item Like \link{transform_with} with a rotation matrix, a reprojected chunk is no longer an

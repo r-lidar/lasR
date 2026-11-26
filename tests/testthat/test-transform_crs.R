@@ -16,6 +16,9 @@ read_range = function(f)
        on = f, noread = TRUE)
 }
 
+# EPSG:2949+5773, NAD83(CSRS) / MTM zone 7 + EGM96 height (projinfo -o WKT1_GDAL)
+mtm7_egm96 <- 'COMPD_CS["NAD83(CSRS) / MTM zone 7 + EGM96 height",PROJCS["NAD83(CSRS) / MTM zone 7",GEOGCS["NAD83(CSRS)",DATUM["NAD83_Canadian_Spatial_Reference_System",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],AUTHORITY["EPSG","6140"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4617"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",-70.5],PARAMETER["scale_factor",0.9999],PARAMETER["false_easting",304800],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","2949"]],VERT_CS["EGM96 height",VERT_DATUM["EGM96 geoid",2005,AUTHORITY["EPSG","5171"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Gravity-related height",UP],AUTHORITY["EPSG","5773"]]]'
+
 test_that("transform_crs reprojects to a geographic CRS (EPSG:4326)",
 {
   f <- system.file("extdata", "Topography.las", package = "lasR")
@@ -137,6 +140,60 @@ test_that("transform_crs fails with an invalid target CRS",
 {
   f <- system.file("extdata", "Example.las", package = "lasR")
   expect_error(exec(reader_las() + transform_crs(12) + write_las(), on = f, noread = TRUE))
+})
+
+test_that("transform_crs refuses a target CRS that describes the heights",
+{
+  # Z is not transformed: a 3D or compound target would label heights that were not transformed
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  expect_error(exec(reader_las() + transform_crs(4979) + summarise(), on = f), "2D CRS")
+  expect_error(exec(reader_las() + transform_crs(mtm7_egm96) + summarise(), on = f), "2D CRS")
+})
+
+test_that("transform_crs keeps the vertical CRS of a compound source CRS",
+{
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  src <- read_range(f)
+
+  out <- tempfile(fileext = ".las")
+  exec(reader_las() + set_crs(mtm7_egm96) + transform_crs(32619) + write_las(out), on = f, noread = TRUE)
+
+  crs <- read_crs(out)
+  expect_match(crs, "UTM zone 19N")
+  expect_match(crs, "EGM96 height")
+
+  # Z is not modified and X/Y are reprojected as without the vertical CRS
+  ref <- tempfile(fileext = ".las")
+  exec(reader_las() + transform_crs(32619) + write_las(ref), on = f, noread = TRUE)
+  r <- read_range(out)
+  expect_equal(r, read_range(ref))
+  expect_equal(unname(r[c("zmin", "zmax")]), unname(src[c("zmin", "zmax")]))
+})
+
+test_that("transform_crs fails on files in different CRS",
+{
+  # The transformation is built for the CRS of the first file. A file in another CRS must not be
+  # reprojected as if it were in this CRS
+  f <- system.file("extdata", "Topography.las", package = "lasR") # EPSG:2949
+  utm <- tempfile(fileext = ".las")
+  exec(reader_las() + transform_crs(32619) + write_las(utm), on = f, noread = TRUE)
+
+  expect_error(exec(reader_las() + transform_crs(2949) + summarise(), on = c(f, utm)), "not all in the same CRS")
+})
+
+test_that("transform_crs accepts files in the same CRS written with different WKT",
+{
+  f <- system.file("extdata", "Topography.las", package = "lasR") # EPSG:2949 in GeoKeys
+  mtm7 <- substr(mtm7_egm96, regexpr("PROJCS[", mtm7_egm96, fixed = TRUE), regexpr(",VERT_CS[", mtm7_egm96, fixed = TRUE) - 1)
+  w <- tempfile(fileext = ".las")
+  exec(reader_las() + set_crs(mtm7) + write_las(w), on = f, noread = TRUE)
+  expect_false(identical(read_crs(f), read_crs(w)))
+
+  od <- tempfile()
+  dir.create(od)
+  res <- exec(reader_las() + transform_crs(32619) + write_las(file.path(od, "*_utm.las")), on = c(f, w))
+  expect_length(res, 2)
+  expect_equal(read_range(res[1]), read_range(res[2]))
 })
 
 test_that("transform_crs reprojects the coverage extent for downstream rasterization",

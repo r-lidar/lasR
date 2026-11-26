@@ -44,13 +44,65 @@ bool LASRtransformcrs::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
+  // Z is not modified. A target that describes the heights (EPSG:4979, a compound CRS) would
+  // label heights that were not transformed.
+  if (target_crs.get_crs().GetAxesCount() != 2)
+  {
+    last_error = "transform_crs: the target CRS must be a 2D CRS because Z is not transformed. The vertical CRS of the point cloud, if any, is kept.";
+    return false;
+  }
+
   return true;
+}
+
+// The same CRS can be written with several WKT
+static bool same_crs(const CRS& a, const CRS& b)
+{
+  if (a == b) return true;
+  if (!a.is_valid() || !b.is_valid()) return false;
+  OGRSpatialReference sa = a.get_crs();
+  OGRSpatialReference sb = b.get_crs();
+  return sa.IsSame(&sb);
+}
+
+// Z is not modified so it still refers to the vertical CRS of the source, if the source is a
+// compound CRS. The output CRS is then the target CRS combined with this vertical CRS.
+static CRS keep_vertical(const CRS& target, const CRS& source)
+{
+  if (!source.is_valid()) return target;
+
+  OGRSpatialReference src = source.get_crs();
+  if (!src.IsCompound()) return target;
+
+  const OGR_SRSNode* node = src.GetAttrNode("VERT_CS");
+  if (node == nullptr) return target;
+
+  char* wkt = nullptr;
+  OGRSpatialReference vertical;
+  OGRErr err = node->exportToWkt(&wkt);
+  if (err == OGRERR_NONE) err = vertical.importFromWkt(wkt);
+  CPLFree(wkt);
+  if (err != OGRERR_NONE) return target;
+
+  OGRSpatialReference horizontal = target.get_crs();
+  if (horizontal.GetName() == nullptr || vertical.GetName() == nullptr) return target;
+
+  OGRSpatialReference compound;
+  std::string name = std::string(horizontal.GetName()) + " + " + vertical.GetName();
+  if (compound.SetCompoundCS(name.c_str(), &horizontal, &vertical) != OGRERR_NONE) return target;
+
+  const char* options[] = {"FORMAT=WKT2", nullptr};
+  wkt = nullptr;
+  err = compound.exportToWkt(&wkt, options);
+  CRS out = (err == OGRERR_NONE) ? CRS(std::string(wkt)) : CRS();
+  CPLFree(wkt);
+  return out.is_valid() ? out : target;
 }
 
 // The CRS received is the source CRS. The next stages receive the target CRS.
 void LASRtransformcrs::set_crs(const CRS& crs)
 {
-  this->crs = target_crs;
+  this->crs = keep_vertical(target_crs, crs);
 
   if (transform && crs == source_crs) return;
 
@@ -151,6 +203,15 @@ bool LASRtransformcrs::process(PointCloud*& las)
     return false;
   }
 
+  // The transformation and the extents given to the next stages are built for the CRS received
+  // when the pipeline was parsed: the CRS of the first file or the one assigned by set_crs().
+  // A file in another CRS would be reprojected as if it were in this CRS.
+  if (!same_crs(las->header->crs, source_crs))
+  {
+    last_error = "transform_crs: the files are not all in the same CRS. Reproject them separately.";
+    return false;
+  }
+
   Attribute& attrx = las->header->schema.attributes[AttributeCore::X];
   Attribute& attry = las->header->schema.attributes[AttributeCore::Y];
 
@@ -227,7 +288,7 @@ bool LASRtransformcrs::process(PointCloud*& las)
   attry.scale_factor = yscale;
   attrx.value_offset = xoffset;
   attry.value_offset = yoffset;
-  las->header->crs = target_crs;
+  las->header->crs = crs;
 
   if (dropped > 0)
   {
