@@ -19,7 +19,12 @@ LASRtransformcrs::LASRtransformcrs(const LASRtransformcrs& other) : Stage(other)
   target_crs = other.target_crs;
   xoffset = other.xoffset;
   yoffset = other.yoffset;
-  if (other.transform) transform.reset(other.transform->Clone());
+
+  for (const auto& s : other.sources)
+  {
+    sources.push_back({s.crs, Transformation(s.transform ? s.transform->Clone() : nullptr)});
+    if (s.transform.get() == other.transform) transform = sources.back().transform.get();
+  }
 }
 
 bool LASRtransformcrs::set_parameters(const nlohmann::json& stage)
@@ -53,16 +58,6 @@ bool LASRtransformcrs::set_parameters(const nlohmann::json& stage)
   }
 
   return true;
-}
-
-// The same CRS can be written with several WKT
-static bool same_crs(const CRS& a, const CRS& b)
-{
-  if (a == b) return true;
-  if (!a.is_valid() || !b.is_valid()) return false;
-  OGRSpatialReference sa = a.get_crs();
-  OGRSpatialReference sb = b.get_crs();
-  return sa.IsSame(&sb);
 }
 
 // Z is not modified so it still refers to the vertical CRS of the source, if the source is a
@@ -99,28 +94,51 @@ static CRS keep_vertical(const CRS& target, const CRS& source)
   return out.is_valid() ? out : target;
 }
 
-// The CRS received is the source CRS. The next stages receive the target CRS.
-void LASRtransformcrs::set_crs(const CRS& crs)
+LASRtransformcrs::Transformation LASRtransformcrs::create_transformation(const CRS& source_crs) const
 {
-  this->crs = keep_vertical(target_crs, crs);
-
-  if (transform && crs == source_crs) return;
-
-  source_crs = crs;
-  transform.reset();
-  if (!source_crs.is_valid()) return;
+  if (!source_crs.is_valid()) return Transformation();
 
   // x is the longitude or the easting, whatever the axis order of the CRS
   OGRSpatialReference source = source_crs.get_crs();
   OGRSpatialReference target = target_crs.get_crs();
   source.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
   target.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
-  transform.reset(OGRCreateCoordinateTransformation(&source, &target));
+  return Transformation(OGRCreateCoordinateTransformation(&source, &target));
+}
+
+// The CRS received is the source CRS. The next stages receive the target CRS. The
+// transformations are built here, on the main thread (see the copy constructor).
+void LASRtransformcrs::set_crs(const CRS& crs)
+{
+  this->crs = keep_vertical(target_crs, crs);
+
+  // set_crs() is called twice when the pipeline is parsed
+  if (!sources.empty() && crs == sources[0].crs) return;
+
+  sources.clear();
+  transform = nullptr;
+  source_crs = crs;
+  if (!source_crs.is_valid()) return;
+
+  sources.push_back({crs, create_transformation(crs)});
+
+  // The files are in different CRS: each one is reprojected from its own CRS. The CRS of the
+  // chunk tells which one (see set_chunk()). If set_crs() assigned the CRS of the first file to
+  // all the files, only the first transformation is used.
+  if (file_collection != nullptr && crs == file_collection->get_crs())
+  {
+    for (const auto& other : file_collection->get_crs_list())
+    {
+      if (other.is_valid() && !other.is_same(crs)) sources.push_back({other, create_transformation(other)});
+    }
+  }
+
+  transform = sources[0].transform.get();
 }
 
 // Bounding box of the reprojected box. The edges of a reprojected box are curved so they are
 // sampled. Returns false, and leaves the box unchanged, if a sample cannot be reprojected.
-bool LASRtransformcrs::reproject_bbox(double& xmin, double& ymin, double& xmax, double& ymax) const
+bool LASRtransformcrs::reproject_bbox(OGRCoordinateTransformation* ct, double& xmin, double& ymin, double& xmax, double& ymax) const
 {
   const int n = 20;
   std::vector<double> x, y;
@@ -133,7 +151,7 @@ bool LASRtransformcrs::reproject_bbox(double& xmin, double& ymin, double& xmax, 
   }
 
   std::vector<int> ok(x.size());
-  transform->Transform((int)x.size(), x.data(), y.data(), nullptr, ok.data());
+  ct->Transform((int)x.size(), x.data(), y.data(), nullptr, ok.data());
   if (std::find(ok.begin(), ok.end(), 0) != ok.end()) return false;
 
   xmin = *std::min_element(x.begin(), x.end());
@@ -143,12 +161,54 @@ bool LASRtransformcrs::reproject_bbox(double& xmin, double& ymin, double& xmax, 
   return true;
 }
 
+// The extent of a collection of files in different CRS mixes their coordinates. The extent of
+// the reprojected coverage is the union of the reprojected files.
+bool LASRtransformcrs::reproject_files(double& xmin, double& ymin, double& xmax, double& ymax) const
+{
+  const std::vector<Header>& headers = file_collection->get_headers();
+  const std::vector<CRS>& list = file_collection->get_crs_list();
+
+  double x0 = std::numeric_limits<double>::max();
+  double y0 = std::numeric_limits<double>::max();
+  double x1 = std::numeric_limits<double>::lowest();
+  double y1 = std::numeric_limits<double>::lowest();
+
+  for (size_t i = 0 ; i < headers.size() ; i++)
+  {
+    const CRS& crs = list[file_collection->get_crs_index(i)];
+    auto it = std::find_if(sources.begin(), sources.end(), [&crs](const Source& s) { return s.crs.is_same(crs); });
+    if (it == sources.end() || !it->transform) return false;
+
+    double a = headers[i].min_x, b = headers[i].min_y, c = headers[i].max_x, d = headers[i].max_y;
+    if (!reproject_bbox(it->transform.get(), a, b, c, d)) return false;
+
+    x0 = std::min(x0, a);
+    y0 = std::min(y0, b);
+    x1 = std::max(x1, c);
+    y1 = std::max(y1, d);
+  }
+
+  xmin = x0;
+  ymin = y0;
+  xmax = x1;
+  ymax = y1;
+  return true;
+}
+
 // Like transform_with() with a matrix: the next stages must receive the extent of the
 // reprojected coverage.
 void LASRtransformcrs::get_extent(double& xmin, double& ymin, double& xmax, double& ymax)
 {
   if (!transform) return;
-  if (!reproject_bbox(xmin, ymin, xmax, ymax)) return;
+
+  if (sources.size() > 1)
+  {
+    if (!reproject_files(xmin, ymin, xmax, ymax)) return;
+  }
+  else if (!reproject_bbox(transform, xmin, ymin, xmax, ymax))
+  {
+    return;
+  }
 
   this->xmin = xmin;
   this->ymin = ymin;
@@ -166,11 +226,41 @@ bool LASRtransformcrs::set_chunk(Chunk& chunk)
 {
   Stage::set_chunk(chunk);
 
+  // The points of a chunk are read together: they cannot be in several CRS
+  if (chunk.mixed_crs)
+  {
+    last_error = "transform_crs: the chunk " + chunk.name + " reads files in different CRS together (buffer or query). Files in different CRS can only be reprojected file by file, without buffer.";
+    return false;
+  }
+
+  // The files are in different CRS: the transformation of the CRS of the file
+  if (sources.size() > 1)
+  {
+    auto it = std::find_if(sources.begin(), sources.end(), [&chunk](const Source& s) { return s.crs.is_same(chunk.crs); });
+    if (it == sources.end())
+    {
+      last_error = "transform_crs: the file " + chunk.name + " has no CRS";
+      return false;
+    }
+
+    source_crs = it->crs;
+    transform = it->transform.get();
+
+    if (!keep_vertical(target_crs, source_crs).is_same(crs))
+    {
+      last_error = "transform_crs: the files do not have the same vertical CRS";
+      return false;
+    }
+  }
+
+  // The next stages receive the target CRS
+  chunk.crs = crs;
+
   if (!transform) return true; // process() fails with an error message
 
   double diagonal = std::hypot(chunk.xmax - chunk.xmin, chunk.ymax - chunk.ymin);
 
-  if (!reproject_bbox(chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax))
+  if (!reproject_bbox(transform, chunk.xmin, chunk.ymin, chunk.xmax, chunk.ymax))
   {
     warning("transform_crs: cannot reproject the extent of the chunk\n");
     return true;
@@ -203,12 +293,10 @@ bool LASRtransformcrs::process(PointCloud*& las)
     return false;
   }
 
-  // The transformation and the extents given to the next stages are built for the CRS received
-  // when the pipeline was parsed: the CRS of the first file or the one assigned by set_crs().
-  // A file in another CRS would be reprojected as if it were in this CRS.
-  if (!same_crs(las->header->crs, source_crs))
+  // The transformation is chosen from the CRS of the file in set_chunk()
+  if (!las->header->crs.is_same(source_crs))
   {
-    last_error = "transform_crs: the files are not all in the same CRS. Reproject them separately.";
+    last_error = "transform_crs: the point cloud is not in the CRS of its file";
     return false;
   }
 

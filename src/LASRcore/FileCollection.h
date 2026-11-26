@@ -53,6 +53,9 @@ public:
   double get_ymax() const { return ymax; };
   void set_crs(const CRS& crs) { this->crs = crs; };
   CRS get_crs() const { return crs; };
+  const std::vector<CRS>& get_crs_list() const { return crs_list; };
+  int get_crs_index(int file) const { return crs_index.empty() ? 0 : crs_index[file]; };
+  const std::vector<Header>& get_headers() const { return headers; };
   const std::vector<std::filesystem::path>& get_files() const;
   bool check_spatial_index();
   void set_all_indexed();
@@ -84,6 +87,11 @@ private:
 
   // CRS retained of the overall collection
   CRS crs;
+
+  // The files may be in different CRS: the distinct CRS (the first one is the CRS of the first
+  // file) and the index of the CRS of each file in this list. Empty if they are all the same.
+  std::vector<CRS> crs_list;
+  std::vector<int> crs_index;
 
   // reader mode to support R data.frame
   bool use_dataframe;

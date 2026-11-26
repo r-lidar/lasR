@@ -102,6 +102,7 @@ public:
   virtual std::string get_name() const = 0;
 
   void set_extent(double xmin, double ymin, double xmax, double ymax) { this->xmin = xmin; this->ymin = ymin; this->xmax = xmax; this->ymax = ymax; };
+  void set_file_collection(const FileCollection* ctg) { file_collection = ctg; };
   void set_ncpu(int ncpu) { this->ncpu = ncpu; }
   void set_ncpu_concurrent_files(int ncpu) { this->ncpu_concurrent_files = ncpu; }
   void set_verbose(bool verbose) { this->verbose = verbose; };
@@ -161,6 +162,7 @@ protected:
   PointFilter pointfilter;
   Progress* progress;
   std::map<std::string, Stage*> connections;
+  const FileCollection* file_collection = nullptr; // the files to process, set when the pipeline is parsed
 
 #ifdef USING_R
   int nsexpprotected;

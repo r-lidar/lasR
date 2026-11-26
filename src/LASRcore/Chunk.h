@@ -1,6 +1,7 @@
 #ifndef CHUNK_H
 #define CHUNK_H
 
+#include "CRS.h"
 #include "Shape.h"
 #include <string>
 
@@ -24,6 +25,8 @@ struct Chunk
     ymax = 0;
     id = 0;
     shape = ShapeType::UNKNOWN;
+    crs = CRS();
+    mixed_crs = false;
     buffer = 0;
     process = true;
     name.clear();
@@ -52,6 +55,8 @@ struct Chunk
   bool process;
   int id;
   ShapeType shape;
+  CRS crs;        // CRS of the points of the chunk
+  bool mixed_crs; // the files read for this chunk (main and neighbours) are not all in the same CRS
   std::string name;
   std::vector<std::string> main_files;
   std::vector<std::string> neighbour_files;

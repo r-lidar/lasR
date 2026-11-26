@@ -29,3 +29,15 @@ bool LASRsetcrs::process(Header*& header)
   header->crs = crs;
   return true;
 }
+
+// The CRS assigned replaces the CRS of the files for the next stages (see transform_crs)
+bool LASRsetcrs::set_chunk(Chunk& chunk)
+{
+  if (crs.is_valid())
+  {
+    chunk.crs = crs;
+    chunk.mixed_crs = false;
+  }
+
+  return Stage::set_chunk(chunk);
+}

@@ -106,6 +106,13 @@ bool CRS::operator==(const CRS& other) const
   return epsg == other.epsg && valid == other.valid && wkt == other.wkt;
 }
 
+bool CRS::is_same(const CRS& other) const
+{
+  if (*this == other) return true;
+  if (!valid || !other.valid) return false;
+  return oSRS.IsSame(&other.oSRS);
+}
+
 // # nocov start
 void CRS::dump() const
 {

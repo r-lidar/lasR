@@ -170,15 +170,73 @@ test_that("transform_crs keeps the vertical CRS of a compound source CRS",
   expect_equal(unname(r[c("zmin", "zmax")]), unname(src[c("zmin", "zmax")]))
 })
 
-test_that("transform_crs fails on files in different CRS",
+test_that("transform_crs reprojects each file from its own CRS",
 {
-  # The transformation is built for the CRS of the first file. A file in another CRS must not be
-  # reprojected as if it were in this CRS
   f <- system.file("extdata", "Topography.las", package = "lasR") # EPSG:2949
+  src <- read_range(f)
+
+  # Back and forth: the file in degrees is reprojected from EPSG:4326, not from EPSG:2949 (#350)
+  ll <- tempfile(fileext = ".las")
+  exec(reader_las() + transform_crs(4326) + write_las(ll), on = f, noread = TRUE)
+  od <- tempfile()
+  dir.create(od)
+  res <- exec(reader_las() + transform_crs(2949) + write_las(file.path(od, "*_back.las")), on = c(f, ll))
+  expect_length(res, 2)
+  for (r in lapply(res, read_range)) expect_lt(max(abs(r - src)), 0.02)
+
+  # Two CRS in metres: both files give the same points
   utm <- tempfile(fileext = ".las")
   exec(reader_las() + transform_crs(32619) + write_las(utm), on = f, noread = TRUE)
+  od <- tempfile()
+  dir.create(od)
+  res <- exec(reader_las() + transform_crs(4326) + write_las(file.path(od, "*_ll.las")), on = c(f, utm))
+  expect_equal(read_epsg(res[1]), 4326L)
+  expect_equal(read_epsg(res[2]), 4326L)
+  expect_lt(max(abs(read_range(res[1]) - read_range(res[2]))), 2e-7)
+})
 
-  expect_error(exec(reader_las() + transform_crs(2949) + summarise(), on = c(f, utm)), "not all in the same CRS")
+test_that("transform_crs gives the extent of the reprojected files in different CRS",
+{
+  # The extent of the collection mixes coordinates of two CRS. The raster must cover the two
+  # reprojected files, 700 km apart, and contain all their points
+  skip_if_not_installed("terra")
+
+  f <- system.file("extdata", "Topography.las", package = "lasR") # NAD83(CSRS) / MTM zone 7
+  m <- system.file("extdata", "Megaplot.las", package = "lasR")   # NAD83 / UTM zone 17N
+  tif <- tempfile(fileext = ".tif")
+  exec(reader_las() + transform_crs(4326) + rasterize(0.01, "count", ofile = tif), on = c(f, m))
+
+  r <- terra::rast(tif)
+  e <- as.vector(terra::ext(r))
+  expect_lt(e[["xmin"]], -78.6) # Megaplot
+  expect_gt(e[["xmax"]], -70.92) # Topography
+  n <- exec(summarise(), on = c(f, m))$npoints
+  expect_equal(sum(terra::values(r), na.rm = TRUE), n)
+})
+
+test_that("transform_crs fails when files in different CRS are read together",
+{
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  rel <- tempfile(fileext = ".las")
+  exec(reader_las() + set_crs(32619) + write_las(rel), on = f, noread = TRUE) # same coordinates, another CRS
+  exec(write_lax(), on = rel)
+
+  # The buffer of triangulate() reads the other file, and so does a query
+  expect_error(exec(reader_las() + transform_crs(4326) + triangulate() + summarise(), on = c(f, rel)), "different CRS")
+  expect_error(exec(reader_las(xc = 273500, yc = 5274500, r = 20) + transform_crs(4326) + summarise(), on = c(f, rel)), "different CRS")
+})
+
+test_that("set_crs assigns one CRS to files in different CRS before transform_crs",
+{
+  f <- system.file("extdata", "Topography.las", package = "lasR")
+  rel <- tempfile(fileext = ".las")
+  exec(reader_las() + set_crs(32619) + write_las(rel), on = f, noread = TRUE)
+
+  # set_crs() says that both files are in EPSG:2949: they give the same points
+  od <- tempfile()
+  dir.create(od)
+  res <- exec(reader_las() + set_crs(2949) + transform_crs(4326) + write_las(file.path(od, "*_ll.las")), on = c(f, rel))
+  expect_equal(read_range(res[1]), read_range(res[2]))
 })
 
 test_that("transform_crs accepts files in the same CRS written with different WKT",
@@ -287,3 +345,29 @@ test_that("transform_crs gives the same coordinates under concurrent_files as se
   }
 })
 
+
+test_that("transform_crs reprojects files in different CRS the same way under concurrent_files",
+{
+  # Each thread uses a copy of the transformations of all the CRS, built on the main thread
+  skip_if_not(has_omp_support())
+
+  f <- system.file("extdata", "Topography.las", package = "lasR") # NAD83(CSRS) / MTM zone 7
+  m <- system.file("extdata", "Megaplot.las", package = "lasR")   # NAD83 / UTM zone 17N
+  utm <- tempfile(fileext = ".las")
+  exec(reader_las() + transform_crs(32619) + write_las(utm), on = f, noread = TRUE)
+
+  strategy <- get_parallel_strategy()
+  on.exit(if (is.null(strategy)) unset_parallel_strategy() else set_parallel_strategy(strategy), add = TRUE)
+
+  run <- function(strategy)
+  {
+    set_parallel_strategy(strategy)
+    od <- tempfile()
+    dir.create(od)
+    res <- exec(reader_las() + transform_crs(4326) + write_las(file.path(od, "*_ll.las")), on = c(f, utm, m))
+    set_parallel_strategy(sequential())
+    lapply(sort(res), read_range)
+  }
+
+  expect_identical(run(concurrent_files(3)), run(sequential()))
+})

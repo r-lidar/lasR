@@ -282,6 +282,29 @@ class TestTransformCRS(unittest.TestCase):
         self.assertEqual(summary["crs"]["epsg"], 32619)
         self.assertEqual(summary["npoints"], 73403)
 
+    def test_transform_crs_files_in_different_crs(self):
+        # A copy in EPSG:4326 and the original in EPSG:2949: each file is reprojected from its own CRS
+        lonlat = os.path.join(tempfile.mkdtemp(), "lonlat.las")
+        self.execute(pylasr.transform_crs(4326), pylasr.write_las(lonlat))
+
+        ranges = []
+
+        def bbox(data):
+            ranges.append((float(data["X"].min()), float(data["X"].max()), float(data["Y"].min()), float(data["Y"].max())))
+
+        pipeline = pylasr.Pipeline()
+        pipeline += pylasr.transform_crs(2949)
+        pipeline += pylasr.callback(bbox, expose="xy", no_las_update=True)
+        pipeline.set_sequential_strategy()
+        pipeline.set_verbose(False)
+        result = pipeline.execute([self.topography, lonlat])
+        self.assertTrue(result["success"])
+
+        self.assertEqual(len(ranges), 2)
+        for a, b in zip(ranges[0], ranges[1]):
+            self.assertAlmostEqual(a, b, delta=0.02)
+        self.assertAlmostEqual(ranges[1][0], 273357.14825, delta=0.02)
+
     def test_transform_crs_refuses_a_3d_target(self):
         # Z is not transformed: EPSG:4979 would label the heights as ellipsoidal heights
         with self.assertRaisesRegex(ValueError, "2D CRS"):
