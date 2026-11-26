@@ -1,13 +1,14 @@
 # lasR 0.22
 
-- New: `summarise()` reports area, point density and pulse density
-- New: `local_maximum()` supports variable windows size.
-- Fix: `summarise()` area, density and pulse density for circular queries used the bounding square instead of the disc
-- Fix: heap-corrupting data race in thread_safe_print #328
-- Fix: #369 `write_lax()` now enables selective decompression before opening the reader, so only X and Y are decompressed when indexing LAZ 1.4 files (PDRF 6-10). Indexing is about twice as fast for such files.
+- New: `summarise()` reports area, point density and pulse density.
+- New: `local_maximum()` supports variable window sizes.
+- New: parallel decoding of LAZ files with `concurrent_points()` strategy (parallel read of one file). `concurrent_files()` strategy already reads (and decodes) several files in parallel.
+- Fix: `summarise()` area, density and pulse density for circular queries used the bounding square instead of the disc.
+- Fix: heap-corrupting data race in `thread_safe_print` #328.
+- Fix: `write_lax()` now enables selective decompression before opening the reader, so only X and Y are decompressed when indexing LAZ 1.4 files (PDRF 6-10). Indexing is about twice as fast for such files. #369
 - Fix: `write_las()` no longer flags a scale and an offset in the Extra Bytes VLR for attributes whose scale is 1 and offset is 0. Such integer attributes were read as doubles by other software, such as `rlas`.
 - Fix: an invalid CRS (e.g. `set_crs(12)` or a file with an unreadable CRS) silenced the GDAL error messages reported afterwards, such as the warnings of `terra` and `sf`.
-- Fix: `rasterize()` over tiles could shift a chunk by one cell, or put a point lying on a cell edge in a different cell than a single-file run, when the resolution has no exact binary value (e.g. 1.2, 1.4) and the tile origins are not on the raster grid.
+- Fix: `rasterize()` over tiles could shift a chunk by one cell, or put a point lying on a cell edge in a different cell than in a single-file run, when the resolution has no exact binary value (e.g. 1.2, 1.4) and the tile origins are not on the raster grid.
 - Fix: `local_maximum()` dropped some tree tops as "duplicated FID" when the stored Y integers are negative (Y offset of the file above the data).
 
 # lasR 0.21.4
