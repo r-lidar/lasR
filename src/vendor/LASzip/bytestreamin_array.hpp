@@ -7,14 +7,14 @@
       
   PROGRAMMERS:
   
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
   
   COPYRIGHT:
   
-    (c) 2007-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -46,7 +46,7 @@ public:
 /* read a single byte                                        */
   U32 getByte();
 /* read an array of bytes                                    */
-  void getBytes(U8* bytes, const U32 num_bytes);
+  void getBytes(U8* bytes, const I64 num_bytes);
 /* is the stream seekable (e.g. stdin is not)                */
   BOOL isSeekable() const;
 /* get current position of stream                            */
@@ -81,7 +81,7 @@ public:
 /* read 64 bit big-endian field                              */
   void get64bitsBE(U8* bytes);
 private:
-  U8 swapped[8];
+  U8 swapped[8] = {0};
 };
 
 class ByteStreamInArrayBE : public ByteStreamInArray
@@ -102,7 +102,7 @@ public:
 /* read 64 bit big-endian field                              */
   void get64bitsBE(U8* bytes);
 private:
-  U8 swapped[8];
+  U8 swapped[8] = {0};
 };
 
 inline ByteStreamInArray::ByteStreamInArray()
@@ -145,13 +145,13 @@ inline U32 ByteStreamInArray::getByte()
   return byte;
 }
 
-inline void ByteStreamInArray::getBytes(U8* bytes, const U32 num_bytes)
+inline void ByteStreamInArray::getBytes(U8* bytes, const I64 num_bytes)
 {
   if ((curr + num_bytes) > size)
   {
     throw EOF;
   }
-  memcpy((void*)bytes, (void*)(data+curr), num_bytes);
+  memcpy((void*)bytes, (const void*)(data+curr), num_bytes);
   curr += num_bytes;
 }
 

@@ -5,6 +5,9 @@
 #' `concurrent_points()`, and `nested()` are functions to assign a parallelization strategy (see Details).
 #' `has_omp_support()` tells you if the `lasR` package was compiled with the support of OpenMP which
 #' is unlikely to be the case on MacOS.
+#' Without OpenMP, the only parallelized part is the decoding of LAZ files (which does not rely on
+#' OpenMP): `concurrent_points()` is supported, while `concurrent_files()` and `nested()` fall back
+#' on `concurrent_points()`.
 #'
 #' There are 4 strategies of parallel processing:
 #' \describe{
@@ -53,7 +56,8 @@ set_parallel_strategy <- function(strategy)
   if (is.null(strategy))
     return(invisible())
 
-  if (strategy[1] > 1L & !has_omp_support())
+  # Without OpenMP only 'concurrent-points' is meaningful (multi-threaded LAZ decoding)
+  if (strategy[1] > 1L & !has_omp_support() & !identical(attr(strategy, "strategy"), "concurrent-points"))
   {
     warning("This version of lasR has no OpenMP support")
     return(invisible())
@@ -95,7 +99,7 @@ ncores <- function() { available_threads() }
 
 #' @rdname multithreading
 #' @export
-half_cores <- function(){ as.integer(ncores()/2L) }
+half_cores <- function(){ max(1L, as.integer(ncores()/2L)) }
 
 #' @rdname multithreading
 #' @export

@@ -22,6 +22,7 @@ public:
   virtual bool is_opened() = 0;
   virtual void close() = 0;
   virtual void reset_accessor() = 0;
+  virtual void set_threads(int n) { (void)n; }
   virtual int64_t p_count() = 0;
 };
 

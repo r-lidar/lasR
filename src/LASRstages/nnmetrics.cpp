@@ -58,6 +58,11 @@ bool LASRnnmetrics::process(PointCloud*& las)
   if (verbose) print("Building KDtree spatial index\n");
   las->build_kdtree();
 
+  // Fresh copy at each call: the AttributeAccessors cache a pointer to the schema of the point
+  // cloud they first read. Without OpenMP firstprivate() is ignored and the member would keep a
+  // dangling pointer to the schema of the previous chunk.
+  MetricManager metrics = this->metrics;
+  
   #pragma omp parallel for num_threads(ncpu) firstprivate(metrics)
   for (size_t i = 0 ; i < maxima.size() ; i++)
   {

@@ -1,5 +1,7 @@
 # Vendor files (include all LASlib implementations)
 set(VENDOR_FILES
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lascopc.cpp
+    ${LASR_SOURCE_DIR}/vendor/LASlib/lasformula_api_stub.cpp
     ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader.cpp
     ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_las.cpp
     ${LASR_SOURCE_DIR}/vendor/LASlib/lasreader_txt.cpp

@@ -53,21 +53,19 @@
 #else
 #include <istream>
 #include <fstream>
-using namespace std;
 #endif
 
 class LASreadPoint;
 
-class LASreaderLAS : public LASreader
+class LASLIB_DLL LASreaderLAS : public LASreader
 {
 public:
-
   void set_delete_stream(BOOL delete_stream=TRUE) { this->delete_stream = delete_stream; };
   void set_keep_copc(BOOL keep_copc) { this->keep_copc = keep_copc; };
 
   BOOL open(const char* file_name, I32 io_buffer_size=LAS_TOOLS_IO_IBUFFER_SIZE, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL);
   BOOL open(FILE* file, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL);
-  BOOL open(istream& stream, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL, BOOL seekable=TRUE);
+  BOOL open(std::istream& stream, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL, BOOL seekable=TRUE);
   virtual BOOL open(ByteStreamIn* stream, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL);
 
   I32 get_format() const;
@@ -77,7 +75,10 @@ public:
   ByteStreamIn* get_stream() const;
   void close(BOOL close_stream=TRUE);
 
-  LASreaderLAS();
+  // r-lidar: the point decoder, e.g. to read its chunk table (see LASreadPoint::get_chunk_totals())
+  inline const LASreadPoint* get_read_point() const { return reader; };
+
+  LASreaderLAS(LASreadOpener* opener);
   virtual ~LASreaderLAS();
 
 protected:
@@ -93,10 +94,10 @@ private:
   BOOL keep_copc;
 };
 
-class LASreaderLASrescale : public virtual LASreaderLAS
+class LASLIB_DLL LASreaderLASrescale : public virtual LASreaderLAS
 {
 public:
-  LASreaderLASrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, BOOL check_for_overflow=TRUE);
+  LASreaderLASrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, BOOL check_for_overflow=TRUE);
 
 protected:
   virtual BOOL open(ByteStreamIn* stream, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL);
@@ -107,30 +108,51 @@ protected:
   F64 orig_x_scale_factor, orig_y_scale_factor, orig_z_scale_factor;
 };
 
-class LASreaderLASreoffset : public virtual LASreaderLAS
+class LASLIB_DLL LASreaderLASreoffset : public virtual LASreaderLAS
 {
 public:
-  LASreaderLASreoffset(F64 x_offset, F64 y_offset, F64 z_offset);
-  LASreaderLASreoffset(); // auto reoffset
+  LASreaderLASreoffset(LASreadOpener* opener, F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderLASreoffset(LASreadOpener* opener); // auto reoffset
 
 protected:
   virtual BOOL open(ByteStreamIn* stream, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL);
   virtual BOOL read_point_default();
   BOOL auto_reoffset;
   BOOL reoffset_x, reoffset_y, reoffset_z;
-  F64 offset[3];
+  F64 offset[3] = {0};
   F64 orig_x_offset, orig_y_offset, orig_z_offset;
 };
 
-class LASreaderLASrescalereoffset : public LASreaderLASrescale, LASreaderLASreoffset
+class LASLIB_DLL LASreaderLASrescalereoffset : public LASreaderLASrescale, public LASreaderLASreoffset
 {
 public:
-  LASreaderLASrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
-  LASreaderLASrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor); // auto reoffset
+  LASreaderLASrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset);
+  LASreaderLASrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor); // auto reoffset
 
 protected:
-  BOOL open(ByteStreamIn* stream, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL);
-  BOOL read_point_default();
+  virtual BOOL open(ByteStreamIn* stream, BOOL peek_only=FALSE, U32 decompress_selective=LASZIP_DECOMPRESS_SELECTIVE_ALL);
+  virtual BOOL read_point_default();
 };
+
+class LASLIB_DLL LASreaderLASrescalereoffsetgps : public LASreaderLASrescalereoffset
+{
+public:
+    LASreaderLASrescalereoffsetgps(LASreadOpener* opener, BOOL rescale, BOOL reoffset, BOOL gps, 
+                                   F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, 
+                                   F64 z_offset, U16 dest_global_encoding, U16 dest_time_offset);
+    LASreaderLASrescalereoffsetgps(LASreadOpener* opener, BOOL rescale, BOOL gps, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, 
+                                   U16 dest_global_encoding, U16 dest_time_offset); // auto reoffset
+
+protected:
+    virtual BOOL open(ByteStreamIn* stream, BOOL peek_only = FALSE, U32 decompress_selective = LASZIP_DECOMPRESS_SELECTIVE_ALL);
+    virtual BOOL read_point_default();
+
+    U16 dest_global_encoding;
+    U16 dest_time_offset;
+    BOOL rescale;
+    BOOL reoffset;
+    BOOL gps;
+};
+
 
 #endif

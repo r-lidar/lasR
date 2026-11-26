@@ -13,7 +13,7 @@ LASRlaswriter::~LASRlaswriter()
   {
     // # nocov start
     warning("internal error: please report, a LASwriter is still opened when destructing LASRlaswriter. The LAS or LAZ file written may be corrupted\n");
-    lasio->close();
+    try { lasio->close(); } catch (...) {} // a destructor must not throw
     delete lasio;
     lasio = nullptr;
     // # nocov end
@@ -201,9 +201,12 @@ void LASRlaswriter::clear(bool last)
   {
     if (lasio)
     {
-      lasio->close();
+      // LASlib throws when the file cannot be finalized: release the writer, then report the error
+      std::string error;
+      try { lasio->close(); } catch (const std::exception& e) { error = e.what(); }
       delete lasio;
       lasio = nullptr;
+      if (!error.empty()) throw std::runtime_error(error);
     }
   }
 }

@@ -9,11 +9,11 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
   
   COPYRIGHT:
   
-    (c) 2007-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2017, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -48,6 +48,8 @@ public:
   I32 min_Y;
   I32 max_Z;
   I32 min_Z;
+  F64 max_gps_time;
+  F64 min_gps_time;
   BOOL init(const LASheader* header);
   BOOL add(const LASpoint* point);
   BOOL update_header(LASheader* header) const;
@@ -75,10 +77,10 @@ public:
   I64 flagged_extended_overlap_classification[256];
   LASpoint min;
   LASpoint max;
-  U16 xyz_low_digits_10[3];
-  U16 xyz_low_digits_100[3];
-  U16 xyz_low_digits_1000[3];
-  U16 xyz_low_digits_10000[3];
+  U16 xyz_low_digits_10[3] = {0};
+  U16 xyz_low_digits_100[3] = {0};
+  U16 xyz_low_digits_1000[3] = {0};
+  U16 xyz_low_digits_10000[3] = {0};
   I64 xyz_fluff_10[3];
   I64 xyz_fluff_100[3];
   I64 xyz_fluff_1000[3];
@@ -97,7 +99,7 @@ private:
   BOOL first;
 };
 
-class LASbin
+class LASLIB_DLL LASbin
 {
 public:
   void add(I32 item);
@@ -120,8 +122,8 @@ private:
   F64 one_over_step;
   BOOL first;
   I32 anker;
-  I32 size_pos;
-  I32 size_neg;
+  U32 size_pos;
+  U32 size_neg;
   U32* bins_pos;
   U32* bins_neg;
   F64* values_pos;

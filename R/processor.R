@@ -187,7 +187,7 @@ parse_options = function(on, with, ...)
   buffer <- 0
   chunk <- 0
   progress <- FALSE
-  ncores <- if (has_omp_support()) concurrent_points(half_cores()) else sequential()
+  ncores <- concurrent_points(half_cores())
   noprocess <- NULL
   verbose <- FALSE
   noread <- FALSE
@@ -263,9 +263,19 @@ parse_options = function(on, with, ...)
 
   if (!has_omp_support())
   {
-    if (ncores[1] > 1) warning("This version of lasR has no OpenMP support")
-    ncores <- 1L
-    mode <- "sequential"
+    user_ncores <- !is.null(dots[["ncores"]]) || !is.null(with[["ncores"]]) || !is.null(LASROPTIONS[["ncores"]])
+    msg <- "This version of lasR has no OpenMP support: only LAZ decoding is parallelized"
+
+    if (mode %in% c("concurrent-files", "nested"))
+    {
+      if (ncores[1] > 1) warning(paste0(msg, ". Using 'concurrent-points' strategy instead of '", mode, "'"), call. = FALSE)
+      ncores <- ncores[1]
+      mode <- "concurrent-points"
+    }
+    else if (mode == "concurrent-points" && ncores[1] > 1 && user_ncores)
+    {
+      warning(msg, call. = FALSE)
+    }
   }
 
   stopifnot(is.numeric(buffer))

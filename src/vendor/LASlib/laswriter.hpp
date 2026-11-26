@@ -25,6 +25,7 @@
 
   CHANGE HISTORY:
 
+    17 October 2025 -- add requested_version to select item version in laz compression
     14 June 2023 -- add tell() to the writers to be able to write copc files
     7 September 2018 -- replaced calls to _strdup with calls to the LASCopyString macro
     17 August 2017 -- switch on "native LAS 1.4 extension". turns off with '-no_native'.
@@ -56,15 +57,14 @@ public:
   I64 npoints;
   I64 p_count;
   LASinventory inventory;
-
   virtual BOOL write_point(const LASpoint* point) = 0;
   virtual void update_inventory(const LASpoint* point) { inventory.add(point); };
   virtual BOOL chunk() = 0;
-
-  virtual BOOL update_header(const LASheader* header, BOOL use_inventory=FALSE, BOOL update_extra_bytes=FALSE) = 0;
-  virtual I64 close(BOOL update_npoints=TRUE) = 0;
+  virtual BOOL update_header(const LASheader* header, BOOL use_inventory = FALSE, BOOL update_extra_bytes = FALSE) = 0;
+  virtual I64 close(BOOL update_npoints = TRUE) = 0;
   virtual I64 tell() { return 0; };
 
+  // lasR: COPC writer options (laswriter_copc.hpp)
   virtual void set_copc_depth(int depth) { return; };
   virtual void set_copc_sparse() { return; };
   virtual void set_copc_normal() { return; };
@@ -91,6 +91,7 @@ public:
   BOOL set_format(I32 format);
   BOOL set_format(const CHAR* format);
   void set_force(BOOL force);
+  void set_requested_version(U32 requested_version);
   void set_chunk_size(U32 chunk_size);
   void make_numbered_file_name(const CHAR* file_name, I32 digits);
   void make_file_name(const CHAR* file_name, I32 file_number=-1);
@@ -120,7 +121,7 @@ public:
 private:
   void add_directory(const CHAR* directory=0);
   void add_appendix(const CHAR* appendix=0);
-  void cut_characters(U32 cut=0);
+  void cut_characters();
   I32 io_obuffer_size;
   CHAR* directory;
   CHAR* file_name;
@@ -138,7 +139,7 @@ private:
   U32 chunk_size;
   BOOL use_stdout;
   BOOL use_nil;
-  BOOL buffered;
+  U32 requested_version;
 };
 
 #endif

@@ -9,14 +9,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2018, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -37,7 +37,7 @@
 
 #include "laswriteitem.hpp"
 
-#include <assert.h>
+#include <cassert>
 
 class LASwriteItemRaw_POINT10_LE : public LASwriteItemRaw
 {
@@ -59,12 +59,12 @@ public:
     ENDIAN_SWAP_32(&item[ 4], &swapped[ 4]);    // Y
     ENDIAN_SWAP_32(&item[ 8], &swapped[ 8]);    // Z
     ENDIAN_SWAP_16(&item[12], &swapped[12]);    // intensity
-    *((U32*)&swapped[14]) = *((U32*)&item[14]); // bitfield, classification, scan_angle_rank, user_data
+    *((U32*)&swapped[14]) = *((const U32*)&item[14]); // bitfield, classification, scan_angle_rank, user_data
     ENDIAN_SWAP_16(&item[18], &swapped[18]);    // point_source_ID
     return outstream->putBytes(swapped, 20);
   };
 private:
-  U8 swapped[20];
+  U8 swapped[20] = {0};
 };
 
 class LASwriteItemRaw_GPSTIME11_LE : public LASwriteItemRaw
@@ -87,7 +87,7 @@ public:
     return outstream->putBytes(swapped, 8);
   };
 private:
-  U8 swapped[8];
+  U8 swapped[8] = {0};
 };
 
 class LASwriteItemRaw_RGB12_LE : public LASwriteItemRaw
@@ -112,7 +112,7 @@ public:
     return outstream->putBytes(swapped, 6);
   };
 private:
-  U8 swapped[6];
+  U8 swapped[6] = {0};
 };
 
 class LASwriteItemRaw_WAVEPACKET13_LE : public LASwriteItemRaw
@@ -141,7 +141,7 @@ public:
     return outstream->putBytes(swapped, 29);
   };
 private:
-  U8 swapped[29];
+  U8 swapped[29] = {0};
 };
 
 class LASwriteItemRaw_BYTE : public LASwriteItemRaw
@@ -218,39 +218,39 @@ public:
   LASwriteItemRaw_POINT14_LE(){};
   inline BOOL write(const U8* item, U32& context)
   {
-    ((LAStempWritePoint14*)buffer)->X = ((LAStempWritePoint10*)item)->X;
-    ((LAStempWritePoint14*)buffer)->Y = ((LAStempWritePoint10*)item)->Y;
-    ((LAStempWritePoint14*)buffer)->Z = ((LAStempWritePoint10*)item)->Z;
-    ((LAStempWritePoint14*)buffer)->intensity = ((LAStempWritePoint10*)item)->intensity;
-    ((LAStempWritePoint14*)buffer)->scan_direction_flag = ((LAStempWritePoint10*)item)->scan_direction_flag;
-    ((LAStempWritePoint14*)buffer)->edge_of_flight_line = ((LAStempWritePoint10*)item)->edge_of_flight_line;
-    ((LAStempWritePoint14*)buffer)->classification = (((LAStempWritePoint10*)item)->classification & 31);
-    ((LAStempWritePoint14*)buffer)->user_data = ((LAStempWritePoint10*)item)->user_data;
-    ((LAStempWritePoint14*)buffer)->point_source_ID = ((LAStempWritePoint10*)item)->point_source_ID;
+    ((LAStempWritePoint14*)buffer)->X = ((const LAStempWritePoint10*)item)->X;
+    ((LAStempWritePoint14*)buffer)->Y = ((const LAStempWritePoint10*)item)->Y;
+    ((LAStempWritePoint14*)buffer)->Z = ((const LAStempWritePoint10*)item)->Z;
+    ((LAStempWritePoint14*)buffer)->intensity = ((const LAStempWritePoint10*)item)->intensity;
+    ((LAStempWritePoint14*)buffer)->scan_direction_flag = ((const LAStempWritePoint10*)item)->scan_direction_flag;
+    ((LAStempWritePoint14*)buffer)->edge_of_flight_line = ((const LAStempWritePoint10*)item)->edge_of_flight_line;
+    ((LAStempWritePoint14*)buffer)->classification = (((const LAStempWritePoint10*)item)->classification & 31);
+    ((LAStempWritePoint14*)buffer)->user_data = ((const LAStempWritePoint10*)item)->user_data;
+    ((LAStempWritePoint14*)buffer)->point_source_ID = ((const LAStempWritePoint10*)item)->point_source_ID;
 
-    if (((LAStempWritePoint10*)item)->extended_point_type)
+    if (((const LAStempWritePoint10*)item)->extended_point_type)
     {
-      ((LAStempWritePoint14*)buffer)->classification_flags = (((LAStempWritePoint10*)item)->extended_classification_flags & 8) | (((LAStempWritePoint10*)item)->classification >> 5);
-      if (((LAStempWritePoint14*)buffer)->classification == 0) ((LAStempWritePoint14*)buffer)->classification = ((LAStempWritePoint10*)item)->extended_classification;
-      ((LAStempWritePoint14*)buffer)->scanner_channel = ((LAStempWritePoint10*)item)->extended_scanner_channel;
-      ((LAStempWritePoint14*)buffer)->return_number = ((LAStempWritePoint10*)item)->extended_return_number;
-      ((LAStempWritePoint14*)buffer)->number_of_returns = ((LAStempWritePoint10*)item)->extended_number_of_returns;
-      ((LAStempWritePoint14*)buffer)->scan_angle = ((LAStempWritePoint10*)item)->extended_scan_angle;
+      ((LAStempWritePoint14*)buffer)->classification_flags = (((const LAStempWritePoint10*)item)->extended_classification_flags & 8) | (((const LAStempWritePoint10*)item)->classification >> 5);
+      if (((LAStempWritePoint14*)buffer)->classification == 0) ((LAStempWritePoint14*)buffer)->classification = ((const LAStempWritePoint10*)item)->extended_classification;
+      ((LAStempWritePoint14*)buffer)->scanner_channel = ((const LAStempWritePoint10*)item)->extended_scanner_channel;
+      ((LAStempWritePoint14*)buffer)->return_number = ((const LAStempWritePoint10*)item)->extended_return_number;
+      ((LAStempWritePoint14*)buffer)->number_of_returns = ((const LAStempWritePoint10*)item)->extended_number_of_returns;
+      ((LAStempWritePoint14*)buffer)->scan_angle = ((const LAStempWritePoint10*)item)->extended_scan_angle;
     }
     else
     {
-      ((LAStempWritePoint14*)buffer)->classification_flags = (((LAStempWritePoint10*)item)->classification >> 5);
+      ((LAStempWritePoint14*)buffer)->classification_flags = (((const LAStempWritePoint10*)item)->classification >> 5);
       ((LAStempWritePoint14*)buffer)->scanner_channel = 0;
-      ((LAStempWritePoint14*)buffer)->return_number = ((LAStempWritePoint10*)item)->return_number;
-      ((LAStempWritePoint14*)buffer)->number_of_returns = ((LAStempWritePoint10*)item)->number_of_returns;
-      ((LAStempWritePoint14*)buffer)->scan_angle = I16_QUANTIZE(((LAStempWritePoint10*)item)->scan_angle_rank/0.006f);
+      ((LAStempWritePoint14*)buffer)->return_number = ((const LAStempWritePoint10*)item)->return_number;
+      ((LAStempWritePoint14*)buffer)->number_of_returns = ((const LAStempWritePoint10*)item)->number_of_returns;
+      ((LAStempWritePoint14*)buffer)->scan_angle = I16_QUANTIZE(((const LAStempWritePoint10*)item)->scan_angle_rank/0.006f);
     }
 
-    *((F64*)&buffer[22]) = ((LAStempWritePoint10*)item)->gps_time;
+    *((F64*)&buffer[22]) = ((const LAStempWritePoint10*)item)->gps_time;
     return outstream->putBytes(buffer, 30);
   }
 private:
-  U8 buffer[30];
+  U8 buffer[30] = {0};
 };
 
 class LASwriteItemRaw_POINT14_BE : public LASwriteItemRaw
@@ -263,35 +263,35 @@ public:
     ENDIAN_SWAP_32(&item[ 4], &swapped[ 4]);    // Y
     ENDIAN_SWAP_32(&item[ 8], &swapped[ 8]);    // Z
     ENDIAN_SWAP_16(&item[12], &swapped[12]);    // intensity
-    ((LAStempWritePoint14*)swapped)->scan_direction_flag = ((LAStempWritePoint10*)item)->scan_direction_flag;
-    ((LAStempWritePoint14*)swapped)->edge_of_flight_line = ((LAStempWritePoint10*)item)->edge_of_flight_line;
-    ((LAStempWritePoint14*)swapped)->classification = (((LAStempWritePoint10*)item)->classification & 31);
-    ((LAStempWritePoint14*)swapped)->user_data = ((LAStempWritePoint10*)item)->user_data;
+    ((LAStempWritePoint14*)swapped)->scan_direction_flag = ((const LAStempWritePoint10*)item)->scan_direction_flag;
+    ((LAStempWritePoint14*)swapped)->edge_of_flight_line = ((const LAStempWritePoint10*)item)->edge_of_flight_line;
+    ((LAStempWritePoint14*)swapped)->classification = (((const LAStempWritePoint10*)item)->classification & 31);
+    ((LAStempWritePoint14*)swapped)->user_data = ((const LAStempWritePoint10*)item)->user_data;
     ENDIAN_SWAP_16(&item[18], &swapped[20]); // point_source_ID
 
-    if (((LAStempWritePoint10*)item)->extended_point_type)
+    if (((const LAStempWritePoint10*)item)->extended_point_type)
     {
-      ((LAStempWritePoint14*)swapped)->classification_flags = (((LAStempWritePoint10*)item)->extended_classification_flags & 8) | (((LAStempWritePoint10*)item)->classification >> 5);
-      if (((LAStempWritePoint14*)swapped)->classification == 0) ((LAStempWritePoint14*)swapped)->classification = ((LAStempWritePoint10*)item)->extended_classification;
-      ((LAStempWritePoint14*)swapped)->scanner_channel = ((LAStempWritePoint10*)item)->extended_scanner_channel;
-      ((LAStempWritePoint14*)swapped)->return_number = ((LAStempWritePoint10*)item)->extended_return_number;
-      ((LAStempWritePoint14*)swapped)->number_of_returns = ((LAStempWritePoint10*)item)->extended_number_of_returns;
+      ((LAStempWritePoint14*)swapped)->classification_flags = (((const LAStempWritePoint10*)item)->extended_classification_flags & 8) | (((const LAStempWritePoint10*)item)->classification >> 5);
+      if (((LAStempWritePoint14*)swapped)->classification == 0) ((LAStempWritePoint14*)swapped)->classification = ((const LAStempWritePoint10*)item)->extended_classification;
+      ((LAStempWritePoint14*)swapped)->scanner_channel = ((const LAStempWritePoint10*)item)->extended_scanner_channel;
+      ((LAStempWritePoint14*)swapped)->return_number = ((const LAStempWritePoint10*)item)->extended_return_number;
+      ((LAStempWritePoint14*)swapped)->number_of_returns = ((const LAStempWritePoint10*)item)->extended_number_of_returns;
       ENDIAN_SWAP_16(&item[20], &swapped[18]); // scan_angle
     }
     else
     {
-      ((LAStempWritePoint14*)swapped)->classification_flags = (((LAStempWritePoint10*)item)->classification >> 5);
+      ((LAStempWritePoint14*)swapped)->classification_flags = (((const LAStempWritePoint10*)item)->classification >> 5);
       ((LAStempWritePoint14*)swapped)->scanner_channel = 0;
-      ((LAStempWritePoint14*)swapped)->return_number = ((LAStempWritePoint10*)item)->return_number;
-      ((LAStempWritePoint14*)swapped)->number_of_returns = ((LAStempWritePoint10*)item)->number_of_returns;
-      I16 scan_angle = I16_QUANTIZE(((LAStempWritePoint10*)item)->scan_angle_rank/0.006f);
+      ((LAStempWritePoint14*)swapped)->return_number = ((const LAStempWritePoint10*)item)->return_number;
+      ((LAStempWritePoint14*)swapped)->number_of_returns = ((const LAStempWritePoint10*)item)->number_of_returns;
+      I16 scan_angle = I16_QUANTIZE(((const LAStempWritePoint10*)item)->scan_angle_rank/0.006f);
       ENDIAN_SWAP_16((U8*)(&scan_angle), &swapped[18]); // scan_angle
     }
-    ENDIAN_SWAP_64((U8*)&(((LAStempWritePoint10*)item)->gps_time), &swapped[22]);
+    ENDIAN_SWAP_64((const U8*)&(((const LAStempWritePoint10*)item)->gps_time), &swapped[22]);
     return outstream->putBytes(swapped, 30);
   }
 private:
-  U8 swapped[30];
+  U8 swapped[30] = {0};
 };
 
 class LASwriteItemRaw_RGBNIR14_LE : public LASwriteItemRaw
@@ -317,7 +317,7 @@ public:
     return outstream->putBytes(swapped, 8);
   };
 private:
-  U8 swapped[8];
+  U8 swapped[8] = {0};
 };
 
 #endif

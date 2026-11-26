@@ -10,14 +10,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2005-2014, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -77,6 +77,14 @@ ArithmeticModel::ArithmeticModel(U32 symbols, BOOL compress)
   this->symbols = symbols;
   this->compress = compress;
   distribution = 0;
+  decoder_table = 0;
+  last_symbol = 0;
+  symbols_until_update = 0;
+  symbol_count = 0;
+  table_shift = 0;
+  table_size = 0;
+  total_count = 0;
+  update_cycle = 0;
 }
 
 ArithmeticModel::~ArithmeticModel()

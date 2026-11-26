@@ -2,9 +2,9 @@
 ===============================================================================
 
   FILE:  lasreadermerged.hpp
-
+  
   CONTENTS:
-
+  
     Reads LiDAR points from the LAS format from more than one file.
 
   PROGRAMMERS:
@@ -21,16 +21,16 @@
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
+  
   CHANGE HISTORY:
-
+  
      2 May 2023 -- adding support of COPC spatial index standard
      4 November 2019 -- add ID to files for subsets of merged '-faf' files
      5 September 2018 -- support for reading points from the PLY format
      1 December 2017 -- support extra bytes during '-merged' operations
-     3 May 2015 -- header sets file source ID to 0 when merging flightlines
+     3 May 2015 -- header sets file source ID to 0 when merging flightlines 
     20 January 2011 -- created missing Livermore and my Extra Virgin Olive Oil
-
+  
 ===============================================================================
 */
 #ifndef LAS_READER_MERGED_HPP
@@ -45,8 +45,9 @@
 #include "lasreader_ply.hpp"
 #include "lasreader_qfit.hpp"
 #include "lasreader_txt.hpp"
+#include <unordered_set>
 
-class LASreaderMerged : public LASreader
+class LASLIB_DLL LASreaderMerged : public LASreader
 {
 public:
 
@@ -85,7 +86,7 @@ public:
   ByteStreamIn* get_stream() const { return 0; };
   void close(BOOL close_stream=TRUE);
 
-  LASreaderMerged();
+  LASreaderMerged(LASreadOpener* opener);
   ~LASreaderMerged();
 
 protected:
@@ -106,6 +107,7 @@ private:
   LASreaderQFIT* lasreaderqfit;
   LASreaderTXT* lasreadertxt;
   BOOL point_type_change;
+  BOOL gps_transform;
   BOOL point_size_change;
   BOOL additional_attribute_change;
   BOOL rescale;
@@ -129,6 +131,7 @@ private:
   CHAR** file_names;
   U32* file_names_ID;
   F64* bounding_boxes;
+  std::unordered_set<size_t> filtered_file_number;
 };
 
 #endif

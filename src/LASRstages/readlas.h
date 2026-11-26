@@ -20,6 +20,7 @@ public:
   void clear(bool) override;
 
   // multi-threading
+  bool is_parallelized() const override { return true; }; // concurrent-points: the LAZ files are decoded in parallel
   LASRlasreader* clone() const override { return new LASRlasreader(*this); };
 
 private:

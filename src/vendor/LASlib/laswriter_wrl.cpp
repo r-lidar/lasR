@@ -2,18 +2,18 @@
 ===============================================================================
 
   FILE:  laswriter_wrl.cpp
-
+  
   CONTENTS:
-
+  
     see corresponding header file
-
+  
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2012, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -21,14 +21,16 @@
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
+  
   CHANGE HISTORY:
-
+  
     see corresponding header file
-
+  
 ===============================================================================
 */
 #include "laswriter_wrl.hpp"
+
+#include "lasmessage.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -38,15 +40,15 @@ BOOL LASwriterWRL::open(const CHAR* file_name, const LASheader* header, const CH
 {
   if (file_name == 0)
   {
-    eprint("ERROR: file name pointer is zero\n");
+    laserror("file name pointer is zero");
     return FALSE;
   }
 
-  file = fopen(file_name, "w");
+  file = LASfopen(file_name, "w");
 
   if (file == 0)
   {
-    eprint( "ERROR: cannot open file '%s'\n", file_name);
+    laserror("cannot open file '%s'", file_name);
     return FALSE;
   }
 
@@ -59,7 +61,7 @@ BOOL LASwriterWRL::open(FILE* file, const LASheader* header, const CHAR* parse_s
 {
   if (file == 0)
   {
-    eprint("ERROR: file pointer is zero\n");
+    laserror("file pointer is zero");
     return FALSE;
   }
 
@@ -75,12 +77,16 @@ BOOL LASwriterWRL::open(FILE* file, const LASheader* header, const CHAR* parse_s
         if (rgb == 0)
         {
           rgb_alloc = 1024;
-          rgb = (U8*)malloc(3*sizeof(U8)*rgb_alloc);
+          rgb = (U8*)malloc_las(3 * sizeof(U8) * rgb_alloc);
+          if (rgb == 0) {
+            LASMessage(LAS_WARNING, "failed to allocate memory for RGB colors");
+            rgb_alloc = 0;
+          }
         }
       }
       else
       {
-        eprint("WARNING: points do not have RGB colors\n");
+        LASMessage(LAS_WARNING, "points do not have RGB colors");
         if (rgb)
         {
           rgb_alloc = 0;
@@ -97,7 +103,12 @@ BOOL LASwriterWRL::open(FILE* file, const LASheader* header, const CHAR* parse_s
       if (rgb == 0)
       {
         rgb_alloc = 1024;
-        rgb = (U8*)malloc(3*sizeof(U8)*rgb_alloc);
+        rgb = (U8*)malloc_las(3 * sizeof(U8) * rgb_alloc);
+        if (rgb == 0) {
+          LASMessage(LAS_WARNING, "failed to allocate memory for RGB colors");
+          rgb_alloc = 0;
+        }
+
       }
     }
     else
@@ -126,50 +137,62 @@ BOOL LASwriterWRL::open(FILE* file, const LASheader* header, const CHAR* parse_s
   return TRUE;
 }
 
-static void lidardouble2string(CHAR* string, double value)
+static void lidardouble2string(CHAR* string, size_t stringsz, double value)
 {
-  int len;
-  len = snprintf(string, 512, "%.15f", value) - 1;
-  while (string[len] == '0') len--;
+  int n = snprintf(string, stringsz, "%.15f", value);
+  if (n <= 0 || (size_t)n >= stringsz)
+  {
+    string[stringsz - 1] = '\0';
+    return;
+  }
+  int len = n - 1;
+  while (len > 0 && string[len] == '0') len--;
   if (string[len] != '.') len++;
   string[len] = '\0';
 }
 
-static void lidardouble2string(CHAR* string, double value, double precision)
+static void lidardouble2string(CHAR* string, size_t stringsz, double value, double precision)
 {
   if (precision == 0.1)
-    snprintf(string, 512, "%.1f", value);
+    snprintf(string, stringsz, "%.1f", value);
   else if (precision == 0.01)
-    snprintf(string, 512, "%.2f", value);
+    snprintf(string, stringsz, "%.2f", value);
   else if (precision == 0.001)
-    snprintf(string, 512, "%.3f", value);
+    snprintf(string, stringsz, "%.3f", value);
   else if (precision == 0.0001)
-    snprintf(string, 512, "%.4f", value);
+    snprintf(string, stringsz, "%.4f", value);
   else if (precision == 0.00001)
-    snprintf(string, 512, "%.5f", value);
+    snprintf(string, stringsz, "%.5f", value);
   else if (precision == 0.000001)
-    snprintf(string, 512, "%.6f", value);
+    snprintf(string, stringsz, "%.6f", value);
   else if (precision == 0.0000001)
-    snprintf(string, 512, "%.7f", value);
+    snprintf(string, stringsz, "%.7f", value);
   else if (precision == 0.00000001)
-    snprintf(string, 512, "%.8f", value);
+    snprintf(string, stringsz, "%.8f", value);
   else if (precision == 0.000000001)
-    snprintf(string, 512, "%.9f", value);
+    snprintf(string, stringsz, "%.9f", value);
   else
-    lidardouble2string(string, value);
+    lidardouble2string(string, stringsz, value);
 }
 
 BOOL LASwriterWRL::write_point(const LASpoint* point)
 {
-  lidardouble2string(printstring, header->get_x(point->get_X()), header->x_scale_factor); fprintf(file, "%s ", printstring);
-  lidardouble2string(printstring, header->get_y(point->get_Y()), header->y_scale_factor); fprintf(file, "%s ", printstring);
-  lidardouble2string(printstring, header->get_z(point->get_Z()), header->z_scale_factor); fprintf(file, "%s\012", printstring);
+  lidardouble2string(printstring, sizeof(printstring), header->get_x(point->get_X()), header->x_scale_factor); fprintf(file, "%s ", printstring);
+  lidardouble2string(printstring, sizeof(printstring), header->get_y(point->get_Y()), header->y_scale_factor); fprintf(file, "%s ", printstring);
+  lidardouble2string(printstring, sizeof(printstring), header->get_z(point->get_Z()), header->z_scale_factor); fprintf(file, "%s\012", printstring);
   if (rgb)
   {
-    if (p_count == rgb_alloc)
+    if (p_count >= rgb_alloc)
     {
-      rgb_alloc *= 2;
-      rgb = (U8*)realloc(rgb, 3*sizeof(U8)*rgb_alloc);
+      I64 new_rgb_alloc = (I64)rgb_alloc * 2;
+      U64 new_bytes = (U64)new_rgb_alloc * 3;
+      if ((new_rgb_alloc > I32_MAX) || ((U64)(size_t)new_bytes != new_bytes) ||
+          !try_realloc_las(rgb, (size_t)new_bytes))
+      {
+        laserror("cannot grow the rgb buffer to %lld entries", new_rgb_alloc);
+        return FALSE;
+      }
+      rgb_alloc = (I32)new_rgb_alloc;
     }
     if (point->rgb[0] > 255)
       rgb[3*p_count+0] = U8_CLAMP(point->rgb[0]/256);
@@ -215,7 +238,7 @@ I64 LASwriterWRL::close(BOOL update_header)
   fprintf(file, "\t}\012");
   fprintf(file, "}\012");
 
-  I64 bytes = ftell(file);
+  I64 bytes = ftell_las(file);
 
   if (file)
   {
@@ -239,6 +262,7 @@ LASwriterWRL::LASwriterWRL()
   file = 0;
   rgb = 0;
   rgb_alloc = 0;
+  header = nullptr;
 }
 
 LASwriterWRL::~LASwriterWRL()

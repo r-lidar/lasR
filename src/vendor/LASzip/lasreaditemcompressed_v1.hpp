@@ -9,14 +9,14 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2017, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
@@ -38,7 +38,7 @@
 #include "arithmeticdecoder.hpp"
 #include "integercompressor.hpp"
 
-class LASreadItemCompressed_POINT10_v1 : public LASreadItemCompressed
+class LASLIB_DLL LASreadItemCompressed_POINT10_v1 : public LASreadItemCompressed
 {
 public:
 
@@ -51,10 +51,10 @@ public:
 
 private:
   ArithmeticDecoder* dec;
-  U8 last_item[20];
+  U8 last_item[20] = {0};
 
-  I32 last_x_diff[3];
-  I32 last_y_diff[3];
+  I32 last_x_diff[3] = {0};
+  I32 last_y_diff[3] = {0};
   I32 last_incr;
   IntegerCompressor* ic_dx;
   IntegerCompressor* ic_dy;
@@ -68,7 +68,7 @@ private:
   ArithmeticModel* m_user_data[256];
 };
 
-class LASreadItemCompressed_GPSTIME11_v1 : public LASreadItemCompressed
+class LASLIB_DLL LASreadItemCompressed_GPSTIME11_v1 : public LASreadItemCompressed
 {
 public:
 
@@ -90,7 +90,7 @@ private:
   I32 last_gpstime_diff;
 };
 
-class LASreadItemCompressed_RGB12_v1 : public LASreadItemCompressed
+class LASLIB_DLL LASreadItemCompressed_RGB12_v1 : public LASreadItemCompressed
 {
 public:
 
@@ -109,7 +109,7 @@ private:
   IntegerCompressor* ic_rgb;
 };
 
-class LASreadItemCompressed_WAVEPACKET13_v1 : public LASreadItemCompressed
+class LASLIB_DLL LASreadItemCompressed_WAVEPACKET13_v1 : public LASreadItemCompressed
 {
 public:
 
@@ -134,7 +134,7 @@ private:
   IntegerCompressor* ic_xyz;
 };
 
-class LASreadItemCompressed_BYTE_v1 : public LASreadItemCompressed
+class LASLIB_DLL LASreadItemCompressed_BYTE_v1 : public LASreadItemCompressed
 {
 public:
 

@@ -10,21 +10,22 @@
 
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2019, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2022, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
-    terms of the GNU Lesser General Licence as published by the Free Software
+    terms of the Apache Public License 2.0 published by the Apache Software
     Foundation. See the COPYING file for more information.
 
     This software is distributed WITHOUT ANY WARRANTY and without even the
     implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   CHANGE HISTORY:
-
+    17 October 2025 -- upped to 3.5, general support for LAS 1.5
+    20 October 2023 -- Fix int overflow of number_of_point_records when using laszip_update_inventory
     20 March 2019 -- upped to 3.3 r1 for consistent legacy and extended class check
     21 February 2019 -- bug fix when writing 4294967295+ points uncompressed to LAS
     28 December 2018 -- fix for v4 decompression of WavePacket part of PRDF 9 and 10
@@ -58,6 +59,8 @@
 #ifndef LASZIP_HPP
 #define LASZIP_HPP
 
+#include <cstring>
+
 #if defined(_MSC_VER) && (_MSC_VER < 1300)
 #define LZ_WIN32_VC6
 typedef __int64   SIGNED_INT64;
@@ -71,10 +74,11 @@ typedef long long SIGNED_INT64;
 #define LASCopyString strdup
 #endif
 
+// sync changes with LASZIP_API_VERSION_STRING in LASzip\CMakeLists.txt
 #define LASZIP_VERSION_MAJOR                3
-#define LASZIP_VERSION_MINOR                4
-#define LASZIP_VERSION_REVISION             3
-#define LASZIP_VERSION_BUILD_DATE      191111
+#define LASZIP_VERSION_MINOR                5
+#define LASZIP_VERSION_REVISION             1
+#define LASZIP_VERSION_BUILD_DATE      260810
 
 #define LASZIP_COMPRESSOR_NONE              0
 #define LASZIP_COMPRESSOR_POINTWISE         1
@@ -92,7 +96,9 @@ typedef long long SIGNED_INT64;
 
 #define LASZIP_CHUNK_SIZE_DEFAULT           50000
 
-class LASitem
+#include "mydefs.hpp"
+
+class LASLIB_DLL LASitem
 {
 public:
   enum Type { BYTE = 0, SHORT, INT, LONG, FLOAT, DOUBLE, POINT10, GPSTIME11, RGB12, WAVEPACKET13, POINT14, RGB14, RGBNIR14, WAVEPACKET14, BYTE14 } type;
@@ -102,7 +108,7 @@ public:
   const char* get_name() const;
 };
 
-class LASzip
+class LASLIB_DLL LASzip
 {
 public:
 
@@ -129,6 +135,7 @@ public:
   bool setup(const unsigned short num_items, const LASitem* items, const unsigned short compressor);
   bool set_chunk_size(const unsigned int chunk_size);             /* for compressor only */
   bool request_version(const unsigned short requested_version);   /* for compressor only */
+  unsigned short get_default_version(const unsigned char point_type, const unsigned char las_version_major, const unsigned char las_version_minor); 
 
   // in case a function returns false this string describes the problem
   const char* get_error() const;

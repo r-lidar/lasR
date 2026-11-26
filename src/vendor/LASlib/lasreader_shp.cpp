@@ -9,11 +9,11 @@
   
   PROGRAMMERS:
 
-    martin.isenburg@rapidlasso.com  -  http://rapidlasso.com
+    info@rapidlasso.de  -  https://rapidlasso.de
 
   COPYRIGHT:
 
-    (c) 2007-2012, martin isenburg, rapidlasso - fast tools to catch reality
+    (c) 2007-2012, rapidlasso GmbH - fast tools to catch reality
 
     This is free software; you can redistribute and/or modify it under the
     terms of the GNU Lesser General Licence as published by the Free Software
@@ -30,6 +30,8 @@
 */
 #include "lasreader_shp.hpp"
 
+#include "lasmessage.hpp"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,20 +41,9 @@
 
 extern "C" FILE* fopen_compressed(const char* filename, const char* mode, bool* piped);
 
-static bool is_little_endian = true;
-
-static void initialize_endianness()
-{
-  int i = 1;
-  if (*((unsigned char*)&i) == 1)
-    is_little_endian = true;
-  else
-    is_little_endian = false;
-}
-
 static void from_big_endian(int* value)
 {
-  if (is_little_endian)
+  if (Endian::IS_LITTLE_ENDIAN)
   {
     char help;
     char* field = (char*)value;
@@ -67,7 +58,7 @@ static void from_big_endian(int* value)
 
 static void from_little_endian(int* value)
 {
-  if (!is_little_endian)
+  if (!Endian::IS_LITTLE_ENDIAN)
   {
     char help;
     char* field = (char*)value;
@@ -82,7 +73,7 @@ static void from_little_endian(int* value)
 
 static void from_little_endian(double* value)
 {
-  if (!is_little_endian)
+  if (!Endian::IS_LITTLE_ENDIAN)
   {
     char help;
     char* field = (char*)value;
@@ -105,7 +96,7 @@ BOOL LASreaderSHP::open(const char* file_name)
 {
   if (file_name == 0)
   {
-    eprint("ERROR: file name pointer is zero\n");
+    laserror("file name pointer is zero");
     return FALSE;
   }
 
@@ -114,7 +105,7 @@ BOOL LASreaderSHP::open(const char* file_name)
   file = fopen_compressed(file_name, "rb", &piped);
   if (file == 0)
   {
-    eprint( "ERROR: cannot open file '%s'\n", file_name);
+    laserror("cannot open file '%s'", file_name);
     return FALSE;
   }
 
@@ -124,8 +115,8 @@ BOOL LASreaderSHP::open(const char* file_name)
 
   // populate the header as much as it makes sense
 
-  snprintf(header.system_identifier, 32, "LAStools (c) by rapidlasso GmbH");
-  snprintf(header.generating_software, 32, "via LASreaderSHP (%d)", LAS_TOOLS_VERSION);
+  snprintf(header.system_identifier, LAS_HEADER_CHAR_LEN, LAS_TOOLS_COPYRIGHT);
+  snprintf(header.generating_software, LAS_HEADER_CHAR_LEN, "via LASreaderSHP (%d)", LAS_TOOLS_VERSION);
 
   // maybe set creation date
 
@@ -158,7 +149,7 @@ BOOL LASreaderSHP::open(const char* file_name)
   from_big_endian(&int_input); 
   if (int_input != 9994)
   {
-    eprint( "ERROR: wrong shapefile code %d != 9994\n", int_input);
+    laserror("wrong shapefile code %d != 9994", int_input);
     return FALSE;
   }
   if (fread(&int_input, sizeof(int), 1, file) != 1) return false; // unused (BIG)
@@ -173,7 +164,7 @@ BOOL LASreaderSHP::open(const char* file_name)
   from_little_endian(&int_input); 
   if (int_input != 1000)
   {
-    eprint( "ERROR: wrong shapefile version %d != 1000\n", int_input);
+    laserror("wrong shapefile version %d != 1000", int_input);
     return FALSE;
   }
   if (fread(&int_input, sizeof(int), 1, file) != 1) return false; // shape type (LITTLE)
@@ -181,7 +172,7 @@ BOOL LASreaderSHP::open(const char* file_name)
   shape_type = int_input;
   if (shape_type != 1 && shape_type != 11 && shape_type != 21 && shape_type != 8 && shape_type != 18 && shape_type != 28)
   {
-    eprint( "ERROR: wrong shape type %d != 1,11,21,8,18,28\n", shape_type);
+    laserror("wrong shape type %d != 1,11,21,8,18,28", shape_type);
     return FALSE;
   }
   double double_input;
@@ -245,8 +236,8 @@ BOOL LASreaderSHP::open(const char* file_name)
 
   populate_bounding_box();
   
-  p_count = 0;
-
+  p_idx = 0;
+  p_cnt = 0;
   return TRUE;
 }
 
@@ -292,23 +283,24 @@ BOOL LASreaderSHP::read_point_default()
   if (point_count == number_of_points)
   {
     int i, int_input;
-    if (fread(&int_input, sizeof(int), 1, file) != 1) { npoints = p_count; return FALSE; }; // record number (BIG)
-    if (fread(&int_input, sizeof(int), 1, file) != 1) { npoints = p_count; return FALSE; }; // content length (BIG)
-    if (fread(&int_input, sizeof(int), 1, file) != 1) { npoints = p_count; return FALSE; }; // shape type (LITTLE)
+    if (fread(&int_input, sizeof(int), 1, file) != 1) { npoints = p_idx; return FALSE; }; // record number (BIG)
+    if (fread(&int_input, sizeof(int), 1, file) != 1) { npoints = p_idx; return FALSE; }; // content length (BIG)
+    if (fread(&int_input, sizeof(int), 1, file) != 1) { npoints = p_idx; return FALSE; }; // shape type (LITTLE)
     from_little_endian(&int_input);
     if (int_input != shape_type)
     {
-      eprint( "WARNING: wrong shape type %d != %d in record\n", int_input, shape_type);
+      LASMessage(LAS_WARNING, "wrong shape type %d != %d in record", int_input, shape_type);
     }
     double double_input;
     if (shape_type == 8 || shape_type == 18 || shape_type == 28) // Multipoint
     {
-      if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // xmin (LITTLE)
-      if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // ymin (LITTLE)
-      if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // xmax (LITTLE)
-      if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // ymax (LITTLE)
-      if (fread(&int_input, sizeof(int), 1, file) != 1) { npoints = p_count; return FALSE; }; // number of points (LITTLE)
+      if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // xmin (LITTLE)
+      if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // ymin (LITTLE)
+      if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // xmax (LITTLE)
+      if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // ymax (LITTLE)
+      if (fread(&int_input, sizeof(int), 1, file) != 1) { npoints = p_idx; return FALSE; }; // number of points (LITTLE)
       from_little_endian(&int_input);
+      if ((int_input < 0) || (int_input > (I32_MAX / 3))) { npoints = p_idx; return FALSE; }
       number_of_points = int_input;
     }
     else // or regular point?
@@ -326,24 +318,46 @@ BOOL LASreaderSHP::read_point_default()
       // read points x and y
       for (i = 0; i < number_of_points; i++)
       {
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // x of point (LITTLE)
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // x of point (LITTLE)
         from_little_endian(&double_input);
-        points[3*i+0] = (I32)header.get_X(double_input);
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // y of point (LITTLE)
+        if (opener->is_offset_adjust() == FALSE) 
+        {
+          points[3*i+0] = (I32)header.get_X(double_input);
+        } else {
+          if (double_input >= orig_x_offset) 
+            points[3 * i + 0] = (I32)(((double_input - orig_x_offset) / orig_x_scale_factor) + 0.5);
+          else 
+            points[3 * i + 0] = (I32)(((double_input - orig_x_offset) / orig_x_scale_factor) - 0.5);
+        }
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // y of point (LITTLE)
         from_little_endian(&double_input);
-        points[3*i+1] = (I32)header.get_Y(double_input);
+        if (opener->is_offset_adjust() == FALSE) {
+          points[3 * i + 1] = (I32)header.get_Y(double_input);
+        } else {
+          if (double_input >= orig_y_offset)
+            points[3 * i + 1] = (I32)(((double_input - orig_y_offset) / orig_y_scale_factor) + 0.5);
+          else
+            points[3 * i + 1] = (I32)(((double_input - orig_y_offset) / orig_y_scale_factor) - 0.5);
+        }
       }
       // read points z and write LAS points
       if (shape_type == 18) // Multipoint
       {
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // zmin (LITTLE)
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // zmin (LITTLE)
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // zmin (LITTLE)
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // zmin (LITTLE)
       }
       for (i = 0; i < number_of_points; i++)
       {
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // z of point (LITTLE)
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // z of point (LITTLE)
         from_little_endian(&double_input);
-        points[3*i+2] = (I32)header.get_Z(double_input);
+        if (opener->is_offset_adjust() == FALSE) {
+          points[3 * i + 2] = (I32)header.get_Z(double_input);
+        } else {
+          if (double_input >= orig_z_offset)
+            points[3 * i + 2] = (I32)(((double_input - orig_z_offset) / orig_z_scale_factor) + 0.5);
+          else
+            points[3 * i + 2] = (I32)(((double_input - orig_z_offset) / orig_z_scale_factor) - 0.5);
+        }
       }
     }
     else
@@ -357,12 +371,26 @@ BOOL LASreaderSHP::read_point_default()
       // read points x and y and write LAS points
       for (i = 0; i < number_of_points; i++)
       {
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // x of point (LITTLE)
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // x of point (LITTLE)
         from_little_endian(&double_input);
-        points[2*i+0] = (I32)header.get_X(double_input);
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // y of point (LITTLE)
+        if (opener->is_offset_adjust() == FALSE) {
+          points[2 * i + 0] = (I32)header.get_X(double_input);
+        } else {
+          if (double_input >= orig_x_offset)
+            points[2 * i + 0] = (I32)(((double_input - orig_x_offset) / orig_x_scale_factor) + 0.5);
+          else
+            points[2 * i + 0] = (I32)(((double_input - orig_x_offset) / orig_x_scale_factor) - 0.5);
+        }
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // y of point (LITTLE)
         from_little_endian(&double_input);
-        points[2*i+1] = (I32)header.get_Y(double_input);
+        if (opener->is_offset_adjust() == FALSE) {
+          points[2 * i + 1] = (I32)header.get_Y(double_input);
+        } else {
+          if (double_input >= orig_y_offset)
+            points[2 * i + 1] = (I32)(((double_input - orig_y_offset) / orig_y_scale_factor) + 0.5);
+          else
+            points[2 * i + 1] = (I32)(((double_input - orig_y_offset) / orig_y_scale_factor) - 0.5);
+        }
       }
     }
     // read points m
@@ -370,29 +398,51 @@ BOOL LASreaderSHP::read_point_default()
     {
       if (shape_type == 18 || shape_type == 28) // Multipoint
       {
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // mmin (LITTLE)
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // mmin (LITTLE)
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // mmin (LITTLE)
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // mmin (LITTLE)
       }
       for (i = 0; i < number_of_points; i++)
       {
-        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_count; return FALSE; }; // m of point (LITTLE)
+        if (fread(&double_input, sizeof(double), 1, file) != 1) { npoints = p_idx; return FALSE; }; // m of point (LITTLE)
       }
     }
     point_count = 0;
   }
   if (shape_type == 11 || shape_type == 18)
   {
-    point.set_X(points[3*point_count+0]);
-    point.set_Y(points[3*point_count+1]);
-    point.set_Z(points[3*point_count+2]);
+    point.set_X(points[3 * point_count + 0]);
+    point.set_Y(points[3 * point_count + 1]);
+    point.set_Z(points[3 * point_count + 2]);
   }
   else
   {
-    point.set_X(points[2*point_count+0]);
-    point.set_Y(points[2*point_count+1]);
-    point.set_Z(0);
+    if (opener->is_offset_adjust() == FALSE) 
+    {
+      point.set_X(points[2 * point_count + 0]);
+      point.set_Y(points[2 * point_count + 1]);
+      point.set_Z(0);
+    } 
+    else 
+    {
+      I32 x = points[2 * point_count + 0];
+      I32 y = points[2 * point_count + 1];
+      I32 z = points[0];
+      if (x >= orig_x_offset)
+        point.set_X((I32)(((x - orig_x_offset) / orig_x_scale_factor) + 0.5));
+      else
+        point.set_X((I32)(((x - orig_x_offset) / orig_x_scale_factor) - 0.5));
+      if (y >= orig_y_offset)
+        point.set_Y((I32)(((y - orig_y_offset) / orig_y_scale_factor) + 0.5));
+      else
+        point.set_Y((I32)(((y - orig_y_offset) / orig_y_scale_factor) - 0.5));
+      if (z >= orig_z_offset)
+        point.set_Z((I32)(((z - orig_z_offset) / orig_z_scale_factor) + 0.5));
+      else
+        point.set_Z((I32)(((z - orig_z_offset) / orig_z_scale_factor) - 0.5));
+    }
   }
-  p_count++;
+  p_idx++;
+  p_cnt++;
   point_count++;
   return TRUE;
 }
@@ -416,14 +466,14 @@ BOOL LASreaderSHP::reopen(const char* file_name)
 {
   if (file_name == 0)
   {
-    eprint("ERROR: file name pointer is zero\n");
+    laserror("file name pointer is zero");
     return FALSE;
   }
 
   file = fopen_compressed(file_name, "rb", &piped);
   if (file == 0)
   {
-    eprint( "ERROR: cannot reopen file '%s'\n", file_name);
+    laserror("cannot reopen file '%s'", file_name);
     return FALSE;
   }
 
@@ -449,8 +499,8 @@ BOOL LASreaderSHP::reopen(const char* file_name)
   if (fread(&double_input, sizeof(double), 1, file) != 1) return FALSE; // mmin (LITTLE)
   if (fread(&double_input, sizeof(double), 1, file) != 1) return FALSE; // mmax (LITTLE)
 
-  p_count = 0;
-
+  p_idx = 0;
+  p_cnt = 0;
   return TRUE;
 }
 
@@ -466,10 +516,8 @@ void LASreaderSHP::clean()
   point_count = 0;
 }
 
-LASreaderSHP::LASreaderSHP()
+LASreaderSHP::LASreaderSHP(LASreadOpener* opener):LASreader(opener)
 {
-  initialize_endianness();
-
   file = 0;
   piped = false;
   scale_factor = 0;
@@ -479,6 +527,12 @@ LASreaderSHP::LASreaderSHP()
   points_allocated = 0;
   number_of_points = 0;
   point_count = 0;
+  orig_x_offset = 0.0;
+  orig_y_offset = 0.0;
+  orig_z_offset = 0.0;
+  orig_x_scale_factor = 0.01;
+  orig_y_scale_factor = 0.01;
+  orig_z_scale_factor = 0.01;
 }
 
 LASreaderSHP::~LASreaderSHP()
@@ -524,6 +578,9 @@ void LASreaderSHP::populate_scale_and_offset()
     }
     header.z_scale_factor = 0.01;
   }
+  orig_x_scale_factor = header.x_scale_factor;
+  orig_y_scale_factor = header.y_scale_factor;
+  orig_z_scale_factor = header.z_scale_factor;
 
   // if not specified in the command line, set a reasonable offset
   if (offset)
@@ -549,6 +606,9 @@ void LASreaderSHP::populate_scale_and_offset()
     else
       header.z_offset = 0;
   }
+  orig_x_offset = header.x_offset;
+  orig_y_offset = header.y_offset;
+  orig_z_offset = header.z_offset;
 }
 
 void LASreaderSHP::populate_bounding_box()
@@ -566,8 +626,8 @@ void LASreaderSHP::populate_bounding_box()
 
   if ((header.min_x > 0) != (dequant_min_x > 0))
   {
-    eprint( "WARNING: quantization sign flip for min_x from %g to %g.\n", header.min_x, dequant_min_x);
-    eprint( "         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
+    LASMessage(LAS_WARNING, "quantization sign flip for min_x from %g to %g.\n" \
+                            "\tset scale factor for x coarser than %g with '-rescale'", header.min_x, dequant_min_x, header.x_scale_factor);
   }
   else
   {
@@ -575,8 +635,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.max_x > 0) != (dequant_max_x > 0))
   {
-    eprint( "WARNING: quantization sign flip for max_x from %g to %g.\n", header.max_x, dequant_max_x);
-    eprint( "         set scale factor for x coarser than %g with '-rescale'\n", header.x_scale_factor);
+    LASMessage(LAS_WARNING, "quantization sign flip for max_x from %g to %g.\n" \
+                            "\tset scale factor for x coarser than %g with '-rescale'", header.max_x, dequant_max_x, header.x_scale_factor);
   }
   else
   {
@@ -584,8 +644,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.min_y > 0) != (dequant_min_y > 0))
   {
-    eprint( "WARNING: quantization sign flip for min_y from %g to %g.\n", header.min_y, dequant_min_y);
-    eprint( "         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
+    LASMessage(LAS_WARNING, "quantization sign flip for min_y from %g to %g.\n" \
+                            "\tset scale factor for y coarser than %g with '-rescale'", header.min_y, dequant_min_y, header.y_scale_factor);
   }
   else
   {
@@ -593,8 +653,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.max_y > 0) != (dequant_max_y > 0))
   {
-    eprint( "WARNING: quantization sign flip for max_y from %g to %g.\n", header.max_y, dequant_max_y);
-    eprint( "         set scale factor for y coarser than %g with '-rescale'\n", header.y_scale_factor);
+    LASMessage(LAS_WARNING, "quantization sign flip for max_y from %g to %g.\n" \
+                            "\tset scale factor for y coarser than %g with '-rescale'", header.max_y, dequant_max_y, header.y_scale_factor);
   }
   else
   {
@@ -602,8 +662,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.min_z > 0) != (dequant_min_z > 0))
   {
-    eprint( "WARNING: quantization sign flip for min_z from %g to %g.\n", header.min_z, dequant_min_z);
-    eprint( "         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
+    LASMessage(LAS_WARNING, "quantization sign flip for min_z from %g to %g.\n" \
+                            "\tset scale factor for z coarser than %g with '-rescale'", header.min_z, dequant_min_z, header.z_scale_factor);
   }
   else
   {
@@ -611,8 +671,8 @@ void LASreaderSHP::populate_bounding_box()
   }
   if ((header.max_z > 0) != (dequant_max_z > 0))
   {
-    eprint( "WARNING: quantization sign flip for max_z from %g to %g.\n", header.max_z, dequant_max_z);
-    eprint( "         set scale factor for z coarser than %g with '-rescale'\n", header.z_scale_factor);
+    LASMessage(LAS_WARNING, "quantization sign flip for max_z from %g to %g.\n" \
+                            "\tset scale factor for z coarser than %g with '-rescale'", header.max_z, dequant_max_z, header.z_scale_factor);
   }
   else
   {
@@ -620,7 +680,7 @@ void LASreaderSHP::populate_bounding_box()
   }
 }
 
-LASreaderSHPrescale::LASreaderSHPrescale(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor) : LASreaderSHP()
+LASreaderSHPrescale::LASreaderSHPrescale(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor) : LASreaderSHP(opener)
 {
   scale_factor[0] = x_scale_factor;
   scale_factor[1] = y_scale_factor;
@@ -646,7 +706,7 @@ BOOL LASreaderSHPrescale::open(const char* file_name)
   return TRUE;
 }
 
-LASreaderSHPreoffset::LASreaderSHPreoffset(F64 x_offset, F64 y_offset, F64 z_offset) : LASreaderSHP()
+LASreaderSHPreoffset::LASreaderSHPreoffset(LASreadOpener* opener, F64 x_offset, F64 y_offset, F64 z_offset) : LASreaderSHP(opener)
 {
   this->offset[0] = x_offset;
   this->offset[1] = y_offset;
@@ -672,7 +732,10 @@ BOOL LASreaderSHPreoffset::open(const char* file_name)
   return TRUE;
 }
 
-LASreaderSHPrescalereoffset::LASreaderSHPrescalereoffset(F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset) : LASreaderSHPrescale(x_scale_factor, y_scale_factor, z_scale_factor), LASreaderSHPreoffset(x_offset, y_offset, z_offset)
+LASreaderSHPrescalereoffset::LASreaderSHPrescalereoffset(LASreadOpener* opener, F64 x_scale_factor, F64 y_scale_factor, F64 z_scale_factor, F64 x_offset, F64 y_offset, F64 z_offset) : 
+  LASreaderSHP(opener),
+  LASreaderSHPrescale(opener, x_scale_factor, y_scale_factor, z_scale_factor), 
+  LASreaderSHPreoffset(opener, x_offset, y_offset, z_offset)
 {
 }
 
