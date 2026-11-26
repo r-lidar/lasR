@@ -58,3 +58,21 @@ test_that("set_crs fails with invalid wkt",
   expect_error(exec(pipeline, on = f), "WKT string")
 })
 
+test_that("an invalid CRS does not silence the GDAL error messages",
+{
+  # The CRS constructors push a quiet GDAL error handler. It was not popped when the CRS is
+  # invalid, so the GDAL errors reported afterwards to terra or sf were silently discarded.
+  skip_if_not_installed("terra")
+
+  f <- system.file("extdata", "Example.las", package="lasR")
+  expect_error(exec(set_crs(12) + summarise(), on = f), "crs not found")
+  expect_error(exec(set_crs("BLA") + summarise(), on = f), "WKT string")
+
+  tif <- tempfile(fileext = ".tif")
+  writeLines("not a tif", tif)
+  msg <- character(0)
+  withCallingHandlers(
+    try(terra::rast(tif), silent = TRUE),
+    warning = function(w) { msg <<- c(msg, conditionMessage(w)); invokeRestart("muffleWarning") })
+  expect_match(msg, "not recognized as", all = FALSE)
+})
