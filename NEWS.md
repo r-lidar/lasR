@@ -1,3 +1,7 @@
+# lasR 0.23
+
+- New: `write_cog()` copies a raster produced by another stage into a Cloud Optimized GeoTIFF once all chunks are processed. #372
+
 # lasR 0.22
 
 - New: `summarise()` reports area, point density and pulse density.

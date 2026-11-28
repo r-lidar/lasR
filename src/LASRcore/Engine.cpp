@@ -493,6 +493,23 @@ void Engine::clear(bool last)
   }
 }
 
+// Called once on the main pipeline when every chunk has been processed and the private pipelines
+// of each thread have been destroyed. Stages can do work that requires the complete output
+// such as converting a raster to COG.
+bool Engine::finalize()
+{
+  for (auto&& stage : pipeline)
+  {
+    if (!stage->finalize())
+    {
+      last_error = "in '" + stage->get_name() + "' while finalizing: " + last_error;
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void Engine::clean()
 {
   if (!point_cloud_ownership_transfered) delete las;

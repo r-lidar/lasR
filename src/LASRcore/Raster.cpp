@@ -410,6 +410,68 @@ bool Raster::get_chunk(const Chunk& chunk, int band_index)
   return true;
 }
 
+// Copies the raster into a new Cloud Optimized GeoTIFF. A COG cannot be written chunk by chunk:
+// the GDAL COG driver only supports CreateCopy() from a complete dataset. The raster must thus
+// be linked to a file on disk that has been fully written. In a pipeline, this happens once
+// all the chunks have been processed i.e. in Stage::finalize()
+bool Raster::to_cog(const std::string& cog_file, const std::string& resampling) const
+{
+  if (!dataset || file.empty())
+  {
+    last_error = "the raster is not linked to a file on disk";
+    return false;
+  }
+
+  if (!is_raster())
+  {
+    last_error = "the dataset is not a raster"; // # nocov
+    return false; // # nocov
+  }
+
+  if (cog_file.empty())
+  {
+    last_error = "no output file name for the COG";
+    return false;
+  }
+
+  if (cog_file == file)
+  {
+    last_error = "the COG file must be different from the source raster file: " + file;
+    return false;
+  }
+
+  GDALDriver* driver = GetGDALDriverManager()->GetDriverByName("COG");
+  if (!driver)
+  {
+    last_error = "the GDAL COG driver is not available. GDAL >= 3.1 is required"; // # nocov
+    return false; // # nocov
+  }
+
+  // Make sure every block written with RasterIO is on disk before copying
+  dataset->FlushCache();
+
+  char** papszOptions = NULL;
+  papszOptions = CSLSetNameValue(papszOptions, "COMPRESS", "ZSTD");
+  papszOptions = CSLSetNameValue(papszOptions, "LEVEL", "9");
+  papszOptions = CSLSetNameValue(papszOptions, "PREDICTOR", "YES");
+  papszOptions = CSLSetNameValue(papszOptions, "BIGTIFF", "IF_SAFER");
+  papszOptions = CSLSetNameValue(papszOptions, "RESAMPLING", resampling.c_str());
+
+  CPLErrorReset();
+  GDALDataset* cog = driver->CreateCopy(cog_file.c_str(), dataset.get(), FALSE, papszOptions, nullptr, nullptr);
+  CSLDestroy(papszOptions);
+
+  if (!cog)
+  {
+    last_error = "error while writing the COG: " + std::string(CPLGetLastErrorMsg());
+    return false;
+  }
+
+  GDALClose(cog);
+
+  return true;
+}
+
 bool Raster::write()
 {
   if (data.size() == 0)

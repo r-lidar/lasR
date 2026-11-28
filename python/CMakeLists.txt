@@ -250,6 +250,7 @@ pybind11_add_module(pylasr
   ${LASR_SOURCE_DIR}/src/LASRstages/svd.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/transformwith.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/triangulate.cpp
+  ${LASR_SOURCE_DIR}/src/LASRstages/writecog.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writelas.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writelax.cpp
   ${LASR_SOURCE_DIR}/src/LASRstages/writepcd.cpp

@@ -589,6 +589,13 @@ PYBIND11_MODULE(pylasr, m) {
           "Write PCD file",
           py::arg("ofile"), py::arg("binary") = true);
 
+    m.def("write_cog", [](py::object connect_uid, std::string ofile, std::string resampling) {
+        std::string uid = extract_uid(connect_uid);
+        return api::write_cog(uid, ofile, resampling);
+    },
+    "Convert a raster to a Cloud Optimized GeoTIFF",
+    py::arg("connect_uid"), py::arg("ofile"), py::arg("resampling") = "bilinear");
+
     m.def("write_vpc", &api::write_vpc,
           "Write VPC file",
           py::arg("ofile"), py::arg("absolute_path") = false, py::arg("use_gpstime") = false);

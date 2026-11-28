@@ -37,6 +37,7 @@
 #include "triangulate.h"
 #include "transformwith.h"
 #include "writelas.h"
+#include "writecog.h"
 #include "writelax.h"
 #include "writevpc.h"
 #include "writepcd.h"
@@ -125,6 +126,7 @@ bool Engine::parse(const nlohmann::json& json, bool progress)
     {"svd",                  create_instance<LASRsvd>},
     {"transform_with",       create_instance<LASRtransformwith>},
     {"triangulate",          create_instance<LASRtriangulate>},
+    {"write_cog",            create_instance<LASRcogwriter>},
     {"write_las",            create_instance<LASRlaswriter>},
     {"write_vpc",            create_instance<LASRvpcwriter>},
     {"write_pcd",            create_instance<LASRpcdwriter>}

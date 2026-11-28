@@ -381,6 +381,13 @@ ReturnType execute(const std::string& config_file)
       throw std::runtime_error(last_error);
     }
 
+    // All the chunks are processed and the private pipelines are destroyed: the main pipeline
+    // is now the only owner of the output files, which are complete.
+    if (!pipeline.finalize())
+    {
+      throw std::runtime_error(last_error);
+    }
+
     pipeline.sort();
 
     pipeline.profiler.write(profile_file);

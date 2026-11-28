@@ -30,6 +30,7 @@ public:
   const double (&get_full_extent() const)[4] { return extent; };
   bool focal(float size, float (*operation)(std::vector<float>&));
   bool write();
+  bool to_cog(const std::string& file, const std::string& resampling = "BILINEAR") const;
   void show() const;
   float operator()(int row, int col, int layer = 1)
   {

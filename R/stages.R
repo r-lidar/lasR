@@ -1586,6 +1586,39 @@ write_pcd = function(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
   .APISTAGES$write_pcd(ofile, binary)
 }
 
+#' Write a Cloud Optimized GeoTIFF
+#'
+#' Copies the raster produced by another stage into a Cloud Optimized GeoTIFF (COG). A COG cannot be
+#' written chunk by chunk. The source raster is written on disk as usual, and it is copied into a COG
+#' once all the chunks have been processed. The COG is compressed with ZSTD and contains overviews.
+#'
+#' The source raster must be written in a single file. A source raster stored only in memory
+#' (`ofile = ""`) or written in one file per chunk (`ofile` with a wildcard `*`) is not supported.
+#' By default the source raster is written in a temporary file, so only the COG needs to be kept.
+#'
+#' @param raster LASRalgorithm. A stage that produces a raster.
+#' @param ofile character. The path of the COG file, with extension `.tif`. It must be different
+#' from the file of the source raster.
+#' @param resampling character. The resampling method used to compute the overviews. Can be
+#' 'nearest', 'bilinear', 'cubic', 'cubicspline', 'lanczos', 'average' or 'mode'.
+#' @returns This stage produces a raster.
+#' @examples
+#' f <- system.file("extdata", "Topography.las", package = "lasR")
+#'
+#' chm <- rasterize(1, "max")
+#' cog <- write_cog(chm, ofile = tempfile(fileext = ".tif"))
+#' ans <- exec(reader() + chm + cog, on = f)
+#' ans
+#' @export
+#' @md
+write_cog = function(raster, ofile = temptif(), resampling = "bilinear")
+{
+  info = .APIOPERATIONS$get_stage_info(raster)
+  if (!info$raster) stop("'raster' must be a raster stage")
+  ofile = normalizePath(ofile, mustWork = FALSE)
+  .APISTAGES$write_cog(info[["uid"]], ofile, resampling)
+}
+
 #' Write a Virtual Point Cloud
 #'
 #' Borrowing the concept of virtual rasters from GDAL, the VPC file format references other point

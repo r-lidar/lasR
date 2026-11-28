@@ -631,6 +631,16 @@ Pipeline write_pcd(std::string ofile, bool binary)
   return Pipeline(s);
 }
 
+Pipeline write_cog(std::string connect_uid, std::string ofile, std::string resampling)
+{
+  Stage s("write_cog");
+  s.set("connect", connect_uid);
+  s.set("output", ofile);
+  s.set("resampling", resampling);
+
+  return Pipeline(s);
+}
+
 Pipeline write_vpc(std::string ofile, bool absolute_path, bool use_gpstime)
 {
   Stage s("write_vpc");

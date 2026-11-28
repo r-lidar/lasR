@@ -36,6 +36,7 @@ public:
   bool run();
   void merge(const Engine& other);
   void clear(bool last = false);
+  bool finalize();
   bool is_parallelizable() const;
   bool is_parallelized() const;
   bool is_streamable() const;

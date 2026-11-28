@@ -63,8 +63,10 @@
  *  26. merge()
  * Pipeline::sort()
  *  27. sort()
+ * Pipeline::finalize() (main pipeline only, after all chunks, single thread)
+ *  28. finalize()
  * Pipeline::to_R()
- *  28. to_R();
+ *  29. to_R();
  */
 
 class Stage
@@ -81,6 +83,7 @@ public:
   virtual bool break_pipeline() { return false; };
   virtual bool write() { return true; };
   virtual void clear(bool last = false) { return; };
+  virtual bool finalize() { return true; }; // Called once on the main pipeline after all chunks were processed
   virtual void set_crs(const CRS& crs) { this->crs = crs; };
   virtual bool set_output_file(const std::string& file) { ofile = file; return true; };
   virtual bool set_input_file_name(const std::string& file) { return true; };
@@ -180,6 +183,9 @@ public:
   #endif
 
   nlohmann::json to_json() const override;
+
+  bool is_merged() const { return merged; };
+  const std::string& get_template_filename() const { return template_filename; };
 
 protected:
   bool merged;

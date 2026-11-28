@@ -98,6 +98,7 @@ RCPP_MODULE(stages)
   function("write_las", &api::write_las, "Write a LAS or LAZ file");
   function("write_copc", &api::write_copc, "Write a LAS or LAZ file");
   function("write_pcd", &api::write_pcd, "Write a PCD file");
+  function("write_cog", &api::write_cog, "Convert a raster to a Cloud Optimized GeoTIFF");
   function("write_vpc", &api::write_vpc, "Write a VPC file");
   function("write_lax", &api::write_lax, "Write a LAX spatial index for LAS and LAZ files");
   function("xptr", &api::xptr, "Reserved for internal use only");
