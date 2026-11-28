@@ -8,6 +8,7 @@
 
 #ifdef USING_GDAL
 #include <cpl_vsi.h>
+#include <cpl_error.h>
 #endif
 
 #include <fstream>
@@ -479,9 +480,14 @@ std::string EPTio::read_file_contents(const std::string& path) const
     if (path.compare(0, 4, "http") == 0)
       vsi_path = "/vsicurl/" + path;
 
+    // Silence GDAL diagnostics that R packages such as sf turn into R warnings
+    CPLPushErrorHandler(CPLQuietErrorHandler);
+    CPLErrorReset();
     VSILFILE* fp = VSIFOpenL(vsi_path.c_str(), "rb");
+    std::string gdal_msg = CPLGetLastErrorMsg();
+    CPLPopErrorHandler();
     if (!fp)
-      throw std::runtime_error("Cannot open remote file: " + path);
+      throw std::runtime_error("Cannot open remote file: " + path + (gdal_msg.empty() ? "" : " (" + gdal_msg + ")"));
 
     // Read in chunks — seeking to end doesn't work reliably for HTTP streams
     std::string content;

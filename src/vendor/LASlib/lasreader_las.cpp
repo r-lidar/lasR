@@ -41,6 +41,7 @@
 #ifdef USING_GDAL
 #include "bytestreamin_gdal.hpp" // rlas: remote files through GDAL's virtual file system
 #include <cpl_vsi.h>
+#include <cpl_error.h>
 #include <string>
 #endif
 
@@ -79,6 +80,11 @@ BOOL LASreaderLAS::open(const char* file_name, I32 io_buffer_size, BOOL peek_onl
     else
       vsi_path = file_name;
 
+    // lasR: silence GDAL's own diagnostics (e.g. "HTTP response code ... 0") that R
+    // packages such as sf turn into R warnings. Failures are reported by laserror() below.
+    CPLPushErrorHandler(CPLQuietErrorHandler);
+    CPLErrorReset();
+
     // Size warning for non-COPC files
     if (strstr(file_name, ".copc.") == NULL)
     {
@@ -93,9 +99,14 @@ BOOL LASreaderLAS::open(const char* file_name, I32 io_buffer_size, BOOL peek_onl
     }
 
     VSILFILE* vsi_file = VSIFOpenL(vsi_path.c_str(), "rb");
+    std::string gdal_msg = CPLGetLastErrorMsg();
+    CPLPopErrorHandler();
     if (vsi_file == 0)
     {
-      laserror("cannot open remote file '%s'", file_name);
+      if (gdal_msg.empty())
+        laserror("cannot open remote file '%s'", file_name);
+      else
+        laserror("cannot open remote file '%s': %s", file_name, gdal_msg.c_str());
       return FALSE;
     }
 
