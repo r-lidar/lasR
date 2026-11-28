@@ -189,6 +189,9 @@ public:
   const std::vector<std::string>& get_written() const { return written; };
 
 protected:
+  static bool has_name_tag(const std::string& file); // {CHUNKNAME}, {XCENTER}, {YCENTER}, {XMIN}, {XMAX}, {YMIN}, {YMAX}
+  std::string make_output_name(const std::string& chunkname) const;
+
   bool merged;
   std::string template_filename;
   std::vector<std::string> written;

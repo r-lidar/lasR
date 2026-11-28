@@ -46,14 +46,8 @@ bool LASRlaswriter::set_parameters(const nlohmann::json& stage)
 
 bool LASRlaswriter::set_input_file_name(const std::string& file)
 {
-  ofile = template_filename;
   ifile = file;
-  size_t pos = ofile.find('*');
-
-  if (pos != std::string::npos)
-  {
-    ofile.replace(pos, 1, ifile);
-  }
+  ofile = make_output_name(ifile);
 
   return true;
 }
@@ -63,8 +57,7 @@ bool LASRlaswriter::set_output_file(const std::string& file)
   template_filename = file;
   clean_copc_ext(template_filename);
 
-  size_t pos = file.find('*');
-  if (pos == std::string::npos)
+  if (!has_name_tag(file))
   {
     merged = true;
   }

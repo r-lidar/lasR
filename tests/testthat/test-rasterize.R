@@ -244,3 +244,19 @@ test_that("rasterize gives the same raster tiled or not when the resolution does
     expect_identical(b, a)
   }
 })
+
+test_that("rasterize replaces tags in the file name",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+  d = tempfile()
+  dir.create(d)
+
+  read = reader_rectangles(c(273400, 273500), c(5274400,5274400), c(273450,273550), c(5274450,5274460))
+  u = exec(read + rasterize(2, "max", ofile = file.path(d, "{XMIN}_{YMAX}_{CHUNKNAME}.tif")), on = f)
+
+  expect_length(u, 2)
+  expect_equal(basename(u), c("273400_5274450_Topography_0.tif", "273500_5274460_Topography_1.tif"))
+  expect_true(all(file.exists(u)))
+
+  expect_error(exec(read + rasterize(2, "max", ofile = file.path(d, "{XMIN}.vrt")), on = f), "tag")
+})

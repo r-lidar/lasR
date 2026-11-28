@@ -104,3 +104,21 @@ test_that("writelas allow controlling format",
   expect_equal(v$npoints_per_class, c("1" = 25, "2" = 1))
 })
 
+
+test_that("writelas replaces tags in the file name",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+  d = tempfile()
+  dir.create(d)
+
+  read = reader_rectangles(c(273400, 273500), c(5274400,5274400), c(273450,273550), c(5274450,5274460))
+  write = write_las(file.path(d, "{XCENTER}_{YCENTER}_{XMIN}_{XMAX}_{YMIN}_{YMAX}.las"))
+  u = exec(read + write, on = f)
+
+  expect_equal(basename(u), c("273425_5274425_273400_273450_5274400_5274450.las", "273525_5274430_273500_273550_5274400_5274460.las"))
+  expect_true(all(file.exists(u)))
+
+  u = exec(write_las(file.path(d, "{CHUNKNAME}_tile.las")), on = f, chunk = 200)
+  expect_length(u, 9)
+  expect_equal(basename(u), paste0("Topography_", 0:8, "_tile.las"))
+})

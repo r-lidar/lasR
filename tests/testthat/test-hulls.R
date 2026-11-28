@@ -69,3 +69,15 @@ test_that("hulls works with multiple file and a buffer",
   expect_equal(sum(sf::st_area(ans1)),   sum(sf::st_area(ans2)))
 })
 
+
+test_that("hulls replaces tags in the file name",
+{
+  f = system.file("extdata", "Topography.las", package="lasR")
+  d = tempfile()
+  dir.create(d)
+
+  read = reader_rectangles(c(273400, 273500), c(5274400,5274400), c(273450,273550), c(5274450,5274460))
+  exec(read + hulls(ofile = file.path(d, "{XCENTER}_{YCENTER}.gpkg")), on = f)
+
+  expect_equal(list.files(d), c("273425_5274425.gpkg", "273525_5274430.gpkg"))
+})

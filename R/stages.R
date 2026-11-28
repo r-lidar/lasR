@@ -1536,7 +1536,10 @@ transform_with = function(stage, operator = "-", store_in_attribute = "", biline
 #' @param ofile character. Output file names. The string must contain a wildcard * so the wildcard can
 #' be replaced by the name of the original tile and preserve the tiling pattern. If the wildcard
 #' is omitted, everything will be written into a single file. This may be the desired behavior in some
-#' circumstances, e.g., to merge some files.
+#' circumstances, e.g., to merge some files. The file name can also contain tags replaced for each
+#' chunk: `{CHUNKNAME}` (equivalent to *), `{XCENTER}`, `{YCENTER}`,
+#' `{XMIN}`, `{XMAX}`, `{YMIN}` and `{YMAX}`. Coordinates are the bounding box of the chunk (buffer
+#' excluded) rounded to the nearest integer, e.g., `"folder/{XCENTER}_{YCENTER}.las"`.
 #' @param keep_buffer bool. The buffer is removed to write file but it can be preserved.
 #' @param binary boolean. Write binary or ascii PCD files.
 #' @param version integer. LAS format minor version to write. NULL or NA means it is auto-detected based

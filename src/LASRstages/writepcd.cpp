@@ -30,14 +30,8 @@ bool LASRpcdwriter::set_parameters(const nlohmann::json& stage)
 
 bool LASRpcdwriter::set_input_file_name(const std::string& file)
 {
-  ofile = template_filename;
   ifile = file;
-  size_t pos = ofile.find('*');
-
-  if (pos != std::string::npos)
-  {
-    ofile.replace(pos, 1, ifile);
-  }
+  ofile = make_output_name(ifile);
 
   return true;
 }
@@ -46,8 +40,7 @@ bool LASRpcdwriter::set_output_file(const std::string& file)
 {
   template_filename = file;
 
-  size_t pos = file.find('*');
-  if (pos == std::string::npos)
+  if (!has_name_tag(file))
   {
     merged = true;
   }

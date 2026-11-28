@@ -28,7 +28,10 @@ write_pcd(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
 \item{ofile}{character. Output file names. The string must contain a wildcard * so the wildcard can
 be replaced by the name of the original tile and preserve the tiling pattern. If the wildcard
 is omitted, everything will be written into a single file. This may be the desired behavior in some
-circumstances, e.g., to merge some files.}
+circumstances, e.g., to merge some files. The file name can also contain tags replaced for each
+chunk: \code{{CHUNKNAME}} (equivalent to *), \code{{XCENTER}}, \code{{YCENTER}},
+\code{{XMIN}}, \code{{XMAX}}, \code{{YMIN}} and \code{{YMAX}}. Coordinates are the bounding box of the chunk (buffer
+excluded) rounded to the nearest integer, e.g., \code{"folder/{XCENTER}_{YCENTER}.las"}.}
 
 \item{filter}{the 'filter' argument allows filtering of the point-cloud to work with points of
 interest. For a given stage when a filter is applied, only the points that meet the criteria are processed.

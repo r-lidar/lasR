@@ -41,9 +41,9 @@ bool LASRcogwriter::set_parameters(const nlohmann::json& stage)
     return false;
   }
 
-  if (file.find('*') != std::string::npos)
+  if (has_name_tag(file))
   {
-    last_error = "wildcard '*' is not supported in the file name";
+    last_error = "wildcard '*' or tags are not supported in the file name";
     return false;
   }
 

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <filesystem>
 
 /* ==============
@@ -160,6 +161,34 @@ StageWriter::StageWriter(const StageWriter& other) : Stage(other)
   if (!merged) written.clear();
 }
 
+bool StageWriter::has_name_tag(const std::string& file)
+{
+  static const char* tags[] = {"*", "{CHUNKNAME}", "{XCENTER}", "{YCENTER}", "{XMIN}", "{XMAX}", "{YMIN}", "{YMAX}"};
+  for (const char* tag : tags) { if (file.find(tag) != std::string::npos) return true; }
+  return false;
+}
+
+std::string StageWriter::make_output_name(const std::string& chunkname) const
+{
+  auto num = [](double x) { return std::to_string(std::llround(x)); };
+  const std::pair<std::string, std::string> tags[] = {
+    {"*", chunkname}, {"{CHUNKNAME}", chunkname},
+    {"{XCENTER}", num((xmin + xmax) / 2)}, {"{YCENTER}", num((ymin + ymax) / 2)},
+    {"{XMIN}", num(xmin)}, {"{XMAX}", num(xmax)}, {"{YMIN}", num(ymin)}, {"{YMAX}", num(ymax)}};
+
+  std::string name = template_filename;
+  for (const auto& tag : tags)
+  {
+    size_t pos = 0;
+    while ((pos = name.find(tag.first, pos)) != std::string::npos)
+    {
+      name.replace(pos, tag.first.size(), tag.second);
+      pos += tag.second.size();
+    }
+  }
+  return name;
+}
+
 void StageWriter::sort(const std::vector<int>& order)
 {
   if (merged) return;
@@ -255,10 +284,9 @@ bool StageRaster::set_input_file_name(const std::string& file)
   ofile = template_filename;
 
   ifile = file;
-  size_t pos = ofile.find('*');
-  if (pos != std::string::npos)
+  if (has_name_tag(template_filename))
   {
-    ofile.replace(pos, 1, ifile);
+    ofile = make_output_name(ifile);
     raster.set_file(ofile);
     if (!raster.create_file()) return false;
     written.push_back(ofile);
@@ -279,9 +307,9 @@ bool StageRaster::set_output_file(const std::string& file)
   std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
   if (ext == ".vrt")
   {
-    if (file.find('*') != std::string::npos)
+    if (has_name_tag(file))
     {
-      last_error = "a VRT file name cannot contain a wildcard '*': " + file;
+      last_error = "a VRT file name cannot contain a wildcard '*' or a tag: " + file;
       return false;
     }
 
@@ -292,8 +320,7 @@ bool StageRaster::set_output_file(const std::string& file)
   }
 
   template_filename = file;
-  size_t pos = file.find('*');
-  if (pos == std::string::npos)
+  if (!has_name_tag(file))
   {
     merged = true;
     raster.set_file(file);
@@ -374,11 +401,10 @@ bool StageVector::set_input_file_name(const std::string& file)
 
   ofile = template_filename;
   ifile = file;
-  size_t pos = ofile.find('*');
 
-  if (pos != std::string::npos)
+  if (has_name_tag(template_filename))
   {
-    ofile.replace(pos, 1, ifile);
+    ofile = make_output_name(ifile);
     vector.set_file(ofile);
     if (!vector.create_file()) return false;
     written.push_back(ofile);
@@ -392,8 +418,7 @@ bool StageVector::set_output_file(const std::string& file)
   if (file.empty()) return true;
 
   template_filename = file;
-  size_t pos = file.find('*');
-  if (pos == std::string::npos)
+  if (!has_name_tag(file))
   {
     merged = true;
     vector.set_file(file);
