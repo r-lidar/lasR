@@ -145,7 +145,7 @@ read_as_common_r_object = function(ans)
     if (is.character(x))
     {
       pos <- regexpr("\\.([[:alnum:]]+)$", x)
-      ext <- ifelse(pos > -1L, substring(x, pos + 1L), "")
+      ext <- tolower(ifelse(pos > -1L, substring(x, pos + 1L), ""))
       if (length(ext) == 1)
       {
         if (ext %in% c("tif", "tiff", "jpg", "jpeg", "png", "gif", "bmp", "jp2", "ecw", "sid", "kml", "kmz", "gdb", "vrt", "dxf"))

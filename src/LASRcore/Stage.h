@@ -63,7 +63,7 @@
  *  26. merge()
  * Pipeline::sort()
  *  27. sort()
- * Pipeline::finalize() (main pipeline only, after all chunks, single thread)
+ * Pipeline::finalize() (main pipeline only, after all chunks and sort(), single thread)
  *  28. finalize()
  * Pipeline::to_R()
  *  29. to_R();
@@ -186,6 +186,7 @@ public:
 
   bool is_merged() const { return merged; };
   const std::string& get_template_filename() const { return template_filename; };
+  const std::vector<std::string>& get_written() const { return written; };
 
 protected:
   bool merged;
@@ -204,11 +205,14 @@ public:
   bool set_input_file_name(const std::string& file) override;
   bool set_output_file(const std::string& file) override;
   bool write() override;
+  bool finalize() override;
   //void clear(bool last) override;
   const Raster& get_raster() { return raster; };
+  bool is_vrt() const { return !vrt_file.empty(); };
 
 protected:
   Raster raster;
+  std::string vrt_file; // Not empty if the per-chunk files are combined into a VRT
 };
 
 class StageVector : public StageWriter

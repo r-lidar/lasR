@@ -73,22 +73,20 @@ bool LASRcogwriter::set_parameters(const nlohmann::json& stage)
 }
 
 // Called after the connected raster stage got its own output file. It is the earliest point
-// where we know whether the source raster is a single file on disk
+// where we know whether the source raster is written on disk. The source can be a single file,
+// one file per chunk (ofile with a wildcard *) or one file per chunk combined into a VRT.
 bool LASRcogwriter::set_output_file(const std::string& file)
 {
   StageRaster* p = get_source();
   if (!p) return false; // # nocov
 
-  if (!p->is_merged())
+  if (p->get_template_filename().empty())
   {
-    if (p->get_template_filename().empty())
-      last_error = "the source raster is not written on disk (ofile = \"\"). A COG can only be made from a raster file";
-    else
-      last_error = "the source raster is written in one file per chunk (ofile with a wildcard *). This is not supported yet";
+    last_error = "the source raster is not written on disk (ofile = \"\"). A COG can only be made from raster files";
     return false;
   }
 
-  if (Raster::same_file(p->get_template_filename(), file))
+  if (p->is_merged() && Raster::same_file(p->get_template_filename(), file))
   {
     last_error = "the COG file must be different from the source raster file: " + file;
     return false;
@@ -104,7 +102,27 @@ bool LASRcogwriter::finalize()
   StageRaster* p = get_source();
   if (!p) return false; // # nocov
 
-  return p->get_raster().to_cog(ofile, resampling);
+  // Single file or VRT on disk: the source raster is linked to its dataset. The source stage
+  // was finalized before this one, so its VRT is already built.
+  const Raster& source = p->get_raster();
+  if (source.is_open())
+    return source.to_cog(ofile, resampling);
+
+  // One file per chunk with a wildcard *: combine the files in a temporary in-memory VRT.
+  // Its definition (bands, nodata, names) is copied from the source raster but not its dataset.
+  const std::vector<std::string>& files = p->get_written();
+  for (const auto& f : files)
+  {
+    if (Raster::same_file(f, ofile))
+    {
+      last_error = "the COG file must be different from the source raster files: " + ofile;
+      return false;
+    }
+  }
+
+  Raster mosaic(source);
+  if (!mosaic.build_vrt(files, "")) return false;
+  return mosaic.to_cog(ofile, resampling);
 }
 
 StageRaster* LASRcogwriter::get_source() const

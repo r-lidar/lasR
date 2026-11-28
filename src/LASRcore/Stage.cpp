@@ -1,5 +1,9 @@
 #include "Stage.h"
 
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
+
 /* ==============
  *  VIRTUAL
  *  ============= */
@@ -219,6 +223,7 @@ StageRaster::StageRaster()
 StageRaster::StageRaster(const StageRaster& other) : StageWriter(other)
 {
   raster = other.raster;
+  vrt_file = other.vrt_file;
 }
 
 StageRaster::~StageRaster()
@@ -269,6 +274,23 @@ bool StageRaster::set_output_file(const std::string& file)
 {
   if (file.empty()) return true;
 
+  std::filesystem::path path(file);
+  std::string ext = path.extension().string();
+  std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
+  if (ext == ".vrt")
+  {
+    if (file.find('*') != std::string::npos)
+    {
+      last_error = "a VRT file name cannot contain a wildcard '*': " + file;
+      return false;
+    }
+
+    vrt_file = file;
+    template_filename = (path.parent_path() / ("*_" + path.stem().string() + ".tif")).string();
+    merged = false;
+    return true;
+  }
+
   template_filename = file;
   size_t pos = file.find('*');
   if (pos == std::string::npos)
@@ -279,6 +301,14 @@ bool StageRaster::set_output_file(const std::string& file)
     written.push_back(file);
   }
 
+  return true;
+}
+
+bool StageRaster::finalize()
+{
+  if (vrt_file.empty()) return true;
+  if (!raster.build_vrt(written, vrt_file)) return false;
+  written = {vrt_file};
   return true;
 }
 

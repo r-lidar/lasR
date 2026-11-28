@@ -1592,8 +1592,9 @@ write_pcd = function(ofile = paste0(tempdir(), "/*.pcd"), binary = TRUE)
 #' written chunk by chunk. The source raster is written on disk as usual, and it is copied into a COG
 #' once all the chunks have been processed. The COG is compressed with ZSTD and contains overviews.
 #'
-#' The source raster must be written in a single file. A source raster stored only in memory
-#' (`ofile = ""`) or written in one file per chunk (`ofile` with a wildcard `*`) is not supported.
+#' The source raster can be written in a single file, in one file per chunk (`ofile` with a wildcard
+#' `*`), or in one file per chunk combined into a VRT (`ofile = "dtm.vrt"`). The files per chunk are
+#' combined into a single COG. A source raster stored only in memory (`ofile = ""`) is not supported.
 #' By default the source raster is written in a temporary file, so only the COG needs to be kept.
 #'
 #' @param raster LASRalgorithm. A stage that produces a raster.

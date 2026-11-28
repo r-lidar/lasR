@@ -31,6 +31,8 @@ public:
   bool focal(float size, float (*operation)(std::vector<float>&));
   bool write();
   bool to_cog(const std::string& file, const std::string& resampling = "BILINEAR") const;
+  bool build_vrt(const std::vector<std::string>& files, const std::string& vrt_file);
+  bool is_open() const { return dataset != nullptr; };
   static bool same_file(const std::string& a, const std::string& b);
   void show() const;
   float operator()(int row, int col, int layer = 1)

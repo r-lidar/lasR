@@ -1,6 +1,7 @@
 # lasR 0.23
 
 - New: `write_cog()` copies a raster produced by another stage into a Cloud Optimized GeoTIFF once all chunks are processed. #372
+- New: raster stages accept a `.vrt` output file, e.g. `rasterize(1, "min", ofile = "folder/dtm.vrt")`. One file is written per chunk (`folder/<chunk>_dtm.tif`) and they are combined into a GDAL virtual raster at the end. `write_cog()` accepts sources written in one file per chunk, with a `*` or a `.vrt`.
 
 # lasR 0.22
 

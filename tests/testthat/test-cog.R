@@ -93,17 +93,38 @@ test_that("write_cog fails with invalid arguments",
   expect_true(is_cog(ofile))
 })
 
-test_that("write_cog fails when the source raster is not a single file",
+test_that("write_cog combines the files written per chunk with * or .vrt",
+{
+  files = paste0(system.file(package = "lasR"), "/extdata/bcts/")
+  files = list.files(files, pattern = "(?i)\\.la(s|z)$", full.names = TRUE)
+
+  d = tempfile()
+  dir.create(d)
+
+  ref  = rasterize(1, c("min", "max"))
+  star = rasterize(1, c("min", "max"), ofile = file.path(d, "*_star.tif"))
+  vrt  = rasterize(1, c("min", "max"), ofile = file.path(d, "dtm.vrt"))
+  cog1 = write_cog(star, ofile = file.path(d, "star_cog.tif"))
+  cog2 = write_cog(vrt, ofile = file.path(d, "vrt_cog.tif"))
+  ans = exec(reader() + ref + star + vrt + cog1 + cog2, on = files)
+
+  expect_true(is_cog(file.path(d, "star_cog.tif")))
+  expect_true(is_cog(file.path(d, "vrt_cog.tif")))
+
+  for (cog in ans[4:5])
+  {
+    expect_equal(names(cog), c("min", "max"))
+    expect_true(terra::compareGeom(cog, ans[[1]]))
+    expect_equal(terra::values(cog), terra::values(ans[[1]]))
+  }
+})
+
+test_that("write_cog fails when the source raster is not on disk or is the same file",
 {
   # In memory raster
   chm = rasterize(2, "max", ofile = "")
   cog = write_cog(chm, ofile = tempfile(fileext = ".tif"))
   expect_error(exec(reader() + chm + cog, on = f), "not written on disk")
-
-  # One file per chunk
-  chm = rasterize(2, "max", ofile = paste0(tempdir(), "/*_cogtest.tif"))
-  cog = write_cog(chm, ofile = tempfile(fileext = ".tif"))
-  expect_error(exec(reader() + chm + cog, on = f), "one file per chunk")
 
   # Same file as the source
   src = tempfile(fileext = ".tif")

@@ -3,6 +3,9 @@
 
 #include "print.h"
 
+#include <gdal_utils.h>
+
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <system_error>
@@ -425,13 +428,69 @@ bool Raster::same_file(const std::string& a, const std::string& b)
   return !ec && same;
 }
 
+// Links this raster to a GDAL virtual raster (VRT) that mosaics 'files'. The files are the
+// rasters written for each chunk and must be complete and closed. If 'vrt_file' is empty the
+// VRT is kept in memory, otherwise it is written on disk with paths relative to the VRT file.
+// The raster must not already be linked to a dataset.
+bool Raster::build_vrt(const std::vector<std::string>& files, const std::string& vrt_file)
+{
+  if (dataset)
+  {
+    last_error = "the raster is already linked to a file"; // # nocov
+    return false; // # nocov
+  }
+
+  if (files.empty())
+  {
+    last_error = "there is no raster file to combine into a VRT. All chunks may be empty";
+    return false;
+  }
+
+  initialize_gdal();
+
+  std::vector<const char*> names;
+  names.reserve(files.size());
+  for (const auto& f : files) names.push_back(f.c_str());
+
+  CPLErrorReset();
+  int usage_error = FALSE;
+  GDALBuildVRTOptions* options = GDALBuildVRTOptionsNew(nullptr, nullptr);
+  GDALDatasetH vrt = GDALBuildVRT(vrt_file.c_str(), (int)names.size(), nullptr, names.data(), options, &usage_error);
+  GDALBuildVRTOptionsFree(options);
+
+  if (!vrt)
+  {
+    last_error = "error while building the VRT: " + std::string(CPLGetLastErrorMsg());
+    return false;
+  }
+
+  dataset.reset(GDALDataset::FromHandle(vrt), GDALClose);
+  file = vrt_file;
+
+  // GDALBuildVRT does not reliably carry the band descriptions. Set them with the nodata value
+  // from the raster definition. They are written in the VRT file when it is flushed.
+  int n = std::min(nBands, dataset->GetRasterCount());
+  for (int i = 1 ; i <= n ; i++)
+  {
+    GDALRasterBand* band = dataset->GetRasterBand(i);
+    band->SetNoDataValue(nodata);
+    if ((size_t)i <= band_names.size() && !band_names[i-1].empty())
+      band->SetDescription(band_names[i-1].c_str());
+  }
+
+  dataset->FlushCache();
+
+  return true;
+}
+
 // Copies the raster into a new Cloud Optimized GeoTIFF. A COG cannot be written chunk by chunk:
 // the GDAL COG driver only supports CreateCopy() from a complete dataset. The raster must thus
 // be linked to a file on disk that has been fully written. In a pipeline, this happens once
 // all the chunks have been processed i.e. in Stage::finalize()
 bool Raster::to_cog(const std::string& cog_file, const std::string& resampling) const
 {
-  if (!dataset || file.empty())
+  // The dataset is either a raster file on disk or a VRT (on disk or in memory) of raster files
+  if (!dataset)
   {
     last_error = "the raster is not linked to a file on disk";
     return false;

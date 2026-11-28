@@ -24,8 +24,9 @@ written chunk by chunk. The source raster is written on disk as usual, and it is
 once all the chunks have been processed. The COG is compressed with ZSTD and contains overviews.
 }
 \details{
-The source raster must be written in a single file. A source raster stored only in memory
-(\code{ofile = ""}) or written in one file per chunk (\code{ofile} with a wildcard \code{*}) is not supported.
+The source raster can be written in a single file, in one file per chunk (\code{ofile} with a wildcard
+\code{*}), or in one file per chunk combined into a VRT (\code{ofile = "dtm.vrt"}). The files per chunk are
+combined into a single COG. A source raster stored only in memory (\code{ofile = ""}) is not supported.
 By default the source raster is written in a temporary file, so only the COG needs to be kept.
 }
 \examples{
