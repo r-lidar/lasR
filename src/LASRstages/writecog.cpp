@@ -88,7 +88,7 @@ bool LASRcogwriter::set_output_file(const std::string& file)
     return false;
   }
 
-  if (p->get_template_filename() == file)
+  if (Raster::same_file(p->get_template_filename(), file))
   {
     last_error = "the COG file must be different from the source raster file: " + file;
     return false;

@@ -6,6 +6,9 @@ is_cog = function(file)
   any(grepl("LAYOUT=COG", d))
 }
 
+# Paths can be written differently for the same file (e.g. /var vs /private/var on macOS)
+same_path = function(a, b) normalizePath(a) == normalizePath(b)
+
 test_that("write_cog writes a COG identical to the source raster",
 {
   ofile = tempfile(fileext = ".tif")
@@ -15,7 +18,7 @@ test_that("write_cog writes a COG identical to the source raster",
 
   expect_length(ans, 2L)
   expect_true(file.exists(ofile))
-  expect_equal(terra::sources(ans[[2]]), ofile)
+  expect_true(same_path(terra::sources(ans[[2]]), ofile))
   expect_true(is_cog(ofile))
   expect_false(is_cog(terra::sources(ans[[1]])))
 
@@ -38,7 +41,7 @@ test_that("write_cog works with a source raster written in a user defined file",
   cog = write_cog(chm, ofile = ofile, resampling = "nearest")
   ans = exec(reader() + chm + cog, on = f)
 
-  expect_equal(terra::sources(ans[[1]]), src)
+  expect_true(same_path(terra::sources(ans[[1]]), src))
   expect_true(is_cog(ofile))
   expect_equal(terra::values(ans[[2]]), terra::values(ans[[1]]))
 })
@@ -105,6 +108,12 @@ test_that("write_cog fails when the source raster is not a single file",
   # Same file as the source
   src = tempfile(fileext = ".tif")
   chm = rasterize(2, "max", ofile = src)
+  cog = write_cog(chm, ofile = src)
+  expect_error(exec(reader() + chm + cog, on = f), "must be different")
+
+  # Same file written differently (e.g. 8.3 short names or separators on Windows)
+  src = tempfile(fileext = ".tif")
+  chm = rasterize(2, "max", ofile = file.path(dirname(src), ".", basename(src)))
   cog = write_cog(chm, ofile = src)
   expect_error(exec(reader() + chm + cog, on = f), "must be different")
 })

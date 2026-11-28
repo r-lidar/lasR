@@ -31,6 +31,7 @@ public:
   bool focal(float size, float (*operation)(std::vector<float>&));
   bool write();
   bool to_cog(const std::string& file, const std::string& resampling = "BILINEAR") const;
+  static bool same_file(const std::string& a, const std::string& b);
   void show() const;
   float operator()(int row, int col, int layer = 1)
   {

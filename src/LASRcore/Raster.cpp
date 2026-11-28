@@ -4,6 +4,8 @@
 #include "print.h"
 
 #include <cmath>
+#include <filesystem>
+#include <system_error>
 
 // Default constructor creates a Raster from (0,0) to (0,0) with a resolution of 0
 // GDALdataset is NOT initialized.
@@ -410,6 +412,19 @@ bool Raster::get_chunk(const Chunk& chunk, int band_index)
   return true;
 }
 
+bool Raster::same_file(const std::string& a, const std::string& b)
+{
+  if (a == b) return true;
+
+  std::error_code ec;
+  std::filesystem::path pa(a);
+  std::filesystem::path pb(b);
+  if (!std::filesystem::exists(pa, ec) || !std::filesystem::exists(pb, ec)) return false;
+
+  bool same = std::filesystem::equivalent(pa, pb, ec);
+  return !ec && same;
+}
+
 // Copies the raster into a new Cloud Optimized GeoTIFF. A COG cannot be written chunk by chunk:
 // the GDAL COG driver only supports CreateCopy() from a complete dataset. The raster must thus
 // be linked to a file on disk that has been fully written. In a pipeline, this happens once
@@ -434,7 +449,7 @@ bool Raster::to_cog(const std::string& cog_file, const std::string& resampling) 
     return false;
   }
 
-  if (cog_file == file)
+  if (same_file(cog_file, file))
   {
     last_error = "the COG file must be different from the source raster file: " + file;
     return false;
